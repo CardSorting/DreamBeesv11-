@@ -145,6 +145,20 @@ export default function Generator() {
     async function handleGenerate() {
         if (!prompt) return;
 
+        // Anti-spam: Check for keyboard mashing/gibberish (words longer than 40 chars)
+        const hasLongWords = prompt.split(/\s+/).some(word => word.length > 40);
+        if (hasLongWords) {
+            toast.error("Your prompt contains unusually long words. Please use real words.", {
+                icon: '🚫',
+                style: {
+                    border: '1px solid #ef4444',
+                    background: '#18181b',
+                    color: '#fff',
+                }
+            });
+            return;
+        }
+
         setGenerating(true);
         setGeneratedImage(null);
         setElapsedTime(0);
