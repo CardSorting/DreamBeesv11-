@@ -10,8 +10,14 @@ export default function Auth() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const { login, signup, loginWithGoogle } = useAuth();
+    const { login, signup, loginWithGoogle, currentUser } = useAuth();
     const navigate = useNavigate();
+
+    React.useEffect(() => {
+        if (currentUser) {
+            navigate('/');
+        }
+    }, [currentUser, navigate]);
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -121,7 +127,6 @@ export default function Auth() {
                         try {
                             setLoading(true);
                             await loginWithGoogle();
-                            navigate('/');
                         } catch (err) {
                             console.error(err);
                             setError('Failed to sign in with Google: ' + err.message);
