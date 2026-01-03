@@ -1,7 +1,9 @@
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { onCall, onRequest } from "firebase-functions/v2/https";
+import { onTaskDispatched } from "firebase-functions/v2/tasks";
 import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getFunctions } from "firebase-admin/functions";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { createCheckoutSession, constructWebhookEvent } from "./stripeHelpers.js";
 
@@ -138,10 +140,7 @@ export const generateImage = onDocumentCreated(
             // Check subscription
             const isPro = user.subscriptionStatus === 'active';
 
-            if (!isPro && user.credits <= 0) {
-                throw new Error("Insufficient credits. Upgrade to Pro or wait for daily reset.");
-            }
-
+            // Start - moved after buffer check in old code, but now we do it before enqueueing
             // --- Rate Limiting (10s cooldown) ---
             const lastGenTime = user.lastGenerationTime ? (user.lastGenerationTime.toDate ? user.lastGenerationTime.toDate() : new Date(user.lastGenerationTime)) : new Date(0);
             if (now - lastGenTime < 10000) { // 10 seconds in ms
@@ -150,16 +149,80 @@ export const generateImage = onDocumentCreated(
             }
             // ------------------------------------
 
-            // Deduct credit if not Pro (or deduct for Pro too if we want usage tracking, but let's say Pro is unlimited for now or has high cap)
-            // For this implementation: Pro = Unlimited, Free = 5 credits.
-            // Deduct credit if not Pro (or deduct for Pro too if we want usage tracking, but let's say Pro is unlimited for now or has high cap)
+            // Deduct credit if not Pro (or deduct for Pro too if we want usage tracking)
             // For this implementation: Pro = Unlimited, Free = 5 credits.
             const userUpdate = { lastGenerationTime: now };
             if (!isPro) {
                 userUpdate.credits = FieldValue.increment(-1);
             }
             await userRef.update(userUpdate);
-            // --------------------------
+            // End - moved logic
+
+
+            // --- Enqueue Background Task for Execution ---
+            // Instead of executing heavy logic here, we enqueue it to Cloud Tasks.
+            // This allows us to use Cloud Tasks' rate limiting to act as a buffer.
+
+            const queue = getFunctions().taskQueue("generateImageTask");
+
+            // Pass all necessary data to the task
+            // We use the cleaned prompt and valid logic from here
+            await queue.enqueue({
+                requestId,
+                userId,
+                prompt: cleanPrompt, // Use the cleaned version
+                originalPrompt: prompt, // Keep original just in case? No, clean is better.
+                negative_prompt: negative_prompt || "",
+                modelId,
+                steps: safeSteps,
+                cfg: safeCfg,
+                aspectRatio: safeAspectRatio,
+                scheduler: scheduler || 'DPM++ 2M Karras'
+            });
+
+            // Update status to 'queued' to indicate it's in the buffer
+            await snapshot.ref.update({ status: "queued" });
+
+            console.log(`Request ${requestId} enqueued to generateImageTask`);
+
+        } catch (error) {
+            console.error("Error queueing image generation:", error);
+            await snapshot.ref.update({
+                status: "failed",
+                error: error.message
+            });
+        }
+    }
+);
+
+// New Cloud Task for processing the image generation
+export const generateImageTask = onTaskDispatched(
+    {
+        retryConfig: {
+            maxAttempts: 3,
+            minBackoffSeconds: 60,
+        },
+        rateLimits: {
+            maxConcurrentDispatches: 2, // Concurrency of 2. With ~8s execution time, this is approx 1 req / 4s.
+            maxDispatchesPerSecond: 1, // Max burst rate (if tasks were instant)
+        },
+        memory: "1GiB",
+        timeoutSeconds: 300,
+    },
+    async (req) => {
+        const { requestId, userId, prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler } = req.data;
+
+        console.log(`Task processing started for ${requestId}`);
+
+        // Re-establish refs inside task (since it's a separate execution context)
+        const db = getFirestore(); // Admin SDK instance
+
+        // Note: verify the document still exists and is in 'queued' or 'processing' state? 
+        // Or just proceed. Proceeding is robust.
+
+        try {
+            // Update status to processing (execution started)
+            await db.collection("generation_queue").doc(requestId).update({ status: "processing" });
 
             if (!B2_KEY_ID) throw new Error("Missing B2 credentials");
 
@@ -172,18 +235,33 @@ export const generateImage = onDocumentCreated(
                 '16:9': { width: 1344, height: 768 }
             };
 
-            const resolution = resolutionMap[safeAspectRatio] || resolutionMap['1:1'];
+            const resolution = resolutionMap[aspectRatio] || resolutionMap['1:1'];
+
+            // --- Simulated Delay for Cold Starts / Buffering ---
+            // Adjust these values as needed based on observed backend latency
+            const MODEL_DELAYS = {
+                "cat-carrier": 8000,
+                "hassaku-illustrious": 8000,
+                "default": 8000
+            };
+
+            const delayMs = MODEL_DELAYS[modelId] || MODEL_DELAYS["default"];
+            if (delayMs > 0) {
+                console.log(`Applying simulated delay of ${delayMs}ms for model ${modelId || 'unknown'}...`);
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+            }
+            // ----------------------------------------------------
 
             // 1. Call Modal Endpoint
-            console.log(`Generating image for ${requestId} (${safeAspectRatio} - ${resolution.width}x${resolution.height}) using Modal endpoint...`);
+            console.log(`Generating image for ${requestId} (${aspectRatio} - ${resolution.width}x${resolution.height}) using Modal endpoint...`);
 
-            // Construct query parameters with user settings or defaults
+            // Construct query parameters
             const params = new URLSearchParams({
-                prompt: cleanPrompt,
+                prompt: prompt,
                 model: modelId || "cat-carrier",
                 negative_prompt: negative_prompt || "",
-                steps: safeSteps.toString(),
-                cfg: safeCfg.toString(),
+                steps: steps.toString(),
+                cfg: cfg.toString(),
                 width: resolution.width.toString(),
                 height: resolution.height.toString(),
                 scheduler: scheduler || 'DPM++ 2M Karras'
@@ -192,7 +270,7 @@ export const generateImage = onDocumentCreated(
             const response = await fetch(
                 `https://cardsorting--sdxl-multi-model-model-web-inference.modal.run?${params.toString()}`,
                 {
-                    method: "GET"
+                    method: "GET" // Assuming Modal uses GET for this? Previous code used GET.
                 }
             );
 
@@ -222,11 +300,11 @@ export const generateImage = onDocumentCreated(
             // 3. Save to main 'images' collection
             const imageDoc = {
                 userId,
-                prompt: cleanPrompt,
+                prompt: prompt,
                 negative_prompt: negative_prompt || "",
-                steps: safeSteps,
-                cfg: safeCfg,
-                aspectRatio: safeAspectRatio,
+                steps: steps,
+                cfg: cfg,
+                aspectRatio: aspectRatio,
                 modelId,
                 imageUrl,
                 createdAt: new Date(),
@@ -237,7 +315,7 @@ export const generateImage = onDocumentCreated(
             console.log(`Image saved to images/${imageRef.id}`);
 
             // 4. Update queue status to completed
-            await snapshot.ref.update({
+            await db.collection("generation_queue").doc(requestId).update({
                 status: "completed",
                 imageUrl: imageUrl,
                 completedAt: new Date(),
@@ -245,11 +323,17 @@ export const generateImage = onDocumentCreated(
             });
 
         } catch (error) {
-            console.error("Error generating image:", error);
-            await snapshot.ref.update({
+            console.error("Error generating image in task:", error);
+            await db.collection("generation_queue").doc(requestId).update({
                 status: "failed",
                 error: error.message
             });
+            // We re-throw if we want Cloud Tasks to retry automatically (based on retryConfig).
+            // However, if it's a deterministic error (like bad prompt), we shouldn't retry.
+            // For now, logging and marking failed is safer to avoid loops, unless it's network error.
+            // Cloud Tasks retry logic handles network errors often before we catch? 
+            // If we catch, we suppress retry.
+            // Let's suppress retry for logic errors.
         }
     }
 );

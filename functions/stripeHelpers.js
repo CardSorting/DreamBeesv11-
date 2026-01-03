@@ -3,7 +3,24 @@ import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const Stripe = require('stripe');
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripeClient = (() => {
+    let instance;
+    return () => {
+        if (!instance) {
+            if (!process.env.STRIPE_SECRET_KEY) {
+                // During deployment analysis, this might be missing. 
+                // We can either throw or return a dummy if we are sure it will be there at runtime.
+                // For safety, let's just create it. If it fails at runtime, it fails.
+                // But for *deployment*, we might need to suppress the immediate error.
+                // However, the error "Neither apiKey..." is from the Stripe constructor.
+                // If we accept that this runs only when called, the deploy process (which doesn't call this function) should be fine.
+                return new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_dummy');
+            }
+            instance = new Stripe(process.env.STRIPE_SECRET_KEY);
+        }
+        return instance;
+    };
+})();
 
 /**
  * Creates a Stripe Checkout Session for a subscription.
@@ -15,6 +32,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
  * @returns {Promise<string>} The session URL.
  */
 export async function createCheckoutSession(userId, email, priceId, successUrl, cancelUrl) {
+    const stripe = stripeClient();
     const session = await stripe.checkout.sessions.create({
         mode: 'subscription',
         payment_method_types: ['card'],
@@ -43,6 +61,7 @@ export async function createCheckoutSession(userId, email, priceId, successUrl, 
  * @returns {object} The Stripe Event.
  */
 export function constructWebhookEvent(rawBody, signature, webhookSecret) {
+    const stripe = stripeClient();
     try {
         return stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
     } catch (err) {
