@@ -231,109 +231,144 @@ export default function Generator() {
                 {showAdvanced && (
                     <div className="fade-in" style={{ marginBottom: '40px' }}>
                         <div className="glass-panel" style={{ padding: '32px' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '32px' }}>
-                                {/* Aspect Ratio */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px' }}>
+
+                                {/* Section 1: Output Format */}
                                 <div>
-                                    <h4 style={{ color: 'white', marginBottom: '16px', fontSize: '1rem' }}>Aspect Ratio</h4>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                                        {[
-                                            { id: '1:1', label: '1:1 Square', icon: <Square size={16} /> },
-                                            { id: '16:9', label: '16:9 Wide', icon: <RectangleHorizontal size={16} /> },
-                                            { id: '9:16', label: '9:16 Tall', icon: <RectangleVertical size={16} /> },
-                                            { id: '3:2', label: '3:2 Photo', icon: <RectangleHorizontal size={14} /> },
-                                            { id: '2:3', label: '2:3 Portrait', icon: <RectangleVertical size={14} /> }
-                                        ].map((ratio) => (
-                                            <button
-                                                key={ratio.id}
-                                                onClick={() => setAspectRatio(ratio.id)}
-                                                style={{
-                                                    padding: '12px 8px',
-                                                    borderRadius: 'var(--radius-md)',
-                                                    border: aspectRatio === ratio.id ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                                                    background: aspectRatio === ratio.id ? 'rgba(139, 92, 246, 0.1)' : 'rgba(0,0,0,0.2)',
-                                                    color: aspectRatio === ratio.id ? 'white' : 'var(--color-text-muted)',
-                                                    fontSize: '0.8rem',
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    alignItems: 'center',
-                                                    gap: '8px',
-                                                    transition: 'all 0.2s'
-                                                }}
-                                            >
-                                                {ratio.icon}
-                                                {ratio.label}
-                                            </button>
-                                        ))}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                                        <div style={{ width: '4px', height: '16px', background: 'var(--color-primary)', borderRadius: '2px' }}></div>
+                                        <h4 style={{ color: 'white', fontSize: '1.1rem', margin: 0 }}>Output Format</h4>
+                                    </div>
+
+                                    <div style={{ marginBottom: '16px' }}>
+                                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '12px' }}>Aspect Ratio</p>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                                            {[
+                                                { id: '1:1', icon: <Square size={16} /> },
+                                                { id: '16:9', icon: <RectangleHorizontal size={16} /> },
+                                                { id: '9:16', icon: <RectangleVertical size={16} /> },
+                                                { id: '3:2', icon: <RectangleHorizontal size={14} /> },
+                                                { id: '2:3', icon: <RectangleVertical size={14} /> }
+                                            ].map((ratio) => (
+                                                <button
+                                                    key={ratio.id}
+                                                    onClick={() => setAspectRatio(ratio.id)}
+                                                    title={ratio.id}
+                                                    style={{
+                                                        padding: '12px 4px',
+                                                        borderRadius: 'var(--radius-md)',
+                                                        border: aspectRatio === ratio.id ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                                                        background: aspectRatio === ratio.id ? 'rgba(139, 92, 246, 0.15)' : 'rgba(255,255,255,0.03)',
+                                                        color: aspectRatio === ratio.id ? 'white' : 'var(--color-text-muted)',
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        alignItems: 'center',
+                                                        gap: '4px',
+                                                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    {ratio.icon}
+                                                    <span style={{ fontSize: '0.7rem', fontWeight: '600' }}>{ratio.id}</span>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Sliders */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                                    <div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                            <label style={{ color: 'white', fontSize: '0.9rem' }}>Inference Steps</label>
-                                            <span style={{ color: 'var(--color-primary)', fontWeight: 'bold' }}>{steps}</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="20" max="50" step="1"
-                                            value={steps}
-                                            onChange={(e) => setSteps(parseInt(e.target.value))}
-                                            style={{ width: '100%', accentColor: 'var(--color-primary)' }}
-                                        />
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
-                                            <span>20 (Fast)</span>
-                                            <span>50 (Detailed)</span>
-                                        </div>
+                                {/* Section 2: Generation Parameters */}
+                                <div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+                                        <div style={{ width: '4px', height: '16px', background: 'var(--color-primary)', borderRadius: '2px' }}></div>
+                                        <h4 style={{ color: 'white', fontSize: '1.1rem', margin: 0 }}>Generation Parameters</h4>
                                     </div>
 
-                                    <div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                            <label style={{ color: 'white', fontSize: '0.9rem' }}>CFG Scale (Guidance)</label>
-                                            <span style={{ color: 'var(--color-primary)', fontWeight: 'bold' }}>{cfg}</span>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                        <div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                <label style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Inference Steps</label>
+                                                <span style={{ color: 'white', fontSize: '0.9rem', fontWeight: 'bold', background: 'rgba(139, 92, 246, 0.2)', padding: '2px 8px', borderRadius: '4px' }}>{steps}</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="20" max="50" step="1"
+                                                value={steps}
+                                                onChange={(e) => setSteps(parseInt(e.target.value))}
+                                                style={{ width: '100%', height: '6px', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+                                            />
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                <span>Faster</span>
+                                                <span>Higher Quality</span>
+                                            </div>
                                         </div>
-                                        <input
-                                            type="range"
-                                            min="1" max="10" step="0.5"
-                                            value={cfg}
-                                            onChange={(e) => setCfg(parseFloat(e.target.value))}
-                                            style={{ width: '100%', accentColor: 'var(--color-primary)' }}
-                                        />
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
-                                            <span>1.0 (Creative)</span>
-                                            <span>10.0 (High Contrast)</span>
+
+                                        <div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                <label style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Guidance (CFG)</label>
+                                                <span style={{ color: 'white', fontSize: '0.9rem', fontWeight: 'bold', background: 'rgba(139, 92, 246, 0.2)', padding: '2px 8px', borderRadius: '4px' }}>{cfg}</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="1" max="10" step="0.5"
+                                                value={cfg}
+                                                onChange={(e) => setCfg(parseFloat(e.target.value))}
+                                                style={{ width: '100%', height: '6px', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+                                            />
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                                <span>Creative</span>
+                                                <span>Precise</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Negative Prompt */}
-                            <div style={{ marginTop: '32px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                    <label style={{ color: 'white', fontSize: '0.9rem' }}>Negative Prompt</label>
+                            {/* Section 3: Content Constraints */}
+                            <div style={{ marginTop: '32px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '32px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <div style={{ width: '4px', height: '16px', background: 'var(--color-primary)', borderRadius: '2px' }}></div>
+                                        <h4 style={{ color: 'white', fontSize: '1.1rem', margin: 0 }}>Content Constraints</h4>
+                                    </div>
                                     <button
                                         onClick={() => setNegPrompt('')}
-                                        style={{ color: '#ef4444', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                        style={{
+                                            color: '#ef4444',
+                                            fontSize: '0.75rem',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            padding: '4px 8px',
+                                            borderRadius: '6px',
+                                            background: 'rgba(239, 68, 68, 0.1)',
+                                            transition: 'all 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
                                     >
-                                        <Trash2 size={12} /> Clear
+                                        <Trash2 size={12} /> Clear Negative Prompt
                                     </button>
                                 </div>
                                 <textarea
                                     value={negPrompt}
                                     onChange={(e) => setNegPrompt(e.target.value)}
-                                    placeholder="Items you DON'T want in the image..."
+                                    placeholder="Describe elements to exclude (e.g., blurry, distorted, low quality)..."
                                     style={{
                                         width: '100%',
-                                        height: '80px',
-                                        padding: '12px',
+                                        height: '90px',
+                                        padding: '16px',
                                         borderRadius: 'var(--radius-md)',
-                                        background: 'rgba(0,0,0,0.3)',
+                                        background: 'rgba(0,0,0,0.2)',
                                         border: '1px solid var(--color-border)',
                                         color: 'white',
                                         fontSize: '0.9rem',
+                                        lineHeight: '1.5',
                                         resize: 'none',
-                                        outline: 'none'
+                                        outline: 'none',
+                                        transition: 'border-color 0.2s'
                                     }}
+                                    onFocus={(e) => e.target.style.borderColor = 'var(--color-primary)'}
+                                    onBlur={(e) => e.target.style.borderColor = 'var(--color-border)'}
                                 />
                             </div>
                         </div>
