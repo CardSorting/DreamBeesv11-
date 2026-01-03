@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { db } from '../firebase';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
-import { Download, Trash2, Calendar, Info, ArrowLeft, Loader2, Share2 } from 'lucide-react';
+import { Download, Trash2, Calendar, Info, ArrowLeft, Loader2, Share2, RefreshCw, Link as LinkIcon } from 'lucide-react';
 
 export default function ImageDetail() {
     const { id } = useParams();
@@ -60,6 +60,21 @@ export default function ImageDetail() {
         document.body.removeChild(link);
     };
 
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText(window.location.href);
+        alert("Link copied to clipboard!");
+    };
+
+    const handleRemix = () => {
+        const params = new URLSearchParams();
+        params.set('prompt', image.prompt);
+        if (image.aspectRatio) params.set('aspectRatio', image.aspectRatio);
+        if (image.steps) params.set('steps', image.steps);
+        if (image.cfg) params.set('cfg', image.cfg);
+        if (image.negative_prompt) params.set('negPrompt', image.negative_prompt);
+        navigate(`/?${params.toString()}`);
+    };
+
     if (loading) {
         return (
             <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
@@ -112,13 +127,22 @@ export default function ImageDetail() {
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            <button
-                                className="btn btn-primary"
-                                style={{ width: '100%', gap: '10px', height: '56px', fontSize: '1.1rem' }}
-                                onClick={handleDownload}
-                            >
-                                <Download size={22} /> Download HD
-                            </button>
+                            <div style={{ display: 'flex', gap: '12px' }}>
+                                <button
+                                    className="btn btn-primary"
+                                    style={{ flex: 1, gap: '10px', height: '56px', fontSize: '1.1rem' }}
+                                    onClick={handleDownload}
+                                >
+                                    <Download size={22} /> Download HD
+                                </button>
+                                <button
+                                    className="btn btn-outline"
+                                    style={{ flex: 1, gap: '10px', height: '56px', fontSize: '1.1rem', background: 'rgba(139, 92, 246, 0.1)', borderColor: 'var(--color-primary)' }}
+                                    onClick={handleRemix}
+                                >
+                                    <RefreshCw size={22} /> Remix
+                                </button>
+                            </div>
 
                             <div style={{ display: 'flex', gap: '12px' }}>
                                 <button
@@ -130,6 +154,13 @@ export default function ImageDetail() {
                                     }}
                                 >
                                     <Share2 size={18} /> Copy Prompt
+                                </button>
+                                <button
+                                    className="btn btn-outline"
+                                    style={{ flex: 1, gap: '8px' }}
+                                    onClick={handleCopyLink}
+                                >
+                                    <LinkIcon size={18} /> Copy Link
                                 </button>
                                 <button
                                     className="btn btn-outline"

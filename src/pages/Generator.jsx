@@ -4,10 +4,14 @@ import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp, doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader2, Sparkles, Image as ImageIcon, Cpu, Settings, Trash2, ChevronDown, ChevronUp, Square, RectangleHorizontal, RectangleVertical } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 export default function Generator() {
-    const [prompt, setPrompt] = useState('');
+    const [searchParams] = useSearchParams();
+    const { currentUser } = useAuth();
+    const { selectedModel } = useModel();
+
+    const [prompt, setPrompt] = useState(searchParams.get('prompt') || '');
     const [generating, setGenerating] = useState(false);
     const [generatedImage, setGeneratedImage] = useState(null);
     const [currentJobId, setCurrentJobId] = useState(null);
@@ -18,13 +22,17 @@ export default function Generator() {
 
     // Advanced Settings State
     const [showAdvanced, setShowAdvanced] = useState(false);
-    const [aspectRatio, setAspectRatio] = useState('1:1');
-    const [steps, setSteps] = useState(30);
-    const [cfg, setCfg] = useState(5.0);
-    const [negPrompt, setNegPrompt] = useState("worst quality, bad quality, low quality, lowres, scan artifacts, jpeg artifacts, sketch, light particles, watermark, multiple views, 2koma, 3koma, 4koma, heart-shaped pupils,");
+    const [aspectRatio, setAspectRatio] = useState(searchParams.get('aspectRatio') || '1:1');
+    const [steps, setSteps] = useState(parseInt(searchParams.get('steps')) || 30);
+    const [cfg, setCfg] = useState(parseFloat(searchParams.get('cfg')) || 5.0);
+    const [negPrompt, setNegPrompt] = useState(searchParams.get('negPrompt') || "worst quality, bad quality, low quality, lowres, scan artifacts, jpeg artifacts, sketch, light particles, watermark, multiple views, 2koma, 3koma, 4koma, heart-shaped pupils,");
 
-    const { currentUser } = useAuth();
-    const { selectedModel } = useModel();
+    // Open advanced if any settings are pre-filled
+    useEffect(() => {
+        if (searchParams.get('aspectRatio') || searchParams.get('steps') || searchParams.get('cfg') || searchParams.get('negPrompt')) {
+            setShowAdvanced(true);
+        }
+    }, [searchParams]);
 
     const LOADING_MESSAGES = [
         "Warming up the AI engines...",

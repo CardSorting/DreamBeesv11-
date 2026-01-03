@@ -2,14 +2,16 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, Search, Download, Trash2, X, ExternalLink, Calendar, Info } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
+import { Loader2, Search, Download, Trash2, X, ExternalLink, Calendar, Info, Check } from 'lucide-react';
 
 export default function Gallery() {
     const navigate = useNavigate();
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
     const { currentUser } = useAuth();
 
     useEffect(() => {
@@ -51,8 +53,20 @@ export default function Gallery() {
         }
     };
 
+    const handleBatchDelete = async () => {
+        if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} images?`)) return;
+        try {
+            await Promise.all(selectedIds.map(id => deleteDoc(doc(db, "images", id))));
+            setImages(prev => prev.filter(img => !selectedIds.includes(img.id)));
+            setSelectedIds([]);
+            setIsSelectionMode(false);
+        } catch (err) {
+            console.error("Error batch deleting:", err);
+        }
+    };
+
     const handleDownload = (e, url, prompt) => {
-        e.stopPropagation();
+        if (e) e.stopPropagation();
         const link = document.createElement('a');
         link.href = url;
         link.download = `DreamBee-${prompt.slice(0, 20)}.png`;
@@ -61,17 +75,41 @@ export default function Gallery() {
         document.body.removeChild(link);
     };
 
+    const handleBatchDownload = () => {
+        selectedIds.forEach(id => {
+            const img = images.find(i => i.id === id);
+            if (img) handleDownload(null, img.imageUrl, img.prompt);
+        });
+    };
+
+    const toggleSelection = (id) => {
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
     return (
-        <div className="container" style={{ paddingTop: '100px', paddingBottom: '80px' }}>
+        <div className="container" style={{ paddingTop: '100px', paddingBottom: '120px' }}>
             <header style={{ marginBottom: '60px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
                     <h1 style={{ fontSize: '2.5rem', fontWeight: '800', background: 'linear-gradient(to right, #fff, #a1a1aa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                         Your Gallery
                     </h1>
-                    <Link to="/" className="btn btn-primary" style={{ gap: '8px' }}>
-                        <ExternalLink size={18} />
-                        Create New
-                    </Link>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                        <button
+                            className={`btn ${isSelectionMode ? 'btn-primary' : 'btn-outline'}`}
+                            onClick={() => {
+                                setIsSelectionMode(!isSelectionMode);
+                                setSelectedIds([]);
+                            }}
+                        >
+                            {isSelectionMode ? 'Cancel Selection' : 'Select'}
+                        </button>
+                        <Link to="/" className="btn btn-primary" style={{ gap: '8px' }}>
+                            <ExternalLink size={18} />
+                            Create New
+                        </Link>
+                    </div>
                 </div>
 
                 <div className="search-wrapper">
@@ -113,45 +151,66 @@ export default function Gallery() {
                         <div
                             key={img.id}
                             className="masonry-item"
-                            onClick={() => navigate(`/gallery/${img.id}`)}
+                            onClick={() => isSelectionMode ? toggleSelection(img.id) : navigate(`/gallery/${img.id}`)}
                         >
-                            <div className="glass-panel gallery-card">
+                            <div className={`glass-panel gallery-card ${isSelectionMode ? 'selecting' : ''} ${selectedIds.includes(img.id) ? 'selected' : ''}`}>
+                                {isSelectionMode && (
+                                    <div className={`selection-dot ${selectedIds.includes(img.id) ? 'selected' : ''}`}>
+                                        {selectedIds.includes(img.id) && <Check size={14} color="white" />}
+                                    </div>
+                                )}
                                 <img
                                     src={img.imageUrl}
                                     alt={img.prompt}
                                     style={{ width: '100%', display: 'block', borderRadius: 'var(--radius-lg)' }}
                                     loading="lazy"
                                 />
-                                <div className="overlay">
-                                    <p style={{
-                                        fontSize: '0.85rem',
-                                        marginBottom: '16px',
-                                        display: '-webkit-box',
-                                        WebkitLineClamp: 2,
-                                        WebkitBoxOrient: 'vertical',
-                                        overflow: 'hidden',
-                                        lineHeight: '1.4'
-                                    }}>{img.prompt}</p>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button
-                                            className="btn btn-outline"
-                                            style={{ padding: '8px', flex: 1, fontSize: '0.8rem', gap: '6px' }}
-                                            onClick={(e) => handleDownload(e, img.imageUrl, img.prompt)}
-                                        >
-                                            <Download size={14} /> Download
-                                        </button>
-                                        <button
-                                            className="btn btn-outline"
-                                            style={{ padding: '8px', width: '40px', borderColor: 'rgba(239, 68, 68, 0.2)' }}
-                                            onClick={(e) => handleDelete(e, img.id)}
-                                        >
-                                            <Trash2 size={14} color="#ef4444" />
-                                        </button>
+                                {!isSelectionMode && (
+                                    <div className="overlay">
+                                        <p style={{
+                                            fontSize: '0.85rem',
+                                            marginBottom: '16px',
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: 'vertical',
+                                            overflow: 'hidden',
+                                            lineHeight: '1.4'
+                                        }}>{img.prompt}</p>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <button
+                                                className="btn btn-outline"
+                                                style={{ padding: '8px', flex: 1, fontSize: '0.8rem', gap: '6px' }}
+                                                onClick={(e) => handleDownload(e, img.imageUrl, img.prompt)}
+                                            >
+                                                <Download size={14} /> Download
+                                            </button>
+                                            <button
+                                                className="btn btn-outline"
+                                                style={{ padding: '8px', width: '40px', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+                                                onClick={(e) => handleDelete(e, img.id)}
+                                            >
+                                                <Trash2 size={14} color="#ef4444" />
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {isSelectionMode && selectedIds.length > 0 && (
+                <div className="glass-panel batch-bar fade-in">
+                    <span style={{ fontWeight: '600' }}>{selectedIds.length} items selected</span>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                        <button className="btn btn-outline" style={{ gap: '8px' }} onClick={handleBatchDownload}>
+                            <Download size={18} /> Download
+                        </button>
+                        <button className="btn btn-outline" style={{ gap: '8px', borderColor: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }} onClick={handleBatchDelete}>
+                            <Trash2 size={18} /> Delete Selected
+                        </button>
+                    </div>
                 </div>
             )}
         </div>
