@@ -1,10 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
-import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers } from 'lucide-react';
+import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight } from 'lucide-react';
 
 const CustomCursor = ({ isHovering }) => {
-    const cursorRef = useRef(null);
     const [position, setPosition] = useState({ x: 0, y: 0 });
 
     useEffect(() => {
@@ -39,11 +38,9 @@ export default function ModelDetail() {
             const found = availableModels.find(m => m.id === id);
             if (found) {
                 setModel(found);
-            } else {
-                // navigate('/models'); // Optional: redirect if not found
             }
         }
-    }, [id, availableModels, navigate]);
+    }, [id, availableModels]);
 
     useEffect(() => {
         const handleScroll = () => setScrollY(window.scrollY);
@@ -60,316 +57,334 @@ export default function ModelDetail() {
     }
 
     const isActive = selectedModel?.id === model.id;
-    const previewImages = model.previewImages || Array(6).fill(model.image); // Fallback
+    // Ensure we have enough images for a feed
+    const baseImages = model.previewImages || [model.image];
+    // Create a larger set for the feed impression if needed
+    const feedImages = baseImages.length < 6
+        ? [...baseImages, ...baseImages, ...baseImages].slice(0, 12)
+        : baseImages;
 
     return (
         <div className="cursor-none" style={{ background: '#0a0a0a', minHeight: '100vh', color: '#e5e5e5', position: 'relative' }}>
             <CustomCursor isHovering={isHovering} />
 
-            {/* Ambient Background - reusing from Models.jsx for consistency */}
+            {/* Global Noise Overlay */}
+            <div className="noise-overlay" style={{ position: 'fixed', opacity: 0.03, pointerEvents: 'none', zIndex: 100 }} />
+
+            {/* Back Navigation (Fixed) */}
             <div style={{
                 position: 'fixed',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                background: 'linear-gradient(to bottom, #050505 0%, #0a0a0a 100%)',
-                pointerEvents: 'none',
-                zIndex: 0
-            }} />
+                top: '40px',
+                left: '40px',
+                zIndex: 50,
+                mixBlendMode: 'difference'
+            }}>
+                <button
+                    onClick={() => navigate('/models')}
+                    onMouseEnter={() => setIsHovering(true)}
+                    onMouseLeave={() => setIsHovering(false)}
+                    style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        fontSize: '0.75rem',
+                        letterSpacing: '0.2em',
+                        cursor: 'none',
+                        textTransform: 'uppercase'
+                    }}
+                >
+                    <ArrowLeft size={16} /> <span className="hover-underline">Index</span>
+                </button>
+            </div>
 
-            <div className="container" style={{ position: 'relative', zIndex: 1, paddingBottom: '120px' }}>
-
-                {/* Navigation */}
-                <div style={{
-                    position: 'fixed',
-                    top: '100px',
-                    left: '4vw',
-                    zIndex: 50,
-                    opacity: scrollY > 50 ? 0 : 1,
-                    transition: 'opacity 0.3s',
-                    pointerEvents: scrollY > 50 ? 'none' : 'auto'
+            <div className="split-layout">
+                {/* LEFT PANEL: Sticky Info */}
+                <div className="info-panel" style={{
+                    position: 'sticky',
+                    top: 0,
+                    height: '100vh',
+                    width: '50%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    padding: '0 6vw',
+                    borderRight: '1px solid rgba(255,255,255,0.05)'
                 }}>
-                    <button
-                        onClick={() => navigate('/models')}
-                        onMouseEnter={() => setIsHovering(true)}
-                        onMouseLeave={() => setIsHovering(false)}
-                        style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: '#666',
+                    <div className="content-wrapper" style={{ maxWidth: '600px' }}>
+
+                        {/* ID Badge */}
+                        <div style={{
+                            marginBottom: '40px',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '12px',
-                            fontSize: '0.8rem',
-                            letterSpacing: '0.1em',
-                            cursor: 'none'
-                        }}
-                    >
-                        <ArrowLeft size={16} /> BACK TO ARCHIVE
-                    </button>
-                </div>
-
-                {/* Hero Section */}
-                <div style={{
-                    paddingTop: '180px',
-                    marginBottom: '120px',
-                    paddingLeft: '4vw',
-                    display: 'grid',
-                    gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 0.8fr)',
-                    gap: '60px'
-                }}>
-                    <div className="hero-content">
-                        <div className="text-reveal-mask" style={{ marginBottom: '24px' }}>
+                            gap: '16px',
+                            opacity: 0.6
+                        }}>
                             <span style={{
-                                animation: 'revealUp 1s cubic-bezier(0.16, 1, 0.3, 1) both',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '16px',
-                                fontFamily: 'monospace',
-                                color: 'var(--color-accent-primary)',
-                                fontSize: '0.8rem',
-                                letterSpacing: '0.2em'
-                            }}>
-                                <span style={{ width: '20px', height: '1px', background: 'currentColor' }}></span>
-                                {model.id.toUpperCase()}
+                                width: '8px',
+                                height: '8px',
+                                background: 'var(--color-accent-primary)',
+                                borderRadius: '50%',
+                                boxShadow: '0 0 10px var(--color-accent-primary)'
+                            }} />
+                            <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', letterSpacing: '0.2em' }}>
+                                MODEL // {model.id.toUpperCase()}
                             </span>
                         </div>
 
+                        {/* Heading */}
                         <h1 style={{
-                            fontSize: 'clamp(3.5rem, 6vw, 7rem)',
-                            lineHeight: 0.9,
+                            fontSize: 'clamp(3rem, 5vw, 5rem)',
+                            lineHeight: 1,
                             fontWeight: '300',
                             color: 'white',
-                            marginBottom: '40px',
-                            marginLeft: '-4px'
+                            marginBottom: '32px',
+                            letterSpacing: '-0.03em',
+                            position: 'relative'
                         }}>
                             <div className="text-reveal-mask">
-                                <span style={{ animation: 'revealUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both' }}>
+                                <span style={{ animation: 'revealUp 1s cubic-bezier(0.16, 1, 0.3, 1) both' }}>
                                     {model.name}
                                 </span>
                             </div>
                         </h1>
 
+                        {/* Description */}
                         <p style={{
-                            fontSize: 'clamp(1.1rem, 2vw, 1.25rem)',
+                            fontSize: '1.125rem',
                             lineHeight: 1.6,
                             color: '#888',
-                            maxWidth: '600px',
                             fontFamily: 'var(--font-serif)',
                             marginBottom: '60px',
-                            animation: 'fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both'
+                            animation: 'fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both'
                         }}>
                             {model.description}
                         </p>
 
-                        <div
-                            style={{ animation: 'fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both' }}
-                            onMouseEnter={() => setIsHovering(true)}
-                            onMouseLeave={() => setIsHovering(false)}
-                        >
+                        {/* CTAs */}
+                        <div style={{
+                            display: 'flex',
+                            gap: '20px',
+                            marginBottom: '80px',
+                            animation: 'fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both'
+                        }}>
                             <button
                                 onClick={() => {
                                     setSelectedModel(model);
                                     setTimeout(() => navigate('/generate'), 500);
                                 }}
-                                className={`btn-primary ${isActive ? 'active-engine' : ''}`}
+                                onMouseEnter={() => setIsHovering(true)}
+                                onMouseLeave={() => setIsHovering(false)}
                                 disabled={isActive}
+                                className={`btn-primary ${isActive ? 'active-engine' : ''}`}
                                 style={{
-                                    background: isActive ? 'var(--color-accent-primary)' : 'white',
+                                    padding: '24px 48px',
+                                    borderRadius: '0',
+                                    background: isActive ? 'white' : 'white',
                                     color: 'black',
-                                    border: 'none',
-                                    padding: '18px 40px',
-                                    borderRadius: '100px',
                                     fontSize: '0.9rem',
                                     letterSpacing: '0.1em',
-                                    display: 'inline-flex',
+                                    display: 'flex',
                                     alignItems: 'center',
                                     gap: '12px',
-                                    cursor: isActive ? 'default' : 'none',
-                                    opacity: isActive ? 0.8 : 1,
-                                    transform: isHovering && !isActive ? 'scale(1.05)' : 'scale(1)',
-                                    transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+                                    border: 'none',
+                                    cursor: 'none',
+                                    transformOrigin: 'left',
+                                    transition: 'transform 0.3s'
                                 }}
                             >
-                                {isActive ? <Check size={18} /> : <Zap size={18} fill="currentColor" />}
-                                {isActive ? 'ENGINE ACTIVE' : 'ACTIVATE ENGINE'}
+                                {isActive ? 'ACTIVE' : 'ACTIVATE'} <ArrowUpRight size={18} />
                             </button>
                         </div>
-                    </div>
 
-                    {/* Metadata Side Panel */}
-                    <div style={{
-                        paddingTop: '30px',
-                        animation: 'fadeIn 1.5s ease 0.5s both'
-                    }}>
-                        <div className="metadata-grid" style={{
+                        {/* Technical Spec Grid */}
+                        <div className="specs-grid" style={{
                             display: 'grid',
-                            gridTemplateColumns: 'repeat(2, 1fr)',
-                            gap: '40px 20px',
-                            borderLeft: '1px solid rgba(255,255,255,0.1)',
-                            paddingLeft: '40px'
+                            gridTemplateColumns: '1fr 1fr',
+                            borderTop: '1px solid rgba(255,255,255,0.1)',
+                            paddingTop: '32px',
+                            animation: 'fadeIn 1.5s ease 0.6s both'
                         }}>
-                            <div className="meta-item">
-                                <div className="meta-label"><Layers size={14} /> TYPE</div>
-                                <div className="meta-value">Diffusion v2</div>
+                            <div style={{ borderRight: '1px solid rgba(255,255,255,0.1)', paddingRight: '32px' }}>
+                                <div className="spec-label">RESOLUTION</div>
+                                <div className="spec-value">1024x1024</div>
                             </div>
-                            <div className="meta-item">
-                                <div className="meta-label"><Aperture size={14} /> RESOLUTION</div>
-                                <div className="meta-value">1024x1024 Native</div>
+                            <div style={{ paddingLeft: '32px' }}>
+                                <div className="spec-label">BASE MODEL</div>
+                                <div className="spec-value">SDXL 1.0</div>
                             </div>
-                            <div className="meta-item" style={{ gridColumn: 'span 2' }}>
-                                <div className="meta-label"><Hash size={14} /> KEYWORDS</div>
-                                <div className="meta-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
-                                    {model.tags.map(tag => (
-                                        <span key={tag} style={{
-                                            fontSize: '0.75rem',
-                                            color: '#999',
-                                            border: '1px solid rgba(255,255,255,0.1)',
-                                            padding: '6px 14px',
-                                            borderRadius: '100px'
-                                        }}>
-                                            {tag}
-                                        </span>
+                            <div style={{ gridColumn: 'span 2', marginTop: '32px' }}>
+                                <div className="spec-label">TAGS</div>
+                                <div className="spec-tags">
+                                    {model.tags.map(t => (
+                                        <span key={t} className="spec-tag">{t}</span>
                                     ))}
                                 </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
 
-                {/* Masonry Feed */}
-                <div className="feed-section" style={{ padding: '0 4vw' }}>
-                    <div style={{
-                        marginBottom: '60px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '24px',
-                        opacity: 0.6
-                    }}>
-                        <div style={{ width: '40px', height: '1px', background: 'white' }}></div>
-                        <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', letterSpacing: '0.2em' }}>GENERATED SAMPLES</span>
-                    </div>
-
+                {/* RIGHT PANEL: Scrollable Feed */}
+                <div className="feed-panel" style={{
+                    width: '50%',
+                    marginLeft: '50%', // Push to right
+                    padding: '20vh 4vw 20vh 4vw'
+                }}>
                     <div className="masonry-grid">
-                        {previewImages.map((imgSrc, index) => (
+                        {feedImages.map((imgSrc, index) => (
                             <div
                                 key={index}
                                 className="masonry-item"
                                 onMouseEnter={() => setIsHovering(true)}
                                 onMouseLeave={() => setIsHovering(false)}
                                 style={{
-                                    marginBottom: '30px',
+                                    marginBottom: '40px',
                                     breakInside: 'avoid',
-                                    cursor: 'none',
-                                    animation: `fadeInUp 1s ease ${0.2 + (index * 0.1)}s both`
+                                    animation: `fadeInUp 1s ease ${0.4 + (index * 0.1)}s both`
                                 }}
                             >
-                                <div style={{
-                                    position: 'relative',
-                                    borderRadius: '4px', // Tighter radius for agency feel
-                                    overflow: 'hidden',
-                                    background: '#111'
-                                }}>
-                                    <img
-                                        src={imgSrc}
-                                        alt={`Sample ${index}`}
-                                        style={{
-                                            width: '100%',
-                                            display: 'block',
-                                            transition: 'transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
-                                            filter: 'grayscale(0.2) contrast(1.1)'
-                                        }}
-                                        className="feed-image"
-                                    />
-                                    <div className="hover-overlay" style={{
-                                        position: 'absolute',
-                                        inset: 0,
-                                        background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%)',
-                                        opacity: 0,
-                                        transition: 'opacity 0.3s',
-                                        display: 'flex',
-                                        alignItems: 'flex-end',
-                                        padding: '24px'
-                                    }}>
-                                        <div style={{ transform: 'translateY(10px)', transition: 'transform 0.3s' }} className="overlay-content">
-                                            <span style={{ fontFamily: 'monospace', fontSize: '10px', color: 'white', letterSpacing: '0.2em' }}>SAMPLE_0{index + 1}</span>
-                                        </div>
+                                <div className="image-card">
+                                    <div className="image-wrapper">
+                                        <img
+                                            src={imgSrc}
+                                            alt={`Sample ${index}`}
+                                            className="feed-image"
+                                        />
+                                    </div>
+                                    <div className="image-meta">
+                                        <span className="mono-label">SAMPLE_{String(index + 1).padStart(2, '0')}</span>
                                     </div>
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
-
             </div>
 
             <style>{`
-                .text-reveal-mask { 
-                    overflow: hidden; 
+                .split-layout {
+                    display: flex;
+                    width: 100%;
+                    min-height: 100vh;
                 }
+                
+                .text-reveal-mask { overflow: hidden; }
                 
                 @keyframes revealUp {
                     from { transform: translateY(100%); opacity: 0; }
                     to { transform: translateY(0); opacity: 1; }
                 }
-
                 @keyframes fadeInUp {
                     from { transform: translateY(40px); opacity: 0; }
                     to { transform: translateY(0); opacity: 1; }
                 }
-
                 @keyframes fadeIn {
                     from { opacity: 0; }
                     to { opacity: 1; }
                 }
 
-                .meta-label {
+                .hover-underline {
+                    position: relative;
+                }
+                .hover-underline::after {
+                    content: '';
+                    position: absolute;
+                    bottom: -4px;
+                    left: 0;
+                    width: 0%;
+                    height: 1px;
+                    background: white;
+                    transition: width 0.3s;
+                }
+                button:hover .hover-underline::after {
+                    width: 100%;
+                }
+
+                .spec-label {
                     font-family: monospace;
                     font-size: 0.7rem;
                     color: #555;
                     letter-spacing: 0.15em;
                     margin-bottom: 8px;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
                 }
-                
-                .meta-value {
+                .spec-value {
                     font-size: 1rem;
-                    color: #ccc;
-                    font-weight: 300;
+                    color: #e5e5e5;
+                }
+                .spec-tags {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 12px;
+                }
+                .spec-tag {
+                    font-family: monospace;
+                    font-size: 0.75rem;
+                    color: #888;
+                    border: 1px solid rgba(255,255,255,0.1);
+                    padding: 4px 12px;
+                    border-radius: 100px;
                 }
 
+                /* Masonry & Cards */
                 .masonry-grid {
-                    column-count: 3;
-                    column-gap: 30px;
+                    column-count: 2;
+                    column-gap: 40px;
+                }
+                .image-card {
+                    position: relative;
+                    cursor: none;
+                }
+                .image-wrapper {
+                    overflow: hidden;
+                    margin-bottom: 12px;
+                }
+                .feed-image {
+                    width: 100%;
+                    display: block;
+                    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.6s;
+                    filter: grayscale(0.2);
+                }
+                .image-card:hover .feed-image {
+                    transform: scale(1.05);
+                    filter: grayscale(0);
+                }
+                .image-meta {
+                    opacity: 0.4;
+                    transition: opacity 0.3s;
+                }
+                .image-card:hover .image-meta {
+                    opacity: 1;
+                }
+                .mono-label {
+                    font-family: monospace;
+                    font-size: 0.7rem;
+                    letter-spacing: 0.1em;
                 }
 
-                .feed-image:hover {
-                    transform: scale(1.03) !important;
-                    filter: grayscale(0) contrast(1) !important;
-                }
-
-                .masonry-item:hover .hover-overlay {
-                    opacity: 1 !important;
-                }
-                
-                .masonry-item:hover .overlay-content {
-                    transform: translateY(0) !important;
-                }
-
-                @media (max-width: 1200px) {
-                    .masonry-grid { column-count: 2; }
-                }
-
-                @media (max-width: 768px) {
-                    .hero-content h1 { font-size: 3.5rem !important; }
+                /* Mobile Responsiveness */
+                @media (max-width: 1024px) {
+                    .split-layout { flex-direction: column; }
+                    .info-panel {
+                        position: relative;
+                        width: 100% !important;
+                        height: auto !important;
+                        padding: 120px 20px 60px 20px !important;
+                        border-right: none !important;
+                        border-bottom: 1px solid rgba(255,255,255,0.05);
+                    }
+                    .feed-panel {
+                        width: 100% !important;
+                        margin-left: 0 !important;
+                        padding: 40px 20px !important;
+                    }
                     .masonry-grid { column-count: 1; }
                     .custom-cursor { display: none; }
                     .cursor-none { cursor: auto; }
-                    .metadata-grid { border-left: none !important; padding-left: 0 !important; margin-top: 40px; }
-                    div[style*="minmax(0, 1.2fr)"] { grid-template-columns: 1fr !important; gap: 0 !important; }
                 }
             `}</style>
         </div>
