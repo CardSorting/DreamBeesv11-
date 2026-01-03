@@ -120,9 +120,13 @@ export const generateImage = onDocumentCreated(
             const imageDoc = {
                 userId,
                 prompt,
+                negative_prompt: negative_prompt || "",
+                steps: steps || 30,
+                cfg: cfg || 5.0,
+                aspectRatio: aspectRatio || "1:1",
                 modelId,
                 imageUrl,
-                createdAt: new Date(), // Use server timestamp in real deployment if possible, simplified here
+                createdAt: new Date(),
                 originalrequestId: requestId
             };
 
