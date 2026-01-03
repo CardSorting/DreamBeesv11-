@@ -1,7 +1,9 @@
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
+import { onCall, onRequest } from "firebase-functions/v2/https";
 import { initializeApp, cert } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { createCheckoutSession, constructWebhookEvent } from "./stripeHelpers.js";
 
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
@@ -58,6 +60,42 @@ export const generateImage = onDocumentCreated(
             await snapshot.ref.update({ status: "processing" });
 
             const { prompt, modelId, userId, negative_prompt, steps, cfg, aspectRatio, scheduler } = data;
+
+            // --- Credit Check Logic ---
+            const userRef = db.collection('users').doc(userId);
+            const userDoc = await userRef.get();
+            let user = userDoc.exists ? userDoc.data() : {};
+
+            // Default values for new users
+            if (!user.credits && user.credits !== 0) user.credits = 5;
+            if (!user.lastDailyReset) user.lastDailyReset = new Date(0); // Epoch
+
+            const now = new Date();
+            const lastReset = user.lastDailyReset.toDate ? user.lastDailyReset.toDate() : new Date(user.lastDailyReset);
+            const oneDay = 24 * 60 * 60 * 1000;
+
+            // Daily Reset Logic for minimal example (or just reset if > 24h)
+            if (now - lastReset > oneDay) {
+                user.credits = 5; // Reset to daily free limit
+                user.lastDailyReset = now;
+                await userRef.set({ credits: 5, lastDailyReset: now }, { merge: true });
+            }
+
+            // Check subscription
+            const isPro = user.subscriptionStatus === 'active';
+
+            if (!isPro && user.credits <= 0) {
+                throw new Error("Insufficient credits. Upgrade to Pro or wait for daily reset.");
+            }
+
+            // Deduct credit if not Pro (or deduct for Pro too if we want usage tracking, but let's say Pro is unlimited for now or has high cap)
+            // For this implementation: Pro = Unlimited, Free = 5 credits.
+            if (!isPro) {
+                await userRef.update({
+                    credits: FieldValue.increment(-1)
+                });
+            }
+            // --------------------------
 
             if (!B2_KEY_ID) throw new Error("Missing B2 credentials");
 
@@ -151,3 +189,63 @@ export const generateImage = onDocumentCreated(
         }
     }
 );
+
+export const createStripeCheckout = onCall(async (request) => {
+    const { priceId, successUrl, cancelUrl } = request.data;
+    const uid = request.auth.uid;
+    const email = request.auth.token.email;
+
+    if (!uid) {
+        throw new Error("Unauthenticated");
+    }
+
+    try {
+        const sessionUrl = await createCheckoutSession(uid, email, priceId, successUrl, cancelUrl);
+        return { url: sessionUrl };
+    } catch (error) {
+        console.error("Stripe Checkout Error:", error);
+        throw new Error("Failed to create checkout session");
+    }
+});
+
+export const stripeWebhook = onRequest(async (req, res) => {
+    const signature = req.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    let event;
+    try {
+        event = constructWebhookEvent(req.rawBody, signature, webhookSecret);
+    } catch (err) {
+        console.error("Webhook Error:", err.message);
+        res.status(400).send(`Webhook Error: ${err.message}`);
+        return;
+    }
+
+    try {
+        if (event.type === 'checkout.session.completed') {
+            const session = event.data.object;
+            const userId = session.metadata.userId;
+            const customerId = session.customer;
+
+            // Update user to active subscription
+            await db.collection('users').doc(userId).set({
+                subscriptionStatus: 'active',
+                stripeCustomerId: customerId,
+                credits: 1000 // Give them a bunch or mark as "unlimited" logic
+            }, { merge: true });
+        } else if (event.type === 'customer.subscription.deleted') {
+            const subscription = event.data.object;
+            const customerId = subscription.customer;
+
+            // Find user by stripeCustomerId (simple query)
+            const usersSnapshot = await db.collection('users').where('stripeCustomerId', '==', customerId).get();
+            usersSnapshot.forEach(async (doc) => {
+                await doc.ref.update({ subscriptionStatus: 'inactive' });
+            });
+        }
+        res.json({ received: true });
+    } catch (err) {
+        console.error("Error processing webhook:", err);
+        res.status(500).send("Internal Server Error");
+    }
+});

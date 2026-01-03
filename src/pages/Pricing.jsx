@@ -1,139 +1,146 @@
-import React from 'react';
-import { Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { Check, Zap, Crown } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function Pricing() {
-    const plans = [
-        {
-            name: "Starter",
-            price: "Free",
-            description: "Perfect for exploring AI art generation.",
-            features: [
-                "100 Daily Credits",
-                "Standard Speed",
-                "Public Gallery",
-                "Standard Resolution",
-                "CC BY-NC 4.0 License"
-            ],
-            highlight: false
-        },
-        {
-            name: "Pro",
-            price: "$29",
-            period: "/month",
-            description: "For creators who need more power.",
-            features: [
-                "Unlimited Slow Generations",
-                "500 Fast Credits / mo",
-                "Private Mode",
-                "Upscaling Support",
-                "Commercial License",
-                "Priority Support"
-            ],
-            highlight: true
-        },
-        {
-            name: "Enterprise",
-            price: "Custom",
-            description: "Scalable solutions for teams.",
-            features: [
-                "Custom API Access",
-                "Dedicated GPU Instance",
-                "SSO Scim",
-                "Custom Models",
-                "SLA Guarantee",
-                "24/7 Account Manager"
-            ],
-            highlight: false
+    const { currentUser } = useAuth();
+    const [loading, setLoading] = useState(false);
+    const functions = getFunctions();
+
+    const handleSubscribe = async (priceId) => {
+        if (!currentUser) {
+            toast.error("Please log in to upgrade.");
+            return;
         }
-    ];
+
+        setLoading(true);
+        try {
+            const createStripeCheckout = httpsCallable(functions, 'createStripeCheckout');
+            const result = await createStripeCheckout({
+                priceId: priceId,
+                successUrl: window.location.origin + '/generator?success=true',
+                cancelUrl: window.location.origin + '/pricing?canceled=true',
+            });
+            window.location.href = result.data.url;
+        } catch (error) {
+            console.error("Error creating checkout session:", error);
+            toast.error("Failed to start checkout. Please try again.");
+            setLoading(false);
+        }
+    };
 
     return (
-        <div className="container" style={{ padding: '120px 20px 60px' }}>
-            <div style={{ textAlign: 'center', marginBottom: '80px' }}>
-                <h1 style={{
-                    fontSize: '3.5rem',
-                    fontWeight: '800',
-                    marginBottom: '20px',
-                    background: 'linear-gradient(135deg, #fff 0%, #a1a1aa 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent'
-                }}>
-                    Simple Pricing
+        <div className="container" style={{ paddingTop: '100px', paddingBottom: '60px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+                <h1 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '16px', backgroundImage: 'linear-gradient(to right, #8b5cf6, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    Choose Your Plan
                 </h1>
-                <p style={{ color: 'var(--color-text-muted)', fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto' }}>
-                    Choose the plan that fits your creative needs.
+                <p style={{ fontSize: '1.2rem', color: 'var(--color-text-muted)' }}>
+                    Unlock full creative power with DreamBees Pro
                 </p>
             </div>
 
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                gap: '30px',
-                maxWidth: '1100px',
-                margin: '0 auto'
-            }}>
-                {plans.map((plan, index) => (
-                    <div key={index} className="glass-panel" style={{
-                        padding: '40px',
-                        position: 'relative',
-                        border: plan.highlight ? '1px solid var(--color-primary)' : undefined,
-                        background: plan.highlight ? 'rgba(139, 92, 246, 0.1)' : undefined
-                    }}>
-                        {plan.highlight && (
-                            <div style={{
-                                position: 'absolute',
-                                top: '-12px',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))',
-                                padding: '4px 12px',
-                                borderRadius: '20px',
-                                fontSize: '0.8rem',
-                                fontWeight: 'bold',
-                                color: 'white'
-                            }}>
-                                MOST POPULAR
-                            </div>
-                        )}
-                        <h3 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '10px', color: 'white' }}>{plan.name}</h3>
-                        <div style={{ display: 'flex', alignItems: 'baseline', marginBottom: '20px' }}>
-                            <span style={{ fontSize: '3rem', fontWeight: '800', color: 'white' }}>{plan.price}</span>
-                            {plan.period && <span style={{ color: 'var(--color-text-muted)', marginLeft: '4px' }}>{plan.period}</span>}
-                        </div>
-                        <p style={{ color: 'var(--color-text-muted)', marginBottom: '30px' }}>{plan.description}</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px', maxWidth: '1000px', margin: '0 auto' }}>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '40px' }}>
-                            {plan.features.map((feature, i) => (
-                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                    <div style={{
-                                        width: '20px', height: '20px', borderRadius: '50%',
-                                        background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                    }}>
-                                        <Check size={12} color="var(--color-primary)" />
-                                    </div>
-                                    <span style={{ color: 'var(--color-text-main)', fontSize: '0.95rem' }}>{feature}</span>
-                                </div>
-                            ))}
-                        </div>
-
-                        <button style={{
-                            width: '100%',
-                            padding: '16px',
-                            borderRadius: '12px',
-                            background: plan.highlight ? 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))' : 'rgba(255,255,255,0.1)',
-                            color: 'white',
-                            fontWeight: '600',
-                            fontSize: '1rem',
-                            border: 'none',
-                            cursor: 'pointer',
-                            transition: 'transform 0.2s'
-                        }}
-                            onMouseEnter={(e) => e.target.style.transform = 'scale(1.02)'}
-                            onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}>
-                            {plan.price === 'Custom' ? 'Contact Sales' : 'Get Started'}
-                        </button>
+                {/* Free Tier */}
+                <div className="glass-panel" style={{ padding: '40px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '16px' }}>Starter</h3>
+                    <div style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '24px' }}>
+                        Free
+                        <span style={{ fontSize: '1rem', fontWeight: 'normal', color: 'var(--color-text-muted)' }}> / forever</span>
                     </div>
-                ))}
+
+                    <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 40px 0', flex: 1 }}>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                            <Check size={20} color="#4ade80" />
+                            <span>5 daily credits (resets every 24h)</span>
+                        </li>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                            <Check size={20} color="#4ade80" />
+                            <span>Standard generation speed</span>
+                        </li>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                            <Check size={20} color="#4ade80" />
+                            <span>Access to base models</span>
+                        </li>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                            <Check size={20} color="#4ade80" />
+                            <span>Personal gallery</span>
+                        </li>
+                    </ul>
+
+                    <button className="btn btn-outline" style={{ width: '100%' }} disabled>
+                        Current Plan
+                    </button>
+                </div>
+
+                {/* Pro Tier */}
+                <div className="glass-panel" style={{
+                    padding: '40px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    position: 'relative',
+                    border: '1px solid var(--color-primary)',
+                    boxShadow: '0 0 30px rgba(139, 92, 246, 0.2)'
+                }}>
+                    <div style={{
+                        position: 'absolute',
+                        top: '-12px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        background: 'var(--color-primary)',
+                        padding: '4px 16px',
+                        borderRadius: '20px',
+                        fontSize: '0.8rem',
+                        fontWeight: '700',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px'
+                    }}>
+                        Recommended
+                    </div>
+
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        Pro <Crown size={20} color="#fbbf24" fill="#fbbf24" />
+                    </h3>
+                    <div style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '24px' }}>
+                        $10
+                        <span style={{ fontSize: '1rem', fontWeight: 'normal', color: 'var(--color-text-muted)' }}> / month</span>
+                    </div>
+
+                    <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 40px 0', flex: 1 }}>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                            <Check size={20} color="#4ade80" />
+                            <span><strong>Unlimited</strong> generations*</span>
+                        </li>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                            <Zap size={20} color="#fbbf24" />
+                            <span><strong>Priority</strong> processing (skip queue)</span>
+                        </li>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                            <Check size={20} color="#4ade80" />
+                            <span>Access to <strong>Premium Models</strong></span>
+                        </li>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                            <Check size={20} color="#4ade80" />
+                            <span>Commercial usage rights</span>
+                        </li>
+                    </ul>
+
+                    <button
+                        className="btn btn-primary"
+                        style={{ width: '100%' }}
+                        onClick={() => handleSubscribe('price_1Qjsd2LkdJw...')} // Placeholder Price ID
+                        disabled={loading}
+                    >
+                        {loading ? 'Processing...' : 'Upgrade Now'}
+                    </button>
+                    <p style={{ marginTop: '16px', fontSize: '0.8rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>
+                        *Subject to fair use policy (1000 fast hours)
+                    </p>
+                </div>
+
             </div>
         </div>
     );

@@ -28,6 +28,27 @@ export default function Generator() {
     const [cfg, setCfg] = useState(parseFloat(searchParams.get('cfg')) || 5.0);
     const [negPrompt, setNegPrompt] = useState(searchParams.get('negPrompt') || "worst quality, bad quality, low quality, lowres, scan artifacts, jpeg artifacts, sketch, light particles, watermark, multiple views, 2koma, 3koma, 4koma, heart-shaped pupils,");
 
+    // Monetization State
+    const [credits, setCredits] = useState(null);
+    const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+
+    // Listen to User Credits
+    useEffect(() => {
+        if (!currentUser) return;
+        const unsub = onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setCredits(data.credits !== undefined ? data.credits : 5); // Default to 5 if not set
+                setSubscriptionStatus(data.subscriptionStatus);
+            } else {
+                // User doc might not exist yet, default to free tier values
+                setCredits(5);
+                setSubscriptionStatus('inactive');
+            }
+        });
+        return () => unsub();
+    }, [currentUser]);
+
     // Open advanced if any settings are pre-filled
     useEffect(() => {
         if (searchParams.get('aspectRatio') || searchParams.get('steps') || searchParams.get('cfg') || searchParams.get('negPrompt')) {
@@ -176,6 +197,38 @@ export default function Generator() {
                     </p>
                 </header>
 
+                {/* Credit Display */}
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+                    <div className="glass-panel" style={{
+                        padding: '8px 16px',
+                        borderRadius: '20px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        background: 'rgba(0,0,0,0.4)',
+                        border: '1px solid rgba(255,255,255,0.1)'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Sparkles size={16} color={credits > 0 || subscriptionStatus === 'active' ? "#fbbf24" : "#ef4444"} />
+                            <span style={{ fontWeight: '600', color: 'white' }}>
+                                {subscriptionStatus === 'active' ? "Unlimited Pro" : `${credits} credits left`}
+                            </span>
+                        </div>
+                        {subscriptionStatus !== 'active' && (
+                            <Link to="/pricing" style={{
+                                fontSize: '0.8rem',
+                                color: 'var(--color-primary)',
+                                fontWeight: 'bold',
+                                textDecoration: 'none',
+                                paddingLeft: '12px',
+                                borderLeft: '1px solid rgba(255,255,255,0.2)'
+                            }}>
+                                Get Pro &rarr;
+                            </Link>
+                        )}
+                    </div>
+                </div>
+
                 <div className="glass-panel" style={{ padding: '24px', marginBottom: '16px' }}>
                     <div className="mobile-stack" style={{ gap: '16px' }}>
                         <input
@@ -201,8 +254,8 @@ export default function Generator() {
                         <button
                             className="btn btn-primary"
                             onClick={handleGenerate}
-                            disabled={generating || !prompt}
-                            style={{ minWidth: '160px', width: '100%' }}
+                            disabled={generating || !prompt || (credits <= 0 && subscriptionStatus !== 'active')}
+                            style={{ minWidth: '160px', width: '100%', opacity: (credits <= 0 && subscriptionStatus !== 'active') ? 0.5 : 1 }}
                         >
                             {generating ? <><Loader2 className="animate-spin" size={20} style={{ marginRight: '8px' }} /> Generating</> : <><Sparkles size={20} style={{ marginRight: '8px' }} /> Generate</>}
                         </button>
