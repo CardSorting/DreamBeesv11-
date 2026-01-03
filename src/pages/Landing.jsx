@@ -72,14 +72,14 @@ export default function Landing() {
                     </div>
                 </div>
 
-                <div style={{ position: 'absolute', bottom: '40px', left: 0, right: 0, display: 'flex', justifyContent: 'center', animation: 'bounce 2s infinite' }}>
+                <div style={{ position: 'absolute', bottom: '40px', left: 0, right: 0, display: 'flex', justifyContent: 'center', opacity: 0.5 }}>
                     <ChevronDown color="var(--color-text-muted)" size={24} />
                 </div>
             </section>
 
             {/* Infinite Marquee */}
-            <section style={{ borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-black)' }}>
-                <div style={{ padding: '60px 0', overflow: 'hidden' }}>
+            <section style={{ borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg)' }}>
+                <div style={{ padding: '80px 0', overflow: 'hidden' }}>
                     <MarqueeImages />
                 </div>
             </section>
@@ -87,22 +87,22 @@ export default function Landing() {
             {/* Features Grid */}
             <section style={{ padding: '160px 0', background: 'var(--color-bg)' }}>
                 <div className="container">
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '24px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '32px' }}>
 
                         <FeatureCard
                             icon={Zap}
                             title="Instant Inference"
-                            desc="Powered by H100 GPU clusters for sub-second latent diffusion generation."
+                            desc="Powered by H100 GPU clusters for sub-second latent diffusion generation. Zero latency, infinite creative flow."
                         />
                         <FeatureCard
                             icon={Layers}
                             title="Professional Control"
-                            desc="Precise control over CFG scale, steps, seeds, and advanced negative prompting."
+                            desc="Precise control over CFG scale, steps, seeds, and advanced negative prompting for exacting requirements."
                         />
                         <FeatureCard
                             icon={Shield}
                             title="Enterprise Security"
-                            desc="Private galleries, secure storage, and full commercial usage rights for all assets."
+                            desc="Private galleries, secure storage, and full commercial usage rights for all assets generated on our platform."
                         />
 
                     </div>
@@ -110,12 +110,12 @@ export default function Landing() {
             </section>
 
             {/* Minimal CTA */}
-            <section style={{ padding: '120px 0', textAlign: 'center' }}>
-                <div className="container" style={{ maxWidth: '800px' }}>
-                    <h2 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', marginBottom: '32px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>
+            <section style={{ padding: '160px 0', textAlign: 'center' }}>
+                <div className="container" style={{ maxWidth: '720px' }}>
+                    <h2 style={{ fontSize: 'clamp(2.5rem, 6vw, 4rem)', marginBottom: '40px', letterSpacing: '-0.04em', lineHeight: 1, fontWeight: '800', color: 'white' }}>
                         Ready to orchestrate <br /> your imagination?
                     </h2>
-                    <Link to="/auth" className="btn btn-primary" style={{ padding: '20px 48px', fontSize: '1.2rem' }}>
+                    <Link to="/auth" className="btn btn-primary" style={{ padding: '0 48px', height: '64px', fontSize: '1.1rem', borderRadius: 'var(--radius-full)' }}>
                         Get Started Now <ArrowRight size={20} style={{ marginLeft: '12px' }} />
                     </Link>
                 </div>

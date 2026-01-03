@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { db } from '../firebase';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
-import { Download, Trash2, Calendar, Info, ArrowLeft, Loader2, Share2, RefreshCw, Link as LinkIcon, AlertTriangle } from 'lucide-react';
+import { Download, Trash2, ArrowLeft, Loader2, RefreshCw, Link as LinkIcon, Info, Sliders, Layers, X } from 'lucide-react';
 import { AVAILABLE_MODELS } from '../contexts/ModelContext';
 import toast from 'react-hot-toast';
 
@@ -13,8 +13,6 @@ export default function ImageDetail() {
     const { currentUser } = useAuth();
     const [image, setImage] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [showFullPrompt, setShowFullPrompt] = useState(false);
-    const PROMPT_LIMIT = 200;
 
     const modelName = image ? (AVAILABLE_MODELS.find(m => m.id === image.modelId)?.name || 'SDXL Model') : 'Loading...';
 
@@ -26,7 +24,6 @@ export default function ImageDetail() {
 
                 if (docSnap.exists()) {
                     const data = docSnap.data();
-                    // Basic security check: only the owner can view
                     if (data.userId !== currentUser.uid) {
                         navigate('/gallery');
                         return;
@@ -42,259 +39,173 @@ export default function ImageDetail() {
                 setLoading(false);
             }
         }
-        if (currentUser && id) {
-            fetchImage();
-        }
+        if (currentUser && id) fetchImage();
     }, [id, currentUser, navigate]);
 
+    const handleCopy = (text) => {
+        navigator.clipboard.writeText(text);
+        toast.success("Copied to clipboard");
+    };
+
     const handleDelete = async () => {
-        toast((t) => (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '200px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
-                    <AlertTriangle size={20} color="#ef4444" />
-                    <span style={{ fontWeight: '600' }}>Delete this image?</span>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                        onClick={async () => {
-                            toast.dismiss(t.id);
-                            try {
-                                await deleteDoc(doc(db, "images", id));
-                                navigate('/gallery');
-                                toast.success("Image deleted");
-                            } catch (err) {
-                                console.error("Error deleting image:", err);
-                                toast.error("Failed to delete image");
-                            }
-                        }}
-                        style={{
-                            background: '#ef4444',
-                            color: 'white',
-                            border: 'none',
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            fontSize: '0.85rem',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            flex: 1
-                        }}
-                    >
-                        Delete
-                    </button>
-                    <button
-                        onClick={() => toast.dismiss(t.id)}
-                        style={{
-                            background: 'rgba(255,255,255,0.1)',
-                            color: 'white',
-                            border: 'none',
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            fontSize: '0.85rem',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            flex: 1
-                        }}
-                    >
-                        Cancel
-                    </button>
-                </div>
-            </div>
-        ), { duration: 6000 });
+        if (!window.confirm("Permanently delete this creation?")) return;
+        try {
+            await deleteDoc(doc(db, "images", id));
+            navigate('/gallery');
+            toast.success("Deleted");
+        } catch (err) {
+            toast.error("Deletion failed");
+        }
     };
 
-    const handleDownload = () => {
-        const link = document.createElement('a');
-        link.href = image.imageUrl;
-        link.download = `DreamBee-${image.prompt.slice(0, 20)}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
-    const handleCopyLink = () => {
-        navigator.clipboard.writeText(window.location.href);
-        toast.success("Link copied to clipboard!");
-    };
-
-    const handleRemix = () => {
-        const params = new URLSearchParams();
-        params.set('prompt', image.prompt);
-        if (image.aspectRatio) params.set('aspectRatio', image.aspectRatio);
-        if (image.steps) params.set('steps', image.steps);
-        if (image.cfg) params.set('cfg', image.cfg);
-        if (image.negative_prompt) params.set('negPrompt', image.negative_prompt);
-        if (image.modelId) params.set('modelId', image.modelId);
-        navigate(`/?${params.toString()}`);
-    };
-
-    if (loading) {
-        return (
-            <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-                <Loader2 className="animate-spin" size={48} color="var(--color-primary)" />
-            </div>
-        );
-    }
+    if (loading) return (
+        <div className="flex-center" style={{ height: '100vh', width: '100vw' }}>
+            <Loader2 className="animate-spin" size={32} color="var(--color-text-muted)" />
+        </div>
+    );
 
     if (!image) return null;
 
-    const isPromptLong = image.prompt.length > PROMPT_LIMIT;
-
     return (
-        <div className="container" style={{ paddingTop: '100px', paddingBottom: '80px' }}>
-            <Link to="/gallery" className="btn btn-outline" style={{ marginBottom: '32px', gap: '8px' }}>
-                <ArrowLeft size={18} /> Back to Gallery
-            </Link>
+        <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-            <div className="glass-panel fade-in" style={{ padding: '0', borderRadius: '24px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
-                <div className="modal-grid">
-                    <div style={{
-                        background: '#000',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        minHeight: '40vh',
-                        position: 'relative',
-                        padding: '20px'
-                    }}>
-                        <img
-                            src={image.imageUrl}
-                            alt={image.prompt}
-                            style={{
-                                maxWidth: '100%',
-                                maxHeight: '85vh',
-                                objectFit: 'contain',
-                                display: 'block'
-                            }}
-                        />
-                    </div>
+            {/* Top Navigation Bar */}
+            <div style={{
+                height: '60px', borderBottom: '1px solid var(--color-border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '0 20px', background: 'var(--color-bg)'
+            }}>
+                <Link to="/gallery" className="flex-center" style={{ gap: '8px', color: 'var(--color-text-muted)', fontSize: '0.9rem', fontWeight: '500', transition: 'color 0.2s' }}>
+                    <ArrowLeft size={16} /> Back
+                </Link>
 
-                    <div className="modal-info-panel" style={{ display: 'flex', flexDirection: 'column' }}>
-                        {/* Prompt Section */}
-                        <div style={{ marginBottom: '32px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: 'var(--color-text-muted)' }}>
-                                <Info size={16} />
-                                <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Prompt Description</span>
-                            </div>
-                            <div style={{ position: 'relative' }}>
-                                <p style={{
-                                    fontSize: '1.1rem',
-                                    lineHeight: '1.6',
-                                    color: '#fff',
-                                    fontWeight: '400',
-                                    whiteSpace: 'pre-wrap',
-                                    wordBreak: 'break-word'
-                                }}>
-                                    {isPromptLong && !showFullPrompt
-                                        ? `${image.prompt.slice(0, PROMPT_LIMIT)}...`
-                                        : image.prompt}
-                                </p>
-                                {isPromptLong && (
-                                    <button
-                                        onClick={() => setShowFullPrompt(!showFullPrompt)}
-                                        style={{
-                                            background: 'none',
-                                            border: 'none',
-                                            color: 'var(--color-primary)',
-                                            fontWeight: '600',
-                                            fontSize: '0.9rem',
-                                            marginTop: '8px',
-                                            cursor: 'pointer',
-                                            padding: 0
-                                        }}
-                                    >
-                                        {showFullPrompt ? 'Show Less' : 'Read Full Prompt'}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Metadata Grid */}
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-                            gap: '20px',
-                            marginBottom: '32px',
-                            padding: '24px',
-                            background: 'rgba(255,255,255,0.03)',
-                            borderRadius: '16px',
-                            border: '1px solid rgba(255,255,255,0.05)'
-                        }}>
-                            <div>
-                                <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>Aspect Ratio</span>
-                                <span style={{ fontSize: '1rem', fontWeight: '600', color: 'white' }}>{image.aspectRatio || '1:1'}</span>
-                            </div>
-                            <div>
-                                <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>Steps</span>
-                                <span style={{ fontSize: '1rem', fontWeight: '600', color: 'white' }}>{image.steps || 30}</span>
-                            </div>
-                            <div>
-                                <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>CFG Scale</span>
-                                <span style={{ fontSize: '1rem', fontWeight: '600', color: 'white' }}>{image.cfg || 5.0}</span>
-                            </div>
-                            <div>
-                                <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>Model</span>
-                                <span style={{ fontSize: '1rem', fontWeight: '600', color: 'white' }}>{modelName}</span>
-                            </div>
-                        </div>
-
-                        {image.negative_prompt && (
-                            <div style={{ marginBottom: '32px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', color: 'var(--color-text-muted)' }}>
-                                    <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Negative Prompt</span>
-                                </div>
-                                <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.6)', fontStyle: 'italic', lineHeight: '1.4' }}>{image.negative_prompt}</p>
-                            </div>
-                        )}
-
-                        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                                <button
-                                    className="btn btn-primary"
-                                    style={{ flex: '1 1 140px', gap: '10px', height: '52px' }}
-                                    onClick={handleDownload}
-                                >
-                                    <Download size={20} /> Download
-                                </button>
-                                <button
-                                    className="btn btn-outline"
-                                    style={{ flex: '1 1 140px', gap: '10px', height: '52px', border: '1px solid var(--color-primary)' }}
-                                    onClick={handleRemix}
-                                >
-                                    <RefreshCw size={20} /> Remix
-                                </button>
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '12px' }}>
-                                <button
-                                    className="btn btn-outline"
-                                    style={{ flex: 1, gap: '8px', fontSize: '0.85rem' }}
-                                    onClick={() => {
-                                        const meta = `Prompt: ${image.prompt}\nNegative Prompt: ${image.negative_prompt || 'None'}\nSteps: ${image.steps || 30}\nCFG: ${image.cfg || 5.0}\nRatio: ${image.aspectRatio || '1:1'}`;
-                                        navigator.clipboard.writeText(meta);
-                                        toast.success("Full generation info copied!");
-                                    }}
-                                >
-                                    <RefreshCw size={16} /> Copy Info
-                                </button>
-                                <button
-                                    className="btn btn-outline"
-                                    style={{ flex: 1, gap: '8px', fontSize: '0.85rem' }}
-                                    onClick={handleCopyLink}
-                                >
-                                    <LinkIcon size={16} /> Copy Link
-                                </button>
-                                <button
-                                    className="btn btn-outline"
-                                    style={{ width: '52px', borderColor: 'rgba(239, 68, 68, 0.2)' }}
-                                    onClick={handleDelete}
-                                >
-                                    <Trash2 size={18} color="#ef4444" />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                <div className="flex-center" style={{ gap: '12px' }}>
+                    <button onClick={() => handleCopy(window.location.href)} className="btn-ghost" title="Copy Link">
+                        <LinkIcon size={18} />
+                    </button>
+                    <button onClick={handleDelete} className="btn-ghost" style={{ color: '#ef4444' }} title="Delete">
+                        <Trash2 size={18} />
+                    </button>
+                    <a href={image.imageUrl} download={`db-${image.id}.png`} className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                        <Download size={16} style={{ marginRight: '8px' }} /> Download
+                    </a>
                 </div>
             </div>
+
+            {/* Main Split Layout */}
+            <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+
+                {/* Left: Image Canvas (Theater Mode) */}
+                <div style={{
+                    flex: 1,
+                    background: '#050505',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '40px'
+                }}>
+                    <img
+                        src={image.imageUrl}
+                        alt={image.prompt}
+                        style={{
+                            maxWidth: '100%', maxHeight: '100%',
+                            boxShadow: '0 0 50px rgba(0,0,0,0.5)',
+                            objectFit: 'contain'
+                        }}
+                    />
+                </div>
+
+                {/* Right: Inspector Panel */}
+                <div style={{
+                    width: '400px',
+                    borderLeft: '1px solid var(--color-border)',
+                    background: 'var(--color-bg)',
+                    overflowY: 'auto',
+                    padding: '32px'
+                }}>
+                    <div style={{ marginBottom: '40px' }}>
+                        <label style={{ fontSize: '0.75rem', fontWeight: '700', letterSpacing: '0.05em', color: 'var(--color-text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '12px' }}>
+                            PROMPT
+                        </label>
+                        <p style={{ fontSize: '1.1rem', lineHeight: '1.6', color: 'white', fontWeight: '400' }}>
+                            {image.prompt}
+                        </p>
+                        <button
+                            onClick={() => handleCopy(image.prompt)}
+                            style={{ marginTop: '12px', fontSize: '0.8rem', color: 'var(--color-accent-primary)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontWeight: '500' }}
+                        >
+                            Copy Prompt
+                        </button>
+                    </div>
+
+                    {image.negative_prompt && (
+                        <div style={{ marginBottom: '40px' }}>
+                            <label style={{ fontSize: '0.75rem', fontWeight: '700', letterSpacing: '0.05em', color: 'var(--color-text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '12px' }}>
+                                NEGATIVE PROMPT
+                            </label>
+                            <p style={{ fontSize: '0.9rem', lineHeight: '1.6', color: 'var(--color-text-muted)', fontWeight: '400', fontStyle: 'italic' }}>
+                                {image.negative_prompt}
+                            </p>
+                        </div>
+                    )}
+
+                    <div style={{ height: '1px', background: 'var(--color-border)', margin: '0 0 40px 0' }} />
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px 12px' }}>
+                        <div>
+                            <label className="meta-label">MODEL</label>
+                            <div className="meta-value">{modelName}</div>
+                        </div>
+                        <div>
+                            <label className="meta-label">DIMENSIONS</label>
+                            <div className="meta-value">1024 x 1024</div> {/* Assuming default, read from aspect ratio if avail */}
+                        </div>
+                        <div>
+                            <label className="meta-label">STEPS</label>
+                            <div className="meta-value">{image.steps || 30}</div>
+                        </div>
+                        <div>
+                            <label className="meta-label">GUIDANCE</label>
+                            <div className="meta-value">{image.cfg || 7.0}</div>
+                        </div>
+                        <div>
+                            <label className="meta-label">SEED</label>
+                            <div className="meta-value text-mono">{image.seed || 'Random'}</div>
+                        </div>
+                        <div>
+                            <label className="meta-label">ASPECT</label>
+                            <div className="meta-value">{image.aspectRatio || '1:1'}</div>
+                        </div>
+                    </div>
+
+                    <div style={{ marginTop: '60px' }}>
+                        <Link to={`/?prompt=${encodeURIComponent(image.prompt)}&seed=${image.seed}&steps=${image.steps}&cfg=${image.cfg}`} className="btn btn-outline" style={{ width: '100%', justifyContent: 'center' }}>
+                            <RefreshCw size={16} style={{ marginRight: '8px' }} /> Remix in Studio
+                        </Link>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <style>{`
+                .meta-label {
+                    fontSize: 0.7rem;
+                    fontWeight: 700;
+                    letterSpacing: 0.05em;
+                    color: var(--color-text-dim);
+                    textTransform: uppercase;
+                    display: block;
+                    marginBottom: 8px;
+                }
+                .meta-value {
+                    fontSize: 0.95rem;
+                    font-weight: 500;
+                    color: white;
+                }
+                .text-mono {
+                    font-family: monospace;
+                    letter-spacing: -0.02em;
+                }
+            `}</style>
         </div>
     );
 }

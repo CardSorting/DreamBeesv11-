@@ -3,7 +3,7 @@ import { db } from '../firebase';
 import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Loader2, Search, Download, Trash2, X, ExternalLink, Calendar, Info, Check, AlertTriangle } from 'lucide-react';
+import { Loader2, Search, Download, Trash2, X, ExternalLink, Calendar, Info, Check, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Gallery() {
@@ -43,136 +43,21 @@ export default function Gallery() {
         );
     }, [images, searchQuery]);
 
-    const handleDelete = async (e, id) => {
-        e.stopPropagation();
-        toast((t) => (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '200px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
-                    <AlertTriangle size={20} color="#ef4444" />
-                    <span style={{ fontWeight: '600' }}>Delete this image?</span>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                        onClick={async () => {
-                            toast.dismiss(t.id);
-                            try {
-                                await deleteDoc(doc(db, "images", id));
-                                setImages(prev => prev.filter(img => img.id !== id));
-                                toast.success("Image deleted");
-                            } catch (err) {
-                                console.error("Error deleting image:", err);
-                                toast.error("Failed to delete image");
-                            }
-                        }}
-                        style={{
-                            background: '#ef4444',
-                            color: 'white',
-                            border: 'none',
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            fontSize: '0.85rem',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            flex: 1
-                        }}
-                    >
-                        Delete
-                    </button>
-                    <button
-                        onClick={() => toast.dismiss(t.id)}
-                        style={{
-                            background: 'rgba(255,255,255,0.1)',
-                            color: 'white',
-                            border: 'none',
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            fontSize: '0.85rem',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            flex: 1
-                        }}
-                    >
-                        Cancel
-                    </button>
-                </div>
-            </div>
-        ), { duration: 6000 });
-    };
-
     const handleBatchDelete = async () => {
-        toast((t) => (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '220px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
-                    <AlertTriangle size={20} color="#ef4444" />
-                    <span style={{ fontWeight: '600' }}>Delete {selectedIds.length} images?</span>
-                </div>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <button
-                        onClick={async () => {
-                            toast.dismiss(t.id);
-                            try {
-                                const loadToast = toast.loading(`Deleting ${selectedIds.length} images...`);
-                                await Promise.all(selectedIds.map(id => deleteDoc(doc(db, "images", id))));
-                                setImages(prev => prev.filter(img => !selectedIds.includes(img.id)));
-                                setSelectedIds([]);
-                                setIsSelectionMode(false);
-                                toast.dismiss(loadToast);
-                                toast.success("Images deleted successfully");
-                            } catch (err) {
-                                console.error("Error batch deleting:", err);
-                                toast.error("Failed to delete some images");
-                            }
-                        }}
-                        style={{
-                            background: '#ef4444',
-                            color: 'white',
-                            border: 'none',
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            fontSize: '0.85rem',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            flex: 1
-                        }}
-                    >
-                        Delete
-                    </button>
-                    <button
-                        onClick={() => toast.dismiss(t.id)}
-                        style={{
-                            background: 'rgba(255,255,255,0.1)',
-                            color: 'white',
-                            border: 'none',
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            fontSize: '0.85rem',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            flex: 1
-                        }}
-                    >
-                        Cancel
-                    </button>
-                </div>
-            </div>
-        ), { duration: 8000 });
-    };
+        if (!window.confirm(`Delete ${selectedIds.length} images? This cannot be undone.`)) return;
 
-    const handleDownload = (e, url, prompt) => {
-        if (e) e.stopPropagation();
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `DreamBee-${prompt.slice(0, 20)}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-
-    const handleBatchDownload = () => {
-        selectedIds.forEach(id => {
-            const img = images.find(i => i.id === id);
-            if (img) handleDownload(null, img.imageUrl, img.prompt);
-        });
+        const loadToast = toast.loading('Deleting...');
+        try {
+            await Promise.all(selectedIds.map(id => deleteDoc(doc(db, "images", id))));
+            setImages(prev => prev.filter(img => !selectedIds.includes(img.id)));
+            setSelectedIds([]);
+            setIsSelectionMode(false);
+            toast.success("Deleted successfully");
+        } catch (err) {
+            toast.error("Failed to delete");
+        } finally {
+            toast.dismiss(loadToast);
+        }
     };
 
     const toggleSelection = (id) => {
@@ -182,130 +67,142 @@ export default function Gallery() {
     };
 
     return (
-        <div className="container" style={{ paddingTop: '100px', paddingBottom: '120px' }}>
-            <header style={{ marginBottom: '60px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px', flexWrap: 'wrap', gap: '20px' }}>
-                    <h1 style={{ fontSize: 'clamp(2rem, 5vw, 2.5rem)', fontWeight: '800', background: 'linear-gradient(to right, #fff, #a1a1aa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
-                        Your Gallery
-                    </h1>
-                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <div className="container" style={{ paddingTop: '120px', paddingBottom: '120px' }}>
+
+            {/* Header */}
+            <header style={{ marginBottom: '40px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '24px' }}>
+                    <div>
+                        <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: '800', letterSpacing: '-0.03em', lineHeight: '1', color: 'white', marginBottom: '16px' }}>
+                            Gallery
+                        </h1>
+                        <p style={{ color: 'var(--color-text-muted)', maxWidth: '400px' }}>
+                            Your personal collection of synthesized dreams.
+                        </p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                        <Link to="/" className="btn btn-primary" style={{ padding: '0 24px', height: '44px' }}>
+                            <Plus size={18} style={{ marginRight: '8px' }} />
+                            Create
+                        </Link>
                         <button
                             className={`btn ${isSelectionMode ? 'btn-primary' : 'btn-outline'}`}
                             onClick={() => {
                                 setIsSelectionMode(!isSelectionMode);
                                 setSelectedIds([]);
                             }}
+                            style={{ height: '44px' }}
                         >
-                            {isSelectionMode ? 'Cancel' : 'Select'}
+                            {isSelectionMode ? 'Finish' : 'Select'}
                         </button>
-                        <Link to="/" className="btn btn-primary" style={{ gap: '8px' }}>
-                            <ExternalLink size={18} />
-                            Create New
-                        </Link>
                     </div>
                 </div>
 
-                <div className="search-wrapper">
-                    <Search className="search-icon" size={20} />
-                    <input
-                        type="text"
-                        placeholder="Search by prompt..."
-                        className="search-input"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+                {/* Sub-header / Search */}
+                <div style={{ display: 'flex', gap: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '24px' }}>
+                    <div className="search-wrapper" style={{ flex: 1, maxWidth: '400px', background: 'transparent', border: 'none', padding: 0 }}>
+                        <Search className="search-icon" size={18} color="var(--color-text-muted)" style={{ left: 0 }} />
+                        <input
+                            type="text"
+                            placeholder="Filter by prompt..."
+                            className="search-input"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            style={{ paddingLeft: '32px', background: 'transparent', border: 'none', fontSize: '1rem' }}
+                        />
+                    </div>
                 </div>
             </header>
 
             {loading ? (
-                <div className="masonry-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2px' }}>
                     {[...Array(6)].map((_, i) => (
-                        <div key={i} className="masonry-item">
-                            <div className="glass-panel" style={{ padding: '12px' }}>
-                                <div className="skeleton" style={{ aspectRatio: '1', width: '100%', borderRadius: '12px' }}></div>
-                            </div>
-                        </div>
+                        <div key={i} style={{ aspectRatio: '1', background: 'var(--color-surface)', opacity: 0.5 }} className="animate-pulse-slow" />
                     ))}
                 </div>
             ) : filteredImages.length === 0 ? (
-                <div className="glass-panel fade-in" style={{ padding: '80px 20px', textAlign: 'center' }}>
-                    <div style={{ background: 'var(--color-surface)', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-                        <Search size={32} color="var(--color-text-muted)" />
-                    </div>
-                    <h3 style={{ fontSize: '1.5rem', marginBottom: '12px' }}>No matches found</h3>
-                    <p style={{ color: 'var(--color-text-muted)', marginBottom: '32px' }}>
-                        {searchQuery ? `We couldn't find any images matching "${searchQuery}"` : "You haven't generated any images yet."}
-                    </p>
-                    <Link to="/" className="btn btn-primary">Start Generating</Link>
+                <div style={{ padding: '120px 0', textAlign: 'center', border: '1px dashed var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
+                    <p style={{ color: 'var(--color-text-muted)', marginBottom: '24px' }}>No creations found.</p>
                 </div>
             ) : (
-                <div className="masonry-grid fade-in">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
                     {filteredImages.map(img => (
                         <div
                             key={img.id}
-                            className="masonry-item"
+                            className={`fade-in gallery-item-wrapper ${isSelectionMode && selectedIds.includes(img.id) ? 'selected' : ''}`}
                             onClick={() => isSelectionMode ? toggleSelection(img.id) : navigate(`/gallery/${img.id}`)}
+                            style={{
+                                position: 'relative',
+                                aspectRatio: img.aspectRatio ? img.aspectRatio.replace(':', '/') : '1/1',
+                                cursor: 'pointer',
+                                borderRadius: 'var(--radius-md)',
+                                overflow: 'hidden',
+                                background: 'var(--color-surface)'
+                            }}
                         >
-                            <div className={`glass-panel gallery-card ${isSelectionMode ? 'selecting' : ''} ${selectedIds.includes(img.id) ? 'selected' : ''}`}>
-                                {isSelectionMode && (
-                                    <div className={`selection-dot ${selectedIds.includes(img.id) ? 'selected' : ''}`}>
-                                        {selectedIds.includes(img.id) && <Check size={14} color="white" />}
-                                    </div>
-                                )}
-                                <img
-                                    src={img.imageUrl}
-                                    alt={img.prompt}
-                                    style={{ width: '100%', display: 'block', borderRadius: 'var(--radius-lg)' }}
-                                    loading="lazy"
-                                />
-                                {!isSelectionMode && (
-                                    <div className="overlay">
-                                        <p style={{
-                                            fontSize: '0.85rem',
-                                            marginBottom: '16px',
-                                            display: '-webkit-box',
-                                            WebkitLineClamp: 2,
-                                            WebkitBoxOrient: 'vertical',
-                                            overflow: 'hidden',
-                                            lineHeight: '1.4'
-                                        }}>{img.prompt}</p>
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <button
-                                                className="btn btn-outline"
-                                                style={{ padding: '8px', flex: 1, fontSize: '0.8rem', gap: '6px' }}
-                                                onClick={(e) => handleDownload(e, img.imageUrl, img.prompt)}
-                                            >
-                                                <Download size={14} /> Download
-                                            </button>
-                                            <button
-                                                className="btn btn-outline"
-                                                style={{ padding: '8px', width: '40px', borderColor: 'rgba(239, 68, 68, 0.2)' }}
-                                                onClick={(e) => handleDelete(e, img.id)}
-                                            >
-                                                <Trash2 size={14} color="#ef4444" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
+                            <img
+                                src={img.imageUrl}
+                                alt={img.prompt}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
+                            />
+
+                            {/* Hover Overlay - Minimal */}
+                            <div className="gallery-overlay" style={{
+                                position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
+                                opacity: isSelectionMode ? 0 : 0, transition: 'opacity 0.2s',
+                                display: 'flex', alignItems: 'flex-end', padding: '20px'
+                            }}>
+                                <p style={{ color: 'white', fontSize: '0.9rem', fontWeight: '500', lineClamp: 2, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                    {img.prompt}
+                                </p>
                             </div>
+
+                            {/* Selection Indicator */}
+                            {isSelectionMode && (
+                                <div style={{
+                                    position: 'absolute', inset: 0,
+                                    border: selectedIds.includes(img.id) ? '4px solid var(--color-accent-primary)' : 'none',
+                                    background: selectedIds.includes(img.id) ? 'rgba(99, 102, 241, 0.2)' : 'rgba(0,0,0,0.1)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                }}>
+                                    {selectedIds.includes(img.id) && (
+                                        <div style={{ padding: '12px', background: 'var(--color-accent-primary)', borderRadius: '50%' }}>
+                                            <Check color="white" size={24} />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
             )}
 
+            {/* Batch Actions Float */}
             {isSelectionMode && selectedIds.length > 0 && (
-                <div className="glass-panel batch-bar fade-in">
-                    <span style={{ fontWeight: '600' }}>{selectedIds.length} items selected</span>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                        <button className="btn btn-outline" style={{ gap: '8px' }} onClick={handleBatchDownload}>
-                            <Download size={18} /> Download
-                        </button>
-                        <button className="btn btn-outline" style={{ gap: '8px', borderColor: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }} onClick={handleBatchDelete}>
-                            <Trash2 size={18} /> Delete Selected
-                        </button>
-                    </div>
+                <div className="fade-in" style={{
+                    position: 'fixed', bottom: '32px', left: '50%', transform: 'translateX(-50%)',
+                    background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+                    padding: '12px 24px', borderRadius: '100px',
+                    display: 'flex', alignItems: 'center', gap: '24px',
+                    boxShadow: 'var(--shadow-lg)'
+                }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: '600' }}>{selectedIds.length} Selected</span>
+                    <div style={{ height: '20px', width: '1px', background: 'var(--color-border)' }} />
+                    <button onClick={handleBatchDelete} style={{ color: '#ef4444', fontSize: '0.9rem', fontWeight: '600', background: 'none', border: 'none', cursor: 'pointer' }}>Delete</button>
+                    <button onClick={() => setSelectedIds([])} style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', background: 'none', border: 'none', cursor: 'pointer' }}>Clear</button>
                 </div>
             )}
+
+            {/* CSS for hover effect injection */}
+            <style>{`
+                .gallery-item-wrapper:hover img {
+                    transform: scale(1.05);
+                }
+                .gallery-item-wrapper:hover .gallery-overlay {
+                    opacity: 1 !important;
+                }
+            `}</style>
         </div>
     );
 }

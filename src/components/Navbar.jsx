@@ -1,180 +1,217 @@
-import React from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, LayoutGrid, Sparkles, Cpu, LogIn, UserPlus, Menu, X } from 'lucide-react';
+import { Menu, X, Hexagon, LogOut, LayoutGrid, Zap, Settings, User } from 'lucide-react';
+import { useModel } from '../contexts/ModelContext';
 
 export default function Navbar() {
     const { currentUser, logout } = useAuth();
+    const { credits } = useModel();
     const navigate = useNavigate();
     const location = useLocation();
-    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [scrolled, setScrolled] = useState(false);
 
-    // Close menu when route changes
-    React.useEffect(() => {
-        setIsMenuOpen(false);
-    }, [location.pathname]);
+    useEffect(() => {
+        const handleScroll = () => setScrolled(window.scrollY > 20);
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
-    async function handleLogout() {
+    const handleLogout = async () => {
         try {
             await logout();
-            navigate('/');
+            navigate('/auth');
         } catch (error) {
-            console.error("Failed to log out", error);
+            console.error('Failed to log out', error);
         }
-    }
+    };
 
-    const isActive = (path) => location.pathname === path;
-
-    const NavItem = ({ to, icon: Icon, children }) => (
-        <Link
-            to={to}
-            className={`
-                flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors rounded-full
-                ${isActive(to) ? 'text-white bg-white/10' : 'text-zinc-400 hover:text-white hover:bg-white/5'}
-            `}
-            style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '8px 16px',
-                borderRadius: '99px',
-                color: isActive(to) ? 'white' : 'var(--color-text-muted)',
-                background: isActive(to) ? 'rgba(255,255,255,0.08)' : 'transparent',
-                transition: 'all 0.2s ease',
-                textDecoration: 'none'
-            }}
-            onMouseEnter={(e) => {
-                if (!isActive(to)) {
-                    e.currentTarget.style.color = 'white';
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
-                }
-            }}
-            onMouseLeave={(e) => {
-                if (!isActive(to)) {
-                    e.currentTarget.style.color = 'var(--color-text-muted)';
-                    e.currentTarget.style.background = 'transparent';
-                }
-            }}
-        >
-            {Icon && <Icon size={16} />}
-            {children}
-        </Link>
-    );
+    const navLinks = [
+        { path: '/', label: 'Studio', icon: Zap },
+        { path: '/gallery', label: 'Gallery', icon: LayoutGrid },
+        { path: '/pricing', label: 'Pro', icon: Hexagon },
+    ];
 
     return (
-        <>
+        <div style={{
+            position: 'fixed',
+            top: '20px',
+            left: 0,
+            right: 0,
+            display: 'flex',
+            justifyContent: 'center',
+            zIndex: 100,
+            padding: '0 20px',
+            pointerEvents: 'none' /* Passthrough clicks outside nav */
+        }}>
             <nav style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 'var(--header-height)',
-                zIndex: 100,
-                backdropFilter: 'blur(12px)',
-                background: 'rgba(0,0,0,0.5)',
-                borderBottom: '1px solid rgba(255,255,255,0.03)'
+                pointerEvents: 'auto',
+                background: 'rgba(10, 10, 10, 0.7)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                padding: '8px 8px 8px 20px',
+                borderRadius: '999px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '24px',
+                width: '100%',
+                maxWidth: '900px', // Constrained width for "island" look
+                boxShadow: '0 8px 32px -8px rgba(0,0,0,0.3)',
+                transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                transform: scrolled ? 'translateY(0)' : 'translateY(0)'
             }}>
-                <div className="container" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-
-                    {/* Brand */}
-                    <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{
-                            width: '32px',
-                            height: '32px',
-                            background: 'white',
-                            borderRadius: '8px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}>
-                            <span style={{ fontWeight: '900', color: 'black', fontSize: '14px' }}>DB</span>
-                        </div>
-                        <span style={{ fontWeight: '700', fontSize: '1.2rem', letterSpacing: '-0.02em' }}>DreamBees</span>
-                    </Link>
-
-                    {/* Desktop Navigation */}
-                    <div className="hidden-mobile" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {currentUser ? (
-                            <>
-                                <NavItem to="/models" icon={Cpu}>Models</NavItem>
-                                <NavItem to="/generate" icon={Sparkles}>Generate</NavItem>
-                                <NavItem to="/gallery" icon={LayoutGrid}>Gallery</NavItem>
-                                <div style={{ width: '1px', height: '20px', background: 'var(--color-border)', margin: '0 12px' }} />
-                                <button
-                                    onClick={handleLogout}
-                                    className="btn-ghost"
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', padding: '8px 16px', borderRadius: '99px',
-                                        color: 'var(--color-text-muted)'
-                                    }}
-                                >
-                                    <LogOut size={16} /> Logout
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <NavItem to="/gallery" icon={LayoutGrid}>Gallery</NavItem>
-                                <div style={{ width: '1px', height: '20px', background: 'var(--color-border)', margin: '0 12px' }} />
-                                <Link to="/auth" style={{
-                                    marginRight: '12px',
-                                    fontSize: '0.9rem',
-                                    color: 'var(--color-text-muted)',
-                                    fontWeight: '500'
-                                }}>
-                                    Log in
-                                </Link>
-                                <Link to="/auth" className="btn btn-primary" style={{ padding: '10px 24px', fontSize: '0.9rem' }}>
-                                    Sign Up
-                                </Link>
-                            </>
-                        )}
+                {/* Logo */}
+                <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: 'auto' }}>
+                    <div style={{
+                        width: '32px', height: '32px', background: 'var(--color-white)', borderRadius: '8px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'black'
+                    }}>
+                        <Hexagon size={18} fill="black" />
                     </div>
+                    <span style={{ fontWeight: 700, fontSize: '1rem', letterSpacing: '-0.02em' }} className="hidden-mobile">
+                        DreamBees
+                    </span>
+                </Link>
+
+                {/* Desktop Nav */}
+                <div className="hidden-mobile" style={{ display: 'flex', gap: '4px' }}>
+                    {currentUser && navLinks.map(link => (
+                        <Link
+                            key={link.path}
+                            to={link.path}
+                            style={{
+                                padding: '8px 16px',
+                                borderRadius: '99px',
+                                fontSize: '0.9rem',
+                                color: location.pathname === link.path ? 'var(--color-white)' : 'var(--color-text-muted)',
+                                background: location.pathname === link.path ? 'rgba(255,255,255,0.1)' : 'transparent',
+                                fontWeight: 500
+                            }}
+                        >
+                            {link.label}
+                        </Link>
+                    ))}
+                    {!currentUser && (
+                        <Link
+                            to="/pricing"
+                            style={{
+                                padding: '8px 16px',
+                                borderRadius: '99px',
+                                fontSize: '0.9rem',
+                                color: location.pathname === '/pricing' ? 'var(--color-white)' : 'var(--color-text-muted)',
+                                background: location.pathname === '/pricing' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                                fontWeight: 500
+                            }}
+                        >
+                            Pricing
+                        </Link>
+                    )}
+                </div>
+
+                {/* Right Side Actions */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    {currentUser ? (
+                        <>
+                            <div style={{
+                                padding: '6px 14px',
+                                background: 'rgba(255,255,255,0.05)',
+                                borderRadius: '99px',
+                                fontSize: '0.8rem',
+                                border: '1px solid rgba(255,255,255,0.05)',
+                                color: 'var(--color-text-muted)'
+                            }} className="hidden-mobile">
+                                <span style={{ color: 'white', fontWeight: 700 }}>{credits}</span> Credits
+                            </div>
+
+                            <button
+                                onClick={handleLogout}
+                                className="hidden-mobile"
+                                style={{
+                                    width: '36px', height: '36px', borderRadius: '50%',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    background: 'rgba(255,255,255,0.1)',
+                                    color: 'white'
+                                }}
+                            >
+                                <LogOut size={16} />
+                            </button>
+                        </>
+                    ) : (
+                        <Link to="/auth" className="btn btn-primary" style={{ height: '36px', padding: '0 20px', fontSize: '0.85rem' }}>
+                            Sign In
+                        </Link>
+                    )}
 
                     {/* Mobile Menu Toggle */}
                     <button
                         className="visible-mobile"
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
-                        style={{ color: 'white', padding: '8px' }}
+                        style={{ padding: '8px', color: 'white' }}
                     >
                         {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
                     </button>
                 </div>
             </nav>
 
-            {/* Mobile Menu Content */}
+            {/* Mobile Menu Dropdown */}
             {isMenuOpen && (
-                <div style={{
+                <div className="visible-mobile bg-grid" style={{
                     position: 'fixed',
-                    top: 'var(--header-height)',
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'var(--color-bg)',
-                    zIndex: 90,
+                    top: '80px',
+                    left: '20px',
+                    right: '20px',
+                    background: 'var(--color-zinc-900)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '24px',
                     padding: '24px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '16px'
+                    gap: '16px',
+                    boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                    pointerEvents: 'auto',
+                    zIndex: 99
                 }}>
                     {currentUser ? (
                         <>
-                            <Link to="/models" className="btn btn-outline" style={{ justifyContent: 'flex-start' }}><Cpu size={18} style={{ marginRight: '8px' }} /> Models</Link>
-                            <Link to="/generate" className="btn btn-primary" style={{ justifyContent: 'flex-start' }}><Sparkles size={18} style={{ marginRight: '8px' }} /> Generate</Link>
-                            <Link to="/gallery" className="btn btn-outline" style={{ justifyContent: 'flex-start' }}><LayoutGrid size={18} style={{ marginRight: '8px' }} /> Gallery</Link>
-                            <button onClick={handleLogout} className="btn btn-ghost" style={{ justifyContent: 'flex-start', border: '1px solid var(--color-border)' }}>
-                                <LogOut size={18} style={{ marginRight: '8px' }} /> Logout
-                            </button>
+                            {navLinks.map(link => (
+                                <Link
+                                    key={link.path}
+                                    to={link.path}
+                                    onClick={() => setIsMenuOpen(false)}
+                                    style={{
+                                        padding: '16px',
+                                        borderRadius: '12px',
+                                        background: location.pathname === link.path ? 'var(--color-white)' : 'rgba(255,255,255,0.03)',
+                                        color: location.pathname === link.path ? 'black' : 'white',
+                                        fontSize: '1rem',
+                                        fontWeight: 600,
+                                        display: 'flex', alignItems: 'center', gap: '12px'
+                                    }}
+                                >
+                                    <link.icon size={20} />
+                                    {link.label}
+                                </Link>
+                            ))}
+                            <div style={{ height: '1px', background: 'var(--color-border)', margin: '8px 0' }} />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 8px' }}>
+                                <span style={{ color: 'var(--color-text-muted)' }}>Credits: <span style={{ color: 'white' }}>{credits}</span></span>
+                                <button onClick={() => { handleLogout(); setIsMenuOpen(false); }} style={{ color: '#ef4444', fontWeight: 600 }}>Sign Out</button>
+                            </div>
                         </>
                     ) : (
-                        <>
-                            <Link to="/gallery" className="btn btn-outline" style={{ justifyContent: 'flex-start' }}><LayoutGrid size={18} style={{ marginRight: '8px' }} /> Gallery</Link>
-                            <div style={{ height: '1px', background: 'var(--color-border)', margin: '12px 0' }} />
-                            <Link to="/auth" className="btn btn-outline">Log In</Link>
-                            <Link to="/auth" className="btn btn-primary">Sign Up</Link>
-                        </>
+                        <Link
+                            to="/auth"
+                            onClick={() => setIsMenuOpen(false)}
+                            className="btn btn-primary"
+                            style={{ width: '100%' }}
+                        >
+                            Sign In / Sign Up
+                        </Link>
                     )}
                 </div>
             )}
-        </>
+        </div>
     );
 }

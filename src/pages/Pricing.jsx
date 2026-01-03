@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
-import { Check, Zap, Crown } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Pricing() {
@@ -11,25 +11,9 @@ export default function Pricing() {
     const [loading, setLoading] = useState(false);
     const functions = getFunctions();
     const db = getFirestore();
-    // Fetch user tier on load
-    useEffect(() => {
-        if (currentUser) {
-            // We can listen to the realtime updates if we want, or just check once.
-            // Since subscription status is in public claims or user doc, let's assume we check the doc or claims.
-            // For simplicity, we can rely on the fact that App.jsx or context might have it, but here we'll just use a quick check 
-            // or rely on what we know. A better way is to pass it from context or fetch it.
-            // Let's assume we use a quick fetch or context if available. 
-            // Actually, we can just use the state from Generator logic or similar.
-            // Let's replicate the snapshot listener for accurate status, or just fetching once.
-            // Fetching once is safer for 'status' pages.
-        }
-    }, [currentUser]);
 
-    // Use a listener actually, to be reactive
-    // Listen to subscription status
     useEffect(() => {
         if (!currentUser) return;
-
         const unsub = onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
@@ -43,28 +27,11 @@ export default function Pricing() {
         return () => unsub();
     }, [currentUser, db]);
 
-
-    const handleManageSubscription = async () => {
-        setLoading(true);
-        try {
-            const createStripePortalSession = httpsCallable(functions, 'createStripePortalSession');
-            const result = await createStripePortalSession({
-                returnUrl: window.location.href
-            });
-            window.location.href = result.data.url;
-        } catch (error) {
-            console.error("Error opening portal:", error);
-            toast.error("Failed to open subscription settings.");
-            setLoading(false);
-        }
-    };
-
     const handleSubscribe = async (priceId, mode = 'subscription') => {
         if (!currentUser) {
             toast.error("Please log in to upgrade.");
             return;
         }
-
         setLoading(true);
         try {
             const createStripeCheckout = httpsCallable(functions, 'createStripeCheckout');
@@ -83,105 +50,64 @@ export default function Pricing() {
     };
 
     return (
-        <div className="container" style={{ paddingTop: '100px', paddingBottom: '60px' }}>
-            <div style={{ textAlign: 'center', marginBottom: '80px' }}>
-                <h1 style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: '800', marginBottom: '24px', color: 'white', letterSpacing: '-0.03em' }}>
-                    Simple, transparent pricing.
+        <div className="container" style={{ paddingTop: '160px', paddingBottom: '120px' }}>
+
+            <div style={{ maxWidth: '800px', margin: '0 auto 120px', textAlign: 'center' }}>
+                <h1 style={{ fontSize: 'clamp(3rem, 6vw, 5rem)', fontWeight: '800', letterSpacing: '-0.04em', lineHeight: '1', marginBottom: '32px', color: 'white' }}>
+                    Unlock your <br /> full potential.
                 </h1>
-                <p style={{ fontSize: '1.1rem', color: 'var(--color-text-muted)' }}>
-                    Professional tools for the next generation of creators.
+                <p style={{ fontSize: '1.2rem', color: 'var(--color-text-muted)', lineHeight: '1.6' }}>
+                    Select the plan that aligns with your creative velocity. <br />
+                    Transparent pricing, no hidden limits.
                 </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '40px', maxWidth: '1000px', margin: '0 auto' }}>
+            <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '60px' }}>
 
-                {/* Free Tier */}
-                <div className="glass-panel" style={{ padding: '40px', display: 'flex', flexDirection: 'column', position: 'relative', background: 'var(--color-bg-subtle)' }}>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '16px', color: 'white' }}>Starter</h3>
-                    <div style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '32px', color: 'white', letterSpacing: '-0.02em' }}>
-                        Free
-                        <span style={{ fontSize: '1rem', fontWeight: 'normal', color: 'var(--color-text-muted)' }}> / forever</span>
+                {/* Free Plan */}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ marginBottom: '24px', borderBottom: '1px solid var(--color-border)', paddingBottom: '24px' }}>
+                        <h3 style={{ fontSize: '1.5rem', fontWeight: '500', color: 'white', marginBottom: '8px' }}>Free</h3>
+                        <p style={{ color: 'var(--color-text-muted)' }}>For exploration and hobbies.</p>
                     </div>
-
-                    <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 40px 0', flex: 1 }}>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', color: 'var(--color-text-muted)' }}>
-                            <Check size={18} color="white" />
-                            <span>5 daily credits</span>
-                        </li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', color: 'var(--color-text-muted)' }}>
-                            <Check size={18} color="white" />
-                            <span>Standard speeds</span>
-                        </li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', color: 'var(--color-text-muted)' }}>
-                            <Check size={18} color="white" />
-                            <span>Base models</span>
-                        </li>
-                    </ul>
-
-                    <button className="btn btn-outline" style={{ width: '100%', height: '50px' }} disabled>
-                        {userTier === 'free' ? 'Current Plan' : 'Included'}
+                    <div style={{ fontSize: '3rem', fontWeight: '800', letterSpacing: '-0.03em', marginBottom: '32px', color: 'white' }}>
+                        $0
+                    </div>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '40px' }}>
+                        <FeatureItem text="5 Credits Daily" />
+                        <FeatureItem text="Standard Generation Speed" />
+                        <FeatureItem text="Base Models Only" />
+                        <FeatureItem text="Private Gallery" />
+                        <FeatureItem text="Personal License" muted />
+                    </div>
+                    <button className="btn btn-outline" style={{ width: '100%' }} disabled>
+                        Included
                     </button>
                 </div>
 
-                {/* Pro Tier */}
-                <div className="glass-panel" style={{
-                    padding: '40px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    position: 'relative',
-                    border: '1px solid var(--color-white)',
-                    background: 'rgba(255,255,255,0.03)'
-                }}>
-                    <div style={{
-                        position: 'absolute',
-                        top: '-14px',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        background: 'white',
-                        color: 'black',
-                        padding: '6px 16px',
-                        borderRadius: '99px',
-                        fontSize: '0.75rem',
-                        fontWeight: '700',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.1em'
-                    }}>
-                        Recommended
+                {/* Pro Plan */}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ marginBottom: '24px', borderBottom: '1px solid white', paddingBottom: '24px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: '500', color: 'white', marginBottom: '8px' }}>Pro Membership</h3>
+                            <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', background: 'white', color: 'black', padding: '4px 12px', borderRadius: '99px' }}>Recommended</span>
+                        </div>
+                        <p style={{ color: 'var(--color-text-muted)' }}>For professionals and power users.</p>
                     </div>
-
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '16px', color: 'white' }}>Pro</h3>
-                    <div style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '32px', color: 'white', letterSpacing: '-0.02em' }}>
-                        $10
-                        <span style={{ fontSize: '1rem', fontWeight: 'normal', color: 'var(--color-text-muted)' }}> / month</span>
+                    <div style={{ fontSize: '3rem', fontWeight: '800', letterSpacing: '-0.03em', marginBottom: '32px', color: 'white' }}>
+                        $10 <span style={{ fontSize: '1rem', color: 'var(--color-text-muted)', fontWeight: 'normal' }}>/ mo</span>
                     </div>
-
-                    <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 40px 0', flex: 1 }}>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', color: 'white' }}>
-                            <Check size={18} color="white" />
-                            <span><strong>Unlimited</strong> generations</span>
-                        </li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', color: 'white' }}>
-                            <Zap size={18} color="white" fill="white" />
-                            <span><strong>Fast</strong> GPU priority</span>
-                        </li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', color: 'white' }}>
-                            <Check size={18} color="white" />
-                            <span>Premium models (Flux Pro)</span>
-                        </li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', color: 'white' }}>
-                            <Check size={18} color="white" />
-                            <span>Commercial license</span>
-                        </li>
-                    </ul>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '40px' }}>
+                        <FeatureItem text="Unlimited Generations" highlight />
+                        <FeatureItem text="Priority GPU Access" highlight />
+                        <FeatureItem text="Advanced Models (Flux Pro)" highlight />
+                        <FeatureItem text="Commercial License" highlight />
+                        <FeatureItem text="Priority You.com Support" />
+                    </div>
 
                     {userTier === 'pro' ? (
-                        <button
-                            className="btn btn-outline"
-                            style={{ width: '100%', borderColor: 'var(--color-primary)', color: 'white' }}
-                            onClick={() => { }} // No portal for one-time payments usually, or just billing history
-                            disabled={true} // Disable for now as portal logic was for subs
-                        >
-                            Active - Expires in 30 days
+                        <button className="btn btn-outline" style={{ width: '100%', borderColor: 'white', color: 'white' }} disabled>
+                            Active Membership
                         </button>
                     ) : (
                         <button
@@ -190,15 +116,23 @@ export default function Pricing() {
                             onClick={() => handleSubscribe('price_1SlZ0TIA2zQnWbn5xLtW3auh', 'payment')}
                             disabled={loading}
                         >
-                            {loading ? 'Processing...' : 'Buy 30 Days Access'}
+                            {loading ? 'Processing...' : 'Upgrade Now'}
                         </button>
                     )}
-                    <p style={{ marginTop: '16px', fontSize: '0.8rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>
-                        One-time payment. No auto-renewal.
-                    </p>
                 </div>
 
             </div>
         </div>
     );
+}
+
+function FeatureItem({ text, highlight, muted }) {
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: muted ? 'var(--color-text-dim)' : (highlight ? 'white' : 'var(--color-text-muted)') }}>
+            <div style={{ width: '20px', display: 'flex', justifyContent: 'center' }}>
+                <Check size={18} color={highlight ? 'white' : 'currentColor'} />
+            </div>
+            <span style={{ fontSize: '1rem', fontWeight: highlight ? '600' : '400' }}>{text}</span>
+        </div>
+    )
 }
