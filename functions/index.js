@@ -57,19 +57,20 @@ export const generateImage = onDocumentCreated(
             // Update status to processing
             await snapshot.ref.update({ status: "processing" });
 
-            const { prompt, modelId, userId } = data;
+            const { prompt, modelId, userId, negative_prompt, steps, cfg, scheduler } = data;
 
             if (!B2_KEY_ID) throw new Error("Missing B2 credentials");
 
             // 1. Call Modal Endpoint
             console.log(`Generating image for ${requestId} using Modal endpoint...`);
 
-            // Construct query parameters
+            // Construct query parameters with optimized defaults
             const params = new URLSearchParams({
                 prompt: prompt,
-                steps: '30',
-                cfg: '7.0',
-                scheduler: 'Euler a'
+                negative_prompt: negative_prompt || "",
+                steps: steps || '30',
+                cfg: cfg || '6.0', // Lowered from 7.0 to reduce "fried" look
+                scheduler: scheduler || 'DPM++ 2M Karras' // Often better than Euler a for SDXL
             });
 
             const response = await fetch(
