@@ -11,9 +11,17 @@ import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const serviceAccount = require("./dreambees-app-gen-v1-firebase-adminsdk-fbsvc-195fd20c32.json");
 
-initializeApp({
-    credential: cert(serviceAccount)
-});
+// Initializing Firebase Admin
+// Use the service account key only for local emulation or if env var not set
+// In production (Cloud Functions), initializeApp() uses ADC (default service account)
+if (process.env.FUNCTIONS_EMULATOR || process.env.NODE_ENV === 'development') {
+    const serviceAccount = require("./dreambees-app-gen-v1-firebase-adminsdk-fbsvc-195fd20c32.json");
+    initializeApp({
+        credential: cert(serviceAccount)
+    });
+} else {
+    initializeApp();
+}
 const db = getFirestore();
 
 // Environment variables should be set in Firebase Functions config
@@ -95,11 +103,8 @@ export const generateImage = onDocumentCreated(
                 return;
             }
 
-            // Update the prompt to use for generation
-            prompt = cleanPrompt; // We can reassign since we destructured, but better to just use cleanPrompt in calls down below.
-            // Actually, we destructured `prompt` as const above. Let's fix that.
-            // We need to use `cleanPrompt` in the `params` construction later.
-            // -----------------------------------
+            // Removed invalid assignment to const 'prompt'
+            // We successfully have 'cleanPrompt' to use for subsequent steps.
 
             const validAspectRatios = ['1:1', '2:3', '3:2', '9:16', '16:9'];
             const safeAspectRatio = validAspectRatios.includes(aspectRatio) ? aspectRatio : '1:1';
