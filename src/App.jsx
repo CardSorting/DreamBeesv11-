@@ -11,6 +11,7 @@ import Generator from './pages/Generator';
 import Gallery from './pages/Gallery';
 import Models from './pages/Models';
 import ImageDetail from './pages/ImageDetail';
+import ModelDetail from './pages/ModelDetail';
 import Features from './pages/Features';
 import Pricing from './pages/Pricing';
 import About from './pages/About';
@@ -78,6 +79,11 @@ function App() {
                 <Route path="/models" element={
                   <PrivateRoute>
                     <Models />
+                  </PrivateRoute>
+                } />
+                <Route path="/model/:id" element={
+                  <PrivateRoute>
+                    <ModelDetail />
                   </PrivateRoute>
                 } />
                 <Route path="/features" element={<Features />} />

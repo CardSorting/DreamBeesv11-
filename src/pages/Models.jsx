@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useModel } from '../contexts/ModelContext';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Search, LayoutGrid, List, SlidersHorizontal, Sparkles, ChevronDown } from 'lucide-react';
+import { ArrowRight, Search, LayoutGrid, List, SlidersHorizontal, Sparkles, ChevronDown, Info } from 'lucide-react';
 
 // Internal Custom Cursor Component
 const CustomCursor = ({ isHovering }) => {
@@ -67,7 +67,7 @@ export default function Models() {
     function handleSelect(model) {
         setIsTransitioning(true);
         setSelectedModel(model);
-        setTimeout(() => navigate('/'), 800);
+        setTimeout(() => navigate('/generate'), 800);
     }
 
     if (loading) {
@@ -305,7 +305,7 @@ export default function Models() {
                                     key={model.id}
                                     onMouseEnter={() => setHoveredId(model.id)}
                                     onMouseLeave={() => setHoveredId(null)}
-                                    onClick={() => handleSelect(model)}
+                                    onClick={() => navigate(`/model/${model.id}`)}
                                     className="model-row"
                                     style={{
                                         display: 'flex',
@@ -385,19 +385,49 @@ export default function Models() {
                                             <p style={{ fontSize: '1.2rem', color: '#888', lineHeight: '1.6', maxWidth: '400px', marginLeft: isEven ? 0 : 'auto', fontFamily: 'var(--font-serif)', marginBottom: '40px' }}>
                                                 {model.description}
                                             </p>
-                                            <button className={`btn-outline ${isHovered ? 'active' : ''}`} style={{
-                                                background: isHovered ? 'white' : 'transparent',
-                                                color: isHovered ? 'black' : 'white',
-                                                borderColor: isHovered ? 'white' : 'rgba(255,255,255,0.2)',
-                                                padding: '16px 32px',
-                                                borderRadius: '100px',
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: '12px',
-                                                transition: 'all 0.3s'
-                                            }}>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleSelect(model);
+                                                }}
+                                                className={`btn-outline ${isHovered ? 'active' : ''}`} style={{
+                                                    background: isHovered ? 'white' : 'transparent',
+                                                    color: isHovered ? 'black' : 'white',
+                                                    borderColor: isHovered ? 'white' : 'rgba(255,255,255,0.2)',
+                                                    padding: '16px 32px',
+                                                    borderRadius: '100px',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '12px',
+                                                    transition: 'all 0.3s',
+                                                    cursor: 'pointer'
+                                                }}>
                                                 {isSelected ? 'ACTIVE ENGINE' : 'SELECT MODEL'}
                                                 <ArrowRight size={16} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    navigate(`/model/${model.id}`);
+                                                }}
+                                                className={`btn-outline ${isHovered ? 'active' : ''}`}
+                                                style={{
+                                                    background: 'transparent',
+                                                    color: '#888',
+                                                    borderColor: 'rgba(255,255,255,0.1)',
+                                                    padding: '16px',
+                                                    borderRadius: '50%',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    marginLeft: '16px',
+                                                    transition: 'all 0.3s',
+                                                    cursor: 'pointer'
+                                                }}
+                                                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'white'; e.currentTarget.style.color = 'white'; }}
+                                                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#888'; }}
+                                            >
+                                                <Info size={18} />
                                             </button>
                                         </div>
                                     </div>
@@ -420,7 +450,7 @@ export default function Models() {
                                     key={model.id}
                                     onMouseEnter={() => setHoveredId(model.id)}
                                     onMouseLeave={() => setHoveredId(null)}
-                                    onClick={() => handleSelect(model)}
+                                    onClick={() => navigate(`/model/${model.id}`)}
                                     style={{
                                         background: 'rgba(255,255,255,0.02)',
                                         border: `1px solid ${isSelected ? 'var(--color-accent-primary)' : 'rgba(255,255,255,0.05)'}`,
@@ -452,17 +482,23 @@ export default function Models() {
                                             <span style={{ fontFamily: 'monospace', fontSize: '10px', color: isSelected ? 'var(--color-accent-primary)' : '#444' }}>
                                                 {isSelected ? 'CURRENTLY ACTIVE' : `REF_${String(index).padStart(3, '0')}`}
                                             </span>
-                                            <button style={{
-                                                background: isSelected ? 'var(--color-accent-primary)' : 'rgba(255,255,255,0.05)',
-                                                color: isSelected ? 'black' : 'white',
-                                                border: 'none',
-                                                width: '40px',
-                                                height: '40px',
-                                                borderRadius: '50%',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center'
-                                            }}>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleSelect(model);
+                                                }}
+                                                style={{
+                                                    background: isSelected ? 'var(--color-accent-primary)' : 'rgba(255,255,255,0.05)',
+                                                    color: isSelected ? 'black' : 'white',
+                                                    border: 'none',
+                                                    width: '40px',
+                                                    height: '40px',
+                                                    borderRadius: '50%',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    cursor: 'pointer'
+                                                }}>
                                                 <ArrowRight size={18} />
                                             </button>
                                         </div>

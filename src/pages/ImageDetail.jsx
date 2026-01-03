@@ -4,7 +4,7 @@ import { db } from '../firebase';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { Download, Trash2, ArrowLeft, Loader2, RefreshCw, Link as LinkIcon, Info, Sliders, Layers, X, ChevronDown, ChevronUp } from 'lucide-react';
-import { AVAILABLE_MODELS } from '../contexts/ModelContext';
+import { useModel } from '../contexts/ModelContext';
 import toast from 'react-hot-toast';
 
 export default function ImageDetail() {
@@ -15,7 +15,8 @@ export default function ImageDetail() {
     const [loading, setLoading] = useState(true);
     const [showFullPrompt, setShowFullPrompt] = useState(false);
 
-    const modelName = image ? (AVAILABLE_MODELS.find(m => m.id === image.modelId)?.name || 'SDXL Model') : 'Loading...';
+    const { availableModels } = useModel();
+    const modelName = image ? (availableModels.find(m => m.id === image.modelId)?.name || 'SDXL Model') : 'Loading...';
 
     useEffect(() => {
         async function fetchImage() {

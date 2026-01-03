@@ -14,7 +14,10 @@ export function ModelProvider({ children }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // Load initialization
     useEffect(() => {
+        const savedModelId = localStorage.getItem('selectedModelId');
+
         const fetchModels = async () => {
             try {
                 setLoading(true);
@@ -28,11 +31,23 @@ export function ModelProvider({ children }) {
                 });
 
                 setAvailableModels(models);
+
+                // Prioritize saved model, then current selection (if any), then default
                 if (models.length > 0) {
-                    setSelectedModel(models[0]);
+                    if (savedModelId) {
+                        const saved = models.find(m => m.id === savedModelId);
+                        if (saved) {
+                            setSelectedModel(saved);
+                        } else {
+                            setSelectedModel(models[0]);
+                        }
+                    } else if (!selectedModel) {
+                        setSelectedModel(models[0]);
+                    }
                 }
                 setLoading(false);
             } catch (err) {
+                // ... error handling ...
                 console.error("Error fetching models:", err);
                 setError(err.message);
                 setLoading(false);
@@ -41,6 +56,13 @@ export function ModelProvider({ children }) {
 
         fetchModels();
     }, []);
+
+    // Persist selection
+    useEffect(() => {
+        if (selectedModel) {
+            localStorage.setItem('selectedModelId', selectedModel.id);
+        }
+    }, [selectedModel]);
 
     const value = {
         selectedModel,
