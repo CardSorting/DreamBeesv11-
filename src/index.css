@@ -459,3 +459,137 @@ button {
   flex-direction: column;
   justify-content: center;
 }
+
+/* Generator Specific Styles */
+
+/* Modern Range Slider */
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  background: transparent;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+  margin-top: -8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  border: 2px solid var(--color-primary);
+  transition: transform 0.1s;
+}
+
+input[type=range]::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+/* Generator Hero Input */
+.generator-input-wrapper {
+  position: relative;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  padding: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.generator-input-wrapper:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.generator-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.1rem;
+  padding: 16px;
+  outline: none;
+}
+
+.generator-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* Aspect Ratio Button Visuals */
+.ar-preview {
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  margin-bottom: 8px;
+  transition: all 0.2s;
+}
+
+.ar-btn:hover .ar-preview {
+  box-shadow: 0 0 10px currentColor;
+}
+
+/* Smooth toggles */
+.toggle-advanced {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--color-text-muted);
+  border: 1px solid transparent;
+}
+
+.toggle-advanced:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.toggle-advanced.active {
+  background: rgba(139, 92, 246, 0.1);
+  color: var(--color-primary);
+  border-color: rgba(139, 92, 246, 0.2);
+}
+
+/* Section Card */
+.section-card {
+  background: rgba(24, 24, 27, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  height: 100%;
+  transition: all 0.2s;
+}
+
+.section-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(24, 24, 27, 0.6);
+}
+
+/* Pill Badge */
+.pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  white-space: nowrap;
+}

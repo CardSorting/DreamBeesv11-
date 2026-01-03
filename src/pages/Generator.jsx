@@ -123,12 +123,13 @@ export default function Generator() {
 
                 if (data.status === 'completed') {
                     setProgress(100);
+                    // Slightly longer delay to show 100%
                     setTimeout(() => {
                         setGeneratedImage(data.imageUrl);
                         setGenerating(false);
                         setCurrentJobId(null);
                         setJobStatus('pending');
-                    }, 500);
+                    }, 800);
                 } else if (data.status === 'failed') {
                     toast.error(`Generation failed: ${data.error || 'Unknown error'}`);
                     setGenerating(false);
@@ -180,85 +181,95 @@ export default function Generator() {
     return (
         <div className="container" style={{ paddingTop: '100px', paddingBottom: '40px' }}>
             <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                <header style={{ marginBottom: '40px', textAlign: 'center' }}>
+                <header style={{ marginBottom: '50px', textAlign: 'center' }}>
                     <h1 style={{
-                        fontSize: 'clamp(2.5rem, 6vw, 3.5rem)',
+                        fontSize: 'clamp(2.5rem, 6vw, 4rem)',
                         fontWeight: '800',
-                        marginBottom: '16px',
+                        marginBottom: '8px',
                         background: 'linear-gradient(to right, #8b5cf6, #ec4899)',
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
-                        letterSpacing: '-1px'
+                        letterSpacing: '-2px',
+                        lineHeight: '1.1'
                     }}>
                         Dream it. Generate it.
                     </h1>
                     <p style={{ fontSize: 'clamp(1rem, 3vw, 1.2rem)', color: 'var(--color-text-muted)' }}>
-                        Turn your text descriptions into stunning AI art in seconds.
+                        Turn your words into stunning visuals with AI.
                     </p>
                 </header>
 
-                {/* Credit Display */}
-                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-                    <div className="glass-panel" style={{
-                        padding: '8px 16px',
-                        borderRadius: '20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        background: 'rgba(0,0,0,0.4)',
-                        border: '1px solid rgba(255,255,255,0.1)'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Sparkles size={16} color={credits > 0 || subscriptionStatus === 'active' ? "#fbbf24" : "#ef4444"} />
-                            <span style={{ fontWeight: '600', color: 'white' }}>
-                                {subscriptionStatus === 'active' ? "Unlimited Pro" : `${credits} credits left`}
-                            </span>
-                        </div>
-                        {subscriptionStatus !== 'active' && (
-                            <Link to="/pricing" style={{
-                                fontSize: '0.8rem',
-                                color: 'var(--color-primary)',
-                                fontWeight: 'bold',
-                                textDecoration: 'none',
-                                paddingLeft: '12px',
-                                borderLeft: '1px solid rgba(255,255,255,0.2)'
+                <div className="generator-input-wrapper" style={{ padding: '8px', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', padding: '0 8px' }}>
+                            {/* Floating Credit Badge */}
+                            <div style={{
+                                position: 'absolute',
+                                top: '-40px',
+                                right: '0',
+                                display: 'flex',
+                                gap: '12px'
                             }}>
-                                Get Pro &rarr;
-                            </Link>
-                        )}
-                    </div>
-                </div>
+                                <div className="pill-badge">
+                                    <Sparkles size={14} color={credits > 0 || subscriptionStatus === 'active' ? "#fbbf24" : "#ef4444"} />
+                                    <span>{subscriptionStatus === 'active' ? "Unlimited" : `${credits} credits`}</span>
+                                    {subscriptionStatus !== 'active' && (
+                                        <Link to="/pricing" style={{ marginLeft: '4px', opacity: 0.8, borderLeft: '1px solid rgba(255,255,255,0.2)', paddingLeft: '8px' }}>Get Pro</Link>
+                                    )}
+                                </div>
+                            </div>
 
-                <div className="glass-panel" style={{ padding: '24px', marginBottom: '16px' }}>
-                    <div className="mobile-stack" style={{ gap: '16px' }}>
-                        <input
-                            type="text"
-                            placeholder="A futuristic cyberpunk city with neon lights..."
-                            value={prompt}
-                            onChange={(e) => setPrompt(e.target.value)}
-                            disabled={generating}
-                            style={{
-                                flex: 1,
-                                padding: '16px',
-                                borderRadius: 'var(--radius-md)',
-                                background: generating ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.3)',
-                                border: '1px solid var(--color-border)',
-                                color: 'white',
-                                fontSize: '1rem',
-                                outline: 'none',
-                                opacity: generating ? 0.7 : 1,
-                                cursor: generating ? 'not-allowed' : 'text'
-                            }}
-                            onKeyDown={(e) => e.key === 'Enter' && !generating && handleGenerate()}
-                        />
-                        <button
-                            className="btn btn-primary"
-                            onClick={handleGenerate}
-                            disabled={generating || !prompt || (credits <= 0 && subscriptionStatus !== 'active')}
-                            style={{ minWidth: '160px', width: '100%', opacity: (credits <= 0 && subscriptionStatus !== 'active') ? 0.5 : 1 }}
-                        >
-                            {generating ? <><Loader2 className="animate-spin" size={20} style={{ marginRight: '8px' }} /> Generating</> : <><Sparkles size={20} style={{ marginRight: '8px' }} /> Generate</>}
-                        </button>
+                            <textarea
+                                placeholder="A futuristic cyberpunk city with neon lights, realistic, 8k..."
+                                value={prompt}
+                                onChange={(e) => setPrompt(e.target.value)}
+                                disabled={generating}
+                                className="generator-input"
+                                style={{
+                                    resize: 'none',
+                                    height: '80px',
+                                    fontFamily: 'inherit'
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        if (!generating) handleGenerate();
+                                    }
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '8px' }}>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                {/* Quick Model Badge */}
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    fontSize: '0.75rem',
+                                    color: 'var(--color-text-muted)',
+                                    background: 'rgba(255,255,255,0.05)',
+                                    padding: '4px 8px',
+                                    borderRadius: '6px'
+                                }}>
+                                    <Cpu size={12} />
+                                    {selectedModel.name}
+                                </div>
+                            </div>
+
+                            <button
+                                className="btn btn-primary"
+                                onClick={handleGenerate}
+                                disabled={generating || !prompt || (credits <= 0 && subscriptionStatus !== 'active')}
+                                style={{
+                                    minWidth: '140px',
+                                    padding: '10px 24px',
+                                    opacity: (credits <= 0 && subscriptionStatus !== 'active') ? 0.5 : 1
+                                }}
+                            >
+                                {generating ? <><Loader2 className="animate-spin" size={18} style={{ marginRight: '8px' }} /> Generating</> : <><Sparkles size={18} style={{ marginRight: '8px' }} /> Generate Art</>}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -266,20 +277,9 @@ export default function Generator() {
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
                     <button
                         onClick={() => !generating && setShowAdvanced(!showAdvanced)}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            color: showAdvanced ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                            fontSize: '0.9rem',
-                            fontWeight: '600',
-                            padding: '8px 16px',
-                            borderRadius: '20px',
-                            background: showAdvanced ? 'rgba(139, 92, 246, 0.1)' : 'transparent',
-                            transition: 'all 0.2s',
-                            cursor: generating ? 'not-allowed' : 'pointer',
-                            opacity: generating ? 0.5 : 1
-                        }}
+                        className={`toggle-advanced ${showAdvanced ? 'active' : ''}`}
+                        disabled={generating}
+                        style={{ cursor: generating ? 'not-allowed' : 'pointer', opacity: generating ? 0.5 : 1 }}
                     >
                         <Settings size={16} />
                         Advanced Settings
@@ -289,105 +289,111 @@ export default function Generator() {
 
                 {showAdvanced && (
                     <div className="fade-in" style={{ marginBottom: '40px' }}>
-                        <div className="glass-panel" style={{ padding: '32px' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
 
-                                {/* Section 1: Output Format */}
-                                <div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                                        <div style={{ width: '4px', height: '16px', background: 'var(--color-primary)', borderRadius: '2px' }}></div>
-                                        <h4 style={{ color: 'white', fontSize: '1.1rem', margin: 0 }}>Output Format</h4>
-                                    </div>
-
-                                    <div style={{ marginBottom: '16px' }}>
-                                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '12px' }}>Aspect Ratio</p>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(60px, 1fr))', gap: '8px' }}>
-                                            {[
-                                                { id: '1:1', icon: <Square size={16} /> },
-                                                { id: '16:9', icon: <RectangleHorizontal size={16} /> },
-                                                { id: '9:16', icon: <RectangleVertical size={16} /> },
-                                                { id: '3:2', icon: <RectangleHorizontal size={14} /> },
-                                                { id: '2:3', icon: <RectangleVertical size={14} /> }
-                                            ].map((ratio) => (
-                                                <button
-                                                    key={ratio.id}
-                                                    onClick={() => setAspectRatio(ratio.id)}
-                                                    title={ratio.id}
-                                                    style={{
-                                                        padding: '12px 4px',
-                                                        borderRadius: 'var(--radius-md)',
-                                                        border: aspectRatio === ratio.id ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
-                                                        background: aspectRatio === ratio.id ? 'rgba(139, 92, 246, 0.15)' : 'rgba(255,255,255,0.03)',
-                                                        color: aspectRatio === ratio.id ? 'white' : 'var(--color-text-muted)',
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        alignItems: 'center',
-                                                        gap: '4px',
-                                                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                                        cursor: 'pointer'
-                                                    }}
-                                                >
-                                                    {ratio.icon}
-                                                    <span style={{ fontSize: '0.7rem', fontWeight: '600' }}>{ratio.id}</span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
+                            {/* Section 1: Output Format */}
+                            <div className="section-card">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+                                    <div style={{ width: '4px', height: '16px', background: 'var(--color-primary)', borderRadius: '2px' }}></div>
+                                    <h4 style={{ color: 'white', fontSize: '1.1rem', margin: 0, fontWeight: '600' }}>Output Format</h4>
                                 </div>
 
-                                {/* Section 2: Generation Parameters */}
-                                <div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-                                        <div style={{ width: '4px', height: '16px', background: 'var(--color-primary)', borderRadius: '2px' }}></div>
-                                        <h4 style={{ color: 'white', fontSize: '1.1rem', margin: 0 }}>Generation Parameters</h4>
+                                <div style={{ marginBottom: '8px' }}>
+                                    <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '16px', fontWeight: '500' }}>Aspect Ratio</p>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px' }}>
+                                        {[
+                                            { id: '1:1', w: 24, h: 24, label: 'Square' },
+                                            { id: '16:9', w: 32, h: 18, label: 'Landscape' },
+                                            { id: '9:16', w: 18, h: 32, label: 'Portrait' },
+                                            { id: '3:2', w: 30, h: 20, label: 'Classic' },
+                                            { id: '2:3', w: 20, h: 30, label: 'Tall' }
+                                        ].map((ratio) => (
+                                            <button
+                                                key={ratio.id}
+                                                onClick={() => setAspectRatio(ratio.id)}
+                                                className="ar-btn"
+                                                title={ratio.label}
+                                                style={{
+                                                    padding: '12px 4px',
+                                                    borderRadius: 'var(--radius-md)',
+                                                    border: aspectRatio === ratio.id ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                                                    background: aspectRatio === ratio.id ? 'rgba(139, 92, 246, 0.15)' : 'rgba(255,255,255,0.03)',
+                                                    color: aspectRatio === ratio.id ? 'white' : 'var(--color-text-muted)',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    gap: '8px',
+                                                    cursor: 'pointer',
+                                                    height: '80px',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                <div
+                                                    className="ar-preview"
+                                                    style={{
+                                                        width: `${ratio.w}px`,
+                                                        height: `${ratio.h}px`,
+                                                        background: aspectRatio === ratio.id ? 'currentColor' : 'transparent'
+                                                    }}
+                                                />
+                                                <span style={{ fontSize: '0.7rem', fontWeight: '600' }}>{ratio.id}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Section 2: Generation Parameters */}
+                            <div className="section-card">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
+                                    <div style={{ width: '4px', height: '16px', background: 'var(--color-primary)', borderRadius: '2px' }}></div>
+                                    <h4 style={{ color: 'white', fontSize: '1.1rem', margin: 0, fontWeight: '600' }}>Parameters</h4>
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                                    <div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', alignItems: 'center' }}>
+                                            <label style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', fontWeight: '500' }}>Inference Steps</label>
+                                            <span style={{ color: 'white', fontSize: '0.85rem', fontWeight: '700', background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px', minWidth: '32px', textAlign: 'center' }}>{steps}</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="20" max="50" step="1"
+                                            value={steps}
+                                            onChange={(e) => setSteps(parseInt(e.target.value))}
+                                        />
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
+                                            <span>Speed</span>
+                                            <span>Quality</span>
+                                        </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                        <div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                                <label style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Inference Steps</label>
-                                                <span style={{ color: 'white', fontSize: '0.9rem', fontWeight: 'bold', background: 'rgba(139, 92, 246, 0.2)', padding: '2px 8px', borderRadius: '4px' }}>{steps}</span>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="20" max="50" step="1"
-                                                value={steps}
-                                                onChange={(e) => setSteps(parseInt(e.target.value))}
-                                                style={{ width: '100%', height: '6px', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
-                                            />
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                                <span>Faster</span>
-                                                <span>Higher Quality</span>
-                                            </div>
+                                    <div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', alignItems: 'center' }}>
+                                            <label style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', fontWeight: '500' }}>Guidance Scale (CFG)</label>
+                                            <span style={{ color: 'white', fontSize: '0.85rem', fontWeight: '700', background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px', minWidth: '32px', textAlign: 'center' }}>{cfg}</span>
                                         </div>
-
-                                        <div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                                <label style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>Guidance (CFG)</label>
-                                                <span style={{ color: 'white', fontSize: '0.9rem', fontWeight: 'bold', background: 'rgba(139, 92, 246, 0.2)', padding: '2px 8px', borderRadius: '4px' }}>{cfg}</span>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="1" max="10" step="0.5"
-                                                value={cfg}
-                                                onChange={(e) => setCfg(parseFloat(e.target.value))}
-                                                style={{ width: '100%', height: '6px', accentColor: 'var(--color-primary)', cursor: 'pointer' }}
-                                            />
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '0.65rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                                <span>Creative</span>
-                                                <span>Precise</span>
-                                            </div>
+                                        <input
+                                            type="range"
+                                            min="1" max="15" step="0.5"
+                                            value={cfg}
+                                            onChange={(e) => setCfg(parseFloat(e.target.value))}
+                                        />
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
+                                            <span>Creative</span>
+                                            <span>Strict</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Section 3: Content Constraints */}
-                            <div style={{ marginTop: '32px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '32px' }}>
+                            {/* Section 3: Negative Prompt (Full Width) */}
+                            <div className="section-card" style={{ gridColumn: '1 / -1' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <div style={{ width: '4px', height: '16px', background: 'var(--color-primary)', borderRadius: '2px' }}></div>
-                                        <h4 style={{ color: 'white', fontSize: '1.1rem', margin: 0 }}>Content Constraints</h4>
+                                        <div style={{ width: '4px', height: '16px', background: 'var(--color-secondary)', borderRadius: '2px' }}></div>
+                                        <h4 style={{ color: 'white', fontSize: '1.1rem', margin: 0, fontWeight: '600' }}>Negative Prompt</h4>
                                     </div>
                                     <button
                                         onClick={() => setNegPrompt('')}
@@ -397,26 +403,28 @@ export default function Generator() {
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: '6px',
-                                            padding: '4px 8px',
+                                            padding: '6px 10px',
                                             borderRadius: '6px',
                                             background: 'rgba(239, 68, 68, 0.1)',
-                                            transition: 'all 0.2s'
+                                            transition: 'all 0.2s',
+                                            border: 'none',
+                                            cursor: 'pointer'
                                         }}
                                         onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
                                         onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
                                     >
-                                        <Trash2 size={12} /> Clear Negative Prompt
+                                        <Trash2 size={12} /> Clear
                                     </button>
                                 </div>
                                 <textarea
                                     value={negPrompt}
                                     onChange={(e) => setNegPrompt(e.target.value)}
-                                    placeholder="Describe elements to exclude (e.g., blurry, distorted, low quality)..."
+                                    placeholder="Describe what you want to avoid (e.g., blurry, low quality, distorted)..."
                                     style={{
                                         width: '100%',
-                                        height: '90px',
+                                        height: '70px',
                                         padding: '16px',
-                                        borderRadius: 'var(--radius-md)',
+                                        borderRadius: 'var(--radius-sm)',
                                         background: 'rgba(0,0,0,0.2)',
                                         border: '1px solid var(--color-border)',
                                         color: 'white',
@@ -430,6 +438,7 @@ export default function Generator() {
                                     onBlur={(e) => e.target.style.borderColor = 'var(--color-border)'}
                                 />
                             </div>
+
                         </div>
                     </div>
                 )}
