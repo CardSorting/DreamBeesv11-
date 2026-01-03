@@ -336,3 +336,339 @@ input[type=range]::-webkit-slider-runnable-track {
   background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
 }
+
+/* --- NEW LANDING PAGE STYLES --- */
+
+/* Bento Grid System */
+.bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 24px;
+}
+
+.bento-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  position: relative;
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.bento-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* Spotlight Effect */
+.spotlight-overlay {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(800px circle at var(--mouse-x) var(--mouse-y), rgba(255, 255, 255, 0.06), transparent 40%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+.bento-card:hover .spotlight-overlay {
+  opacity: 1;
+}
+
+/* Hero Typography Enhancements */
+.hero-title-gradient {
+  background: linear-gradient(135deg, #fff 30%, rgba(255, 255, 255, 0.4) 110%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 30px rgba(255, 255, 255, 0.1));
+}
+
+.text-glow-accent {
+  text-shadow: 0 0 20px var(--color-accent-glow);
+}
+
+/* Accordion */
+.accordion-item {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.accordion-summary {
+  padding: 24px 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 500;
+  font-size: 1.1rem;
+  transition: color 0.2s;
+}
+
+.accordion-summary:hover {
+  color: var(--color-white);
+}
+
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  color: var(--color-text-muted);
+}
+
+.accordion-content.open {
+  max-height: 200px;
+  /* Approximate max height */
+  padding-bottom: 24px;
+}
+
+/* Spec List */
+.spec-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1px;
+  background: var(--color-border);
+  /* Creates grid lines via gap */
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.spec-item {
+  background: var(--color-bg);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.spec-label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.spec-value {
+  font-size: 1.25rem;
+  color: var(--color-white);
+  font-family: var(--font-display);
+  font-weight: 500;
+}
+
+/* Mobile Tweaks for Bento */
+@media (max-width: 1024px) {
+  .bento-grid {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* --- How It Works Section --- */
+.step-card {
+  position: relative;
+  padding: 40px;
+  background: transparent;
+  border-left: 1px solid var(--color-border);
+  transition: all 0.3s ease;
+}
+
+.step-card:hover {
+  border-left-color: var(--color-accent-primary);
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.02), transparent);
+}
+
+.step-number {
+  font-family: var(--font-display);
+  font-size: 4rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.05);
+  line-height: 1;
+  margin-bottom: 24px;
+  transition: all 0.3s ease;
+}
+
+.step-card:hover .step-number {
+  color: var(--color-accent-primary);
+  transform: translateX(10px);
+}
+
+/* --- Sales Pitch Section --- */
+.value-prop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.value-prop-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 1.1rem;
+  color: var(--color-zinc-100);
+}
+
+.check-icon-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+}
+
+/* --- Interactive Demo Section --- */
+.demo-container {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  /* Give more space to image */
+  gap: 60px;
+  align-items: center;
+  position: relative;
+}
+
+@media (max-width: 900px) {
+  .demo-container {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}
+
+.demo-terminal {
+  background: rgba(10, 10, 10, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  padding: 40px;
+  font-family: 'JetBrains Mono', monospace;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.8);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+}
+
+.demo-terminal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-accent-primary), transparent);
+  opacity: 0.5;
+}
+
+.typing-cursor::after {
+  content: '▋';
+  animation: blink 1s step-end infinite;
+  color: var(--color-accent-primary);
+  margin-left: 4px;
+}
+
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+.demo-preview-wrapper {
+  position: relative;
+  transform: perspective(1000px) rotateY(-2deg);
+  transition: transform 0.5s ease;
+}
+
+.demo-preview-wrapper:hover {
+  transform: perspective(1000px) rotateY(0deg);
+}
+
+.demo-preview {
+  position: relative;
+  aspect-ratio: 16/9;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 80px -30px var(--color-accent-glow);
+}
+
+.scan-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, transparent 0%, rgba(79, 70, 229, 0.2) 50%, var(--color-accent-primary) 50%, rgba(79, 70, 229, 0.2) 50%, transparent 100%);
+  background-size: 100% 200%;
+  z-index: 10;
+  opacity: 0;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.scan-active {
+  animation: hologramScan 1.6s ease-in-out forwards;
+}
+
+@keyframes hologramScan {
+  0% {
+    background-position: 0% -100%;
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    background-position: 0% 200%;
+    opacity: 0;
+  }
+}
+
+.tech-grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
