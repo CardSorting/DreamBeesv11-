@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Heart, X, ChevronDown, Sparkles } from 'lucide-react';
+import { Search, Heart, X, Sparkles, Command } from 'lucide-react';
 
 export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onSelectModel, models }) {
     const [searchQuery, setSearchQuery] = useState('');
@@ -53,8 +53,8 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
             left: 0,
             width: '100vw',
             height: '100vh',
-            background: 'rgba(0,0,0,0.85)',
-            backdropFilter: 'blur(16px)',
+            background: 'rgba(0,0,0,0.92)',
+            backdropFilter: 'blur(32px)',
             zIndex: 9999,
             display: 'flex',
             alignItems: 'center',
@@ -65,72 +65,100 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
         }}>
             <div className="glass-panel" style={{
                 width: '100%',
-                maxWidth: '1000px',
-                height: '85vh',
+                maxWidth: '1200px',
+                height: '90vh',
                 display: 'flex',
                 flexDirection: 'column',
-                border: '1px solid rgba(255,255,255,0.1)',
-                boxShadow: '0 24px 80px rgba(0,0,0,0.6)',
-                animation: 'fadeIn 0.2s ease-out',
-                background: 'linear-gradient(180deg, rgba(20,20,20,0.9) 0%, rgba(10,10,10,0.95) 100%)',
-                borderRadius: '24px',
-                overflow: 'hidden'
+                border: '1px solid rgba(255,255,255,0.08)',
+                boxShadow: '0 40px 120px rgba(0,0,0,0.8)',
+                animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                background: 'linear-gradient(180deg, #0a0a0a 0%, #050505 100%)',
+                borderRadius: '32px',
+                overflow: 'hidden',
+                position: 'relative'
             }}>
+                {/* Background Ambient Glow */}
+                <div style={{
+                    position: 'absolute',
+                    top: '-10%',
+                    right: '-5%',
+                    width: '400px',
+                    height: '400px',
+                    background: 'radial-gradient(circle, rgba(79, 70, 229, 0.1) 0%, transparent 70%)',
+                    pointerEvents: 'none',
+                    zIndex: 0
+                }} />
+
                 {/* Header Section */}
                 <div style={{
-                    padding: '24px 32px',
-                    borderBottom: '1px solid rgba(255,255,255,0.08)',
+                    padding: '40px 48px',
+                    borderBottom: '1px solid rgba(255,255,255,0.05)',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '20px'
+                    gap: '32px',
+                    position: 'relative',
+                    zIndex: 1
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', letterSpacing: '-0.02em' }}>Select Model</h2>
-                        <button onClick={onClose} className="btn-ghost" style={{ padding: '8px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }}>
-                            <X size={20} color="#ccc" />
+                        <div className="text-reveal-mask">
+                            <h2 style={{ fontSize: '2.5rem', fontWeight: '300', color: 'white', letterSpacing: '-0.04em' }}>
+                                <span>Select <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic' }}>Engine</span></span>
+                            </h2>
+                        </div>
+                        <button onClick={onClose} className="btn-ghost" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <X size={20} color="#fff" />
                         </button>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
                         {/* Search Bar */}
                         <div style={{
                             position: 'relative',
                             flex: 1,
+                            minWidth: '300px'
                         }}>
-                            <Search size={18} color="#666" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
+                            <Search size={18} color="#666" style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)' }} />
                             <input
                                 type="text"
-                                placeholder="Search models by name or tag..."
+                                placeholder="Search archives..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 style={{
                                     width: '100%',
-                                    padding: '12px 12px 12px 48px',
-                                    borderRadius: '12px',
-                                    background: 'rgba(0,0,0,0.3)',
+                                    padding: '16px 16px 16px 56px',
+                                    borderRadius: '100px',
+                                    background: 'rgba(255,255,255,0.03)',
                                     border: '1px solid rgba(255,255,255,0.1)',
                                     color: 'white',
-                                    fontSize: '0.95rem',
+                                    fontSize: '0.9rem',
                                     outline: 'none',
-                                    transition: 'border-color 0.2s'
+                                    transition: 'all 0.3s'
                                 }}
-                                onFocus={(e) => e.target.style.borderColor = 'var(--color-accent-primary)'}
+                                onFocus={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.3)'}
                                 onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
                             />
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: '#666' }}
+                                >
+                                    <X size={14} />
+                                </button>
+                            )}
                         </div>
 
                         {/* Tabs */}
-                        <div style={{ display: 'flex', background: 'rgba(0,0,0,0.3)', padding: '4px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', padding: '6px', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.1)' }}>
                             <button
                                 onClick={() => setActiveTab('all')}
                                 style={{
-                                    padding: '8px 20px',
-                                    borderRadius: '8px',
-                                    background: activeTab === 'all' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                                    color: activeTab === 'all' ? 'white' : '#888',
-                                    fontSize: '0.9rem',
+                                    padding: '10px 24px',
+                                    borderRadius: '100px',
+                                    background: activeTab === 'all' ? 'white' : 'transparent',
+                                    color: activeTab === 'all' ? 'black' : '#666',
+                                    fontSize: '0.8rem',
                                     fontWeight: '600',
-                                    transition: 'all 0.2s'
+                                    transition: 'all 0.3s'
                                 }}
                             >
                                 All Models
@@ -138,19 +166,19 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
                             <button
                                 onClick={() => setActiveTab('favorites')}
                                 style={{
-                                    padding: '8px 20px',
-                                    borderRadius: '8px',
-                                    background: activeTab === 'favorites' ? 'var(--color-accent-primary)' : 'transparent',
-                                    color: activeTab === 'favorites' ? 'black' : '#888',
-                                    fontSize: '0.9rem',
+                                    padding: '10px 24px',
+                                    borderRadius: '100px',
+                                    background: activeTab === 'favorites' ? 'white' : 'transparent',
+                                    color: activeTab === 'favorites' ? 'black' : '#666',
+                                    fontSize: '0.8rem',
                                     fontWeight: '600',
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '6px',
-                                    transition: 'all 0.2s'
+                                    gap: '8px',
+                                    transition: 'all 0.3s'
                                 }}
                             >
-                                <Heart size={14} fill={activeTab === 'favorites' ? 'black' : 'none'} /> Favorites
+                                <Heart size={14} fill={activeTab === 'favorites' ? 'currentColor' : 'none'} /> Favorites
                             </button>
                         </div>
                     </div>
@@ -159,105 +187,161 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
                 {/* Scrollable Content */}
                 <div style={{
                     flex: 1,
-                    padding: '32px',
+                    padding: '48px',
                     overflowY: 'auto',
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                    gap: '24px',
-                    alignContent: 'start'
-                }}>
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                    gap: '40px',
+                    alignContent: 'start',
+                    zIndex: 1
+                }} className="no-scrollbar">
                     {filteredModels.length === 0 ? (
-                        <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '60px', color: '#666' }}>
-                            <Sparkles size={48} style={{ opacity: 0.2, marginBottom: '16px' }} />
-                            <p>No models found matching your criteria.</p>
+                        <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '100px 0', color: '#444' }}>
+                            <Command size={48} style={{ opacity: 0.1, marginBottom: '24px' }} />
+                            <p style={{ letterSpacing: '0.1em', fontSize: '0.8rem', fontWeight: 'bold' }}>NO MATCHES FOUND IN ARCHIVE</p>
                         </div>
-                    ) : filteredModels.map(model => (
-                        <div
-                            key={model.id}
-                            onClick={() => {
-                                onSelectModel(model);
-                                onClose();
-                            }}
-                            style={{
-                                background: selectedModel.id === model.id ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.03)',
-                                border: selectedModel.id === model.id ? '2px solid var(--color-accent-primary)' : '1px solid rgba(255,255,255,0.05)',
-                                borderRadius: '16px',
-                                overflow: 'hidden',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                                position: 'relative',
-                                height: '100%',
-                                display: 'flex',
-                                flexDirection: 'column'
-                            }}
-                            className="hover-card group"
-                        >
-                            {/* Image Preview */}
-                            <div style={{ aspectRatio: '16/9', overflow: 'hidden', background: '#000', position: 'relative' }}>
-                                <img src={model.image} alt={model.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s' }} className="hover-scale" />
+                    ) : filteredModels.map((model, index) => {
+                        const isSelected = selectedModel.id === model.id;
+                        const isFavorite = favorites.includes(model.id);
 
-                                {/* Overlay Gradient */}
-                                <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '60%', background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }} />
+                        return (
+                            <div
+                                key={model.id}
+                                onClick={() => {
+                                    onSelectModel(model);
+                                    onClose();
+                                }}
+                                style={{
+                                    background: 'rgba(255,255,255,0.02)',
+                                    border: `1px solid ${isSelected ? 'var(--color-accent-primary)' : 'rgba(255,255,255,0.05)'}`,
+                                    borderRadius: '24px',
+                                    overflow: 'hidden',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    position: 'relative'
+                                }}
+                                className="group hover-card"
+                            >
+                                {/* Image Preview */}
+                                <div style={{ aspectRatio: '16/10', overflow: 'hidden', background: '#000', position: 'relative' }}>
+                                    <div className="noise-overlay" />
+                                    <img
+                                        src={model.image}
+                                        alt={model.name}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)' }}
+                                        className="agency-image-filter hover-scale"
+                                    />
 
-                                {/* Favorite Button */}
-                                <button
-                                    onClick={(e) => toggleFavorite(e, model.id)}
-                                    style={{
+                                    {/* Favorite Button */}
+                                    <button
+                                        onClick={(e) => toggleFavorite(e, model.id)}
+                                        style={{
+                                            position: 'absolute',
+                                            top: '16px',
+                                            right: '16px',
+                                            width: '36px',
+                                            height: '36px',
+                                            borderRadius: '50%',
+                                            background: 'rgba(0,0,0,0.4)',
+                                            backdropFilter: 'blur(8px)',
+                                            border: '1px solid rgba(255,255,255,0.1)',
+                                            color: isFavorite ? '#fff' : 'rgba(255,255,255,0.6)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            transition: 'all 0.2s',
+                                            zIndex: 2
+                                        }}
+                                        className="hover:scale-110 active:scale-95"
+                                    >
+                                        <Heart size={16} fill={isFavorite ? '#fff' : 'none'} color={isFavorite ? 'white' : 'currentColor'} />
+                                    </button>
+
+                                    {/* Tech Metadata Overlay */}
+                                    <div style={{
                                         position: 'absolute',
-                                        top: '12px',
-                                        right: '12px',
-                                        padding: '8px',
-                                        borderRadius: '50%',
-                                        background: 'rgba(0,0,0,0.4)',
-                                        backdropFilter: 'blur(4px)',
-                                        border: '1px solid rgba(255,255,255,0.1)',
-                                        color: favorites.includes(model.id) ? '#ff4d4d' : 'white',
-                                        transition: 'transform 0.2s'
-                                    }}
-                                    className="hover:scale-110 active:scale-95"
-                                >
-                                    <Heart size={16} fill={favorites.includes(model.id) ? '#ff4d4d' : 'none'} />
-                                </button>
-                            </div>
+                                        bottom: '16px',
+                                        left: '16px',
+                                        fontFamily: 'monospace',
+                                        fontSize: '9px',
+                                        color: 'rgba(255,255,255,0.5)',
+                                        letterSpacing: '0.1em',
+                                        zIndex: 2,
+                                        pointerEvents: 'none'
+                                    }}>
+                                        REF_{String(index + 1).padStart(3, '0')} // ID: {model.id.toUpperCase()}
+                                    </div>
 
-                            {/* Info */}
-                            <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
-                                    <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: 'white' }}>{model.name}</h3>
-                                    {selectedModel.id === model.id && <div className="pill-badge" style={{ background: 'var(--color-accent-primary)', color: 'black', fontWeight: 'bold' }}>ACTIVE</div>}
+                                    {/* Selection Glow */}
+                                    {isSelected && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            inset: 0,
+                                            border: '2px solid var(--color-accent-primary)',
+                                            borderRadius: 'inherit',
+                                            pointerEvents: 'none',
+                                            zIndex: 3
+                                        }} />
+                                    )}
                                 </div>
-                                <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', lineHeight: '1.5', marginBottom: '16px', flex: 1 }}>
-                                    {model.description}
-                                </p>
-                                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                                    {model.tags && model.tags.map(tag => (
-                                        <span key={tag} style={{
-                                            fontSize: '0.7rem',
-                                            padding: '4px 10px',
-                                            borderRadius: '100px',
-                                            background: 'rgba(255,255,255,0.08)',
-                                            color: '#ccc',
-                                            border: '1px solid rgba(255,255,255,0.05)'
-                                        }}>
-                                            {tag}
-                                        </span>
-                                    ))}
+
+                                {/* Info */}
+                                <div style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                                        <h3 style={{ fontSize: '1.2rem', fontWeight: '400', color: 'white', letterSpacing: '-0.02em' }}>{model.name}</h3>
+                                        {isSelected && (
+                                            <span style={{ fontSize: '9px', fontFamily: 'monospace', color: 'var(--color-accent-primary)', letterSpacing: '0.2em', fontWeight: 'bold' }}>ACTIVE</span>
+                                        )}
+                                    </div>
+
+                                    <p style={{ fontSize: '0.85rem', color: '#888', lineHeight: '1.6', flex: 1, fontFamily: 'var(--font-serif)' }}>
+                                        {model.description}
+                                    </p>
+
+                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                        {model.tags && model.tags.map(tag => (
+                                            <span key={tag} style={{
+                                                fontSize: '10px',
+                                                padding: '4px 12px',
+                                                borderRadius: '100px',
+                                                background: 'rgba(255,255,255,0.03)',
+                                                color: '#666',
+                                                border: '1px solid rgba(255,255,255,0.05)',
+                                                textTransform: 'uppercase',
+                                                letterSpacing: '0.05em'
+                                            }}>
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
             <style>{`
-                .hover-scale { transition: transform 0.4s ease; }
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+                .hover-scale { transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1) !important; }
                 .hover-card:hover .hover-scale { transform: scale(1.05); }
-                .hover-card:hover { border-color: rgba(255,255,255,0.2) !important; background: rgba(255,255,255,0.06) !important; }
+                .hover-card:hover { border-color: rgba(255,255,255,0.2) !important; background: rgba(255,255,255,0.04) !important; transform: translateY(-4px); }
+                
                 @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
-                /* Custom Scrollbar for Modal */
-                ::-webkit-scrollbar { width: 8px; }
-                ::-webkit-scrollbar-track { background: transparent; }
-                ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); borderRadius: 4px; }
-                ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+                
+                .text-reveal-mask { overflow: hidden; }
+                .text-reveal-mask span { 
+                    display: inline-block;
+                    animation: revealUpModal 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+                }
+                
+                @keyframes revealUpModal {
+                    from { transform: translateY(100%); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
             `}</style>
         </div>
     );

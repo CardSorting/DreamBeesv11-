@@ -280,47 +280,53 @@ export default function Generator() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                             {/* Model Selector Trigger */}
                             <div>
-                                <label className="setting-label">MODEL</label>
+                                <label className="setting-label">MODEL ENGINE</label>
                                 <button
                                     onClick={() => setIsModelModalOpen(true)}
                                     style={{
                                         width: '100%',
-                                        padding: '16px',
-                                        borderRadius: '12px',
-                                        background: 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
+                                        padding: '20px',
+                                        borderRadius: '16px',
+                                        background: 'rgba(255,255,255,0.02)',
                                         border: '1px solid var(--color-border)',
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: '16px',
+                                        gap: '20px',
                                         cursor: 'pointer',
                                         textAlign: 'left',
-                                        transition: 'all 0.2s',
+                                        transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                                         position: 'relative',
                                         overflow: 'hidden'
                                     }}
-                                    className="hover:border-white/40"
+                                    className="hover:border-white/20 hover:bg-white/[0.04]"
                                 >
                                     <div style={{
-                                        width: '48px',
-                                        height: '48px',
-                                        borderRadius: '8px',
-                                        background: '#222',
+                                        width: '56px',
+                                        height: '56px',
+                                        borderRadius: '10px',
+                                        background: '#000',
                                         overflow: 'hidden',
-                                        flexShrink: 0
+                                        flexShrink: 0,
+                                        position: 'relative'
                                     }}>
+                                        <div className="noise-overlay" style={{ opacity: 0.2 }} />
                                         {selectedModel.image ? (
-                                            <img src={selectedModel.image} alt={selectedModel.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            <img src={selectedModel.image} alt={selectedModel.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} className="agency-image-filter" />
                                         ) : (
-                                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>
-                                                <ImageIcon size={20} />
+                                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444' }}>
+                                                <ImageIcon size={24} />
                                             </div>
                                         )}
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <div style={{ fontSize: '0.9rem', fontWeight: '600', color: 'white', marginBottom: '4px' }}>{selectedModel.name}</div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{selectedModel.tags?.[0] || 'Standard'}</div>
+                                        <div style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: 'var(--color-accent-primary)', letterSpacing: '0.1em', marginBottom: '4px' }}>
+                                            ENGINE // {selectedModel.id.toUpperCase()}
+                                        </div>
+                                        <div style={{ fontSize: '1.1rem', fontWeight: '400', color: 'white', letterSpacing: '-0.01em' }}>{selectedModel.name}</div>
                                     </div>
-                                    <Settings2 size={16} color="var(--color-text-muted)" />
+                                    <div style={{ opacity: 0.3 }}>
+                                        <ChevronUp size={16} />
+                                    </div>
                                 </button>
                             </div>
 
