@@ -9,6 +9,7 @@ import Auth from './pages/Auth';
 import Generator from './pages/Generator';
 import Gallery from './pages/Gallery';
 import Models from './pages/Models';
+import ImageDetail from './pages/ImageDetail';
 
 function PrivateRoute({ children }) {
   const { currentUser } = useAuth();
@@ -34,6 +35,11 @@ function App() {
                 <Route path="/gallery" element={
                   <PrivateRoute>
                     <Gallery />
+                  </PrivateRoute>
+                } />
+                <Route path="/gallery/:id" element={
+                  <PrivateRoute>
+                    <ImageDetail />
                   </PrivateRoute>
                 } />
                 <Route path="/models" element={
