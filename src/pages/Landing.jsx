@@ -146,42 +146,7 @@ export default function Landing() {
                     pointerEvents: 'none'
                 }} />
 
-                <div style={{
-                    display: 'flex',
-                    width: '200%',
-                    gap: '24px'
-                }} className="animate-marquee">
-                    {[...Array(12)].map((_, i) => (
-                        <div key={i} style={{
-                            flex: '0 0 300px',
-                            height: '200px',
-                            borderRadius: '16px',
-                            overflow: 'hidden',
-                            position: 'relative',
-                            border: '1px solid rgba(255,255,255,0.1)'
-                        }}>
-                            <img
-                                src={`https://picsum.photos/seed/${i + 1337}/600/400`}
-                                alt="AI Generated Art"
-                                style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    objectFit: 'cover',
-                                    transition: 'transform 0.5s ease',
-                                    filter: 'brightness(0.8)'
-                                }}
-                                onMouseOver={(e) => {
-                                    e.target.style.transform = 'scale(1.1)';
-                                    e.target.style.filter = 'brightness(1)';
-                                }}
-                                onMouseOut={(e) => {
-                                    e.target.style.transform = 'scale(1)';
-                                    e.target.style.filter = 'brightness(0.8)';
-                                }}
-                            />
-                        </div>
-                    ))}
-                </div>
+                <MarqueeImages />
             </section>
 
             {/* Detailed Capabilities */}
@@ -440,6 +405,58 @@ function CapabilityCard({ icon, title, description, stat, statLabel }) {
             </div>
         </div>
     );
+}
+
+function MarqueeImages() {
+    // Dynamic import of generated assets
+    const generatedImages = import.meta.glob('../assets/images/landing/*.png', { eager: true, query: '?url', import: 'default' });
+    const generatedImageUrls = Object.values(generatedImages);
+
+    // Fallback if no images generated yet
+    const hasGeneratedCallback = generatedImageUrls.length > 0;
+    const baseImages = hasGeneratedCallback ? generatedImageUrls : [...Array(8)].map((_, i) => `https://picsum.photos/seed/${i + 1337}/600/400`);
+
+    // Triple the array to ensure smooth seamless loop
+    const displayImages = [...baseImages, ...baseImages, ...baseImages];
+
+    return (
+        <div style={{
+            display: 'flex',
+            width: 'max-content', // Allow content to dictate width
+            gap: '24px'
+        }} className="animate-marquee">
+            {displayImages.map((src, i) => (
+                <div key={i} style={{
+                    flex: '0 0 300px',
+                    height: '200px',
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                    position: 'relative',
+                    border: '1px solid rgba(255,255,255,0.1)'
+                }}>
+                    <img
+                        src={src}
+                        alt="AI Generated Art"
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            transition: 'transform 0.5s ease',
+                            filter: 'brightness(0.8)'
+                        }}
+                        onMouseOver={(e) => {
+                            e.target.style.transform = 'scale(1.1)';
+                            e.target.style.filter = 'brightness(1)';
+                        }}
+                        onMouseOut={(e) => {
+                            e.target.style.transform = 'scale(1)';
+                            e.target.style.filter = 'brightness(0.8)';
+                        }}
+                    />
+                </div>
+            ))}
+        </div>
+    )
 }
 
 function FAQItem({ question, answer }) {
