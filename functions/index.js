@@ -61,12 +61,43 @@ export const generateImage = onDocumentCreated(
 
             const { prompt, modelId, userId, negative_prompt, steps, cfg, aspectRatio, scheduler } = data;
 
-            // --- Input Validation ---
-            if (!prompt || typeof prompt !== 'string' || prompt.length > 1000) {
-                // Fail silently or update with error to avoid crash loops, but here we just return/throw
+            // --- Input Validation & Cleaning ---
+            let cleanPrompt = prompt;
+
+            if (!cleanPrompt || typeof cleanPrompt !== 'string') {
                 await snapshot.ref.update({ status: "failed", error: "Invalid prompt" });
                 return;
             }
+
+            // 1. Remove excessive emojis (if > 5)
+            // Regex to match emojis (simplified common ranges)
+            const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
+            const emojiCount = (cleanPrompt.match(emojiRegex) || []).length;
+            if (emojiCount > 5) {
+                // Strip ALL emojis if excessive
+                cleanPrompt = cleanPrompt.replace(emojiRegex, '');
+            }
+
+            // 2. Collapse repeated punctuation/symbols (e.g. "!!!!" -> "!")
+            // Collapse sequences of 3+ same non-alphanumeric chars to 1
+            cleanPrompt = cleanPrompt.replace(/([^a-zA-Z0-9\s])\1{2,}/g, '$1');
+
+            // 3. Remove long number sequences (5+ digits)
+            cleanPrompt = cleanPrompt.replace(/\d{5,}/g, '');
+
+            // 4. Trim and check length
+            cleanPrompt = cleanPrompt.trim();
+
+            if (cleanPrompt.length < 5) {
+                await snapshot.ref.update({ status: "failed", error: "Prompt too short or invalid after cleaning" });
+                return;
+            }
+
+            // Update the prompt to use for generation
+            prompt = cleanPrompt; // We can reassign since we destructured, but better to just use cleanPrompt in calls down below.
+            // Actually, we destructured `prompt` as const above. Let's fix that.
+            // We need to use `cleanPrompt` in the `params` construction later.
+            // -----------------------------------
 
             const validAspectRatios = ['1:1', '2:3', '3:2', '9:16', '16:9'];
             const safeAspectRatio = validAspectRatios.includes(aspectRatio) ? aspectRatio : '1:1';
@@ -111,13 +142,23 @@ export const generateImage = onDocumentCreated(
                 throw new Error("Insufficient credits. Upgrade to Pro or wait for daily reset.");
             }
 
+            // --- Rate Limiting (10s cooldown) ---
+            const lastGenTime = user.lastGenerationTime ? (user.lastGenerationTime.toDate ? user.lastGenerationTime.toDate() : new Date(user.lastGenerationTime)) : new Date(0);
+            if (now - lastGenTime < 10000) { // 10 seconds in ms
+                await snapshot.ref.update({ status: "failed", error: "Rate limit exceeded. Please wait 10 seconds between generations." });
+                return;
+            }
+            // ------------------------------------
+
             // Deduct credit if not Pro (or deduct for Pro too if we want usage tracking, but let's say Pro is unlimited for now or has high cap)
             // For this implementation: Pro = Unlimited, Free = 5 credits.
+            // Deduct credit if not Pro (or deduct for Pro too if we want usage tracking, but let's say Pro is unlimited for now or has high cap)
+            // For this implementation: Pro = Unlimited, Free = 5 credits.
+            const userUpdate = { lastGenerationTime: now };
             if (!isPro) {
-                await userRef.update({
-                    credits: FieldValue.increment(-1)
-                });
+                userUpdate.credits = FieldValue.increment(-1);
             }
+            await userRef.update(userUpdate);
             // --------------------------
 
             if (!B2_KEY_ID) throw new Error("Missing B2 credentials");
@@ -138,7 +179,7 @@ export const generateImage = onDocumentCreated(
 
             // Construct query parameters with user settings or defaults
             const params = new URLSearchParams({
-                prompt: prompt,
+                prompt: cleanPrompt,
                 model: modelId || "cat-carrier",
                 negative_prompt: negative_prompt || "",
                 steps: safeSteps.toString(),
@@ -181,7 +222,7 @@ export const generateImage = onDocumentCreated(
             // 3. Save to main 'images' collection
             const imageDoc = {
                 userId,
-                prompt,
+                prompt: cleanPrompt,
                 negative_prompt: negative_prompt || "",
                 steps: safeSteps,
                 cfg: safeCfg,
@@ -218,9 +259,29 @@ export const createStripeCheckout = onCall(async (request) => {
     const uid = request.auth.uid;
     const email = request.auth.token.email;
 
+    // App Check Verification
+    if (request.app == undefined) {
+        throw new Error("The function must be called from an App Check verified app.");
+    }
+
     if (!uid) {
         throw new Error("Unauthenticated");
     }
+
+    // Rate Limiting for Checkout (Max 1 per minute)
+    const db = getFirestore(); // Ensure db is available or use global if already initialized
+    const userRef = db.collection('users').doc(uid);
+    const userDoc = await userRef.get();
+    const user = userDoc.exists ? userDoc.data() : {};
+
+    const now = new Date();
+    const lastCheckout = user.lastCheckoutSessionTime ? (user.lastCheckoutSessionTime.toDate ? user.lastCheckoutSessionTime.toDate() : new Date(user.lastCheckoutSessionTime)) : new Date(0);
+
+    if (now - lastCheckout < 60000) { // 60 seconds
+        throw new Error("Please wait a minute before creating a new checkout session.");
+    }
+
+    await userRef.set({ lastCheckoutSessionTime: now }, { merge: true });
 
     try {
         const sessionUrl = await createCheckoutSession(uid, email, priceId, successUrl, cancelUrl);
