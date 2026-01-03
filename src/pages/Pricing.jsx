@@ -59,7 +59,7 @@ export default function Pricing() {
         }
     };
 
-    const handleSubscribe = async (priceId) => {
+    const handleSubscribe = async (priceId, mode = 'subscription') => {
         if (!currentUser) {
             toast.error("Please log in to upgrade.");
             return;
@@ -72,6 +72,7 @@ export default function Pricing() {
                 priceId: priceId,
                 successUrl: window.location.origin + '/generator?success=true',
                 cancelUrl: window.location.origin + '/pricing?canceled=true',
+                mode: mode
             });
             window.location.href = result.data.url;
         } catch (error) {
@@ -156,7 +157,7 @@ export default function Pricing() {
                     </h3>
                     <div style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '24px' }}>
                         $10
-                        <span style={{ fontSize: '1rem', fontWeight: 'normal', color: 'var(--color-text-muted)' }}> / month</span>
+                        <span style={{ fontSize: '1rem', fontWeight: 'normal', color: 'var(--color-text-muted)' }}> / 30 days</span>
                     </div>
 
                     <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 40px 0', flex: 1 }}>
@@ -182,23 +183,23 @@ export default function Pricing() {
                         <button
                             className="btn btn-outline"
                             style={{ width: '100%', borderColor: 'var(--color-primary)', color: 'white' }}
-                            onClick={handleManageSubscription}
-                            disabled={loading}
+                            onClick={() => { }} // No portal for one-time payments usually, or just billing history
+                            disabled={true} // Disable for now as portal logic was for subs
                         >
-                            {loading ? 'Opening Portal...' : 'Manage Subscription'}
+                            Active - Expires in 30 days
                         </button>
                     ) : (
                         <button
                             className="btn btn-primary"
                             style={{ width: '100%' }}
-                            onClick={() => handleSubscribe('price_1Qjsd2LkdJw...')} // Placeholder Price ID
+                            onClick={() => handleSubscribe('price_1SlZ0TIA2zQnWbn5xLtW3auh', 'payment')}
                             disabled={loading}
                         >
-                            {loading ? 'Processing...' : 'Upgrade Now'}
+                            {loading ? 'Processing...' : 'Buy 30 Days Access'}
                         </button>
                     )}
                     <p style={{ marginTop: '16px', fontSize: '0.8rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>
-                        *Subject to fair use policy (1000 fast hours)
+                        One-time payment. No auto-renewal.
                     </p>
                 </div>
 

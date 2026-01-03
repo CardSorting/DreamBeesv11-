@@ -344,7 +344,7 @@ export const generateImageTask = onTaskDispatched(
 );
 
 export const createStripeCheckout = onCall(async (request) => {
-    const { priceId, successUrl, cancelUrl } = request.data;
+    const { priceId, successUrl, cancelUrl, mode } = request.data;
     const uid = request.auth.uid;
     const email = request.auth.token.email;
 
@@ -373,7 +373,9 @@ export const createStripeCheckout = onCall(async (request) => {
     await userRef.set({ lastCheckoutSessionTime: now }, { merge: true });
 
     try {
-        const sessionUrl = await createCheckoutSession(uid, email, priceId, successUrl, cancelUrl);
+        // Default mode to 'subscription' if not provided, unless we logic it out. 
+        // Or let helper default it.
+        const sessionUrl = await createCheckoutSession(uid, email, priceId, successUrl, cancelUrl, mode);
         return { url: sessionUrl };
     } catch (error) {
         console.error("Stripe Checkout Error:", error);

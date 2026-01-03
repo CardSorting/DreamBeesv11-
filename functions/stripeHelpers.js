@@ -29,12 +29,13 @@ const stripeClient = (() => {
  * @param {string} priceId - The Stripe Price ID to subscribe to.
  * @param {string} successUrl - URL to redirect to on success.
  * @param {string} cancelUrl - URL to redirect to on cancellation.
+ * @param {string} mode - 'subscription' or 'payment'
  * @returns {Promise<string>} The session URL.
  */
-export async function createCheckoutSession(userId, email, priceId, successUrl, cancelUrl) {
+export async function createCheckoutSession(userId, email, priceId, successUrl, cancelUrl, mode = 'subscription') {
     const stripe = stripeClient();
     const session = await stripe.checkout.sessions.create({
-        mode: 'subscription',
+        mode: mode,
         payment_method_types: ['card'],
         customer_email: email,
         line_items: [
