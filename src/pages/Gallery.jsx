@@ -138,7 +138,8 @@ export default function Gallery() {
                                 cursor: 'pointer',
                                 borderRadius: 'var(--radius-md)',
                                 overflow: 'hidden',
-                                background: 'var(--color-surface)'
+                                background: 'var(--color-surface)',
+                                animationDelay: `${i * 0.05}s` // Dynamic stagger
                             }}
                         >
                             <img
