@@ -116,14 +116,35 @@ export default function Gallery() {
             </header>
 
             {loading ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2px' }}>
-                    {[...Array(6)].map((_, i) => (
-                        <div key={i} style={{ aspectRatio: '1', background: 'var(--color-surface)', opacity: 0.5 }} className="animate-pulse-slow" />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
+                    {[...Array(9)].map((_, i) => (
+                        <div key={i} style={{
+                            aspectRatio: '1',
+                            background: 'var(--color-surface)',
+                            borderRadius: 'var(--radius-md)',
+                            animation: 'pulseSubtle 2s infinite',
+                            animationDelay: `${i * 0.1}s`
+                        }} />
                     ))}
                 </div>
             ) : filteredImages.length === 0 ? (
-                <div style={{ padding: '120px 0', textAlign: 'center', border: '1px dashed var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
-                    <p style={{ color: 'var(--color-text-muted)', marginBottom: '24px' }}>No creations found.</p>
+                <div style={{ padding: '120px 0', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{
+                        width: '80px', height: '80px', borderRadius: '50%',
+                        background: 'var(--color-surface)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        marginBottom: '24px',
+                        color: 'var(--color-text-dim)'
+                    }}>
+                        <Search size={32} />
+                    </div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: 'white', marginBottom: '8px' }}>The void is waiting.</h3>
+                    <p style={{ color: 'var(--color-text-muted)', maxWidth: '300px', lineHeight: 1.5 }}>
+                        Your gallery is empty. Start generating to fill this space with your imagination.
+                    </p>
+                    <Link to="/generate" className="btn btn-primary" style={{ marginTop: '32px' }}>
+                        Start Creating
+                    </Link>
                 </div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>

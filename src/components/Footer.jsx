@@ -1,83 +1,105 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Github, Twitter, Heart, Sparkles, Linkedin, Instagram } from 'lucide-react';
+import { Github, Twitter, Linkedin, Instagram, ArrowUpRight } from 'lucide-react';
 
 export default function Footer() {
     return (
         <footer style={{
             borderTop: '1px solid var(--color-border)',
             background: 'var(--color-bg)',
-            padding: '80px 0 40px',
-            marginTop: 'auto'
+            padding: '120px 0 60px',
+            marginTop: 'auto',
+            position: 'relative',
+            overflow: 'hidden'
         }}>
             <div className="container">
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: '60px',
-                    marginBottom: '80px'
-                }}>
-                    {/* Brand Section */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', fontWeight: 'bold', fontSize: '1.2rem', color: 'white' }}>
-                            <div style={{
-                                width: '28px', height: '28px', borderRadius: '6px',
-                                background: 'white',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: '12px', fontWeight: '900', color: 'black'
-                            }}>DB</div>
-                            DreamBees
-                        </Link>
-                        <p style={{ color: 'var(--color-text-muted)', lineHeight: '1.6', maxWidth: '300px', fontSize: '0.9rem' }}>
-                            Pioneering the future of generative media with professional-grade tools for creators and enterprises.
+
+                {/* Top Section: CTA & Newsletter */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '80px', marginBottom: '120px' }}>
+
+                    <div style={{ maxWidth: '500px' }}>
+                        <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: '800', lineHeight: 1, letterSpacing: '-0.03em', color: 'white', marginBottom: '24px' }}>
+                            Stay in the flow.
+                        </h2>
+                        <p style={{ color: 'var(--color-text-muted)', fontSize: '1.1rem', lineHeight: 1.5, marginBottom: '40px' }}>
+                            Join the newsletter for updates on new models, specialized workflows, and featured artist showcases.
                         </p>
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                            <SocialIcon icon={Github} />
-                            <SocialIcon icon={Twitter} />
-                            <SocialIcon icon={Instagram} />
-                            <SocialIcon icon={Linkedin} />
+
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                            <input
+                                type="email"
+                                placeholder="Enter your email"
+                                style={{
+                                    flex: 1,
+                                    minWidth: '240px',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    borderBottom: '1px solid var(--color-border)',
+                                    padding: '12px 0',
+                                    fontSize: '1rem',
+                                    color: 'white',
+                                    borderRadius: 0,
+                                    outline: 'none'
+                                }}
+                            />
+                            <button className="btn btn-outline" style={{ borderRadius: '99px', padding: '0 24px' }}>
+                                Subscribe
+                            </button>
                         </div>
                     </div>
 
-                    {/* Columns */}
-                    <FooterColumn title="Platform">
-                        <FooterLink to="/generate">Generate</FooterLink>
-                        <FooterLink to="/models">Models</FooterLink>
-                        <FooterLink to="/gallery">Gallery</FooterLink>
-                        <FooterLink to="/features">Features</FooterLink>
-                    </FooterColumn>
-
-                    <FooterColumn title="Company">
-                        <FooterLink to="/about">About</FooterLink>
-                        <FooterLink to="/careers">Careers</FooterLink>
-                        <FooterLink to="/blog">Blog</FooterLink>
-                        <FooterLink to="/contact">Contact</FooterLink>
-                    </FooterColumn>
-
-                    <FooterColumn title="Legal">
-                        <FooterLink to="/privacy">Privacy Policy</FooterLink>
-                        <FooterLink to="/terms">Terms of Service</FooterLink>
-                        <FooterLink to="/cookies">Cookie Policy</FooterLink>
-                    </FooterColumn>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
+                        <FooterColumn title="Platform">
+                            <FooterLink to="/generate">Studio</FooterLink>
+                            <FooterLink to="/gallery">Gallery</FooterLink>
+                            <FooterLink to="/pricing">Pricing</FooterLink>
+                            <FooterLink to="/models">Models</FooterLink>
+                        </FooterColumn>
+                        <FooterColumn title="Studio">
+                            <FooterLink to="/about">About Us</FooterLink>
+                            <FooterLink to="/careers">Careers</FooterLink>
+                            <FooterLink to="/brand">Brand Assets</FooterLink>
+                            <FooterLink to="/contact">Contact</FooterLink>
+                        </FooterColumn>
+                    </div>
 
                 </div>
 
+                {/* Bottom Section: Legal & Social */}
                 <div style={{
                     borderTop: '1px solid var(--color-border)',
-                    paddingTop: '32px',
+                    paddingTop: '40px',
                     display: 'flex',
-                    flexWrap: 'wrap',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: '20px',
-                    fontSize: '0.85rem',
-                    color: 'var(--color-zinc-700)'
+                    flexDirection: 'column',
+                    gap: '40px'
                 }}>
-                    <p>© {new Date().getFullYear()} DreamBees Inc.</p>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        Designed in California
+                    <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '20px', alignItems: 'flex-end' }}>
+                        {/* Huge Brand Name */}
+                        <div style={{ fontSize: '14vw', lineHeight: 0.8, fontWeight: '900', letterSpacing: '-0.06em', color: 'var(--color-zinc-900)', userSelect: 'none', pointerEvents: 'none', marginLeft: '-0.5vw' }}>
+                            DREAMBEES
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px', fontSize: '0.9rem', color: 'var(--color-text-dim)' }}>
+                        <div style={{ display: 'flex', gap: '24px' }}>
+                            <Link to="/privacy">Privacy</Link>
+                            <Link to="/terms">Terms</Link>
+                            <Link to="/cookies">Cookies</Link>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '16px' }}>
+                            <SocialLink icon={Twitter} href="#" />
+                            <SocialLink icon={Github} href="#" />
+                            <SocialLink icon={Instagram} href="#" />
+                            <SocialLink icon={Linkedin} href="#" />
+                        </div>
+
+                        <div>
+                            &copy; {new Date().getFullYear()} DreamBees Inc.
+                        </div>
                     </div>
                 </div>
+
             </div>
         </footer>
     );
@@ -86,43 +108,24 @@ export default function Footer() {
 function FooterColumn({ title, children }) {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <h4 style={{ fontSize: '0.9rem', fontWeight: '600', color: 'white', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{title}</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {children}
-            </div>
+            <h4 style={{ fontSize: '0.85rem', fontWeight: '700', color: 'white', letterSpacing: '0.05em', textTransform: 'uppercase' }}>{title}</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>{children}</div>
         </div>
     )
 }
 
 function FooterLink({ to, children }) {
     return (
-        <Link to={to} style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', transition: 'color 0.2s' }}
-            onMouseEnter={(e) => e.target.style.color = 'white'}
-            onMouseLeave={(e) => e.target.style.color = 'var(--color-text-muted)'}>
+        <Link to={to} className="footer-link" style={{ color: 'var(--color-text-muted)', fontSize: '1rem', transition: 'color 0.2s', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
             {children}
         </Link>
     )
 }
 
-function SocialIcon({ icon: Icon }) {
+function SocialLink({ icon: Icon, href }) {
     return (
-        <a href="#" style={{
-            width: '36px', height: '36px', borderRadius: '50%',
-            border: '1px solid var(--color-border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'var(--color-text-muted)',
-            transition: 'all 0.2s'
-        }}
-            onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'white';
-                e.currentTarget.style.color = 'white';
-            }}
-            onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--color-border)';
-                e.currentTarget.style.color = 'var(--color-text-muted)';
-            }}
-        >
-            <Icon size={16} />
+        <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-text-muted)', transition: 'color 0.2s' }}>
+            <Icon size={20} />
         </a>
     )
 }
