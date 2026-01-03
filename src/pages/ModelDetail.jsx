@@ -198,9 +198,23 @@ export default function ModelDetail() {
                         : images;
                     setShowcaseImages(displayImages);
                 } else {
-                    // SEEDING: If collection is empty, migrate previewImages
+                    // SEEDING: Check for local showcase manifest or migrate previewImages
                     console.log('Seeding showcase images for', model.id);
-                    const seeds = model.previewImages || [model.image];
+                    let seeds = [];
+
+                    try {
+                        const manifestRes = await fetch(`/showcase/${model.id}/manifest.json`);
+                        if (manifestRes.ok) {
+                            seeds = await manifestRes.json();
+                            console.log('Found local showcase manifest:', seeds);
+                        }
+                    } catch (e) {
+                        console.log('No local manifest found, using previewImages');
+                    }
+
+                    if (seeds.length === 0) {
+                        seeds = model.previewImages || [model.image];
+                    }
 
                     // Optimistically set UI
                     const displaySeeds = seeds.length < 6
