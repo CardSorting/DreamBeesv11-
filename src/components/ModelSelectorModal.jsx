@@ -300,6 +300,32 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
                                         {model.description}
                                     </p>
 
+                                    {/* Preview Gallery */}
+                                    {model.previewImages && model.previewImages.length > 0 && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            <div style={{ fontSize: '8px', fontFamily: 'monospace', color: '#444', letterSpacing: '0.1em' }}>EXAMPLES //</div>
+                                            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }} className="no-scrollbar">
+                                                {model.previewImages.map((img, i) => (
+                                                    <div key={i} style={{ position: 'relative', flexShrink: 0 }}>
+                                                        <img
+                                                            src={img}
+                                                            alt={`Preview ${i}`}
+                                                            style={{
+                                                                width: '100px',
+                                                                height: '100px',
+                                                                borderRadius: '12px',
+                                                                objectFit: 'cover',
+                                                                border: '1px solid rgba(255,255,255,0.05)',
+                                                                transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+                                                            }}
+                                                            className="hover:scale-105"
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                                         {model.tags && model.tags.map(tag => (
                                             <span key={tag} style={{
