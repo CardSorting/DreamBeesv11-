@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
-import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight } from 'lucide-react';
+import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight, X, Download, Copy, RefreshCw } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -27,6 +27,138 @@ const CustomCursor = ({ isHovering }) => {
     );
 };
 
+const ShowcaseModal = ({ image, onClose, model }) => {
+    if (!image) return null;
+
+    return (
+        <div style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'var(--color-bg)',
+            display: 'flex', flexDirection: 'column',
+            animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+        }}>
+            {/* Top Bar */}
+            <div style={{
+                height: '60px', borderBottom: '1px solid var(--color-border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '0 20px', background: 'var(--color-bg)'
+            }}>
+                <button
+                    onClick={onClose}
+                    className="flex-center"
+                    style={{ gap: '8px', color: 'var(--color-text-muted)', fontSize: '0.9rem', fontWeight: '500', transition: 'color 0.2s', background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                    <ArrowLeft size={16} /> Back to Gallery
+                </button>
+
+                <div className="flex-center" style={{ gap: '12px' }}>
+                    <a href={image} download={`db-showcase.png`} className="btn-ghost" title="Download">
+                        <Download size={18} />
+                    </a>
+                    <button onClick={onClose} className="btn-ghost" title="Close" style={{ marginLeft: '12px' }}>
+                        <X size={24} />
+                    </button>
+                </div>
+            </div>
+
+            {/* Split Layout */}
+            <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+
+                {/* Image View */}
+                <div style={{
+                    flex: 1,
+                    background: '#050505',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '40px',
+                    position: 'relative'
+                }}>
+                    <img
+                        src={image}
+                        alt="Showcase Detail"
+                        style={{
+                            maxWidth: '100%', maxHeight: '100%',
+                            boxShadow: '0 0 50px rgba(0,0,0,0.5)',
+                            objectFit: 'contain'
+                        }}
+                    />
+                </div>
+
+                {/* Info Panel */}
+                <div style={{
+                    width: '400px',
+                    borderLeft: '1px solid var(--color-border)',
+                    background: 'var(--color-bg)',
+                    overflowY: 'auto',
+                    padding: '32px'
+                }}>
+                    <div style={{ marginBottom: '40px' }}>
+                        <label className="meta-label">PROMPT</label>
+                        <p style={{ fontSize: '1.1rem', lineHeight: '1.6', color: 'white', fontWeight: '400', fontStyle: 'italic', opacity: 0.8 }}>
+                            "This is a curated showcase generation demonstrating the capabilities of {model?.name || 'this model'}. High-fidelity details and texture handling are key characteristics shown here."
+                        </p>
+                    </div>
+
+                    <div style={{ height: '1px', background: 'var(--color-border)', margin: '0 0 40px 0' }} />
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px 12px' }}>
+                        <div>
+                            <label className="meta-label">MODEL</label>
+                            <div className="meta-value">{model?.name || 'Unknown'}</div>
+                        </div>
+                        <div>
+                            <label className="meta-label">BASE</label>
+                            <div className="meta-value">SDXL 1.0</div>
+                        </div>
+                        <div>
+                            <label className="meta-label">SOURCE</label>
+                            <div className="meta-value">Official Showcase</div>
+                        </div>
+                        <div>
+                            <label className="meta-label">LICENSE</label>
+                            <div className="meta-value">Commercial</div>
+                        </div>
+                    </div>
+
+                    <div style={{ marginTop: '60px' }}>
+                        <div className="p-4 rounded-lg border border-[var(--color-border)] bg-[rgba(255,255,255,0.03)]">
+                            <h4 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
+                                <Sparkles size={14} className="text-[var(--color-accent-primary)]" />
+                                INSPIRED?
+                            </h4>
+                            <p className="text-sm text-[var(--color-text-muted)] mb-4">
+                                Activate this model engine to generate similar high-quality results.
+                            </p>
+                            <button
+                                onClick={onClose}
+                                className="btn btn-outline w-full justify-center text-xs"
+                            >
+                                START CREATING
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <style>{`
+                .meta-label {
+                    font-size: 0.7rem;
+                    font-weight: 700;
+                    letter-spacing: 0.05em;
+                    color: var(--color-text-dim);
+                    text-transform: uppercase;
+                    display: block;
+                    margin-bottom: 8px;
+                }
+                .meta-value {
+                    font-size: 0.95rem;
+                    font-weight: 500;
+                    color: white;
+                }
+            `}</style>
+        </div>
+    );
+};
+
 export default function ModelDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -35,6 +167,7 @@ export default function ModelDetail() {
     const [isHovering, setIsHovering] = useState(false);
     const [scrollY, setScrollY] = useState(0);
     const [showcaseImages, setShowcaseImages] = useState([]);
+    const [activeShowcaseImage, setActiveShowcaseImage] = useState(null);
 
     useEffect(() => {
         if (availableModels.length > 0) {
@@ -285,6 +418,7 @@ export default function ModelDetail() {
                                 <div
                                     key={index}
                                     className="masonry-item"
+                                    onClick={() => setActiveShowcaseImage(imgSrc)}
                                     onMouseEnter={() => setIsHovering(true)}
                                     onMouseLeave={() => setIsHovering(false)}
                                     style={{
@@ -308,6 +442,15 @@ export default function ModelDetail() {
                         })}
                     </div>
                 </div>
+
+                {/* Lightbox Modal */}
+                {activeShowcaseImage && (
+                    <ShowcaseModal
+                        image={activeShowcaseImage}
+                        model={model}
+                        onClose={() => setActiveShowcaseImage(null)}
+                    />
+                )}
 
             </div>
 
