@@ -18,6 +18,9 @@ const app = initializeApp(firebaseConfig);
 // Initialize App Check
 // TODO: Replace "YOUR_RECAPTCHA_ENTERPRISE_SITE_KEY" with your actual key from Firebase Console
 if (typeof window !== "undefined") {
+  if (import.meta.env.DEV) {
+    self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+  }
   initializeAppCheck(app, {
     provider: new ReCaptchaEnterpriseProvider("6LfV7z4sAAAAABQiwI8KMolvCaBoc1mkUvDXqkq5"),
     isTokenAutoRefreshEnabled: true,
