@@ -67,7 +67,7 @@ export default function Gallery() {
     };
 
     return (
-        <div className="container" style={{ paddingTop: '120px', paddingBottom: '120px' }}>
+        <div className="container" style={{ paddingTop: '140px', paddingBottom: '120px' }}>
 
             {/* Header */}
             <header style={{ marginBottom: '40px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
@@ -148,7 +148,7 @@ export default function Gallery() {
                 </div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '24px' }}>
-                    {filteredImages.map(img => (
+                    {filteredImages.map((img, i) => (
                         <div
                             key={img.id}
                             className={`fade-in gallery-item-wrapper ${isSelectionMode && selectedIds.includes(img.id) ? 'selected' : ''}`}

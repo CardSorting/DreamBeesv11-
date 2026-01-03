@@ -46,7 +46,7 @@ export default function Auth() {
     const heroImage = "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=1974&auto=format&fit=crop";
 
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', background: '#000' }}>
+        <div style={{ display: 'flex', minHeight: '100vh', background: '#000', paddingTop: '100px' }}>
 
             {/* Left: Brand / Art Showcase (Hidden on Mobile) */}
             <div className="hidden-mobile" style={{

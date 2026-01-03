@@ -163,7 +163,7 @@ export default function Generator() {
     };
 
     return (
-        <div style={{ paddingTop: '100px', paddingBottom: '40px', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ paddingTop: '140px', paddingBottom: '40px', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
             <div className="container" style={{ flex: 1, display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 340px', gap: '32px' }}>
 
                 {/* Left: Canvas / Input */}

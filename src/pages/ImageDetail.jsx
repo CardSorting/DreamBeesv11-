@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { db } from '../firebase';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
-import { Download, Trash2, ArrowLeft, Loader2, RefreshCw, Link as LinkIcon, Info, Sliders, Layers, X } from 'lucide-react';
+import { Download, Trash2, ArrowLeft, Loader2, RefreshCw, Link as LinkIcon, Info, Sliders, Layers, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { AVAILABLE_MODELS } from '../contexts/ModelContext';
 import toast from 'react-hot-toast';
 
@@ -13,6 +13,7 @@ export default function ImageDetail() {
     const { currentUser } = useAuth();
     const [image, setImage] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [showFullPrompt, setShowFullPrompt] = useState(false);
 
     const modelName = image ? (AVAILABLE_MODELS.find(m => m.id === image.modelId)?.name || 'SDXL Model') : 'Loading...';
 
@@ -66,8 +67,10 @@ export default function ImageDetail() {
 
     if (!image) return null;
 
+    const isLongPrompt = image.prompt.length > 300;
+
     return (
-        <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ height: '100vh', paddingTop: '100px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
             {/* Top Navigation Bar */}
             <div style={{
@@ -121,19 +124,46 @@ export default function ImageDetail() {
                     overflowY: 'auto',
                     padding: '32px'
                 }}>
-                    <div style={{ marginBottom: '40px' }}>
+                    <div style={{ marginBottom: '40px', position: 'relative' }}>
                         <label style={{ fontSize: '0.75rem', fontWeight: '700', letterSpacing: '0.05em', color: 'var(--color-text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: '12px' }}>
                             PROMPT
                         </label>
-                        <p style={{ fontSize: '1.1rem', lineHeight: '1.6', color: 'white', fontWeight: '400' }}>
-                            {image.prompt}
-                        </p>
-                        <button
-                            onClick={() => handleCopy(image.prompt)}
-                            style={{ marginTop: '12px', fontSize: '0.8rem', color: 'var(--color-accent-primary)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontWeight: '500' }}
-                        >
-                            Copy Prompt
-                        </button>
+
+                        <div style={{
+                            position: 'relative',
+                            maxHeight: showFullPrompt ? 'none' : '200px',
+                            overflow: 'hidden',
+                            transition: 'max-height 0.3s ease'
+                        }}>
+                            <p style={{ fontSize: '1.1rem', lineHeight: '1.6', color: 'white', fontWeight: '400', wordBreak: 'break-word' }}>
+                                {image.prompt}
+                            </p>
+                            {!showFullPrompt && isLongPrompt && (
+                                <div style={{
+                                    position: 'absolute', bottom: 0, left: 0, width: '100%', height: '80px',
+                                    background: 'linear-gradient(to bottom, transparent, var(--color-bg))',
+                                    pointerEvents: 'none'
+                                }} />
+                            )}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '16px', marginTop: '12px' }}>
+                            <button
+                                onClick={() => handleCopy(image.prompt)}
+                                style={{ fontSize: '0.8rem', color: 'var(--color-accent-primary)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontWeight: '500' }}
+                            >
+                                Copy Prompt
+                            </button>
+                            {isLongPrompt && (
+                                <button
+                                    onClick={() => setShowFullPrompt(!showFullPrompt)}
+                                    style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                    {showFullPrompt ? <>Show Less <ChevronUp size={14} /></> : <>Read All <ChevronDown size={14} /></>}
+                                </button>
+                            )}
+                        </div>
+
                     </div>
 
                     {image.negative_prompt && (
@@ -156,7 +186,13 @@ export default function ImageDetail() {
                         </div>
                         <div>
                             <label className="meta-label">DIMENSIONS</label>
-                            <div className="meta-value">1024 x 1024</div> {/* Assuming default, read from aspect ratio if avail */}
+                            <div className="meta-value">
+                                {image.aspectRatio === '1:1' ? '1024 x 1024' :
+                                    image.aspectRatio === '16:9' ? '1216 x 832' :
+                                        image.aspectRatio === '9:16' ? '832 x 1216' :
+                                            image.aspectRatio === '3:2' ? '1216 x 832' :
+                                                '1024 x 1024'}
+                            </div>
                         </div>
                         <div>
                             <label className="meta-label">STEPS</label>
