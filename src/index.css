@@ -204,6 +204,15 @@ button {
   animation: pulseFast 0.8s ease-in-out infinite;
 }
 
+@keyframes ping {
+
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
 /* Marquee Animation */
 @keyframes marquee {
   0% {

@@ -59,6 +59,7 @@ export default function Generator() {
     // Microphone State
     const [isListening, setIsListening] = useState(false);
     const [speechRecognition, setSpeechRecognition] = useState(null);
+    const [interimTrans, setInterimTrans] = useState('');
 
     // Initialize Speech Recognition
     useEffect(() => {
@@ -70,30 +71,35 @@ export default function Generator() {
             recognition.lang = 'en-US';
 
             recognition.onresult = (event) => {
-                let interimTranscript = '';
+                let interimHelper = '';
                 let finalTranscript = '';
 
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
                         finalTranscript += event.results[i][0].transcript;
                     } else {
-                        interimTranscript += event.results[i][0].transcript;
+                        interimHelper += event.results[i][0].transcript;
                     }
                 }
 
                 if (finalTranscript) {
                     setPrompt(prev => prev + (prev.length > 0 && !prev.endsWith(' ') ? ' ' : '') + finalTranscript);
+                    setInterimTrans(''); // Clear interim when finalized
+                } else {
+                    setInterimTrans(interimHelper);
                 }
             };
 
             recognition.onerror = (event) => {
                 console.error("Speech recognition error", event.error);
                 setIsListening(false);
+                setInterimTrans('');
                 toast.error("Microphone error: " + event.error);
             };
 
             recognition.onend = () => {
                 setIsListening(false);
+                setInterimTrans('');
             };
 
             setSpeechRecognition(recognition);
@@ -293,6 +299,28 @@ export default function Generator() {
                                 </div>
                             </div>
 
+                            {/* Interim Result Overlay */}
+                            {isListening && interimTrans && (
+                                <div className="fade-in" style={{
+                                    position: 'absolute',
+                                    bottom: '60px',
+                                    right: '12px',
+                                    background: 'rgba(139, 92, 246, 0.9)',
+                                    color: 'white',
+                                    padding: '8px 12px',
+                                    borderRadius: '12px 12px 0 12px',
+                                    fontSize: '0.9rem',
+                                    maxWidth: '250px',
+                                    backdropFilter: 'blur(4px)',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                                    border: '1px solid rgba(255,255,255,0.2)',
+                                    zIndex: 20,
+                                    pointerEvents: 'none'
+                                }}>
+                                    "{interimTrans}..."
+                                </div>
+                            )}
+
                             {/* Microphone Button */}
                             <button
                                 onClick={toggleListening}
@@ -313,11 +341,19 @@ export default function Generator() {
                                     color: 'white',
                                     cursor: 'pointer',
                                     transition: 'all 0.2s ease',
-                                    zIndex: 10,
-                                    animation: isListening ? 'pulseFast 1.5s infinite' : 'none',
-                                    boxShadow: isListening ? '0 0 10px #ef4444' : 'none'
+                                    zIndex: 10
                                 }}
                             >
+                                {isListening && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        inset: -4,
+                                        borderRadius: '50%',
+                                        border: '2px solid #ef4444',
+                                        animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite',
+                                        opacity: 0.5
+                                    }} />
+                                )}
                                 {isListening ? <MicOff size={18} /> : <Mic size={18} />}
                             </button>
 
