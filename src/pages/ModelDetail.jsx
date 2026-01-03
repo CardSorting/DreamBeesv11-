@@ -2,6 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
 import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight } from 'lucide-react';
+import { db } from '../firebase';
+import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const CustomCursor = ({ isHovering }) => {
     const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -32,6 +34,7 @@ export default function ModelDetail() {
     const [model, setModel] = useState(null);
     const [isHovering, setIsHovering] = useState(false);
     const [scrollY, setScrollY] = useState(0);
+    const [showcaseImages, setShowcaseImages] = useState([]);
 
     useEffect(() => {
         if (availableModels.length > 0) {
@@ -41,6 +44,56 @@ export default function ModelDetail() {
             }
         }
     }, [id, availableModels]);
+
+    // Fetch or Seed Showcase Images
+    useEffect(() => {
+        if (!model) return;
+
+        const fetchShowcase = async () => {
+            try {
+                const q = query(
+                    collection(db, 'model_showcase_images'),
+                    where('modelId', '==', model.id)
+                );
+                const snapshot = await getDocs(q);
+
+                if (!snapshot.empty) {
+                    const images = snapshot.docs.map(doc => doc.data().imageUrl);
+                    // Duplicate for effect if too few
+                    const displayImages = images.length < 6
+                        ? [...images, ...images, ...images].slice(0, 15)
+                        : images;
+                    setShowcaseImages(displayImages);
+                } else {
+                    // SEEDING: If collection is empty, migrate previewImages
+                    console.log('Seeding showcase images for', model.id);
+                    const seeds = model.previewImages || [model.image];
+
+                    // Optimistically set UI
+                    const displaySeeds = seeds.length < 6
+                        ? [...seeds, ...seeds, ...seeds].slice(0, 15)
+                        : seeds;
+                    setShowcaseImages(displaySeeds);
+
+                    // Write to DB in background
+                    seeds.forEach(async (url) => {
+                        await addDoc(collection(db, 'model_showcase_images'), {
+                            modelId: model.id,
+                            imageUrl: url,
+                            createdAt: serverTimestamp(),
+                            isCurated: true
+                        });
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching showcase:", error);
+                // Fallback
+                setShowcaseImages(model.previewImages || [model.image]);
+            }
+        };
+
+        fetchShowcase();
+    }, [model]);
 
     useEffect(() => {
         const handleScroll = () => setScrollY(window.scrollY);
@@ -57,12 +110,8 @@ export default function ModelDetail() {
     }
 
     const isActive = selectedModel?.id === model.id;
-    // Ensure we have enough images for a feed
-    const baseImages = model.previewImages || [model.image];
-    // Create a larger set for the feed impression if needed
-    const feedImages = baseImages.length < 6
-        ? [...baseImages, ...baseImages, ...baseImages].slice(0, 15)
-        : baseImages;
+    // Use the fetched showcase images, defaulting to empty array until loaded to prevent flash
+    const imagesToRender = showcaseImages.length > 0 ? showcaseImages : (model.previewImages || []);
 
     return (
         <div className="cursor-none" style={{ background: '#0a0a0a', minHeight: '100vh', color: '#e5e5e5', position: 'relative' }}>
@@ -226,7 +275,7 @@ export default function ModelDetail() {
                     animation: 'fadeIn 1.5s ease 0.4s both'
                 }}>
                     <div className="masonry-grid">
-                        {feedImages.map((imgSrc, index) => {
+                        {imagesToRender.map((imgSrc, index) => {
                             // Pseudo-random aspect ratio based on index
                             // 0: Square (1/1), 1: Portrait (2/3), 2: Square, 3: Tall (9/16), 4: Landscape (4/3) 
                             const ratios = ['1/1', '3/4', '1/1', '2/3', '4/3', '1/1', '3/5'];
