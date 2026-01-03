@@ -3,7 +3,7 @@ import { useModel } from '../contexts/ModelContext';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp, doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, Sparkles, Image as ImageIcon, Cpu, Settings, Trash2, ChevronDown, ChevronUp, Square, RectangleHorizontal, RectangleVertical } from 'lucide-react';
+import { Loader2, Sparkles, Image as ImageIcon, Cpu, Settings, Trash2, ChevronDown, ChevronUp, Square, RectangleHorizontal, RectangleVertical, Mic, MicOff } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -55,6 +55,66 @@ export default function Generator() {
             setShowAdvanced(true);
         }
     }, [searchParams]);
+
+    // Microphone State
+    const [isListening, setIsListening] = useState(false);
+    const [speechRecognition, setSpeechRecognition] = useState(null);
+
+    // Initialize Speech Recognition
+    useEffect(() => {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+
+                if (finalTranscript) {
+                    setPrompt(prev => prev + (prev.length > 0 && !prev.endsWith(' ') ? ' ' : '') + finalTranscript);
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Speech recognition error", event.error);
+                setIsListening(false);
+                toast.error("Microphone error: " + event.error);
+            };
+
+            recognition.onend = () => {
+                setIsListening(false);
+            };
+
+            setSpeechRecognition(recognition);
+        }
+    }, []);
+
+    const toggleListening = () => {
+        if (!speechRecognition) {
+            toast.error("Speech recognition is not supported in this browser.");
+            return;
+        }
+
+        if (isListening) {
+            speechRecognition.stop();
+            setIsListening(false);
+        } else {
+            speechRecognition.start();
+            setIsListening(true);
+            toast.success("Listening...", { icon: '🎙️' });
+        }
+    };
 
     const GENERATION_STAGES = [
         { id: 'queue', label: 'Warming up the AI engines...', progress: 15 },
@@ -232,6 +292,35 @@ export default function Generator() {
                                     )}
                                 </div>
                             </div>
+
+                            {/* Microphone Button */}
+                            <button
+                                onClick={toggleListening}
+                                className={`mic-button ${isListening ? 'active' : ''}`}
+                                title={isListening ? "Stop Listening" : "Start Dictation"}
+                                style={{
+                                    position: 'absolute',
+                                    bottom: '12px',
+                                    right: '12px', // Positioned inside the wrapper
+                                    background: isListening ? '#ef4444' : 'rgba(255,255,255,0.1)',
+                                    border: 'none',
+                                    borderRadius: '50%',
+                                    width: '36px',
+                                    height: '36px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    zIndex: 10,
+                                    animation: isListening ? 'pulseFast 1.5s infinite' : 'none',
+                                    boxShadow: isListening ? '0 0 10px #ef4444' : 'none'
+                                }}
+                            >
+                                {isListening ? <MicOff size={18} /> : <Mic size={18} />}
+                            </button>
+
 
                             <textarea
                                 placeholder="A futuristic cyberpunk city with neon lights, realistic, 8k..."
