@@ -593,3 +593,59 @@ input[type=range]::-webkit-slider-runnable-track {
   color: white;
   white-space: nowrap;
 }
+
+/* Mobile Generator Styles */
+.generator-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: 8px;
+}
+
+.generator-page-container {
+  padding-top: 100px;
+  padding-bottom: 40px;
+}
+
+@media (max-width: 640px) {
+  .generator-page-container {
+    padding-top: 80px;
+    padding-bottom: 80px;
+    /* More bottom padding for nav/action bars */
+  }
+
+  .generator-input-wrapper {
+    margin-bottom: 16px;
+    padding: 6px;
+  }
+
+  .generator-input {
+    font-size: 1rem;
+    padding: 12px;
+    height: 100px;
+    /* Taller on mobile for better visibility */
+  }
+
+  .generator-actions {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .generator-actions>div:first-child {
+    /* Quick Model Badge Container */
+    order: 2;
+    /* Move below button or keep above? Let's move below for better button reachability */
+    justify-content: center;
+  }
+
+  .generator-actions button {
+    width: 100%;
+    order: 1;
+    /* Button first for thumb access */
+    padding: 14px;
+    /* Larger touch target */
+  }
+}

@@ -193,7 +193,7 @@ export default function Generator() {
     }
 
     return (
-        <div className="container" style={{ paddingTop: '100px', paddingBottom: '40px' }}>
+        <div className="container generator-page-container">
             <div style={{ maxWidth: '800px', margin: '0 auto' }}>
                 <header style={{ marginBottom: '50px', textAlign: 'center' }}>
                     <h1 style={{
@@ -253,7 +253,7 @@ export default function Generator() {
                             />
                         </div>
 
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '8px' }}>
+                        <div className="generator-actions">
                             <div style={{ display: 'flex', gap: '8px' }}>
                                 {/* Quick Model Badge */}
                                 <div style={{
@@ -277,7 +277,6 @@ export default function Generator() {
                                 disabled={generating || !prompt || (credits <= 0 && subscriptionStatus !== 'active')}
                                 style={{
                                     minWidth: '140px',
-                                    padding: '10px 24px',
                                     opacity: (credits <= 0 && subscriptionStatus !== 'active') ? 0.5 : 1
                                 }}
                             >
