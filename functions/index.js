@@ -78,6 +78,7 @@ export const generateImage = onDocumentCreated(
             // Construct query parameters with user settings or defaults
             const params = new URLSearchParams({
                 prompt: prompt,
+                model: modelId || "cat-carrier",
                 negative_prompt: negative_prompt || "",
                 steps: (steps || 30).toString(),
                 cfg: (cfg || 5.0).toString(),
@@ -87,7 +88,7 @@ export const generateImage = onDocumentCreated(
             });
 
             const response = await fetch(
-                `https://cardsorting--sdxl-cat-carrier-model-web-inference.modal.run?${params.toString()}`,
+                `https://cardsorting--sdxl-multi-model-model-web-inference.modal.run?${params.toString()}`,
                 {
                     method: "GET"
                 }
