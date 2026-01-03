@@ -4,7 +4,7 @@ const https = require('https');
 
 // Configuration
 const MODELS = [
-    'sdxl-cat-carrier'
+    'cat-carrier'
 ];
 
 const BASE_OUTPUT_DIR = path.join(__dirname, '../public/showcase');
