@@ -11,7 +11,7 @@ import toast from 'react-hot-toast';
 export default function Generator() {
     const [searchParams] = useSearchParams();
     const { currentUser } = useAuth();
-    const { selectedModel, setSelectedModel, availableModels } = useModel();
+    const { selectedModel, setSelectedModel, availableModels, loading } = useModel();
 
     // Modal State
     const [isModelModalOpen, setIsModelModalOpen] = useState(false);
@@ -142,7 +142,7 @@ export default function Generator() {
     }, [currentJobId]);
 
     const handleGenerate = async () => {
-        if (!prompt) return;
+        if (!prompt || !selectedModel) return;
         setGenerating(true);
         setGeneratedImage(null);
 
@@ -165,6 +165,14 @@ export default function Generator() {
             toast.error(error.message);
         }
     };
+
+    if (loading) {
+        return (
+            <div style={{ paddingTop: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', color: 'white' }}>
+                <Loader2 className="animate-spin" size={32} />
+            </div>
+        );
+    }
 
     return (
         <div style={{ paddingTop: '140px', paddingBottom: '40px', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>

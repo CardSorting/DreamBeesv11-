@@ -28,7 +28,7 @@ const CustomCursor = ({ isHovering }) => {
 };
 
 export default function Models() {
-    const { selectedModel, setSelectedModel, availableModels } = useModel();
+    const { selectedModel, setSelectedModel, availableModels, loading, error } = useModel();
     const navigate = useNavigate();
     const [hoveredId, setHoveredId] = useState(null);
     const [isTransitioning, setIsTransitioning] = useState(false);
@@ -68,6 +68,48 @@ export default function Models() {
         setIsTransitioning(true);
         setSelectedModel(model);
         setTimeout(() => navigate('/'), 800);
+    }
+
+    if (loading) {
+        return (
+            <div style={{
+                background: '#0a0a0a',
+                height: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontFamily: 'monospace'
+            }}>
+                <div className="loading-pulse">SYNCING ARCHIVES...</div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div style={{
+                background: '#0a0a0a',
+                height: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#ff4444',
+                flexDirection: 'column',
+                gap: '20px'
+            }}>
+                <h2 style={{ fontFamily: 'var(--font-serif)' }}>Archive Connection Failed</h2>
+                <p style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{error}</p>
+                <button onClick={() => window.location.reload()} style={{
+                    background: 'white',
+                    color: 'black',
+                    border: 'none',
+                    padding: '12px 24px',
+                    borderRadius: '100px',
+                    cursor: 'pointer'
+                }}>RETRY CONNECTION</button>
+            </div>
+        );
     }
 
     return (
