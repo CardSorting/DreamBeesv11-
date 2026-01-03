@@ -1,6 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500;1,600&family=Outfit:wght@300;400;500;600;700&display=swap');
+
 :root {
   /* Typography - Precise & Editorial */
   --font-body: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: 'Cormorant Garamond', serif;
   --font-display: 'Outfit', sans-serif;
 
   /* Primitive Colors - Deep Obsidian & Pure Light */
@@ -671,4 +674,132 @@ input[type=range]::-webkit-slider-runnable-track {
   font-size: 0.75rem;
   color: var(--color-text-muted);
   border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* --- Bespoke Model Page Animations --- */
+
+@keyframes fadeSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-slide-up {
+  animation: fadeSlideUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.delay-100 {
+  animation-delay: 100ms;
+}
+
+.delay-200 {
+  animation-delay: 200ms;
+}
+
+.delay-300 {
+  animation-delay: 300ms;
+}
+
+.hover-trigger .hover-reveal {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hover-trigger:hover .hover-reveal {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* --- Pass 3: Bespoke Agency Details --- */
+
+/* Custom Cursor */
+.custom-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: difference;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s, background-color 0.3s;
+}
+
+.custom-cursor.hovering {
+  width: 80px;
+  height: 80px;
+  background: white;
+}
+
+/* Hide default cursor */
+.cursor-none {
+  cursor: none;
+}
+
+/* Cinematic Overlay */
+.cinematic-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0%;
+  background: #fff;
+  z-index: 10000;
+  pointer-events: none;
+  transition: height 0.8s cubic-bezier(0.8, 0, 0.16, 1);
+  bottom: 0;
+}
+
+.cinematic-overlay.active {
+  height: 100%;
+  bottom: 0;
+  top: auto;
+}
+
+/* Text Reveal Mask */
+.text-reveal-mask {
+  overflow: hidden;
+  display: block;
+}
+
+.text-reveal-mask>span {
+  display: block;
+  transform: translateY(100%);
+  animation: textRevealSlide 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes textRevealSlide {
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Image Grain & Tone */
+.agency-image-filter {
+  filter: contrast(1.1) saturate(0.8) sepia(0.2) brightness(0.9);
+  transition: all 1s ease;
+}
+
+.model-row:hover .agency-image-filter {
+  filter: contrast(1) saturate(1) sepia(0) brightness(1);
+}
+
+/* SVG Noise Overlay */
+.noise-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0.08;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }

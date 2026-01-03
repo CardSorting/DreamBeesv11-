@@ -29,6 +29,7 @@ export default function Navbar() {
 
     const navLinks = [
         { path: '/generate', label: 'Studio', icon: Zap },
+        { path: '/models', label: 'Engine', icon: Settings },
         { path: '/gallery', label: 'Gallery', icon: LayoutGrid },
         { path: '/pricing', label: 'Pro', icon: Hexagon },
     ];

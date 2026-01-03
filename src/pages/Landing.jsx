@@ -447,25 +447,30 @@ function ValueItem({ text }) {
     )
 }
 
+// Demo Asset Imports
+import demoAngel from '../assets/images/landing/ethereal_clockwork_angel_ascending_over_foggy_victorian.jpeg';
+import demoLibrary from '../assets/images/landing/infinite_arcane_library_with_spiraling_towers_of.jpeg';
+import demoPhoenix from '../assets/images/landing/majestic_cosmic_phoenix_formed_from_supernova_stardust.jpeg';
+
 function InteractiveDemo() {
     const demos = [
         {
-            prompt: "A colossal clockwork angel hovering over a Victorian London, steam and divine light, hyperrealistic, baroque details",
-            image: "https://images.unsplash.com/photo-1512413316925-fd5bb3e1319e?w=1200&h=675&fit=crop",
+            prompt: "Ethereal Clockwork Angel ascending over foggy Victorian London, intricate brass gears, radiant golden wings, divine volumetric lighting, atmospheric depth, cinematic composition, 8k resolution, unreal engine 5 render, steampunk masterpiece",
+            image: demoAngel,
             model: "SDXL Turbo",
             seed: "CHRONOS_01",
             time: "0.8s"
         },
         {
-            prompt: "The library of infinite books, spiral architecture stretching into the cosmos, stardust and parchment, cinematic lighting",
-            image: "https://images.unsplash.com/photo-1548544149-4835e62ee5b3?w=1200&h=675&fit=crop",
+            prompt: "Infinite Arcane Library with spiraling towers of floating grimoires, bioluminescent runes, swirling stardust, mystical atmosphere, photorealistic wood textures, deep depth of field, fantasy concept art, trending on ArtStation",
+            image: demoLibrary,
             model: "Flux Pro",
             seed: "AKASHIC_V9",
             time: "1.2s"
         },
         {
-            prompt: "A phoenix formed of molten gold and solar flares, rising from a nebula, intense heat, 8k resolution, epic composition",
-            image: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1200&h=675&fit=crop",
+            prompt: "Majestic Cosmic Phoenix formed from supernova stardust, wings of molten solar plasma, vibrant nebula colors, deep space backdrop, hyper-realistic, dramatic lighting, epic scale, 8k, sharp focus, raytraced global illumination",
+            image: demoPhoenix,
             model: "SDXL 1.0",
             seed: "SOLARIS_X",
             time: "0.9s"
