@@ -61,6 +61,29 @@ export const generateImage = onDocumentCreated(
 
             const { prompt, modelId, userId, negative_prompt, steps, cfg, aspectRatio, scheduler } = data;
 
+            // --- Input Validation ---
+            if (!prompt || typeof prompt !== 'string' || prompt.length > 1000) {
+                // Fail silently or update with error to avoid crash loops, but here we just return/throw
+                await snapshot.ref.update({ status: "failed", error: "Invalid prompt" });
+                return;
+            }
+
+            const validAspectRatios = ['1:1', '2:3', '3:2', '9:16', '16:9'];
+            const safeAspectRatio = validAspectRatios.includes(aspectRatio) ? aspectRatio : '1:1';
+
+            // Clamp steps 10-50 (or whatever the API limits are, keep it reasonable)
+            // Default is 30.
+            let safeSteps = parseInt(steps);
+            if (isNaN(safeSteps) || safeSteps < 10) safeSteps = 10;
+            if (safeSteps > 50) safeSteps = 50;
+
+            // Clamp CFG 1-20
+            // Default is 5.0
+            let safeCfg = parseFloat(cfg);
+            if (isNaN(safeCfg) || safeCfg < 1) safeCfg = 1.0;
+            if (safeCfg > 20) safeCfg = 20.0;
+            // ------------------------
+
             // --- Credit Check Logic ---
             const userRef = db.collection('users').doc(userId);
             const userDoc = await userRef.get();
@@ -108,18 +131,18 @@ export const generateImage = onDocumentCreated(
                 '16:9': { width: 1344, height: 768 }
             };
 
-            const resolution = resolutionMap[aspectRatio] || resolutionMap['1:1'];
+            const resolution = resolutionMap[safeAspectRatio] || resolutionMap['1:1'];
 
             // 1. Call Modal Endpoint
-            console.log(`Generating image for ${requestId} (${aspectRatio} - ${resolution.width}x${resolution.height}) using Modal endpoint...`);
+            console.log(`Generating image for ${requestId} (${safeAspectRatio} - ${resolution.width}x${resolution.height}) using Modal endpoint...`);
 
             // Construct query parameters with user settings or defaults
             const params = new URLSearchParams({
                 prompt: prompt,
                 model: modelId || "cat-carrier",
                 negative_prompt: negative_prompt || "",
-                steps: (steps || 30).toString(),
-                cfg: (cfg || 5.0).toString(),
+                steps: safeSteps.toString(),
+                cfg: safeCfg.toString(),
                 width: resolution.width.toString(),
                 height: resolution.height.toString(),
                 scheduler: scheduler || 'DPM++ 2M Karras'
@@ -160,9 +183,9 @@ export const generateImage = onDocumentCreated(
                 userId,
                 prompt,
                 negative_prompt: negative_prompt || "",
-                steps: steps || 30,
-                cfg: cfg || 5.0,
-                aspectRatio: aspectRatio || "1:1",
+                steps: safeSteps,
+                cfg: safeCfg,
+                aspectRatio: safeAspectRatio,
                 modelId,
                 imageUrl,
                 createdAt: new Date(),
