@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, LayoutGrid, Sparkles, Cpu, LogIn, UserPlus } from 'lucide-react';
+import { LogOut, LayoutGrid, Sparkles, Cpu, LogIn, UserPlus, Menu, X } from 'lucide-react';
 
 export default function Navbar() {
     const { currentUser, logout } = useAuth();
@@ -23,54 +23,43 @@ export default function Navbar() {
         }
     }
 
-    const linkStyle = (path) => ({
-        color: location.pathname === path ? 'white' : 'var(--color-text-muted)',
-        display: 'flex', alignItems: 'center', gap: '6px',
-        transition: 'color 0.2s',
-        fontSize: '0.95rem',
-        fontWeight: '500',
-        textDecoration: 'none'
-    });
+    const isActive = (path) => location.pathname === path;
 
-    const mobileLinkStyle = (path) => ({
-        ...linkStyle(path),
-        fontSize: '1.2rem',
-        padding: '16px 0',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
-        width: '100%'
-    });
-
-    const NavLinks = ({ isMobile = false }) => {
-        const style = isMobile ? mobileLinkStyle : linkStyle;
-
-        return (
-            <>
-                {currentUser ? (
-                    <>
-                        <Link to="/models" style={style('/models')}><Cpu size={18} /> Models</Link>
-                        <Link to="/generate" style={style('/generate')}><Sparkles size={18} /> Generate</Link>
-                        <Link to="/gallery" style={style('/gallery')}><LayoutGrid size={18} /> Gallery</Link>
-                        {!isMobile && <div style={{ width: '1px', height: '24px', background: 'var(--color-border)' }}></div>}
-                        <button onClick={handleLogout} style={{ ...style(''), color: 'var(--color-text-muted)' }} className="hover:text-white">
-                            <LogOut size={18} />
-                            Logout
-                        </button>
-                    </>
-                ) : (
-                    <>
-                        <Link to="/gallery" style={style('/gallery')}><LayoutGrid size={18} /> Gallery</Link>
-                        {!isMobile && <div style={{ width: '1px', height: '24px', background: 'var(--color-border)' }}></div>}
-                        <Link to="/auth" style={style('/auth')}>
-                            <LogIn size={18} /> Login
-                        </Link>
-                        <Link to="/auth" className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '0.9rem', color: 'white', display: 'flex', gap: '6px', justifyContent: isMobile ? 'center' : 'flex-start' }}>
-                            <UserPlus size={18} /> Get Started
-                        </Link>
-                    </>
-                )}
-            </>
-        );
-    };
+    const NavItem = ({ to, icon: Icon, children }) => (
+        <Link
+            to={to}
+            className={`
+                flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors rounded-full
+                ${isActive(to) ? 'text-white bg-white/10' : 'text-zinc-400 hover:text-white hover:bg-white/5'}
+            `}
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                borderRadius: '99px',
+                color: isActive(to) ? 'white' : 'var(--color-text-muted)',
+                background: isActive(to) ? 'rgba(255,255,255,0.08)' : 'transparent',
+                transition: 'all 0.2s ease',
+                textDecoration: 'none'
+            }}
+            onMouseEnter={(e) => {
+                if (!isActive(to)) {
+                    e.currentTarget.style.color = 'white';
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                }
+            }}
+            onMouseLeave={(e) => {
+                if (!isActive(to)) {
+                    e.currentTarget.style.color = 'var(--color-text-muted)';
+                    e.currentTarget.style.background = 'transparent';
+                }
+            }}
+        >
+            {Icon && <Icon size={16} />}
+            {children}
+        </Link>
+    );
 
     return (
         <>
@@ -79,64 +68,111 @@ export default function Navbar() {
                 top: 0,
                 left: 0,
                 right: 0,
-                height: '70px',
-                padding: '0 20px',
+                height: 'var(--header-height)',
                 zIndex: 100,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                backdropFilter: 'blur(10px)',
-                background: 'rgba(9, 9, 11, 0.8)',
-                borderBottom: '1px solid rgba(255,255,255,0.05)'
+                backdropFilter: 'blur(12px)',
+                background: 'rgba(0,0,0,0.5)',
+                borderBottom: '1px solid rgba(255,255,255,0.03)'
             }}>
-                <div className="container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
-                    <Link to="/" style={{ fontWeight: '800', fontSize: '1.2rem', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{
-                            width: '32px', height: '32px', borderRadius: '8px', background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', color: 'white'
-                        }}>DB</span>
-                        DreamBees
+                <div className="container" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+
+                    {/* Brand */}
+                    <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                            width: '32px',
+                            height: '32px',
+                            background: 'white',
+                            borderRadius: '8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <span style={{ fontWeight: '900', color: 'black', fontSize: '14px' }}>DB</span>
+                        </div>
+                        <span style={{ fontWeight: '700', fontSize: '1.2rem', letterSpacing: '-0.02em' }}>DreamBees</span>
                     </Link>
 
-                    {/* Desktop Menu */}
-                    <div className="hidden-mobile" style={{ gap: '30px', alignItems: 'center' }}>
-                        <NavLinks />
+                    {/* Desktop Navigation */}
+                    <div className="hidden-mobile" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {currentUser ? (
+                            <>
+                                <NavItem to="/models" icon={Cpu}>Models</NavItem>
+                                <NavItem to="/generate" icon={Sparkles}>Generate</NavItem>
+                                <NavItem to="/gallery" icon={LayoutGrid}>Gallery</NavItem>
+                                <div style={{ width: '1px', height: '20px', background: 'var(--color-border)', margin: '0 12px' }} />
+                                <button
+                                    onClick={handleLogout}
+                                    className="btn-ghost"
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', padding: '8px 16px', borderRadius: '99px',
+                                        color: 'var(--color-text-muted)'
+                                    }}
+                                >
+                                    <LogOut size={16} /> Logout
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <NavItem to="/gallery" icon={LayoutGrid}>Gallery</NavItem>
+                                <div style={{ width: '1px', height: '20px', background: 'var(--color-border)', margin: '0 12px' }} />
+                                <Link to="/auth" style={{
+                                    marginRight: '12px',
+                                    fontSize: '0.9rem',
+                                    color: 'var(--color-text-muted)',
+                                    fontWeight: '500'
+                                }}>
+                                    Log in
+                                </Link>
+                                <Link to="/auth" className="btn btn-primary" style={{ padding: '10px 24px', fontSize: '0.9rem' }}>
+                                    Sign Up
+                                </Link>
+                            </>
+                        )}
                     </div>
 
                     {/* Mobile Menu Toggle */}
-                    <div className="visible-mobile">
-                        <button
-                            onClick={() => setIsMenuOpen(!isMenuOpen)}
-                            style={{ color: 'white', padding: '8px' }}
-                        >
-                            {isMenuOpen ? <X size={24} /> : <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <span style={{ width: '24px', height: '2px', background: 'white' }}></span>
-                                <span style={{ width: '24px', height: '2px', background: 'white' }}></span>
-                                <span style={{ width: '24px', height: '2px', background: 'white' }}></span>
-                            </div>}
-                        </button>
-                    </div>
+                    <button
+                        className="visible-mobile"
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        style={{ color: 'white', padding: '8px' }}
+                    >
+                        {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                    </button>
                 </div>
             </nav>
 
-            {/* Mobile Menu Overlay */}
+            {/* Mobile Menu Content */}
             {isMenuOpen && (
                 <div style={{
                     position: 'fixed',
-                    top: '70px',
+                    top: 'var(--header-height)',
                     left: 0,
                     right: 0,
                     bottom: 0,
                     background: 'var(--color-bg)',
-                    zIndex: 99,
-                    padding: '20px',
+                    zIndex: 90,
+                    padding: '24px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '10px',
-                    borderTop: '1px solid var(--color-border)',
-                    animation: 'fadeIn 0.2s ease-out'
+                    gap: '16px'
                 }}>
-                    <NavLinks isMobile={true} />
+                    {currentUser ? (
+                        <>
+                            <Link to="/models" className="btn btn-outline" style={{ justifyContent: 'flex-start' }}><Cpu size={18} style={{ marginRight: '8px' }} /> Models</Link>
+                            <Link to="/generate" className="btn btn-primary" style={{ justifyContent: 'flex-start' }}><Sparkles size={18} style={{ marginRight: '8px' }} /> Generate</Link>
+                            <Link to="/gallery" className="btn btn-outline" style={{ justifyContent: 'flex-start' }}><LayoutGrid size={18} style={{ marginRight: '8px' }} /> Gallery</Link>
+                            <button onClick={handleLogout} className="btn btn-ghost" style={{ justifyContent: 'flex-start', border: '1px solid var(--color-border)' }}>
+                                <LogOut size={18} style={{ marginRight: '8px' }} /> Logout
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <Link to="/gallery" className="btn btn-outline" style={{ justifyContent: 'flex-start' }}><LayoutGrid size={18} style={{ marginRight: '8px' }} /> Gallery</Link>
+                            <div style={{ height: '1px', background: 'var(--color-border)', margin: '12px 0' }} />
+                            <Link to="/auth" className="btn btn-outline">Log In</Link>
+                            <Link to="/auth" className="btn btn-primary">Sign Up</Link>
+                        </>
+                    )}
                 </div>
             )}
         </>

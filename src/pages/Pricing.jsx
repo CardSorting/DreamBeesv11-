@@ -84,45 +84,41 @@ export default function Pricing() {
 
     return (
         <div className="container" style={{ paddingTop: '100px', paddingBottom: '60px' }}>
-            <div style={{ textAlign: 'center', marginBottom: '60px' }}>
-                <h1 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '16px', backgroundImage: 'linear-gradient(to right, #8b5cf6, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                    Choose Your Plan
+            <div style={{ textAlign: 'center', marginBottom: '80px' }}>
+                <h1 style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', fontWeight: '800', marginBottom: '24px', color: 'white', letterSpacing: '-0.03em' }}>
+                    Simple, transparent pricing.
                 </h1>
-                <p style={{ fontSize: '1.2rem', color: 'var(--color-text-muted)' }}>
-                    Unlock full creative power with DreamBees Pro
+                <p style={{ fontSize: '1.1rem', color: 'var(--color-text-muted)' }}>
+                    Professional tools for the next generation of creators.
                 </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '32px', maxWidth: '1000px', margin: '0 auto' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '40px', maxWidth: '1000px', margin: '0 auto' }}>
 
                 {/* Free Tier */}
-                <div className="glass-panel" style={{ padding: '40px', display: 'flex', flexDirection: 'column', position: 'relative' }}>
-                    <h3 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '16px' }}>Starter</h3>
-                    <div style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '24px' }}>
+                <div className="glass-panel" style={{ padding: '40px', display: 'flex', flexDirection: 'column', position: 'relative', background: 'var(--color-bg-subtle)' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '16px', color: 'white' }}>Starter</h3>
+                    <div style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '32px', color: 'white', letterSpacing: '-0.02em' }}>
                         Free
                         <span style={{ fontSize: '1rem', fontWeight: 'normal', color: 'var(--color-text-muted)' }}> / forever</span>
                     </div>
 
                     <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 40px 0', flex: 1 }}>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                            <Check size={20} color="#4ade80" />
-                            <span>5 daily credits (resets every 24h)</span>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', color: 'var(--color-text-muted)' }}>
+                            <Check size={18} color="white" />
+                            <span>5 daily credits</span>
                         </li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                            <Check size={20} color="#4ade80" />
-                            <span>Standard generation speed</span>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', color: 'var(--color-text-muted)' }}>
+                            <Check size={18} color="white" />
+                            <span>Standard speeds</span>
                         </li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                            <Check size={20} color="#4ade80" />
-                            <span>Access to base models</span>
-                        </li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                            <Check size={20} color="#4ade80" />
-                            <span>Personal gallery</span>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', color: 'var(--color-text-muted)' }}>
+                            <Check size={18} color="white" />
+                            <span>Base models</span>
                         </li>
                     </ul>
 
-                    <button className="btn btn-outline" style={{ width: '100%' }} disabled>
+                    <button className="btn btn-outline" style={{ width: '100%', height: '50px' }} disabled>
                         {userTier === 'free' ? 'Current Plan' : 'Included'}
                     </button>
                 </div>
@@ -133,49 +129,48 @@ export default function Pricing() {
                     display: 'flex',
                     flexDirection: 'column',
                     position: 'relative',
-                    border: '1px solid var(--color-primary)',
-                    boxShadow: '0 0 30px rgba(139, 92, 246, 0.2)'
+                    border: '1px solid var(--color-white)',
+                    background: 'rgba(255,255,255,0.03)'
                 }}>
                     <div style={{
                         position: 'absolute',
-                        top: '-12px',
+                        top: '-14px',
                         left: '50%',
                         transform: 'translateX(-50%)',
-                        background: 'var(--color-primary)',
-                        padding: '4px 16px',
-                        borderRadius: '20px',
-                        fontSize: '0.8rem',
+                        background: 'white',
+                        color: 'black',
+                        padding: '6px 16px',
+                        borderRadius: '99px',
+                        fontSize: '0.75rem',
                         fontWeight: '700',
                         textTransform: 'uppercase',
-                        letterSpacing: '1px'
+                        letterSpacing: '0.1em'
                     }}>
                         Recommended
                     </div>
 
-                    <h3 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        Pro <Crown size={20} color="#fbbf24" fill="#fbbf24" />
-                    </h3>
-                    <div style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '24px' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '16px', color: 'white' }}>Pro</h3>
+                    <div style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '32px', color: 'white', letterSpacing: '-0.02em' }}>
                         $10
-                        <span style={{ fontSize: '1rem', fontWeight: 'normal', color: 'var(--color-text-muted)' }}> / 30 days</span>
+                        <span style={{ fontSize: '1rem', fontWeight: 'normal', color: 'var(--color-text-muted)' }}> / month</span>
                     </div>
 
                     <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 40px 0', flex: 1 }}>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                            <Check size={20} color="#4ade80" />
-                            <span><strong>Unlimited</strong> generations*</span>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', color: 'white' }}>
+                            <Check size={18} color="white" />
+                            <span><strong>Unlimited</strong> generations</span>
                         </li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                            <Zap size={20} color="#fbbf24" />
-                            <span><strong>Priority</strong> processing (skip queue)</span>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', color: 'white' }}>
+                            <Zap size={18} color="white" fill="white" />
+                            <span><strong>Fast</strong> GPU priority</span>
                         </li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                            <Check size={20} color="#4ade80" />
-                            <span>Access to <strong>Premium Models</strong></span>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', color: 'white' }}>
+                            <Check size={18} color="white" />
+                            <span>Premium models (Flux Pro)</span>
                         </li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                            <Check size={20} color="#4ade80" />
-                            <span>Commercial usage rights</span>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', color: 'white' }}>
+                            <Check size={18} color="white" />
+                            <span>Commercial license</span>
                         </li>
                     </ul>
 
