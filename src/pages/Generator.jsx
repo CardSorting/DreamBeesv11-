@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ModelSelectorModal from '../components/ModelSelectorModal';
 import { useModel } from '../contexts/ModelContext';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp, doc, onSnapshot } from 'firebase/firestore';
@@ -10,7 +11,10 @@ import toast from 'react-hot-toast';
 export default function Generator() {
     const [searchParams] = useSearchParams();
     const { currentUser } = useAuth();
-    const { selectedModel } = useModel();
+    const { selectedModel, setSelectedModel, availableModels } = useModel();
+
+    // Modal State
+    const [isModelModalOpen, setIsModelModalOpen] = useState(false);
 
     const [prompt, setPrompt] = useState(searchParams.get('prompt') || '');
     const [generating, setGenerating] = useState(false);
@@ -274,6 +278,52 @@ export default function Generator() {
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                            {/* Model Selector Trigger */}
+                            <div>
+                                <label className="setting-label">MODEL</label>
+                                <button
+                                    onClick={() => setIsModelModalOpen(true)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '16px',
+                                        borderRadius: '12px',
+                                        background: 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
+                                        border: '1px solid var(--color-border)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '16px',
+                                        cursor: 'pointer',
+                                        textAlign: 'left',
+                                        transition: 'all 0.2s',
+                                        position: 'relative',
+                                        overflow: 'hidden'
+                                    }}
+                                    className="hover:border-white/40"
+                                >
+                                    <div style={{
+                                        width: '48px',
+                                        height: '48px',
+                                        borderRadius: '8px',
+                                        background: '#222',
+                                        overflow: 'hidden',
+                                        flexShrink: 0
+                                    }}>
+                                        {selectedModel.image ? (
+                                            <img src={selectedModel.image} alt={selectedModel.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : (
+                                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666' }}>
+                                                <ImageIcon size={20} />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontSize: '0.9rem', fontWeight: '600', color: 'white', marginBottom: '4px' }}>{selectedModel.name}</div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{selectedModel.tags?.[0] || 'Standard'}</div>
+                                    </div>
+                                    <Settings2 size={16} color="var(--color-text-muted)" />
+                                </button>
+                            </div>
+
                             {/* Aspect Ratio Grid */}
                             <div>
                                 <label className="setting-label">ASPECT RATIO</label>
@@ -343,6 +393,15 @@ export default function Generator() {
 
             </div>
 
+            {/* Model Selection Modal */}
+            <ModelSelectorModal
+                isOpen={isModelModalOpen}
+                onClose={() => setIsModelModalOpen(false)}
+                models={availableModels}
+                selectedModel={selectedModel}
+                onSelectModel={setSelectedModel}
+            />
+
             <style>{`
                 .setting-label {
                     display: block;
@@ -358,7 +417,12 @@ export default function Generator() {
                         grid-template-columns: 1fr !important;
                     }
                 }
+                .hover-scale { transition: transform 0.4s ease; }
+                .hover-card:hover .hover-scale { transform: scale(1.05); }
+                .hover-card:hover { border-color: rgba(255,255,255,0.2) !important; background: rgba(255,255,255,0.06) !important; }
+                @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
             `}</style>
         </div>
     );
 }
+
