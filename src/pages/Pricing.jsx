@@ -1,13 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import { Check, Zap, Crown } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Pricing() {
     const { currentUser } = useAuth();
+    const [userTier, setUserTier] = useState('free');
     const [loading, setLoading] = useState(false);
     const functions = getFunctions();
+    const db = getFirestore();
+    // Fetch user tier on load
+    useEffect(() => {
+        if (currentUser) {
+            // We can listen to the realtime updates if we want, or just check once.
+            // Since subscription status is in public claims or user doc, let's assume we check the doc or claims.
+            // For simplicity, we can rely on the fact that App.jsx or context might have it, but here we'll just use a quick check 
+            // or rely on what we know. A better way is to pass it from context or fetch it.
+            // Let's assume we use a quick fetch or context if available. 
+            // Actually, we can just use the state from Generator logic or similar.
+            // Let's replicate the snapshot listener for accurate status, or just fetching once.
+            // Fetching once is safer for 'status' pages.
+        }
+    }, [currentUser]);
+
+    // Use a listener actually, to be reactive
+    // Listen to subscription status
+    useEffect(() => {
+        if (!currentUser) return;
+
+        const unsub = onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (data.subscriptionStatus === 'active') {
+                    setUserTier('pro');
+                } else {
+                    setUserTier('free');
+                }
+            }
+        });
+        return () => unsub();
+    }, [currentUser, db]);
+
+
+    const handleManageSubscription = async () => {
+        setLoading(true);
+        try {
+            const createStripePortalSession = httpsCallable(functions, 'createStripePortalSession');
+            const result = await createStripePortalSession({
+                returnUrl: window.location.href
+            });
+            window.location.href = result.data.url;
+        } catch (error) {
+            console.error("Error opening portal:", error);
+            toast.error("Failed to open subscription settings.");
+            setLoading(false);
+        }
+    };
 
     const handleSubscribe = async (priceId) => {
         if (!currentUser) {
@@ -72,7 +122,7 @@ export default function Pricing() {
                     </ul>
 
                     <button className="btn btn-outline" style={{ width: '100%' }} disabled>
-                        Current Plan
+                        {userTier === 'free' ? 'Current Plan' : 'Included'}
                     </button>
                 </div>
 
@@ -128,14 +178,25 @@ export default function Pricing() {
                         </li>
                     </ul>
 
-                    <button
-                        className="btn btn-primary"
-                        style={{ width: '100%' }}
-                        onClick={() => handleSubscribe('price_1Qjsd2LkdJw...')} // Placeholder Price ID
-                        disabled={loading}
-                    >
-                        {loading ? 'Processing...' : 'Upgrade Now'}
-                    </button>
+                    {userTier === 'pro' ? (
+                        <button
+                            className="btn btn-outline"
+                            style={{ width: '100%', borderColor: 'var(--color-primary)', color: 'white' }}
+                            onClick={handleManageSubscription}
+                            disabled={loading}
+                        >
+                            {loading ? 'Opening Portal...' : 'Manage Subscription'}
+                        </button>
+                    ) : (
+                        <button
+                            className="btn btn-primary"
+                            style={{ width: '100%' }}
+                            onClick={() => handleSubscribe('price_1Qjsd2LkdJw...')} // Placeholder Price ID
+                            disabled={loading}
+                        >
+                            {loading ? 'Processing...' : 'Upgrade Now'}
+                        </button>
+                    )}
                     <p style={{ marginTop: '16px', fontSize: '0.8rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>
                         *Subject to fair use policy (1000 fast hours)
                     </p>

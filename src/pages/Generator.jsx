@@ -56,6 +56,24 @@ export default function Generator() {
         }
     }, [searchParams]);
 
+    // Handle Stripe Redirects
+    useEffect(() => {
+        if (searchParams.get('success') === 'true') {
+            toast.success("Subscription activated! You are now a Pro member.", {
+                duration: 6000,
+                icon: '👑'
+            });
+            // Clean URL
+            window.history.replaceState({}, '', '/generate');
+        } else if (searchParams.get('canceled') === 'true') {
+            toast.error("Checkout canceled.", {
+                icon: '❌'
+            });
+            // Clean URL
+            window.history.replaceState({}, '', '/generate');
+        }
+    }, [searchParams]);
+
     // Microphone State
     const [isListening, setIsListening] = useState(false);
     const [speechRecognition, setSpeechRecognition] = useState(null);

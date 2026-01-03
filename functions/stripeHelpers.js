@@ -69,3 +69,18 @@ export function constructWebhookEvent(rawBody, signature, webhookSecret) {
         throw err;
     }
 }
+
+/**
+ * Creates a Stripe Customer Portal Session.
+ * @param {string} customerId - The Stripe Customer ID.
+ * @param {string} returnUrl - URL to redirect to after exiting the portal.
+ * @returns {Promise<string>} The portal session URL.
+ */
+export async function createPortalSession(customerId, returnUrl) {
+    const stripe = stripeClient();
+    const session = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: returnUrl,
+    });
+    return session.url;
+}

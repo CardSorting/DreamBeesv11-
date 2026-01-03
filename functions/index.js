@@ -5,7 +5,7 @@ import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getFunctions } from "firebase-admin/functions";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { createCheckoutSession, constructWebhookEvent } from "./stripeHelpers.js";
+import { createCheckoutSession, constructWebhookEvent, createPortalSession } from "./stripeHelpers.js";
 
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
@@ -381,6 +381,36 @@ export const createStripeCheckout = onCall(async (request) => {
     }
 });
 
+export const createStripePortalSession = onCall(async (request) => {
+    const { returnUrl } = request.data;
+    const uid = request.auth.uid;
+
+    if (!uid) {
+        throw new Error("Unauthenticated");
+    }
+
+    const db = getFirestore();
+    const userRef = db.collection('users').doc(uid);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+        throw new Error("User not found");
+    }
+
+    const user = userDoc.data();
+    if (!user.stripeCustomerId) {
+        throw new Error("No subscription found");
+    }
+
+    try {
+        const url = await createPortalSession(user.stripeCustomerId, returnUrl || 'https://dreambees.app');
+        return { url };
+    } catch (error) {
+        console.error("Stripe Portal Error:", error);
+        throw new Error("Failed to create portal session");
+    }
+});
+
 export const stripeWebhook = onRequest(async (req, res) => {
     const signature = req.headers['stripe-signature'];
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -404,8 +434,42 @@ export const stripeWebhook = onRequest(async (req, res) => {
             await db.collection('users').doc(userId).set({
                 subscriptionStatus: 'active',
                 stripeCustomerId: customerId,
-                credits: 1000 // Give them a bunch or mark as "unlimited" logic
+                credits: 1000, // Monthly allowance
+                planTier: 'pro'
             }, { merge: true });
+
+        } else if (event.type === 'invoice.payment_succeeded') {
+            const invoice = event.data.object;
+            // distinct from 'checkout.session.completed', this handles RENEWALS
+            if (invoice.billing_reason === 'subscription_cycle') {
+                const customerId = invoice.customer;
+                const usersSnapshot = await db.collection('users').where('stripeCustomerId', '==', customerId).get();
+
+                if (!usersSnapshot.empty) {
+                    usersSnapshot.forEach(async (doc) => {
+                        console.log(`Renewing credits for user ${doc.id}`);
+                        await doc.ref.update({
+                            credits: 1000,
+                            subscriptionStatus: 'active'
+                        });
+                    });
+                }
+            }
+        } else if (event.type === 'customer.subscription.updated') {
+            const subscription = event.data.object;
+            const customerId = subscription.customer;
+            const status = subscription.status; // active, past_due, unpaid, canceled
+
+            // Map Stripe status to our app status
+            // We only really care if it becomes NOT active/trialing
+            const isActive = status === 'active' || status === 'trialing';
+            const appStatus = isActive ? 'active' : 'inactive';
+
+            const usersSnapshot = await db.collection('users').where('stripeCustomerId', '==', customerId).get();
+            usersSnapshot.forEach(async (doc) => {
+                await doc.ref.update({ subscriptionStatus: appStatus });
+            });
+
         } else if (event.type === 'customer.subscription.deleted') {
             const subscription = event.data.object;
             const customerId = subscription.customer;
