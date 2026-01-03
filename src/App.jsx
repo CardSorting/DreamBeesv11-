@@ -11,6 +11,12 @@ import Generator from './pages/Generator';
 import Gallery from './pages/Gallery';
 import Models from './pages/Models';
 import ImageDetail from './pages/ImageDetail';
+import Features from './pages/Features';
+import Pricing from './pages/Pricing';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import { Privacy, Terms, Cookies } from './pages/Legal';
+import { Blog, Careers, Brand, Api, Showcase } from './pages/Misc';
 
 function PrivateRoute({ children }) {
   const { currentUser } = useAuth();
@@ -74,6 +80,18 @@ function App() {
                     <Models />
                   </PrivateRoute>
                 } />
+                <Route path="/features" element={<Features />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/cookies" element={<Cookies />} />
+                <Route path="/blog" element={<Blog />} />
+                <Route path="/careers" element={<Careers />} />
+                <Route path="/brand" element={<Brand />} />
+                <Route path="/api" element={<Api />} />
+                <Route path="/showcase" element={<Showcase />} />
               </Routes>
             </div>
             <Footer />
