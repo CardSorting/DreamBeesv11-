@@ -3,7 +3,7 @@ import { useModel } from '../contexts/ModelContext';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp, doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, Sparkles, Image as ImageIcon, Cpu } from 'lucide-react';
+import { Loader2, Sparkles, Image as ImageIcon, Cpu, Settings, Trash2, ChevronDown, ChevronUp, Square, RectangleHorizontal, RectangleVertical } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Generator() {
@@ -11,8 +11,18 @@ export default function Generator() {
     const [generating, setGenerating] = useState(false);
     const [generatedImage, setGeneratedImage] = useState(null);
     const [currentJobId, setCurrentJobId] = useState(null);
+    const [jobStatus, setJobStatus] = useState('pending'); // pending, processing, completed, failed
     const [elapsedTime, setElapsedTime] = useState(0);
     const [statusMessage, setStatusMessage] = useState('');
+    const [progress, setProgress] = useState(0);
+
+    // Advanced Settings State
+    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [aspectRatio, setAspectRatio] = useState('1:1');
+    const [steps, setSteps] = useState(30);
+    const [cfg, setCfg] = useState(5.0);
+    const [negPrompt, setNegPrompt] = useState("worst quality, bad quality, low quality, lowres, scan artifacts, jpeg artifacts, sketch, light particles, watermark, multiple views, 2koma, 3koma, 4koma, heart-shaped pupils,");
+
     const { currentUser } = useAuth();
     const { selectedModel } = useModel();
 
@@ -51,6 +61,29 @@ export default function Generator() {
         return () => clearInterval(interval);
     }, [generating]);
 
+    // Progress simulation
+    useEffect(() => {
+        let interval;
+        if (generating) {
+            interval = setInterval(() => {
+                setProgress(prev => {
+                    if (jobStatus === 'pending') {
+                        // Slowly move to 20% while pending
+                        return prev < 20 ? prev + 0.5 : prev;
+                    } else if (jobStatus === 'processing') {
+                        // Move to 90% while processing
+                        if (prev < 20) return 20; // Jump to 20 if just started processing
+                        return prev < 90 ? prev + 0.2 : prev;
+                    }
+                    return prev;
+                });
+            }, 100);
+        } else {
+            setProgress(0);
+        }
+        return () => clearInterval(interval);
+    }, [generating, jobStatus]);
+
 
     useEffect(() => {
         if (!currentJobId) return;
@@ -58,14 +91,21 @@ export default function Generator() {
         const unsub = onSnapshot(doc(db, "generation_queue", currentJobId), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
+                setJobStatus(data.status);
+
                 if (data.status === 'completed') {
-                    setGeneratedImage(data.imageUrl);
-                    setGenerating(false);
-                    setCurrentJobId(null);
+                    setProgress(100);
+                    setTimeout(() => {
+                        setGeneratedImage(data.imageUrl);
+                        setGenerating(false);
+                        setCurrentJobId(null);
+                        setJobStatus('pending');
+                    }, 500);
                 } else if (data.status === 'failed') {
                     alert(`Generation failed: ${data.error || 'Unknown error'}`);
                     setGenerating(false);
                     setCurrentJobId(null);
+                    setJobStatus('pending');
                 }
             }
         });
@@ -85,9 +125,12 @@ export default function Generator() {
             const docRef = await addDoc(collection(db, "generation_queue"), {
                 userId: currentUser.uid,
                 prompt: prompt,
-                negative_prompt: "worst quality, bad quality, low quality, lowres, scan artifacts, jpeg artifacts, sketch, light particles, watermark, multiple views, 2koma, 3koma, 4koma, heart-shaped pupils,",
+                negative_prompt: negPrompt,
                 modelId: selectedModel.id,
                 status: 'pending',
+                aspectRatio: aspectRatio,
+                steps: steps,
+                cfg: cfg,
                 createdAt: serverTimestamp()
             });
             setCurrentJobId(docRef.id);
@@ -119,7 +162,7 @@ export default function Generator() {
                     </p>
                 </header>
 
-                <div className="glass-panel" style={{ padding: '24px', marginBottom: '40px' }}>
+                <div className="glass-panel" style={{ padding: '24px', marginBottom: '16px' }}>
                     <div style={{ display: 'flex', gap: '16px' }}>
                         <input
                             type="text"
@@ -151,6 +194,143 @@ export default function Generator() {
                         </button>
                     </div>
                 </div>
+
+                {/* Advanced Settings Toggle */}
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+                    <button
+                        onClick={() => !generating && setShowAdvanced(!showAdvanced)}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            color: showAdvanced ? 'var(--color-primary)' : 'var(--color-text-muted)',
+                            fontSize: '0.9rem',
+                            fontWeight: '600',
+                            padding: '8px 16px',
+                            borderRadius: '20px',
+                            background: showAdvanced ? 'rgba(139, 92, 246, 0.1)' : 'transparent',
+                            transition: 'all 0.2s',
+                            cursor: generating ? 'not-allowed' : 'pointer',
+                            opacity: generating ? 0.5 : 1
+                        }}
+                    >
+                        <Settings size={16} />
+                        Advanced Settings
+                        {showAdvanced ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                </div>
+
+                {showAdvanced && (
+                    <div className="fade-in" style={{ marginBottom: '40px' }}>
+                        <div className="glass-panel" style={{ padding: '32px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '32px' }}>
+                                {/* Aspect Ratio */}
+                                <div>
+                                    <h4 style={{ color: 'white', marginBottom: '16px', fontSize: '1rem' }}>Aspect Ratio</h4>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                                        {[
+                                            { id: '1:1', label: '1:1 Square', icon: <Square size={16} /> },
+                                            { id: '16:9', label: '16:9 Wide', icon: <RectangleHorizontal size={16} /> },
+                                            { id: '9:16', label: '9:16 Tall', icon: <RectangleVertical size={16} /> },
+                                            { id: '3:2', label: '3:2 Photo', icon: <RectangleHorizontal size={14} /> },
+                                            { id: '2:3', label: '2:3 Portrait', icon: <RectangleVertical size={14} /> }
+                                        ].map((ratio) => (
+                                            <button
+                                                key={ratio.id}
+                                                onClick={() => setAspectRatio(ratio.id)}
+                                                style={{
+                                                    padding: '12px 8px',
+                                                    borderRadius: 'var(--radius-md)',
+                                                    border: aspectRatio === ratio.id ? '2px solid var(--color-primary)' : '1px solid var(--color-border)',
+                                                    background: aspectRatio === ratio.id ? 'rgba(139, 92, 246, 0.1)' : 'rgba(0,0,0,0.2)',
+                                                    color: aspectRatio === ratio.id ? 'white' : 'var(--color-text-muted)',
+                                                    fontSize: '0.8rem',
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    gap: '8px',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                {ratio.icon}
+                                                {ratio.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Sliders */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                    <div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                            <label style={{ color: 'white', fontSize: '0.9rem' }}>Inference Steps</label>
+                                            <span style={{ color: 'var(--color-primary)', fontWeight: 'bold' }}>{steps}</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="20" max="50" step="1"
+                                            value={steps}
+                                            onChange={(e) => setSteps(parseInt(e.target.value))}
+                                            style={{ width: '100%', accentColor: 'var(--color-primary)' }}
+                                        />
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
+                                            <span>20 (Fast)</span>
+                                            <span>50 (Detailed)</span>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                            <label style={{ color: 'white', fontSize: '0.9rem' }}>CFG Scale (Guidance)</label>
+                                            <span style={{ color: 'var(--color-primary)', fontWeight: 'bold' }}>{cfg}</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="1" max="10" step="0.5"
+                                            value={cfg}
+                                            onChange={(e) => setCfg(parseFloat(e.target.value))}
+                                            style={{ width: '100%', accentColor: 'var(--color-primary)' }}
+                                        />
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
+                                            <span>1.0 (Creative)</span>
+                                            <span>10.0 (High Contrast)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Negative Prompt */}
+                            <div style={{ marginTop: '32px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                    <label style={{ color: 'white', fontSize: '0.9rem' }}>Negative Prompt</label>
+                                    <button
+                                        onClick={() => setNegPrompt('')}
+                                        style={{ color: '#ef4444', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                    >
+                                        <Trash2 size={12} /> Clear
+                                    </button>
+                                </div>
+                                <textarea
+                                    value={negPrompt}
+                                    onChange={(e) => setNegPrompt(e.target.value)}
+                                    placeholder="Items you DON'T want in the image..."
+                                    style={{
+                                        width: '100%',
+                                        height: '80px',
+                                        padding: '12px',
+                                        borderRadius: 'var(--radius-md)',
+                                        background: 'rgba(0,0,0,0.3)',
+                                        border: '1px solid var(--color-border)',
+                                        color: 'white',
+                                        fontSize: '0.9rem',
+                                        resize: 'none',
+                                        outline: 'none'
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Selected Model Horizontal Card */}
                 <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '40px' }}>
@@ -206,24 +386,78 @@ export default function Generator() {
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
-                            minHeight: '400px',
+                            minHeight: '450px',
                             justifyContent: 'center'
                         }}>
+                            {/* Visual Progress Header */}
+                            <div style={{ width: '100%', maxWidth: '500px', marginBottom: '32px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
+                                    <span>{jobStatus === 'pending' ? 'Waiting in Queue...' : 'AI is Thinking...'}</span>
+                                    <span>{Math.round(progress)}%</span>
+                                </div>
+                                <div style={{
+                                    width: '100%',
+                                    height: '8px',
+                                    backgroundColor: 'rgba(0,0,0,0.3)',
+                                    borderRadius: '10px',
+                                    overflow: 'hidden',
+                                    border: '1px solid var(--color-border)'
+                                }}>
+                                    <div style={{
+                                        width: `${progress}%`,
+                                        height: '100%',
+                                        background: 'linear-gradient(to right, #8b5cf6, #ec4899)',
+                                        transition: 'width 0.3s ease-out',
+                                        boxShadow: '0 0 10px var(--color-primary-glow)'
+                                    }} />
+                                </div>
+                            </div>
+
                             <div className="skeleton" style={{
                                 width: '100%',
                                 maxWidth: '500px',
-                                height: '300px',
-                                marginBottom: '24px',
-                                borderRadius: 'var(--radius-md)'
-                            }} />
+                                height: '250px',
+                                marginBottom: '32px',
+                                borderRadius: 'var(--radius-md)',
+                                position: 'relative',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <Loader2 className="animate-spin" size={48} color="var(--color-primary)" style={{ opacity: 0.5 }} />
+                            </div>
 
-                            <div style={{ textAlign: 'center' }}>
-                                <h3 style={{ fontSize: '1.5rem', marginBottom: '8px', color: 'var(--color-primary)' }}>
-                                    {statusMessage}
-                                </h3>
-                                <p style={{ color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>
-                                    Time elapsed: {elapsedTime}s
+                            <div style={{ textAlign: 'center', maxWidth: '500px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '12px' }}>
+                                    <div className={jobStatus === 'pending' ? 'pulse-fast' : ''} style={{
+                                        width: '8px',
+                                        height: '8px',
+                                        borderRadius: '50%',
+                                        backgroundColor: jobStatus === 'pending' ? 'var(--color-primary)' : '#4ade80'
+                                    }} />
+                                    <h3 style={{ fontSize: '1.4rem', color: 'white', margin: 0 }}>
+                                        {jobStatus === 'pending' ? "In Queue" : "Generating"}
+                                    </h3>
+                                </div>
+
+                                <p style={{ fontSize: '1.1rem', marginBottom: '16px', color: 'var(--color-text-muted)', minHeight: '1.5em' }}>
+                                    {jobStatus === 'pending' ? "Finding an available worker for you..." : statusMessage}
                                 </p>
+
+                                <div style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    padding: '8px 16px',
+                                    borderRadius: '20px',
+                                    backgroundColor: 'rgba(255,255,255,0.05)',
+                                    fontFamily: 'monospace',
+                                    fontSize: '0.9rem',
+                                    color: 'var(--color-primary)'
+                                }}>
+                                    <Loader2 className="animate-spin" size={14} />
+                                    Elapsed: {elapsedTime}s
+                                </div>
                             </div>
                         </div>
                     </div>

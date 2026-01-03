@@ -57,20 +57,33 @@ export const generateImage = onDocumentCreated(
             // Update status to processing
             await snapshot.ref.update({ status: "processing" });
 
-            const { prompt, modelId, userId, negative_prompt, steps, cfg, scheduler } = data;
+            const { prompt, modelId, userId, negative_prompt, steps, cfg, aspectRatio, scheduler } = data;
 
             if (!B2_KEY_ID) throw new Error("Missing B2 credentials");
 
-            // 1. Call Modal Endpoint
-            console.log(`Generating image for ${requestId} using Modal endpoint...`);
+            // Define resolution mapping for SDXL
+            const resolutionMap = {
+                '1:1': { width: 1024, height: 1024 },
+                '2:3': { width: 832, height: 1216 },
+                '3:2': { width: 1216, height: 832 },
+                '9:16': { width: 768, height: 1344 },
+                '16:9': { width: 1344, height: 768 }
+            };
 
-            // Construct query parameters with optimized defaults
+            const resolution = resolutionMap[aspectRatio] || resolutionMap['1:1'];
+
+            // 1. Call Modal Endpoint
+            console.log(`Generating image for ${requestId} (${aspectRatio} - ${resolution.width}x${resolution.height}) using Modal endpoint...`);
+
+            // Construct query parameters with user settings or defaults
             const params = new URLSearchParams({
                 prompt: prompt,
                 negative_prompt: negative_prompt || "",
-                steps: steps || '30',
-                cfg: cfg || '6.0', // Lowered from 7.0 to reduce "fried" look
-                scheduler: scheduler || 'DPM++ 2M Karras' // Often better than Euler a for SDXL
+                steps: (steps || 30).toString(),
+                cfg: (cfg || 5.0).toString(),
+                width: resolution.width.toString(),
+                height: resolution.height.toString(),
+                scheduler: scheduler || 'DPM++ 2M Karras'
             });
 
             const response = await fetch(

@@ -133,3 +133,35 @@ button {
   animation: skeletonPulse 1.5s ease-in-out infinite;
   border-radius: var(--radius-sm);
 }
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes pulseFast {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
+}
+
+.pulse-fast {
+  animation: pulseFast 0.8s ease-in-out infinite;
+}
