@@ -6,9 +6,7 @@ import {
     createUserWithEmailAndPassword,
     signOut,
     GoogleAuthProvider,
-    signInWithPopup,
-    signInWithRedirect,
-    getRedirectResult
+    signInWithPopup
 } from "firebase/auth";
 
 const AuthContext = createContext();
@@ -31,7 +29,7 @@ export function AuthProvider({ children }) {
 
     function loginWithGoogle() {
         const provider = new GoogleAuthProvider();
-        return signInWithRedirect(auth, provider);
+        return signInWithPopup(auth, provider);
     }
 
     function logout() {
@@ -44,18 +42,6 @@ export function AuthProvider({ children }) {
             setCurrentUser(user);
             setLoading(false);
         });
-
-        // Handle redirect result
-        getRedirectResult(auth)
-            .then((result) => {
-                console.log("Redirect Result:", result);
-                if (result) {
-                    console.log("Redirect Login Successful:", result.user);
-                }
-            })
-            .catch((error) => {
-                console.error("Redirect auth error:", error);
-            });
 
         return unsubscribe;
     }, []);
