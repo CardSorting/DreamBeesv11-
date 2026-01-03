@@ -61,7 +61,7 @@ export default function ModelDetail() {
     const baseImages = model.previewImages || [model.image];
     // Create a larger set for the feed impression if needed
     const feedImages = baseImages.length < 6
-        ? [...baseImages, ...baseImages, ...baseImages].slice(0, 12)
+        ? [...baseImages, ...baseImages, ...baseImages].slice(0, 15)
         : baseImages;
 
     return (
@@ -100,50 +100,53 @@ export default function ModelDetail() {
                 </button>
             </div>
 
-            <div className="split-layout">
-                {/* LEFT PANEL: Sticky Info */}
-                <div className="info-panel" style={{
-                    position: 'sticky',
-                    top: 0,
-                    height: '100vh',
-                    width: '50%',
+            <div className="pinterest-layout">
+
+                {/* HERO SECTION - Centered */}
+                <div className="hero-section" style={{
+                    minHeight: '70vh',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
-                    padding: '0 6vw',
-                    borderRight: '1px solid rgba(255,255,255,0.05)'
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    padding: '120px 20px 60px 20px',
+                    position: 'relative',
+                    zIndex: 10
                 }}>
-                    <div className="content-wrapper" style={{ maxWidth: '600px' }}>
+                    <div style={{ maxWidth: '800px' }}>
 
                         {/* ID Badge */}
                         <div style={{
-                            marginBottom: '40px',
-                            display: 'flex',
+                            marginBottom: '32px',
+                            display: 'inline-flex',
                             alignItems: 'center',
                             gap: '16px',
-                            opacity: 0.6
+                            opacity: 0.6,
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            padding: '8px 16px',
+                            borderRadius: '100px'
                         }}>
                             <span style={{
-                                width: '8px',
-                                height: '8px',
+                                width: '6px',
+                                height: '6px',
                                 background: 'var(--color-accent-primary)',
                                 borderRadius: '50%',
                                 boxShadow: '0 0 10px var(--color-accent-primary)'
                             }} />
-                            <span style={{ fontFamily: 'monospace', fontSize: '0.8rem', letterSpacing: '0.2em' }}>
+                            <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', letterSpacing: '0.2em' }}>
                                 MODEL // {model.id.toUpperCase()}
                             </span>
                         </div>
 
                         {/* Heading */}
                         <h1 style={{
-                            fontSize: 'clamp(3rem, 5vw, 5rem)',
+                            fontSize: 'clamp(3rem, 6vw, 6rem)',
                             lineHeight: 1,
                             fontWeight: '300',
                             color: 'white',
                             marginBottom: '32px',
-                            letterSpacing: '-0.03em',
-                            position: 'relative'
+                            letterSpacing: '-0.03em'
                         }}>
                             <div className="text-reveal-mask">
                                 <span style={{ animation: 'revealUp 1s cubic-bezier(0.16, 1, 0.3, 1) both' }}>
@@ -154,11 +157,14 @@ export default function ModelDetail() {
 
                         {/* Description */}
                         <p style={{
-                            fontSize: '1.125rem',
+                            fontSize: 'clamp(1rem, 2vw, 1.25rem)',
                             lineHeight: 1.6,
-                            color: '#888',
+                            color: '#aaa',
                             fontFamily: 'var(--font-serif)',
-                            marginBottom: '60px',
+                            marginBottom: '40px',
+                            maxWidth: '600px',
+                            marginLeft: 'auto',
+                            marginRight: 'auto',
                             animation: 'fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both'
                         }}>
                             {model.description}
@@ -167,8 +173,10 @@ export default function ModelDetail() {
                         {/* CTAs */}
                         <div style={{
                             display: 'flex',
-                            gap: '20px',
-                            marginBottom: '80px',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: '24px',
+                            marginBottom: '60px',
                             animation: 'fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both'
                         }}>
                             <button
@@ -181,8 +189,8 @@ export default function ModelDetail() {
                                 disabled={isActive}
                                 className={`btn-primary ${isActive ? 'active-engine' : ''}`}
                                 style={{
-                                    padding: '24px 48px',
-                                    borderRadius: '0',
+                                    padding: '20px 40px',
+                                    borderRadius: '100px',
                                     background: isActive ? 'white' : 'white',
                                     color: 'black',
                                     fontSize: '0.9rem',
@@ -192,36 +200,19 @@ export default function ModelDetail() {
                                     gap: '12px',
                                     border: 'none',
                                     cursor: 'none',
-                                    transformOrigin: 'left',
                                     transition: 'transform 0.3s'
                                 }}
                             >
                                 {isActive ? 'ACTIVE' : 'ACTIVATE'} <ArrowUpRight size={18} />
                             </button>
-                        </div>
 
-                        {/* Technical Spec Grid */}
-                        <div className="specs-grid" style={{
-                            display: 'grid',
-                            gridTemplateColumns: '1fr 1fr',
-                            borderTop: '1px solid rgba(255,255,255,0.1)',
-                            paddingTop: '32px',
-                            animation: 'fadeIn 1.5s ease 0.6s both'
-                        }}>
-                            <div style={{ borderRight: '1px solid rgba(255,255,255,0.1)', paddingRight: '32px' }}>
-                                <div className="spec-label">RESOLUTION</div>
-                                <div className="spec-value">1024x1024</div>
-                            </div>
-                            <div style={{ paddingLeft: '32px' }}>
-                                <div className="spec-label">BASE MODEL</div>
-                                <div className="spec-value">SDXL 1.0</div>
-                            </div>
-                            <div style={{ gridColumn: 'span 2', marginTop: '32px' }}>
-                                <div className="spec-label">TAGS</div>
-                                <div className="spec-tags">
-                                    {model.tags.map(t => (
-                                        <span key={t} className="spec-tag">{t}</span>
-                                    ))}
+                            {/* Technical Specs Row */}
+                            <div className="tech-row" style={{ display: 'flex', gap: '24px' }}>
+                                <div className="tech-item">
+                                    <span className="tech-label">RES</span> 1024
+                                </div>
+                                <div className="tech-item">
+                                    <span className="tech-label">BASE</span> SDXL
                                 </div>
                             </div>
                         </div>
@@ -229,160 +220,144 @@ export default function ModelDetail() {
                     </div>
                 </div>
 
-                {/* RIGHT PANEL: Scrollable Feed */}
-                <div className="feed-panel" style={{
-                    width: '50%',
-                    marginLeft: '50%', // Push to right
-                    padding: '20vh 4vw 20vh 4vw'
+                {/* FULL MASONRY FEED */}
+                <div className="pinterest-feed" style={{
+                    padding: '0 2vw 120px 2vw',
+                    animation: 'fadeIn 1.5s ease 0.4s both'
                 }}>
                     <div className="masonry-grid">
-                        {feedImages.map((imgSrc, index) => (
-                            <div
-                                key={index}
-                                className="masonry-item"
-                                onMouseEnter={() => setIsHovering(true)}
-                                onMouseLeave={() => setIsHovering(false)}
-                                style={{
-                                    marginBottom: '40px',
-                                    breakInside: 'avoid',
-                                    animation: `fadeInUp 1s ease ${0.4 + (index * 0.1)}s both`
-                                }}
-                            >
-                                <div className="image-card">
-                                    <div className="image-wrapper">
-                                        <img
-                                            src={imgSrc}
-                                            alt={`Sample ${index}`}
-                                            className="feed-image"
-                                        />
-                                    </div>
-                                    <div className="image-meta">
-                                        <span className="mono-label">SAMPLE_{String(index + 1).padStart(2, '0')}</span>
+                        {feedImages.map((imgSrc, index) => {
+                            // Pseudo-random aspect ratio based on index
+                            // 0: Square (1/1), 1: Portrait (2/3), 2: Square, 3: Tall (9/16), 4: Landscape (4/3) 
+                            const ratios = ['1/1', '3/4', '1/1', '2/3', '4/3', '1/1', '3/5'];
+                            const ratio = ratios[index % ratios.length];
+
+                            return (
+                                <div
+                                    key={index}
+                                    className="masonry-item"
+                                    onMouseEnter={() => setIsHovering(true)}
+                                    onMouseLeave={() => setIsHovering(false)}
+                                    style={{
+                                        animation: `fadeInUp 1s ease ${0.1 + (Math.random() * 0.5)}s both`
+                                    }}
+                                >
+                                    <div className="image-card">
+                                        <div className="image-wrapper" style={{ aspectRatio: ratio }}>
+                                            <img
+                                                src={imgSrc}
+                                                alt={`Sample ${index}`}
+                                                className="feed-image"
+                                            />
+                                        </div>
+                                        <div className="image-meta">
+                                            <div className="meta-badge">SAMPLE_{String(index + 1).padStart(2, '0')}</div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
+
             </div>
 
             <style>{`
-                .split-layout {
-                    display: flex;
-                    width: 100%;
-                    min-height: 100vh;
-                }
-                
                 .text-reveal-mask { overflow: hidden; }
                 
-                @keyframes revealUp {
-                    from { transform: translateY(100%); opacity: 0; }
-                    to { transform: translateY(0); opacity: 1; }
-                }
-                @keyframes fadeInUp {
-                    from { transform: translateY(40px); opacity: 0; }
-                    to { transform: translateY(0); opacity: 1; }
-                }
-                @keyframes fadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
+                @keyframes revealUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+                @keyframes fadeInUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-                .hover-underline {
-                    position: relative;
-                }
+                .hover-underline { position: relative; }
                 .hover-underline::after {
-                    content: '';
-                    position: absolute;
-                    bottom: -4px;
-                    left: 0;
-                    width: 0%;
-                    height: 1px;
-                    background: white;
-                    transition: width 0.3s;
+                    content: ''; position: absolute; bottom: -4px; left: 0; width: 0%; height: 1px; background: white; transition: width 0.3s;
                 }
-                button:hover .hover-underline::after {
-                    width: 100%;
-                }
+                button:hover .hover-underline::after { width: 100%; }
 
-                .spec-label {
+                .tech-item {
                     font-family: monospace;
-                    font-size: 0.7rem;
-                    color: #555;
-                    letter-spacing: 0.15em;
-                    margin-bottom: 8px;
-                }
-                .spec-value {
-                    font-size: 1rem;
-                    color: #e5e5e5;
-                }
-                .spec-tags {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 12px;
-                }
-                .spec-tag {
-                    font-family: monospace;
-                    font-size: 0.75rem;
-                    color: #888;
+                    font-size: 0.8rem;
+                    color: #666;
                     border: 1px solid rgba(255,255,255,0.1);
-                    padding: 4px 12px;
-                    border-radius: 100px;
+                    padding: 8px 16px;
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
                 }
+                .tech-label { color: #444; }
 
                 /* Masonry & Cards */
                 .masonry-grid {
-                    column-count: 2;
-                    column-gap: 40px;
+                    column-count: 6; /* dense wall */
+                    column-gap: 4px; /* Ultra tight */
+                }
+                .masonry-item {
+                    margin-bottom: 4px; /* Ultra tight */
+                    break-inside: avoid;
                 }
                 .image-card {
                     position: relative;
                     cursor: none;
+                    border-radius: 2px; /* Sharp corners */
+                    overflow: hidden;
+                    background: #111;
+                    /* Ensure container respects aspect ratio wrapper */
                 }
                 .image-wrapper {
                     overflow: hidden;
-                    margin-bottom: 12px;
+                    position: relative;
+                    width: 100%;
                 }
                 .feed-image {
                     width: 100%;
+                    height: 100%;
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    object-fit: cover;
                     display: block;
                     transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.6s;
                     filter: grayscale(0.2);
                 }
                 .image-card:hover .feed-image {
-                    transform: scale(1.05);
+                    transform: scale(1.1);
                     filter: grayscale(0);
                 }
                 .image-meta {
-                    opacity: 0.4;
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    width: 100%;
+                    padding: 8px;
+                    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+                    opacity: 0;
                     transition: opacity 0.3s;
+                    display: flex;
+                    align-items: flex-end;
                 }
                 .image-card:hover .image-meta {
                     opacity: 1;
                 }
-                .mono-label {
+                .meta-badge {
                     font-family: monospace;
-                    font-size: 0.7rem;
-                    letter-spacing: 0.1em;
+                    font-size: 0.6rem;
+                    background: rgba(255,255,255,0.2);
+                    backdrop-filter: blur(4px);
+                    padding: 2px 4px;
+                    border-radius: 2px;
+                    color: white;
                 }
 
                 /* Mobile Responsiveness */
-                @media (max-width: 1024px) {
-                    .split-layout { flex-direction: column; }
-                    .info-panel {
-                        position: relative;
-                        width: 100% !important;
-                        height: auto !important;
-                        padding: 120px 20px 60px 20px !important;
-                        border-right: none !important;
-                        border-bottom: 1px solid rgba(255,255,255,0.05);
-                    }
-                    .feed-panel {
-                        width: 100% !important;
-                        margin-left: 0 !important;
-                        padding: 40px 20px !important;
-                    }
-                    .masonry-grid { column-count: 1; }
+                @media (max-width: 1600px) { .masonry-grid { column-count: 5; } }
+                @media (max-width: 1200px) { .masonry-grid { column-count: 4; } }
+                @media (max-width: 800px) { .masonry-grid { column-count: 3; } }
+                @media (max-width: 500px) { 
+                    .masonry-grid { column-count: 2; column-gap: 2px; } 
+                    .masonry-item { margin-bottom: 2px; }
+                    .hero-section { min-height: auto; padding-top: 140px; }
                     .custom-cursor { display: none; }
                     .cursor-none { cursor: auto; }
                 }
