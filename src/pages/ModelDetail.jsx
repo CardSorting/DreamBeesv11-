@@ -52,7 +52,7 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                 </button>
 
                 <div className="flex-center" style={{ gap: '12px' }}>
-                    <a href={image} download={`db-showcase.png`} className="btn-ghost" title="Download">
+                    <a href={image.url || image} download={`db-showcase.png`} className="btn-ghost" title="Download">
                         <Download size={18} />
                     </a>
                     <button onClick={onClose} className="btn-ghost" title="Close" style={{ marginLeft: '12px' }}>
@@ -73,7 +73,7 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                     position: 'relative'
                 }}>
                     <img
-                        src={image}
+                        src={image.url || image}
                         alt="Showcase Detail"
                         style={{
                             maxWidth: '100%', maxHeight: '100%',
@@ -94,7 +94,7 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                     <div style={{ marginBottom: '40px' }}>
                         <label className="meta-label">PROMPT</label>
                         <p style={{ fontSize: '1.1rem', lineHeight: '1.6', color: 'white', fontWeight: '400', fontStyle: 'italic', opacity: 0.8 }}>
-                            "This is a curated showcase generation demonstrating the capabilities of {model?.name || 'this model'}. High-fidelity details and texture handling are key characteristics shown here."
+                            {image.prompt ? `"${image.prompt}"` : `"This is a curated showcase generation demonstrating the capabilities of ${model?.name || 'this model'}. High-fidelity details and texture handling are key characteristics shown here."`}
                         </p>
                     </div>
 
@@ -129,7 +129,10 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                                 Activate this model engine to generate similar high-quality results.
                             </p>
                             <button
-                                onClick={onClose}
+                                onClick={() => {
+                                    onClose();
+                                    navigate(`/generate?prompt=${encodeURIComponent(image.prompt || '')}`);
+                                }}
                                 className="btn btn-outline w-full justify-center text-xs"
                             >
                                 START CREATING
@@ -190,16 +193,31 @@ export default function ModelDetail() {
                 );
                 const snapshot = await getDocs(q);
 
+                let hasValidData = false;
                 if (!snapshot.empty) {
-                    const images = snapshot.docs.map(doc => doc.data().imageUrl);
-                    // Duplicate for effect if too few
-                    const displayImages = images.length < 6
-                        ? [...images, ...images, ...images].slice(0, 15)
-                        : images;
-                    setShowcaseImages(displayImages);
-                } else {
+                    const dbImages = snapshot.docs.map(doc => ({
+                        url: doc.data().imageUrl,
+                        prompt: doc.data().prompt,
+                        name: doc.data().name
+                    }));
+
+                    // Check if we have prompts (rich metadata)
+                    const hasPrompts = dbImages.some(img => img.prompt);
+
+                    if (hasPrompts) {
+                        // DB is good, use it
+                        const displayImages = dbImages.length < 6
+                            ? [...dbImages, ...dbImages, ...dbImages].slice(0, 15)
+                            : dbImages;
+                        setShowcaseImages(displayImages);
+                        hasValidData = true;
+                    }
+                }
+
+                if (!hasValidData) {
+                    // DB empty OR stale (no prompts). Try manifest.
                     // SEEDING: Check for local showcase manifest or migrate previewImages
-                    console.log('Seeding showcase images for', model.id);
+                    console.log('Seeding/Updating showcase images for', model.id);
                     let seeds = [];
 
                     try {
@@ -212,30 +230,39 @@ export default function ModelDetail() {
                         console.log('No local manifest found, using previewImages');
                     }
 
-                    if (seeds.length === 0) {
-                        seeds = model.previewImages || [model.image];
+                    // Normalize seeds to objects if they are strings
+                    let normalizedSeeds = seeds.map(s => typeof s === 'string' ? { url: s } : s);
+
+                    if (normalizedSeeds.length === 0) {
+                        const previews = model.previewImages || [model.image];
+                        normalizedSeeds = previews.map(s => ({ url: s }));
                     }
 
                     // Optimistically set UI
-                    const displaySeeds = seeds.length < 6
-                        ? [...seeds, ...seeds, ...seeds].slice(0, 15)
-                        : seeds;
+                    const displaySeeds = normalizedSeeds.length < 6
+                        ? [...normalizedSeeds, ...normalizedSeeds, ...normalizedSeeds].slice(0, 15)
+                        : normalizedSeeds;
                     setShowcaseImages(displaySeeds);
 
-                    // Write to DB in background
-                    seeds.forEach(async (url) => {
-                        await addDoc(collection(db, 'model_showcase_images'), {
-                            modelId: model.id,
-                            imageUrl: url,
-                            createdAt: serverTimestamp(),
-                            isCurated: true
+                    // Only write to DB if DB was actually empty (to avoid duplicates if just updating)
+                    if (snapshot.empty) {
+                        normalizedSeeds.forEach(async (item) => {
+                            await addDoc(collection(db, 'model_showcase_images'), {
+                                modelId: model.id,
+                                imageUrl: item.url,
+                                prompt: item.prompt || null,
+                                name: item.name || null,
+                                createdAt: serverTimestamp(),
+                                isCurated: true
+                            });
                         });
-                    });
+                    }
                 }
             } catch (error) {
                 console.error("Error fetching showcase:", error);
                 // Fallback
-                setShowcaseImages(model.previewImages || [model.image]);
+                const previews = model.previewImages || [model.image];
+                setShowcaseImages(previews.map(s => ({ url: s })));
             }
         };
 
@@ -258,7 +285,8 @@ export default function ModelDetail() {
 
     const isActive = selectedModel?.id === model.id;
     // Use the fetched showcase images, defaulting to empty array until loaded to prevent flash
-    const imagesToRender = showcaseImages.length > 0 ? showcaseImages : (model.previewImages || []);
+    // normalized logic handles object structure
+    const imagesToRender = showcaseImages.length > 0 ? showcaseImages : (model.previewImages?.map(s => ({ url: s })) || []);
 
     return (
         <div className="cursor-none" style={{ background: '#0a0a0a', minHeight: '100vh', color: '#e5e5e5', position: 'relative' }}>
@@ -422,7 +450,7 @@ export default function ModelDetail() {
                     animation: 'fadeIn 1.5s ease 0.4s both'
                 }}>
                     <div className="masonry-grid">
-                        {imagesToRender.map((imgSrc, index) => {
+                        {imagesToRender.map((imgItem, index) => {
                             // Pseudo-random aspect ratio based on index
                             // 0: Square (1/1), 1: Portrait (2/3), 2: Square, 3: Tall (9/16), 4: Landscape (4/3) 
                             const ratios = ['1/1', '3/4', '1/1', '2/3', '4/3', '1/1', '3/5'];
@@ -432,7 +460,7 @@ export default function ModelDetail() {
                                 <div
                                     key={index}
                                     className="masonry-item"
-                                    onClick={() => setActiveShowcaseImage(imgSrc)}
+                                    onClick={() => setActiveShowcaseImage(imgItem)}
                                     onMouseEnter={() => setIsHovering(true)}
                                     onMouseLeave={() => setIsHovering(false)}
                                     style={{
@@ -442,7 +470,7 @@ export default function ModelDetail() {
                                     <div className="image-card">
                                         <div className="image-wrapper" style={{ aspectRatio: ratio }}>
                                             <img
-                                                src={imgSrc}
+                                                src={imgItem.url || imgItem}
                                                 alt={`Sample ${index}`}
                                                 className="feed-image"
                                             />

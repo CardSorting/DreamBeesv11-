@@ -228,7 +228,7 @@ async function generateImage(modelId, item, index, outputDir) {
     const filePath = path.join(outputDir, filename);
 
     // Skip if exists to save time/cost during dev (optional, remove check for full regen)
-    // if (fs.existsSync(filePath)) return `/showcase/${modelId}/${filename}`;
+    if (fs.existsSync(filePath)) return `/showcase/${modelId}/${filename}`;
 
     console.log(`   [${modelId}] [${index + 1}/${PROMPTS.length}] Generating: ${item.name}...`);
 
@@ -279,7 +279,11 @@ async function processModel(modelId) {
     for (let i = 0; i < PROMPTS.length; i++) {
         try {
             const webPath = await generateImage(modelId, PROMPTS[i], i, outputDir);
-            webPaths.push(webPath);
+            webPaths.push({
+                url: webPath,
+                name: PROMPTS[i].name,
+                prompt: PROMPTS[i].prompt
+            });
         } catch (error) {
             console.error(`      ✗ Failed: ${error.message}`);
         }
