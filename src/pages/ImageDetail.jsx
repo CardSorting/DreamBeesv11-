@@ -152,8 +152,9 @@ export default function ImageDetail() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        minHeight: '500px',
-                        position: 'relative'
+                        minHeight: '40vh',
+                        position: 'relative',
+                        padding: '20px'
                     }}>
                         <img
                             src={image.imageUrl}
@@ -246,17 +247,17 @@ export default function ImageDetail() {
                         )}
 
                         <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            <div style={{ display: 'flex', gap: '12px' }}>
+                            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                                 <button
                                     className="btn btn-primary"
-                                    style={{ flex: 1, gap: '10px', height: '52px' }}
+                                    style={{ flex: '1 1 140px', gap: '10px', height: '52px' }}
                                     onClick={handleDownload}
                                 >
                                     <Download size={20} /> Download
                                 </button>
                                 <button
                                     className="btn btn-outline"
-                                    style={{ flex: 1, gap: '10px', height: '52px', border: '1px solid var(--color-primary)' }}
+                                    style={{ flex: '1 1 140px', gap: '10px', height: '52px', border: '1px solid var(--color-primary)' }}
                                     onClick={handleRemix}
                                 >
                                     <RefreshCw size={20} /> Remix

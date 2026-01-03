@@ -54,6 +54,44 @@ button {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 0 16px;
+  }
+}
+
+.mobile-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .mobile-stack {
+    flex-direction: row;
+  }
+}
+
+.hidden-mobile {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .hidden-mobile {
+    display: flex;
+  }
+}
+
+.visible-mobile {
+  display: flex;
+}
+
+@media (min-width: 768px) {
+  .visible-mobile {
+    display: none;
+  }
 }
 
 .btn {
@@ -165,6 +203,7 @@ button {
 .pulse-fast {
   animation: pulseFast 0.8s ease-in-out infinite;
 }
+
 /* Masonry Layout */
 .masonry-grid {
   columns: 1;
@@ -331,6 +370,10 @@ button {
   padding: 12px 24px;
   border: 1px solid var(--color-primary-glow);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  width: max-content;
+  max-width: 90%;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .selection-dot {

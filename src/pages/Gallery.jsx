@@ -184,11 +184,11 @@ export default function Gallery() {
     return (
         <div className="container" style={{ paddingTop: '100px', paddingBottom: '120px' }}>
             <header style={{ marginBottom: '60px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
-                    <h1 style={{ fontSize: '2.5rem', fontWeight: '800', background: 'linear-gradient(to right, #fff, #a1a1aa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px', flexWrap: 'wrap', gap: '20px' }}>
+                    <h1 style={{ fontSize: 'clamp(2rem, 5vw, 2.5rem)', fontWeight: '800', background: 'linear-gradient(to right, #fff, #a1a1aa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
                         Your Gallery
                     </h1>
-                    <div style={{ display: 'flex', gap: '12px' }}>
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                         <button
                             className={`btn ${isSelectionMode ? 'btn-primary' : 'btn-outline'}`}
                             onClick={() => {
@@ -196,7 +196,7 @@ export default function Gallery() {
                                 setSelectedIds([]);
                             }}
                         >
-                            {isSelectionMode ? 'Cancel Selection' : 'Select'}
+                            {isSelectionMode ? 'Cancel' : 'Select'}
                         </button>
                         <Link to="/" className="btn btn-primary" style={{ gap: '8px' }}>
                             <ExternalLink size={18} />

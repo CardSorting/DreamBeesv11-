@@ -60,7 +60,7 @@ export default function Landing() {
                     </div>
 
                     <h1 className="fade-in" style={{
-                        fontSize: '4.5rem',
+                        fontSize: 'clamp(2.5rem, 8vw, 4.5rem)',
                         fontWeight: '800',
                         lineHeight: 1.1,
                         marginBottom: '24px',
@@ -78,7 +78,7 @@ export default function Landing() {
                     </h1>
 
                     <p className="fade-in" style={{
-                        fontSize: '1.25rem',
+                        fontSize: 'clamp(1rem, 4vw, 1.25rem)',
                         color: 'var(--color-text-muted)',
                         marginBottom: '40px',
                         maxWidth: '600px',
@@ -95,13 +95,14 @@ export default function Landing() {
                         gap: '20px',
                         justifyContent: 'center',
                         marginBottom: '60px',
-                        animationDelay: '0.4s'
+                        animationDelay: '0.4s',
+                        flexWrap: 'wrap'
                     }}>
-                        <Link to="/auth" className="btn btn-primary" style={{ padding: '16px 32px', fontSize: '1.1rem' }}>
+                        <Link to="/auth" className="btn btn-primary" style={{ padding: '16px 32px', fontSize: '1.1rem', width: 'min(100%, 200px)' }}>
                             <Sparkles size={20} style={{ marginRight: '8px' }} />
                             Start Creating
                         </Link>
-                        <Link to="/gallery" className="btn btn-outline" style={{ padding: '16px 32px', fontSize: '1.1rem' }}>
+                        <Link to="/gallery" className="btn btn-outline" style={{ padding: '16px 32px', fontSize: '1.1rem', width: 'min(100%, 200px)' }}>
                             View Gallery
                         </Link>
                     </div>

@@ -161,7 +161,7 @@ export default function Generator() {
             <div style={{ maxWidth: '800px', margin: '0 auto' }}>
                 <header style={{ marginBottom: '40px', textAlign: 'center' }}>
                     <h1 style={{
-                        fontSize: '3.5rem',
+                        fontSize: 'clamp(2.5rem, 6vw, 3.5rem)',
                         fontWeight: '800',
                         marginBottom: '16px',
                         background: 'linear-gradient(to right, #8b5cf6, #ec4899)',
@@ -171,13 +171,13 @@ export default function Generator() {
                     }}>
                         Dream it. Generate it.
                     </h1>
-                    <p style={{ fontSize: '1.2rem', color: 'var(--color-text-muted)' }}>
+                    <p style={{ fontSize: 'clamp(1rem, 3vw, 1.2rem)', color: 'var(--color-text-muted)' }}>
                         Turn your text descriptions into stunning AI art in seconds.
                     </p>
                 </header>
 
                 <div className="glass-panel" style={{ padding: '24px', marginBottom: '16px' }}>
-                    <div style={{ display: 'flex', gap: '16px' }}>
+                    <div className="mobile-stack" style={{ gap: '16px' }}>
                         <input
                             type="text"
                             placeholder="A futuristic cyberpunk city with neon lights..."
@@ -202,7 +202,7 @@ export default function Generator() {
                             className="btn btn-primary"
                             onClick={handleGenerate}
                             disabled={generating || !prompt}
-                            style={{ minWidth: '160px' }}
+                            style={{ minWidth: '160px', width: '100%' }}
                         >
                             {generating ? <><Loader2 className="animate-spin" size={20} style={{ marginRight: '8px' }} /> Generating</> : <><Sparkles size={20} style={{ marginRight: '8px' }} /> Generate</>}
                         </button>
@@ -248,7 +248,7 @@ export default function Generator() {
 
                                     <div style={{ marginBottom: '16px' }}>
                                         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', marginBottom: '12px' }}>Aspect Ratio</p>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(60px, 1fr))', gap: '8px' }}>
                                             {[
                                                 { id: '1:1', icon: <Square size={16} /> },
                                                 { id: '16:9', icon: <RectangleHorizontal size={16} /> },
