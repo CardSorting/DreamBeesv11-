@@ -5,6 +5,7 @@ import { collection, addDoc, serverTimestamp, doc, onSnapshot } from 'firebase/f
 import { useAuth } from '../contexts/AuthContext';
 import { Loader2, Sparkles, Image as ImageIcon, Cpu, Settings, Trash2, ChevronDown, ChevronUp, Square, RectangleHorizontal, RectangleVertical } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 export default function Generator() {
     const [searchParams] = useSearchParams();
@@ -34,13 +35,12 @@ export default function Generator() {
         }
     }, [searchParams]);
 
-    const LOADING_MESSAGES = [
-        "Warming up the AI engines...",
-        "Dreaming up your concept...",
-        "Adding details and textures...",
-        "Polishing the pixels...",
-        "Almost there...",
-        "Applying final touches..."
+    const GENERATION_STAGES = [
+        { id: 'queue', label: 'Warming up the AI engines...', progress: 15 },
+        { id: 'worker', label: 'Worker found! Preparing model...', progress: 35 },
+        { id: 'dream', label: 'AI Dreaming: Shaping your vision...', progress: 65 },
+        { id: 'detail', label: 'Adding fine details and textures...', progress: 85 },
+        { id: 'polish', label: 'Polishing pixels and finishing up...', progress: 95 }
     ];
 
     useEffect(() => {
@@ -58,39 +58,38 @@ export default function Generator() {
     useEffect(() => {
         let interval;
         if (generating) {
-            // Change message every 3 seconds
+            // Find current stage based on status and elapsed time
             interval = setInterval(() => {
-                const randomIndex = Math.floor(Math.random() * LOADING_MESSAGES.length);
-                setStatusMessage(LOADING_MESSAGES[randomIndex]);
-            }, 3000);
-            // Set initial message
-            setStatusMessage(LOADING_MESSAGES[0]);
+                let stageIndex = 0;
+                if (jobStatus === 'pending') {
+                    stageIndex = elapsedTime < 5 ? 0 : 1;
+                } else if (jobStatus === 'processing') {
+                    if (elapsedTime < 15) stageIndex = 2;
+                    else if (elapsedTime < 30) stageIndex = 3;
+                    else stageIndex = 4;
+                }
+                const stage = GENERATION_STAGES[stageIndex];
+                setStatusMessage(stage.label);
+
+                // Also update progress more intelligently
+                setProgress(prev => {
+                    const target = stage.progress;
+                    if (prev < target) {
+                        return prev + (target - prev) * 0.1;
+                    }
+                    return prev + 0.1; // Slow creep
+                });
+            }, 1000);
         }
         return () => clearInterval(interval);
-    }, [generating]);
+    }, [generating, jobStatus, elapsedTime]);
 
-    // Progress simulation
+    // Simplified progress logic handled by status message effect
     useEffect(() => {
-        let interval;
-        if (generating) {
-            interval = setInterval(() => {
-                setProgress(prev => {
-                    if (jobStatus === 'pending') {
-                        // Slowly move to 20% while pending
-                        return prev < 20 ? prev + 0.5 : prev;
-                    } else if (jobStatus === 'processing') {
-                        // Move to 90% while processing
-                        if (prev < 20) return 20; // Jump to 20 if just started processing
-                        return prev < 90 ? prev + 0.2 : prev;
-                    }
-                    return prev;
-                });
-            }, 100);
-        } else {
+        if (!generating) {
             setProgress(0);
         }
-        return () => clearInterval(interval);
-    }, [generating, jobStatus]);
+    }, [generating]);
 
 
     useEffect(() => {
@@ -110,7 +109,7 @@ export default function Generator() {
                         setJobStatus('pending');
                     }, 500);
                 } else if (data.status === 'failed') {
-                    alert(`Generation failed: ${data.error || 'Unknown error'}`);
+                    toast.error(`Generation failed: ${data.error || 'Unknown error'}`);
                     setGenerating(false);
                     setCurrentJobId(null);
                     setJobStatus('pending');
@@ -127,6 +126,13 @@ export default function Generator() {
         setGenerating(true);
         setGeneratedImage(null);
         setElapsedTime(0);
+        setShowAdvanced(false); // Auto-collapse for focus
+
+        // Scroll to generator area
+        setTimeout(() => {
+            const el = document.getElementById('generation-area');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
 
         try {
             // Submit job to Firestore Queue
@@ -145,7 +151,7 @@ export default function Generator() {
 
         } catch (error) {
             console.error("Error queueing job:", error);
-            alert(`Error: ${error.message}`);
+            toast.error(`Error: ${error.message}`);
             setGenerating(false);
         }
     }
@@ -456,7 +462,7 @@ export default function Generator() {
                                 </div>
                             </div>
 
-                            <div className="skeleton" style={{
+                            <div id="generation-area" className="skeleton" style={{
                                 width: '100%',
                                 maxWidth: '500px',
                                 height: '250px',
@@ -465,9 +471,28 @@ export default function Generator() {
                                 position: 'relative',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'center'
+                                justifyContent: 'center',
+                                overflow: 'hidden'
                             }}>
-                                <Loader2 className="animate-spin" size={48} color="var(--color-primary)" style={{ opacity: 0.5 }} />
+                                <Loader2 className="animate-spin" size={48} color="var(--color-primary)" style={{ opacity: 0.5, zIndex: 2 }} />
+                                {/* AI Dreaming Visualization */}
+                                <div style={{
+                                    position: 'absolute',
+                                    inset: 0,
+                                    background: 'radial-gradient(circle at center, var(--color-primary-glow) 0%, transparent 70%)',
+                                    opacity: (progress / 100) * 0.5,
+                                    animation: 'pulseFast 2s ease-in-out infinite'
+                                }} />
+                                <div style={{
+                                    position: 'absolute',
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    height: '2px',
+                                    background: 'linear-gradient(to right, transparent, var(--color-primary), transparent)',
+                                    animation: 'fadeIn 1s ease-in-out infinite',
+                                    opacity: jobStatus === 'processing' ? 0.8 : 0
+                                }} />
                             </div>
 
                             <div style={{ textAlign: 'center', maxWidth: '500px' }}>
@@ -519,8 +544,9 @@ export default function Generator() {
                                     boxShadow: 'var(--shadow-glow)'
                                 }}
                             />
-                            <div style={{ marginTop: '20px', display: 'flex', gap: '12px' }}>
-                                <Link to="/gallery" className="btn btn-outline"><ImageIcon size={18} style={{ marginRight: '8px' }} /> View Gallery</Link>
+                            <div style={{ marginTop: '24px', display: 'flex', gap: '12px', width: '100%', justifyContent: 'center' }}>
+                                <Link to="/gallery" className="btn btn-primary" style={{ flex: 1, maxWidth: '240px' }}><ImageIcon size={18} style={{ marginRight: '8px' }} /> View in Gallery</Link>
+                                <button className="btn btn-outline" style={{ flex: 1, maxWidth: '240px' }} onClick={() => setGeneratedImage(null)}><Sparkles size={18} style={{ marginRight: '8px' }} /> Generate Another</button>
                             </div>
                         </div>
                     </div>

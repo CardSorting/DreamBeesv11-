@@ -3,8 +3,9 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { db } from '../firebase';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
-import { Download, Trash2, Calendar, Info, ArrowLeft, Loader2, Share2, RefreshCw, Link as LinkIcon } from 'lucide-react';
+import { Download, Trash2, Calendar, Info, ArrowLeft, Loader2, Share2, RefreshCw, Link as LinkIcon, AlertTriangle } from 'lucide-react';
 import { AVAILABLE_MODELS } from '../contexts/ModelContext';
+import toast from 'react-hot-toast';
 
 export default function ImageDetail() {
     const { id } = useParams();
@@ -47,13 +48,58 @@ export default function ImageDetail() {
     }, [id, currentUser, navigate]);
 
     const handleDelete = async () => {
-        if (!window.confirm("Are you sure you want to delete this image?")) return;
-        try {
-            await deleteDoc(doc(db, "images", id));
-            navigate('/gallery');
-        } catch (err) {
-            console.error("Error deleting image:", err);
-        }
+        toast((t) => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '200px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
+                    <AlertTriangle size={20} color="#ef4444" />
+                    <span style={{ fontWeight: '600' }}>Delete this image?</span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                        onClick={async () => {
+                            toast.dismiss(t.id);
+                            try {
+                                await deleteDoc(doc(db, "images", id));
+                                navigate('/gallery');
+                                toast.success("Image deleted");
+                            } catch (err) {
+                                console.error("Error deleting image:", err);
+                                toast.error("Failed to delete image");
+                            }
+                        }}
+                        style={{
+                            background: '#ef4444',
+                            color: 'white',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            fontSize: '0.85rem',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            flex: 1
+                        }}
+                    >
+                        Delete
+                    </button>
+                    <button
+                        onClick={() => toast.dismiss(t.id)}
+                        style={{
+                            background: 'rgba(255,255,255,0.1)',
+                            color: 'white',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            fontSize: '0.85rem',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            flex: 1
+                        }}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        ), { duration: 6000 });
     };
 
     const handleDownload = () => {
@@ -67,7 +113,7 @@ export default function ImageDetail() {
 
     const handleCopyLink = () => {
         navigator.clipboard.writeText(window.location.href);
-        alert("Link copied to clipboard!");
+        toast.success("Link copied to clipboard!");
     };
 
     const handleRemix = () => {
@@ -224,7 +270,7 @@ export default function ImageDetail() {
                                     onClick={() => {
                                         const meta = `Prompt: ${image.prompt}\nNegative Prompt: ${image.negative_prompt || 'None'}\nSteps: ${image.steps || 30}\nCFG: ${image.cfg || 5.0}\nRatio: ${image.aspectRatio || '1:1'}`;
                                         navigator.clipboard.writeText(meta);
-                                        alert("Full generation info copied!");
+                                        toast.success("Full generation info copied!");
                                     }}
                                 >
                                     <RefreshCw size={16} /> Copy Info

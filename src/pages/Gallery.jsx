@@ -3,7 +3,8 @@ import { db } from '../firebase';
 import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Loader2, Search, Download, Trash2, X, ExternalLink, Calendar, Info, Check } from 'lucide-react';
+import { Loader2, Search, Download, Trash2, X, ExternalLink, Calendar, Info, Check, AlertTriangle } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function Gallery() {
     const navigate = useNavigate();
@@ -44,25 +45,117 @@ export default function Gallery() {
 
     const handleDelete = async (e, id) => {
         e.stopPropagation();
-        if (!window.confirm("Are you sure you want to delete this image?")) return;
-        try {
-            await deleteDoc(doc(db, "images", id));
-            setImages(prev => prev.filter(img => img.id !== id));
-        } catch (err) {
-            console.error("Error deleting image:", err);
-        }
+        toast((t) => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '200px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
+                    <AlertTriangle size={20} color="#ef4444" />
+                    <span style={{ fontWeight: '600' }}>Delete this image?</span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                        onClick={async () => {
+                            toast.dismiss(t.id);
+                            try {
+                                await deleteDoc(doc(db, "images", id));
+                                setImages(prev => prev.filter(img => img.id !== id));
+                                toast.success("Image deleted");
+                            } catch (err) {
+                                console.error("Error deleting image:", err);
+                                toast.error("Failed to delete image");
+                            }
+                        }}
+                        style={{
+                            background: '#ef4444',
+                            color: 'white',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            fontSize: '0.85rem',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            flex: 1
+                        }}
+                    >
+                        Delete
+                    </button>
+                    <button
+                        onClick={() => toast.dismiss(t.id)}
+                        style={{
+                            background: 'rgba(255,255,255,0.1)',
+                            color: 'white',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            fontSize: '0.85rem',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            flex: 1
+                        }}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        ), { duration: 6000 });
     };
 
     const handleBatchDelete = async () => {
-        if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} images?`)) return;
-        try {
-            await Promise.all(selectedIds.map(id => deleteDoc(doc(db, "images", id))));
-            setImages(prev => prev.filter(img => !selectedIds.includes(img.id)));
-            setSelectedIds([]);
-            setIsSelectionMode(false);
-        } catch (err) {
-            console.error("Error batch deleting:", err);
-        }
+        toast((t) => (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minWidth: '220px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fff' }}>
+                    <AlertTriangle size={20} color="#ef4444" />
+                    <span style={{ fontWeight: '600' }}>Delete {selectedIds.length} images?</span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                        onClick={async () => {
+                            toast.dismiss(t.id);
+                            try {
+                                const loadToast = toast.loading(`Deleting ${selectedIds.length} images...`);
+                                await Promise.all(selectedIds.map(id => deleteDoc(doc(db, "images", id))));
+                                setImages(prev => prev.filter(img => !selectedIds.includes(img.id)));
+                                setSelectedIds([]);
+                                setIsSelectionMode(false);
+                                toast.dismiss(loadToast);
+                                toast.success("Images deleted successfully");
+                            } catch (err) {
+                                console.error("Error batch deleting:", err);
+                                toast.error("Failed to delete some images");
+                            }
+                        }}
+                        style={{
+                            background: '#ef4444',
+                            color: 'white',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            fontSize: '0.85rem',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            flex: 1
+                        }}
+                    >
+                        Delete
+                    </button>
+                    <button
+                        onClick={() => toast.dismiss(t.id)}
+                        style={{
+                            background: 'rgba(255,255,255,0.1)',
+                            color: 'white',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            fontSize: '0.85rem',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            flex: 1
+                        }}
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        ), { duration: 8000 });
     };
 
     const handleDownload = (e, url, prompt) => {
