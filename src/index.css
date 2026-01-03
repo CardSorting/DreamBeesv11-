@@ -427,3 +427,35 @@ button {
   border-color: var(--color-primary);
   box-shadow: 0 0 20px var(--color-primary-glow);
 }
+
+/* Mock Browser UI */
+.mock-browser {
+  background: #1e1e24;
+  border-radius: 8px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mock-browser-header {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 12px;
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mock-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.mock-content {
+  padding: 24px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}

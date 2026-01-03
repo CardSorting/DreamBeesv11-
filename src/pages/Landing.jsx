@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Zap, Shield, Image as ImageIcon, ArrowRight, Wand2, Download, Share2 } from 'lucide-react';
+import { Sparkles, Zap, Shield, Image as ImageIcon, ArrowRight, Wand2, Download, Share2, Search, Sliders, Layers, Cpu, Lock } from 'lucide-react';
 
 export default function Landing() {
     return (
@@ -111,20 +111,11 @@ export default function Landing() {
                         animationDelay: '0.4s',
                         flexWrap: 'wrap'
                     }}>
-                        <Link to="/auth" className="btn btn-primary" style={{
-                            padding: '16px 40px',
-                            fontSize: '1.1rem',
-                            borderRadius: '50px'
-                        }}>
+                        <Link to="/auth" className="btn btn-primary" style={{ padding: '16px 40px', fontSize: '1.1rem', borderRadius: '50px' }}>
                             <Sparkles size={20} style={{ marginRight: '8px' }} />
                             Start Creating Free
                         </Link>
-                        <Link to="/gallery" className="btn btn-outline" style={{
-                            padding: '16px 40px',
-                            fontSize: '1.1rem',
-                            borderRadius: '50px',
-                            background: 'rgba(255,255,255,0.02)'
-                        }}>
+                        <Link to="/gallery" className="btn btn-outline" style={{ padding: '16px 40px', fontSize: '1.1rem', borderRadius: '50px', background: 'rgba(255,255,255,0.02)' }}>
                             Explore Gallery
                         </Link>
                     </div>
@@ -160,7 +151,6 @@ export default function Landing() {
                     width: '200%',
                     gap: '24px'
                 }} className="animate-marquee">
-                    {/* Double the items for seamless loop */}
                     {[...Array(12)].map((_, i) => (
                         <div key={i} style={{
                             flex: '0 0 300px',
@@ -194,67 +184,205 @@ export default function Landing() {
                 </div>
             </section>
 
-            {/* How It Works */}
-            <section style={{ padding: '100px 0', position: 'relative' }}>
-                <div className="container">
-                    <div style={{ textAlign: 'center', marginBottom: '80px' }}>
-                        <h2 style={{ fontSize: '2.5rem', marginBottom: '16px', fontWeight: '800' }}>How It Works</h2>
-                        <p style={{ color: 'var(--color-text-muted)' }}>From text to masterpiece in three simple steps.</p>
+            {/* Detailed Capabilities */}
+            <section style={{ padding: '120px 0', position: 'relative' }}>
+                <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    right: '0',
+                    width: '30%',
+                    height: '100%',
+                    background: 'radial-gradient(ellipse at right center, rgba(139, 92, 246, 0.15), transparent 70%)',
+                    zIndex: 0,
+                    pointerEvents: 'none'
+                }} />
+
+                <div className="container" style={{ position: 'relative', zIndex: 1 }}>
+                    <div style={{ maxWidth: '600px', marginBottom: '80px' }}>
+                        <h2 style={{ fontSize: '3rem', marginBottom: '24px', fontWeight: '800', lineHeight: 1.1 }}>
+                            Powered by <br />
+                            <span style={{ color: 'var(--color-primary)' }}>Advanced Latent Diffusion</span>
+                        </h2>
+                        <p style={{ color: 'var(--color-text-muted)', fontSize: '1.2rem', lineHeight: 1.6 }}>
+                            We leverage the latest SDXL models run on high-performance H100 GPUs to deliver exceptional quality at breakneck speeds.
+                        </p>
                     </div>
 
                     <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                        gap: '40px',
-                        textAlign: 'center'
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                        gap: '40px'
                     }}>
-                        <StepCard
-                            number="01"
-                            icon={<Wand2 size={32} color="var(--color-primary)" />}
-                            title="Describe Your Vision"
-                            description="Enter a simple text prompt describing what you want to see. The more detailed, the better."
+                        <CapabilityCard
+                            icon={<Cpu size={32} color="#f43f5e" />}
+                            title="SDXL Engine"
+                            description="Utilizing Stable Diffusion XL for superior composition, realism, and prompt adherence."
+                            stat="1024px"
+                            statLabel="Native Resolution"
                         />
-                        <StepCard
-                            number="02"
-                            icon={<Zap size={32} color="var(--color-secondary)" />}
-                            title="AI Magic Happens"
-                            description="Our advanced models process your request instantly, generating variations of your idea."
+                        <CapabilityCard
+                            icon={<Zap size={32} color="#eab308" />}
+                            title="Instant Results"
+                            description="Optimized inference pipeline running on our global edge network."
+                            stat="< 5s"
+                            statLabel="Generation Time"
                         />
-                        <StepCard
-                            number="03"
-                            icon={<Download size={32} color="#10b981" />}
-                            title="Download & Share"
-                            description="Select your favorite, upscale it if needed, and share your creation with the world."
+                        <CapabilityCard
+                            icon={<Layers size={32} color="#3b82f6" />}
+                            title="Batch Processing"
+                            description="Generate multiple variations simultaneously to find the perfect image faster."
+                            stat="4x"
+                            statLabel="Parallel Grids"
                         />
                     </div>
                 </div>
             </section>
 
-            {/* Features Section */}
+            {/* How It Works (Zig Zag Walkthrough) */}
             <section style={{ padding: '100px 0', background: 'rgba(255,255,255,0.02)' }}>
                 <div className="container">
-                    <div style={{ textAlign: 'center', marginBottom: '80px' }}>
-                        <h2 style={{ fontSize: '2.5rem', marginBottom: '16px', fontWeight: '800' }}>Why DreamBees?</h2>
+                    <div style={{ textAlign: 'center', marginBottom: '100px' }}>
+                        <span style={{
+                            color: 'var(--color-secondary)', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase', fontSize: '0.9rem'
+                        }}>Workflow</span>
+                        <h2 style={{ fontSize: '2.5rem', marginTop: '16px', fontWeight: '800' }}>From Text to Masterpiece</h2>
                     </div>
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                        gap: '30px'
-                    }}>
-                        <FeatureCard
-                            icon={<Zap size={32} color="var(--color-primary)" />}
-                            title="Lightning Fast"
-                            description="Generate images in seconds. Our optimized infrastructure ensures you never lose your flow state."
+
+                    <div className="mobile-stack" style={{ gap: '120px' }}>
+
+                        {/* Step 1 */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '60px', alignItems: 'center' }}>
+                            <div>
+                                <div style={{ fontSize: '4rem', fontWeight: '900', color: 'rgba(139, 92, 246, 0.1)', lineHeight: 1, marginBottom: '24px' }}>01</div>
+                                <h3 style={{ fontSize: '2rem', marginBottom: '16px', fontWeight: '700' }}>Craft Your Vision</h3>
+                                <p style={{ color: 'var(--color-text-muted)', fontSize: '1.1rem', lineHeight: 1.6 }}>
+                                    Start with a simple description. Our prompt helper will assist you in adding details, styles, and lighting effects to get exactly what you want.
+                                </p>
+                            </div>
+                            <div className="mock-browser">
+                                <div className="mock-browser-header">
+                                    <div className="mock-dot" style={{ background: '#ff5f56' }} />
+                                    <div className="mock-dot" style={{ background: '#ffbd2e' }} />
+                                    <div className="mock-dot" style={{ background: '#27c93f' }} />
+                                </div>
+                                <div className="mock-content" style={{ background: '#09090b' }}>
+                                    <div style={{
+                                        border: '1px solid var(--color-border)',
+                                        padding: '16px',
+                                        borderRadius: '8px',
+                                        color: 'var(--color-text-muted)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px'
+                                    }}>
+                                        <Search size={18} />
+                                        <span>A futuristic cyberpunk city with neon lights...|</span>
+                                    </div>
+                                    <div style={{ marginTop: '16px', display: 'flex', gap: '8px' }}>
+                                        <div style={{ padding: '6px 12px', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '20px', fontSize: '0.8rem', color: 'var(--color-primary)' }}>Cyberpunk</div>
+                                        <div style={{ padding: '6px 12px', background: 'rgba(236, 72, 153, 0.1)', borderRadius: '20px', fontSize: '0.8rem', color: 'var(--color-secondary)' }}>Cinematic</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Step 2 */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '60px', alignItems: 'center' }}>
+                            <div style={{ order: 2 }}> {/* Mobile order switch handled by grid usually, but explicit mobile-stack check needed for pure CSS without media queries? using class above */}
+                                <div style={{ fontSize: '4rem', fontWeight: '900', color: 'rgba(236, 72, 153, 0.1)', lineHeight: 1, marginBottom: '24px' }}>02</div>
+                                <h3 style={{ fontSize: '2rem', marginBottom: '16px', fontWeight: '700' }}>AI Magic in Seconds</h3>
+                                <p style={{ color: 'var(--color-text-muted)', fontSize: '1.1rem', lineHeight: 1.6 }}>
+                                    Our H100 GPU cluster processes your request instantly. Watch as noise transforms into clarity in real-time.
+                                </p>
+                            </div>
+                            <div className="mock-browser" style={{ order: 1 }}>
+                                <div className="mock-browser-header">
+                                    <div className="mock-dot" style={{ background: '#ff5f56' }} />
+                                    <div className="mock-dot" style={{ background: '#ffbd2e' }} />
+                                    <div className="mock-dot" style={{ background: '#27c93f' }} />
+                                </div>
+                                <div className="mock-content" style={{ background: '#09090b', alignItems: 'center' }}>
+                                    <div style={{
+                                        width: '100%',
+                                        height: '8px',
+                                        background: '#27272a',
+                                        borderRadius: '4px',
+                                        overflow: 'hidden',
+                                        marginBottom: '16px'
+                                    }}>
+                                        <div style={{ width: '70%', height: '100%', background: 'linear-gradient(90deg, var(--color-primary), var(--color-secondary))' }} />
+                                    </div>
+                                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Generating variations...</span>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '20px', width: '100%' }}>
+                                        <div className="skeleton" style={{ height: '80px', borderRadius: '4px' }} />
+                                        <div className="skeleton" style={{ height: '80px', borderRadius: '4px' }} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Step 3 */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '60px', alignItems: 'center' }}>
+                            <div>
+                                <div style={{ fontSize: '4rem', fontWeight: '900', color: 'rgba(16, 185, 129, 0.1)', lineHeight: 1, marginBottom: '24px' }}>03</div>
+                                <h3 style={{ fontSize: '2rem', marginBottom: '16px', fontWeight: '700' }}>Refine, Upscale, Export</h3>
+                                <p style={{ color: 'var(--color-text-muted)', fontSize: '1.1rem', lineHeight: 1.6 }}>
+                                    Select the best variation. Upscale it to 4K resolution, or remix it with new parameters. Your art is ready for the world.
+                                </p>
+                            </div>
+                            <div className="mock-browser">
+                                <div className="mock-browser-header">
+                                    <div className="mock-dot" style={{ background: '#ff5f56' }} />
+                                    <div className="mock-dot" style={{ background: '#ffbd2e' }} />
+                                    <div className="mock-dot" style={{ background: '#27c93f' }} />
+                                </div>
+                                <div className="mock-content" style={{ background: '#09090b', position: 'relative' }}>
+                                    <div style={{
+                                        position: 'absolute', inset: '0',
+                                        background: 'url(https://picsum.photos/seed/cyber/600/400)',
+                                        backgroundSize: 'cover',
+                                        opacity: 0.5
+                                    }} />
+                                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', gap: '12px', justifyContent: 'center', marginTop: 'auto' }}>
+                                        <button className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.9rem' }}>
+                                            <Download size={16} style={{ marginRight: '8px' }} /> Download
+                                        </button>
+                                        <button className="btn btn-outline" style={{ padding: '8px 16px', fontSize: '0.9rem', background: 'rgba(0,0,0,0.5)' }}>
+                                            <Share2 size={16} style={{ marginRight: '8px' }} /> Share
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            {/* FAQ Section */}
+            <section style={{ padding: '100px 0', position: 'relative' }}>
+                <div className="container" style={{ maxWidth: '800px' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+                        <h2 style={{ fontSize: '2.5rem', marginBottom: '16px', fontWeight: '800' }}>Frequently Asked Questions</h2>
+                        <p style={{ color: 'var(--color-text-muted)' }}>Everything you need to know about DreamBees.</p>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <FAQItem
+                            question="Is DreamBees free to use?"
+                            answer="Yes! You can start creating immediately for free with our daily credit allowance. For power users needing more generations and faster speeds, we offer premium capabilities."
                         />
-                        <FeatureCard
-                            icon={<ImageIcon size={32} color="#ec4899" />}
-                            title="High Fidelity"
-                            description="Access state-of-the-art models capable of photorealistic details, complex lighting, and artistic styles."
+                        <FAQItem
+                            question="Can I use the images commercially?"
+                            answer="Absolutely. You own full commercial rights to all images you generate on DreamBees, regardless of whether you are on a free or paid plan."
                         />
-                        <FeatureCard
-                            icon={<Shield size={32} color="#8b5cf6" />}
-                            title="Secure & Private"
-                            description="Your creations are yours. We respect your privacy and provide a secure environment for your art."
+                        <FAQItem
+                            question="What models do you use?"
+                            answer="We primarily utilize Stable Diffusion XL (SDXL) for its superior prompt adherence and image quality. We also offer fine-tuned variants for specific styles like Anime or Photorealism."
+                        />
+                        <FAQItem
+                            question="How long are my images stored?"
+                            answer="Your images are stored securely in your private gallery indefinitely. You can download or delete them at any time."
                         />
                     </div>
                 </div>
@@ -284,13 +412,14 @@ export default function Landing() {
     );
 }
 
-function FeatureCard({ icon, title, description }) {
+function CapabilityCard({ icon, title, description, stat, statLabel }) {
     return (
         <div className="glass-panel" style={{
-            padding: '40px',
+            padding: '32px',
             transition: 'all 0.3s ease',
             height: '100%',
-            cursor: 'default'
+            display: 'flex',
+            flexDirection: 'column'
         }}
             onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-5px)';
@@ -303,39 +432,57 @@ function FeatureCard({ icon, title, description }) {
         >
             <div style={{ marginBottom: '24px', background: 'rgba(255,255,255,0.05)', width: 'fit-content', padding: '12px', borderRadius: '12px' }}>{icon}</div>
             <h3 style={{ fontSize: '1.5rem', marginBottom: '12px', fontWeight: '700' }}>{title}</h3>
-            <p style={{ color: 'var(--color-text-muted)', lineHeight: 1.6 }}>{description}</p>
+            <p style={{ color: 'var(--color-text-muted)', lineHeight: 1.6, marginBottom: '24px', flex: 1 }}>{description}</p>
+
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px' }}>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white' }}>{stat}</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{statLabel}</div>
+            </div>
         </div>
     );
 }
 
-function StepCard({ number, icon, title, description }) {
+function FAQItem({ question, answer }) {
+    const [isOpen, setIsOpen] = React.useState(false);
+
     return (
-        <div style={{ position: 'relative', padding: '20px' }}>
+        <div
+            className="glass-panel"
+            style={{
+                overflow: 'hidden',
+                transition: 'all 0.3s ease',
+                border: isOpen ? '1px solid var(--color-primary)' : '1px solid rgba(255, 255, 255, 0.05)',
+                cursor: 'pointer'
+            }}
+            onClick={() => setIsOpen(!isOpen)}
+        >
             <div style={{
-                fontSize: '4rem',
-                fontWeight: '900',
-                color: 'rgba(255,255,255,0.03)',
-                position: 'absolute',
-                top: '0',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                lineHeight: 1
+                padding: '24px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                background: isOpen ? 'rgba(255,255,255,0.03)' : 'transparent'
             }}>
-                {number}
+                <h3 style={{ fontSize: '1.1rem', fontWeight: '600', margin: 0 }}>{question}</h3>
+                <div style={{
+                    transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.3s ease',
+                    color: isOpen ? 'var(--color-primary)' : 'var(--color-text-muted)'
+                }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
             </div>
             <div style={{
-                position: 'relative',
-                zIndex: 1,
-                background: 'var(--color-bg)',
-                border: '1px solid var(--color-border)',
-                padding: '40px 20px',
-                borderRadius: '24px',
-                marginTop: '30px'
+                maxHeight: isOpen ? '200px' : '0',
+                opacity: isOpen ? 1 : 0,
+                padding: isOpen ? '0 24px 24px' : '0 24px',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                overflow: 'hidden',
+                color: 'var(--color-text-muted)',
+                lineHeight: 1.6
             }}>
-                <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>{icon}</div>
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '12px', fontWeight: 'bold' }}>{title}</h3>
-                <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', lineHeight: 1.6 }}>{description}</p>
+                {answer}
             </div>
         </div>
-    )
+    );
 }
