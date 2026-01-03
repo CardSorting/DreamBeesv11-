@@ -4,8 +4,7 @@ const https = require('https');
 
 // Configuration
 const MODELS = [
-    'hassaku-illustrious',
-    'cat-carrier'
+    'hassaku-illustrious'
 ];
 
 const BASE_OUTPUT_DIR = path.join(__dirname, '../public/showcase');
