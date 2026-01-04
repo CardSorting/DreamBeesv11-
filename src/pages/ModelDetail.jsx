@@ -110,6 +110,10 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                             <div className="meta-value">SDXL 1.0</div>
                         </div>
                         <div>
+                            <label className="meta-label">CREATOR</label>
+                            <div className="meta-value">{image.creator || 'Unknown'}</div>
+                        </div>
+                        <div>
                             <label className="meta-label">SOURCE</label>
                             <div className="meta-value">Official Showcase</div>
                         </div>
@@ -198,7 +202,8 @@ export default function ModelDetail() {
                     const dbImages = snapshot.docs.map(doc => ({
                         url: doc.data().imageUrl,
                         prompt: doc.data().prompt,
-                        name: doc.data().name
+                        name: doc.data().name,
+                        creator: doc.data().creator
                     }));
 
                     // Check if we have prompts (rich metadata)
@@ -270,6 +275,8 @@ export default function ModelDetail() {
         fetchShowcase();
     }, [model]);
 
+    const [selectedCreator, setSelectedCreator] = useState('ALL');
+
     useEffect(() => {
         const handleScroll = () => setScrollY(window.scrollY);
         window.addEventListener('scroll', handleScroll, { passive: true });
@@ -286,9 +293,15 @@ export default function ModelDetail() {
 
     const isActive = selectedModel?.id === model.id;
     // Use the fetched showcase images, defaulting to empty array until loaded to prevent flash
-    // normalized logic handles object structure
     const rawImages = showcaseImages.length > 0 ? showcaseImages : (model.previewImages?.map(s => (typeof s === 'string' ? { url: s } : s)) || []);
-    const imagesToRender = rawImages.filter(img => img && img.url && typeof img.url === 'string' && img.url.length > 5);
+
+    // Extract unique creators
+    const creators = ['ALL', ...new Set(rawImages.map(img => img.creator).filter(Boolean))];
+
+    // Filter images
+    const imagesToRender = rawImages
+        .filter(img => img && img.url && typeof img.url === 'string' && img.url.length > 5)
+        .filter(img => selectedCreator === 'ALL' || img.creator === selectedCreator);
 
     return (
         <div className="cursor-none" style={{ background: '#0a0a0a', minHeight: '100vh', color: '#e5e5e5', position: 'relative' }}>
@@ -446,6 +459,28 @@ export default function ModelDetail() {
                     </div>
                 </div>
 
+
+                {/* Creator Tabs */}
+                {creators.length > 1 && (
+                    <div className="tabs-container" style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: '2px', // Tight gap for seamless look
+                        marginBottom: '40px',
+                        animation: 'fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both'
+                    }}>
+                        {creators.map(creator => (
+                            <button
+                                key={creator}
+                                onClick={() => setSelectedCreator(creator)}
+                                className={`tab-btn ${selectedCreator === creator ? 'active' : ''}`}
+                            >
+                                {creator === 'ALL' ? 'ALL CREATORS' : creator.toUpperCase()}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
                 {/* FULL MASONRY FEED */}
                 <div className="pinterest-feed" style={{
                     padding: '0 2vw 120px 2vw',
@@ -597,7 +632,29 @@ export default function ModelDetail() {
                     .custom-cursor { display: none; }
                     .cursor-none { cursor: auto; }
                 }
+
+                .tab-btn {
+                    background: transparent;
+                    border: 1px solid transparent;
+                    color: var(--color-text-dim);
+                    padding: 8px 16px;
+                    font-size: 0.75rem;
+                    font-weight: 500;
+                    letter-spacing: 0.05em;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    border-radius: 100px;
+                }
+                .tab-btn:hover {
+                    color: white;
+                    background: rgba(255,255,255,0.05);
+                }
+                .tab-btn.active {
+                    color: black;
+                    background: white;
+                    border-color: white;
+                }
             `}</style>
-        </div>
+        </div >
     );
 }

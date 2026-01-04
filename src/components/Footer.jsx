@@ -56,6 +56,7 @@ export default function Footer() {
                             <FooterLink to="/models">Models</FooterLink>
                         </FooterColumn>
                         <FooterColumn title="Studio">
+                            <FooterLink to="/blog">Blog</FooterLink>
                             <FooterLink to="/about">About Us</FooterLink>
                             <FooterLink to="/careers">Careers</FooterLink>
                             <FooterLink to="/brand">Brand Assets</FooterLink>

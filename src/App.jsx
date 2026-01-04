@@ -17,7 +17,9 @@ import Pricing from './pages/Pricing';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import { Privacy, Terms, Cookies } from './pages/Legal';
-import { Blog, Careers, Brand, Api, Showcase } from './pages/Misc';
+import { Blog as PlaceholderBlog, Careers, Brand, Api, Showcase } from './pages/Misc';
+import Blog from './pages/Blog';
+import BlogPost from './pages/BlogPost';
 
 function PrivateRoute({ children }) {
   const { currentUser } = useAuth();
@@ -94,6 +96,7 @@ function App() {
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/cookies" element={<Cookies />} />
                 <Route path="/blog" element={<Blog />} />
+                <Route path="/blog/:id" element={<BlogPost />} />
                 <Route path="/careers" element={<Careers />} />
                 <Route path="/brand" element={<Brand />} />
                 <Route path="/api" element={<Api />} />
