@@ -4,7 +4,7 @@ import { useLocation } from 'react-router-dom';
 
 const SEO = ({ title, description, keywords, image, type = 'website' }) => {
     const location = useLocation();
-    const siteUrl = 'https://dreambees.ai'; // Replace with actual domain
+    const siteUrl = 'https://dreambeesai.com'; // Replace with actual domain
     const currentUrl = `${siteUrl}${location.pathname}`;
     const defaultTitle = 'DreamBeesAI - Advanced AI Image Generator';
     const defaultDescription = 'Create stunning AI-generated images with DreamBeesAI. Use advanced models like Flux, SDXL, and more to bring your imagination to life.';

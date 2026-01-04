@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://dreambeeai.com/sitemap.xml
+Sitemap: https://dreambeesai.com/sitemap.xml

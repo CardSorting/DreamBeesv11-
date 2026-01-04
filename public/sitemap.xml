@@ -1,77 +1,77 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://dreambeeai.com/</loc>
+    <loc>https://dreambeesai.com/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://dreambeeai.com/features</loc>
+    <loc>https://dreambeesai.com/features</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://dreambeeai.com/pricing</loc>
+    <loc>https://dreambeesai.com/pricing</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://dreambeeai.com/showcase</loc>
+    <loc>https://dreambeesai.com/showcase</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://dreambeeai.com/about</loc>
+    <loc>https://dreambeesai.com/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://dreambeeai.com/contact</loc>
+    <loc>https://dreambeesai.com/contact</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://dreambeeai.com/blog</loc>
+    <loc>https://dreambeesai.com/blog</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://dreambeeai.com/blog/prompt-director-drift-evaluation</loc>
+    <loc>https://dreambeesai.com/blog/prompt-director-drift-evaluation</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://dreambeeai.com/api</loc>
+    <loc>https://dreambeesai.com/api</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://dreambeeai.com/careers</loc>
+    <loc>https://dreambeesai.com/careers</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
-    <loc>https://dreambeeai.com/brand</loc>
+    <loc>https://dreambeesai.com/brand</loc>
     <changefreq>yearly</changefreq>
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://dreambeeai.com/privacy</loc>
+    <loc>https://dreambeesai.com/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://dreambeeai.com/terms</loc>
+    <loc>https://dreambeesai.com/terms</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://dreambeeai.com/cookies</loc>
+    <loc>https://dreambeesai.com/cookies</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://dreambeeai.com/auth</loc>
+    <loc>https://dreambeesai.com/auth</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
