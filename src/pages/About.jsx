@@ -1,8 +1,13 @@
 import React from 'react';
+import SEO from '../components/SEO';
 
 export default function About() {
     return (
         <div className="container" style={{ padding: '120px 20px 60px', maxWidth: '800px' }}>
+            <SEO
+                title="About Us"
+                description="Learn about the mission and team behind DreamBeesAI. We are dedicated to democratizing creativity through artificial intelligence."
+            />
             <h1 style={{
                 fontSize: '3.5rem',
                 fontWeight: '800',

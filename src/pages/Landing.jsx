@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, Zap, Shield, ArrowRight, Layers, ChevronDown, Cpu, Expand, Clock, Check, Plus, Minus } from 'lucide-react';
+import SEO from '../components/SEO';
 
 export default function Landing() {
     return (
         <div className="landing-page bg-grid" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+            <SEO />
 
             {/* Hero Section */}
             <section style={{

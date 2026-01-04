@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { blogPosts } from '../data/blogPosts';
 import { ArrowLeft, Calendar, Clock, User, Share2 } from 'lucide-react';
+import SEO from '../components/SEO';
 
 export default function BlogPost() {
     const { id } = useParams(); // 'id' here captures the slug from the route parameter
@@ -29,6 +30,11 @@ export default function BlogPost() {
 
     return (
         <article style={{ paddingTop: '140px', paddingBottom: '120px' }}>
+            <SEO
+                title={post.title}
+                description={post.excerpt}
+                type="article"
+            />
             {/* Hero / Header */}
             <div className="container" style={{ maxWidth: '900px', marginBottom: '60px' }}>
                 <Link to="/blog" style={{

@@ -1,8 +1,13 @@
 import React from 'react';
+import SEO from '../components/SEO';
 
 export default function Contact() {
     return (
         <div className="container" style={{ padding: '120px 20px 60px', maxWidth: '600px' }}>
+            <SEO
+                title="Contact Support"
+                description="Get in touch with the DreamBeesAI support team. We're here to help with any questions or issues."
+            />
             <h1 style={{
                 fontSize: '3rem',
                 fontWeight: '800',

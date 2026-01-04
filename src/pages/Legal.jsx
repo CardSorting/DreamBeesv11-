@@ -1,8 +1,10 @@
 import React from 'react';
+import SEO from '../components/SEO';
 
 export function Privacy() {
     return (
         <div className="container" style={{ padding: '120px 20px 60px', maxWidth: '800px' }}>
+            <SEO title="Privacy Policy" description="DreamBeesAI Privacy Policy." />
             <h1 style={{ color: 'white', marginBottom: '30px' }}>Privacy Policy</h1>
             <div className="glass-panel" style={{ padding: '40px', color: 'var(--color-text-muted)', lineHeight: '1.8' }}>
                 <p>Last updated: January 2026</p>
@@ -22,6 +24,7 @@ export function Privacy() {
 export function Terms() {
     return (
         <div className="container" style={{ padding: '120px 20px 60px', maxWidth: '800px' }}>
+            <SEO title="Terms of Service" description="DreamBeesAI Terms of Service." />
             <h1 style={{ color: 'white', marginBottom: '30px' }}>Terms of Service</h1>
             <div className="glass-panel" style={{ padding: '40px', color: 'var(--color-text-muted)', lineHeight: '1.8' }}>
                 <p>Last updated: January 2026</p>
@@ -82,6 +85,7 @@ export function Terms() {
 export function Cookies() {
     return (
         <div className="container" style={{ padding: '120px 20px 60px', maxWidth: '800px' }}>
+            <SEO title="Cookie Policy" description="DreamBeesAI Cookie Policy." />
             <h1 style={{ color: 'white', marginBottom: '30px' }}>Cookie Policy</h1>
             <div className="glass-panel" style={{ padding: '40px', color: 'var(--color-text-muted)', lineHeight: '1.8' }}>
                 <p>We use cookies to enhance your experience on DreamBees.</p>

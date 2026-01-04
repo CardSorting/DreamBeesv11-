@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { blogPosts } from '../data/blogPosts';
 import { Search, ArrowRight, Calendar, User, Clock } from 'lucide-react';
+import SEO from '../components/SEO';
 
 export default function Blog() {
     const navigate = useNavigate();
@@ -16,6 +17,10 @@ export default function Blog() {
 
     return (
         <div className="container" style={{ paddingTop: '140px', paddingBottom: '120px' }}>
+            <SEO
+                title="Research & Insights"
+                description="Read the latest news, research, and insights from the DreamBeesAI team. Deep dives into generative AI and synthetic media."
+            />
             {/* Header */}
             <header style={{ marginBottom: '60px', textAlign: 'center', maxWidth: '800px', margin: '0 auto 80px' }}>
                 <h1 style={{

@@ -4,6 +4,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import { Check, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import SEO from '../components/SEO';
 
 export default function Pricing() {
     const { currentUser } = useAuth();
@@ -51,6 +52,10 @@ export default function Pricing() {
 
     return (
         <div className="container" style={{ paddingTop: '160px', paddingBottom: '120px' }}>
+            <SEO
+                title="Pricing"
+                description="Choose the perfect plan for your creative needs. DreamBeesAI offers flexible pricing options for hobbyists and professionals."
+            />
 
             <div style={{ maxWidth: '800px', margin: '0 auto 120px', textAlign: 'center' }}>
                 <h1 style={{ fontSize: 'clamp(3rem, 6vw, 5rem)', fontWeight: '800', letterSpacing: '-0.04em', lineHeight: '1', marginBottom: '32px', color: 'white' }}>

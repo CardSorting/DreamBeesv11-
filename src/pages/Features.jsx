@@ -1,5 +1,6 @@
 import React from 'react';
 import { Zap, Shield, Image as ImageIcon, Cpu, Share2, Layers } from 'lucide-react';
+import SEO from '../components/SEO';
 
 export default function Features() {
     const features = [
@@ -37,6 +38,10 @@ export default function Features() {
 
     return (
         <div className="container" style={{ padding: '120px 20px 60px' }}>
+            <SEO
+                title="Features"
+                description="Explore the powerful features of DreamBeesAI, including lightning-fast generation, high-resolution support, and advanced AI models."
+            />
             <div style={{ textAlign: 'center', marginBottom: '80px' }}>
                 <h1 style={{
                     fontSize: '3.5rem',
