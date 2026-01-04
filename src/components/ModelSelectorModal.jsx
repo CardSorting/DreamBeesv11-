@@ -1,36 +1,78 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Heart, X, Sparkles, Command } from 'lucide-react';
+import { db } from '../firebase';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 
 export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onSelectModel, models }) {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('all'); // 'all' | 'favorites'
     const [favorites, setFavorites] = useState([]);
 
-    // Load favorites from local storage on mount
+    // The model currently being previewed in the right panel
+    const [previewModel, setPreviewModel] = useState(null);
+
+    // Cache for fetched images: { [modelId]: string[] }
+    const [imageCache, setImageCache] = useState({});
+
+    // Load favorites
     useEffect(() => {
         const stored = localStorage.getItem('dreamBees_modelFavorites');
         if (stored) {
             try {
                 setFavorites(JSON.parse(stored));
-            } catch (e) {
-                console.error("Failed to parse favorites", e);
-            }
+            } catch (e) { console.error(e); }
         }
     }, []);
 
-    // Save favorites to local storage whenever they change
+    // Save favorites
     useEffect(() => {
         localStorage.setItem('dreamBees_modelFavorites', JSON.stringify(favorites));
     }, [favorites]);
 
+    // Set initial preview when modal opens
+    useEffect(() => {
+        if (isOpen && selectedModel) {
+            setPreviewModel(selectedModel);
+        }
+    }, [isOpen, selectedModel]);
+
+    // FETCH IMAGES for the active preview model
+    useEffect(() => {
+        if (!isOpen || !previewModel) return;
+
+        // If we already have images in cache, skip fetch
+        if (imageCache[previewModel.id]) return;
+
+        const fetchImages = async () => {
+            try {
+                // Check if we have dynamic images in Firestore
+                const q = query(
+                    collection(db, 'model_showcase_images'),
+                    where('modelId', '==', previewModel.id),
+                    limit(12)
+                );
+                const snapshot = await getDocs(q);
+
+                if (!snapshot.empty) {
+                    const urls = snapshot.docs.map(d => d.data().imageUrl);
+                    setImageCache(prev => ({ ...prev, [previewModel.id]: urls }));
+                } else {
+                    // Mark as empty in cache so we don't retry endlessly
+                    setImageCache(prev => ({ ...prev, [previewModel.id]: [] }));
+                }
+            } catch (e) {
+                console.error("Error fetching preview images", e);
+            }
+        };
+
+        fetchImages();
+    }, [previewModel, isOpen, imageCache]);
+
     const toggleFavorite = (e, modelId) => {
         e.stopPropagation();
         setFavorites(prev => {
-            if (prev.includes(modelId)) {
-                return prev.filter(id => id !== modelId);
-            } else {
-                return [...prev, modelId];
-            }
+            if (prev.includes(modelId)) return prev.filter(id => id !== modelId);
+            return [...prev, modelId];
         });
     };
 
@@ -46,119 +88,63 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
         return matchesSearch;
     });
 
+    // Ensure we have a valid preview model even if filtering changes
+    const activePreview = previewModel || filteredModels[0] || null;
+
+    // Resolve images to show: Cache -> Model Static -> Empty
+    const currentImages = (activePreview && imageCache[activePreview.id] && imageCache[activePreview.id].length > 0)
+        ? imageCache[activePreview.id]
+        : (activePreview?.previewImages || []);
+
     return (
         <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            background: 'rgba(0,0,0,0.92)',
-            backdropFilter: 'blur(32px)',
-            zIndex: 9999,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '24px'
-        }} onClick={(e) => {
-            if (e.target === e.currentTarget) onClose();
-        }}>
+            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(20px)', zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2vw'
+        }} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+
             <div className="glass-panel" style={{
-                width: '100%',
-                maxWidth: '1200px',
-                height: '90vh',
-                display: 'flex',
-                flexDirection: 'column',
-                border: '1px solid rgba(255,255,255,0.08)',
-                boxShadow: '0 40px 120px rgba(0,0,0,0.8)',
-                animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                background: 'linear-gradient(180deg, #0a0a0a 0%, #050505 100%)',
-                borderRadius: '32px',
-                overflow: 'hidden',
-                position: 'relative'
+                width: '100%', maxWidth: '1400px', height: '85vh',
+                display: 'flex', overflow: 'hidden', position: 'relative',
+                background: '#0a0a0a', border: '1px solid rgba(255,255,255,0.08)',
+                boxShadow: '0 40px 100px -20px rgba(0,0,0,0.8)', borderRadius: '24px'
             }}>
-                {/* Background Ambient Glow */}
-                <div style={{
-                    position: 'absolute',
-                    top: '-10%',
-                    right: '-5%',
-                    width: '400px',
-                    height: '400px',
-                    background: 'radial-gradient(circle, rgba(79, 70, 229, 0.1) 0%, transparent 70%)',
-                    pointerEvents: 'none',
-                    zIndex: 0
-                }} />
 
-                {/* Header Section */}
+                {/* LEFT PANEL: LIST & SEARCH (35%) */}
                 <div style={{
-                    padding: '40px 48px',
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '32px',
-                    position: 'relative',
-                    zIndex: 1
+                    width: '35%', minWidth: '380px', display: 'flex', flexDirection: 'column',
+                    borderRight: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.2)'
                 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div className="text-reveal-mask">
-                            <h2 style={{ fontSize: '2.5rem', fontWeight: '300', color: 'white', letterSpacing: '-0.04em' }}>
-                                <span>Select <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic' }}>Engine</span></span>
-                            </h2>
+                    {/* Header / Search */}
+                    <div style={{ padding: '32px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
+                            <h2 style={{ fontSize: '1.5rem', fontWeight: '400', color: 'white' }}>Select Engine</h2>
+                            <button onClick={onClose} className="btn-ghost" style={{ padding: '8px' }}><X size={20} /></button>
                         </div>
-                        <button onClick={onClose} className="btn-ghost" style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <X size={20} color="#fff" />
-                        </button>
-                    </div>
 
-                    <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
-                        {/* Search Bar */}
-                        <div style={{
-                            position: 'relative',
-                            flex: 1,
-                            minWidth: '300px'
-                        }}>
-                            <Search size={18} color="#666" style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)' }} />
+                        <div style={{ position: 'relative', marginBottom: '16px' }}>
+                            <Search size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#666' }} />
                             <input
                                 type="text"
-                                placeholder="Search archives..."
+                                placeholder="Search models..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 style={{
-                                    width: '100%',
-                                    padding: '16px 16px 16px 56px',
-                                    borderRadius: '100px',
-                                    background: 'rgba(255,255,255,0.03)',
-                                    border: '1px solid rgba(255,255,255,0.1)',
-                                    color: 'white',
-                                    fontSize: '0.9rem',
-                                    outline: 'none',
-                                    transition: 'all 0.3s'
+                                    width: '100%', padding: '12px 12px 12px 44px', borderRadius: '12px',
+                                    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
+                                    color: 'white', fontSize: '0.9rem', outline: 'none'
                                 }}
-                                onFocus={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.3)'}
-                                onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
                             />
-                            {searchQuery && (
-                                <button
-                                    onClick={() => setSearchQuery('')}
-                                    style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', color: '#666' }}
-                                >
-                                    <X size={14} />
-                                </button>
-                            )}
                         </div>
 
                         {/* Tabs */}
-                        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.03)', padding: '6px', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <div style={{ display: 'flex', gap: '8px' }}>
                             <button
                                 onClick={() => setActiveTab('all')}
                                 style={{
-                                    padding: '10px 24px',
-                                    borderRadius: '100px',
-                                    background: activeTab === 'all' ? 'white' : 'transparent',
-                                    color: activeTab === 'all' ? 'black' : '#666',
-                                    fontSize: '0.8rem',
-                                    fontWeight: '600',
-                                    transition: 'all 0.3s'
+                                    padding: '8px 16px', borderRadius: '100px', fontSize: '0.8rem', fontWeight: '600',
+                                    background: activeTab === 'all' ? 'white' : 'rgba(255,255,255,0.03)',
+                                    color: activeTab === 'all' ? 'black' : '#888', transition: 'all 0.2s'
                                 }}
                             >
                                 All Models
@@ -166,208 +152,155 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
                             <button
                                 onClick={() => setActiveTab('favorites')}
                                 style={{
-                                    padding: '10px 24px',
-                                    borderRadius: '100px',
-                                    background: activeTab === 'favorites' ? 'white' : 'transparent',
-                                    color: activeTab === 'favorites' ? 'black' : '#666',
-                                    fontSize: '0.8rem',
-                                    fontWeight: '600',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    transition: 'all 0.3s'
+                                    padding: '8px 16px', borderRadius: '100px', fontSize: '0.8rem', fontWeight: '600',
+                                    background: activeTab === 'favorites' ? 'white' : 'rgba(255,255,255,0.03)',
+                                    color: activeTab === 'favorites' ? 'black' : '#888', transition: 'all 0.2s',
+                                    display: 'flex', alignItems: 'center', gap: '6px'
                                 }}
                             >
-                                <Heart size={14} fill={activeTab === 'favorites' ? 'currentColor' : 'none'} /> Favorites
+                                <Heart size={12} fill={activeTab === 'favorites' ? 'black' : 'none'} /> Favorites
                             </button>
                         </div>
                     </div>
+
+                    {/* Scrollable List */}
+                    <div className="no-scrollbar" style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+                        {filteredModels.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '40px', color: '#444' }}>
+                                <Command size={32} style={{ opacity: 0.2, marginBottom: '16px' }} />
+                                <p style={{ fontSize: '0.8rem' }}>NO MODELS FOUND</p>
+                            </div>
+                        ) : filteredModels.map(model => {
+                            const isActive = activePreview?.id === model.id;
+                            const isSel = selectedModel?.id === model.id;
+                            const isFav = favorites.includes(model.id);
+
+                            return (
+                                <div
+                                    key={model.id}
+                                    onMouseEnter={() => setPreviewModel(model)}
+                                    onClick={() => setPreviewModel(model)}
+                                    style={{
+                                        padding: '16px', borderRadius: '16px', marginBottom: '8px', cursor: 'pointer',
+                                        background: isActive ? 'rgba(255,255,255,0.06)' : 'transparent',
+                                        border: isActive ? '1px solid rgba(255,255,255,0.1)' : '1px solid transparent',
+                                        transition: 'all 0.2s', display: 'flex', gap: '16px', alignItems: 'center'
+                                    }}
+                                >
+                                    <div style={{
+                                        width: '48px', height: '48px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0,
+                                        border: isSel ? '2px solid var(--color-accent-primary)' : '1px solid rgba(255,255,255,0.1)'
+                                    }}>
+                                        <img src={model.image} alt={model.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    </div>
+                                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                            <h3 style={{ color: isActive ? 'white' : '#ccc', fontSize: '0.95rem', fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{model.name}</h3>
+                                            {isSel && <span style={{ fontSize: '9px', fontWeight: 'bold', color: 'var(--color-accent-primary)', background: 'rgba(79, 70, 229, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>ACTIVE</span>}
+                                        </div>
+                                        <div style={{ fontSize: '0.75rem', color: '#666', fontFamily: 'monospace' }}>{model.id.toUpperCase()}</div>
+                                    </div>
+                                    {isFav && <Heart size={14} fill="white" color="white" style={{ opacity: 0.5 }} />}
+                                </div>
+                            );
+                        })}
+                    </div>
                 </div>
 
-                {/* Scrollable Content */}
-                <div style={{
-                    flex: 1,
-                    padding: '48px',
-                    overflowY: 'auto',
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                    gap: '40px',
-                    alignContent: 'start',
-                    zIndex: 1
-                }} className="no-scrollbar">
-                    {filteredModels.length === 0 ? (
-                        <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '100px 0', color: '#444' }}>
-                            <Command size={48} style={{ opacity: 0.1, marginBottom: '24px' }} />
-                            <p style={{ letterSpacing: '0.1em', fontSize: '0.8rem', fontWeight: 'bold' }}>NO MATCHES FOUND IN ARCHIVE</p>
-                        </div>
-                    ) : filteredModels.map((model, index) => {
-                        const isSelected = selectedModel.id === model.id;
-                        const isFavorite = favorites.includes(model.id);
+                {/* RIGHT PANEL: PREVIEW (65%) */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#050505', position: 'relative', overflow: 'hidden' }}>
+                    {activePreview ? (
+                        <>
+                            {/* Hero Image Background */}
+                            <div key={activePreview.id} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '70%', zIndex: 0, animation: 'fadeIn 0.5s ease' }}>
+                                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 0%, #050505 100%)', zIndex: 1 }} />
+                                <div className="noise-overlay" style={{ opacity: 0.3, zIndex: 1 }} />
+                                <img
+                                    src={activePreview.image}
+                                    alt="Preview"
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6, filter: 'saturate(0.5)' }}
+                                />
+                            </div>
 
-                        return (
-                            <div
-                                key={model.id}
-                                onClick={() => {
-                                    onSelectModel(model);
-                                    onClose();
-                                }}
-                                style={{
-                                    background: 'rgba(255,255,255,0.02)',
-                                    border: `1px solid ${isSelected ? 'var(--color-accent-primary)' : 'rgba(255,255,255,0.05)'}`,
-                                    borderRadius: '24px',
-                                    overflow: 'hidden',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    position: 'relative'
-                                }}
-                                className="group hover-card"
-                            >
-                                {/* Image Preview */}
-                                <div style={{ aspectRatio: '16/10', overflow: 'hidden', background: '#000', position: 'relative' }}>
-                                    <div className="noise-overlay" />
-                                    <img
-                                        src={model.image}
-                                        alt={model.name}
-                                        style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 1.2s cubic-bezier(0.16, 1, 0.3, 1)' }}
-                                        className="agency-image-filter hover-scale"
-                                    />
+                            {/* Content Overlay */}
+                            <div style={{ position: 'relative', zIndex: 2, display: 'flex', flexDirection: 'column', height: '100%', padding: '48px' }}>
+                                <div style={{ flex: 1 }} /> {/* Spacer */}
 
-                                    {/* Favorite Button */}
-                                    <button
-                                        onClick={(e) => toggleFavorite(e, model.id)}
-                                        style={{
-                                            position: 'absolute',
-                                            top: '16px',
-                                            right: '16px',
-                                            width: '36px',
-                                            height: '36px',
-                                            borderRadius: '50%',
-                                            background: 'rgba(0,0,0,0.4)',
-                                            backdropFilter: 'blur(8px)',
-                                            border: '1px solid rgba(255,255,255,0.1)',
-                                            color: isFavorite ? '#fff' : 'rgba(255,255,255,0.6)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            transition: 'all 0.2s',
-                                            zIndex: 2
-                                        }}
-                                        className="hover:scale-110 active:scale-95"
-                                    >
-                                        <Heart size={16} fill={isFavorite ? '#fff' : 'none'} color={isFavorite ? 'white' : 'currentColor'} />
-                                    </button>
-
-                                    {/* Tech Metadata Overlay */}
-                                    <div style={{
-                                        position: 'absolute',
-                                        bottom: '16px',
-                                        left: '16px',
-                                        fontFamily: 'monospace',
-                                        fontSize: '9px',
-                                        color: 'rgba(255,255,255,0.5)',
-                                        letterSpacing: '0.1em',
-                                        zIndex: 2,
-                                        pointerEvents: 'none'
-                                    }}>
-                                        REF_{String(index + 1).padStart(3, '0')} // ID: {model.id.toUpperCase()}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                    <div className="text-reveal-mask">
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--color-accent-primary)', fontWeight: 'bold', letterSpacing: '0.2em', marginBottom: '8px', fontFamily: 'monospace' }}>
+                                            ENGINE // {activePreview.id.toUpperCase()}
+                                        </div>
+                                        <h1 style={{ fontSize: '3.5rem', fontWeight: '300', color: 'white', lineHeight: 1 }}>
+                                            {activePreview.name}
+                                        </h1>
                                     </div>
 
-                                    {/* Selection Glow */}
-                                    {isSelected && (
-                                        <div style={{
-                                            position: 'absolute',
-                                            inset: 0,
-                                            border: '2px solid var(--color-accent-primary)',
-                                            borderRadius: 'inherit',
-                                            pointerEvents: 'none',
-                                            zIndex: 3
-                                        }} />
-                                    )}
-                                </div>
-
-                                {/* Info */}
-                                <div style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                                        <h3 style={{ fontSize: '1.2rem', fontWeight: '400', color: 'white', letterSpacing: '-0.02em' }}>{model.name}</h3>
-                                        {isSelected && (
-                                            <span style={{ fontSize: '9px', fontFamily: 'monospace', color: 'var(--color-accent-primary)', letterSpacing: '0.2em', fontWeight: 'bold' }}>ACTIVE</span>
-                                        )}
-                                    </div>
-
-                                    <p style={{ fontSize: '0.85rem', color: '#888', lineHeight: '1.6', flex: 1, fontFamily: 'var(--font-serif)' }}>
-                                        {model.description}
+                                    <p style={{ maxWidth: '600px', fontSize: '1.1rem', color: '#aaa', lineHeight: 1.6, fontFamily: 'var(--font-serif)' }}>
+                                        {activePreview.description}
                                     </p>
 
-                                    {/* Preview Gallery */}
-                                    {model.previewImages && model.previewImages.length > 0 && (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                            <div style={{ fontSize: '8px', fontFamily: 'monospace', color: '#444', letterSpacing: '0.1em' }}>EXAMPLES //</div>
-                                            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }} className="no-scrollbar">
-                                                {model.previewImages.map((img, i) => (
-                                                    <div key={i} style={{ position: 'relative', flexShrink: 0 }}>
-                                                        <img
-                                                            src={img}
-                                                            alt={`Preview ${i}`}
-                                                            style={{
-                                                                width: '100px',
-                                                                height: '100px',
-                                                                borderRadius: '12px',
-                                                                objectFit: 'cover',
-                                                                border: '1px solid rgba(255,255,255,0.05)',
-                                                                transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-                                                            }}
-                                                            className="hover:scale-105"
-                                                        />
+                                    {/* Action row */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginTop: '16px' }}>
+                                        <button
+                                            onClick={() => { onSelectModel(activePreview); onClose(); }}
+                                            className="btn btn-primary"
+                                            style={{ height: '56px', padding: '0 40px', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '12px' }}
+                                        >
+                                            <Sparkles size={18} />
+                                            {selectedModel.id === activePreview.id ? 'Already Selected' : 'Use This Model'}
+                                        </button>
+
+                                        <button
+                                            onClick={(e) => toggleFavorite(e, activePreview.id)}
+                                            style={{
+                                                width: '56px', height: '56px', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.1)',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', color: favorites.includes(activePreview.id) ? '#ef4444' : 'white',
+                                                background: 'rgba(255,255,255,0.03)', transition: 'all 0.2s'
+                                            }}
+                                            className="hover:bg-white/10"
+                                        >
+                                            <Heart size={24} fill={favorites.includes(activePreview.id) ? 'currentColor' : 'none'} />
+                                        </button>
+                                    </div>
+
+                                    {/* Preview Gallery (Horizontal) */}
+                                    {currentImages.length > 0 && (
+                                        <div style={{ marginTop: '32px', paddingTop: '32px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                                            <div style={{ fontSize: '0.75rem', color: '#666', letterSpacing: '0.1em', marginBottom: '16px', fontWeight: 'bold' }}>GENERATION SAMPLES</div>
+                                            <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }} className="no-scrollbar">
+                                                {currentImages.map((img, i) => (
+                                                    <div key={i} className="group" style={{ position: 'relative', width: '120px', aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                        <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s' }} className="group-hover:scale-110" />
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
                                     )}
-
-                                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                        {model.tags && model.tags.map(tag => (
-                                            <span key={tag} style={{
-                                                fontSize: '10px',
-                                                padding: '4px 12px',
-                                                borderRadius: '100px',
-                                                background: 'rgba(255,255,255,0.03)',
-                                                color: '#666',
-                                                border: '1px solid rgba(255,255,255,0.05)',
-                                                textTransform: 'uppercase',
-                                                letterSpacing: '0.05em'
-                                            }}>
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
                                 </div>
                             </div>
-                        );
-                    })}
+                        </>
+                    ) : (
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.3 }}>
+                            <div style={{ textAlign: 'center' }}>
+                                <Command size={64} style={{ marginBottom: '24px' }} />
+                                <div>SELECT A MODEL TO PREVIEW</div>
+                            </div>
+                        </div>
+                    )}
                 </div>
+
             </div>
             <style>{`
                 .no-scrollbar::-webkit-scrollbar { display: none; }
                 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-                .hover-scale { transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1) !important; }
-                .hover-card:hover .hover-scale { transform: scale(1.05); }
-                .hover-card:hover { border-color: rgba(255,255,255,0.2) !important; background: rgba(255,255,255,0.04) !important; transform: translateY(-4px); }
-                
-                @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
-                
-                .text-reveal-mask { overflow: hidden; }
-                .text-reveal-mask span { 
-                    display: inline-block;
-                    animation: revealUpModal 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
-                }
                 
                 @keyframes revealUpModal {
                     from { transform: translateY(100%); opacity: 0; }
                     to { transform: translateY(0); opacity: 1; }
                 }
+                .text-reveal-mask { overflow: hidden; }
+                .text-reveal-mask > * { animation: revealUpModal 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
             `}</style>
         </div>
     );
