@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, where, limit } from 'firebase/firestore';
 
 const ModelContext = createContext();
 
@@ -64,12 +64,51 @@ export function ModelProvider({ children }) {
         }
     }, [selectedModel]);
 
+    const [showcaseCache, setShowcaseCache] = useState({});
+
+    // Fetch and cache showcase images for a model
+    const getShowcaseImages = async (modelId) => {
+        // 1. Check cache
+        if (showcaseCache[modelId]) {
+            return showcaseCache[modelId];
+        }
+
+        // 2. Fetch from Firestore
+        try {
+            console.log(`[Cache Miss] Fetching showcase for ${modelId}`);
+            const q = query(
+                collection(db, 'model_showcase_images'),
+                where('modelId', '==', modelId),
+                orderBy('createdAt', 'desc'),
+                limit(50) // Reduced limit to prevent overuse, but enough for showcase
+            );
+            const snapshot = await getDocs(q);
+
+            let images = [];
+            if (!snapshot.empty) {
+                images = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+            }
+
+            // 3. Update Cache
+            setShowcaseCache(prev => ({ ...prev, [modelId]: images }));
+            return images;
+        } catch (err) {
+            console.error("Error fetching showcase images:", err);
+            return []; // Return empty on error to prevent blocking
+        }
+    };
+
     const value = {
         selectedModel,
         setSelectedModel,
         availableModels,
         loading,
-        error
+        error,
+        getShowcaseImages, // Exported function
+        showcaseCache      // Exported state (optional, mainly for debugging)
     };
 
     return (

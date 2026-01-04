@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Heart, X, Sparkles, Command } from 'lucide-react';
-import { db } from '../firebase';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { useModel } from '../contexts/ModelContext';
 
 export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onSelectModel, models }) {
+    const { getShowcaseImages } = useModel();
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('all'); // 'all' | 'favorites'
     const [favorites, setFavorites] = useState([]);
@@ -11,8 +11,8 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
     // The model currently being previewed in the right panel
     const [previewModel, setPreviewModel] = useState(null);
 
-    // Cache for fetched images: { [modelId]: string[] }
-    const [imageCache, setImageCache] = useState({});
+    // Local state to hold images for the CURRENT preview model only (for UI display)
+    const [currentPreviewImages, setCurrentPreviewImages] = useState([]);
 
     // Load favorites
     useEffect(() => {
@@ -36,37 +36,23 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
         }
     }, [isOpen, selectedModel]);
 
-    // FETCH IMAGES for the active preview model
+    // FETCH IMAGES for the active preview model using Context Cache
     useEffect(() => {
         if (!isOpen || !previewModel) return;
 
-        // If we already have images in cache, skip fetch
-        if (imageCache[previewModel.id]) return;
+        const loadImages = async () => {
+            // Reset current images temporarily or keep old ones? 
+            // Better to clear or show loading state if desired, but here we just wait.
+            setCurrentPreviewImages([]);
 
-        const fetchImages = async () => {
-            try {
-                // Check if we have dynamic images in Firestore
-                const q = query(
-                    collection(db, 'model_showcase_images'),
-                    where('modelId', '==', previewModel.id),
-                    limit(12)
-                );
-                const snapshot = await getDocs(q);
-
-                if (!snapshot.empty) {
-                    const urls = snapshot.docs.map(d => d.data().imageUrl);
-                    setImageCache(prev => ({ ...prev, [previewModel.id]: urls }));
-                } else {
-                    // Mark as empty in cache so we don't retry endlessly
-                    setImageCache(prev => ({ ...prev, [previewModel.id]: [] }));
-                }
-            } catch (e) {
-                console.error("Error fetching preview images", e);
-            }
+            const images = await getShowcaseImages(previewModel.id);
+            // Map to URLs for display
+            const urls = images.map(img => img.imageUrl || img.url); // Handle both DB format and potential fallback format
+            setCurrentPreviewImages(urls);
         };
 
-        fetchImages();
-    }, [previewModel, isOpen, imageCache]);
+        loadImages();
+    }, [previewModel, isOpen]);
 
     const toggleFavorite = (e, modelId) => {
         e.stopPropagation();
@@ -92,8 +78,9 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
     const activePreview = previewModel || filteredModels[0] || null;
 
     // Resolve images to show: Cache -> Model Static -> Empty
-    const currentImages = (activePreview && imageCache[activePreview.id] && imageCache[activePreview.id].length > 0)
-        ? imageCache[activePreview.id]
+    // Resolve images to show: Dynamic Fetched -> Model Static -> Empty
+    const currentImages = (currentPreviewImages && currentPreviewImages.length > 0)
+        ? currentPreviewImages
         : (activePreview?.previewImages || []);
 
     return (

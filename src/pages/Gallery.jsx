@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { db } from '../firebase';
-import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, deleteDoc, doc, limit, orderBy, startAfter } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Loader2, Search, Download, Trash2, X, ExternalLink, Calendar, Info, Check, Plus } from 'lucide-react';
@@ -15,27 +15,72 @@ export default function Gallery() {
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const { currentUser } = useAuth();
 
+    const [lastVisible, setLastVisible] = useState(null);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const LIMIT = 24;
+
     useEffect(() => {
-        async function fetchImages() {
+        // Initial fetch
+        async function fetchInitial() {
             if (!currentUser) return;
             try {
+                // Determine if we need to search or just list
+                if (searchQuery.length > 0) return; // Search is handled client-side for now or needs separate query
+
                 const q = query(
                     collection(db, "images"),
-                    where("userId", "==", currentUser.uid)
+                    where("userId", "==", currentUser.uid),
+                    orderBy("createdAt", "desc"),
+                    limit(LIMIT)
                 );
                 const snapshot = await getDocs(q);
-                const imgs = snapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() }))
-                    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+                const imgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 setImages(imgs);
+                setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+                setHasMore(snapshot.docs.length === LIMIT);
+
             } catch (err) {
                 console.error("Error fetching images:", err);
             } finally {
                 setLoading(false);
             }
         }
-        fetchImages();
-    }, [currentUser]);
+
+        if (searchQuery === '') {
+            fetchInitial();
+        }
+    }, [currentUser, searchQuery]); // Re-run if user or search clears
+
+    const loadMore = async () => {
+        if (!currentUser || !lastVisible || loadingMore) return;
+        setLoadingMore(true);
+        try {
+            const q = query(
+                collection(db, "images"),
+                where("userId", "==", currentUser.uid),
+                orderBy("createdAt", "desc"),
+                startAfter(lastVisible),
+                limit(LIMIT)
+            );
+            const snapshot = await getDocs(q);
+
+            if (!snapshot.empty) {
+                const newImgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setImages(prev => [...prev, ...newImgs]);
+                setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+                setHasMore(snapshot.docs.length === LIMIT);
+            } else {
+                setHasMore(false);
+            }
+        } catch (err) {
+            console.error("Error loading more:", err);
+            toast.error("Could not load more images");
+        } finally {
+            setLoadingMore(false);
+        }
+    };
 
     const filteredImages = useMemo(() => {
         return images.filter(img =>
@@ -152,7 +197,7 @@ export default function Gallery() {
                         <div
                             key={img.id}
                             className={`fade-in gallery-item-wrapper ${isSelectionMode && selectedIds.includes(img.id) ? 'selected' : ''}`}
-                            onClick={() => isSelectionMode ? toggleSelection(img.id) : navigate(`/gallery/${img.id}`)}
+                            onClick={() => isSelectionMode ? toggleSelection(img.id) : navigate(`/gallery/${img.id}`, { state: { image: img } })}
                             style={{
                                 position: 'relative',
                                 aspectRatio: img.aspectRatio ? img.aspectRatio.replace(':', '/') : '1/1',
@@ -197,6 +242,20 @@ export default function Gallery() {
                             )}
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Load More Button */}
+            {!loading && hasMore && searchQuery === '' && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '40px' }}>
+                    <button
+                        onClick={loadMore}
+                        disabled={loadingMore}
+                        className="btn btn-outline"
+                        style={{ minWidth: '160px' }}
+                    >
+                        {loadingMore ? <Loader2 className="animate-spin" size={18} /> : 'Load More'}
+                    </button>
                 </div>
             )}
 

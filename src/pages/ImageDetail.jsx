@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { db } from '../firebase';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,15 +11,26 @@ export default function ImageDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { currentUser } = useAuth();
-    const [image, setImage] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const location = useLocation();
+
+    // Optimistically set from state if available
+    const [image, setImage] = useState(location.state?.image || null);
+    const [loading, setLoading] = useState(!location.state?.image);
+
     const [showFullPrompt, setShowFullPrompt] = useState(false);
 
     const { availableModels } = useModel();
     const modelName = image ? (availableModels.find(m => m.id === image.modelId)?.name || 'SDXL Model') : 'Loading...';
 
     useEffect(() => {
+        // If we already have the image from navigation state, we don't need to fetch
+        if (location.state?.image && location.state.image.id === id) {
+            setLoading(false);
+            return;
+        }
+
         async function fetchImage() {
+            setLoading(true);
             try {
                 const docRef = doc(db, "images", id);
                 const docSnap = await getDoc(docRef);
@@ -42,7 +53,7 @@ export default function ImageDetail() {
             }
         }
         if (currentUser && id) fetchImage();
-    }, [id, currentUser, navigate]);
+    }, [id, currentUser, navigate, location.state]);
 
     const handleCopy = (text) => {
         navigator.clipboard.writeText(text);

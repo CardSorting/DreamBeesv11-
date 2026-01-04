@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
 import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight, X, Download, Copy, RefreshCw } from 'lucide-react';
 import { db } from '../firebase';
-import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const CustomCursor = ({ isHovering }) => {
     const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -186,24 +186,23 @@ export default function ModelDetail() {
     }, [id, availableModels]);
 
     // Fetch or Seed Showcase Images
+    const { getShowcaseImages } = useModel();
+
     useEffect(() => {
         if (!model) return;
 
-        const fetchShowcase = async () => {
+        const loadShowcase = async () => {
             try {
-                const q = query(
-                    collection(db, 'model_showcase_images'),
-                    where('modelId', '==', model.id)
-                );
-                const snapshot = await getDocs(q);
+                // 1. Try to get from Cache / Firestore via Context
+                const cachedImages = await getShowcaseImages(model.id);
 
                 let hasValidData = false;
-                if (!snapshot.empty) {
-                    const dbImages = snapshot.docs.map(doc => ({
-                        url: doc.data().imageUrl,
-                        prompt: doc.data().prompt,
-                        name: doc.data().name,
-                        creator: doc.data().creator
+                if (cachedImages && cachedImages.length > 0) {
+                    const dbImages = cachedImages.map(doc => ({
+                        url: doc.imageUrl || doc.url, // Handle consistency
+                        prompt: doc.prompt,
+                        name: doc.name,
+                        creator: doc.creator
                     }));
 
                     // Check if we have prompts (rich metadata)
@@ -249,8 +248,8 @@ export default function ModelDetail() {
                         : normalizedSeeds;
                     setShowcaseImages(displaySeeds);
 
-                    // Only write to DB if DB was actually empty (to avoid duplicates if just updating)
-                    if (snapshot.empty) {
+                    // Only write to DB if we truly had nothing (cachedImages empty) to avoid duplicates if just updating
+                    if (!cachedImages || cachedImages.length === 0) {
                         const validSeeds = normalizedSeeds.filter(item => item && item.url && typeof item.url === 'string' && item.url.length > 5);
                         validSeeds.forEach(async (item) => {
                             await addDoc(collection(db, 'model_showcase_images'), {
@@ -258,6 +257,7 @@ export default function ModelDetail() {
                                 imageUrl: item.url,
                                 prompt: item.prompt || null,
                                 name: item.name || null,
+                                creator: item.creator || 'Gemini Pro 3', // Default creator for new seeds
                                 createdAt: serverTimestamp(),
                                 isCurated: true
                             });
@@ -272,7 +272,7 @@ export default function ModelDetail() {
             }
         };
 
-        fetchShowcase();
+        loadShowcase();
     }, [model]);
 
     const [selectedCreator, setSelectedCreator] = useState('ALL');
