@@ -56,7 +56,9 @@ export default function Footer() {
                             <FooterLink to="/models">Models</FooterLink>
                         </FooterColumn>
                         <FooterColumn title="Studio">
-                            <FooterLink to="/blog">Blog</FooterLink>
+                            <Link to="/blog" style={{ color: 'white', fontWeight: '500', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                Blog <ArrowUpRight size={16} color="var(--color-accent-primary)" />
+                            </Link>
                             <FooterLink to="/about">About Us</FooterLink>
                             <FooterLink to="/careers">Careers</FooterLink>
                             <FooterLink to="/brand">Brand Assets</FooterLink>
