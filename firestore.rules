@@ -28,5 +28,15 @@ service cloud.firestore {
       // Updates (processing -> completed) are done by the backend Admin SDK.
       allow update, delete: if false; 
     }
+
+    // Models: Publicly readable configuration
+    match /models/{modelId} {
+      allow read: if true;
+    }
+
+    // Model Showcase Images: Publicly readable for the gallery
+    match /model_showcase_images/{imageId} {
+      allow read: if true;
+    }
   }
 }
