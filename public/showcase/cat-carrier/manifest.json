@@ -1043,5 +1043,505 @@
     "url": "/showcase/cat-carrier/komi_san_cat_ears.png",
     "name": "komi_san_cat_ears",
     "prompt": "masterpiece, best quality, silent beauty, sudden cat ears pop up, notebook communication, classroom setting, wholesome comedy"
+  },
+  {
+    "url": "/showcase/cat-carrier/ethereal_forest_elf.png",
+    "name": "ethereal_forest_elf",
+    "prompt": "masterpiece, best quality, beautiful anime elf girl, long silver hair, emerald eyes, white sundress, ancient tree background, fireflies, soft morning light"
+  },
+  {
+    "url": "/showcase/cat-carrier/cyber_vogue_idol.png",
+    "name": "cyber_vogue_idol",
+    "prompt": "masterpiece, best quality, beautiful cyberpunk pop idol, neon visor (raised), holographic wings, shiny latex outfit, stage lights, futuristic tokyo skyline, concerts atmosphere"
+  },
+  {
+    "url": "/showcase/cat-carrier/crimson_witch_library.png",
+    "name": "crimson_witch_library",
+    "prompt": "masterpiece, best quality, beautiful witch, deep crimson hat and robe, floating grimoires, magical library, glowing runes, mysterious smile, candlelight"
+  },
+  {
+    "url": "/showcase/cat-carrier/sunflower_summer_girl.png",
+    "name": "sunflower_summer_girl",
+    "prompt": "masterpiece, best quality, beautiful anime girl, straw hat, white sundress, sunflower field, bright blue sky, puffy clouds, brilliant sunlight, cheerful smile"
+  },
+  {
+    "url": "/showcase/cat-carrier/moonlight_assassin.png",
+    "name": "moonlight_assassin",
+    "prompt": "masterpiece, best quality, beautiful female assassin, sleek black bodysuit, rooftop at night, full moon, silver hair blowing in wind, intense gaze, dual daggers"
+  },
+  {
+    "url": "/showcase/cat-carrier/royal_ice_queen.png",
+    "name": "royal_ice_queen",
+    "prompt": "masterpiece, best quality, beautiful ice queen, crystal crown, pale blue skin, elegant frost gown, throne of ice, snowing indoors, cold haughty expression"
+  },
+  {
+    "url": "/showcase/cat-carrier/steampunk_aviator_girl.png",
+    "name": "steampunk_aviator_girl",
+    "prompt": "masterpiece, best quality, beautiful aviator girl, leather flight cap, brass goggles, white scarf, piloting vintage airship, clouds, golden hour lighting, adventurous"
+  },
+  {
+    "url": "/showcase/cat-carrier/aquatic_mermaid_princess.png",
+    "name": "aquatic_mermaid_princess",
+    "prompt": "masterpiece, best quality, beautiful mermaid princess, pearlescent scales, coral crown, underwater palace, schools of tropical fish, light beams filtering down"
+  },
+  {
+    "url": "/showcase/cat-carrier/gothic_lolita_doll.png",
+    "name": "gothic_lolita_doll",
+    "prompt": "masterpiece, best quality, beautiful gothic lolita, frilly black dress, parasol, rose garden, victorian mansion background, porcelain skin, red eyes"
+  },
+  {
+    "url": "/showcase/cat-carrier/shrine_maiden_autumn.png",
+    "name": "shrine_maiden_autumn",
+    "prompt": "masterpiece, best quality, beautiful shrine maiden (miko), sweeping leaves, red and white traditional robes, autumn maple trees, torii gate, peaceful atmosphere"
+  },
+  {
+    "url": "/showcase/cat-carrier/futuristic_android_beauty.png",
+    "name": "futuristic_android_beauty",
+    "prompt": "masterpiece, best quality, beautiful android girl, visible mechanical joints, porcelain skin, glowing blue circuitry lines, sterile white laboratory, sci-fi aesthetic"
+  },
+  {
+    "url": "/showcase/cat-carrier/desert_dancer_sunset.png",
+    "name": "desert_dancer_sunset",
+    "prompt": "masterpiece, best quality, beautiful exotic dancer, sheer silks, gold jewelry, desert dunes, sunset, oasis background, graceful pose, warm lighting"
+  },
+  {
+    "url": "/showcase/cat-carrier/battle_angel_ruins.png",
+    "name": "battle_angel_ruins",
+    "prompt": "masterpiece, best quality, beautiful battle angel, metallic wings, damaged armor, standing in ruins, sword in hand, ray of hope, feathers falling, cinematic composition"
+  },
+  {
+    "url": "/showcase/cat-carrier/violinist_in_rain.png",
+    "name": "violinist_in_rain",
+    "prompt": "masterpiece, best quality, beautiful anime girl playing violin, rainy street, reflection in puddles, streetlights, emotional expression, water droplets, dramatic atmosphere"
+  },
+  {
+    "url": "/showcase/cat-carrier/vintage_tea_maid.png",
+    "name": "vintage_tea_maid",
+    "prompt": "masterpiece, best quality, beautiful victorian maid, pouring tea, elegant parlor, afternoon sun, dust motes, gentle smile, classic anime style"
+  },
+  {
+    "url": "/showcase/cat-carrier/neon_hacker_protagonist.png",
+    "name": "neon_hacker_protagonist",
+    "prompt": "masterpiece, best quality, beautiful hacker girl, oversized hoodie, messy room, multiple monitors, neon purple lighting, focus on screen, coding interface"
+  },
+  {
+    "url": "/showcase/cat-carrier/dragon_tamer_priestess.png",
+    "name": "dragon_tamer_priestess",
+    "prompt": "masterpiece, best quality, beautiful dragon tamer, ceremonial robes, small dragon perched on shoulder, floating islands background, wind magic, mystical"
+  },
+  {
+    "url": "/showcase/cat-carrier/office_lady_city_lights.png",
+    "name": "office_lady_city_lights",
+    "prompt": "masterpiece, best quality, beautiful office lady, business suit, looking out skyscraper window, night city bokeh, glass reflection, melancholic beauty"
+  },
+  {
+    "url": "/showcase/cat-carrier/flower_spirit_dryad.png",
+    "name": "flower_spirit_dryad",
+    "prompt": "masterpiece, best quality, beautiful dryad girl, hair made of vines and flowers, bark skin texture, lush rainforest, blooming orchids, nature goddess"
+  },
+  {
+    "url": "/showcase/cat-carrier/space_fleet_commander.png",
+    "name": "space_fleet_commander",
+    "prompt": "masterpiece, best quality, beautiful starship commander, white uniform with gold trim, bridge of spaceship, view of nebula, confident pose, saluting"
+  },
+  {
+    "url": "/showcase/cat-carrier/vampire_countess_glass.png",
+    "name": "vampire_countess_glass",
+    "prompt": "masterpiece, best quality, beautiful vampire noblewoman, sipping red wine, velvet chesterfield sofa, fireplace, dark elegant room, pale skin, fangs"
+  },
+  {
+    "url": "/showcase/cat-carrier/retro_pop_waitress.png",
+    "name": "retro_pop_waitress",
+    "prompt": "masterpiece, best quality, beautiful 50s diner waitress, roller skates, holding tray of burgers, checkerboard floor, jukebox, bright pop art colors"
+  },
+  {
+    "url": "/showcase/cat-carrier/snow_leopard_girl.png",
+    "name": "snow_leopard_girl",
+    "prompt": "masterpiece, best quality, beautiful snow leopard kemonomimi, spotted ears and tail, thick fur coat, snowy mountain peak, blue eyes, winter cold"
+  },
+  {
+    "url": "/showcase/cat-carrier/street_samurai_punk.png",
+    "name": "street_samurai_punk",
+    "prompt": "masterpiece, best quality, beautiful punk samurai, dyed hair, leather jacket, katana with graffiti, neon alleyway, rain, rebellious attitude"
+  },
+  {
+    "url": "/showcase/cat-carrier/celestial_goddess_prayer.png",
+    "name": "celestial_goddess_prayer",
+    "prompt": "masterpiece, best quality, beautiful goddess, praying hands, white robes, halo, clouds, sunbeams, divine atmosphere, ethereal glow"
+  },
+  {
+    "url": "/showcase/cat-carrier/school_deliquent_leader.png",
+    "name": "school_deliquent_leader",
+    "prompt": "masterpiece, best quality, beautiful delinquent girl, sukeban long skirt, wooden sword, leaning on wall, graffiti art, tough expression, wind blowing hair"
+  },
+  {
+    "url": "/showcase/cat-carrier/fairy_queen_throne.png",
+    "name": "fairy_queen_throne",
+    "prompt": "masterpiece, best quality, beautiful fairy queen, translucent butterfly wings, flower throne, giant mushrooms, magical forest glade, sparkling dust"
+  },
+  {
+    "url": "/showcase/cat-carrier/mecha_pilot_plugsuit.png",
+    "name": "mecha_pilot_plugsuit",
+    "prompt": "masterpiece, best quality, beautiful mecha pilot, tight plugsuit, inside cockpit, interface glow on face, intense focus, sci-fi interior detailing"
+  },
+  {
+    "url": "/showcase/cat-carrier/kumiho_nine_tails.png",
+    "name": "kumiho_nine_tails",
+    "prompt": "masterpiece, best quality, beautiful nine-tailed fox spirit, hanbok, fox ears, nine fluffy tails, moonlight, mysterious temple, blue foxfire"
+  },
+  {
+    "url": "/showcase/cat-carrier/library_bookworm_cozy.png",
+    "name": "library_bookworm_cozy",
+    "prompt": "masterpiece, best quality, beautiful girl reading, giant pile of books, sweater, glasses, cozy library nook, warm lamp light, rain outside window"
+  },
+  {
+    "url": "/showcase/cat-carrier/succubus_heart_charm.png",
+    "name": "succubus_heart_charm",
+    "prompt": "masterpiece, best quality, beautiful succubus, bat wings, heart shaped tail, gothic lingerie, blowing a kiss, pink and black aesthetic, seductive"
+  },
+  {
+    "url": "/showcase/cat-carrier/painter_studio_messy.png",
+    "name": "painter_studio_messy",
+    "prompt": "masterpiece, best quality, beautiful artist girl, paint on face and apron, holding palette, colorful canvas, sunlit art studio, creative chaos"
+  },
+  {
+    "url": "/showcase/cat-carrier/cat_cafe_worker.png",
+    "name": "cat_cafe_worker",
+    "prompt": "masterpiece, best quality, beautiful cat cafe employee, cat ears headband, holding tray of cat treats, surrounded by kittens, pastel decor, wholesome"
+  },
+  {
+    "url": "/showcase/cat-carrier/dark_elf_rogue.png",
+    "name": "dark_elf_rogue",
+    "prompt": "masterpiece, best quality, beautiful dark elf, grey skin, white hair, leather armor, dual daggers, cave with glowing crystals, stealthy pose"
+  },
+  {
+    "url": "/showcase/cat-carrier/starry_sky_gazer.png",
+    "name": "starry_sky_gazer",
+    "prompt": "masterpiece, best quality, beautiful girl lying on grass, looking up at milky way, telescope nearby, shooting stars, night time, peaceful wonder"
+  },
+  {
+    "url": "/showcase/cat-carrier/racer_girl_victory.png",
+    "name": "racer_girl_victory",
+    "prompt": "masterpiece, best quality, beautiful race car driver, holding helmet, racing suit, checkered flag background, podium, champagne spray, victory smile"
+  },
+  {
+    "url": "/showcase/cat-carrier/traditional_archer_kyudo.png",
+    "name": "traditional_archer_kyudo",
+    "prompt": "masterpiece, best quality, beautiful kyudo archer, hakama, drawing longbow, concentration, dojo setting, cherry blossoms, zen atmosphere"
+  },
+  {
+    "url": "/showcase/cat-carrier/steampunk_clockmaker.png",
+    "name": "steampunk_clockmaker",
+    "prompt": "masterpiece, best quality, beautiful clockmaker, magnifying glass eye, surrounding by clocks and gears, workbench, detailed brass mechanisms"
+  },
+  {
+    "url": "/showcase/cat-carrier/bioluminescent_diver.png",
+    "name": "bioluminescent_diver",
+    "prompt": "masterpiece, best quality, beautiful deep sea diver, futuristic suit, bioluminescent plants, underwater ruins, bubbles, mysterious ocean"
+  },
+  {
+    "url": "/showcase/cat-carrier/kitsune_mask_festival.png",
+    "name": "kitsune_mask_festival",
+    "prompt": "masterpiece, best quality, beautiful girl at summer festival, yukata, holding kitsune mask, fireworks in background, lanterns, vibrant colors"
+  },
+  {
+    "url": "/showcase/cat-carrier/zombie_hunter_apoc.png",
+    "name": "zombie_hunter_apoc",
+    "prompt": "masterpiece, best quality, beautiful survivor girl, dirty clothes, holding shotgun, abandonded city street, sunset, gritty atmosphere"
+  },
+  {
+    "url": "/showcase/cat-carrier/crystal_maiden_cave.png",
+    "name": "crystal_maiden_cave",
+    "prompt": "masterpiece, best quality, beautiful crystal maiden, dress made of diamonds, glittering cave, refraction of light, elegant pose, fantasy"
+  },
+  {
+    "url": "/showcase/cat-carrier/cyber_geisha_future.png",
+    "name": "cyber_geisha_future",
+    "prompt": "masterpiece, best quality, beautiful cybernetic geisha, metallic face paint, neon kimono, futuristic tea house, digital shamisen, sci-fi japan"
+  },
+  {
+    "url": "/showcase/cat-carrier/forest_guardian_deer.png",
+    "name": "forest_guardian_deer",
+    "prompt": "masterpiece, best quality, beautiful forest guardian, deer antlers, nature robes, surrounded by animals, sun filtering through leaves, peaceful"
+  },
+  {
+    "url": "/showcase/cat-carrier/nurse_angel_healing.png",
+    "name": "nurse_angel_healing",
+    "prompt": "masterpiece, best quality, beautiful anime nurse, pink uniform, angel wings, giant syringe, hospital setting, hearts and sparkles, healing magic"
+  },
+  {
+    "url": "/showcase/cat-carrier/skateboard_park_trick.png",
+    "name": "skateboard_park_trick",
+    "prompt": "masterpiece, best quality, beautiful skater girl, mid-air trick, skate park, graffiti, blue sky, wide angle lens, dynamic motion"
+  },
+  {
+    "url": "/showcase/cat-carrier/victorian_vampire_hunter.png",
+    "name": "victorian_vampire_hunter",
+    "prompt": "masterpiece, best quality, beautiful vampire hunter, van helsing hat, crossbow, foggy london street, gaslight, gothic mystery"
+  },
+  {
+    "url": "/showcase/cat-carrier/holographic_ai_assistant.png",
+    "name": "holographic_ai_assistant",
+    "prompt": "masterpiece, best quality, beautiful ai avatar, translucent body, binary code rain, sci-fi interface, floating in server room, digital beauty"
+  },
+  {
+    "url": "/showcase/cat-carrier/desert_nomad_oasis.png",
+    "name": "desert_nomad_oasis",
+    "prompt": "masterpiece, best quality, beautiful nomad girl, scarf covering face, riding camel, sand dunes, oasis water, harsh sun, detailed fabric"
+  },
+  {
+    "url": "/showcase/cat-carrier/baker_fresh_bread.png",
+    "name": "baker_fresh_bread",
+    "prompt": "masterpiece, best quality, beautiful bakery girl, holding basket of fresh bread, flour on cheek, rustic bakery interior, warm morning light"
+  },
+  {
+    "url": "/showcase/cat-carrier/raincoat_frog_umbrella.png",
+    "name": "raincoat_frog_umbrella",
+    "prompt": "masterpiece, best quality, beautiful girl in yellow raincoat, holding frog umbrella, heavy rain, hydrangea flowers, wet street, reflection"
+  },
+  {
+    "url": "/showcase/cat-carrier/galaxy_hair_goddess.png",
+    "name": "galaxy_hair_goddess",
+    "prompt": "masterpiece, best quality, beautiful cosmic goddess, hair made of nebulae and stars, holding a planet, deep space background, infinite scope"
+  },
+  {
+    "url": "/showcase/cat-carrier/tennis_player_serve.png",
+    "name": "tennis_player_serve",
+    "prompt": "masterpiece, best quality, beautiful tennis player, mid-serve, motion blur, tennis court, sunny day, sweat drops, sports anime style"
+  },
+  {
+    "url": "/showcase/cat-carrier/winter_soldier_russia.png",
+    "name": "winter_soldier_russia",
+    "prompt": "masterpiece, best quality, beautiful soldier, ushanka hat, thick winter coat, holding rifle, snowy red square background, cold breath"
+  },
+  {
+    "url": "/showcase/cat-carrier/fire_dancer_festival.png",
+    "name": "fire_dancer_festival",
+    "prompt": "masterpiece, best quality, beautiful fire dancer, spinning fire poi, night beach party, flames trailing, intense focus, dynamic lighting"
+  },
+  {
+    "url": "/showcase/cat-carrier/angel_fallen_wings.png",
+    "name": "angel_fallen_wings",
+    "prompt": "masterpiece, best quality, beautiful fallen angel, black wings, torn white dress, chains, dark stormy sky, tragic expression, dramatic"
+  },
+  {
+    "url": "/showcase/cat-carrier/cyber_medic_drone.png",
+    "name": "cyber_medic_drone",
+    "prompt": "masterpiece, best quality, beautiful combat medic, healing drone hovering, futuristic battlefield, glowing energy shield, sci-fi armor"
+  },
+  {
+    "url": "/showcase/cat-carrier/mermaid_siren_rock.png",
+    "name": "mermaid_siren_rock",
+    "prompt": "masterpiece, best quality, beautiful siren, sitting on rock, stormy ocean, singing, ship in distance, mesmerizing beauty, dangerous"
+  },
+  {
+    "url": "/showcase/cat-carrier/gym_fitness_girl.png",
+    "name": "gym_fitness_girl",
+    "prompt": "masterpiece, best quality, beautiful fitness girl, sport bra and leggings, gym setting, holding water bottle, sweat, ponytail, athletic body"
+  },
+  {
+    "url": "/showcase/cat-carrier/samurai_blood_moon.png",
+    "name": "samurai_blood_moon",
+    "prompt": "masterpiece, best quality, beautiful samurai, red blood moon, field of spider lilies, katana, menacing atmosphere, dark fantasy"
+  },
+  {
+    "url": "/showcase/cat-carrier/royal_guard_palace.png",
+    "name": "royal_guard_palace",
+    "prompt": "masterpiece, best quality, beautiful royal guard, ornamental armor, standing at palace gate, red cape, stoic expression, marble pillars"
+  },
+  {
+    "url": "/showcase/cat-carrier/techwear_urban_ninja.png",
+    "name": "techwear_urban_ninja",
+    "prompt": "masterpiece, best quality, beautiful urban ninja, techwear fashion, straps and buckles, rooftop crouch, night city, face mask"
+  },
+  {
+    "url": "/showcase/cat-carrier/wedding_dress_garden.png",
+    "name": "wedding_dress_garden",
+    "prompt": "masterpiece, best quality, beautiful bride, intricate lace wedding dress, veil, flower garden,gazebo, soft romantic lighting, happy tears"
+  },
+  {
+    "url": "/showcase/cat-carrier/school_swimsuit_pool.png",
+    "name": "school_swimsuit_pool",
+    "prompt": "masterpiece, best quality, beautiful girl in school swimsuit, cleaning pool, hose water spraying, summer heat, blue sky, shimmer"
+  },
+  {
+    "url": "/showcase/cat-carrier/magical_library_spirit.png",
+    "name": "magical_library_spirit",
+    "prompt": "masterpiece, best quality, beautiful book spirit, emerging from open book, letters floating, ancient library, magical dust, knowledge"
+  },
+  {
+    "url": "/showcase/cat-carrier/cowgirl_western_town.png",
+    "name": "cowgirl_western_town",
+    "prompt": "masterpiece, best quality, beautiful cowgirl, sheriff badge, revolver, western saloon background, sunset, dust, wild west style"
+  },
+  {
+    "url": "/showcase/cat-carrier/ice_skater_performance.png",
+    "name": "ice_skater_performance",
+    "prompt": "masterpiece, best quality, beautiful figure skater, elegant pose, ice rink, spotlight, sequins sparkling, frozen motion, graceful"
+  },
+  {
+    "url": "/showcase/cat-carrier/biopunk_experiment_girl.png",
+    "name": "biopunk_experiment_girl",
+    "prompt": "masterpiece, best quality, beautiful biopunk girl, plant symbiote, glass tank, laboratory, glowing green liquid, sci-fi horror beauty"
+  },
+  {
+    "url": "/showcase/cat-carrier/autumn_park_bench.png",
+    "name": "autumn_park_bench",
+    "prompt": "masterpiece, best quality, beautiful girl sitting on park bench, knitting scarf, falling orange leaves, park setting, soft focus, nostalgic"
+  },
+  {
+    "url": "/showcase/cat-carrier/bunny_girl_casino.png",
+    "name": "bunny_girl_casino",
+    "prompt": "masterpiece, best quality, beautiful bunny girl, casino dealer, holding cards, roulette wheel, luxury background, red carpet, playful wink"
+  },
+  {
+    "url": "/showcase/cat-carrier/pilot_cockpit_view.png",
+    "name": "pilot_cockpit_view",
+    "prompt": "masterpiece, best quality, beautiful airplane pilot, cockpit pov, blue sky and clouds outside, sunglasses, uniform, freedom"
+  },
+  {
+    "url": "/showcase/cat-carrier/gothic_vampire_coffin.png",
+    "name": "gothic_vampire_coffin",
+    "prompt": "masterpiece, best quality, beautiful vampire sleeping in coffin, red velvet lining, black lace dress, roses, crypt setting, pale skin"
+  },
+  {
+    "url": "/showcase/cat-carrier/cheerleader_stadium.png",
+    "name": "cheerleader_stadium",
+    "prompt": "masterpiece, best quality, beautiful cheerleader, pom poms, high jump, sports stadium background, blue sky, energetic, dynamic angle"
+  },
+  {
+    "url": "/showcase/cat-carrier/post_apoc_scavenger.png",
+    "name": "post_apoc_scavenger",
+    "prompt": "masterpiece, best quality, beautiful scavenger girl, backpack, ruins of city, overgrown with plants, sunset, hopeful expression"
+  },
+  {
+    "url": "/showcase/cat-carrier/christmas_santa_girl.png",
+    "name": "christmas_santa_girl",
+    "prompt": "masterpiece, best quality, beautiful santa girl, holding gift, snowy street, christmas lights, warm breath, festive atmosphere"
+  },
+  {
+    "url": "/showcase/cat-carrier/battle_nun_gun.png",
+    "name": "battle_nun_gun",
+    "prompt": "masterpiece, best quality, beautiful warrior nun, habit torn, dual pistols, muzzle flash, stained glass church background, holy action"
+  },
+  {
+    "url": "/showcase/cat-carrier/egyptian_queen_nile.png",
+    "name": "egyptian_queen_nile",
+    "prompt": "masterpiece, best quality, beautiful egyptian queen, gold jewelry, white linen, nile river background, pyramids, ancient splendor"
+  },
+  {
+    "url": "/showcase/cat-carrier/racing_miku_style.png",
+    "name": "racing_miku_style",
+    "prompt": "masterpiece, best quality, beautiful futuristic racer, parasol, digital circuit track, bright teal and white, speed lines, mascot"
+  },
+  {
+    "url": "/showcase/cat-carrier/phantom_thief_night.png",
+    "name": "phantom_thief_night",
+    "prompt": "masterpiece, best quality, beautiful phantom thief girl, mask, holding jewel, jumping off building, police lights below, city night"
+  },
+  {
+    "url": "/showcase/cat-carrier/glass_sculpture_girl.png",
+    "name": "glass_sculpture_girl",
+    "prompt": "masterpiece, best quality, beautiful girl made of stained glass, light shining through, colorful refraction, abstract garden, fragile beauty"
+  },
+  {
+    "url": "/showcase/cat-carrier/demon_huntress_horns.png",
+    "name": "demon_huntress_horns",
+    "prompt": "masterpiece, best quality, beautiful demon huntress, curved horns, glowing red tattoos, dark forest, moonlight, fierce warrior"
+  },
+  {
+    "url": "/showcase/cat-carrier/cafe_date_window.png",
+    "name": "cafe_date_window",
+    "prompt": "masterpiece, best quality, beautiful girl on date, coffee shop, window seat, looking at viewer, latte art, warm lighting, romantic"
+  },
+  {
+    "url": "/showcase/cat-carrier/snow_magic_caster.png",
+    "name": "snow_magic_caster",
+    "prompt": "masterpiece, best quality, beautiful snow mage, casting spell, snowflake magic circle, winter forest, white fur cloak, glowing blue"
+  },
+  {
+    "url": "/showcase/cat-carrier/desert_warrior_scimitar.png",
+    "name": "desert_warrior_scimitar",
+    "prompt": "masterpiece, best quality, beautiful desert warrior, scimitar, turban, sandstorm, ancient ruins background, fierce eyes"
+  },
+  {
+    "url": "/showcase/cat-carrier/idol_backstage_mirror.png",
+    "name": "idol_backstage_mirror",
+    "prompt": "masterpiece, best quality, beautiful idol girl, looking in vanity mirror, applying makeup, backstage dressing room, lights, pensive"
+  },
+  {
+    "url": "/showcase/cat-carrier/flower_field_running.png",
+    "name": "flower_field_running",
+    "prompt": "masterpiece, best quality, beautiful girl running through flower field, white dress, petals flying, blue sky, wide shot, freedom"
+  },
+  {
+    "url": "/showcase/cat-carrier/clockwork_doll_key.png",
+    "name": "clockwork_doll_key",
+    "prompt": "masterpiece, best quality, beautiful clockwork doll, wind-up key on back, porcelain joints, antique shop, dust and shadows, melancholy"
+  },
+  {
+    "url": "/showcase/cat-carrier/volleyball_spike_beach.png",
+    "name": "volleyball_spike_beach",
+    "prompt": "masterpiece, best quality, beautiful beach volleyball player, spiking ball, sand flying, ocean background, sun flare, summer energy"
+  },
+  {
+    "url": "/showcase/cat-carrier/medusa_gorgon_stone.png",
+    "name": "medusa_gorgon_stone",
+    "prompt": "masterpiece, best quality, beautiful medusa, snake hair, stone statues background, greek temple, glowing green eyes, mystical dangerous"
+  },
+  {
+    "url": "/showcase/cat-carrier/cyber_sniper_roof.png",
+    "name": "cyber_sniper_roof",
+    "prompt": "masterpiece, best quality, beautiful cyberpunk sniper, lying on rooftop, neon city rain, futuristic rifle, hud interface, cool vibes"
+  },
+  {
+    "url": "/showcase/cat-carrier/forest_witch_hut.png",
+    "name": "forest_witch_hut",
+    "prompt": "masterpiece, best quality, beautiful cottagecore witch, drying herbs, wooden hut, black cat, sunlight filtering, peaceful life"
+  },
+  {
+    "url": "/showcase/cat-carrier/princess_balcony_night.png",
+    "name": "princess_balcony_night",
+    "prompt": "masterpiece, best quality, beautiful princess, leaning on balcony, looking at castle town night, stars, elegant gown, longing"
+  },
+  {
+    "url": "/showcase/cat-carrier/sword_maiden_blindfold.png",
+    "name": "sword_maiden_blindfold",
+    "prompt": "masterpiece, best quality, beautiful sword maiden, blindfolded, white robes, holding scale and sword, justice symbolism, marble hall"
+  },
+  {
+    "url": "/showcase/cat-carrier/rainy_bus_stop_waiting.png",
+    "name": "rainy_bus_stop_waiting",
+    "prompt": "masterpiece, best quality, beautiful girl waiting at bus stop, holding clear umbrella, rain falling, street lights reflection, lo-fi mood"
+  },
+  {
+    "url": "/showcase/cat-carrier/succubus_bar_singer.png",
+    "name": "succubus_bar_singer",
+    "prompt": "masterpiece, best quality, beautiful jazz singer succubus, microphone, smoky bar, red dress, horns, spot light, sultry atmosphere"
+  },
+  {
+    "url": "/showcase/cat-carrier/kitsune_wedding_rain.png",
+    "name": "kitsune_wedding_rain",
+    "prompt": "masterpiece, best quality, beautiful kitsune bride, fox wedding, sun shower, traditional kimono, forest path, mystical spirits"
+  },
+  {
+    "url": "/showcase/cat-carrier/dragon_rider_sky.png",
+    "name": "dragon_rider_sky",
+    "prompt": "masterpiece, best quality, beautiful dragon rider, flying high in clouds, goggles, leather gear, wind blowing, epic adventure"
+  },
+  {
+    "url": "/showcase/cat-carrier/time_traveler_clock.png",
+    "name": "time_traveler_clock",
+    "prompt": "masterpiece, best quality, beautiful time traveler, standing on giant clock face, time vortex, steampunk gear, hourglass, surreal"
+  },
+  {
+    "url": "/showcase/cat-carrier/candy_kingdom_girl.png",
+    "name": "candy_kingdom_girl",
+    "prompt": "masterpiece, best quality, beautiful candy girl, dress made of sweets, lollipop forest, chocolate river, pastel colors, cute fantasy"
+  },
+  {
+    "url": "/showcase/cat-carrier/ghost_ship_captain.png",
+    "name": "ghost_ship_captain",
+    "prompt": "masterpiece, best quality, beautiful ghost captain, spectral pirate ship, green fog, translucent body, tricorne hat, eerie beauty"
   }
 ]
