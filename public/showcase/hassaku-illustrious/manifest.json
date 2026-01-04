@@ -1,0 +1,1047 @@
+[
+  {
+    "url": "/showcase/hassaku-illustrious/cyberpunk_portrait.png",
+    "name": "cyberpunk_portrait",
+    "prompt": "masterpiece, best quality, 1girl, cyberpunk, neon aesthetic, urban, mechanical parts, glowing eyes, cinematic lighting, highly detailed"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/fantasy_forest.png",
+    "name": "fantasy_forest",
+    "prompt": "masterpiece, best quality, magical forest, bioluminescent plants, ethereal atmosphere, fireflies, soft fog, dreamlike, fantasy landscape"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/scifi_station.png",
+    "name": "scifi_station",
+    "prompt": "masterpiece, best quality, futuristic space station interior, sleek white panels, holographic displays, window looking out to deep space, nebulae"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/anime_cafe.png",
+    "name": "anime_cafe",
+    "prompt": "masterpiece, best quality, cozy cafe interior, rain on window, warm lighting, anime style, lo-fi aesthetic, detailed food and drinks"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/mecha_battle.png",
+    "name": "mecha_battle",
+    "prompt": "masterpiece, best quality, giant mecha robot, battle stance, explosions in background, detailed armor, lens flare, dynamic angle"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/watercolor_landscape.png",
+    "name": "watercolor_landscape",
+    "prompt": "masterpiece, best quality, rolling hills, watercolor style, soft pastel colors, traditional art medium, serene, fluffy clouds"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/synthwave_city.png",
+    "name": "synthwave_city",
+    "prompt": "masterpiece, best quality, synthwave city, retrowave, purple and cyan, grid floor, sunset, palm trees, 80s aesthetic"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/space_marine.png",
+    "name": "space_marine",
+    "prompt": "masterpiece, best quality, space marine, power armor, battle worn, holding rifle, alien planet background, dust, smoke"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/isometric_room.png",
+    "name": "isometric_room",
+    "prompt": "masterpiece, best quality, isometric 3d render, cute gamer room, pastel colors, soft lighting, 3d blender style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/steampunk_inventor.png",
+    "name": "steampunk_inventor",
+    "prompt": "masterpiece, best quality, steampunk inventor, brass goggles, workshop, gears and steam, cinematic lighting, detailed clothes"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/underwater_city.png",
+    "name": "underwater_city",
+    "prompt": "masterpiece, best quality, bioshock style underwater city, art deco architecture, schools of fish, light rays filtering down, ocean depth"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/pixel_art_adventurer.png",
+    "name": "pixel_art_adventurer",
+    "prompt": "masterpiece, best quality, pixel art style, 16-bit, adventurer standing on cliff edge, looking at castle in distance, sunset"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/oil_painting_cottage.png",
+    "name": "oil_painting_cottage",
+    "prompt": "masterpiece, best quality, oil painting, impasto, cozy cottage, flower garden, sunny day, claude monet style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/glitch_art_portrait.png",
+    "name": "glitch_art_portrait",
+    "prompt": "masterpiece, best quality, abstract portrait, glitch art, datamosh, vhs static, neon colors, distorted face"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/origami_zoo.png",
+    "name": "origami_zoo",
+    "prompt": "masterpiece, best quality, paper craft style, origami animals, paper zoo, depth of field, tilt shift, bright colors"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/pencil_sketch_street.png",
+    "name": "pencil_sketch_street",
+    "prompt": "masterpiece, best quality, graphite pencil sketch, narrow european street, cafe tables, cobblestone, rough texture, detailed shading"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/low_poly_mountain.png",
+    "name": "low_poly_mountain",
+    "prompt": "masterpiece, best quality, low poly style, mountain landscape, geometric shapes, flat shading, vibrant colors, minimalist"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/stained_glass_window.png",
+    "name": "stained_glass_window",
+    "prompt": "masterpiece, best quality, stained glass window, intricate pattern, sunlight streaming through, colorful church interior"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/ukiyo_e_wave.png",
+    "name": "ukiyo_e_wave",
+    "prompt": "masterpiece, best quality, ukiyo-e style, great wave, japanese woodblock print, traditional art, mount fuji in background"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/macro_insect.png",
+    "name": "macro_insect",
+    "prompt": "masterpiece, best quality, macro photography, mechanical insect, clockwork beetle, depth of field, metallic texture, detailed gears"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/vaporwave_statue.png",
+    "name": "vaporwave_statue",
+    "prompt": "masterpiece, best quality, vaporwave aesthetic, marble statue head, windows 95 ui elements, palm leaves, pink and blue gradients"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/noir_detective.png",
+    "name": "noir_detective",
+    "prompt": "masterpiece, best quality, film noir style, detective in trench coat, rainy city street, black and white, dramatic shadows, street light"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/claymation_alien.png",
+    "name": "claymation_alien",
+    "prompt": "masterpiece, best quality, claymation style, cute alien creature, plasticine texture, stop motion look, moon surface"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/pop_art_explosion.png",
+    "name": "pop_art_explosion",
+    "prompt": "masterpiece, best quality, pop art style, comic book explosion, halftone dots, roy lichtenstein style, bold lines, bright primary colors"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/bioware_armor.png",
+    "name": "bioware_armor",
+    "prompt": "masterpiece, best quality, organic bio-armor, hr giger style but clean, sleek chitin, glowing veins, character concept"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/vector_flat_office.png",
+    "name": "vector_flat_office",
+    "prompt": "masterpiece, best quality, vector art, flat design, modern office workspace, clean lines, corporate memphis style, minimalist"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/gothic_cathedral.png",
+    "name": "gothic_cathedral",
+    "prompt": "masterpiece, best quality, gothic cathedral interior, vaulted ceilings, eerie mist, candlelight, dark atmosphere, photorealistic"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/cinematic_samurai.png",
+    "name": "cinematic_samurai",
+    "prompt": "masterpiece, best quality, cinematic shot, samurai warrior, cherry blossom forest, petals falling, katana drawn, shallow depth of field"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/retro_futurism_car.png",
+    "name": "retro_futurism_car",
+    "prompt": "masterpiece, best quality, retro futurism, 1950s flying car, chrome fins, atomic age, hover technology, utopian city background"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/double_exposure_bear.png",
+    "name": "double_exposure_bear",
+    "prompt": "masterpiece, best quality, double exposure photography, silhouette of bear, pine forest inside silhouette, northern lights, starry sky"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/lego_castle.png",
+    "name": "lego_castle",
+    "prompt": "masterpiece, best quality, lego pieces, medieval castle, plastic texture, depth of field, miniature photography style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/neon_sign_rain.png",
+    "name": "neon_sign_rain",
+    "prompt": "masterpiece, best quality, close up, neon sign reflecting in puddle, rain drops, bokeh city lights, urban night atmosphere"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/marble_bust_flowers.png",
+    "name": "marble_bust_flowers",
+    "prompt": "masterpiece, best quality, classical marble bust, exploding with colorful flowers instead of head, surrealism, dali style, studio lighting"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/cyber_samurai_girl.png",
+    "name": "cyber_samurai_girl",
+    "prompt": "masterpiece, best quality, cybernetic samurai girl, glowing katana, neon rain, futuristic tokyo background, detailed mechanical limbs"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/art_nouveau_witch.png",
+    "name": "art_nouveau_witch",
+    "prompt": "masterpiece, best quality, art nouveau style, much, witch brewing potion, intricate borders, gold leaf details, flowing hair, stained glass background"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/miniature_library.png",
+    "name": "miniature_library",
+    "prompt": "masterpiece, best quality, tilt shift photography, miniature library inside a glass bottle, tiny books, warm lighting, magical atmosphere"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/crystal_dragon.png",
+    "name": "crystal_dragon",
+    "prompt": "masterpiece, best quality, translucent crystal dragon, refracting light, prism effect, cavern setting, detailed scales, fantasy creature"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/knolling_camera_gear.png",
+    "name": "knolling_camera_gear",
+    "prompt": "masterpiece, best quality, knolling photography, vintage camera gear disassembled, organized neatly, overhead shot, clean background, technical"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/bioluminescent_jellyfish.png",
+    "name": "bioluminescent_jellyfish",
+    "prompt": "masterpiece, best quality, deep sea underwater, giant bioluminescent jellyfish, glowing blue and purple, dark ocean, national geographic style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/paper_cutout_forest.png",
+    "name": "paper_cutout_forest",
+    "prompt": "masterpiece, best quality, layered paper cutout art, shadow box style, deep dark forest, depth effect, silhouettes, moon lighting"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/soviet_brutalist_bus_stop.png",
+    "name": "soviet_brutalist_bus_stop",
+    "prompt": "masterpiece, best quality, brutalist architecture, concrete bus stop, snow covered landscape, overcast sky, melancholic atmosphere"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/rococo_spaceship.png",
+    "name": "rococo_spaceship",
+    "prompt": "masterpiece, best quality, spaceship interior in rococo style, gold ornate details, pastel pink and blue, intricate carvings, luxury sci-fi"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/felt_puppet_monster.png",
+    "name": "felt_puppet_monster",
+    "prompt": "masterpiece, best quality, felt texture, cute fuzzy monster puppet, muppet style, studio lighting, depth of field"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/double_exposure_wolf.png",
+    "name": "double_exposure_wolf",
+    "prompt": "masterpiece, best quality, double exposure, silhouette of howling wolf, snowy mountain landscape inside, aurora borealis, starry night"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/isometric_magic_shop.png",
+    "name": "isometric_magic_shop",
+    "prompt": "masterpiece, best quality, isometric 3d render, magic potion shop, floating items, glowing cauldons, purple lighting, cute style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/graffiti_astronaut.png",
+    "name": "graffiti_astronaut",
+    "prompt": "masterpiece, best quality, street art style, graffiti mural of astronaut, spray paint texture, dripping paint, brick wall background"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/vintage_botanical_print.png",
+    "name": "vintage_botanical_print",
+    "prompt": "masterpiece, best quality, vintage botanical illustration, detailed scientific drawing of imaginary alien plant, aged paper texture"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/abstract_smoke_dancer.png",
+    "name": "abstract_smoke_dancer",
+    "prompt": "masterpiece, best quality, formed by colorful smoke, silhouette of dancer, dynamic pose, flowing swirls, black background, high contrast"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/ceramic_ghost.png",
+    "name": "ceramic_ghost",
+    "prompt": "masterpiece, best quality, cute ceramic ghost figurine, glossy glaze, cracked porcelain texture, shelf background, soft indoor lighting"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/fractal_landscape.png",
+    "name": "fractal_landscape",
+    "prompt": "masterpiece, best quality, 3d fractal landscape, mandelbulb, mathematical geometry, alien terrain, infinite detail, psychedelic colors"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/blueprint_mecha.png",
+    "name": "blueprint_mecha",
+    "prompt": "masterpiece, best quality, technical blueprint, giant robot schematic, cyanotype, white lines on blue background, detailed measurements"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/kintsugi_heart.png",
+    "name": "kintsugi_heart",
+    "prompt": "masterpiece, best quality, broken stone heart repaired with gold kintsugi, dramatic lighting, symbolism, detailed texture"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/lego_food_truck.png",
+    "name": "lego_food_truck",
+    "prompt": "masterpiece, best quality, lego set, food truck, minifigures eating, city street, plastic texture, tilt shift macro"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/neon_noir_rain.png",
+    "name": "neon_noir_rain",
+    "prompt": "masterpiece, best quality, cyberpunk detective, reflection in puddle, heavy rain, neon signs, blade runner vibe, cinematic"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/steampunk_owl.png",
+    "name": "steampunk_owl",
+    "prompt": "masterpiece, best quality, mechanical owl, brass feathers, clockwork eyes, perched on copper branch, steam vents, intricate gears"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/viking_longhouse.png",
+    "name": "viking_longhouse",
+    "prompt": "masterpiece, best quality, warm viking longhouse interior, fire pit, furs, wooden carvings, feast table, candle light"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/embroidery_landscape.png",
+    "name": "embroidery_landscape",
+    "prompt": "masterpiece, best quality, embroidery art, stitched thread texture, mountain landscape, fabric background, handmade feel"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/bubble_macro.png",
+    "name": "bubble_macro",
+    "prompt": "masterpiece, best quality, macro photography, soap bubble, iridescent colors, reflection of city, high detail, scientific"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/anime_idol_singer.png",
+    "name": "anime_idol_singer",
+    "prompt": "masterpiece, best quality, anime style, cute idol singer performing on stage, sparkling dress, holding microphone, crowd silhouettes, stage lights, lens flare"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/school_library_girl.png",
+    "name": "school_library_girl",
+    "prompt": "masterpiece, best quality, beautiful anime girl, reading book in sunny library, dust motes, school uniform, messy bun, peaceful atmosphere, makoto shinkai style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/cherry_blossom_kimono.png",
+    "name": "cherry_blossom_kimono",
+    "prompt": "masterpiece, best quality, traditional japanese beauty, floral kimono, holding umbrella, falling cherry blossom petals, kyoto street background, soft focus"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/magical_girl_transformation.png",
+    "name": "magical_girl_transformation",
+    "prompt": "masterpiece, best quality, magical girl transformation sequence, floating ribbons, glowing symbols, glitter effects, dynamic pose, frilly dress, starry background"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/gothic_lolita_tea.png",
+    "name": "gothic_lolita_tea",
+    "prompt": "masterpiece, best quality, gothic lolita fashion, dark victorian interior, drinking tea, elaborate dress with lace, doll-like face, rose garden window"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/cyberpunk_hacker_girl.png",
+    "name": "cyberpunk_hacker_girl",
+    "prompt": "masterpiece, best quality, cool anime girl, headphones, holographic screens, messy server room, neon lighting, hoodie, determined expression"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/elf_archer_forest.png",
+    "name": "elf_archer_forest",
+    "prompt": "masterpiece, best quality, fantasy elf girl, forest ranger attire, bow and arrow, perched on tree branch, ancient woods, dappled sunlight"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/maid_cafe_welcome.png",
+    "name": "maid_cafe_welcome",
+    "prompt": "masterpiece, best quality, akihabara maid cafe, cute maid welcoming customer, curtsy pose, pastel colors, frilly apron, cake background"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/shrine_maiden_dance.png",
+    "name": "shrine_maiden_dance",
+    "prompt": "masterpiece, best quality, miko shrine maiden, performing kagura dance, red hakama, shinto shrine background, autumn leaves falling, spiritual atmosphere"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/vampire_princess_castle.png",
+    "name": "vampire_princess_castle",
+    "prompt": "masterpiece, best quality, elegant vampire princess, pale skin, red eyes, gothic ballgown, sitting on throne, moonlit castle window, wine glass"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/beach_volleyball_summer.png",
+    "name": "beach_volleyball_summer",
+    "prompt": "masterpiece, best quality, anime summer vibe, girl playing beach volleyball, splashing water, blue sky, tropical ocean, dynamic action shot"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/winter_scarf_girl.png",
+    "name": "winter_scarf_girl",
+    "prompt": "masterpiece, best quality, cute girl in winter, snowy street, knitted scarf covering mouth, rosy cheeks, snowflakes falling, warm breath vapor, night lights"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/steampunk_mechanic_girl.png",
+    "name": "steampunk_mechanic_girl",
+    "prompt": "masterpiece, best quality, steampunk mechanic girl, grease smudges on face, goggles, holding wrench, airship engine room, brass gears, confident smile"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/urban_skater_girl.png",
+    "name": "urban_skater_girl",
+    "prompt": "masterpiece, best quality, streetwear fashion, skater girl, holding skateboard, graffiti alley, sunset lighting, cool sneakers, oversized hoodie"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/demon_slayer_katana.png",
+    "name": "demon_slayer_katana",
+    "prompt": "masterpiece, best quality, fierce demon slayer girl, drawing katana, lightning effects, traditional pattern kimono, battle stance, night foreset"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/angel_wings_sky.png",
+    "name": "angel_wings_sky",
+    "prompt": "masterpiece, best quality, beautiful angel girl, white feathered wings spreading, floating in blue sky, sun rays, ethereal white dress, holy atmosphere"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/casual_gamer_girl.png",
+    "name": "casual_gamer_girl",
+    "prompt": "masterpiece, best quality, cozy room, gamer girl playing on console, beanbag chair, messy hair, oversized t-shirt, rgb pc in background, snacks"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/witch_academia_potion.png",
+    "name": "witch_academia_potion",
+    "prompt": "masterpiece, best quality, witch academy student, stirring glowing potion, cauldron smoke, magical sparks, library of spellbooks, curious expression"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/race_queen_circuit.png",
+    "name": "race_queen_circuit",
+    "prompt": "masterpiece, best quality, race queen, holding umbrella, race track background, f1 car, latex outfit, sunny day, high contrast"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/nekomimi_pet_shop.png",
+    "name": "nekomimi_pet_shop",
+    "prompt": "masterpiece, best quality, cute cat girl, nekomimi, large bell collar, sitting in box, paw gesture, fluffy tail, anime pet shop setting"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/samurai_sunset_duel.png",
+    "name": "samurai_sunset_duel",
+    "prompt": "masterpiece, best quality, wandering samurai girl, windy field, susuki grass, sunset silhouette, intense stare, hand on hilt, cinema scope"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/space_pilot_cockpit.png",
+    "name": "space_pilot_cockpit",
+    "prompt": "masterpiece, best quality, anime space pilot, inside mecha cockpit, complex hud, star field outside, helmet visor reflection, sci-fi plug suit"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/office_lady_sunset.png",
+    "name": "office_lady_sunset",
+    "prompt": "masterpiece, best quality, tired office lady, loosening tie, city skyline sunset through window, high rise office, bokeh city lights, realistic anime style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/princess_knight_rose.png",
+    "name": "princess_knight_rose",
+    "prompt": "masterpiece, best quality, knight princess, silver armor with rose engravings, sword planted in ground, royal cape, castle garden, noble stance"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/mermaid_coral_reef.png",
+    "name": "mermaid_coral_reef",
+    "prompt": "masterpiece, best quality, beautiful mermaid, swimming in coral reef, schools of colorful fish, underwater sunbeams, wet hair, shimmering scales"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/dragon_slayer_flame.png",
+    "name": "dragon_slayer_flame",
+    "prompt": "masterpiece, best quality, shonen anime hero, young dragon slayer, wielding massive greatsword, engulfed in flames, fierce expression, battle stance, rocky wasteland background"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/lightning_ninja_roof.png",
+    "name": "lightning_ninja_roof",
+    "prompt": "masterpiece, best quality, cool ninja boy, blue lightning crackling around hands, standing on traditional japanese roof, moonlight, dynamic angle, blowing scarf"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/soccer_striker_shot.png",
+    "name": "soccer_striker_shot",
+    "prompt": "masterpiece, best quality, sports anime, intense soccer striker, mid-air bicycle kick, motion blur, flaming aura effect, stadium lights, determined eyes"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/spirit_detective_alley.png",
+    "name": "spirit_detective_alley",
+    "prompt": "masterpiece, best quality, spirit detective, green school uniform, glowing spectral energy finger gun, dark alleyway, delinquent hairstyle, confidence"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/mecha_pilot_ace.png",
+    "name": "mecha_pilot_ace",
+    "prompt": "masterpiece, best quality, male mecha pilot ace, plugsuit, confident smirk, leaning against giant robot leg, hangar background, sparks, sci-fi anime style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/cursed_exorcist.png",
+    "name": "cursed_exorcist",
+    "prompt": "masterpiece, best quality, jujutsu sorcerer style, blindfold, spiked hair, black uniform, hand sign, dark purple cursed energy, abandoned building"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/pirate_captain_deck.png",
+    "name": "pirate_captain_deck",
+    "prompt": "masterpiece, best quality, anime pirate captain, red coat, straw hat, grinning wildly, ship deck, ocean spray, seagulls, adventure awaits"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/fullmetal_alchemist_circle.png",
+    "name": "fullmetal_alchemist_circle",
+    "prompt": "masterpiece, best quality, young alchemist, drawing transmutation circle, blue alchemical lightning, red cloak, blonde braided hair, steampunk setting"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/martial_artist_aura.png",
+    "name": "martial_artist_aura",
+    "prompt": "masterpiece, best quality, muscular martial artist, gi torn, golden energy aura, powering up, floating rocks, intense screaming expression, dragon ball style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/wandering_swordsman_ronin.png",
+    "name": "wandering_swordsman_ronin",
+    "prompt": "masterpiece, best quality, wandering ronin, cross-shaped scar on cheek, red kimono, katana on hip, bamboo forest, wind blowing leaves, stoic"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/beast_tamer_wolf.png",
+    "name": "beast_tamer_wolf",
+    "prompt": "masterpiece, best quality, wild beast tamer boy, wolf ears and tail, crouching with giant white wolf, forest clearing, tribal markings, fierce bond"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/cyborg_soldier_gun.png",
+    "name": "cyborg_soldier_gun",
+    "prompt": "masterpiece, best quality, cyborg soldier, mechanical arm, holding futuristic railgun, red optical eye, dystopian city ruins, dust and debris"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/demon_king_throne.png",
+    "name": "demon_king_throne",
+    "prompt": "masterpiece, best quality, cool demon king, horns, black wings, sitting arrogantly on obsidian throne, red wine glass, dark castle hall"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/isekai_hero_summon.png",
+    "name": "isekai_hero_summon",
+    "prompt": "masterpiece, best quality, isekai hero, just summoned, holding legendary shield, confused expression, magic circle on floor, fantasy guild hall"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/rival_dark_swordsman.png",
+    "name": "rival_dark_swordsman",
+    "prompt": "masterpiece, best quality, anime rival character, black trenchcoat, long silver hair, dual wielding swords, rainy rooftop, menacing glare"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/student_council_president.png",
+    "name": "student_council_president",
+    "prompt": "masterpiece, best quality, student council president, glasses, adjusting tie, stern look, holding clipboard, school hallway, sunset lighting"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/basketball_zone_dunk.png",
+    "name": "basketball_zone_dunk",
+    "prompt": "masterpiece, best quality, basketball player, entering the zone, eyes glowing streams of light, slamming dunk, shattered backboard effect"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/butler_combat_ready.png",
+    "name": "butler_combat_ready",
+    "prompt": "masterpiece, best quality, combat butler, throwing knives between fingers, pristine tuxedo, elegant pose, mansion hallway, motion lines"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/phantom_thief_moon.png",
+    "name": "phantom_thief_moon",
+    "prompt": "masterpiece, best quality, phantom thief, top hat, cape, monocle, standing on clock tower hand, full moon background, holding calling card"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/sniper_ghillie_suit.png",
+    "name": "sniper_ghillie_suit",
+    "prompt": "masterpiece, best quality, anime sniper, ghillie suit, looking through scope, forest camouflage, intense focus, lens reflection"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/street_brawler_fist.png",
+    "name": "street_brawler_fist",
+    "prompt": "masterpiece, best quality, tough street brawler, bandaged knuckles, punching towards camera, impact shockwave, urban graffiti background"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/shadow_summoner.png",
+    "name": "shadow_summoner",
+    "prompt": "masterpiece, best quality, shadow summoner, emerging from shadows, dark creatures forming around him, glowing purple eyes, gothic alley"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/ice_mage_prince.png",
+    "name": "ice_mage_prince",
+    "prompt": "masterpiece, best quality, ice mage prince, creating ice shards, frozen breath, white hair, royal blue robes, snow palace background"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/post_apocalyptic_drifter.png",
+    "name": "post_apocalyptic_drifter",
+    "prompt": "masterpiece, best quality, wasteland drifter, goggles, gas mask hanging on neck, makeshift armor, dusty desert, rusty motorcycle"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/card_duelist_draw.png",
+    "name": "card_duelist_draw",
+    "prompt": "masterpiece, best quality, anime card game player, dramatic card draw, energetic pose, monsters emerging from cards, ancient egypt background"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/ghibli_grassland.png",
+    "name": "ghibli_grassland",
+    "prompt": "masterpiece, best quality, studio ghibli style, vast green grassland, moving castle in distance, billowing white clouds, vibrant blue sky, painted texture"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/shinkai_sunset_train.png",
+    "name": "shinkai_sunset_train",
+    "prompt": "masterpiece, best quality, makoto shinkai style, train interior at sunset, intense lens flare, dust particles, hyper-detailed lighting, emotional atmosphere"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/monitor_head_vibe.png",
+    "name": "monitor_head_vibe",
+    "prompt": "masterpiece, best quality, object head, tv head monitor, retro anime aesthetic, glitched screen face, wearing hoodie, lo-fi bedroom"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/trigger_fighter_pose.png",
+    "name": "trigger_fighter_pose",
+    "prompt": "masterpiece, best quality, studio trigger style, dynamic exaggerated perspective, loud colors, jagged lines, flaming sword, screaming expression, impact frames"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/kyoto_animation_eyes.png",
+    "name": "kyoto_animation_eyes",
+    "prompt": "masterpiece, best quality, kyoto animation style, extreme close up on eyes, intricate eye detail, reflections, emotional tears, soft lighting, hair strands"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/jojo_stand_user.png",
+    "name": "jojo_stand_user",
+    "prompt": "masterpiece, best quality, jojo style, menacing rumble kanji, stylish pose, colorful aura, stand summon behind, bold lines, dramatic shading, araki style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/chainsaw_man_urban.png",
+    "name": "chainsaw_man_urban",
+    "prompt": "masterpiece, best quality, gritty urban fantasy, suit and tie, devil hunter, blood splatter style, muted colors, film grain, cinematic composition"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/sailor_moon_transform.png",
+    "name": "sailor_moon_transform",
+    "prompt": "masterpiece, best quality, 90s anime aesthetic, magical girl transformation background, silhouette with ribbons, pastel gradients, sparkles, retro tv scanlines"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/evangelion_entry_plug.png",
+    "name": "evangelion_entry_plug",
+    "prompt": "masterpiece, best quality, lcl fluid amber lighting, entry plug interior, interface holograms, plugsuit, psychological horror vibe, distorted angles"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/cowboy_bebop_jazz.png",
+    "name": "cowboy_bebop_jazz",
+    "prompt": "masterpiece, best quality, space western, smoking cigarette, jazz club, noir lighting, cool attitude, spike spiegel vibe, retro futurism"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/berserk_eclipse.png",
+    "name": "berserk_eclipse",
+    "prompt": "masterpiece, best quality, dark fantasy, eclipse sun, grotesque scenery, heavy hatching lines, manga style inking, despair atmosphere, miura style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/frieren_journey.png",
+    "name": "frieren_journey",
+    "prompt": "masterpiece, best quality, elf mage walking, melancholic fantasy landscape, passing of time, soft watercolor background, peaceful stillness"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/spy_family_elegant.png",
+    "name": "spy_family_elegant",
+    "prompt": "masterpiece, best quality, 1960s spy aesthetic, elegant suit and dress, silencer pistol, peanuts, stylish furniture, mid-century modern background"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/one_piece_adventure.png",
+    "name": "one_piece_adventure",
+    "prompt": "masterpiece, best quality, wide shot ocean adventure, pirate ship sunny, seagulls, bright tropical colors, oda style, exaggerated expressions"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/naruto_sage_mode.png",
+    "name": "naruto_sage_mode",
+    "prompt": "masterpiece, best quality, ninja sage mode, orange eyeshadow, toad summon, nature energy aura, forest training ground, dynamic action"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/bleach_bankai.png",
+    "name": "bleach_bankai",
+    "prompt": "masterpiece, best quality, soul reaper, katana bankai release, black reiatsu energy, white kimono, hollow mask, high contrast black and white style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/demon_slayer_hinokami.png",
+    "name": "demon_slayer_hinokami",
+    "prompt": "masterpiece, best quality, hinokami kagura, sun breathing, flaming sword slash, ukiyo-e flame effects, snowy forest night, intense action"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/aot_titan_steam.png",
+    "name": "aot_titan_steam",
+    "prompt": "masterpiece, best quality, giant titan steam, wall maria background, grappling hook gear, mid-air maneuver, motion lines, gritty texture"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/hxg_hunter_aura.png",
+    "name": "hxg_hunter_aura",
+    "prompt": "masterpiece, best quality, nen aura, terrifying pressure, dark continent creature, strategy mood, detailed line work, togashi style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/gundam_space_battle.png",
+    "name": "gundam_space_battle",
+    "prompt": "masterpiece, best quality, giant mobile suit, beam saber clash, space colony background, laser blasts, mechanical detail, 80s mecha shading"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/akira_bike_slide.png",
+    "name": "akira_bike_slide",
+    "prompt": "masterpiece, best quality, red motorcycle slide, leaving light trails, neo tokyo skyline at night, cyberpunk explosions, otomo katsuhiro style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/ghost_in_shell_diving.png",
+    "name": "ghost_in_shell_diving",
+    "prompt": "masterpiece, best quality, cybernetic brain dive, digital data stream, optical camouflage, urban cyberpunk city, philosophical mood"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/violet_evergarden_type.png",
+    "name": "violet_evergarden_type",
+    "prompt": "masterpiece, best quality, auto memory doll, mechanical hands typing, flying letters, emotional lighting, victorian setting, detailed flowers"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/madoka_witch_labyrinth.png",
+    "name": "madoka_witch_labyrinth",
+    "prompt": "masterpiece, best quality, collage art style, surreal witch labyrinth, scissors and paper textures, unsettling cute horror, psychedelic patterns"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/mob_psycho_explosion.png",
+    "name": "mob_psycho_explosion",
+    "prompt": "masterpiece, best quality, psychic energy explosion, crayon scribble effects, 100% emotion, floating debris, neon outline, one style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/opm_serious_punch.png",
+    "name": "opm_serious_punch",
+    "prompt": "masterpiece, best quality, one punch impact, clouds parting globally, shockwave, minimalist hero face, intense action lines, murata detail"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/death_note_writing.png",
+    "name": "death_note_writing",
+    "prompt": "masterpiece, best quality, dramatic potato chip eating, gothic lighting, shinigami lurking in shadow, notebook, intense psychological tension"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/pokemon_trainer_camp.png",
+    "name": "pokemon_trainer_camp",
+    "prompt": "masterpiece, best quality, cozy camping with monster partners, cooking curry, forest clearing, warm lighting, ken sugimori watercolor style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/digimon_digital_world.png",
+    "name": "digimon_digital_world",
+    "prompt": "masterpiece, best quality, digital world landscape, floating data islands, circuit board textures, monster evolution glowing, adventure vibe"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/yugioh_shadow_realm.png",
+    "name": "yugioh_shadow_realm",
+    "prompt": "masterpiece, best quality, ancient egyptian duel, millennium puzzle glowing, dark purple fog, giant monster hologram, sharp angular hair"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/fate_noble_phantasm.png",
+    "name": "fate_noble_phantasm",
+    "prompt": "masterpiece, best quality, noble phantasm release, golden light particles, epic fantasy armor, heroic spirit, unlimited blade works"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/touhou_bullet_hell.png",
+    "name": "touhou_bullet_hell",
+    "prompt": "masterpiece, best quality, danmaku pattern background, shrine maiden flying, colorful energy bullets, frilly dress, gensokyo landscape"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/hatsune_miku_concert.png",
+    "name": "hatsune_miku_concert",
+    "prompt": "masterpiece, best quality, virtual idol concert, glow sticks crowd, teal pigtails, digital stage effects, hologram shaders, futuristic"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/persona_all_out.png",
+    "name": "persona_all_out",
+    "prompt": "masterpiece, best quality, all out attack finisher, red and black style, stylized silhouette, comic book sound effects, cool composition, mask"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/danganronpa_execution.png",
+    "name": "danganronpa_execution",
+    "prompt": "masterpiece, best quality, punishment time, neon pink blood, pop art style, despair bear mascot, classroom trial setting, psychopop"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/ace_attorney_objection.png",
+    "name": "ace_attorney_objection",
+    "prompt": "masterpiece, best quality, finger pointing objection, courtroom anime style, speed lines, sweat drop, desk slam, intense debate"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/nier_automata_ruins.png",
+    "name": "nier_automata_ruins",
+    "prompt": "masterpiece, best quality, 2b android, post apocalyptic city ruins, overgrown vegetation, white hair, black dress, blindfold, melancholic beauty"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/zelda_botw_landscape.png",
+    "name": "zelda_botw_landscape",
+    "prompt": "masterpiece, best quality, open air style, cell shaded landscape, guardian ruins, silent princess flowers, watercolor texture, vast horizon"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/mario_mushroom_kingdom.png",
+    "name": "mario_mushroom_kingdom",
+    "prompt": "masterpiece, best quality, vibrant platformer world, floating blocks, green pipes, castle in background, bright primary colors, 3d render style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/sonic_green_hill.png",
+    "name": "sonic_green_hill",
+    "prompt": "masterpiece, best quality, loop de loop grass, checkerboard soil, blue blur speed lines, golden rings, sunny blue sky, sega aesthetic"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/final_fantasy_crystal.png",
+    "name": "final_fantasy_crystal",
+    "prompt": "masterpiece, best quality, giant floating crystal, fantasy airship, chocobo running, detailed rpg armor, magic particles, square enix style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/kingdom_hearts_twilight.png",
+    "name": "kingdom_hearts_twilight",
+    "prompt": "masterpiece, best quality, twilight town clock tower, sea salt ice cream, keyblade, zipper details, sunset orange sky, emotional nostalgia"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/monster_hunter_cook.png",
+    "name": "monster_hunter_cook",
+    "prompt": "masterpiece, best quality, palico chef cooking massive meal, meat roasting, steam, rustic tavern, detailed food art, mouth watering"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/dark_souls_bonfire.png",
+    "name": "dark_souls_bonfire",
+    "prompt": "masterpiece, best quality, knight resting at bonfire, dark fantasy ruins, embers, ominous fog, heavy armor, depressing atmosphere"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/elden_ring_erdtree.png",
+    "name": "elden_ring_erdtree",
+    "prompt": "masterpiece, best quality, giant glowing gold tree, vast fantasy landscape, tarnished knight, horse riding, epic scale, oil painting vibe"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/cyberpunk_edgerunners_moon.png",
+    "name": "cyberpunk_edgerunners_moon",
+    "prompt": "masterpiece, best quality, sandevistan trails, neon hallucinations, moon staring, yellow jacket, trigger style colors, tragic romance"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/arcane_jinx_smoke.png",
+    "name": "arcane_jinx_smoke",
+    "prompt": "masterpiece, best quality, painted texture 3d, blue smoke flares, graffiti, steampunk city piltover, expressive facial animation, riot style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/spider_verse_leap.png",
+    "name": "spider_verse_leap",
+    "prompt": "masterpiece, best quality, leap of faith, upside down city, chromatic aberration, comic dots, glitch effects, stylized 3d, vibrant colors"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/blue_period_art.png",
+    "name": "blue_period_art",
+    "prompt": "masterpiece, best quality, oil painting texture overlay, art student painting, emotional blue lighting, messy apron, canvas focus, creative flow"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/bocchi_the_rock_glitch.png",
+    "name": "bocchi_the_rock_glitch",
+    "prompt": "masterpiece, best quality, social anxiety glitch, melting face, cubist distortion, pink track suit, guitar, funny abstract animation style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/k-on_tea_time.png",
+    "name": "k-on_tea_time",
+    "prompt": "masterpiece, best quality, kyoto animation moeblob, girls band, cake and tea, music room, soft fluffy atmosphere, warm afternoon light"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/nichijou_reaction.png",
+    "name": "nichijou_reaction",
+    "prompt": "masterpiece, best quality, exaggerated shock reaction, laser beam mouth, simplistic style turned epic, helvetica standard, surreal comedy"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/pop_team_epic_meme.png",
+    "name": "pop_team_epic_meme",
+    "prompt": "masterpiece, best quality, crappy art style intentional, middle fingers, surreal humor, 4koma manga style, chaotic energy"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/lucky_star_dance.png",
+    "name": "lucky_star_dance",
+    "prompt": "masterpiece, best quality, sailor uniform, cheering pose, moe art style, colorful background, 2000s anime aesthetic, otaku culture"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/haruhi_god_pose.png",
+    "name": "haruhi_god_pose",
+    "prompt": "masterpiece, best quality, arms crossed bossy pose, yellow ribbon, sos brigade classroom, aliens time travelers espers, iconic anime scene"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/toradora_palm_tiger.png",
+    "name": "toradora_palm_tiger",
+    "prompt": "masterpiece, best quality, palm top tiger, tsundere expression, wooden katana, school uniform, messy apartment, romantic comedy vibe"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/clannad_dango.png",
+    "name": "clannad_dango",
+    "prompt": "masterpiece, best quality, key visual novel style, big sad eyes, dango family plushies, cherry blossom hill, emotional drama, soft shading"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/angel_beats_piano.png",
+    "name": "angel_beats_piano",
+    "prompt": "masterpiece, best quality, girl playing piano, disappearing light particles, afterlife school gym, emotional performance, sunset gradient"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/anohana_flower.png",
+    "name": "anohana_flower",
+    "prompt": "masterpiece, best quality, ghost girl white dress, summer heat haze, secret base, crying friends, nostalgic emotional flower, blue sky"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/your_lie_in_april_violin.png",
+    "name": "your_lie_in_april_violin",
+    "prompt": "masterpiece, best quality, vibrant violin performance, cherry blossoms exploding, stage lights, crying while playing, colorful emotional synesthesia"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/fruits_basket_zodiac.png",
+    "name": "fruits_basket_zodiac",
+    "prompt": "masterpiece, best quality, shoujo manga style, soft sparkles, zodiac animals, gentle smiling girl, onigiri, heartfelt atmosphere"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/nana_punk_band.png",
+    "name": "nana_punk_band",
+    "prompt": "masterpiece, best quality, punk rock fashion, cigarette smoke, microphone stand, vivienne westwood jewelry, josei style, dramatic lighting"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/paradise_kiss_fashion.png",
+    "name": "paradise_kiss_fashion",
+    "prompt": "masterpiece, best quality, high fashion runway, atelier setting, blue dress, elegant art style, detailed clothing texture, stylish"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/utena_rose_duel.png",
+    "name": "utena_rose_duel",
+    "prompt": "masterpiece, best quality, surreal rose garden, duelist uniform, sword pulled from chest, shadow girls, shoujo revolution, aesthetics"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/cardcaptor_sakura_fly.png",
+    "name": "cardcaptor_sakura_fly",
+    "prompt": "masterpiece, best quality, clamp art style, frilly battle costume, clow cards flying, sealing staff, wings, flowers everywhere"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/chobits_persocom.png",
+    "name": "chobits_persocom",
+    "prompt": "masterpiece, best quality, clamp style, ears interface, wires, abandoned city street light, romantic robot, flowing hair"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/lain_wired_room.png",
+    "name": "lain_wired_room",
+    "prompt": "masterpiece, best quality, messy room with computer wires, buzzing power lines, shadows, psychological horror, bear suit, static noise"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/haibane_renmei_wings.png",
+    "name": "haibane_renmei_wings",
+    "prompt": "masterpiece, best quality, grey wings, halo, walled city, watercolor background, peaceful slice of life, melancholic mystery"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/kino_journey_bike.png",
+    "name": "kino_journey_bike",
+    "prompt": "masterpiece, best quality, traveler on talking motorcycle, beautiful landscape, revolver on hip, philosophical atmosphere, wide angle"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/mushi_shi_nature.png",
+    "name": "mushi_shi_nature",
+    "prompt": "masterpiece, best quality, glowing ethereal lifeforms, medicine seller, lush forest, quiet atmosphere, traditional japan, supernatural beauty"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/natsume_book_friends.png",
+    "name": "natsume_book_friends",
+    "prompt": "masterpiece, best quality, boy returning name, paper flying, yokai spirits, fat cat spirit, gentle atmosphere, countryside shrine"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/mononoke_medicine_seller.png",
+    "name": "mononoke_medicine_seller",
+    "prompt": "masterpiece, best quality, paper texture overlay, vibrant flat colors, ukiyo-e horror, medicine seller with sword, abstract spirit patterns"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/tatami_galaxy_fast.png",
+    "name": "tatami_galaxy_fast",
+    "prompt": "masterpiece, best quality, yuasa style, simple flat colors, fast motion blur, college life surrealism, clockwork background, unique art"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/ping_pong_animation.png",
+    "name": "ping_pong_animation",
+    "prompt": "masterpiece, best quality, sketchy shaky lines, yuasa style, intense ping pong rally, sweat flying, distorted perspective, raw energy"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/devilman_crybaby_neon.png",
+    "name": "devilman_crybaby_neon",
+    "prompt": "masterpiece, best quality, yuasa style, neon strobe lights, demon transformation, running track, drug trip visuals, intense sexuality and violence"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/flcl_vespa_guitar.png",
+    "name": "flcl_vespa_guitar",
+    "prompt": "masterpiece, best quality, yellow vespa, gibson guitar, robot popping out of head, chaotic action, manga panels background, gainax style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/gurren_lagann_drill.png",
+    "name": "gurren_lagann_drill",
+    "prompt": "masterpiece, best quality, drill that will pierce the heavens, galaxy background, giant robot sunglasses, burning fighting spirit, epic scale"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/kill_la_kill_scissor.png",
+    "name": "kill_la_kill_scissor",
+    "prompt": "masterpiece, best quality, scissor blade, living school uniform, chaotic academy, bold red text overlay, dynamic action pose"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/promare_fire.png",
+    "name": "promare_fire",
+    "prompt": "masterpiece, best quality, geometric fire effects, pastel neon colors, firefighter mech, trigger style, minimalist shading, high contrast"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/lwa_broom_flight.png",
+    "name": "lwa_broom_flight",
+    "prompt": "masterpiece, best quality, witch academy, flying on broom, shiny magic trail, energetic expression, fantasy sky, anime harry potter vibe"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/bna_beast_city.png",
+    "name": "bna_beast_city",
+    "prompt": "masterpiece, best quality, neon furry city, tanuki girl transformation, pop art colors, synthwave aesthetic, trigger style, night life"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/cyberpunk_lucy_wire.png",
+    "name": "cyberpunk_lucy_wire",
+    "prompt": "masterpiece, best quality, monowire weapon, glowing orange, netrunner suit, night city background, chromatic aberration, trigger aesthetic"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/dorohedoro_gyoza.png",
+    "name": "dorohedoro_gyoza",
+    "prompt": "masterpiece, best quality, gritty grunge texture, lizard head man, cooking gyoza, dirty smoke, dark fantasy humor, detailed background"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/tokyo_ghoul_mask.png",
+    "name": "tokyo_ghoul_mask",
+    "prompt": "masterpiece, best quality, zipper mask, red kagune tentacles, white hair, shattered glass reflection, dark urban horror, tragedy"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/parasyte_hand.png",
+    "name": "parasyte_hand",
+    "prompt": "masterpiece, best quality, morphing hand eye, body horror, high school setting, philosophical alien, tense atmosphere, anime horror"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/junji_ito_spiral.png",
+    "name": "junji_ito_spiral",
+    "prompt": "masterpiece, best quality, horror manga style, black and white inking, obsessed with spirals, creepy atmosphere, detailed line work"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/higurashi_cute_horror.png",
+    "name": "higurashi_cute_horror",
+    "prompt": "masterpiece, best quality, cute country girls, sunset cicadas crying, hidden weapon, psychological horror contrast, blood splatter"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/madoka_magica_walpurgis.png",
+    "name": "madoka_magica_walpurgis",
+    "prompt": "masterpiece, best quality, giant gear witch, upside down city, magical girls fighting, tragic atmosphere, shaft head tilt"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/made_in_abyss_hole.png",
+    "name": "made_in_abyss_hole",
+    "prompt": "masterpiece, best quality, giant abyss hole, lush layer visuals, cute chibi characters, hidden eldritch horror, fantasy adventure"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/promised_neverland_wall.png",
+    "name": "promised_neverland_wall",
+    "prompt": "masterpiece, best quality, orphanage kids, white uniforms, standing at the gate, forest background, suspenseful atmosphere, fish eye lens"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/re_zero_witch_scent.png",
+    "name": "re_zero_witch_scent",
+    "prompt": "masterpiece, best quality, return by death, black shadow hands, witch scent miasma, crying desperation, fantasy mansion"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/overlord_tomb.png",
+    "name": "overlord_tomb",
+    "prompt": "masterpiece, best quality, ainz ooal gown, skeleton mage, floor guardians, nazarick throne room, dark fantasy power fantasy"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/slime_isekai_rimuru.png",
+    "name": "slime_isekai_rimuru",
+    "prompt": "masterpiece, best quality, cute blue slime, human form transformation, goblin village, cheerful atmosphere, sword and magic"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/konosuba_explosion.png",
+    "name": "konosuba_explosion",
+    "prompt": "masterpiece, best quality, explosion magic chant, chunibyo pose, goofy faces, fantasy party dysfunction, bright comedy colors"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/shield_hero_rage.png",
+    "name": "shield_hero_rage",
+    "prompt": "masterpiece, best quality, curse shield, glowing green fire, rage face, iron maiden skill, fantasy defense, gritty isekai"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/sword_art_online_menu.png",
+    "name": "sword_art_online_menu",
+    "prompt": "masterpiece, best quality, dual wielding swords, floating ui menu, boss room, digital particle effects, virtual reality mmo style"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/login_horizon_studying.png",
+    "name": "login_horizon_studying",
+    "prompt": "masterpiece, best quality, round table conference, adjusting glasses, strategy map, mmo interface, politics in fantasy, detailed background"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/no_game_no_life_colors.png",
+    "name": "no_game_no_life_colors",
+    "prompt": "masterpiece, best quality, oversaturated colors, red outlines, chess board world, floating cards, sora and shiro, fantasy game"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/classroom_elite_stare.png",
+    "name": "classroom_elite_stare",
+    "prompt": "masterpiece, best quality, cold calculating stare, manipulating from shadows, high school elite, psychological thriller vibe"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/kaguya_sama_love_war.png",
+    "name": "kaguya_sama_love_war",
+    "prompt": "masterpiece, best quality, cute mental battle, chibi devil narrator, student council room, romantic tension, red heart background"
+  },
+  {
+    "url": "/showcase/hassaku-illustrious/komi_san_cat_ears.png",
+    "name": "komi_san_cat_ears",
+    "prompt": "masterpiece, best quality, silent beauty, sudden cat ears pop up, notebook communication, classroom setting, wholesome comedy"
+  }
+]

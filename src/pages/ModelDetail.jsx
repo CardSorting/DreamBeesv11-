@@ -246,7 +246,8 @@ export default function ModelDetail() {
 
                     // Only write to DB if DB was actually empty (to avoid duplicates if just updating)
                     if (snapshot.empty) {
-                        normalizedSeeds.forEach(async (item) => {
+                        const validSeeds = normalizedSeeds.filter(item => item && item.url && typeof item.url === 'string' && item.url.length > 5);
+                        validSeeds.forEach(async (item) => {
                             await addDoc(collection(db, 'model_showcase_images'), {
                                 modelId: model.id,
                                 imageUrl: item.url,
@@ -286,7 +287,8 @@ export default function ModelDetail() {
     const isActive = selectedModel?.id === model.id;
     // Use the fetched showcase images, defaulting to empty array until loaded to prevent flash
     // normalized logic handles object structure
-    const imagesToRender = showcaseImages.length > 0 ? showcaseImages : (model.previewImages?.map(s => ({ url: s })) || []);
+    const rawImages = showcaseImages.length > 0 ? showcaseImages : (model.previewImages?.map(s => (typeof s === 'string' ? { url: s } : s)) || []);
+    const imagesToRender = rawImages.filter(img => img && img.url && typeof img.url === 'string' && img.url.length > 5);
 
     return (
         <div className="cursor-none" style={{ background: '#0a0a0a', minHeight: '100vh', color: '#e5e5e5', position: 'relative' }}>
