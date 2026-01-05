@@ -5,7 +5,7 @@ import { useModel } from '../contexts/ModelContext';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp, doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
-import { useAuth } from '../contexts/AuthContext';
+
 import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, ChevronDown, ChevronUp, Mic, MicOff, Zap, AlertCircle, Share2, Maximize2, Dices, X, Wand2, Monitor, Smartphone, LayoutTemplate, Square, RectangleHorizontal, RectangleVertical, HelpCircle, ThumbsUp, ThumbsDown } from 'lucide-react';
 
 import { Link, useSearchParams } from 'react-router-dom';
