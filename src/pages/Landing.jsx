@@ -265,7 +265,7 @@ export default function Landing() {
                             Yes. You own 100% of the rights to any image you generate on DreamBees. You can use them for commercial projects, merchandise, or any other purpose without restriction.
                         </AccordionItem>
                         <AccordionItem title="How does the credit system work?">
-                            We operate on a simple credit system. 1 Credit = 1 Image Generation. New users receive 5 free credits to get started. You can purchase additional credit packs or subscribe for monthly refills.
+                            We operate on a simple credit system. 1 Credit = 1 Image Generation. New users receive 30 free credits to get started. You can purchase additional credit packs or subscribe for monthly refills.
                         </AccordionItem>
                         <AccordionItem title="What models are currently supported?">
                             We currently support Stable Diffusion XL (SDXL) and SDXL Turbo for lightning-fast generation. We are actively testing Flux and other next-gen models for integration in the next update.

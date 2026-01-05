@@ -127,6 +127,81 @@ export default function Pricing() {
                 </div>
 
             </div>
+
+            {/* Credit Packs Section */}
+            <div style={{ marginTop: '120px', maxWidth: '1000px', margin: '120px auto 0', textAlign: 'center' }}>
+                <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: '700', color: 'white', marginBottom: '16px' }}>
+                    Refill your creativity.
+                </h2>
+                <p style={{ color: 'var(--color-text-muted)', marginBottom: '60px', fontSize: '1.1rem' }}>
+                    Pay as you go with one-time credit packs. No subscription required.
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '32px' }}>
+                    {/* Starter Pack */}
+                    <div className="glass-panel" style={{ padding: '32px', textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
+                        <h3 style={{ fontSize: '1.25rem', color: 'white', marginBottom: '8px' }}>Starter Pack</h3>
+                        <div style={{ fontSize: '2rem', fontWeight: '800', color: 'white', marginBottom: '16px' }}>
+                            $4.99
+                        </div>
+                        <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '24px', display: 'inline-block', textAlign: 'center' }}>
+                            <span style={{ color: 'var(--color-accent-primary)', fontWeight: '600' }}>100 Credits</span>
+                        </div>
+                        <div style={{ flex: 1 }}></div>
+                        <button
+                            className="btn btn-outline"
+                            style={{ width: '100%' }}
+                            onClick={() => handleSubscribe('price_1SmMWqIA2zQnWbn58u3TzNWC', 'payment')}
+                            disabled={loading}
+                        >
+                            Buy Now
+                        </button>
+                    </div>
+
+                    {/* Pro Pack */}
+                    <div className="glass-panel" style={{ padding: '32px', textAlign: 'left', display: 'flex', flexDirection: 'column', border: '1px solid var(--color-accent-primary)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <h3 style={{ fontSize: '1.25rem', color: 'white', marginBottom: '8px' }}>Pro Pack</h3>
+                            <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', background: 'var(--color-accent-primary)', color: 'white', padding: '2px 8px', borderRadius: '4px', height: 'fit-content' }}>Popular</span>
+                        </div>
+                        <div style={{ fontSize: '2rem', fontWeight: '800', color: 'white', marginBottom: '16px' }}>
+                            $19.99
+                        </div>
+                        <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '24px', display: 'inline-block', textAlign: 'center' }}>
+                            <span style={{ color: 'var(--color-accent-primary)', fontWeight: '600' }}>500 Credits</span>
+                        </div>
+                        <div style={{ flex: 1 }}></div>
+                        <button
+                            className="btn btn-primary"
+                            style={{ width: '100%' }}
+                            onClick={() => handleSubscribe('price_1SmMWqIA2zQnWbn5gj16f4Rx', 'payment')}
+                            disabled={loading}
+                        >
+                            Buy Now
+                        </button>
+                    </div>
+
+                    {/* Studio Pack */}
+                    <div className="glass-panel" style={{ padding: '32px', textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
+                        <h3 style={{ fontSize: '1.25rem', color: 'white', marginBottom: '8px' }}>Studio Pack</h3>
+                        <div style={{ fontSize: '2rem', fontWeight: '800', color: 'white', marginBottom: '16px' }}>
+                            $49.99
+                        </div>
+                        <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '24px', display: 'inline-block', textAlign: 'center' }}>
+                            <span style={{ color: 'var(--color-accent-primary)', fontWeight: '600' }}>1500 Credits</span>
+                        </div>
+                        <div style={{ flex: 1 }}></div>
+                        <button
+                            className="btn btn-outline"
+                            style={{ width: '100%' }}
+                            onClick={() => handleSubscribe('price_1SmMWqIA2zQnWbn5ogGzTmcc', 'payment')}
+                            disabled={loading}
+                        >
+                            Buy Now
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

@@ -128,18 +128,39 @@ export const generateImage = onDocumentCreated(
             let user = userDoc.exists ? userDoc.data() : {};
 
             // Default values for new users
-            if (!user.credits && user.credits !== 0) user.credits = 5;
-            if (!user.lastDailyReset) user.lastDailyReset = new Date(0); // Epoch
+            if (!user.credits && user.credits !== 0) user.credits = 30; // Generous starting credits
+            // Set lastDailyReset to NOW for new users so they don't trigger an immediate reset
+            if (!user.lastDailyReset) user.lastDailyReset = new Date();
 
             const now = new Date();
             const lastReset = user.lastDailyReset.toDate ? user.lastDailyReset.toDate() : new Date(user.lastDailyReset);
             const oneDay = 24 * 60 * 60 * 1000;
 
-            // Daily Reset Logic for minimal example (or just reset if > 24h)
+            // Daily Reset Logic
+            // Only reset if it's been > 24h AND the user has fewer than 5 credits.
+            // This prevents wiping out the 30 starting credits or purchased packs.
             if (now - lastReset > oneDay) {
-                user.credits = 5; // Reset to daily free limit
+                if ((user.credits || 0) < 5) {
+                    user.credits = 5; // Top up to daily limit
+                    // We only update lastDailyReset if we actually topped up? 
+                    // Or always update it to mark the new cycle?
+                    // Let's always update it so we check again tomorrow.
+                }
                 user.lastDailyReset = now;
-                await userRef.set({ credits: 5, lastDailyReset: now }, { merge: true });
+                // We use set with merge to ensure fields exist, though update is likely fine if user exists.
+                // Using update pattern below.
+                const updateData = { lastDailyReset: now };
+                if ((user.credits || 0) < 5) {
+                    updateData.credits = 5;
+                }
+                const updates = {};
+                // If we modified credits locally, ensure we persist (user.credits was local var)
+                // But better to just define the update object explicitly.
+
+                await userRef.set(updateData, { merge: true });
+
+                // Update local user object so the check below uses correct values
+                if (updateData.credits) user.credits = updateData.credits;
             }
 
             // Check subscription
@@ -432,14 +453,39 @@ export const stripeWebhook = onRequest(async (req, res) => {
             const session = event.data.object;
             const userId = session.metadata.userId;
             const customerId = session.customer;
+            const mode = session.mode; // 'subscription' or 'payment'
 
-            // Update user to active subscription
-            await db.collection('users').doc(userId).set({
-                subscriptionStatus: 'active',
-                stripeCustomerId: customerId,
-                credits: 1000, // Monthly allowance
-                planTier: 'pro'
-            }, { merge: true });
+            if (mode === 'subscription') {
+                // Update user to active subscription
+                await db.collection('users').doc(userId).set({
+                    subscriptionStatus: 'active',
+                    stripeCustomerId: customerId,
+                    credits: 1000, // Monthly allowance
+                    planTier: 'pro'
+                }, { merge: true });
+            } else if (mode === 'payment') {
+                // Handle One-Time Credit Packs
+                // Recover the line items or check the amount_total to imply the pack?
+                // Better to use the Price ID if possible, but session object doesn't always have line items expanded.
+                // However, we can map amount_total to credits for simplicity as our prices are unique.
+
+                const amount = session.amount_total;
+                let creditsToAdd = 0;
+
+                // Map Amount (in cents) to Credits
+                if (amount === 499) creditsToAdd = 100;       // Starter
+                else if (amount === 1999) creditsToAdd = 500; // Pro
+                else if (amount === 4999) creditsToAdd = 1500;// Studio
+
+                if (creditsToAdd > 0) {
+                    console.log(`Adding ${creditsToAdd} credits to user ${userId} for one-time payment of $${amount / 100}`);
+                    await db.collection('users').doc(userId).update({
+                        credits: FieldValue.increment(creditsToAdd)
+                    });
+                } else {
+                    console.warn(`Unknown payment amount: ${amount} for user ${userId}`);
+                }
+            }
 
         } else if (event.type === 'invoice.payment_succeeded') {
             const invoice = event.data.object;

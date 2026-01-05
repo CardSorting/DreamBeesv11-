@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Github, Twitter, Linkedin, Instagram, ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 
 export default function Footer() {
     return (
@@ -90,12 +90,7 @@ export default function Footer() {
                             <Link to="/cookies">Cookies</Link>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '16px' }}>
-                            <SocialLink icon={Twitter} href="#" />
-                            <SocialLink icon={Github} href="#" />
-                            <SocialLink icon={Instagram} href="#" />
-                            <SocialLink icon={Linkedin} href="#" />
-                        </div>
+
 
                         <div>
                             &copy; {new Date().getFullYear()} DreamBees Inc.
@@ -125,10 +120,4 @@ function FooterLink({ to, children }) {
     )
 }
 
-function SocialLink({ icon: Icon, href }) {
-    return (
-        <a href={href} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-text-muted)', transition: 'color 0.2s' }}>
-            <Icon size={20} />
-        </a>
-    )
-}
+
