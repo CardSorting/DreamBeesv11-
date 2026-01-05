@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
 import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight, X, Download, Copy, RefreshCw } from 'lucide-react';
+import { getOptimizedImageUrl } from '../utils';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -55,7 +56,7 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                     <button
                         onClick={async () => {
                             try {
-                                const imageUrl = image.url || image;
+                                const imageUrl = getOptimizedImageUrl(image.url || image);
                                 const response = await fetch(imageUrl);
                                 const blob = await response.blob();
                                 const url = window.URL.createObjectURL(blob);
@@ -94,7 +95,7 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                     position: 'relative'
                 }}>
                     <img
-                        src={image.url || image}
+                        src={getOptimizedImageUrl(image.url || image)}
                         alt="Showcase Detail"
                         style={{
                             maxWidth: '100%', maxHeight: '100%',
@@ -220,7 +221,7 @@ export default function ModelDetail() {
                 let hasValidData = false;
                 if (cachedImages && cachedImages.length > 0) {
                     const dbImages = cachedImages.map(doc => ({
-                        url: doc.imageUrl || doc.url, // Handle consistency
+                        url: getOptimizedImageUrl(doc.imageUrl || doc.url), // Handle consistency and CDN
                         prompt: doc.prompt,
                         name: doc.name,
                         creator: doc.creator
@@ -260,7 +261,7 @@ export default function ModelDetail() {
 
                     if (normalizedSeeds.length === 0) {
                         const previews = model.previewImages || [model.image];
-                        normalizedSeeds = previews.map(s => ({ url: s }));
+                        normalizedSeeds = previews.map(s => ({ url: getOptimizedImageUrl(s) }));
                     }
 
                     // Optimistically set UI
@@ -275,7 +276,7 @@ export default function ModelDetail() {
                         validSeeds.forEach(async (item) => {
                             await addDoc(collection(db, 'model_showcase_images'), {
                                 modelId: model.id,
-                                imageUrl: item.url,
+                                imageUrl: getOptimizedImageUrl(item.url),
                                 prompt: item.prompt || null,
                                 name: item.name || null,
                                 creator: item.creator || 'Gemini Pro 3', // Default creator for new seeds
@@ -289,7 +290,7 @@ export default function ModelDetail() {
                 console.error("Error fetching showcase:", error);
                 // Fallback
                 const previews = model.previewImages || [model.image];
-                setShowcaseImages(previews.map(s => ({ url: s })));
+                setShowcaseImages(previews.map(s => ({ url: getOptimizedImageUrl(s) })));
             }
         };
 
@@ -528,7 +529,7 @@ export default function ModelDetail() {
                                     <div className="image-card">
                                         <div className="image-wrapper" style={{ aspectRatio: ratio }}>
                                             <img
-                                                src={imgItem.url || imgItem}
+                                                src={getOptimizedImageUrl(imgItem.url || imgItem)}
                                                 alt={`Sample ${index}`}
                                                 className="feed-image"
                                             />

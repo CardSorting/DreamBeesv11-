@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Heart, X, Sparkles, Command } from 'lucide-react';
 import { useModel } from '../contexts/ModelContext';
+import { getOptimizedImageUrl } from '../utils';
 
 export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onSelectModel, models }) {
     const { getShowcaseImages } = useModel();
@@ -47,7 +48,7 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
 
             const images = await getShowcaseImages(previewModel.id);
             // Map to URLs for display
-            const urls = images.map(img => img.imageUrl || img.url); // Handle both DB format and potential fallback format
+            const urls = images.map(img => getOptimizedImageUrl(img.imageUrl || img.url)); // Handle both DB format and potential fallback format
             setCurrentPreviewImages(urls);
         };
 
@@ -81,7 +82,7 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
     // Resolve images to show: Dynamic Fetched -> Model Static -> Empty
     const currentImages = (currentPreviewImages && currentPreviewImages.length > 0)
         ? currentPreviewImages
-        : (activePreview?.previewImages || []);
+        : (activePreview?.previewImages?.map(s => getOptimizedImageUrl(s)) || []);
 
     return (
         <div style={{
@@ -178,7 +179,7 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
                                         width: '48px', height: '48px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0,
                                         border: isSel ? '2px solid var(--color-accent-primary)' : '1px solid rgba(255,255,255,0.1)'
                                     }}>
-                                        <img src={model.image} alt={model.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <img src={getOptimizedImageUrl(model.image)} alt={model.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     </div>
                                     <div style={{ flex: 1, overflow: 'hidden' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
@@ -202,8 +203,9 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
                             <div key={activePreview.id} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '70%', zIndex: 0, animation: 'fadeIn 0.5s ease' }}>
                                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 0%, #050505 100%)', zIndex: 1 }} />
                                 <div className="noise-overlay" style={{ opacity: 0.3, zIndex: 1 }} />
+                                <div className="noise-overlay" style={{ opacity: 0.3, zIndex: 1 }} />
                                 <img
-                                    src={activePreview.image}
+                                    src={getOptimizedImageUrl(activePreview.image)}
                                     alt="Preview"
                                     style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6, filter: 'saturate(0.5)' }}
                                 />
@@ -258,7 +260,7 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
                                             <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }} className="no-scrollbar">
                                                 {currentImages.map((img, i) => (
                                                     <div key={i} className="group" style={{ position: 'relative', width: '120px', aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                        <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s' }} className="group-hover:scale-110" />
+                                                        <img src={getOptimizedImageUrl(img)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s' }} className="group-hover:scale-110" />
                                                     </div>
                                                 ))}
                                             </div>
