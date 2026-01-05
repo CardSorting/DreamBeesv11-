@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Heart, X, Sparkles, Command } from 'lucide-react';
-import { useModel } from '../contexts/ModelContext';
+
 import { getOptimizedImageUrl } from '../utils';
 
 export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onSelectModel, models }) {
-    const { getShowcaseImages } = useModel();
+
     const [searchQuery, setSearchQuery] = useState('');
     const [activeTab, setActiveTab] = useState('all'); // 'all' | 'favorites'
     const [favorites, setFavorites] = useState([]);
@@ -13,7 +13,7 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
     const [previewModel, setPreviewModel] = useState(null);
 
     // Hybrid Strategy: Immediate static previews -> Async detailed showcase
-    const [localImages, setLocalImages] = useState([]);
+
 
 
 
@@ -39,29 +39,7 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
         }
     }, [isOpen, selectedModel]);
 
-    // HYBRID FETCH: Instant Static -> Async Dynamic
-    useEffect(() => {
-        if (!isOpen || !previewModel) return;
 
-        // 1. Immediate Static Fallback (Instant UI feedback)
-        const staticImages = previewModel.previewImages?.map(s => getOptimizedImageUrl(s)) || [];
-        setLocalImages(staticImages);
-
-        // 2. Background Fetch for Richest Content
-        const loadRichImages = async () => {
-            // Only fetch if we want to potentially upgrade to better images
-            // or if static images are missing
-            const dynamicImages = await getShowcaseImages(previewModel.id);
-
-            if (dynamicImages && dynamicImages.length > 0) {
-                // Map and set (Prioritize Showcase if available as it often has better metadata/quality)
-                const urls = dynamicImages.map(img => getOptimizedImageUrl(img.imageUrl || img.url));
-                setLocalImages(urls);
-            }
-        };
-
-        loadRichImages();
-    }, [previewModel, isOpen]);
 
 
 
@@ -88,7 +66,7 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
     // Ensure we have a valid preview model even if filtering changes
     const activePreview = previewModel || filteredModels[0] || null;
 
-    const currentImages = localImages;
+
 
     return (
         <div style={{
@@ -259,19 +237,7 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
                                         </button>
                                     </div>
 
-                                    {/* Preview Gallery (Horizontal) */}
-                                    {currentImages.length > 0 && (
-                                        <div style={{ marginTop: '32px', paddingTop: '32px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                                            <div style={{ fontSize: '0.75rem', color: '#666', letterSpacing: '0.1em', marginBottom: '16px', fontWeight: 'bold' }}>GENERATION SAMPLES</div>
-                                            <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '8px' }} className="no-scrollbar">
-                                                {currentImages.map((img, i) => (
-                                                    <div key={i} className="group" style={{ position: 'relative', width: '120px', aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                        <img src={getOptimizedImageUrl(img)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s' }} className="group-hover:scale-110" />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
+
                                 </div>
                             </div>
                         </>

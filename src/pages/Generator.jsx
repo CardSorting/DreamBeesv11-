@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ModelSelectorModal from '../components/ModelSelectorModal';
+import GenerationHistory from '../components/GenerationHistory';
 import { useModel } from '../contexts/ModelContext';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp, doc, onSnapshot } from 'firebase/firestore';
@@ -167,6 +168,16 @@ export default function Generator() {
         }
     };
 
+
+
+    const handleHistorySelect = (job) => {
+        setGeneratedImage(job.imageUrl);
+        setPrompt(job.prompt);
+        if (job.negative_prompt) setNegPrompt(job.negative_prompt);
+        // Optional: restore other settings like model, aspect ratio etc.
+        // For now, we just restore the image view and prompt.
+    };
+
     if (loading) {
         return (
             <div style={{ paddingTop: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', color: 'white' }}>
@@ -296,6 +307,12 @@ export default function Generator() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Generation History */}
+                    <GenerationHistory
+                        onSelect={handleHistorySelect}
+                        selectedJobId={null}
+                    />
                 </div>
 
                 {/* Right: Property View (Sidebar) */}
