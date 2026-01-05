@@ -6,6 +6,12 @@ export const getOptimizedImageUrl = (url) => {
     if (url.includes('f005.backblazeb2.com/file/printeregg')) {
         return url.replace('https://f005.backblazeb2.com', 'https://cdn.dreambeesai.com');
     }
+
+    // Fix malformed CDN URLs that are missing the bucket path
+    if (url.startsWith('https://cdn.dreambeesai.com/generated/')) {
+        return url.replace('https://cdn.dreambeesai.com/generated/', 'https://cdn.dreambeesai.com/file/printeregg/generated/');
+    }
+
     return url;
 };
 const RANDOM_PROMPTS = [

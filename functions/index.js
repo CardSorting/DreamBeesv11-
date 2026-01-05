@@ -300,7 +300,8 @@ export const generateImageTask = onTaskDispatched(
             });
 
             await s3Client.send(command);
-            const imageUrl = `${B2_PUBLIC_URL}/${filename}`;
+            // Construct CDN URL with explicit bucket path
+            const imageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${filename}`;
 
             // 3. Save to main 'images' collection
             const imageDoc = {
