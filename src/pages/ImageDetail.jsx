@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Download, Trash2, ArrowLeft, Loader2, RefreshCw, Link as LinkIcon, Info, Sliders, Layers, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { useModel } from '../contexts/ModelContext';
 import toast from 'react-hot-toast';
+import { getOptimizedImageUrl } from '../utils';
 
 export default function ImageDetail() {
     const { id } = useParams();
@@ -103,7 +104,7 @@ export default function ImageDetail() {
                     </button>
                     <button onClick={async () => {
                         try {
-                            const response = await fetch(image.imageUrl);
+                            const response = await fetch(getOptimizedImageUrl(image.imageUrl));
                             const blob = await response.blob();
                             const url = window.URL.createObjectURL(blob);
                             const link = document.createElement('a');
@@ -134,7 +135,7 @@ export default function ImageDetail() {
                     padding: '40px'
                 }}>
                     <img
-                        src={image.imageUrl}
+                        src={getOptimizedImageUrl(image.imageUrl)}
                         alt={image.prompt}
                         style={{
                             maxWidth: '100%', maxHeight: '100%',

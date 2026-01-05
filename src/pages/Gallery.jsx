@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Loader2, Search, Download, Trash2, X, ExternalLink, Calendar, Info, Check, Plus } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getOptimizedImageUrl } from '../utils';
 
 export default function Gallery() {
     const navigate = useNavigate();
@@ -209,7 +210,7 @@ export default function Gallery() {
                             }}
                         >
                             <img
-                                src={img.imageUrl}
+                                src={getOptimizedImageUrl(img.imageUrl)}
                                 alt={img.prompt}
                                 style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
                             />

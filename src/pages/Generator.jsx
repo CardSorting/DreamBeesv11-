@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, ChevronDown, ChevronUp, Mic, MicOff, Zap, AlertCircle, Share2, Download, Maximize2 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { getOptimizedImageUrl } from '../utils';
 
 export default function Generator() {
     const [searchParams] = useSearchParams();
@@ -210,12 +211,12 @@ export default function Generator() {
                                 </div>
                             ) : generatedImage ? (
                                 <div className="fade-in" style={{ width: '100%', height: '100%', padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <img src={generatedImage} alt="Generated" style={{ maxWidth: '100%', maxHeight: '100%', boxShadow: '0 0 50px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
+                                    <img src={getOptimizedImageUrl(generatedImage)} alt="Generated" style={{ maxWidth: '100%', maxHeight: '100%', boxShadow: '0 0 50px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
                                     <div style={{ position: 'absolute', bottom: '20px', right: '20px', display: 'flex', gap: '12px' }}>
                                         <button
                                             onClick={async () => {
                                                 try {
-                                                    const response = await fetch(generatedImage);
+                                                    const response = await fetch(getOptimizedImageUrl(generatedImage));
                                                     const blob = await response.blob();
                                                     const url = window.URL.createObjectURL(blob);
                                                     const link = document.createElement('a');
@@ -227,7 +228,7 @@ export default function Generator() {
                                                     window.URL.revokeObjectURL(url);
                                                 } catch (e) {
                                                     console.error("Download failed", e);
-                                                    window.open(generatedImage, '_blank');
+                                                    window.open(getOptimizedImageUrl(generatedImage), '_blank');
                                                 }
                                             }}
                                             className="btn btn-primary"
