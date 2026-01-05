@@ -200,7 +200,7 @@ export default function Generator() {
     }
 
     return (
-        <div style={{ paddingTop: '140px', paddingBottom: '40px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '140px 0 40px 0', display: 'flex', flexDirection: 'column' }}>
             <div className="container" style={{ flex: 1, display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 340px', gap: '32px' }}>
 
                 {/* Left: Canvas / Input */}
@@ -239,20 +239,38 @@ export default function Generator() {
                                     <div style={{ position: 'absolute', bottom: '20px', right: '20px', display: 'flex', gap: '12px' }}>
                                         <button
                                             onClick={async () => {
+                                                const imageUrl = getOptimizedImageUrl(generatedImage);
+                                                const originalUrl = generatedImage;
+                                                const toastId = toast.loading("Downloading...");
+
                                                 try {
-                                                    const response = await fetch(getOptimizedImageUrl(generatedImage));
+                                                    // Try optimized URL first
+                                                    let response = await fetch(imageUrl);
+
+                                                    // Fallback to original if optimized fails
+                                                    if (!response.ok && imageUrl !== originalUrl) {
+                                                        console.warn("Optimized URL failed, trying original...");
+                                                        response = await fetch(originalUrl);
+                                                    }
+
+                                                    if (!response.ok) throw new Error("Network response was not ok");
+
                                                     const blob = await response.blob();
                                                     const url = window.URL.createObjectURL(blob);
                                                     const link = document.createElement('a');
                                                     link.href = url;
-                                                    link.download = "generated.png";
+                                                    link.download = `generated-${Date.now()}.png`;
                                                     document.body.appendChild(link);
                                                     link.click();
                                                     document.body.removeChild(link);
                                                     window.URL.revokeObjectURL(url);
+                                                    toast.success("Download complete", { id: toastId });
+                                                    // Do NOT fallback to window.open
                                                 } catch (e) {
                                                     console.error("Download failed", e);
-                                                    window.open(getOptimizedImageUrl(generatedImage), '_blank');
+                                                    toast.dismiss(toastId);
+                                                    toast("Opening in new tab...", { icon: '🔗' });
+                                                    window.open(originalUrl, '_blank');
                                                 }
                                             }}
                                             className="btn btn-primary"

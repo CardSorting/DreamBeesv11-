@@ -103,8 +103,22 @@ export default function ImageDetail() {
                         <Trash2 size={18} />
                     </button>
                     <button onClick={async () => {
+                        const imageUrl = getOptimizedImageUrl(image.imageUrl);
+                        const originalUrl = image.imageUrl;
+                        const toastId = toast.loading("Downloading...");
+
                         try {
-                            const response = await fetch(getOptimizedImageUrl(image.imageUrl));
+                            // Try optimized URL first
+                            let response = await fetch(imageUrl);
+
+                            // Fallback to original if optimized fails
+                            if (!response.ok && imageUrl !== originalUrl) {
+                                console.warn("Optimized URL failed, trying original...");
+                                response = await fetch(originalUrl);
+                            }
+
+                            if (!response.ok) throw new Error("Network response was not ok");
+
                             const blob = await response.blob();
                             const url = window.URL.createObjectURL(blob);
                             const link = document.createElement('a');
@@ -114,9 +128,12 @@ export default function ImageDetail() {
                             link.click();
                             document.body.removeChild(link);
                             window.URL.revokeObjectURL(url);
+                            toast.success("Download complete", { id: toastId });
                         } catch (e) {
                             console.error("Download failed", e);
-                            window.open(image.imageUrl, '_blank');
+                            toast.dismiss(toastId);
+                            toast("Opening in new tab...", { icon: '🔗' });
+                            window.open(originalUrl, '_blank');
                         }
                     }} className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
                         <Download size={16} style={{ marginRight: '8px' }} /> Download
