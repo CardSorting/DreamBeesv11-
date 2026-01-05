@@ -58,36 +58,45 @@ export default function GenerationHistory({ onSelect, selectedJobId }) {
     if (history.length === 0) return null;
 
     return (
-        <div style={{ marginTop: '32px' }}>
+        <div className="history-filmstrip-container" style={{ marginTop: '16px' }}>
             <div style={{
-                fontSize: '0.8rem',
+                fontSize: '0.7rem',
                 fontWeight: '700',
                 letterSpacing: '0.05em',
                 color: 'var(--color-text-muted)',
-                marginBottom: '16px',
-                textTransform: 'uppercase'
+                marginBottom: '8px',
+                textTransform: 'uppercase',
+                paddingLeft: '4px'
             }}>
-                Recent History
+                History
             </div>
 
             <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
-                gap: '12px'
-            }}>
+                display: 'flex',
+                gap: '8px',
+                overflowX: 'auto',
+                padding: '4px',
+                paddingBottom: '8px',
+                width: '100%',
+                scrollBehavior: 'smooth'
+            }} className="no-scrollbar">
                 {history.map((job) => (
                     <div
                         key={job.id}
                         onClick={() => onSelect(job)}
                         className={`history-item ${selectedJobId === job.id ? 'active' : ''}`}
                         style={{
-                            aspectRatio: '1',
-                            borderRadius: '12px',
+                            minWidth: '64px',
+                            width: '64px',
+                            height: '64px',
+                            borderRadius: '8px',
                             overflow: 'hidden',
                             position: 'relative',
                             cursor: 'pointer',
-                            border: selectedJobId === job.id ? '2px solid var(--color-accent-primary)' : '2px solid transparent',
-                            background: '#111'
+                            border: selectedJobId === job.id ? '2px solid var(--color-accent-primary)' : '1px solid rgba(255,255,255,0.1)',
+                            background: '#111',
+                            flexShrink: 0,
+                            transition: 'all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
                         }}
                     >
                         <img
@@ -98,7 +107,8 @@ export default function GenerationHistory({ onSelect, selectedJobId }) {
                                 width: '100%',
                                 height: '100%',
                                 objectFit: 'cover',
-                                transition: 'transform 0.3s ease'
+                                opacity: selectedJobId === job.id ? 1 : 0.7,
+                                transition: 'opacity 0.2s',
                             }}
                         />
 
@@ -116,15 +126,18 @@ export default function GenerationHistory({ onSelect, selectedJobId }) {
                                 onClick={(e) => handleDelete(e, job.id)}
                                 className="btn-icon-danger"
                                 style={{
-                                    padding: '6px',
+                                    padding: '4px',
                                     borderRadius: '50%',
-                                    background: 'rgba(0,0,0,0.6)',
+                                    background: 'rgba(0,0,0,0.8)',
                                     color: '#ef4444',
                                     border: 'none',
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
                                 }}
                             >
-                                <Trash2 size={14} />
+                                <Trash2 size={10} />
                             </button>
                         </div>
                     </div>
@@ -132,11 +145,33 @@ export default function GenerationHistory({ onSelect, selectedJobId }) {
             </div>
 
             <style>{`
+                .history-item:hover {
+                    transform: translateY(-2px);
+                    border-color: rgba(255,255,255,0.4) !important;
+                }
+                .history-item:hover img {
+                    opacity: 1 !important;
+                }
                 .history-item:hover .history-overlay {
                     opacity: 1;
                 }
-                .history-item:hover img {
-                    transform: scale(1.1);
+                .history-item.active {
+                    transform: scale(1.05);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                    z-index: 2;
+                }
+                .no-scrollbar::-webkit-scrollbar {
+                    height: 4px;
+                }
+                .no-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .no-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(255,255,255,0.1);
+                    border-radius: 4px;
+                }
+                .no-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255,255,255,0.2);
                 }
             `}</style>
         </div>

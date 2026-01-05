@@ -174,8 +174,21 @@ export default function Generator() {
         setGeneratedImage(job.imageUrl);
         setPrompt(job.prompt);
         if (job.negative_prompt) setNegPrompt(job.negative_prompt);
-        // Optional: restore other settings like model, aspect ratio etc.
-        // For now, we just restore the image view and prompt.
+
+        // Restore parameters
+        if (job.aspectRatio) setAspectRatio(job.aspectRatio);
+        if (job.steps) setSteps(job.steps);
+        if (job.cfg) setCfg(job.cfg);
+
+        // Restore Model
+        if (job.modelId && availableModels.length > 0) {
+            const restoredModel = availableModels.find(m => m.id === job.modelId);
+            if (restoredModel) {
+                setSelectedModel(restoredModel);
+            }
+        }
+
+        toast.success("Settings restored", { icon: '↺', duration: 2000 });
     };
 
     if (loading) {
@@ -308,12 +321,14 @@ export default function Generator() {
                         </div>
                     </div>
 
-                    {/* Generation History */}
+                    {/* Generation History (Internal) */}
                     <GenerationHistory
                         onSelect={handleHistorySelect}
                         selectedJobId={null}
                     />
                 </div>
+
+
 
                 {/* Right: Property View (Sidebar) */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -474,7 +489,7 @@ export default function Generator() {
                 .hover-card:hover { border-color: rgba(255,255,255,0.2) !important; background: rgba(255,255,255,0.06) !important; }
                 @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
             `}</style>
-        </div>
+        </div >
     );
 }
 
