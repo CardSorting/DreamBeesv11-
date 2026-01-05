@@ -27,7 +27,11 @@ export function ModelProvider({ children }) {
 
                 const models = [];
                 querySnapshot.forEach((doc) => {
-                    models.push({ ...doc.data() });
+                    const data = doc.data();
+                    models.push({
+                        ...data,
+                        tags: Array.isArray(data.tags) ? data.tags : []
+                    });
                 });
 
                 setAvailableModels(models);
