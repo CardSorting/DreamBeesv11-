@@ -212,9 +212,29 @@ export default function Generator() {
                                 <div className="fade-in" style={{ width: '100%', height: '100%', padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <img src={generatedImage} alt="Generated" style={{ maxWidth: '100%', maxHeight: '100%', boxShadow: '0 0 50px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
                                     <div style={{ position: 'absolute', bottom: '20px', right: '20px', display: 'flex', gap: '12px' }}>
-                                        <a href={generatedImage} download="generated.png" className="btn btn-primary" style={{ padding: '0 16px', height: '36px', fontSize: '0.8rem' }}>
+                                        <button
+                                            onClick={async () => {
+                                                try {
+                                                    const response = await fetch(generatedImage);
+                                                    const blob = await response.blob();
+                                                    const url = window.URL.createObjectURL(blob);
+                                                    const link = document.createElement('a');
+                                                    link.href = url;
+                                                    link.download = "generated.png";
+                                                    document.body.appendChild(link);
+                                                    link.click();
+                                                    document.body.removeChild(link);
+                                                    window.URL.revokeObjectURL(url);
+                                                } catch (e) {
+                                                    console.error("Download failed", e);
+                                                    window.open(generatedImage, '_blank');
+                                                }
+                                            }}
+                                            className="btn btn-primary"
+                                            style={{ padding: '0 16px', height: '36px', fontSize: '0.8rem' }}
+                                        >
                                             <Download size={14} style={{ marginRight: '8px' }} /> Download
-                                        </a>
+                                        </button>
                                         <Link to="/gallery" className="btn btn-outline" style={{ padding: '0 16px', height: '36px', fontSize: '0.8rem' }}>
                                             Gallery
                                         </Link>

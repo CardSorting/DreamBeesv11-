@@ -101,9 +101,25 @@ export default function ImageDetail() {
                     <button onClick={handleDelete} className="btn-ghost" style={{ color: '#ef4444' }} title="Delete">
                         <Trash2 size={18} />
                     </button>
-                    <a href={image.imageUrl} download={`db-${image.id}.png`} className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                    <button onClick={async () => {
+                        try {
+                            const response = await fetch(image.imageUrl);
+                            const blob = await response.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = `db-${image.id}.png`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            window.URL.revokeObjectURL(url);
+                        } catch (e) {
+                            console.error("Download failed", e);
+                            window.open(image.imageUrl, '_blank');
+                        }
+                    }} className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
                         <Download size={16} style={{ marginRight: '8px' }} /> Download
-                    </a>
+                    </button>
                 </div>
             </div>
 

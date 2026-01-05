@@ -52,9 +52,30 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                 </button>
 
                 <div className="flex-center" style={{ gap: '12px' }}>
-                    <a href={image.url || image} download={`db-showcase.png`} className="btn-ghost" title="Download">
+                    <button
+                        onClick={async () => {
+                            try {
+                                const imageUrl = image.url || image;
+                                const response = await fetch(imageUrl);
+                                const blob = await response.blob();
+                                const url = window.URL.createObjectURL(blob);
+                                const link = document.createElement('a');
+                                link.href = url;
+                                link.download = `db-showcase.png`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                window.URL.revokeObjectURL(url);
+                            } catch (e) {
+                                console.error("Download failed", e);
+                                window.open(image.url || image, '_blank');
+                            }
+                        }}
+                        className="btn-ghost"
+                        title="Download"
+                    >
                         <Download size={18} />
-                    </a>
+                    </button>
                     <button onClick={onClose} className="btn-ghost" title="Close" style={{ marginLeft: '12px' }}>
                         <X size={24} />
                     </button>
