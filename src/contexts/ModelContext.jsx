@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, query, orderBy, where, limit } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, where, limit, doc, serverTimestamp, setDoc } from 'firebase/firestore';
 
 const ModelContext = createContext();
 
@@ -130,6 +130,74 @@ export function ModelProvider({ children }) {
         }
     };
 
+    // Rate a generation (1: like, -1: dislike)
+    const rateGeneration = async (job, rating) => {
+        if (!job || !job.id) return;
+
+        const updates = {
+            rating: rating,
+            hidden: rating === -1 // Auto-hide on dislike
+        };
+
+        try {
+            // 1. Update Generation Queue
+            const queueRef = doc(db, 'generation_queue', job.id);
+            // using set merge true to be safe, or update
+            await import('firebase/firestore').then(({ updateDoc }) => updateDoc(queueRef, updates));
+
+            // 2. Update Image (if exists)
+            // Some jobs might not have resultImageId if they are old or failed, but if they are visible they likely do or have imageUrl
+            // logic: if job has resultImageId, update that doc in 'images'
+            if (job.resultImageId) {
+                const imageRef = doc(db, 'images', job.resultImageId);
+                await import('firebase/firestore').then(({ updateDoc }) => updateDoc(imageRef, updates));
+            }
+
+            // 3. Log for Training (Fire & Forget)
+            // This creates an immutable dataset for RLHF / Aesthetic Training
+            try {
+                const feedbackData = {
+                    timestamp: serverTimestamp(),
+                    userId: job.userId || 'unknown',
+                    rating: rating,
+                    feedbackType: 'aesthetic',
+
+                    // Context
+                    modelId: job.modelId,
+                    prompt: job.prompt,
+                    negative_prompt: job.negative_prompt || "",
+
+                    // Parameters (Snapshot for reproducibility)
+                    parameters: {
+                        cfg: job.cfg,
+                        steps: job.steps,
+                        aspectRatio: job.aspectRatio,
+                        seed: job.seed,
+                    },
+
+                    // Image Ref
+                    imageUrl: job.imageUrl,
+                    imageId: job.resultImageId || activeJob.id, // Fallback to job ID if image ID missing
+                    jobId: job.id
+                };
+
+                // We use addDoc via the imported SDK function if available, or dynamic import if needed.
+                // Since we need 'addDoc' and 'collection' and 'serverTimestamp' which might not be fully imported in scope if lazy loading was used in original context?
+                // Actually, I updated the imports above.
+                await addDoc(collection(db, 'training_feedback'), feedbackData);
+                console.log("Logged training feedback");
+            } catch (logErr) {
+                console.warn("Failed to log training feedback:", logErr);
+                // improved logging failure shouldn't block the UI action
+            }
+
+            return true;
+        } catch (err) {
+            console.error("Error rating generation:", err);
+            throw err;
+        }
+    };
+
     const value = {
         selectedModel,
         setSelectedModel,
@@ -137,7 +205,8 @@ export function ModelProvider({ children }) {
         loading,
         error,
         getShowcaseImages, // Exported function
-        showcaseCache      // Exported state (optional, mainly for debugging)
+        showcaseCache,     // Exported state (optional, mainly for debugging)
+        rateGeneration,    // EXPORTED
     };
 
     return (

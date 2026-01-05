@@ -39,10 +39,13 @@ export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const jobs = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+            const jobs = snapshot.docs
+                .map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }))
+                .filter(job => !job.hidden); // Filter out hidden (disliked) items
+
             const isNewItem = history.length > 0 && jobs.length > 0 && jobs[0].id !== history[0].id;
             setHistory(jobs);
             setLoading(false);

@@ -5,7 +5,8 @@ import { useModel } from '../contexts/ModelContext';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp, doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, ChevronDown, ChevronUp, Mic, MicOff, Zap, AlertCircle, Share2, Maximize2, Dices, X, Wand2, Monitor, Smartphone, LayoutTemplate, Square, RectangleHorizontal, RectangleVertical, HelpCircle } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, ChevronDown, ChevronUp, Mic, MicOff, Zap, AlertCircle, Share2, Maximize2, Dices, X, Wand2, Monitor, Smartphone, LayoutTemplate, Square, RectangleHorizontal, RectangleVertical, HelpCircle, ThumbsUp, ThumbsDown } from 'lucide-react';
 
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -15,7 +16,7 @@ import { getOptimizedImageUrl, getRandomPrompt, getEnhancedPrompt } from '../uti
 export default function Generator() {
     const [searchParams] = useSearchParams();
     const { currentUser } = useAuth();
-    const { selectedModel, setSelectedModel, availableModels, loading, getShowcaseImages } = useModel();
+    const { selectedModel, setSelectedModel, availableModels, loading, getShowcaseImages, rateGeneration } = useModel();
 
     // Modal State
     const [isModelModalOpen, setIsModelModalOpen] = useState(false);
@@ -27,6 +28,7 @@ export default function Generator() {
     const [generating, setGenerating] = useState(false);
     const [generatedImage, setGeneratedImage] = useState(null);
     const [currentJobId, setCurrentJobId] = useState(null);
+    const [activeJob, setActiveJob] = useState(null); // Full job object for rating
     const [jobStatus, setJobStatus] = useState('pending');
     const [elapsedTime, setElapsedTime] = useState(0);
     const [progress, setProgress] = useState(0);
@@ -150,6 +152,7 @@ export default function Generator() {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 setJobStatus(data.status);
+                setActiveJob({ id: docSnap.id, ...data }); // Keep active job synced
                 if (data.status === 'completed') {
                     setProgress(100);
                     setTimeout(() => {
@@ -198,6 +201,7 @@ export default function Generator() {
 
     const handleHistorySelect = (job) => {
         setGeneratedImage(job.imageUrl);
+        setActiveJob(job); // Set for rating
         setPrompt(job.prompt);
         if (job.negative_prompt) setNegPrompt(job.negative_prompt);
 
@@ -264,6 +268,39 @@ export default function Generator() {
                                 <div className="fade-in" style={{ position: 'absolute', inset: 0, padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <img src={getOptimizedImageUrl(generatedImage)} alt="Generated" style={{ width: '100%', height: '100%', boxShadow: '0 0 50px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
                                     <div style={{ position: 'absolute', bottom: '20px', right: '20px', display: 'flex', gap: '12px' }}>
+                                        {/* Ranking Actions */}
+                                        <div style={{ display: 'flex', gap: '8px', marginRight: '16px', background: 'rgba(0,0,0,0.6)', borderRadius: '8px', padding: '4px', border: '1px solid rgba(255,255,255,0.2)' }}>
+                                            <button
+                                                onClick={() => {
+                                                    if (activeJob) {
+                                                        rateGeneration(activeJob, 1);
+                                                        toast.success("Rated: Positive");
+                                                    }
+                                                }}
+                                                className="btn-icon-hover"
+                                                style={{ padding: '6px', borderRadius: '6px', color: 'white', cursor: 'pointer', background: 'transparent', border: 'none' }}
+                                                title="I like this"
+                                            >
+                                                <ThumbsUp size={18} />
+                                            </button>
+                                            <div style={{ width: '1px', background: 'rgba(255,255,255,0.2)', margin: '4px 0' }} />
+                                            <button
+                                                onClick={() => {
+                                                    if (activeJob) {
+                                                        rateGeneration(activeJob, -1);
+                                                        setGeneratedImage(null); // Optimistic remove
+                                                        setActiveJob(null);
+                                                        toast.success("Rated: Negative (Hidden)");
+                                                    }
+                                                }}
+                                                className="btn-icon-hover"
+                                                style={{ padding: '6px', borderRadius: '6px', color: '#ef4444', cursor: 'pointer', background: 'transparent', border: 'none' }}
+                                                title="I dislike this (Hide)"
+                                            >
+                                                <ThumbsDown size={18} />
+                                            </button>
+                                        </div>
+
                                         <button
                                             onClick={() => setIsFullscreen(true)}
                                             className="btn-icon"

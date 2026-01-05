@@ -37,7 +37,10 @@ export default function Gallery() {
                 );
                 const snapshot = await getDocs(q);
 
-                const imgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const imgs = snapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .filter(img => !img.hidden); // Client-side filtering
+
                 setImages(imgs);
                 setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
                 setHasMore(snapshot.docs.length === LIMIT);
@@ -68,7 +71,10 @@ export default function Gallery() {
             const snapshot = await getDocs(q);
 
             if (!snapshot.empty) {
-                const newImgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const newImgs = snapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .filter(img => !img.hidden);
+
                 setImages(prev => [...prev, ...newImgs]);
                 setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
                 setHasMore(snapshot.docs.length === LIMIT);
