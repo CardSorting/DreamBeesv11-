@@ -172,7 +172,14 @@ async function processModel(modelId) {
                 url: webPath,
                 name: PROMPTS[i].name,
                 prompt: PROMPTS[i].prompt,
-                creator: 'Gemini 3 Pro'
+                creator: 'Gemini 3 Pro',
+                // Technical Metadata
+                steps: 30,
+                cfg: 7.5,
+                width: 1024,
+                height: 1024,
+                scheduler: 'DPM++ 2M Karras',
+                aspectRatio: '1:1'
             });
         } catch (error) {
             console.error(`      ✗ Failed: ${error.message}`);

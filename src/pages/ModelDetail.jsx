@@ -140,8 +140,20 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                             <div className="meta-value">Official Showcase</div>
                         </div>
                         <div>
-                            <label className="meta-label">LICENSE</label>
-                            <div className="meta-value">Commercial</div>
+                            <label className="meta-label">STEPS</label>
+                            <div className="meta-value">{image.steps || 30}</div>
+                        </div>
+                        <div>
+                            <label className="meta-label">GUIDANCE</label>
+                            <div className="meta-value">{image.cfg || 7.0}</div>
+                        </div>
+                        <div>
+                            <label className="meta-label">DIMENSIONS</label>
+                            <div className="meta-value">{image.width && image.height ? `${image.width}x${image.height}` : '1024x1024'}</div>
+                        </div>
+                        <div>
+                            <label className="meta-label">SCHEDULER</label>
+                            <div className="meta-value">{image.scheduler || 'DPM++ 2M'}</div>
                         </div>
                     </div>
 
@@ -157,7 +169,13 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                             <button
                                 onClick={() => {
                                     onClose();
-                                    navigate(`/generate?prompt=${encodeURIComponent(image.prompt || '')}`);
+                                    const params = new URLSearchParams();
+                                    if (image.prompt) params.set('prompt', image.prompt);
+                                    if (image.steps) params.set('steps', image.steps);
+                                    if (image.cfg) params.set('cfg', image.cfg);
+                                    if (image.aspectRatio) params.set('aspectRatio', image.aspectRatio);
+
+                                    navigate(`/generate?${params.toString()}`);
                                 }}
                                 className="btn btn-outline w-full justify-center text-xs"
                             >
@@ -224,7 +242,13 @@ export default function ModelDetail() {
                         url: getOptimizedImageUrl(doc.imageUrl || doc.url), // Handle consistency and CDN
                         prompt: doc.prompt,
                         name: doc.name,
-                        creator: doc.creator
+                        creator: doc.creator,
+                        steps: doc.steps,
+                        cfg: doc.cfg,
+                        width: doc.width,
+                        height: doc.height,
+                        scheduler: doc.scheduler,
+                        aspectRatio: doc.aspectRatio
                     }));
 
                     // Check if we have prompts (rich metadata)
@@ -280,6 +304,12 @@ export default function ModelDetail() {
                                 prompt: item.prompt || null,
                                 name: item.name || null,
                                 creator: item.creator || 'Gemini Pro 3', // Default creator for new seeds
+                                steps: item.steps || null,
+                                cfg: item.cfg || null,
+                                width: item.width || null,
+                                height: item.height || null,
+                                scheduler: item.scheduler || null,
+                                aspectRatio: item.aspectRatio || null,
                                 createdAt: serverTimestamp(),
                                 isCurated: true
                             });
