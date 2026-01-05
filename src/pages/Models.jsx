@@ -1,50 +1,13 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useModel } from '../contexts/ModelContext';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Search, LayoutGrid, List, SlidersHorizontal, Sparkles, ChevronDown, Info } from 'lucide-react';
-
-// Internal Custom Cursor Component
-const CustomCursor = ({ isHovering }) => {
-    const cursorRef = useRef(null);
-    const [position, setPosition] = useState({ x: 0, y: 0 });
-
-    useEffect(() => {
-        const moveCursor = (e) => {
-            setPosition({ x: e.clientX, y: e.clientY });
-        };
-        window.addEventListener('mousemove', moveCursor);
-        return () => window.removeEventListener('mousemove', moveCursor);
-    }, []);
-
-    return (
-        <div
-            className={`custom-cursor ${isHovering ? 'hovering' : ''}`}
-            style={{
-                left: position.x,
-                top: position.y
-            }}
-        />
-    );
-};
+import { ArrowRight, Search, Sparkles, Check } from 'lucide-react';
 
 export default function Models() {
     const { selectedModel, setSelectedModel, availableModels, loading, error } = useModel();
     const navigate = useNavigate();
-    const [hoveredId, setHoveredId] = useState(null);
-    const [isTransitioning, setIsTransitioning] = useState(false);
-    const [viewMode, setViewMode] = useState('atmospheric'); // 'atmospheric' | 'efficient'
     const [searchQuery, setSearchQuery] = useState('');
     const [activeCategory, setActiveCategory] = useState('All');
-    const [page, setPage] = useState(1);
-    const ITEMS_PER_PAGE = 3;
-
-    // Smooth Scroll / Parallax
-    const [scrollY, setScrollY] = useState(0);
-    useEffect(() => {
-        const handleScroll = () => setScrollY(window.scrollY);
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
 
     const categories = useMemo(() => {
         const tags = new Set(['All']);
@@ -61,126 +24,84 @@ export default function Models() {
         });
     }, [availableModels, searchQuery, activeCategory]);
 
-    const displayedModels = filteredModels.slice(0, page * ITEMS_PER_PAGE);
-    const hasMore = displayedModels.length < filteredModels.length;
-
     function handleSelect(model) {
-        setIsTransitioning(true);
         setSelectedModel(model);
-        setTimeout(() => navigate('/generate'), 800);
+        navigate('/generate');
     }
 
     if (loading) {
         return (
             <div style={{
-                background: '#0a0a0a',
+                background: 'var(--color-bg)',
                 height: '100vh',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: 'white',
-                fontFamily: 'monospace'
+                color: 'var(--color-text-muted)',
+                fontFamily: 'var(--font-mono)'
             }}>
-                <div className="loading-pulse">SYNCING ARCHIVES...</div>
+                <div className="flex-center" style={{ gap: '12px' }}>
+                    <div style={{ width: '8px', height: '8px', background: 'var(--color-accent-primary)', borderRadius: '50%', animation: 'pulse 1s infinite' }} />
+                    LOADING ARCHIVED MODELS...
+                </div>
             </div>
         );
     }
 
     if (error) {
         return (
-            <div style={{
-                background: '#0a0a0a',
-                height: '100vh',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#ff4444',
-                flexDirection: 'column',
-                gap: '20px'
-            }}>
-                <h2 style={{ fontFamily: 'var(--font-serif)' }}>Archive Connection Failed</h2>
-                <p style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>{error}</p>
-                <button onClick={() => window.location.reload()} style={{
-                    background: 'white',
-                    color: 'black',
-                    border: 'none',
-                    padding: '12px 24px',
-                    borderRadius: '100px',
-                    cursor: 'pointer'
-                }}>RETRY CONNECTION</button>
+            <div className="container" style={{ paddingTop: '120px', textAlign: 'center' }}>
+                <h2 style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', marginBottom: '16px' }}>Unable to access archives</h2>
+                <p style={{ color: 'var(--color-text-muted)', marginBottom: '32px' }}>{error}</p>
+                <button onClick={() => window.location.reload()} className="btn btn-primary">
+                    RETRY CONNECTION
+                </button>
             </div>
         );
     }
 
     return (
-        <div
-            className="cursor-none"
-            style={{
-                background: '#0a0a0a',
-                minHeight: '100vh',
-                paddingTop: '200px',
-                paddingBottom: '120px',
-                position: 'relative',
-                overflow: 'hidden',
-                color: '#e5e5e5'
-            }}
-        >
-            <CustomCursor isHovering={!!hoveredId} />
-            <div className={`cinematic-overlay ${isTransitioning ? 'active' : ''}`} />
+        <div style={{
+            background: 'var(--color-bg)',
+            minHeight: '100vh',
+            paddingTop: '140px',
+            paddingBottom: '120px',
+        }}>
+            <div className="container">
 
-            {/* Ambient Background */}
-            <div style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                background: 'linear-gradient(to bottom, #0a0a0a 0%, #111 100%)',
-                pointerEvents: 'none',
-                zIndex: 0
-            }} />
-
-            <div className="container" style={{ maxWidth: '1600px', position: 'relative', zIndex: 1 }}>
-
-                {/* Header with Masked Reveals */}
-                <header style={{ marginBottom: '100px', paddingLeft: '4vw' }}>
+                {/* Header */}
+                <header style={{ marginBottom: '80px', maxWidth: '800px' }}>
                     <div style={{
-                        fontFamily: 'monospace',
-                        fontSize: '0.75rem',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.8rem',
                         color: 'var(--color-accent-primary)',
-                        marginBottom: '32px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '24px',
-                        letterSpacing: '0.3em'
-                    }} className="text-reveal-mask">
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '24px', animationDelay: '0.1s' }}>
-                            <span style={{ width: '40px', height: '1px', background: 'currentColor' }}></span>
-                            ARCHIVE // COLLECTION
-                        </span>
-                    </div>
-
-                    <h1 style={{
-                        fontSize: 'clamp(3.5rem, 7vw, 8rem)',
-                        fontWeight: '300',
-                        lineHeight: '1.2',
-                        letterSpacing: '-0.02em',
-                        color: 'white',
+                        marginBottom: '24px',
+                        letterSpacing: '0.2em',
+                        textTransform: 'uppercase'
                     }}>
-                        <div className="text-reveal-mask">
-                            <span style={{ animationDelay: '0.2s', marginRight: '0.3em' }}>Select</span>
-                            <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', animationDelay: '0.25s' }}>Engine</span>
-                        </div>
+                        Model Archives
+                    </div>
+                    <h1 style={{
+                        fontSize: 'clamp(3rem, 5vw, 4.5rem)',
+                        fontWeight: '300',
+                        lineHeight: '1.1',
+                        letterSpacing: '-0.03em',
+                        color: 'var(--color-white)',
+                        marginBottom: '24px'
+                    }}>
+                        Select your <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', color: 'var(--color-text-muted)' }}>creation engine</span>.
                     </h1>
+                    <p style={{ fontSize: '1.1rem', color: 'var(--color-text-muted)', maxWidth: '600px' }}>
+                        Browse our curated collection of fine-tuned Stable Diffusion models. Each engine is specialized for specific artistic styles and generation capabilities.
+                    </p>
                 </header>
 
-                {/* Filters & Toggles */}
+                {/* Controls */}
                 <div style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '40px',
-                    marginBottom: '80px',
-                    padding: '0 4vw'
+                    gap: '32px',
+                    marginBottom: '64px',
                 }}>
                     <div style={{
                         display: 'flex',
@@ -190,387 +111,235 @@ export default function Models() {
                         gap: '24px'
                     }}>
                         {/* Search */}
-                        <div style={{
-                            position: 'relative',
-                            width: '100%',
-                            maxWidth: '400px'
-                        }}>
-                            <Search size={18} style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', color: '#666' }} />
+                        <div style={{ position: 'relative', width: '100%', maxWidth: '400px' }}>
+                            <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-muted)' }} />
                             <input
                                 type="text"
-                                placeholder="Search archives..."
+                                placeholder="Search models..."
                                 value={searchQuery}
-                                onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 style={{
                                     width: '100%',
-                                    background: 'rgba(255,255,255,0.03)',
-                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    background: 'var(--color-bg-subtle)',
+                                    border: '1px solid var(--color-border)',
                                     borderRadius: '100px',
-                                    padding: '16px 20px 16px 56px',
-                                    color: 'white',
+                                    padding: '14px 20px 14px 48px',
+                                    color: 'var(--color-white)',
+                                    fontFamily: 'var(--font-body)',
                                     fontSize: '0.9rem',
                                     outline: 'none',
-                                    transition: 'all 0.3s'
+                                    transition: 'border-color 0.2s'
                                 }}
-                                onFocus={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.3)'}
-                                onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+                                onFocus={(e) => e.target.style.borderColor = 'var(--color-border-hover)'}
+                                onBlur={(e) => e.target.style.borderColor = 'var(--color-border)'}
                             />
                         </div>
 
-                        {/* View Toggle */}
-                        <div style={{
+                        {/* Category List */}
+                        <div className="no-scrollbar" style={{
                             display: 'flex',
-                            background: 'rgba(255,255,255,0.03)',
-                            padding: '6px',
-                            borderRadius: '100px',
-                            border: '1px solid rgba(255,255,255,0.1)'
+                            gap: '8px',
+                            overflowX: 'auto',
+                            paddingBottom: '4px',
+                            maxWidth: '100%'
                         }}>
-                            <button
-                                onClick={() => setViewMode('atmospheric')}
-                                style={{
-                                    padding: '10px 20px',
-                                    borderRadius: '100px',
-                                    background: viewMode === 'atmospheric' ? 'white' : 'transparent',
-                                    color: viewMode === 'atmospheric' ? 'black' : '#666',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    fontSize: '0.8rem',
-                                    fontWeight: '600',
-                                    transition: 'all 0.3s'
-                                }}
-                            >
-                                <List size={16} /> Atmospheric
-                            </button>
-                            <button
-                                onClick={() => setViewMode('efficient')}
-                                style={{
-                                    padding: '10px 20px',
-                                    borderRadius: '100px',
-                                    background: viewMode === 'efficient' ? 'white' : 'transparent',
-                                    color: viewMode === 'efficient' ? 'black' : '#666',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    fontSize: '0.8rem',
-                                    fontWeight: '600',
-                                    transition: 'all 0.3s'
-                                }}
-                            >
-                                <LayoutGrid size={16} /> Efficient
-                            </button>
+                            {categories.map(cat => (
+                                <button
+                                    key={cat}
+                                    onClick={() => setActiveCategory(cat)}
+                                    style={{
+                                        padding: '8px 16px',
+                                        borderRadius: '100px',
+                                        background: activeCategory === cat ? 'var(--color-white)' : 'transparent',
+                                        color: activeCategory === cat ? 'var(--color-black)' : 'var(--color-text-muted)',
+                                        border: activeCategory === cat ? '1px solid var(--color-white)' : '1px solid var(--color-border)',
+                                        fontSize: '0.85rem',
+                                        fontWeight: '500',
+                                        whiteSpace: 'nowrap',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    {cat}
+                                </button>
+                            ))}
                         </div>
-                    </div>
-
-                    {/* Category Scroll */}
-                    <div className="no-scrollbar" style={{
-                        display: 'flex',
-                        gap: '12px',
-                        overflowX: 'auto',
-                        paddingBottom: '10px'
-                    }}>
-                        {categories.map(cat => (
-                            <button
-                                key={cat}
-                                onClick={() => { setActiveCategory(cat); setPage(1); }}
-                                style={{
-                                    padding: '8px 20px',
-                                    borderRadius: '100px',
-                                    background: activeCategory === cat ? 'var(--color-accent-primary)' : 'rgba(255,255,255,0.05)',
-                                    color: activeCategory === cat ? 'black' : '#888',
-                                    border: '1px solid transparent',
-                                    fontSize: '0.8rem',
-                                    whiteSpace: 'nowrap',
-                                    transition: 'all 0.3s'
-                                }}
-                            >
-                                {cat}
-                            </button>
-                        ))}
                     </div>
                 </div>
 
-                {/* Models List/Grid */}
-                {viewMode === 'atmospheric' ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '240px' }}>
-                        {displayedModels.map((model, index) => {
-                            const isEven = index % 2 === 0;
-                            const isSelected = selectedModel?.id === model.id;
-                            const isHovered = hoveredId === model.id;
-                            const parallaxOffset = (scrollY * (isEven ? 0.08 : 0.04)) * -1;
+                {/* Grid */}
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 360px), 1fr))',
+                    gap: '32px',
+                }}>
+                    {filteredModels.map((model) => {
+                        const isSelected = selectedModel?.id === model.id;
 
-                            return (
+                        return (
+                            <div
+                                key={model.id}
+                                className="group"
+                                style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '20px'
+                                }}
+                            >
+                                {/* Card Image */}
                                 <div
-                                    key={model.id}
-                                    onMouseEnter={() => setHoveredId(model.id)}
-                                    onMouseLeave={() => setHoveredId(null)}
-                                    onClick={() => navigate(`/model/${model.id}`)}
-                                    className="model-row"
-                                    style={{
-                                        display: 'flex',
-                                        justifyContent: isEven ? 'flex-start' : 'flex-end',
-                                        padding: isEven ? '0 0 0 6vw' : '0 6vw 0 0',
-                                        position: 'relative'
-                                    }}
-                                >
-                                    <div style={{
-                                        width: '100%',
-                                        maxWidth: '1200px',
-                                        display: 'grid',
-                                        gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1fr)',
-                                        gap: '80px',
-                                        alignItems: 'center',
-                                        direction: isEven ? 'ltr' : 'rtl'
-                                    }}>
-                                        <div style={{ position: 'relative' }}>
-                                            <div style={{
-                                                position: 'absolute',
-                                                top: '-40px',
-                                                left: 0,
-                                                fontFamily: 'monospace',
-                                                fontSize: '10px',
-                                                color: 'var(--color-accent-primary)',
-                                                letterSpacing: '0.2em',
-                                                opacity: isHovered ? 1 : 0.5,
-                                                transition: 'opacity 0.4s'
-                                            }}>
-                                                REF_{String(index).padStart(3, '0')} // ID: {model.id.toUpperCase()}
-                                            </div>
-
-                                            <div style={{
-                                                position: 'absolute',
-                                                top: '-80px',
-                                                left: isEven ? '-60px' : 'auto',
-                                                right: isEven ? 'auto' : '-60px',
-                                                fontSize: '12rem',
-                                                fontFamily: 'var(--font-serif)',
-                                                color: '#111',
-                                                lineHeight: 1,
-                                                zIndex: 0,
-                                                pointerEvents: 'none'
-                                            }}>
-                                                {String(index + 1).padStart(2, '0')}
-                                            </div>
-
-                                            <div style={{
-                                                aspectRatio: '16/10',
-                                                overflow: 'hidden',
-                                                position: 'relative',
-                                                transform: `translateY(${parallaxOffset}px)`,
-                                                transition: 'transform 0.1s linear',
-                                                zIndex: 1
-                                            }}>
-                                                <div className="noise-overlay" />
-                                                <img
-                                                    src={model.image}
-                                                    alt={model.name}
-                                                    className="agency-image-filter"
-                                                    style={{
-                                                        width: '100%',
-                                                        height: '100%',
-                                                        objectFit: 'cover',
-                                                        transform: isHovered ? 'scale(1.03)' : 'scale(1)',
-                                                        transition: 'transform 1.4s cubic-bezier(0.16, 1, 0.3, 1)'
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div style={{ textAlign: isEven ? 'left' : 'right', direction: 'ltr', position: 'relative', zIndex: 2 }}>
-                                            <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: '24px', color: isSelected ? 'var(--color-accent-primary)' : '#444' }}>
-                                                {model.tags[0] || 'GENERATIVE'}
-                                            </div>
-                                            <h2 style={{ fontSize: 'clamp(3rem, 5vw, 4.5rem)', fontWeight: '300', marginBottom: '32px', color: '#fff', lineHeight: 1 }}>{model.name}</h2>
-                                            <p style={{ fontSize: '1.2rem', color: '#888', lineHeight: '1.6', maxWidth: '400px', marginLeft: isEven ? 0 : 'auto', fontFamily: 'var(--font-serif)', marginBottom: '40px' }}>
-                                                {model.description}
-                                            </p>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleSelect(model);
-                                                }}
-                                                className={`btn-outline ${isHovered ? 'active' : ''}`} style={{
-                                                    background: isHovered ? 'white' : 'transparent',
-                                                    color: isHovered ? 'black' : 'white',
-                                                    borderColor: isHovered ? 'white' : 'rgba(255,255,255,0.2)',
-                                                    padding: '16px 32px',
-                                                    borderRadius: '100px',
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    gap: '12px',
-                                                    transition: 'all 0.3s',
-                                                    cursor: 'pointer'
-                                                }}>
-                                                {isSelected ? 'ACTIVE ENGINE' : 'SELECT MODEL'}
-                                                <ArrowRight size={16} />
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    navigate(`/model/${model.id}`);
-                                                }}
-                                                className={`btn-outline ${isHovered ? 'active' : ''}`}
-                                                style={{
-                                                    background: 'transparent',
-                                                    color: '#888',
-                                                    borderColor: 'rgba(255,255,255,0.1)',
-                                                    padding: '16px',
-                                                    borderRadius: '50%',
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    marginLeft: '16px',
-                                                    transition: 'all 0.3s',
-                                                    cursor: 'pointer'
-                                                }}
-                                                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'white'; e.currentTarget.style.color = 'white'; }}
-                                                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#888'; }}
-                                            >
-                                                <Info size={18} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                ) : (
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))',
-                        gap: '40px',
-                        padding: '0 4vw'
-                    }}>
-                        {displayedModels.map((model, index) => {
-                            const isHovered = hoveredId === model.id;
-                            const isSelected = selectedModel?.id === model.id;
-                            return (
-                                <div
-                                    key={model.id}
-                                    onMouseEnter={() => setHoveredId(model.id)}
-                                    onMouseLeave={() => setHoveredId(null)}
                                     onClick={() => navigate(`/model/${model.id}`)}
                                     style={{
-                                        background: 'rgba(255,255,255,0.02)',
-                                        border: `1px solid ${isSelected ? 'var(--color-accent-primary)' : 'rgba(255,255,255,0.05)'}`,
-                                        borderRadius: '24px',
+                                        position: 'relative',
+                                        aspectRatio: '3/2',
+                                        borderRadius: 'var(--radius-lg)',
                                         overflow: 'hidden',
-                                        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                                        transform: isHovered ? 'translateY(-8px)' : 'none',
-                                        boxShadow: isHovered ? '0 20px 40px rgba(0,0,0,0.4)' : 'none'
+                                        cursor: 'pointer',
+                                        border: '1px solid var(--color-border)',
+                                        transition: 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)'
                                     }}
+                                    className="model-card-image"
                                 >
-                                    <div style={{ aspectRatio: '16/9', overflow: 'hidden', position: 'relative' }}>
-                                        <img
-                                            src={model.image}
-                                            alt={model.name}
-                                            className="agency-image-filter"
-                                            style={{ width: '100%', height: '100%', objectFit: 'cover', transform: isHovered ? 'scale(1.05)' : 'scale(1)', transition: 'transform 0.8s' }}
-                                        />
-                                        <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '50%', background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)' }} />
-                                        <div style={{ position: 'absolute', bottom: '20px', left: '20px', display: 'flex', gap: '8px' }}>
-                                            {model.tags.slice(0, 2).map(t => (
-                                                <span key={t} style={{ fontSize: '10px', background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(4px)', padding: '4px 10px', borderRadius: '100px', color: '#ccc' }}>{t}</span>
-                                            ))}
+                                    <img
+                                        src={model.image}
+                                        alt={model.name}
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'cover',
+                                            transition: 'transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1)'
+                                        }}
+                                        className="model-img"
+                                    />
+
+                                    {/* Overlay */}
+                                    <div style={{
+                                        position: 'absolute',
+                                        inset: 0,
+                                        background: 'linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 100%)',
+                                        opacity: 0,
+                                        transition: 'opacity 0.3s'
+                                    }} className="model-overlay" />
+
+                                    {/* Active Badge */}
+                                    {isSelected && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            top: '12px',
+                                            right: '12px',
+                                            background: 'var(--color-accent-primary)',
+                                            color: 'white',
+                                            padding: '6px 12px',
+                                            borderRadius: '100px',
+                                            fontSize: '0.75rem',
+                                            fontWeight: '600',
+                                            letterSpacing: '0.05em',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                                        }}>
+                                            <Check size={12} strokeWidth={3} />
+                                            ACTIVE
                                         </div>
+                                    )}
+                                </div>
+
+                                {/* Info */}
+                                <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                                        <h3 style={{
+                                            fontSize: '1.25rem',
+                                            fontWeight: '500',
+                                            color: 'var(--color-white)',
+                                            fontFamily: 'var(--font-display)'
+                                        }}>
+                                            {model.name}
+                                        </h3>
+                                        <button
+                                            onClick={() => handleSelect(model)}
+                                            style={{
+                                                background: isSelected ? 'var(--color-bg-subtle)' : 'var(--color-white)',
+                                                color: isSelected ? 'var(--color-text-muted)' : 'var(--color-black)',
+                                                border: 'none',
+                                                padding: '8px 16px',
+                                                borderRadius: '100px',
+                                                fontSize: '0.8rem',
+                                                fontWeight: '600',
+                                                cursor: isSelected ? 'default' : 'pointer',
+                                                transition: 'transform 0.2s',
+                                                opacity: isSelected ? 0.5 : 1
+                                            }}
+                                            onMouseEnter={(e) => !isSelected && (e.currentTarget.style.transform = 'scale(1.05)')}
+                                            onMouseLeave={(e) => !isSelected && (e.currentTarget.style.transform = 'scale(1)')}
+                                        >
+                                            {isSelected ? 'Selected' : 'Select'}
+                                        </button>
                                     </div>
-                                    <div style={{ padding: '24px' }}>
-                                        <h3 style={{ fontSize: '1.25rem', color: 'white', marginBottom: '12px' }}>{model.name}</h3>
-                                        <p style={{ fontSize: '0.9rem', color: '#888', lineHeight: '1.5', marginBottom: '24px', height: '3em', overflow: 'hidden' }}>{model.description}</p>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <span style={{ fontFamily: 'monospace', fontSize: '10px', color: isSelected ? 'var(--color-accent-primary)' : '#444' }}>
-                                                {isSelected ? 'CURRENTLY ACTIVE' : `REF_${String(index).padStart(3, '0')}`}
+                                    <p style={{
+                                        color: 'var(--color-text-muted)',
+                                        fontSize: '0.9rem',
+                                        lineHeight: '1.5',
+                                        marginBottom: '16px',
+                                        display: '-webkit-box',
+                                        WebkitLineClamp: 2,
+                                        WebkitBoxOrient: 'vertical',
+                                        overflow: 'hidden'
+                                    }}>
+                                        {model.description}
+                                    </p>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                        {model.tags.slice(0, 3).map(tag => (
+                                            <span key={tag} style={{
+                                                fontSize: '0.75rem',
+                                                color: 'var(--color-text-dim)',
+                                                background: 'var(--color-bg-subtle)',
+                                                border: '1px solid var(--color-border)',
+                                                padding: '4px 10px',
+                                                borderRadius: '4px'
+                                            }}>
+                                                {tag}
                                             </span>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleSelect(model);
-                                                }}
-                                                style={{
-                                                    background: isSelected ? 'var(--color-accent-primary)' : 'rgba(255,255,255,0.05)',
-                                                    color: isSelected ? 'black' : 'white',
-                                                    border: 'none',
-                                                    width: '40px',
-                                                    height: '40px',
-                                                    borderRadius: '50%',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    cursor: 'pointer'
-                                                }}>
-                                                <ArrowRight size={18} />
-                                            </button>
-                                        </div>
+                                        ))}
                                     </div>
                                 </div>
-                            );
-                        })}
-                    </div>
-                )}
+                            </div>
+                        );
+                    })}
+                </div>
 
-                {/* Pagination / Load More */}
-                {hasMore && (
-                    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '120px' }}>
+                {filteredModels.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--color-text-muted)' }}>
+                        <Sparkles size={32} style={{ marginBottom: '16px', opacity: 0.5 }} />
+                        <p>No models found matching your criteria.</p>
                         <button
-                            onClick={() => setPage(p => p + 1)}
-                            className="discover-more"
+                            onClick={() => { setSearchQuery(''); setActiveCategory('All'); }}
                             style={{
-                                background: 'transparent',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                padding: '24px 60px',
-                                color: 'white',
-                                borderRadius: '100px',
-                                fontSize: '1rem',
-                                letterSpacing: '0.2em',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '20px',
-                                transition: 'all 0.4s'
+                                marginTop: '16px',
+                                color: 'var(--color-accent-primary)',
+                                textDecoration: 'underline',
+                                cursor: 'pointer'
                             }}
                         >
-                            <Sparkles size={20} className="shine" />
-                            DISCOVER MORE
-                            <ChevronDown size={20} />
+                            Clear filters
                         </button>
                     </div>
                 )}
             </div>
 
             <style>{`
-                .no-scrollbar::-webkit-scrollbar { display: none; }
-                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-                
-                .text-reveal-mask { overflow: hidden; }
-                .text-reveal-mask span { 
-                    display: inline-block;
-                    animation: revealUp 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+                .model-card-image:hover {
+                    border-color: var(--color-border-hover);
+                    box-shadow: var(--shadow-lg);
+                    transform: translateY(-4px);
                 }
-                
-                @keyframes revealUp {
-                    from { transform: translateY(100%); opacity: 0; }
-                    to { transform: translateY(0); opacity: 1; }
-                }
-
-                .discover-more:hover {
-                    background: white;
-                    color: black;
-                    border-color: white;
+                .model-card-image:hover .model-img {
                     transform: scale(1.05);
                 }
-
-                .shine { animation: pulse 2s infinite; }
-                @keyframes pulse {
-                    0% { transform: scale(1); opacity: 0.5; }
-                    50% { transform: scale(1.2); opacity: 1; }
-                    100% { transform: scale(1); opacity: 0.5; }
+                .model-card-image:hover .model-overlay {
+                    opacity: 1;
                 }
-
-                @media (max-width: 1024px) {
-                    .model-row > div { grid-template-columns: 1fr !important; gap: 40px !important; }
-                    .custom-cursor { display: none; }
-                    .cursor-none { cursor: auto; }
-                    .model-row { padding: 0 20px !important; }
-                }
+                .no-scrollbar::-webkit-scrollbar { display: none; }
+                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
             `}</style>
         </div>
     );
