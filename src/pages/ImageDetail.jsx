@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { db } from '../firebase';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
-import { Download, Trash2, ArrowLeft, Loader2, RefreshCw, Link as LinkIcon, Info, Sliders, Layers, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, ArrowLeft, Loader2, RefreshCw, Link as LinkIcon, Info, Sliders, Layers, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { useModel } from '../contexts/ModelContext';
 import toast from 'react-hot-toast';
 import { getOptimizedImageUrl } from '../utils';
@@ -102,42 +102,7 @@ export default function ImageDetail() {
                     <button onClick={handleDelete} className="btn-ghost" style={{ color: '#ef4444' }} title="Delete">
                         <Trash2 size={18} />
                     </button>
-                    <button onClick={async () => {
-                        const imageUrl = getOptimizedImageUrl(image.imageUrl);
-                        const originalUrl = image.imageUrl;
-                        const toastId = toast.loading("Downloading...");
 
-                        try {
-                            // Try optimized URL first
-                            let response = await fetch(imageUrl);
-
-                            // Fallback to original if optimized fails
-                            if (!response.ok && imageUrl !== originalUrl) {
-                                console.warn("Optimized URL failed, trying original...");
-                                response = await fetch(originalUrl);
-                            }
-
-                            if (!response.ok) throw new Error("Network response was not ok");
-
-                            const blob = await response.blob();
-                            const url = window.URL.createObjectURL(blob);
-                            const link = document.createElement('a');
-                            link.href = url;
-                            link.download = `db-${image.id}.png`;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            window.URL.revokeObjectURL(url);
-                            toast.success("Download complete", { id: toastId });
-                        } catch (e) {
-                            console.error("Download failed", e);
-                            toast.dismiss(toastId);
-                            toast("Opening in new tab...", { icon: '🔗' });
-                            window.open(originalUrl, '_blank');
-                        }
-                    }} className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-                        <Download size={16} style={{ marginRight: '8px' }} /> Download
-                    </button>
                 </div>
             </div>
 

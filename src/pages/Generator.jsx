@@ -5,7 +5,7 @@ import { useModel } from '../contexts/ModelContext';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp, doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, ChevronDown, ChevronUp, Mic, MicOff, Zap, AlertCircle, Share2, Download, Maximize2 } from 'lucide-react';
+import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, ChevronDown, ChevronUp, Mic, MicOff, Zap, AlertCircle, Share2, Maximize2 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { getOptimizedImageUrl } from '../utils';
@@ -200,7 +200,7 @@ export default function Generator() {
     }
 
     return (
-        <div style={{ padding: '140px 0 40px 0', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ paddingTop: '140px', paddingBottom: '40px', display: 'flex', flexDirection: 'column' }}>
             <div className="container" style={{ flex: 1, display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 340px', gap: '32px' }}>
 
                 {/* Left: Canvas / Input */}
@@ -237,47 +237,7 @@ export default function Generator() {
                                 <div className="fade-in" style={{ position: 'absolute', inset: 0, padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <img src={getOptimizedImageUrl(generatedImage)} alt="Generated" style={{ width: '100%', height: '100%', boxShadow: '0 0 50px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
                                     <div style={{ position: 'absolute', bottom: '20px', right: '20px', display: 'flex', gap: '12px' }}>
-                                        <button
-                                            onClick={async () => {
-                                                const imageUrl = getOptimizedImageUrl(generatedImage);
-                                                const originalUrl = generatedImage;
-                                                const toastId = toast.loading("Downloading...");
 
-                                                try {
-                                                    // Try optimized URL first
-                                                    let response = await fetch(imageUrl);
-
-                                                    // Fallback to original if optimized fails
-                                                    if (!response.ok && imageUrl !== originalUrl) {
-                                                        console.warn("Optimized URL failed, trying original...");
-                                                        response = await fetch(originalUrl);
-                                                    }
-
-                                                    if (!response.ok) throw new Error("Network response was not ok");
-
-                                                    const blob = await response.blob();
-                                                    const url = window.URL.createObjectURL(blob);
-                                                    const link = document.createElement('a');
-                                                    link.href = url;
-                                                    link.download = `generated-${Date.now()}.png`;
-                                                    document.body.appendChild(link);
-                                                    link.click();
-                                                    document.body.removeChild(link);
-                                                    window.URL.revokeObjectURL(url);
-                                                    toast.success("Download complete", { id: toastId });
-                                                    // Do NOT fallback to window.open
-                                                } catch (e) {
-                                                    console.error("Download failed", e);
-                                                    toast.dismiss(toastId);
-                                                    toast("Opening in new tab...", { icon: '🔗' });
-                                                    window.open(originalUrl, '_blank');
-                                                }
-                                            }}
-                                            className="btn btn-primary"
-                                            style={{ padding: '0 16px', height: '36px', fontSize: '0.8rem' }}
-                                        >
-                                            <Download size={14} style={{ marginRight: '8px' }} /> Download
-                                        </button>
                                         <Link to="/gallery" className="btn btn-outline" style={{ padding: '0 16px', height: '36px', fontSize: '0.8rem' }}>
                                             Gallery
                                         </Link>
