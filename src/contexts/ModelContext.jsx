@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
-import { collection, getDocs, query, orderBy, where, limit, doc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, where, limit, doc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
 
 const ModelContext = createContext();
 
@@ -130,72 +130,108 @@ export function ModelProvider({ children }) {
         }
     };
 
-    // Rate a generation (1: like, -1: dislike)
+    // --- High Velocity Rating Logic (Buffered) ---
+    const ratingQueue = useRef(new Map()); // stores { job, rating, timestamp } by jobId
+    const flushInterval = useRef(null);
+
+    // Process the queue every 3 seconds or on unmount
+    useEffect(() => {
+        const processQueue = async () => {
+            if (ratingQueue.current.size === 0) return;
+
+            const batch = writeBatch(db);
+            const queueSnapshot = new Map(ratingQueue.current);
+            ratingQueue.current.clear(); // Clear immediately to allow potentially new fast updates
+
+            console.log(`[Batch] Flushing ${queueSnapshot.size} ratings...`);
+
+            queueSnapshot.forEach(({ job, rating }) => {
+                const updates = {
+                    rating: rating,
+                    hidden: rating === -1
+                };
+
+                // 1. Generation Queue (UI State)
+                const queueRef = doc(db, 'generation_queue', job.id);
+                batch.update(queueRef, updates);
+
+                // 2. Images Collection (UI State)
+                if (job.resultImageId) {
+                    const imageRef = doc(db, 'images', job.resultImageId);
+                    batch.update(imageRef, updates);
+                }
+
+                // 3. Training Feedback (ML Ops - Robust)
+                const feedbackId = `feedback_${job.id}`;
+                const feedbackRef = doc(db, 'training_feedback', feedbackId);
+
+                // MLOps: Resolution Mapping
+                const resolutionMap = {
+                    '1:1': { width: 1024, height: 1024 },
+                    '2:3': { width: 832, height: 1216 },
+                    '3:2': { width: 1216, height: 832 },
+                    '9:16': { width: 768, height: 1344 },
+                    '16:9': { width: 1344, height: 768 }
+                };
+                const res = resolutionMap[job.aspectRatio] || resolutionMap['1:1'];
+
+                // MLOps: Deterministic Split
+                // Simple deterministic hash
+                const simpleHash = job.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                const split = (simpleHash % 100) < 90 ? 'train' : 'validation';
+
+                const feedbackData = {
+                    _id: feedbackId,
+                    timestamp: serverTimestamp(),
+                    dataset_split: split,
+                    weight: 1.0,
+                    rating: rating,
+                    meta: {
+                        modelId: job.modelId,
+                        prompt_cleaned: job.prompt ? job.prompt.trim() : "",
+                        negative_prompt: job.negative_prompt || "",
+                        cfg: parseFloat(job.cfg),
+                        steps: parseInt(job.steps),
+                        seed: parseInt(job.seed),
+                        width: res.width,
+                        height: res.height,
+                        aspect_ratio_label: job.aspectRatio
+                    },
+                    asset_pointers: {
+                        image_url: job.imageUrl,
+                        gen_doc_path: `generation_queue/${job.id}`,
+                        user_id: job.userId
+                    }
+                };
+
+                // Use set (upsert) for idempotency
+                batch.set(feedbackRef, feedbackData);
+            });
+
+            try {
+                await batch.commit();
+                console.log("[Batch] Successfully committed ratings.");
+            } catch (err) {
+                console.error("[Batch] Failed to commit ratings:", err);
+            }
+        };
+
+        flushInterval.current = setInterval(processQueue, 3000); // Flush every 3s
+
+        return () => {
+            if (flushInterval.current) clearInterval(flushInterval.current);
+            processQueue();
+        };
+    }, []);
+
+    // Rate a generation (Buffered / Fire & Forget)
     const rateGeneration = async (job, rating) => {
         if (!job || !job.id) return;
 
-        const updates = {
-            rating: rating,
-            hidden: rating === -1 // Auto-hide on dislike
-        };
-
-        try {
-            // 1. Update Generation Queue
-            const queueRef = doc(db, 'generation_queue', job.id);
-            // using set merge true to be safe, or update
-            await import('firebase/firestore').then(({ updateDoc }) => updateDoc(queueRef, updates));
-
-            // 2. Update Image (if exists)
-            // Some jobs might not have resultImageId if they are old or failed, but if they are visible they likely do or have imageUrl
-            // logic: if job has resultImageId, update that doc in 'images'
-            if (job.resultImageId) {
-                const imageRef = doc(db, 'images', job.resultImageId);
-                await import('firebase/firestore').then(({ updateDoc }) => updateDoc(imageRef, updates));
-            }
-
-            // 3. Log for Training (Fire & Forget)
-            // This creates an immutable dataset for RLHF / Aesthetic Training
-            try {
-                const feedbackData = {
-                    timestamp: serverTimestamp(),
-                    userId: job.userId || 'unknown',
-                    rating: rating,
-                    feedbackType: 'aesthetic',
-
-                    // Context
-                    modelId: job.modelId,
-                    prompt: job.prompt,
-                    negative_prompt: job.negative_prompt || "",
-
-                    // Parameters (Snapshot for reproducibility)
-                    parameters: {
-                        cfg: job.cfg,
-                        steps: job.steps,
-                        aspectRatio: job.aspectRatio,
-                        seed: job.seed,
-                    },
-
-                    // Image Ref
-                    imageUrl: job.imageUrl,
-                    imageId: job.resultImageId || activeJob.id, // Fallback to job ID if image ID missing
-                    jobId: job.id
-                };
-
-                // We use addDoc via the imported SDK function if available, or dynamic import if needed.
-                // Since we need 'addDoc' and 'collection' and 'serverTimestamp' which might not be fully imported in scope if lazy loading was used in original context?
-                // Actually, I updated the imports above.
-                await addDoc(collection(db, 'training_feedback'), feedbackData);
-                console.log("Logged training feedback");
-            } catch (logErr) {
-                console.warn("Failed to log training feedback:", logErr);
-                // improved logging failure shouldn't block the UI action
-            }
-
-            return true;
-        } catch (err) {
-            console.error("Error rating generation:", err);
-            throw err;
-        }
+        // Add to queue (Debounces automatically by Map key)
+        ratingQueue.current.set(job.id, { job, rating, timestamp: Date.now() });
+        console.log(`[Rate] Queued rating ${rating} for ${job.id}`);
+        return true;
     };
 
     const value = {
