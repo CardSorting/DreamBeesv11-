@@ -12,8 +12,10 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
     // The model currently being previewed in the right panel
     const [previewModel, setPreviewModel] = useState(null);
 
-    // Local state to hold images for the CURRENT preview model only (for UI display)
-    const [currentPreviewImages, setCurrentPreviewImages] = useState([]);
+    // Hybrid Strategy: Immediate static previews -> Async detailed showcase
+    const [localImages, setLocalImages] = useState([]);
+
+
 
     // Load favorites
     useEffect(() => {
@@ -37,23 +39,31 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
         }
     }, [isOpen, selectedModel]);
 
-    // FETCH IMAGES for the active preview model using Context Cache
+    // HYBRID FETCH: Instant Static -> Async Dynamic
     useEffect(() => {
         if (!isOpen || !previewModel) return;
 
-        const loadImages = async () => {
-            // Reset current images temporarily or keep old ones? 
-            // Better to clear or show loading state if desired, but here we just wait.
-            setCurrentPreviewImages([]);
+        // 1. Immediate Static Fallback (Instant UI feedback)
+        const staticImages = previewModel.previewImages?.map(s => getOptimizedImageUrl(s)) || [];
+        setLocalImages(staticImages);
 
-            const images = await getShowcaseImages(previewModel.id);
-            // Map to URLs for display
-            const urls = images.map(img => getOptimizedImageUrl(img.imageUrl || img.url)); // Handle both DB format and potential fallback format
-            setCurrentPreviewImages(urls);
+        // 2. Background Fetch for Richest Content
+        const loadRichImages = async () => {
+            // Only fetch if we want to potentially upgrade to better images
+            // or if static images are missing
+            const dynamicImages = await getShowcaseImages(previewModel.id);
+
+            if (dynamicImages && dynamicImages.length > 0) {
+                // Map and set (Prioritize Showcase if available as it often has better metadata/quality)
+                const urls = dynamicImages.map(img => getOptimizedImageUrl(img.imageUrl || img.url));
+                setLocalImages(urls);
+            }
         };
 
-        loadImages();
+        loadRichImages();
     }, [previewModel, isOpen]);
+
+
 
     const toggleFavorite = (e, modelId) => {
         e.stopPropagation();
@@ -78,11 +88,7 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
     // Ensure we have a valid preview model even if filtering changes
     const activePreview = previewModel || filteredModels[0] || null;
 
-    // Resolve images to show: Cache -> Model Static -> Empty
-    // Resolve images to show: Dynamic Fetched -> Model Static -> Empty
-    const currentImages = (currentPreviewImages && currentPreviewImages.length > 0)
-        ? currentPreviewImages
-        : (activePreview?.previewImages?.map(s => getOptimizedImageUrl(s)) || []);
+    const currentImages = localImages;
 
     return (
         <div style={{
