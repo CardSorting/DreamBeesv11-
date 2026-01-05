@@ -69,25 +69,34 @@ export default function GenerationHistory({ onSelect, selectedJobId }) {
     if (history.length === 0) return null;
 
     return (
-        <div className="history-filmstrip-container" style={{ marginTop: '16px' }}>
+        <div className="history-filmstrip-container" style={{ marginTop: '24px' }}>
             <div style={{
-                fontSize: '0.7rem',
-                fontWeight: '700',
-                letterSpacing: '0.05em',
-                color: 'var(--color-text-muted)',
-                marginBottom: '8px',
-                textTransform: 'uppercase',
-                paddingLeft: '4px'
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '12px',
+                padding: '0 4px'
             }}>
-                History
+                <div style={{
+                    fontSize: '0.75rem',
+                    fontWeight: '700',
+                    letterSpacing: '0.05em',
+                    color: 'var(--color-text-muted)',
+                    textTransform: 'uppercase',
+                }}>
+                    History
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)' }}>
+                    {history.length} ITEMS
+                </div>
             </div>
 
             <div style={{
                 display: 'flex',
-                gap: '8px',
+                gap: '12px', // More breathing room
                 overflowX: 'auto',
                 padding: '4px',
-                paddingBottom: '8px',
+                paddingBottom: '12px',
                 width: '100%',
                 scrollBehavior: 'smooth'
             }} className="no-scrollbar">
@@ -96,26 +105,24 @@ export default function GenerationHistory({ onSelect, selectedJobId }) {
                         <motion.div
                             key={job.id}
                             layout
-                            initial={{ opacity: 0, scale: 0.8, x: -20 }}
-                            animate={{ opacity: 1, scale: 1, x: 0 }}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
-                            onClick={() => onSelect(job)}
                             className={`history-item ${selectedJobId === job.id ? 'active' : ''}`}
+                            onClick={() => onSelect(job)} // Default action: load
                             style={{
-                                minWidth: '64px',
-                                width: '64px',
-                                height: '64px',
-                                borderRadius: '8px',
+                                minWidth: '100px', // Fixed larger size
+                                width: '100px',
+                                height: '100px',
+                                borderRadius: '12px',
                                 overflow: 'hidden',
                                 position: 'relative',
                                 cursor: 'pointer',
-                                border: selectedJobId === job.id ? '2px solid var(--color-accent-primary)' : '1px solid rgba(255,255,255,0.1)',
+                                border: selectedJobId === job.id ? '2px solid var(--color-accent-primary)' : '1px solid rgba(255,255,255,0.08)',
                                 background: '#111',
-                                flexShrink: 0,
-                                zIndex: 0 // Baseline z-index
+                                flexShrink: 0
                             }}
-                            whileHover={{ width: '140px', zIndex: 10 }}
-                            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                            whileHover={{ y: -2 }} // Subtle lift instead of expansion
                         >
                             <img
                                 src={getOptimizedImageUrl(job.imageUrl)}
@@ -125,64 +132,53 @@ export default function GenerationHistory({ onSelect, selectedJobId }) {
                                     width: '100%',
                                     height: '100%',
                                     objectFit: 'cover',
-                                    opacity: selectedJobId === job.id ? 1 : 0.7,
-                                    transition: 'opacity 0.2s',
+                                    transition: 'transform 0.4s ease',
                                 }}
                             />
 
-                            {/* Overlay with Delete */}
-                            <div className="history-overlay" style={{
-                                position: 'absolute',
-                                inset: 0,
-                                background: 'linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%)',
-                                opacity: 0,
-                                transition: 'opacity 0.2s',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                justifyContent: 'flex-end',
-                                padding: '6px'
-                            }}>
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    whileHover={{ opacity: 1 }}
-                                    style={{ width: '100%' }}
-                                >
-                                    {/* Prompt Tooltip (Truncated) */}
-                                    <div style={{
-                                        color: 'white',
-                                        fontSize: '0.55rem',
-                                        lineHeight: '1.2',
-                                        marginBottom: '16px', // space for delete icon area if needed, or overlap
-                                        display: '-webkit-box',
-                                        WebkitLineClamp: 2,
-                                        WebkitBoxOrient: 'vertical',
-                                        overflow: 'hidden',
-                                        textShadow: '0 1px 2px black'
-                                    }}>
-                                        {job.prompt}
-                                    </div>
+                            {/* Hover Overlay */}
+                            <div className="history-overlay">
+                                <div style={{ flex: 1 }} /> {/* Spacer */}
 
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                        <button
-                                            onClick={(e) => handleDelete(e, job.id)}
-                                            className="btn-icon-danger"
-                                            style={{
-                                                padding: '4px',
-                                                borderRadius: '50%',
-                                                background: 'rgba(255,50,50,0.2)',
-                                                color: '#ef4444',
-                                                border: '1px solid rgba(255,50,50,0.3)',
-                                                cursor: 'pointer',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center'
-                                            }}
-                                            title="Delete"
-                                        >
-                                            <Trash2 size={10} />
-                                        </button>
-                                    </div>
-                                </motion.div>
+                                {/* Quick Stats */}
+                                <div style={{
+                                    fontSize: '0.6rem',
+                                    color: 'rgba(255,255,255,0.8)',
+                                    marginBottom: '6px',
+                                    fontFamily: 'monospace',
+                                    display: 'flex',
+                                    justifyContent: 'space-between'
+                                }}>
+                                    <span>{job.aspectRatio || '1:1'}</span>
+                                    <span>steps:{job.steps}</span>
+                                </div>
+
+                                {/* Actions */}
+                                <div style={{ display: 'flex', gap: '4px', justifyContent: 'space-between' }}>
+                                    {/* Delete Button */}
+                                    <button
+                                        onClick={(e) => handleDelete(e, job.id)}
+                                        className="btn-mini-action danger"
+                                        title="Delete"
+                                    >
+                                        <Trash2 size={12} />
+                                    </button>
+
+                                    {/* Copy Prompt (using Clipboard API directly for simplicity here or could trigger parent) */}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            navigator.clipboard.writeText(job.prompt);
+                                            // You might want a toast here, but we don't have toast imported directly easily unless we pass it or import it. 
+                                            // Assuming toast is available or silent copy. 
+                                            // Ideally we should import toast if we want feedback, but let's stick to the minimal set for now.
+                                        }}
+                                        className="btn-mini-action"
+                                        title="Copy Prompt"
+                                    >
+                                        <span style={{ fontSize: '0.6rem', fontWeight: '700' }}>TXT</span>
+                                    </button>
+                                </div>
                             </div>
                         </motion.div>
                     ))}
@@ -190,29 +186,63 @@ export default function GenerationHistory({ onSelect, selectedJobId }) {
             </div>
 
             <style>{`
-                .history-item:hover {
-                    border-color: rgba(255,255,255,0.4) !important;
+                .history-item img {
+                    transform: scale(1.05);
                 }
                 .history-item:hover img {
-                    opacity: 1 !important;
+                    transform: scale(1.15); /* Zoom effect */
+                    filter: brightness(0.6);
+                }
+                .history-overlay {
+                    position: absolute;
+                    inset: 0;
+                    padding: 8px;
+                    display: flex;
+                    flex-direction: column;
+                    opacity: 0;
+                    transition: all 0.2s ease;
+                    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
                 }
                 .history-item:hover .history-overlay {
                     opacity: 1;
                 }
                 .history-item.active {
-                    box-shadow: 0 0 0 2px var(--color-accent-primary); /* Use box-shadow for border to avoid layout shift if border width changes, though we handled that */
+                    box-shadow: 0 0 15px rgba(var(--color-accent-rgb), 0.3);
                 }
                 
+                .btn-mini-action {
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 6px;
+                    border: none;
+                    background: rgba(255,255,255,0.2);
+                    color: white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .btn-mini-action:hover {
+                    background: white;
+                    color: black;
+                }
+                .btn-mini-action.danger:hover {
+                    background: #ef4444;
+                    color: white;
+                }
+
                 /* Custom Scrollbar */
                 .no-scrollbar::-webkit-scrollbar {
-                    height: 4px;
+                    height: 6px;
                 }
                 .no-scrollbar::-webkit-scrollbar-track {
-                    background: transparent;
+                    background: rgba(255,255,255,0.02);
+                    border-radius: 3px;
                 }
                 .no-scrollbar::-webkit-scrollbar-thumb {
                     background: rgba(255,255,255,0.1);
-                    border-radius: 4px;
+                    border-radius: 3px;
                 }
                 .no-scrollbar::-webkit-scrollbar-thumb:hover {
                     background: rgba(255,255,255,0.2);

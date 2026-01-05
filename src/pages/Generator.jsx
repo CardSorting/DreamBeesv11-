@@ -5,10 +5,12 @@ import { useModel } from '../contexts/ModelContext';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp, doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, ChevronDown, ChevronUp, Mic, MicOff, Zap, AlertCircle, Share2, Maximize2 } from 'lucide-react';
+import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, ChevronDown, ChevronUp, Mic, MicOff, Zap, AlertCircle, Share2, Maximize2, Dices, X, Wand2, Monitor, Smartphone, LayoutTemplate, Square, RectangleHorizontal, RectangleVertical } from 'lucide-react';
+
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { getOptimizedImageUrl } from '../utils';
+import { getOptimizedImageUrl, getRandomPrompt, getEnhancedPrompt } from '../utils';
+
 
 export default function Generator() {
     const [searchParams] = useSearchParams();
@@ -17,6 +19,7 @@ export default function Generator() {
 
     // Modal State
     const [isModelModalOpen, setIsModelModalOpen] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
 
     const [prompt, setPrompt] = useState(searchParams.get('prompt') || '');
     const [generating, setGenerating] = useState(false);
@@ -57,6 +60,17 @@ export default function Generator() {
         });
         return () => unsub();
     }, [currentUser]);
+
+    // Fullscreen Escape Key
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' && isFullscreen) {
+                setIsFullscreen(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isFullscreen]);
 
     useEffect(() => {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -237,7 +251,20 @@ export default function Generator() {
                                 <div className="fade-in" style={{ position: 'absolute', inset: 0, padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <img src={getOptimizedImageUrl(generatedImage)} alt="Generated" style={{ width: '100%', height: '100%', boxShadow: '0 0 50px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
                                     <div style={{ position: 'absolute', bottom: '20px', right: '20px', display: 'flex', gap: '12px' }}>
-
+                                        <button
+                                            onClick={() => setIsFullscreen(true)}
+                                            className="btn-icon"
+                                            style={{
+                                                width: '36px', height: '36px', borderRadius: '8px',
+                                                background: 'rgba(0,0,0,0.6)', color: 'white',
+                                                border: '1px solid rgba(255,255,255,0.2)',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                cursor: 'pointer'
+                                            }}
+                                            title="Fullscreen"
+                                        >
+                                            <Maximize2 size={18} />
+                                        </button>
                                         <Link to="/gallery" className="btn btn-outline" style={{ padding: '0 16px', height: '36px', fontSize: '0.8rem' }}>
                                             Gallery
                                         </Link>
@@ -314,6 +341,32 @@ export default function Generator() {
                                             >
                                                 {isListening ? <MicOff size={16} /> : <Mic size={16} />}
                                                 {isListening && <span>Listening...</span>}
+                                            </button>
+                                            <button
+                                                onClick={() => setPrompt(prev => getEnhancedPrompt(prev))}
+                                                className="btn-ghost"
+                                                title="Magic Enhance"
+                                                style={{
+                                                    padding: '8px',
+                                                    borderRadius: '8px',
+                                                    color: 'var(--color-accent-primary)',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                <Wand2 size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => setPrompt(getRandomPrompt())}
+                                                className="btn-ghost"
+                                                title="Surprise Me"
+                                                style={{
+                                                    padding: '8px',
+                                                    borderRadius: '8px',
+                                                    color: 'var(--color-text-muted)',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                <Dices size={16} />
                                             </button>
                                             <button
                                                 onClick={() => setPrompt('')}
@@ -432,23 +485,42 @@ export default function Generator() {
                             {/* Aspect Ratio Grid */}
                             <div>
                                 <label className="setting-label">ASPECT RATIO</label>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                                    {['1:1', '16:9', '9:16', '3:2', '2:3'].map(r => (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                                    {[
+                                        { label: 'Square', value: '1:1', icon: <Square size={18} />, desc: '1:1' },
+                                        { label: 'Landscape', value: '16:9', icon: <Monitor size={18} />, desc: '16:9' },
+                                        { label: 'Portrait', value: '9:16', icon: <Smartphone size={18} />, desc: '9:16' },
+                                        { label: 'Classic L', value: '3:2', icon: <RectangleHorizontal size={18} />, desc: '3:2' },
+                                        { label: 'Classic P', value: '2:3', icon: <RectangleVertical size={18} />, desc: '2:3' }
+                                    ].map(r => (
                                         <button
-                                            key={r}
-                                            onClick={() => setAspectRatio(r)}
+                                            key={r.value}
+                                            onClick={() => setAspectRatio(r.value)}
+                                            title={r.label}
                                             style={{
-                                                padding: '10px',
-                                                borderRadius: '6px',
-                                                border: aspectRatio === r ? '1px solid white' : '1px solid var(--color-border)',
-                                                background: aspectRatio === r ? 'white' : 'transparent',
-                                                color: aspectRatio === r ? 'black' : 'var(--color-text-muted)',
-                                                fontSize: '0.8rem',
-                                                fontWeight: '600',
+                                                padding: '12px 8px',
+                                                borderRadius: '12px',
+                                                border: aspectRatio === r.value ? '1px solid var(--color-accent-primary)' : '1px solid var(--color-border)',
+                                                background: aspectRatio === r.value ? 'rgba(var(--color-accent-rgb), 0.1)' : 'rgba(255,255,255,0.02)',
+                                                color: aspectRatio === r.value ? 'var(--color-accent-primary)' : 'var(--color-text-muted)',
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                cursor: 'pointer',
                                                 transition: 'all 0.2s'
                                             }}
+                                            className="hover:bg-white/5"
                                         >
-                                            {r}
+                                            <div style={{
+                                                opacity: aspectRatio === r.value ? 1 : 0.7
+                                            }}>
+                                                {r.icon}
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                                                <span style={{ fontSize: '0.65rem', fontWeight: '600' }}>{r.label}</span>
+                                                <span style={{ fontSize: '0.55rem', opacity: 0.5 }}>{r.desc}</span>
+                                            </div>
                                         </button>
                                     ))}
                                 </div>
@@ -506,6 +578,32 @@ export default function Generator() {
                 selectedModel={selectedModel}
                 onSelectModel={setSelectedModel}
             />
+
+            {/* Fullscreen Modal */}
+            {isFullscreen && generatedImage && (
+                <div style={{
+                    position: 'fixed', inset: 0, zIndex: 9999,
+                    background: 'rgba(0,0,0,0.95)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    animation: 'fadeIn 0.2s ease-out'
+                }} onClick={() => setIsFullscreen(false)}>
+                    <button
+                        onClick={() => setIsFullscreen(false)}
+                        style={{
+                            position: 'absolute', top: '24px', right: '24px',
+                            background: 'transparent', border: 'none', color: 'white', cursor: 'pointer'
+                        }}
+                    >
+                        <X size={32} />
+                    </button>
+                    <img
+                        src={generatedImage}
+                        alt="Full Preview"
+                        style={{ maxWidth: '95vw', maxHeight: '95vh', objectFit: 'contain', boxShadow: '0 0 100px rgba(0,0,0,0.8)' }}
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
 
             <style>{`
                 .setting-label {
