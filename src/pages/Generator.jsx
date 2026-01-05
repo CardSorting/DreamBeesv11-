@@ -5,7 +5,7 @@ import { useModel } from '../contexts/ModelContext';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp, doc, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, ChevronDown, ChevronUp, Mic, MicOff, Zap, AlertCircle, Share2, Maximize2, Dices, X, Wand2, Monitor, Smartphone, LayoutTemplate, Square, RectangleHorizontal, RectangleVertical } from 'lucide-react';
+import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, ChevronDown, ChevronUp, Mic, MicOff, Zap, AlertCircle, Share2, Maximize2, Dices, X, Wand2, Monitor, Smartphone, LayoutTemplate, Square, RectangleHorizontal, RectangleVertical, HelpCircle } from 'lucide-react';
 
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -494,38 +494,52 @@ export default function Generator() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                             {/* Model Selector Trigger */}
                             <div>
-                                <label className="setting-label">MODEL ENGINE</label>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <label className="setting-label" style={{ marginBottom: 0 }}>MODEL ENGINE</label>
+                                        <div className="tooltip-container" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                            <HelpCircle size={12} color="var(--color-text-muted)" style={{ cursor: 'help' }} />
+                                            <div className="tooltip-content">
+                                                The Model Engine determines the artistic style and capability of your generation.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>
+                                        {selectedModel.id.toUpperCase()}
+                                    </span>
+                                </div>
                                 <button
                                     onClick={() => setIsModelModalOpen(true)}
                                     style={{
                                         width: '100%',
-                                        padding: '20px',
+                                        padding: '12px',
                                         borderRadius: '16px',
-                                        background: 'rgba(255,255,255,0.02)',
+                                        background: 'linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
                                         border: '1px solid var(--color-border)',
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: '20px',
+                                        gap: '16px',
                                         cursor: 'pointer',
                                         textAlign: 'left',
                                         transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
                                         position: 'relative',
-                                        overflow: 'hidden'
+                                        overflow: 'hidden',
+                                        boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
                                     }}
-                                    className="hover:border-white/20 hover:bg-white/[0.04]"
+                                    className="hover-glow-border"
                                 >
                                     <div style={{
-                                        width: '56px',
-                                        height: '56px',
-                                        borderRadius: '10px',
+                                        width: '64px',
+                                        height: '64px',
+                                        borderRadius: '12px',
                                         background: '#000',
                                         overflow: 'hidden',
                                         flexShrink: 0,
-                                        position: 'relative'
+                                        position: 'relative',
+                                        border: '1px solid rgba(255,255,255,0.1)'
                                     }}>
-                                        <div className="noise-overlay" style={{ opacity: 0.2 }} />
                                         {selectedModel.image ? (
-                                            <img src={selectedModel.image} alt={selectedModel.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} className="agency-image-filter" />
+                                            <img src={getOptimizedImageUrl(selectedModel.image)} alt={selectedModel.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                         ) : (
                                             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444' }}>
                                                 <ImageIcon size={24} />
@@ -533,13 +547,13 @@ export default function Generator() {
                                         )}
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <div style={{ fontSize: '0.7rem', fontFamily: 'monospace', color: 'var(--color-accent-primary)', letterSpacing: '0.1em', marginBottom: '4px' }}>
-                                            ENGINE // {selectedModel.id.toUpperCase()}
+                                        <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'white', letterSpacing: '-0.02em', marginBottom: '2px' }}>{selectedModel.name}</div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                            {selectedModel.description || "High quality image generation model."}
                                         </div>
-                                        <div style={{ fontSize: '1.1rem', fontWeight: '400', color: 'white', letterSpacing: '-0.01em' }}>{selectedModel.name}</div>
                                     </div>
-                                    <div style={{ opacity: 0.3 }}>
-                                        <ChevronUp size={16} />
+                                    <div style={{ opacity: 0.5, paddingRight: '4px' }}>
+                                        <ChevronDown size={18} />
                                     </div>
                                 </button>
                             </div>
@@ -769,6 +783,43 @@ export default function Generator() {
                 .hover-card:hover .hover-scale { transform: scale(1.05); }
                 .hover-card:hover { border-color: rgba(255,255,255,0.2) !important; background: rgba(255,255,255,0.06) !important; }
                 @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
+
+                .hover-glow-border:hover {
+                    border-color: rgba(255,255,255,0.3) !important;
+                    box-shadow: 0 0 20px rgba(255,255,255,0.05) !important;
+                    background: linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%) !important;
+                }
+
+                .tooltip-container:hover .tooltip-content {
+                    opacity: 1;
+                    visibility: visible;
+                    transform: translateX(-50%) translateY(0);
+                }
+                .tooltip-content {
+                    position: absolute;
+                    bottom: 100%;
+                    left: 50%;
+                    transform: translateX(-50%) translateY(5px);
+                    background: rgba(0,0,0,0.9);
+                    border: 1px solid rgba(255,255,255,0.1);
+                    color: white;
+                    padding: 8px 12px;
+                    border-radius: 8px;
+                    font-size: 0.75rem;
+                    width: max-content;
+                    max-width: 200px;
+                    text-align: center;
+                    opacity: 0;
+                    visibility: hidden;
+                    transition: all 0.2s;
+                    pointer-events: none;
+                    z-index: 10;
+                    margin-bottom: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                    text-transform: none;
+                    font-weight: 400;
+                    line-height: 1.4;
+                }
             `}</style>
         </div >
     );

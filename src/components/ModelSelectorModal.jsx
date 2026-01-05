@@ -151,7 +151,7 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
                                 <div
                                     key={model.id}
                                     onMouseEnter={() => setPreviewModel(model)}
-                                    onClick={() => setPreviewModel(model)}
+                                    onClick={() => { onSelectModel(model); onClose(); }}
                                     style={{
                                         padding: '16px', borderRadius: '16px', marginBottom: '8px', cursor: 'pointer',
                                         background: isActive ? 'rgba(255,255,255,0.06)' : 'transparent',
