@@ -1,37 +1,30 @@
 {
-  "indexes": [
+  "indexes": [],
+  "fieldOverrides": [
     {
-      "collectionGroup": "images",
-      "queryScope": "COLLECTION",
-      "fields": [
+      "collectionGroup": "training_feedback",
+      "fieldPath": "timestamp",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "training_feedback",
+      "fieldPath": "rating",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "training_feedback",
+      "fieldPath": "dataset_split",
+      "indexes": [
         {
-          "fieldPath": "userId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
         }
       ]
     },
     {
-      "collectionGroup": "generation_queue",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "userId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "status",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "createdAt",
-          "order": "DESCENDING"
-        }
-      ]
+      "collectionGroup": "training_feedback",
+      "fieldPath": "meta",
+      "indexes": []
     }
-  ],
-  "fieldOverrides": []
+  ]
 }
