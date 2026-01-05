@@ -1,15 +1,31 @@
-import React, { useEffect, useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
-import { collection, query, where, orderBy, limit, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { getOptimizedImageUrl } from '../utils';
-import { Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+
+const getTimeAgo = (timestamp) => {
+    if (!timestamp) return '';
+    const now = new Date();
+    const date = timestamp.toDate();
+    const seconds = Math.floor((now - date) / 1000);
+
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+};
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function GenerationHistory({ onSelect, selectedJobId }) {
+export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt }) {
     const { currentUser } = useAuth();
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
+    const scrollContainerRef = useRef(null);
 
     useEffect(() => {
         if (!currentUser) return;
@@ -27,8 +43,15 @@ export default function GenerationHistory({ onSelect, selectedJobId }) {
                 id: doc.id,
                 ...doc.data()
             }));
+            const isNewItem = history.length > 0 && jobs.length > 0 && jobs[0].id !== history[0].id;
             setHistory(jobs);
             setLoading(false);
+
+            if (isNewItem && scrollContainerRef.current) {
+                setTimeout(() => {
+                    scrollContainerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+                }, 300);
+            }
         }, (error) => {
             console.error("Error fetching history:", error);
             setLoading(false);
@@ -37,16 +60,17 @@ export default function GenerationHistory({ onSelect, selectedJobId }) {
         return () => unsubscribe();
     }, [currentUser]);
 
-    const handleDelete = async (e, jobId) => {
-        e.stopPropagation();
-        if (window.confirm('Are you sure you want to delete this from history?')) {
-            try {
-                await deleteDoc(doc(db, 'generation_queue', jobId));
-            } catch (error) {
-                console.error("Error deleting job:", error);
-            }
+    const scroll = (direction) => {
+        if (scrollContainerRef.current) {
+            const scrollAmount = 300;
+            scrollContainerRef.current.scrollBy({
+                left: direction === 'left' ? -scrollAmount : scrollAmount,
+                behavior: 'smooth'
+            });
         }
     };
+
+
 
     // Skeleton Loader
     if (loading) {
@@ -69,7 +93,8 @@ export default function GenerationHistory({ onSelect, selectedJobId }) {
     if (history.length === 0) return null;
 
     return (
-        <div className="history-filmstrip-container" style={{ marginTop: '24px' }}>
+
+        <div className="history-filmstrip-container" style={{ marginTop: '24px', position: 'relative' }}>
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -86,43 +111,53 @@ export default function GenerationHistory({ onSelect, selectedJobId }) {
                 }}>
                     History
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)' }}>
-                    {history.length} ITEMS
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '2px' }}>
+                        <button onClick={() => scroll('left')} className="btn-icon-mini" title="Scroll Left"><ChevronLeft size={14} /></button>
+                        <button onClick={() => scroll('right')} className="btn-icon-mini" title="Scroll Right"><ChevronRight size={14} /></button>
+                    </div>
                 </div>
             </div>
 
-            <div style={{
-                display: 'flex',
-                gap: '12px', // More breathing room
-                overflowX: 'auto',
-                padding: '4px',
-                paddingBottom: '12px',
-                width: '100%',
-                scrollBehavior: 'smooth'
-            }} className="no-scrollbar">
+            <div
+                ref={scrollContainerRef}
+                style={{
+                    display: 'flex',
+                    gap: '12px',
+                    overflowX: 'auto',
+                    padding: '4px',
+                    paddingBottom: '12px',
+                    width: '100%',
+                    scrollBehavior: 'smooth',
+                    maskImage: 'linear-gradient(to right, black 90%, transparent 100%)' // Fade out edge
+                }}
+                className="no-scrollbar"
+            >
                 <AnimatePresence mode="popLayout" initial={false}>
                     {history.map((job) => (
                         <motion.div
                             key={job.id}
                             layout
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
+                            initial={{ opacity: 0, scale: 0.9, x: -20 }}
+                            animate={{ opacity: 1, scale: 1, x: 0 }}
                             exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
                             className={`history-item ${selectedJobId === job.id ? 'active' : ''}`}
-                            onClick={() => onSelect(job)} // Default action: load
+                            onClick={() => onSelect(job)}
                             style={{
-                                minWidth: '100px', // Fixed larger size
-                                width: '100px',
-                                height: '100px',
-                                borderRadius: '12px',
+                                minWidth: '110px',
+                                width: '110px',
+                                height: '110px',
+                                borderRadius: '16px',
                                 overflow: 'hidden',
                                 position: 'relative',
                                 cursor: 'pointer',
                                 border: selectedJobId === job.id ? '2px solid var(--color-accent-primary)' : '1px solid rgba(255,255,255,0.08)',
                                 background: '#111',
-                                flexShrink: 0
+                                flexShrink: 0,
+                                boxShadow: selectedJobId === job.id ? '0 0 20px rgba(var(--color-accent-rgb), 0.3)' : 'none',
+                                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
                             }}
-                            whileHover={{ y: -2 }} // Subtle lift instead of expansion
+                            whileHover={{ y: -4, boxShadow: '0 10px 20px rgba(0,0,0,0.5)' }}
                         >
                             <img
                                 src={getOptimizedImageUrl(job.imageUrl)}
@@ -138,7 +173,24 @@ export default function GenerationHistory({ onSelect, selectedJobId }) {
 
                             {/* Hover Overlay */}
                             <div className="history-overlay">
-                                <div style={{ flex: 1 }} /> {/* Spacer */}
+                                {/* Time Badge */}
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '6px',
+                                    right: '6px',
+                                    background: 'rgba(0,0,0,0.6)',
+                                    backdropFilter: 'blur(4px)',
+                                    padding: '2px 6px',
+                                    borderRadius: '100px',
+                                    fontSize: '0.55rem',
+                                    color: 'rgba(255,255,255,0.9)',
+                                    display: 'flex', alignItems: 'center', gap: '3px'
+                                }}>
+                                    <Clock size={8} />
+                                    {getTimeAgo(job.createdAt)}
+                                </div>
+
+                                <div style={{ flex: 1 }} />
 
                                 {/* Quick Stats */}
                                 <div style={{
@@ -147,36 +199,28 @@ export default function GenerationHistory({ onSelect, selectedJobId }) {
                                     marginBottom: '6px',
                                     fontFamily: 'monospace',
                                     display: 'flex',
-                                    justifyContent: 'space-between'
+                                    alignItems: 'center',
+                                    gap: '6px'
                                 }}>
-                                    <span>{job.aspectRatio || '1:1'}</span>
-                                    <span>steps:{job.steps}</span>
+                                    <span style={{ background: 'rgba(255,255,255,0.1)', padding: '1px 4px', borderRadius: '4px' }}>{job.aspectRatio || '1:1'}</span>
                                 </div>
 
                                 {/* Actions */}
-                                <div style={{ display: 'flex', gap: '4px', justifyContent: 'space-between' }}>
-                                    {/* Delete Button */}
-                                    <button
-                                        onClick={(e) => handleDelete(e, job.id)}
-                                        className="btn-mini-action danger"
-                                        title="Delete"
-                                    >
-                                        <Trash2 size={12} />
-                                    </button>
-
-                                    {/* Copy Prompt (using Clipboard API directly for simplicity here or could trigger parent) */}
+                                <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', width: '100%' }}>
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            navigator.clipboard.writeText(job.prompt);
-                                            // You might want a toast here, but we don't have toast imported directly easily unless we pass it or import it. 
-                                            // Assuming toast is available or silent copy. 
-                                            // Ideally we should import toast if we want feedback, but let's stick to the minimal set for now.
+                                            if (onUsePrompt) {
+                                                onUsePrompt(job);
+                                            } else {
+                                                navigator.clipboard.writeText(job.prompt);
+                                            }
                                         }}
                                         className="btn-mini-action"
-                                        title="Copy Prompt"
+                                        title="Use Prompt"
+                                        style={{ width: '100%' }}
                                     >
-                                        <span style={{ fontSize: '0.6rem', fontWeight: '700' }}>TXT</span>
+                                        <span style={{ fontSize: '0.65rem', fontWeight: '600' }}>USE</span>
                                     </button>
                                 </div>
                             </div>
@@ -186,12 +230,30 @@ export default function GenerationHistory({ onSelect, selectedJobId }) {
             </div>
 
             <style>{`
+                .btn-icon-mini {
+                    width: 24px;
+                    height: 24px;
+                    border-radius: 6px;
+                    background: rgba(255,255,255,0.05);
+                    color: var(--color-text-muted);
+                    border: none;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .btn-icon-mini:hover {
+                    background: rgba(255,255,255,0.1);
+                    color: white;
+                }
+
                 .history-item img {
-                    transform: scale(1.05);
+                    transform: scale(1.01);
                 }
                 .history-item:hover img {
-                    transform: scale(1.15); /* Zoom effect */
-                    filter: brightness(0.6);
+                    transform: scale(1.1);
+                    filter: brightness(0.5);
                 }
                 .history-overlay {
                     position: absolute;
@@ -201,52 +263,30 @@ export default function GenerationHistory({ onSelect, selectedJobId }) {
                     flex-direction: column;
                     opacity: 0;
                     transition: all 0.2s ease;
-                    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
                 }
                 .history-item:hover .history-overlay {
                     opacity: 1;
                 }
-                .history-item.active {
-                    box-shadow: 0 0 15px rgba(var(--color-accent-rgb), 0.3);
-                }
                 
                 .btn-mini-action {
-                    width: 24px;
                     height: 24px;
                     border-radius: 6px;
-                    border: none;
-                    background: rgba(255,255,255,0.2);
+                    border: 1px solid rgba(255,255,255,0.2);
+                    background: rgba(0,0,0,0.4);
                     color: white;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     cursor: pointer;
                     transition: all 0.2s;
+                    backdrop-filter: blur(4px);
                 }
                 .btn-mini-action:hover {
                     background: white;
                     color: black;
                 }
-                .btn-mini-action.danger:hover {
-                    background: #ef4444;
-                    color: white;
-                }
 
-                /* Custom Scrollbar */
-                .no-scrollbar::-webkit-scrollbar {
-                    height: 6px;
-                }
-                .no-scrollbar::-webkit-scrollbar-track {
-                    background: rgba(255,255,255,0.02);
-                    border-radius: 3px;
-                }
-                .no-scrollbar::-webkit-scrollbar-thumb {
-                    background: rgba(255,255,255,0.1);
-                    border-radius: 3px;
-                }
-                .no-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: rgba(255,255,255,0.2);
-                }
+                .no-scrollbar::-webkit-scrollbar { height: 0px; display: none; }
             `}</style>
         </div>
     );

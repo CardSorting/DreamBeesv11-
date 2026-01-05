@@ -453,6 +453,22 @@ export default function Generator() {
                     <GenerationHistory
                         onSelect={handleHistorySelect}
                         selectedJobId={null}
+                        onUsePrompt={(job) => {
+                            console.log("Using prompt from job:", job);
+                            setPrompt(job.prompt);
+                            if (job.modelId && availableModels.length > 0) {
+                                console.log("Attempting to restore model:", job.modelId);
+                                const restoredModel = availableModels.find(m => m.id === job.modelId);
+                                console.log("Found model:", restoredModel);
+                                if (restoredModel) {
+                                    setSelectedModel(restoredModel);
+                                } else {
+                                    console.warn("Could not find model with ID:", job.modelId);
+                                }
+                            } else {
+                                console.warn("No modelId in job or availableModels empty", { modelId: job.modelId, modelsCount: availableModels.length });
+                            }
+                        }}
                     />
                 </div>
 

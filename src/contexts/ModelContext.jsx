@@ -29,6 +29,7 @@ export function ModelProvider({ children }) {
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     models.push({
+                        id: doc.id,
                         ...data,
                         tags: Array.isArray(data.tags) ? data.tags : []
                     });
