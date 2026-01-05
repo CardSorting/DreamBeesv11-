@@ -118,7 +118,7 @@ export default function Models() {
             style={{
                 background: '#0a0a0a',
                 minHeight: '100vh',
-                paddingTop: '160px',
+                paddingTop: '200px',
                 paddingBottom: '120px',
                 position: 'relative',
                 overflow: 'hidden',
@@ -163,13 +163,12 @@ export default function Models() {
                     <h1 style={{
                         fontSize: 'clamp(3.5rem, 7vw, 8rem)',
                         fontWeight: '300',
-                        lineHeight: '0.9',
-                        letterSpacing: '-0.04em',
+                        lineHeight: '1.2',
+                        letterSpacing: '-0.02em',
                         color: 'white',
-                        marginLeft: '-4px'
                     }}>
                         <div className="text-reveal-mask">
-                            <span style={{ animationDelay: '0.2s' }}>Select </span>
+                            <span style={{ animationDelay: '0.2s', marginRight: '0.3em' }}>Select</span>
                             <span style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', animationDelay: '0.25s' }}>Engine</span>
                         </div>
                     </h1>
