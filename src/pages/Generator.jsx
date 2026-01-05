@@ -200,11 +200,11 @@ export default function Generator() {
     }
 
     return (
-        <div style={{ paddingTop: '140px', paddingBottom: '40px', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ paddingTop: '140px', paddingBottom: '40px', display: 'flex', flexDirection: 'column' }}>
             <div className="container" style={{ flex: 1, display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 340px', gap: '32px' }}>
 
                 {/* Left: Canvas / Input */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', minHeight: 0 }}>
 
                     {/* Header Info (Mobile only mostly, or subtle) */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -217,7 +217,7 @@ export default function Generator() {
                     </div>
 
                     {/* Main Workspace */}
-                    <div className="glass-panel" style={{ flex: 1, minHeight: '500px', display: 'flex', flexDirection: 'column', padding: '4px', overflow: 'hidden' }}>
+                    <div className="glass-panel" style={{ flex: 1, minHeight: '700px', display: 'flex', flexDirection: 'column', padding: '4px', overflow: 'hidden' }}>
 
                         {/* Result View or Placeholder */}
                         <div style={{ flex: 1, background: '#050505', borderRadius: 'var(--radius-md) var(--radius-md) 0 0', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -234,8 +234,8 @@ export default function Generator() {
                                     </div>
                                 </div>
                             ) : generatedImage ? (
-                                <div className="fade-in" style={{ width: '100%', height: '100%', padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <img src={getOptimizedImageUrl(generatedImage)} alt="Generated" style={{ maxWidth: '100%', maxHeight: '100%', boxShadow: '0 0 50px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
+                                <div className="fade-in" style={{ position: 'absolute', inset: 0, padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <img src={getOptimizedImageUrl(generatedImage)} alt="Generated" style={{ width: '100%', height: '100%', boxShadow: '0 0 50px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
                                     <div style={{ position: 'absolute', bottom: '20px', right: '20px', display: 'flex', gap: '12px' }}>
                                         <button
                                             onClick={async () => {
@@ -274,48 +274,108 @@ export default function Generator() {
                         </div>
 
                         {/* Prompt Input Bar - Chat Style */}
-                        <div style={{ padding: '24px', background: 'var(--color-zinc-900)' }}>
-                            <div style={{ position: 'relative' }}>
-                                <textarea
-                                    value={prompt}
-                                    onChange={(e) => setPrompt(e.target.value)}
-                                    placeholder="Describe your vision..."
-                                    style={{
-                                        width: '100%',
-                                        background: 'transparent',
-                                        border: 'none',
-                                        color: 'white',
-                                        fontSize: '1.2rem',
-                                        resize: 'none',
-                                        minHeight: '60px',
-                                        outline: 'none',
-                                        lineHeight: '1.5',
-                                        paddingRight: '40px'
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey && !generating) {
-                                            e.preventDefault();
-                                            handleGenerate();
-                                        }
-                                    }}
-                                />
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button onClick={toggleListening} className={`btn-ghost ${isListening ? 'text-red-500' : ''}`} style={{ padding: '8px' }}>
-                                            {isListening ? <MicOff size={18} color="#ef4444" /> : <Mic size={18} />}
-                                        </button>
-                                        <button onClick={() => setPrompt('')} className="btn-ghost" style={{ padding: '8px' }}>
-                                            <Trash2 size={18} />
+                        <div style={{ padding: '0', background: 'transparent', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                            <div className="glass-panel" style={{
+                                margin: '20px',
+                                padding: '6px', // Inner padding for the border effect
+                                borderRadius: '16px',
+                                background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
+                                boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                                border: '1px solid rgba(255,255,255,0.05)'
+                            }}>
+                                <div style={{
+                                    background: 'rgba(0,0,0,0.4)',
+                                    borderRadius: '12px',
+                                    padding: '16px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '12px'
+                                }}>
+                                    <textarea
+                                        value={prompt}
+                                        onChange={(e) => setPrompt(e.target.value)}
+                                        placeholder="Describe your vision..."
+                                        className="custom-scrollbar"
+                                        style={{
+                                            width: '100%',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            color: 'white',
+                                            fontSize: '1.1rem',
+                                            fontWeight: '400',
+                                            resize: 'none',
+                                            minHeight: '160px',
+                                            outline: 'none',
+                                            lineHeight: '1.6',
+                                            fontFamily: '"Outfit", sans-serif', // Ensure premium font
+                                            letterSpacing: '0.01em'
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey && !generating) {
+                                                e.preventDefault();
+                                                handleGenerate();
+                                            }
+                                        }}
+                                    />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
+                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                            <button
+                                                onClick={toggleListening}
+                                                className={`btn-ghost ${isListening ? 'listening-pulse' : ''}`}
+                                                style={{
+                                                    padding: '8px 12px',
+                                                    borderRadius: '8px',
+                                                    color: isListening ? '#ef4444' : 'var(--color-text-muted)',
+                                                    background: isListening ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
+                                                    transition: 'all 0.2s',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '6px',
+                                                    fontSize: '0.8rem'
+                                                }}
+                                            >
+                                                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                                                {isListening && <span>Listening...</span>}
+                                            </button>
+                                            <button
+                                                onClick={() => setPrompt('')}
+                                                className="btn-ghost"
+                                                title="Clear Prompt"
+                                                style={{
+                                                    padding: '8px',
+                                                    borderRadius: '8px',
+                                                    color: 'var(--color-text-muted)',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                        <button
+                                            onClick={handleGenerate}
+                                            disabled={generating || !prompt || (credits <= 0 && subscriptionStatus !== 'active')}
+                                            className="btn btn-primary generate-btn"
+                                            style={{
+                                                height: '42px',
+                                                padding: '0 32px',
+                                                borderRadius: '10px',
+                                                fontSize: '0.95rem',
+                                                fontWeight: '600',
+                                                letterSpacing: '0.02em',
+                                                boxShadow: '0 0 20px rgba(var(--color-accent-rgb), 0.3)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px'
+                                            }}
+                                        >
+                                            {generating ? <Loader2 className="animate-spin" size={18} /> : (
+                                                <>
+                                                    <Sparkles size={18} style={{ fill: 'currentColor' }} />
+                                                    Generate
+                                                </>
+                                            )}
                                         </button>
                                     </div>
-                                    <button
-                                        onClick={handleGenerate}
-                                        disabled={generating || !prompt || (credits <= 0 && subscriptionStatus !== 'active')}
-                                        className="btn btn-primary"
-                                        style={{ height: '40px', padding: '0 24px' }}
-                                    >
-                                        {generating ? <Loader2 className="animate-spin" size={18} /> : 'Generate'}
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -331,9 +391,9 @@ export default function Generator() {
 
 
                 {/* Right: Property View (Sidebar) */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', height: '100%' }}>
 
-                    <div className="glass-panel" style={{ padding: '24px' }}>
+                    <div className="glass-panel" style={{ padding: '24px', flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', color: 'white', fontWeight: '600', fontSize: '0.9rem' }}>
                             <Sliders size={16} /> PARAMETERS
                         </div>
