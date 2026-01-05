@@ -1,5 +1,7 @@
 {
-  "projects": {},
+  "projects": {
+    "default": "dreambees-app-gen-v1"
+  },
   "targets": {},
   "etags": {}
 }
