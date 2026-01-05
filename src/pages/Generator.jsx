@@ -15,11 +15,13 @@ import { getOptimizedImageUrl, getRandomPrompt, getEnhancedPrompt } from '../uti
 export default function Generator() {
     const [searchParams] = useSearchParams();
     const { currentUser } = useAuth();
-    const { selectedModel, setSelectedModel, availableModels, loading } = useModel();
+    const { selectedModel, setSelectedModel, availableModels, loading, getShowcaseImages } = useModel();
 
     // Modal State
     const [isModelModalOpen, setIsModelModalOpen] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [activeTab, setActiveTab] = useState('simple');
+    const [showcaseImages, setShowcaseImages] = useState([]);
 
     const [prompt, setPrompt] = useState(searchParams.get('prompt') || '');
     const [generating, setGenerating] = useState(false);
@@ -34,6 +36,7 @@ export default function Generator() {
     const [steps, setSteps] = useState(parseInt(searchParams.get('steps')) || 30);
     const [cfg, setCfg] = useState(parseFloat(searchParams.get('cfg')) || 7.0);
     const [negPrompt, setNegPrompt] = useState(searchParams.get('negPrompt') || "");
+    const [seed, setSeed] = useState(parseInt(searchParams.get('seed')) || -1);
 
     // Monetization
     const [credits, setCredits] = useState(null);
@@ -60,6 +63,14 @@ export default function Generator() {
         });
         return () => unsub();
     }, [currentUser]);
+
+    // Fetch Showcase Images
+    useEffect(() => {
+        if (selectedModel) {
+            getShowcaseImages(selectedModel.id).then(imgs => setShowcaseImages(imgs));
+        }
+    }, [selectedModel]);
+
 
     // Fullscreen Escape Key
     useEffect(() => {
@@ -172,6 +183,7 @@ export default function Generator() {
                 aspectRatio: aspectRatio,
                 steps: steps,
                 cfg: cfg,
+                seed: seed,
                 createdAt: serverTimestamp()
             });
             setCurrentJobId(docRef.id);
@@ -193,6 +205,7 @@ export default function Generator() {
         if (job.aspectRatio) setAspectRatio(job.aspectRatio);
         if (job.steps) setSteps(job.steps);
         if (job.cfg) setCfg(job.cfg);
+        if (job.seed) setSeed(job.seed);
 
         // Restore Model
         if (job.modelId && availableModels.length > 0) {
@@ -369,6 +382,30 @@ export default function Generator() {
                                                 <Dices size={16} />
                                             </button>
                                             <button
+                                                onClick={() => {
+                                                    const url = new URL(window.location);
+                                                    url.searchParams.set('prompt', prompt);
+                                                    if (seed !== -1) url.searchParams.set('seed', seed);
+                                                    if (aspectRatio !== '1:1') url.searchParams.set('aspectRatio', aspectRatio);
+                                                    if (steps !== 30) url.searchParams.set('steps', steps);
+                                                    if (cfg !== 7.0) url.searchParams.set('cfg', cfg);
+                                                    if (negPrompt) url.searchParams.set('negPrompt', negPrompt);
+
+                                                    navigator.clipboard.writeText(url.toString());
+                                                    toast.success('Link copied to clipboard');
+                                                }}
+                                                className="btn-ghost"
+                                                title="Share Configuration"
+                                                style={{
+                                                    padding: '8px',
+                                                    borderRadius: '8px',
+                                                    color: 'var(--color-text-muted)',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                <Share2 size={16} />
+                                            </button>
+                                            <button
                                                 onClick={() => setPrompt('')}
                                                 className="btn-ghost"
                                                 title="Clear Prompt"
@@ -425,8 +462,33 @@ export default function Generator() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', height: '100%' }}>
 
                     <div className="glass-panel" style={{ padding: '24px', flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px', color: 'white', fontWeight: '600', fontSize: '0.9rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: 'white', fontWeight: '600', fontSize: '0.9rem' }}>
                             <Sliders size={16} /> PARAMETERS
+                        </div>
+
+                        {/* Tabs */}
+                        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '4px', marginBottom: '24px' }}>
+                            {['simple', 'advanced'].map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    style={{
+                                        flex: 1,
+                                        padding: '8px',
+                                        borderRadius: '8px',
+                                        background: activeTab === tab ? 'var(--color-accent-primary)' : 'transparent',
+                                        color: activeTab === tab ? 'white' : 'var(--color-text-muted)',
+                                        fontSize: '0.85rem',
+                                        fontWeight: '600',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        textTransform: 'capitalize',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    {tab}
+                                </button>
+                            ))}
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -483,87 +545,170 @@ export default function Generator() {
                             </div>
 
                             {/* Aspect Ratio Grid */}
-                            <div>
-                                <label className="setting-label">ASPECT RATIO</label>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
-                                    {[
-                                        { label: 'Square', value: '1:1', icon: <Square size={18} />, desc: '1:1' },
-                                        { label: 'Landscape', value: '16:9', icon: <Monitor size={18} />, desc: '16:9' },
-                                        { label: 'Portrait', value: '9:16', icon: <Smartphone size={18} />, desc: '9:16' },
-                                        { label: 'Classic L', value: '3:2', icon: <RectangleHorizontal size={18} />, desc: '3:2' },
-                                        { label: 'Classic P', value: '2:3', icon: <RectangleVertical size={18} />, desc: '2:3' }
-                                    ].map(r => (
-                                        <button
-                                            key={r.value}
-                                            onClick={() => setAspectRatio(r.value)}
-                                            title={r.label}
+                            {/* Visualization / Simple Mode Content */}
+                            {activeTab === 'simple' && (
+                                <div className="fade-in">
+                                    <label className="setting-label" style={{ marginBottom: '12px' }}>TRY A STYLE</label>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                                        {showcaseImages.slice(0, 9).map((img) => (
+                                            <button
+                                                key={img.id}
+                                                onClick={() => {
+                                                    setPrompt(img.prompt);
+                                                    setGeneratedImage(img.imageUrl);
+                                                }}
+                                                className="hover-card"
+                                                style={{
+                                                    aspectRatio: '1',
+                                                    borderRadius: '12px',
+                                                    overflow: 'hidden',
+                                                    border: '1px solid var(--color-border)',
+                                                    cursor: 'pointer',
+                                                    padding: 0,
+                                                    position: 'relative'
+                                                }}
+                                                title={img.prompt}
+                                            >
+                                                <img
+                                                    src={getOptimizedImageUrl(img.imageUrl)}
+                                                    alt="Style"
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                />
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {showcaseImages.length === 0 && (
+                                        <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                                            Select a model to see examples via showcase
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {activeTab === 'advanced' && (
+                                <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+                                    {/* Aspect Ratio (Now in Advanced) */}
+                                    <div>
+                                        <label className="setting-label">ASPECT RATIO</label>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                                            {[
+                                                { label: 'Square', value: '1:1', icon: <Square size={18} />, desc: '1:1' },
+                                                { label: 'Landscape', value: '16:9', icon: <Monitor size={18} />, desc: '16:9' },
+                                                { label: 'Portrait', value: '9:16', icon: <Smartphone size={18} />, desc: '9:16' },
+                                                { label: 'Classic L', value: '3:2', icon: <RectangleHorizontal size={18} />, desc: '3:2' },
+                                                { label: 'Classic P', value: '2:3', icon: <RectangleVertical size={18} />, desc: '2:3' }
+                                            ].map(r => (
+                                                <button
+                                                    key={r.value}
+                                                    onClick={() => setAspectRatio(r.value)}
+                                                    title={r.label}
+                                                    style={{
+                                                        padding: '12px 8px',
+                                                        borderRadius: '12px',
+                                                        border: aspectRatio === r.value ? '1px solid var(--color-accent-primary)' : '1px solid var(--color-border)',
+                                                        background: aspectRatio === r.value ? 'rgba(var(--color-accent-rgb), 0.1)' : 'rgba(255,255,255,0.02)',
+                                                        color: aspectRatio === r.value ? 'var(--color-accent-primary)' : 'var(--color-text-muted)',
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        alignItems: 'center',
+                                                        gap: '8px',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                    className="hover:bg-white/5"
+                                                >
+                                                    <div style={{
+                                                        opacity: aspectRatio === r.value ? 1 : 0.7
+                                                    }}>
+                                                        {r.icon}
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                                                        <span style={{ fontSize: '0.65rem', fontWeight: '600' }}>{r.label}</span>
+                                                        <span style={{ fontSize: '0.55rem', opacity: 0.5 }}>{r.desc}</span>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                            <label className="setting-label">SEED</label>
+                                            <button
+                                                onClick={() => setSeed(seed === -1 ? Math.floor(Math.random() * 1000000000) : -1)}
+                                                style={{ fontSize: '0.7rem', color: 'var(--color-accent-primary)', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                                            >
+                                                {seed === -1 ? 'RANDOM' : 'CUSTOM'}
+                                            </button>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <input
+                                                type="number"
+                                                value={seed === -1 ? '' : seed}
+                                                onChange={(e) => setSeed(parseInt(e.target.value) || -1)}
+                                                placeholder="Random (-1)"
+                                                style={{
+                                                    width: '100%',
+                                                    background: 'rgba(0,0,0,0.3)',
+                                                    border: '1px solid var(--color-border)',
+                                                    borderRadius: '8px',
+                                                    padding: '8px 12px',
+                                                    color: 'white',
+                                                    fontSize: '0.9rem'
+                                                }}
+                                            />
+                                            <button
+                                                onClick={() => setSeed(Math.floor(Math.random() * 1000000000))}
+                                                className="btn-ghost"
+                                                title="Roll Seed"
+                                                style={{ padding: '8px', borderRadius: '8px', color: 'white', border: '1px solid var(--color-border)' }}
+                                            >
+                                                <Dices size={18} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Sliders */}
+                                    <div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                            <label className="setting-label">STEPS</label>
+                                            <span style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'white' }}>{steps}</span>
+                                        </div>
+                                        <input type="range" min="10" max="50" value={steps} onChange={(e) => setSteps(Number(e.target.value))} />
+                                    </div>
+
+                                    <div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                            <label className="setting-label">GUIDANCE SCALE</label>
+                                            <span style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'white' }}>{cfg}</span>
+                                        </div>
+                                        <input type="range" min="1" max="20" step="0.5" value={cfg} onChange={(e) => setCfg(Number(e.target.value))} />
+                                    </div>
+
+                                    {/* Negative Prompt */}
+                                    <div>
+                                        <label className="setting-label">NEGATIVE PROMPT</label>
+                                        <textarea
+                                            value={negPrompt}
+                                            onChange={(e) => setNegPrompt(e.target.value)}
+                                            placeholder="blur, watermark, low quality..."
                                             style={{
-                                                padding: '12px 8px',
-                                                borderRadius: '12px',
-                                                border: aspectRatio === r.value ? '1px solid var(--color-accent-primary)' : '1px solid var(--color-border)',
-                                                background: aspectRatio === r.value ? 'rgba(var(--color-accent-rgb), 0.1)' : 'rgba(255,255,255,0.02)',
-                                                color: aspectRatio === r.value ? 'var(--color-accent-primary)' : 'var(--color-text-muted)',
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                alignItems: 'center',
-                                                gap: '8px',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s'
+                                                width: '100%',
+                                                background: 'rgba(0,0,0,0.3)',
+                                                border: '1px solid var(--color-border)',
+                                                borderRadius: '8px',
+                                                padding: '12px',
+                                                color: 'var(--color-text-main)',
+                                                fontSize: '0.85rem',
+                                                resize: 'vertical',
+                                                minHeight: '80px',
+                                                fontFamily: 'inherit'
                                             }}
-                                            className="hover:bg-white/5"
-                                        >
-                                            <div style={{
-                                                opacity: aspectRatio === r.value ? 1 : 0.7
-                                            }}>
-                                                {r.icon}
-                                            </div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                                                <span style={{ fontSize: '0.65rem', fontWeight: '600' }}>{r.label}</span>
-                                                <span style={{ fontSize: '0.55rem', opacity: 0.5 }}>{r.desc}</span>
-                                            </div>
-                                        </button>
-                                    ))}
+                                        />
+                                    </div>
                                 </div>
-                            </div>
-
-                            {/* Sliders */}
-                            <div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                    <label className="setting-label">STEPS</label>
-                                    <span style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'white' }}>{steps}</span>
-                                </div>
-                                <input type="range" min="10" max="50" value={steps} onChange={(e) => setSteps(Number(e.target.value))} />
-                            </div>
-
-                            <div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                    <label className="setting-label">GUIDANCE SCALE</label>
-                                    <span style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'white' }}>{cfg}</span>
-                                </div>
-                                <input type="range" min="1" max="20" step="0.5" value={cfg} onChange={(e) => setCfg(Number(e.target.value))} />
-                            </div>
-
-                            {/* Negative Prompt */}
-                            <div>
-                                <label className="setting-label">NEGATIVE PROMPT</label>
-                                <textarea
-                                    value={negPrompt}
-                                    onChange={(e) => setNegPrompt(e.target.value)}
-                                    placeholder="blur, watermark, low quality..."
-                                    style={{
-                                        width: '100%',
-                                        background: 'rgba(0,0,0,0.3)',
-                                        border: '1px solid var(--color-border)',
-                                        borderRadius: '8px',
-                                        padding: '12px',
-                                        color: 'var(--color-text-main)',
-                                        fontSize: '0.85rem',
-                                        resize: 'vertical',
-                                        minHeight: '80px',
-                                        fontFamily: 'inherit'
-                                    }}
-                                />
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>

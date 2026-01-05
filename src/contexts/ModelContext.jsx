@@ -77,14 +77,38 @@ export function ModelProvider({ children }) {
             return showcaseCache[modelId];
         }
 
-        // 2. Fetch from Firestore
+        // 2. Try Local Manifest First
         try {
-            console.log(`[Cache Miss] Fetching showcase for ${modelId}`);
+            console.log(`[Cache Miss] Fetching local showcase for ${modelId}`);
+            const response = await fetch(`/showcase/${modelId}/manifest.json`);
+            if (response.ok) {
+                const localData = await response.json();
+                console.log(`[Local Showcase] Found ${localData.length} items for ${modelId}`);
+
+                // Transform to match Firestore shape if needed, though they seem similar
+                const images = localData.map((item, index) => ({
+                    id: `local_${modelId}_${index}`,
+                    imageUrl: item.url, // manifest uses 'url', our app expects 'imageUrl' usually? app checks getOptimizedImageUrl(img.imageUrl)
+                    ...item
+                }));
+
+                // Update Cache and Return
+                setShowcaseCache(prev => ({ ...prev, [modelId]: images }));
+                return images;
+            }
+        } catch (localErr) {
+            console.warn(`[Local Showcase] Failed to load manifest for ${modelId}`, localErr);
+            // Fallthrough to Firestore on error
+        }
+
+        // 3. Fallback to Firestore
+        try {
+            console.log(`[Firestore Fallback] Fetching showcase for ${modelId}`);
             const q = query(
                 collection(db, 'model_showcase_images'),
                 where('modelId', '==', modelId),
                 orderBy('createdAt', 'desc'),
-                limit(50) // Reduced limit to prevent overuse, but enough for showcase
+                limit(50)
             );
             const snapshot = await getDocs(q);
 
@@ -96,12 +120,12 @@ export function ModelProvider({ children }) {
                 }));
             }
 
-            // 3. Update Cache
+            // 4. Update Cache
             setShowcaseCache(prev => ({ ...prev, [modelId]: images }));
             return images;
         } catch (err) {
             console.error("Error fetching showcase images:", err);
-            return []; // Return empty on error to prevent blocking
+            return [];
         }
     };
 
