@@ -124,7 +124,7 @@ export default function ImageDetail() {
                 }}>
                     <img
                         src={getOptimizedImageUrl(image.imageUrl)}
-                        alt={image.prompt}
+                        alt={image.prompt || "Generated Image Detail"}
                         style={{
                             maxWidth: '100%', maxHeight: '100%',
                             boxShadow: '0 0 50px rgba(0,0,0,0.5)',

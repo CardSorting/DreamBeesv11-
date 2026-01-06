@@ -164,7 +164,7 @@ export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt
                         >
                             <img
                                 src={getOptimizedImageUrl(job.imageUrl)}
-                                alt={job.prompt}
+                                alt={`Previously generated image: ${job.prompt}`}
                                 loading="lazy"
                                 style={{
                                     width: '100%',

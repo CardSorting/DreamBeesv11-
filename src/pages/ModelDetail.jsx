@@ -98,7 +98,7 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                 }}>
                     <img
                         src={getOptimizedImageUrl(image.url || image)}
-                        alt="Showcase Detail"
+                        alt={image.prompt ? `Showcase: ${image.prompt}` : "Model Showcase Detail"}
                         style={{
                             maxWidth: '100%', maxHeight: '100%',
                             boxShadow: '0 0 50px rgba(0,0,0,0.5)',
@@ -624,9 +624,9 @@ export default function ModelDetail() {
                                     <div className="image-card">
                                         <div className="image-wrapper" style={{ aspectRatio: ratio }}>
                                             <img
-                                                src={getOptimizedImageUrl(imgItem.url || imgItem)}
-                                                alt={`Sample ${index}`}
-                                                className="feed-image"
+                                                src={getOptimizedImageUrl(item.imageUrl)}
+                                                alt={`Showcase generation: ${item.prompt ? item.prompt.slice(0, 50) + "..." : "AI Artwork"}`}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                             />
                                         </div>
                                         <div className="image-meta">

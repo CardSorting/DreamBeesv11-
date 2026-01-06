@@ -207,7 +207,7 @@ export default function Models() {
                                 >
                                     <img
                                         src={model.image}
-                                        alt={model.name}
+                                        alt={`${model.name} - AI Model Preview`}
                                         style={{
                                             width: '100%',
                                             height: '100%',

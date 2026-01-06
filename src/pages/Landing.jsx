@@ -429,7 +429,7 @@ function MarqueeImages() {
                 >
                     <img
                         src={src}
-                        alt="AI Generated"
+                        alt={`Generative art created with AI: ${src.split('/').pop()}`}
                         style={{
                             width: '100%',
                             height: '100%',

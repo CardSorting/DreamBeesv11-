@@ -163,7 +163,7 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
                                         width: '48px', height: '48px', borderRadius: '10px', overflow: 'hidden', flexShrink: 0,
                                         border: isSel ? '2px solid var(--color-accent-primary)' : '1px solid rgba(255,255,255,0.1)'
                                     }}>
-                                        <img src={getOptimizedImageUrl(model.image)} alt={model.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <img src={getOptimizedImageUrl(model.image)} alt={`${model.name} thumbnail`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     </div>
                                     <div style={{ flex: 1, overflow: 'hidden' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
@@ -190,7 +190,7 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
                                 <div className="noise-overlay" style={{ opacity: 0.3, zIndex: 1 }} />
                                 <img
                                     src={getOptimizedImageUrl(activePreview.image)}
-                                    alt="Preview"
+                                    alt={`${activePreview.name} - Full Preview`}
                                     style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6, filter: 'saturate(0.5)' }}
                                 />
                             </div>

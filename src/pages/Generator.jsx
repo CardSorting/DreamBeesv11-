@@ -272,7 +272,7 @@ export default function Generator() {
                                 </div>
                             ) : generatedImage ? (
                                 <div className="fade-in" style={{ position: 'absolute', inset: 0, padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <img src={getOptimizedImageUrl(generatedImage)} alt="Generated" style={{ width: '100%', height: '100%', boxShadow: '0 0 50px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
+                                    <img src={getOptimizedImageUrl(generatedImage)} alt={`Generated artwork for prompt: ${prompt}`} style={{ width: '100%', height: '100%', boxShadow: '0 0 50px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
                                     <div style={{ position: 'absolute', bottom: '20px', right: '20px', display: 'flex', gap: '12px' }}>
                                         {/* Ranking Actions */}
                                         <div style={{ display: 'flex', gap: '8px', marginRight: '16px', background: 'rgba(0,0,0,0.6)', borderRadius: '8px', padding: '4px', border: '1px solid rgba(255,255,255,0.2)' }}>
