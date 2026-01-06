@@ -271,8 +271,6 @@ export function ModelProvider({ children }) {
         error,
         getShowcaseImages, // Exported function
         showcaseCache,     // Exported state (optional, mainly for debugging)
-        getShowcaseImages, // Exported function
-        showcaseCache,     // Exported state (optional, mainly for debugging)
         rateGeneration,    // EXPORTED
         rateShowcaseImage, // EXPORTED
     };
