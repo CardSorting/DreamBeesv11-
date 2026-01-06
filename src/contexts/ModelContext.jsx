@@ -234,6 +234,35 @@ export function ModelProvider({ children }) {
         return true;
     };
 
+    // Rate a showcase image (Direct Update, No Hide on Downvote)
+    const rateShowcaseImage = async (imageId, rating, modelId) => {
+        if (!imageId || !modelId) return;
+
+        try {
+            console.log(`[Rate Showcase] Rating ${rating} for ${imageId}`);
+            const imageRef = doc(db, 'model_showcase_images', imageId);
+            await setDoc(imageRef, {
+                rating: rating,
+                ratingTimestamp: serverTimestamp() // Track when it was rated
+            }, { merge: true });
+
+            // Optimistically update cache
+            setShowcaseCache(prev => {
+                const currentImages = prev[modelId] || [];
+                return {
+                    ...prev,
+                    [modelId]: currentImages.map(img =>
+                        img.id === imageId ? { ...img, rating: rating } : img
+                    )
+                };
+            });
+            return true;
+        } catch (e) {
+            console.error("Error rating showcase image:", e);
+            return false;
+        }
+    };
+
     const value = {
         selectedModel,
         setSelectedModel,
@@ -242,7 +271,10 @@ export function ModelProvider({ children }) {
         error,
         getShowcaseImages, // Exported function
         showcaseCache,     // Exported state (optional, mainly for debugging)
+        getShowcaseImages, // Exported function
+        showcaseCache,     // Exported state (optional, mainly for debugging)
         rateGeneration,    // EXPORTED
+        rateShowcaseImage, // EXPORTED
     };
 
     return (

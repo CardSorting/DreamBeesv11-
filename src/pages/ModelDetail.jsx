@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
-import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight, X, Download, Copy, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight, X, Download, Copy, RefreshCw, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { getOptimizedImageUrl } from '../utils';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -29,6 +29,7 @@ const CustomCursor = ({ isHovering }) => {
 };
 
 const ShowcaseModal = ({ image, onClose, model }) => {
+    const { rateShowcaseImage } = useModel();
     if (!image) return null;
 
     return (
@@ -118,6 +119,47 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                         <p style={{ fontSize: '1.1rem', lineHeight: '1.6', color: 'white', fontWeight: '400', fontStyle: 'italic', opacity: 0.8 }}>
                             {image.prompt ? `"${image.prompt}"` : `"This is a curated showcase generation demonstrating the capabilities of ${model?.name || 'this model'}. High-fidelity details and texture handling are key characteristics shown here."`}
                         </p>
+                    </div>
+
+                    {/* Ranking UI */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '40px' }}>
+                        <button
+                            onClick={() => {
+                                const newRating = image.rating === 1 ? 0 : 1;
+                                rateShowcaseImage(image.id, newRating, model.id);
+                                // Optimistically update local image object if needed, or rely on parent re-render
+                            }}
+                            className={`btn-ghost ${image.rating === 1 ? 'active-vote' : ''}`}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '8px',
+                                color: image.rating === 1 ? 'var(--color-accent-primary)' : 'var(--color-text-muted)',
+                                background: image.rating === 1 ? 'rgba(79, 70, 229, 0.1)' : 'transparent',
+                                padding: '8px 16px', borderRadius: '100px', border: '1px solid transparent',
+                                borderColor: image.rating === 1 ? 'var(--color-accent-primary)' : 'rgba(255,255,255,0.1)',
+                                transition: 'all 0.2s', cursor: 'pointer'
+                            }}
+                        >
+                            <ThumbsUp size={16} fill={image.rating === 1 ? "currentColor" : "none"} />
+                            <span style={{ fontSize: '0.8rem', fontWeight: '600' }}>Helpful</span>
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                const newRating = image.rating === -1 ? 0 : -1;
+                                rateShowcaseImage(image.id, newRating, model.id);
+                            }}
+                            className={`btn-ghost ${image.rating === -1 ? 'active-vote' : ''}`}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '8px',
+                                color: image.rating === -1 ? '#ef4444' : 'var(--color-text-muted)',
+                                background: image.rating === -1 ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
+                                padding: '8px 16px', borderRadius: '100px', border: '1px solid transparent',
+                                borderColor: image.rating === -1 ? '#ef4444' : 'rgba(255,255,255,0.1)',
+                                transition: 'all 0.2s', cursor: 'pointer'
+                            }}
+                        >
+                            <ThumbsDown size={16} fill={image.rating === -1 ? "currentColor" : "none"} />
+                        </button>
                     </div>
 
                     <div style={{ height: '1px', background: 'var(--color-border)', margin: '0 0 40px 0' }} />
@@ -248,7 +290,9 @@ export default function ModelDetail() {
                         width: doc.width,
                         height: doc.height,
                         scheduler: doc.scheduler,
-                        aspectRatio: doc.aspectRatio
+                        aspectRatio: doc.aspectRatio,
+                        rating: doc.rating,
+                        id: doc.id
                     }));
 
                     // Check if we have prompts (rich metadata)
@@ -327,7 +371,7 @@ export default function ModelDetail() {
         loadShowcase();
     }, [model]);
 
-    const [selectedCreator, setSelectedCreator] = useState('ALL');
+    const [sortBy, setSortBy] = useState('TOP_RATED'); // 'TOP_RATED' | 'LATEST'
 
     useEffect(() => {
         const handleScroll = () => setScrollY(window.scrollY);
@@ -347,13 +391,27 @@ export default function ModelDetail() {
     // Use the fetched showcase images, defaulting to empty array until loaded to prevent flash
     const rawImages = showcaseImages.length > 0 ? showcaseImages : (model.previewImages?.map(s => (typeof s === 'string' ? { url: s } : s)) || []);
 
-    // Extract unique creators
-    const creators = ['ALL', ...new Set(rawImages.map(img => img.creator).filter(Boolean))];
-
-    // Filter images
+    // Strict Filtering: Only show Official (Gemini Pro 3) images
+    // Sorting: Based on sortBy state
     const imagesToRender = rawImages
-        .filter(img => img && img.url && typeof img.url === 'string' && img.url.length > 5)
-        .filter(img => selectedCreator === 'ALL' || img.creator === selectedCreator);
+        .filter(img => {
+            // Ensure valid image
+            if (!img || !img.url || typeof img.url !== 'string' || img.url.length <= 5) return false;
+            // Strict Filter: Allow only official content or manually curated
+            // Checks for 'Gemini Pro 3' OR if 'isCurated' flag is explicitly true
+            return (img.creator === 'Gemini Pro 3' || img.isCurated === true);
+        })
+        .sort((a, b) => {
+            if (sortBy === 'TOP_RATED') {
+                return (b.rating || 0) - (a.rating || 0);
+            } else {
+                // Latest - Fallback to index if no date, assuming newer are appended/fetched last? 
+                // Actually Firestore 'createdAt' might be object, handling that safely:
+                const timeA = a.createdAt?.seconds || 0;
+                const timeB = b.createdAt?.seconds || 0;
+                return timeB - timeA;
+            }
+        });
 
     return (
         <div className="cursor-none" style={{ background: '#0a0a0a', minHeight: '100vh', color: '#e5e5e5', position: 'relative' }}>
@@ -512,26 +570,27 @@ export default function ModelDetail() {
                 </div>
 
 
-                {/* Creator Tabs */}
-                {creators.length > 1 && (
-                    <div className="tabs-container" style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        gap: '2px', // Tight gap for seamless look
-                        marginBottom: '40px',
-                        animation: 'fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both'
-                    }}>
-                        {creators.map(creator => (
-                            <button
-                                key={creator}
-                                onClick={() => setSelectedCreator(creator)}
-                                className={`tab-btn ${selectedCreator === creator ? 'active' : ''}`}
-                            >
-                                {creator === 'ALL' ? 'ALL CREATORS' : creator.toUpperCase()}
-                            </button>
-                        ))}
-                    </div>
-                )}
+                {/* Sorting Tabs */}
+                <div className="tabs-container" style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    marginBottom: '40px',
+                    animation: 'fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both'
+                }}>
+                    <button
+                        onClick={() => setSortBy('TOP_RATED')}
+                        className={`tab-btn ${sortBy === 'TOP_RATED' ? 'active' : ''}`}
+                    >
+                        TOP RATED
+                    </button>
+                    <button
+                        onClick={() => setSortBy('LATEST')}
+                        className={`tab-btn ${sortBy === 'LATEST' ? 'active' : ''}`}
+                    >
+                        LATEST
+                    </button>
+                </div>
 
                 {/* FULL MASONRY FEED */}
                 <div className="pinterest-feed" style={{
