@@ -153,7 +153,7 @@ async function generateAndSave(prompt, index) {
             url: `/showcase/zit-model/${filename}`,
             prompt: prompt,
             modelId: 'zit-model',
-            creator: { user: 'System', model: 'ZIT-model' } // metadata
+            creator: { user: 'Gemini 3 Pro', model: 'ZIT-model' } // metadata
         };
     } catch (err) {
         console.error(`  Failed: ${err.message}`);
