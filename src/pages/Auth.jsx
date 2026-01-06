@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import SEO from '../components/SEO';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Loader2, ArrowRight, Check } from 'lucide-react';
@@ -47,6 +48,10 @@ export default function Auth() {
 
     return (
         <div style={{ display: 'flex', minHeight: '100vh', background: '#000', paddingTop: '100px' }}>
+            <SEO
+                title={isLogin ? 'Log In' : 'Sign Up'}
+                description="Access your DreamBees AI studio account or create a new one to start generating images."
+            />
 
             {/* Left: Brand / Art Showcase (Hidden on Mobile) */}
             <div className="hidden-mobile" style={{

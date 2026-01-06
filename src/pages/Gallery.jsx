@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import SEO from '../components/SEO';
 import { db } from '../firebase';
 import { collection, query, where, getDocs, deleteDoc, doc, limit, orderBy, startAfter } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
@@ -120,6 +121,11 @@ export default function Gallery() {
 
     return (
         <div className="container" style={{ paddingTop: '140px', paddingBottom: '120px' }}>
+            <SEO
+                title="Gallery"
+                description="Discover AI-generated masterpieces created by the DreamBees community. Get inspired by prompts and styles."
+                keywords="AI art gallery, stable diffusion examples, generative art showcase"
+            />
 
             {/* Header */}
             <header style={{ marginBottom: '40px', display: 'flex', flexDirection: 'column', gap: '32px' }}>

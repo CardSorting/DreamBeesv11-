@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import SEO from '../components/SEO';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
 import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight, X, Download, Copy, RefreshCw, ThumbsUp, ThumbsDown } from 'lucide-react';
@@ -415,6 +416,11 @@ export default function ModelDetail() {
 
     return (
         <div className="cursor-none" style={{ background: '#0a0a0a', minHeight: '100vh', color: '#e5e5e5', position: 'relative' }}>
+            <SEO
+                title={`${model.name} - AI Model`}
+                description={model.description}
+                image={model.image}
+            />
             <CustomCursor isHovering={isHovering} />
 
             {/* Global Noise Overlay */}

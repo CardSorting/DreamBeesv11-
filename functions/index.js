@@ -535,3 +535,84 @@ export const stripeWebhook = onRequest(async (req, res) => {
         res.status(500).send("Internal Server Error");
     }
 });
+
+export const serveSitemap = onRequest({
+    cors: true,
+    memory: "256MiB"
+}, async (req, res) => {
+    try {
+        const db = getFirestore();
+        const baseUrl = 'https://dreambeesai.com';
+
+        // 1. Static Pages
+        const staticPages = [
+            '',
+            '/generate',
+            '/models',
+            '/gallery',
+            '/pricing',
+            '/blog',
+            '/about',
+            '/features',
+            '/contact',
+            '/auth'
+        ];
+
+        let urls = staticPages.map(path => ({
+            loc: `${baseUrl}${path}`,
+            changefreq: 'daily',
+            priority: path === '' ? '1.0' : '0.8'
+        }));
+
+        // 2. Dynamic Models
+        const modelsSnapshot = await db.collection('models').orderBy('order', 'asc').get();
+        modelsSnapshot.forEach(doc => {
+            urls.push({
+                loc: `${baseUrl}/models/${doc.id}`,
+                changefreq: 'weekly',
+                priority: '0.7',
+                lastmod: new Date().toISOString() // Or use implicit today
+            });
+        });
+
+        // 3. Blog Posts (Hardcoded for now as data source is client-side static)
+        const blogPosts = [
+            { id: 'prompt-director-drift-evaluation', date: '2026-01-03' }
+        ];
+
+        blogPosts.forEach(post => {
+            urls.push({
+                loc: `${baseUrl}/blog/${post.id}`,
+                changefreq: 'monthly',
+                priority: '0.7',
+                lastmod: new Date(post.date).toISOString()
+            });
+        });
+
+        // 4. Construct XML
+        let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
+
+        urls.forEach(url => {
+            xml += `
+  <url>
+    <loc>${url.loc}</loc>
+    <lastmod>${url.lastmod || new Date().toISOString()}</lastmod>
+    <changefreq>${url.changefreq}</changefreq>
+    <priority>${url.priority}</priority>
+  </url>`;
+        });
+
+        xml += `
+</urlset>`;
+
+        // 5. Send Response
+        res.set('Content-Type', 'application/xml');
+        res.set('Cache-Control', 'public, max-age=86400, s-maxage=86400'); // Cache for 24h
+        res.status(200).send(xml);
+
+    } catch (error) {
+        console.error("Error generating sitemap:", error);
+        res.status(500).send("Error generating sitemap");
+    }
+});

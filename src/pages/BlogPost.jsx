@@ -34,6 +34,18 @@ export default function BlogPost() {
                 title={post.title}
                 description={post.excerpt}
                 type="article"
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@type": "BlogPosting",
+                    "headline": post.title,
+                    "description": post.excerpt,
+                    "author": {
+                        "@type": "Person",
+                        "name": post.author
+                    },
+                    "datePublished": post.date,
+                    "image": "https://dreambees.ai/og-image.jpg" // Fallback or specific image if available
+                }}
             />
             {/* Hero / Header */}
             <div className="container" style={{ maxWidth: '900px', marginBottom: '60px' }}>

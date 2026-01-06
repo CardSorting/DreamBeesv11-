@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import SEO from '../components/SEO';
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { db } from '../firebase';
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
@@ -84,6 +85,11 @@ export default function ImageDetail() {
 
     return (
         <div style={{ height: '100vh', paddingTop: '100px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <SEO
+                title={`AI Image: ${image.prompt.slice(0, 50)}...`}
+                description={`Created with ${modelName}. Prompt: ${image.prompt}`}
+                image={getOptimizedImageUrl(image.imageUrl)}
+            />
 
             {/* Top Navigation Bar */}
             <div style={{

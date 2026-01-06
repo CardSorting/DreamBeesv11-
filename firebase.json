@@ -17,6 +17,10 @@
     ],
     "rewrites": [
       {
+        "source": "/sitemap.xml",
+        "function": "serveSitemap"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

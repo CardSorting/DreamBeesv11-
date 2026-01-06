@@ -6,7 +6,21 @@ import SEO from '../components/SEO';
 export default function Landing() {
     return (
         <div className="landing-page bg-grid" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-            <SEO />
+            <SEO
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@type": "SoftwareApplication",
+                    "name": "DreamBeesAI",
+                    "applicationCategory": "DesignApplication",
+                    "operatingSystem": "Web",
+                    "offers": {
+                        "@type": "Offer",
+                        "price": "0",
+                        "priceCurrency": "USD"
+                    },
+                    "description": "Create stunning AI-generated images with DreamBeesAI. Use advanced models like Flux, SDXL, and more to bring your imagination to life."
+                }}
+            />
 
             {/* Hero Section */}
             <section style={{

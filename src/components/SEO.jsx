@@ -2,7 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
 
-const SEO = ({ title, description, keywords, image, type = 'website' }) => {
+const SEO = ({ title, description, keywords, image, type = 'website', structuredData, noindex = false }) => {
     const location = useLocation();
     const siteUrl = 'https://dreambeesai.com'; // Replace with actual domain
     const currentUrl = `${siteUrl}${location.pathname}`;
@@ -23,6 +23,7 @@ const SEO = ({ title, description, keywords, image, type = 'website' }) => {
             <meta name="description" content={metaDescription} />
             <meta name="keywords" content={metaKeywords} />
             <link rel="canonical" href={currentUrl} />
+            {noindex && <meta name="robots" content="noindex" />}
 
             {/* Open Graph / Facebook */}
             <meta property="og:type" content={type} />
@@ -38,6 +39,13 @@ const SEO = ({ title, description, keywords, image, type = 'website' }) => {
             <meta name="twitter:title" content={metaTitle} />
             <meta name="twitter:description" content={metaDescription} />
             <meta name="twitter:image" content={metaImage} />
+
+            {/* Structured Data (JSON-LD) */}
+            {structuredData && (
+                <script type="application/ld+json">
+                    {JSON.stringify(structuredData)}
+                </script>
+            )}
         </Helmet>
     );
 };

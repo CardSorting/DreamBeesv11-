@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import SEO from '../components/SEO';
 import ModelSelectorModal from '../components/ModelSelectorModal';
 import GenerationHistory from '../components/GenerationHistory';
 import { useModel } from '../contexts/ModelContext';
@@ -232,6 +233,11 @@ export default function Generator() {
 
     return (
         <div style={{ paddingTop: '140px', paddingBottom: '40px', display: 'flex', flexDirection: 'column' }}>
+            <SEO
+                title="Studio"
+                description="Professional AI Image Generation Studio. Create art with SDXL and Flux models using our high-performance inference engine."
+                keywords="AI studio, image generator, stable diffusion online, art creation tool"
+            />
             <div className="container" style={{ flex: 1, display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 340px', gap: '32px' }}>
 
                 {/* Left: Canvas / Input */}

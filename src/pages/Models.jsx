@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import SEO from '../components/SEO';
 import { useModel } from '../contexts/ModelContext';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Search, Sparkles, Check } from 'lucide-react';
@@ -67,6 +68,11 @@ export default function Models() {
             paddingTop: '140px',
             paddingBottom: '120px',
         }}>
+            <SEO
+                title="AI Models"
+                description="Explore our curated collection of high-performance Stable Diffusion models including SDXL and Flux Pro."
+                keywords="stable diffusion models, SDXL, Flux Pro, AI art models"
+            />
             <div className="container">
 
                 {/* Header */}

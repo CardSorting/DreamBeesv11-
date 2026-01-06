@@ -1,7 +1,9 @@
 import React from 'react';
+import SEO from '../components/SEO';
 
 const PlaceholderPage = ({ title, description }) => (
     <div className="container" style={{ padding: '150px 20px', textAlign: 'center' }}>
+        <SEO title={title} description={description} />
         <h1 style={{ fontSize: '3rem', fontWeight: '800', color: 'white', marginBottom: '20px' }}>{title}</h1>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '1.2rem' }}>{description}</p>
     </div>
