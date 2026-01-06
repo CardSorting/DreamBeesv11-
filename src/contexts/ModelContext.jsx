@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { collection, getDocs, query, orderBy, where, limit, doc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
+import { getOptimizedImageUrl } from '../utils';
 
 const ModelContext = createContext();
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useModel() {
     return useContext(ModelContext);
 }
@@ -45,12 +47,14 @@ export function ModelProvider({ children }) {
                         targetModel = models.find(m => m.id === savedModelId);
                     }
 
+                    // Only set default if no saved model and no current selection
+                    // Use a ref to check current state without causing dependency issues
                     if (!targetModel && !selectedModel) {
                         // Default to ZIT-model if not saved
                         targetModel = models.find(m => m.id === 'zit-model') || models[0];
                     }
 
-                    if (targetModel) {
+                    if (targetModel && (!selectedModel || selectedModel.id !== targetModel.id)) {
                         setSelectedModel(targetModel);
                     } else if (!selectedModel) {
                         setSelectedModel(models[0]);
@@ -66,7 +70,8 @@ export function ModelProvider({ children }) {
         };
 
         fetchModels();
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Intentionally empty - only run on mount
 
     // Persist selection
     useEffect(() => {
@@ -93,9 +98,11 @@ export function ModelProvider({ children }) {
                 console.log(`[Local Showcase] Found ${localData.length} items for ${modelId}`);
 
                 // Transform to match Firestore shape if needed, though they seem similar
+                // Optimize all URLs to use CDN
                 const images = localData.map((item, index) => ({
                     id: `local_${modelId}_${index}`,
-                    imageUrl: item.url, // manifest uses 'url', our app expects 'imageUrl' usually? app checks getOptimizedImageUrl(img.imageUrl)
+                    imageUrl: getOptimizedImageUrl(item.url || item.imageUrl), // manifest uses 'url', optimize to CDN
+                    url: getOptimizedImageUrl(item.url || item.imageUrl), // Also set url for consistency
                     ...item
                 }));
 
@@ -121,10 +128,17 @@ export function ModelProvider({ children }) {
 
             let images = [];
             if (!snapshot.empty) {
-                images = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
+                images = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    // Optimize image URLs to use CDN
+                    const optimizedUrl = getOptimizedImageUrl(data.imageUrl || data.url);
+                    return {
+                        id: doc.id,
+                        ...data,
+                        imageUrl: optimizedUrl,
+                        url: optimizedUrl // Ensure both fields are set
+                    };
+                });
             }
 
             // 4. Update Cache

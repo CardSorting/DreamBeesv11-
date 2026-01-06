@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import SEO from '../components/SEO';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
@@ -10,6 +10,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const ShowcaseModal = ({ image, onClose, model }) => {
     const { rateShowcaseImage } = useModel();
+    const navigate = useNavigate();
     if (!image) return null;
 
     return (
@@ -236,19 +237,15 @@ export default function ModelDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
     const { availableModels, setSelectedModel, selectedModel } = useModel();
-    const [model, setModel] = useState(null);
-    const [isHovering, setIsHovering] = useState(false);
-    const [scrollY, setScrollY] = useState(0);
     const [showcaseImages, setShowcaseImages] = useState([]);
     const [activeShowcaseImage, setActiveShowcaseImage] = useState(null);
 
-    useEffect(() => {
+    // Derive model from availableModels instead of using useState + useEffect
+    const model = useMemo(() => {
         if (availableModels.length > 0) {
-            const found = availableModels.find(m => m.id === id);
-            if (found) {
-                setModel(found);
-            }
+            return availableModels.find(m => m.id === id) || null;
         }
+        return null;
     }, [id, availableModels]);
 
     // Fetch or Seed Showcase Images
@@ -264,20 +261,24 @@ export default function ModelDetail() {
 
                 let hasValidData = false;
                 if (cachedImages && cachedImages.length > 0) {
-                    const dbImages = cachedImages.map(doc => ({
-                        url: getOptimizedImageUrl(doc.imageUrl || doc.url), // Handle consistency and CDN
-                        prompt: doc.prompt,
-                        name: doc.name,
-                        creator: doc.creator,
-                        steps: doc.steps,
-                        cfg: doc.cfg,
-                        width: doc.width,
-                        height: doc.height,
-                        scheduler: doc.scheduler,
-                        aspectRatio: doc.aspectRatio,
-                        rating: doc.rating,
-                        id: doc.id
-                    }));
+                    const dbImages = cachedImages.map(doc => {
+                        // Ensure all image URLs are optimized to use CDN
+                        const imageUrl = getOptimizedImageUrl(doc.imageUrl || doc.url || '');
+                        return {
+                            url: imageUrl,
+                            prompt: doc.prompt,
+                            name: doc.name,
+                            creator: doc.creator,
+                            steps: doc.steps,
+                            cfg: doc.cfg,
+                            width: doc.width,
+                            height: doc.height,
+                            scheduler: doc.scheduler,
+                            aspectRatio: doc.aspectRatio,
+                            rating: doc.rating,
+                            id: doc.id
+                        };
+                    });
 
                     // Check if we have prompts (rich metadata)
                     const hasPrompts = dbImages.some(img => img.prompt);
@@ -304,16 +305,27 @@ export default function ModelDetail() {
                             seeds = await manifestRes.json();
                             console.log('Found local showcase manifest:', seeds);
                         }
-                    } catch (e) {
+                    } catch {
                         console.log('No local manifest found, using previewImages');
                     }
 
-                    // Normalize seeds to objects if they are strings
-                    let normalizedSeeds = seeds.map(s => typeof s === 'string' ? { url: s } : s);
+                    // Normalize seeds to objects if they are strings and ensure they are curated
+                    // Also optimize all URLs to use CDN
+                    let normalizedSeeds = seeds.map(s => {
+                        const base = typeof s === 'string' ? { url: s } : s;
+                        return { 
+                            ...base, 
+                            url: getOptimizedImageUrl(base.url || base.imageUrl || s),
+                            isCurated: true 
+                        };
+                    });
 
                     if (normalizedSeeds.length === 0) {
-                        const previews = model.previewImages || [model.image];
-                        normalizedSeeds = previews.map(s => ({ url: getOptimizedImageUrl(s) }));
+                        const previews = model.previewImages?.length > 0 ? model.previewImages : [model.image];
+                        normalizedSeeds = previews.map(s => ({
+                            url: getOptimizedImageUrl(s),
+                            isCurated: true
+                        }));
                     }
 
                     // Optimistically set UI
@@ -353,15 +365,9 @@ export default function ModelDetail() {
         };
 
         loadShowcase();
-    }, [model]);
+    }, [model, getShowcaseImages]);
 
     const [sortBy, setSortBy] = useState('TOP_RATED'); // 'TOP_RATED' | 'LATEST'
-
-    useEffect(() => {
-        const handleScroll = () => setScrollY(window.scrollY);
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
 
     if (!model) {
         return (
@@ -372,28 +378,28 @@ export default function ModelDetail() {
     }
 
     const isActive = selectedModel?.id === model.id;
-    // Use the fetched showcase images, defaulting to empty array until loaded to prevent flash
-    const rawImages = showcaseImages.length > 0 ? showcaseImages : (model.previewImages?.map(s => (typeof s === 'string' ? { url: s } : s)) || []);
+    // Use the fetched showcase images, defaulting to previewImages or model.image
+    const rawImages = showcaseImages.length > 0
+        ? showcaseImages
+        : (model.previewImages?.length > 0
+            ? model.previewImages.map(s => (typeof s === 'string' ? { url: s, isCurated: true } : { ...s, isCurated: true }))
+            : [{ url: model.image, isCurated: true }]
+        );
 
-    // Strict Filtering: Only show Official (Gemini Pro 3) images
-    // Sorting: Based on sortBy state
+    // Show all images from the model regardless of creator
+    // Only filter out invalid images (missing or invalid URLs)
     const imagesToRender = rawImages
         .filter(img => {
             // Ensure valid image
             if (!img || !img.url || typeof img.url !== 'string' || img.url.length <= 5) return false;
-            // Strict Filter: Allow only official content or manually curated
-            // Checks for 'Gemini Pro 3' OR 'Gemini 3 Pro' OR if 'isCurated' flag is explicitly true
-            const isOfficial = img.creator === 'Gemini Pro 3' ||
-                img.creator === 'Gemini 3 Pro' ||
-                (typeof img.creator === 'object' && img.creator?.user === 'System');
-            return (isOfficial || img.isCurated === true);
+            
+            // Show all valid images regardless of creator
+            return true;
         })
         .sort((a, b) => {
             if (sortBy === 'TOP_RATED') {
                 return (b.rating || 0) - (a.rating || 0);
             } else {
-                // Latest - Fallback to index if no date, assuming newer are appended/fetched last? 
-                // Actually Firestore 'createdAt' might be object, handling that safely:
                 const timeA = a.createdAt?.seconds || 0;
                 const timeB = b.createdAt?.seconds || 0;
                 return timeB - timeA;
@@ -597,7 +603,7 @@ export default function ModelDetail() {
                                     className="masonry-item group"
                                     onClick={() => setActiveShowcaseImage(imgItem)}
                                     style={{
-                                        animation: `fadeInUp 1s ease ${0.1 + (Math.random() * 0.5)}s both`
+                                        animation: `fadeInUp 1s ease ${0.1 + ((index * 0.13) % 0.5)}s both`
                                     }}
                                 >
                                     <div className="image-card">
@@ -605,7 +611,6 @@ export default function ModelDetail() {
                                             <img
                                                 src={getOptimizedImageUrl(imgItem.url || imgItem.imageUrl || (typeof imgItem === 'string' ? imgItem : ''))}
                                                 alt={`Showcase generation: ${imgItem.prompt ? imgItem.prompt.slice(0, 50) + "..." : "AI Artwork"}`}
-                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                             />
                                             {/* Standard Tile Overlay */}
                                             <div style={{
@@ -686,19 +691,17 @@ export default function ModelDetail() {
                     overflow: hidden;
                     position: relative;
                     width: 100%;
+                    display: block;
                 }
-                .feed-image {
+                .image-wrapper img {
                     width: 100%;
                     height: 100%;
-                    position: absolute;
-                    top: 0;
-                    left: 0;
                     object-fit: cover;
                     display: block;
                     transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.6s;
                     filter: grayscale(0.2);
                 }
-                .image-card:hover .feed-image {
+                .image-card:hover .image-wrapper img {
                     transform: scale(1.1);
                     filter: grayscale(0);
                 }
