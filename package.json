@@ -7,10 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "migrate:showcase": "node scripts/migrate_showcase_to_b2.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.962.0",
+    "dotenv": "^17.2.3",
     "firebase": "^12.7.0",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.562.0",

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { db } from '../firebase';
-import { collection, getDocs, query, orderBy, where, limit, doc, serverTimestamp, setDoc, writeBatch } from 'firebase/firestore';
+import { db, functions } from '../firebase';
+import { collection, getDocs, query, orderBy, where, limit } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import { getOptimizedImageUrl } from '../utils';
 
 const ModelContext = createContext();
@@ -151,7 +152,7 @@ export function ModelProvider({ children }) {
     };
 
     // --- High Velocity Rating Logic (Buffered) ---
-    const ratingQueue = useRef(new Map()); // stores { job, rating, timestamp } by jobId
+    const ratingQueue = useRef(new Map()); // stores { jobId, rating, timestamp } by jobId
     const flushInterval = useRef(null);
 
     // Process the queue every 3 seconds or on unmount
@@ -159,80 +160,25 @@ export function ModelProvider({ children }) {
         const processQueue = async () => {
             if (ratingQueue.current.size === 0) return;
 
-            const batch = writeBatch(db);
             const queueSnapshot = new Map(ratingQueue.current);
             ratingQueue.current.clear(); // Clear immediately to allow potentially new fast updates
 
             console.log(`[Batch] Flushing ${queueSnapshot.size} ratings...`);
 
-            queueSnapshot.forEach(({ job, rating }) => {
-                const updates = {
-                    rating: rating,
-                    hidden: rating === -1
-                };
-
-                // 1. Generation Queue (UI State)
-                const queueRef = doc(db, 'generation_queue', job.id);
-                batch.update(queueRef, updates);
-
-                // 2. Images Collection (UI State)
-                if (job.resultImageId) {
-                    const imageRef = doc(db, 'images', job.resultImageId);
-                    batch.update(imageRef, updates);
-                }
-
-                // 3. Training Feedback (ML Ops - Robust)
-                const feedbackId = `feedback_${job.id}`;
-                const feedbackRef = doc(db, 'training_feedback', feedbackId);
-
-                // MLOps: Resolution Mapping
-                const resolutionMap = {
-                    '1:1': { width: 1024, height: 1024 },
-                    '2:3': { width: 832, height: 1216 },
-                    '3:2': { width: 1216, height: 832 },
-                    '9:16': { width: 768, height: 1344 },
-                    '16:9': { width: 1344, height: 768 }
-                };
-                const res = resolutionMap[job.aspectRatio] || resolutionMap['1:1'];
-
-                // MLOps: Deterministic Split
-                // Simple deterministic hash
-                const simpleHash = job.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                const split = (simpleHash % 100) < 90 ? 'train' : 'validation';
-
-                const feedbackData = {
-                    _id: feedbackId,
-                    timestamp: serverTimestamp(),
-                    dataset_split: split,
-                    weight: 1.0,
-                    rating: rating,
-                    meta: {
-                        modelId: job.modelId,
-                        prompt_cleaned: job.prompt ? job.prompt.trim() : "",
-                        negative_prompt: job.negative_prompt || "",
-                        cfg: parseFloat(job.cfg),
-                        steps: parseInt(job.steps),
-                        seed: parseInt(job.seed),
-                        width: res.width,
-                        height: res.height,
-                        aspect_ratio_label: job.aspectRatio
-                    },
-                    asset_pointers: {
-                        image_url: job.imageUrl,
-                        gen_doc_path: `generation_queue/${job.id}`,
-                        user_id: job.userId
-                    }
-                };
-
-                // Use set (upsert) for idempotency
-                batch.set(feedbackRef, feedbackData);
+            // Process each rating through cloud function
+            const rateGenerationFn = httpsCallable(functions, 'rateGeneration');
+            const promises = Array.from(queueSnapshot.values()).map(({ jobId, rating }) => {
+                return rateGenerationFn({ jobId, rating }).catch(err => {
+                    console.error(`[Batch] Failed to rate ${jobId}:`, err);
+                    return null;
+                });
             });
 
             try {
-                await batch.commit();
-                console.log("[Batch] Successfully committed ratings.");
+                await Promise.all(promises);
+                console.log("[Batch] Successfully processed ratings.");
             } catch (err) {
-                console.error("[Batch] Failed to commit ratings:", err);
+                console.error("[Batch] Failed to process ratings:", err);
             }
         };
 
@@ -249,7 +195,7 @@ export function ModelProvider({ children }) {
         if (!job || !job.id) return;
 
         // Add to queue (Debounces automatically by Map key)
-        ratingQueue.current.set(job.id, { job, rating, timestamp: Date.now() });
+        ratingQueue.current.set(job.id, { jobId: job.id, rating, timestamp: Date.now() });
         console.log(`[Rate] Queued rating ${rating} for ${job.id}`);
         return true;
     };
@@ -260,11 +206,8 @@ export function ModelProvider({ children }) {
 
         try {
             console.log(`[Rate Showcase] Rating ${rating} for ${imageId}`);
-            const imageRef = doc(db, 'model_showcase_images', imageId);
-            await setDoc(imageRef, {
-                rating: rating,
-                ratingTimestamp: serverTimestamp() // Track when it was rated
-            }, { merge: true });
+            const rateShowcaseImageFn = httpsCallable(functions, 'rateShowcaseImage');
+            await rateShowcaseImageFn({ imageId, rating });
 
             // Optimistically update cache
             setShowcaseCache(prev => {

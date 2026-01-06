@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import SEO from '../components/SEO';
 import ModelSelectorModal from '../components/ModelSelectorModal';
 import GenerationHistory from '../components/GenerationHistory';
 import { useModel } from '../contexts/ModelContext';
-import { db } from '../firebase';
-import { collection, addDoc, serverTimestamp, doc, onSnapshot } from 'firebase/firestore';
+import { db, functions } from '../firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import { useAuth } from '../contexts/AuthContext';
 
 import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, ChevronDown, ChevronUp, Mic, MicOff, Zap, AlertCircle, Share2, Maximize2, Dices, X, Wand2, Monitor, Smartphone, LayoutTemplate, Square, RectangleHorizontal, RectangleVertical, HelpCircle, ThumbsUp, ThumbsDown } from 'lucide-react';
@@ -30,7 +31,6 @@ export default function Generator() {
     const [generatedImage, setGeneratedImage] = useState(null);
     const [currentJobId, setCurrentJobId] = useState(null);
     const [activeJob, setActiveJob] = useState(null); // Full job object for rating
-    const [jobStatus, setJobStatus] = useState('pending');
     const [elapsedTime, setElapsedTime] = useState(0);
     const [progress, setProgress] = useState(0);
 
@@ -47,8 +47,7 @@ export default function Generator() {
 
     // Microphone
     const [isListening, setIsListening] = useState(false);
-    const [speechRecognition, setSpeechRecognition] = useState(null);
-    const [interimTrans, setInterimTrans] = useState('');
+    const speechRecognitionRef = useRef(null);
 
     // --- Effects & Logic ---
 
@@ -72,6 +71,8 @@ export default function Generator() {
         if (selectedModel) {
             getShowcaseImages(selectedModel.id).then(imgs => setShowcaseImages(imgs));
         }
+        // getShowcaseImages is stable from ModelContext, safe to exclude from deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedModel]);
 
 
@@ -95,36 +96,30 @@ export default function Generator() {
             recognition.lang = 'en-US';
 
             recognition.onresult = (event) => {
-                let interimHelper = '';
                 let finalTranscript = '';
                 for (let i = event.resultIndex; i < event.results.length; ++i) {
                     if (event.results[i].isFinal) {
                         finalTranscript += event.results[i][0].transcript;
-                    } else {
-                        interimHelper += event.results[i][0].transcript;
                     }
                 }
                 if (finalTranscript) {
                     setPrompt(prev => prev + (prev.length > 0 && !prev.endsWith(' ') ? ' ' : '') + finalTranscript);
-                    setInterimTrans('');
-                } else {
-                    setInterimTrans(interimHelper);
                 }
             };
 
             recognition.onerror = () => setIsListening(false);
             recognition.onend = () => setIsListening(false);
-            setSpeechRecognition(recognition);
+            speechRecognitionRef.current = recognition;
         }
     }, []);
 
     const toggleListening = () => {
-        if (!speechRecognition) return toast.error("Browser not supported");
+        if (!speechRecognitionRef.current) return toast.error("Browser not supported");
         if (isListening) {
-            speechRecognition.stop();
+            speechRecognitionRef.current.stop();
             setIsListening(false);
         } else {
-            speechRecognition.start();
+            speechRecognitionRef.current.start();
             setIsListening(true);
             toast.success("Listening...", { icon: '🎙️' });
         }
@@ -132,17 +127,19 @@ export default function Generator() {
 
     // Timer & Status Simulation
     useEffect(() => {
-        let interval;
-        if (generating) {
-            interval = setInterval(() => {
-                setElapsedTime(prev => prev + 1);
-                // Asymptotic progress 
-                setProgress(prev => prev + (99 - prev) * 0.02);
-            }, 100); // Faster updates for smoother feel
-        } else {
+        if (!generating) {
+            // Reset when not generating
             setElapsedTime(0);
             setProgress(0);
+            return;
         }
+
+        const interval = setInterval(() => {
+            setElapsedTime(prev => prev + 1);
+            // Asymptotic progress 
+            setProgress(prev => prev + (99 - prev) * 0.02);
+        }, 100); // Faster updates for smoother feel
+
         return () => clearInterval(interval);
     }, [generating]);
 
@@ -152,7 +149,6 @@ export default function Generator() {
         const unsub = onSnapshot(doc(db, "generation_queue", currentJobId), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                setJobStatus(data.status);
                 setActiveJob({ id: docSnap.id, ...data }); // Keep active job synced
                 if (data.status === 'completed') {
                     setProgress(100);
@@ -160,7 +156,6 @@ export default function Generator() {
                         setGeneratedImage(data.imageUrl);
                         setGenerating(false);
                         setCurrentJobId(null);
-                        setJobStatus('pending');
                     }, 500);
                 } else if (data.status === 'failed') {
                     toast.error(`Failed: ${data.error}`);
@@ -178,23 +173,22 @@ export default function Generator() {
         setGeneratedImage(null);
 
         try {
-            const docRef = await addDoc(collection(db, "generation_queue"), {
-                userId: currentUser.uid,
+            const createGenerationRequest = httpsCallable(functions, 'createGenerationRequest');
+            const result = await createGenerationRequest({
                 prompt: prompt,
                 negative_prompt: negPrompt,
                 modelId: selectedModel.id,
-                status: 'pending',
                 aspectRatio: aspectRatio,
                 steps: steps,
                 cfg: cfg,
-                seed: seed,
-                createdAt: serverTimestamp()
+                seed: seed
             });
-            setCurrentJobId(docRef.id);
+            setCurrentJobId(result.data.requestId);
         } catch (error) {
             console.error("Queue error", error);
             setGenerating(false);
-            toast.error(error.message);
+            const errorMessage = error.message || error.code || "Failed to create generation request";
+            toast.error(errorMessage);
         }
     };
 

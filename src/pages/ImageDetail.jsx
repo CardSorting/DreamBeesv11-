@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import SEO from '../components/SEO';
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
-import { db } from '../firebase';
-import { doc, getDoc, deleteDoc } from 'firebase/firestore';
+import { functions } from '../firebase';
+import { httpsCallable } from 'firebase/functions';
 import { useAuth } from '../contexts/AuthContext';
 import { Trash2, ArrowLeft, Loader2, RefreshCw, Link as LinkIcon, Info, Sliders, Layers, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { useModel } from '../contexts/ModelContext';
@@ -34,21 +34,20 @@ export default function ImageDetail() {
         async function fetchImage() {
             setLoading(true);
             try {
-                const docRef = doc(db, "images", id);
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    if (data.userId !== currentUser.uid) {
-                        navigate('/gallery');
-                        return;
-                    }
-                    setImage({ id: docSnap.id, ...data });
+                const getImageDetail = httpsCallable(functions, 'getImageDetail');
+                const result = await getImageDetail({ imageId: id });
+                
+                if (result.data) {
+                    setImage(result.data);
                 } else {
                     navigate('/gallery');
                 }
             } catch (err) {
                 console.error("Error fetching image:", err);
+                const errorMessage = err.message || "Failed to load image";
+                if (errorMessage.includes("not found") || errorMessage.includes("Unauthorized")) {
+                    toast.error(errorMessage);
+                }
                 navigate('/gallery');
             } finally {
                 setLoading(false);
@@ -65,11 +64,14 @@ export default function ImageDetail() {
     const handleDelete = async () => {
         if (!window.confirm("Permanently delete this creation?")) return;
         try {
-            await deleteDoc(doc(db, "images", id));
+            const deleteImage = httpsCallable(functions, 'deleteImage');
+            await deleteImage({ imageId: id });
             navigate('/gallery');
             toast.success("Deleted");
         } catch (err) {
-            toast.error("Deletion failed");
+            console.error("Error deleting image:", err);
+            const errorMessage = err.message || "Deletion failed";
+            toast.error(errorMessage);
         }
     };
 

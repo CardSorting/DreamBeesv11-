@@ -9,7 +9,6 @@ import { createCheckoutSession, constructWebhookEvent, createPortalSession } fro
 
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
-const serviceAccount = require("./dreambees-app-gen-v1-firebase-adminsdk-fbsvc-195fd20c32.json");
 
 // Initializing Firebase Admin
 // Use the service account key only for local emulation or if env var not set
@@ -153,9 +152,6 @@ export const generateImage = onDocumentCreated(
                 if ((user.credits || 0) < 5) {
                     updateData.credits = 5;
                 }
-                const updates = {};
-                // If we modified credits locally, ensure we persist (user.credits was local var)
-                // But better to just define the update object explicitly.
 
                 await userRef.set(updateData, { merge: true });
 
@@ -601,6 +597,7 @@ export const serveSitemap = onRequest({
             priority: path === '' ? '1.0' : '0.8'
         }));
 
+        const modelsSnapshot = await db.collection('models').get();
         modelsSnapshot.forEach(doc => {
             urls.push({
                 loc: `${baseUrl}/model/${doc.id}`,
@@ -649,5 +646,508 @@ export const serveSitemap = onRequest({
     } catch (error) {
         console.error("Error generating sitemap:", error);
         res.status(500).send("Error generating sitemap");
+    }
+});
+
+// ============================================================================
+// Generation Request Functions
+// ============================================================================
+
+export const createGenerationRequest = onCall(async (request) => {
+    // App Check Verification
+    if (request.app == undefined) {
+        throw new Error("The function must be called from an App Check verified app.");
+    }
+
+    const uid = request.auth?.uid;
+    if (!uid) {
+        throw new Error("Unauthenticated");
+    }
+
+    const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler } = request.data;
+
+    // Input validation
+    if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 5) {
+        throw new Error("Prompt is required and must be at least 5 characters");
+    }
+
+    if (!modelId || typeof modelId !== 'string') {
+        throw new Error("Model ID is required");
+    }
+
+    // Validate aspect ratio
+    const validAspectRatios = ['1:1', '2:3', '3:2', '9:16', '16:9'];
+    const safeAspectRatio = validAspectRatios.includes(aspectRatio) ? aspectRatio : '1:1';
+
+    // Validate and clamp steps (10-50)
+    let safeSteps = parseInt(steps) || 30;
+    if (isNaN(safeSteps) || safeSteps < 10) safeSteps = 10;
+    if (safeSteps > 50) safeSteps = 50;
+
+    // Validate and clamp CFG (1-20)
+    let safeCfg = parseFloat(cfg) || 7.0;
+    if (isNaN(safeCfg) || safeCfg < 1) safeCfg = 1.0;
+    if (safeCfg > 20) safeCfg = 20.0;
+
+    // Validate seed (can be -1 for random or a number)
+    let safeSeed = parseInt(seed) || -1;
+    if (isNaN(safeSeed)) safeSeed = -1;
+
+    try {
+        // Create the generation queue entry
+        const docRef = await db.collection('generation_queue').add({
+            userId: uid,
+            prompt: prompt.trim(),
+            negative_prompt: negative_prompt || "",
+            modelId: modelId,
+            status: 'pending',
+            aspectRatio: safeAspectRatio,
+            steps: safeSteps,
+            cfg: safeCfg,
+            seed: safeSeed,
+            scheduler: scheduler || 'DPM++ 2M Karras',
+            createdAt: new Date()
+        });
+
+        return { requestId: docRef.id };
+    } catch (error) {
+        console.error("Error creating generation request:", error);
+        throw new Error("Failed to create generation request");
+    }
+});
+
+// ============================================================================
+// Image Management Functions
+// ============================================================================
+
+export const getUserImages = onCall(async (request) => {
+    // App Check Verification
+    if (request.app == undefined) {
+        throw new Error("The function must be called from an App Check verified app.");
+    }
+
+    const uid = request.auth?.uid;
+    if (!uid) {
+        throw new Error("Unauthenticated");
+    }
+
+    const { limit: limitParam = 24, startAfterId, searchQuery } = request.data;
+    const limit = Math.min(Math.max(parseInt(limitParam) || 24, 1), 100); // Between 1 and 100
+
+    try {
+        let query = db.collection('images')
+            .where('userId', '==', uid)
+            .where('hidden', '!=', true)
+            .orderBy('createdAt', 'desc')
+            .limit(limit);
+
+        // Handle pagination
+        if (startAfterId) {
+            const startAfterDoc = await db.collection('images').doc(startAfterId).get();
+            if (startAfterDoc.exists) {
+                query = query.startAfter(startAfterDoc);
+            }
+        }
+
+        const snapshot = await query.get();
+        const images = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
+        }));
+
+        // Client-side search filtering if searchQuery provided
+        let filteredImages = images;
+        if (searchQuery && typeof searchQuery === 'string' && searchQuery.trim().length > 0) {
+            const queryLower = searchQuery.toLowerCase();
+            filteredImages = images.filter(img => 
+                img.prompt?.toLowerCase().includes(queryLower)
+            );
+        }
+
+        const lastVisible = snapshot.docs[snapshot.docs.length - 1];
+        const hasMore = snapshot.docs.length === limit;
+
+        return {
+            images: filteredImages,
+            lastVisibleId: lastVisible?.id || null,
+            hasMore: hasMore
+        };
+    } catch (error) {
+        console.error("Error fetching user images:", error);
+        throw new Error("Failed to fetch images");
+    }
+});
+
+export const getImageDetail = onCall(async (request) => {
+    // App Check Verification
+    if (request.app == undefined) {
+        throw new Error("The function must be called from an App Check verified app.");
+    }
+
+    const uid = request.auth?.uid;
+    if (!uid) {
+        throw new Error("Unauthenticated");
+    }
+
+    const { imageId } = request.data;
+
+    if (!imageId || typeof imageId !== 'string') {
+        throw new Error("Image ID is required");
+    }
+
+    try {
+        const imageDoc = await db.collection('images').doc(imageId).get();
+
+        if (!imageDoc.exists) {
+            throw new Error("Image not found");
+        }
+
+        const imageData = imageDoc.data();
+
+        // Verify ownership
+        if (imageData.userId !== uid) {
+            throw new Error("Unauthorized: You don't have access to this image");
+        }
+
+        return {
+            id: imageDoc.id,
+            ...imageData,
+            createdAt: imageData.createdAt?.toDate?.()?.toISOString() || imageData.createdAt
+        };
+    } catch (error) {
+        console.error("Error fetching image detail:", error);
+        if (error.message.includes("not found") || error.message.includes("Unauthorized")) {
+            throw error;
+        }
+        throw new Error("Failed to fetch image");
+    }
+});
+
+export const deleteImage = onCall(async (request) => {
+    // App Check Verification
+    if (request.app == undefined) {
+        throw new Error("The function must be called from an App Check verified app.");
+    }
+
+    const uid = request.auth?.uid;
+    if (!uid) {
+        throw new Error("Unauthenticated");
+    }
+
+    const { imageId } = request.data;
+
+    if (!imageId || typeof imageId !== 'string') {
+        throw new Error("Image ID is required");
+    }
+
+    try {
+        const imageDoc = await db.collection('images').doc(imageId).get();
+
+        if (!imageDoc.exists) {
+            throw new Error("Image not found");
+        }
+
+        const imageData = imageDoc.data();
+
+        // Verify ownership
+        if (imageData.userId !== uid) {
+            throw new Error("Unauthorized: You don't have permission to delete this image");
+        }
+
+        // Delete the image document
+        await db.collection('images').doc(imageId).delete();
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error deleting image:", error);
+        if (error.message.includes("not found") || error.message.includes("Unauthorized")) {
+            throw error;
+        }
+        throw new Error("Failed to delete image");
+    }
+});
+
+export const deleteImagesBatch = onCall(async (request) => {
+    // App Check Verification
+    if (request.app == undefined) {
+        throw new Error("The function must be called from an App Check verified app.");
+    }
+
+    const uid = request.auth?.uid;
+    if (!uid) {
+        throw new Error("Unauthenticated");
+    }
+
+    const { imageIds } = request.data;
+
+    if (!Array.isArray(imageIds) || imageIds.length === 0) {
+        throw new Error("Image IDs array is required");
+    }
+
+    if (imageIds.length > 50) {
+        throw new Error("Cannot delete more than 50 images at once");
+    }
+
+    try {
+        // Verify ownership of all images before deleting
+        const imageDocs = await Promise.all(
+            imageIds.map(id => db.collection('images').doc(id).get())
+        );
+
+        const unauthorized = [];
+        const notFound = [];
+        const valid = [];
+
+        imageDocs.forEach((doc, index) => {
+            if (!doc.exists) {
+                notFound.push(imageIds[index]);
+            } else if (doc.data().userId !== uid) {
+                unauthorized.push(imageIds[index]);
+            } else {
+                valid.push(imageIds[index]);
+            }
+        });
+
+        if (unauthorized.length > 0) {
+            throw new Error(`Unauthorized: You don't have permission to delete ${unauthorized.length} image(s)`);
+        }
+
+        if (notFound.length > 0 && valid.length === 0) {
+            throw new Error(`Images not found: ${notFound.join(', ')}`);
+        }
+
+        // Delete all valid images
+        const batch = db.batch();
+        valid.forEach(id => {
+            batch.delete(db.collection('images').doc(id));
+        });
+        await batch.commit();
+
+        return {
+            success: true,
+            deleted: valid.length,
+            notFound: notFound.length,
+            skipped: unauthorized.length
+        };
+    } catch (error) {
+        console.error("Error deleting images batch:", error);
+        if (error.message.includes("Unauthorized") || error.message.includes("not found")) {
+            throw error;
+        }
+        throw new Error("Failed to delete images");
+    }
+});
+
+// ============================================================================
+// Rating Functions
+// ============================================================================
+
+export const rateGeneration = onCall(async (request) => {
+    // App Check Verification
+    if (request.app == undefined) {
+        throw new Error("The function must be called from an App Check verified app.");
+    }
+
+    const uid = request.auth?.uid;
+    if (!uid) {
+        throw new Error("Unauthenticated");
+    }
+
+    const { jobId, rating } = request.data;
+
+    if (!jobId || typeof jobId !== 'string') {
+        throw new Error("Job ID is required");
+    }
+
+    if (rating !== 1 && rating !== -1) {
+        throw new Error("Rating must be 1 (like) or -1 (dislike)");
+    }
+
+    try {
+        // Get the job document
+        const jobDoc = await db.collection('generation_queue').doc(jobId).get();
+
+        if (!jobDoc.exists) {
+            throw new Error("Generation job not found");
+        }
+
+        const jobData = jobDoc.data();
+
+        // Verify ownership
+        if (jobData.userId !== uid) {
+            throw new Error("Unauthorized: You don't have permission to rate this generation");
+        }
+
+        const batch = db.batch();
+
+        // Update generation queue
+        const queueRef = db.collection('generation_queue').doc(jobId);
+        batch.update(queueRef, {
+            rating: rating,
+            hidden: rating === -1
+        });
+
+        // Update images collection if resultImageId exists
+        if (jobData.resultImageId) {
+            const imageRef = db.collection('images').doc(jobData.resultImageId);
+            batch.update(imageRef, {
+                rating: rating,
+                hidden: rating === -1
+            });
+        }
+
+        // Create/update training feedback for MLOps
+        const feedbackId = `feedback_${jobId}`;
+        const feedbackRef = db.collection('training_feedback').doc(feedbackId);
+
+        const resolutionMap = {
+            '1:1': { width: 1024, height: 1024 },
+            '2:3': { width: 832, height: 1216 },
+            '3:2': { width: 1216, height: 832 },
+            '9:16': { width: 768, height: 1344 },
+            '16:9': { width: 1344, height: 768 }
+        };
+        const res = resolutionMap[jobData.aspectRatio] || resolutionMap['1:1'];
+
+        // Deterministic split based on job ID
+        const simpleHash = jobId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const split = (simpleHash % 100) < 90 ? 'train' : 'validation';
+
+        const feedbackData = {
+            _id: feedbackId,
+            timestamp: new Date(),
+            dataset_split: split,
+            weight: 1.0,
+            rating: rating,
+            meta: {
+                modelId: jobData.modelId,
+                prompt_cleaned: jobData.prompt ? jobData.prompt.trim() : "",
+                negative_prompt: jobData.negative_prompt || "",
+                cfg: parseFloat(jobData.cfg) || 7.0,
+                steps: parseInt(jobData.steps) || 30,
+                seed: parseInt(jobData.seed) || -1,
+                width: res.width,
+                height: res.height,
+                aspect_ratio_label: jobData.aspectRatio || '1:1'
+            },
+            asset_pointers: {
+                image_url: jobData.imageUrl || "",
+                gen_doc_path: `generation_queue/${jobId}`,
+                user_id: jobData.userId
+            }
+        };
+
+        batch.set(feedbackRef, feedbackData);
+
+        await batch.commit();
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error rating generation:", error);
+        if (error.message.includes("not found") || error.message.includes("Unauthorized")) {
+            throw error;
+        }
+        throw new Error("Failed to rate generation");
+    }
+});
+
+export const rateShowcaseImage = onCall(async (request) => {
+    // App Check Verification
+    if (request.app == undefined) {
+        throw new Error("The function must be called from an App Check verified app.");
+    }
+
+    const uid = request.auth?.uid;
+    if (!uid) {
+        throw new Error("Unauthenticated");
+    }
+
+    const { imageId, rating } = request.data;
+
+    if (!imageId || typeof imageId !== 'string') {
+        throw new Error("Image ID is required");
+    }
+
+    if (rating !== 1 && rating !== -1) {
+        throw new Error("Rating must be 1 (like) or -1 (dislike)");
+    }
+
+    try {
+        // Verify image exists
+        const imageDoc = await db.collection('model_showcase_images').doc(imageId).get();
+
+        if (!imageDoc.exists) {
+            throw new Error("Showcase image not found");
+        }
+
+        // Update rating (no ownership check needed for showcase images - they're public)
+        await db.collection('model_showcase_images').doc(imageId).update({
+            rating: rating,
+            ratingTimestamp: new Date()
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error rating showcase image:", error);
+        if (error.message.includes("not found")) {
+            throw error;
+        }
+        throw new Error("Failed to rate showcase image");
+    }
+});
+
+// ============================================================================
+// History Functions
+// ============================================================================
+
+export const getGenerationHistory = onCall(async (request) => {
+    // App Check Verification
+    if (request.app == undefined) {
+        throw new Error("The function must be called from an App Check verified app.");
+    }
+
+    const uid = request.auth?.uid;
+    if (!uid) {
+        throw new Error("Unauthenticated");
+    }
+
+    const { limit: limitParam = 20, startAfterId } = request.data;
+    const limit = Math.min(Math.max(parseInt(limitParam) || 20, 1), 100); // Between 1 and 100
+
+    try {
+        let query = db.collection('generation_queue')
+            .where('userId', '==', uid)
+            .where('status', '==', 'completed')
+            .where('hidden', '!=', true)
+            .orderBy('createdAt', 'desc')
+            .limit(limit);
+
+        // Handle pagination
+        if (startAfterId) {
+            const startAfterDoc = await db.collection('generation_queue').doc(startAfterId).get();
+            if (startAfterDoc.exists) {
+                query = query.startAfter(startAfterDoc);
+            }
+        }
+
+        const snapshot = await query.get();
+        const jobs = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
+        }));
+
+        const lastVisible = snapshot.docs[snapshot.docs.length - 1];
+        const hasMore = snapshot.docs.length === limit;
+
+        return {
+            jobs: jobs,
+            lastVisibleId: lastVisible?.id || null,
+            hasMore: hasMore
+        };
+    } catch (error) {
+        console.error("Error fetching generation history:", error);
+        throw new Error("Failed to fetch generation history");
     }
 });

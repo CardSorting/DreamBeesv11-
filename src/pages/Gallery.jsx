@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import SEO from '../components/SEO';
-import { db } from '../firebase';
-import { collection, query, where, getDocs, deleteDoc, doc, limit, orderBy, startAfter } from 'firebase/firestore';
+import { functions } from '../firebase';
+import { httpsCallable } from 'firebase/functions';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Loader2, Search, Download, Trash2, X, ExternalLink, Calendar, Info, Check, Plus } from 'lucide-react';
@@ -17,7 +17,7 @@ export default function Gallery() {
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const { currentUser } = useAuth();
 
-    const [lastVisible, setLastVisible] = useState(null);
+    const [lastVisibleId, setLastVisibleId] = useState(null);
     const [hasMore, setHasMore] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const LIMIT = 24;
@@ -27,58 +27,44 @@ export default function Gallery() {
         async function fetchInitial() {
             if (!currentUser) return;
             try {
-                // Determine if we need to search or just list
-                if (searchQuery.length > 0) return; // Search is handled client-side for now or needs separate query
+                const getUserImages = httpsCallable(functions, 'getUserImages');
+                const result = await getUserImages({
+                    limit: LIMIT,
+                    searchQuery: searchQuery || undefined
+                });
 
-                const q = query(
-                    collection(db, "images"),
-                    where("userId", "==", currentUser.uid),
-                    orderBy("createdAt", "desc"),
-                    limit(LIMIT)
-                );
-                const snapshot = await getDocs(q);
-
-                const imgs = snapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() }))
-                    .filter(img => !img.hidden); // Client-side filtering
-
-                setImages(imgs);
-                setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
-                setHasMore(snapshot.docs.length === LIMIT);
+                const data = result.data;
+                setImages(data.images || []);
+                setLastVisibleId(data.lastVisibleId);
+                setHasMore(data.hasMore);
 
             } catch (err) {
                 console.error("Error fetching images:", err);
+                toast.error("Failed to load images");
             } finally {
                 setLoading(false);
             }
         }
 
-        if (searchQuery === '') {
-            fetchInitial();
-        }
-    }, [currentUser, searchQuery]); // Re-run if user or search clears
+        fetchInitial();
+    }, [currentUser, searchQuery]); // Re-run if user or search changes
 
     const loadMore = async () => {
-        if (!currentUser || !lastVisible || loadingMore) return;
+        if (!currentUser || !lastVisibleId || loadingMore || !hasMore) return;
         setLoadingMore(true);
         try {
-            const q = query(
-                collection(db, "images"),
-                where("userId", "==", currentUser.uid),
-                orderBy("createdAt", "desc"),
-                startAfter(lastVisible),
-                limit(LIMIT)
-            );
-            const snapshot = await getDocs(q);
+            const getUserImages = httpsCallable(functions, 'getUserImages');
+            const result = await getUserImages({
+                limit: LIMIT,
+                startAfterId: lastVisibleId,
+                searchQuery: searchQuery || undefined
+            });
 
-            if (!snapshot.empty) {
-                const newImgs = snapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() }))
-                    .filter(img => !img.hidden);
-
-                setImages(prev => [...prev, ...newImgs]);
-                setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
-                setHasMore(snapshot.docs.length === LIMIT);
+            const data = result.data;
+            if (data.images && data.images.length > 0) {
+                setImages(prev => [...prev, ...data.images]);
+                setLastVisibleId(data.lastVisibleId);
+                setHasMore(data.hasMore);
             } else {
                 setHasMore(false);
             }
@@ -91,8 +77,11 @@ export default function Gallery() {
     };
 
     const filteredImages = useMemo(() => {
+        // Client-side filtering is now handled by the function, but we keep this for consistency
+        if (!searchQuery) return images;
+        const queryLower = searchQuery.toLowerCase();
         return images.filter(img =>
-            img.prompt.toLowerCase().includes(searchQuery.toLowerCase())
+            img.prompt?.toLowerCase().includes(queryLower)
         );
     }, [images, searchQuery]);
 
@@ -101,13 +90,19 @@ export default function Gallery() {
 
         const loadToast = toast.loading('Deleting...');
         try {
-            await Promise.all(selectedIds.map(id => deleteDoc(doc(db, "images", id))));
-            setImages(prev => prev.filter(img => !selectedIds.includes(img.id)));
-            setSelectedIds([]);
-            setIsSelectionMode(false);
-            toast.success("Deleted successfully");
+            const deleteImagesBatch = httpsCallable(functions, 'deleteImagesBatch');
+            const result = await deleteImagesBatch({ imageIds: selectedIds });
+            
+            if (result.data.success) {
+                setImages(prev => prev.filter(img => !selectedIds.includes(img.id)));
+                setSelectedIds([]);
+                setIsSelectionMode(false);
+                toast.success(`Deleted ${result.data.deleted} image(s) successfully`);
+            }
         } catch (err) {
-            toast.error("Failed to delete");
+            console.error("Error deleting images:", err);
+            const errorMessage = err.message || "Failed to delete images";
+            toast.error(errorMessage);
         } finally {
             toast.dismiss(loadToast);
         }
@@ -259,7 +254,7 @@ export default function Gallery() {
             )}
 
             {/* Load More Button */}
-            {!loading && hasMore && searchQuery === '' && (
+            {!loading && hasMore && (
                 <div style={{ display: 'flex', justifyContent: 'center', marginTop: '40px' }}>
                     <button
                         onClick={loadMore}
