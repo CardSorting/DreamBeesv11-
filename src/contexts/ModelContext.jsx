@@ -37,15 +37,21 @@ export function ModelProvider({ children }) {
 
                 setAvailableModels(models);
 
-                // Prioritize saved model, then current selection (if any), then default
+                // Prioritize saved model, then current selection (if any), then ZIT-model, then first available
                 if (models.length > 0) {
+                    let targetModel = null;
+
                     if (savedModelId) {
-                        const saved = models.find(m => m.id === savedModelId);
-                        if (saved) {
-                            setSelectedModel(saved);
-                        } else {
-                            setSelectedModel(models[0]);
-                        }
+                        targetModel = models.find(m => m.id === savedModelId);
+                    }
+
+                    if (!targetModel && !selectedModel) {
+                        // Default to ZIT-model if not saved
+                        targetModel = models.find(m => m.id === 'zit-model') || models[0];
+                    }
+
+                    if (targetModel) {
+                        setSelectedModel(targetModel);
                     } else if (!selectedModel) {
                         setSelectedModel(models[0]);
                     }

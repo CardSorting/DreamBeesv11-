@@ -278,36 +278,73 @@ export const generateImageTask = onTaskDispatched(
             }
             // ----------------------------------------------------
 
-            // 1. Call Modal Endpoint
-            console.log(`Generating image for ${requestId} (${aspectRatio} - ${resolution.width}x${resolution.height}) using Modal endpoint...`);
+            // 1. Call Model Endpoint
+            console.log(`Generating image for ${requestId} (${aspectRatio} - ${resolution.width}x${resolution.height}) using model ${modelId || 'default'}...`);
 
-            // Construct query parameters
-            const params = new URLSearchParams({
-                prompt: prompt,
-                model: modelId || "cat-carrier",
-                negative_prompt: negative_prompt || "",
-                steps: steps.toString(),
-                cfg: cfg.toString(),
-                width: resolution.width.toString(),
-                height: resolution.height.toString(),
-                scheduler: scheduler || 'DPM++ 2M Karras'
-            });
+            let buffer;
 
-            const response = await fetch(
-                `https://cardsorting--sdxl-multi-model-model-web-inference.modal.run?${params.toString()}`,
-                {
-                    method: "GET" // Assuming Modal uses GET for this? Previous code used GET.
+            if (modelId === 'zit-model') {
+                // ZIT-model specific endpoint (POST)
+                console.log("Using ZIT-model endpoint...");
+
+                // Determine if aspect ratio is directly supported by ZIT
+                // ZIT supports: 1:1, 16:9, 9:16, 4:3, 3:4, 21:9, 9:21
+                const zitSupportedRatios = ['1:1', '16:9', '9:16', '4:3', '3:4', '21:9', '9:21'];
+                const useAspectRatioParam = zitSupportedRatios.includes(aspectRatio);
+
+                const zBody = {
+                    prompt: prompt,
+                    steps: steps, // ZIT recommends 9, but we pass user value (clamped 10-50 currently)
+                    // If supported, pass string, else pass explicit width/height
+                    ...(useAspectRatioParam ? { aspect_ratio: aspectRatio } : { width: resolution.width, height: resolution.height })
+                };
+
+                const response = await fetch("https://cardsorting--zit-only-fastapi-app.modal.run/generate", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(zBody)
+                });
+
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(`ZIT Modal API Error: ${errText}`);
                 }
-            );
 
-            if (!response.ok) {
-                const errText = await response.text();
-                throw new Error(`Modal API Error: ${errText}`);
+                const blob = await response.blob();
+                const arrayBuffer = await blob.arrayBuffer();
+                buffer = Buffer.from(arrayBuffer);
+
+            } else {
+                // Default / SDXL Multi-Model Endpoint (GET)
+                const params = new URLSearchParams({
+                    prompt: prompt,
+                    model: modelId || "cat-carrier",
+                    negative_prompt: negative_prompt || "",
+                    steps: steps.toString(),
+                    cfg: cfg.toString(),
+                    width: resolution.width.toString(),
+                    height: resolution.height.toString(),
+                    scheduler: scheduler || 'DPM++ 2M Karras'
+                });
+
+                const response = await fetch(
+                    `https://cardsorting--sdxl-multi-model-model-web-inference.modal.run?${params.toString()}`,
+                    {
+                        method: "GET"
+                    }
+                );
+
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(`Modal API Error: ${errText}`);
+                }
+
+                const blob = await response.blob();
+                const arrayBuffer = await blob.arrayBuffer();
+                buffer = Buffer.from(arrayBuffer);
             }
-
-            const blob = await response.blob();
-            const arrayBuffer = await blob.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
 
             // 2. Upload to Backblaze B2
             const filename = `generated/${userId}/${Date.now()}.png`;

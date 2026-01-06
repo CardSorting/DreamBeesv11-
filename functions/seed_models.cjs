@@ -81,6 +81,14 @@ const MODELS = [
         type: 'SDXL',
         order: 9,
         isActive: true
+    },
+    {
+        id: 'zit-model',
+        name: 'Z-Image-Turbo',
+        description: 'Ultra-fast generation model optimized for low latency.',
+        type: 'SDXL', // Kept as SDXL for UI compatibility for now, or use 'ZIT' if UI handles it. Using SDXL to ensure it shows up in default filters.
+        order: 10,
+        isActive: true
     }
 ];
 
