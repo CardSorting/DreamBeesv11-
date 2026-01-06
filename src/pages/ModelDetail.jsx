@@ -7,27 +7,6 @@ import { getOptimizedImageUrl } from '../utils';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
-const CustomCursor = ({ isHovering }) => {
-    const [position, setPosition] = useState({ x: 0, y: 0 });
-
-    useEffect(() => {
-        const moveCursor = (e) => {
-            setPosition({ x: e.clientX, y: e.clientY });
-        };
-        window.addEventListener('mousemove', moveCursor);
-        return () => window.removeEventListener('mousemove', moveCursor);
-    }, []);
-
-    return (
-        <div
-            className={`custom-cursor ${isHovering ? 'hovering' : ''}`}
-            style={{
-                left: position.x,
-                top: position.y
-            }}
-        />
-    );
-};
 
 const ShowcaseModal = ({ image, onClose, model }) => {
     const { rateShowcaseImage } = useModel();
@@ -176,7 +155,11 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                         </div>
                         <div>
                             <label className="meta-label">CREATOR</label>
-                            <div className="meta-value">{image.creator || 'Unknown'}</div>
+                            <div className="meta-value">
+                                {typeof image.creator === 'object' && image.creator !== null
+                                    ? (image.creator.user || 'System')
+                                    : (image.creator || 'Unknown')}
+                            </div>
                         </div>
                         <div>
                             <label className="meta-label">SOURCE</label>
@@ -399,8 +382,11 @@ export default function ModelDetail() {
             // Ensure valid image
             if (!img || !img.url || typeof img.url !== 'string' || img.url.length <= 5) return false;
             // Strict Filter: Allow only official content or manually curated
-            // Checks for 'Gemini Pro 3' OR if 'isCurated' flag is explicitly true
-            return (img.creator === 'Gemini Pro 3' || img.isCurated === true);
+            // Checks for 'Gemini Pro 3' OR 'Gemini 3 Pro' OR if 'isCurated' flag is explicitly true
+            const isOfficial = img.creator === 'Gemini Pro 3' ||
+                img.creator === 'Gemini 3 Pro' ||
+                (typeof img.creator === 'object' && img.creator?.user === 'System');
+            return (isOfficial || img.isCurated === true);
         })
         .sort((a, b) => {
             if (sortBy === 'TOP_RATED') {
@@ -415,13 +401,12 @@ export default function ModelDetail() {
         });
 
     return (
-        <main className="cursor-none" style={{ background: '#0a0a0a', minHeight: '100vh', color: '#e5e5e5', position: 'relative' }}>
+        <main style={{ background: '#0a0a0a', minHeight: '100vh', color: '#e5e5e5', position: 'relative' }}>
             <SEO
                 title={`${model.name} - AI Model`}
                 description={model.description}
                 image={model.image}
             />
-            <CustomCursor isHovering={isHovering} />
 
             {/* Global Noise Overlay */}
             <div className="noise-overlay" style={{ position: 'fixed', opacity: 0.03, pointerEvents: 'none', zIndex: 100 }} />
@@ -436,8 +421,6 @@ export default function ModelDetail() {
             }} aria-label="Back navigation">
                 <button
                     onClick={() => navigate('/models')}
-                    onMouseEnter={() => setIsHovering(true)}
-                    onMouseLeave={() => setIsHovering(false)}
                     style={{
                         background: 'transparent',
                         border: 'none',
@@ -539,8 +522,6 @@ export default function ModelDetail() {
                                     setSelectedModel(model);
                                     setTimeout(() => navigate('/generate'), 500);
                                 }}
-                                onMouseEnter={() => setIsHovering(true)}
-                                onMouseLeave={() => setIsHovering(false)}
                                 disabled={isActive}
                                 className={`btn-primary ${isActive ? 'active-engine' : ''}`}
                                 style={{
@@ -554,7 +535,7 @@ export default function ModelDetail() {
                                     alignItems: 'center',
                                     gap: '12px',
                                     border: 'none',
-                                    cursor: 'none',
+                                    cursor: 'pointer',
                                     transition: 'transform 0.3s'
                                 }}
                             >
@@ -613,10 +594,8 @@ export default function ModelDetail() {
                             return (
                                 <article
                                     key={index}
-                                    className="masonry-item"
+                                    className="masonry-item group"
                                     onClick={() => setActiveShowcaseImage(imgItem)}
-                                    onMouseEnter={() => setIsHovering(true)}
-                                    onMouseLeave={() => setIsHovering(false)}
                                     style={{
                                         animation: `fadeInUp 1s ease ${0.1 + (Math.random() * 0.5)}s both`
                                     }}
@@ -626,8 +605,16 @@ export default function ModelDetail() {
                                             <img
                                                 src={getOptimizedImageUrl(imgItem.url || imgItem.imageUrl || (typeof imgItem === 'string' ? imgItem : ''))}
                                                 alt={`Showcase generation: ${imgItem.prompt ? imgItem.prompt.slice(0, 50) + "..." : "AI Artwork"}`}
-                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                                             />
+                                            {/* Standard Tile Overlay */}
+                                            <div style={{
+                                                position: 'absolute',
+                                                inset: 0,
+                                                background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%)',
+                                                opacity: 0,
+                                                transition: 'opacity 0.3s'
+                                            }} className="group-hover:opacity-100" />
                                         </div>
                                         <div className="image-meta">
                                             <div className="meta-badge">SAMPLE_{String(index + 1).padStart(2, '0')}</div>
@@ -687,12 +674,14 @@ export default function ModelDetail() {
                 }
                 .image-card {
                     position: relative;
-                    cursor: none;
-                    border-radius: 2px; /* Sharp corners */
+                    cursor: pointer;
+                    border-radius: var(--radius-lg); /* Match model tiles */
                     overflow: hidden;
+                    border: 1px solid var(--color-border);
                     background: #111;
-                    /* Ensure container respects aspect ratio wrapper */
+                    transition: border-color 0.3s, transform 0.3s;
                 }
+                .image-card:hover { border-color: var(--color-border-hover); }
                 .image-wrapper {
                     overflow: hidden;
                     position: relative;
