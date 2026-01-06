@@ -1,0 +1,27 @@
+# DreamBeesAI
+
+> The professional platform for high-performance generative art.
+
+DreamBeesAI is an advanced AI image generation studio powered by dedicated H100 GPU clusters. We provide sub-second inference using state-of-the-art open-source models like Stable Diffusion XL (SDXL) and Flux Pro.
+
+## Core Capabilities
+- **Text-to-Image Generation:** High-fidelity image synthesis from natural language prompts.
+- **Model Selection:** Access to multiple fine-tuned models (SDXL, Flux, Anime, Photorealistic).
+- **In-Painting/Out-Painting:** (Coming Soon) Advanced editing capabilities.
+- **Gallery:** A community showcase of generated artwork.
+
+## Key Links
+- **Home:** https://dreambeesai.com/
+- **Studio (Generate):** https://dreambeesai.com/generate
+- **Model Catalog:** https://dreambeesai.com/models
+- **Gallery:** https://dreambeesai.com/gallery
+- **Pricing:** https://dreambeesai.com/pricing
+- **Blog:** https://dreambeesai.com/blog
+
+## Technical Stack
+- **Frontend:** React, Vite
+- **Backend:** Firebase (Cloud Functions, Firestore)
+- **Inference:** H100 GPU Clusters via external API
+
+## Contact
+- For support or inquiries, visit https://dreambeesai.com/contact

@@ -95,19 +95,34 @@ export default function Navbar() {
                         </Link>
                     ))}
                     {!currentUser && (
-                        <Link
-                            to="/pricing"
-                            style={{
-                                padding: '8px 16px',
-                                borderRadius: '99px',
-                                fontSize: '0.9rem',
-                                color: location.pathname === '/pricing' ? 'var(--color-white)' : 'var(--color-text-muted)',
-                                background: location.pathname === '/pricing' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                                fontWeight: 500
-                            }}
-                        >
-                            Pricing
-                        </Link>
+                        <>
+                            <Link
+                                to="/models"
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '99px',
+                                    fontSize: '0.9rem',
+                                    color: location.pathname === '/models' ? 'var(--color-white)' : 'var(--color-text-muted)',
+                                    background: location.pathname === '/models' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                                    fontWeight: 500
+                                }}
+                            >
+                                Engine
+                            </Link>
+                            <Link
+                                to="/pricing"
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '99px',
+                                    fontSize: '0.9rem',
+                                    color: location.pathname === '/pricing' ? 'var(--color-white)' : 'var(--color-text-muted)',
+                                    background: location.pathname === '/pricing' ? 'rgba(255,255,255,0.1)' : 'transparent',
+                                    fontWeight: 500
+                                }}
+                            >
+                                Pricing
+                            </Link>
+                        </>
                     )}
                 </div>
 

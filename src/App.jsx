@@ -78,16 +78,8 @@ function App() {
                     <ImageDetail />
                   </PrivateRoute>
                 } />
-                <Route path="/models" element={
-                  <PrivateRoute>
-                    <Models />
-                  </PrivateRoute>
-                } />
-                <Route path="/model/:id" element={
-                  <PrivateRoute>
-                    <ModelDetail />
-                  </PrivateRoute>
-                } />
+                <Route path="/models" element={<Models />} />
+                <Route path="/model/:id" element={<ModelDetail />} />
                 <Route path="/features" element={<Features />} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/about" element={<About />} />

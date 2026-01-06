@@ -415,7 +415,7 @@ export default function ModelDetail() {
         });
 
     return (
-        <div className="cursor-none" style={{ background: '#0a0a0a', minHeight: '100vh', color: '#e5e5e5', position: 'relative' }}>
+        <main className="cursor-none" style={{ background: '#0a0a0a', minHeight: '100vh', color: '#e5e5e5', position: 'relative' }}>
             <SEO
                 title={`${model.name} - AI Model`}
                 description={model.description}
@@ -427,13 +427,13 @@ export default function ModelDetail() {
             <div className="noise-overlay" style={{ position: 'fixed', opacity: 0.03, pointerEvents: 'none', zIndex: 100 }} />
 
             {/* Back Navigation (Fixed) */}
-            <div style={{
+            <nav style={{
                 position: 'fixed',
                 top: '40px',
                 left: '40px',
                 zIndex: 50,
                 mixBlendMode: 'difference'
-            }}>
+            }} aria-label="Back navigation">
                 <button
                     onClick={() => navigate('/models')}
                     onMouseEnter={() => setIsHovering(true)}
@@ -453,12 +453,12 @@ export default function ModelDetail() {
                 >
                     <ArrowLeft size={16} /> <span className="hover-underline">Index</span>
                 </button>
-            </div>
+            </nav>
 
             <div className="pinterest-layout">
 
                 {/* HERO SECTION - Centered */}
-                <div className="hero-section" style={{
+                <header className="hero-section" style={{
                     minHeight: '70vh',
                     display: 'flex',
                     flexDirection: 'column',
@@ -490,7 +490,7 @@ export default function ModelDetail() {
                                 boxShadow: '0 0 10px var(--color-accent-primary)'
                             }} />
                             <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', letterSpacing: '0.2em' }}>
-                                MODEL // {model.id.toUpperCase()}
+                                MODEL // {model?.id?.toUpperCase()}
                             </span>
                         </div>
 
@@ -573,11 +573,11 @@ export default function ModelDetail() {
                         </div>
 
                     </div>
-                </div>
+                </header>
 
 
                 {/* Sorting Tabs */}
-                <div className="tabs-container" style={{
+                <nav className="tabs-container" aria-label="Gallery filters" style={{
                     display: 'flex',
                     justifyContent: 'center',
                     gap: '8px',
@@ -596,10 +596,10 @@ export default function ModelDetail() {
                     >
                         LATEST
                     </button>
-                </div>
+                </nav>
 
                 {/* FULL MASONRY FEED */}
-                <div className="pinterest-feed" style={{
+                <section className="pinterest-feed" aria-label="Showcase Gallery" style={{
                     padding: '0 2vw 120px 2vw',
                     animation: 'fadeIn 1.5s ease 0.4s both'
                 }}>
@@ -611,7 +611,7 @@ export default function ModelDetail() {
                             const ratio = ratios[index % ratios.length];
 
                             return (
-                                <div
+                                <article
                                     key={index}
                                     className="masonry-item"
                                     onClick={() => setActiveShowcaseImage(imgItem)}
@@ -624,8 +624,8 @@ export default function ModelDetail() {
                                     <div className="image-card">
                                         <div className="image-wrapper" style={{ aspectRatio: ratio }}>
                                             <img
-                                                src={getOptimizedImageUrl(item.imageUrl)}
-                                                alt={`Showcase generation: ${item.prompt ? item.prompt.slice(0, 50) + "..." : "AI Artwork"}`}
+                                                src={getOptimizedImageUrl(imgItem.url || imgItem.imageUrl || (typeof imgItem === 'string' ? imgItem : ''))}
+                                                alt={`Showcase generation: ${imgItem.prompt ? imgItem.prompt.slice(0, 50) + "..." : "AI Artwork"}`}
                                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                             />
                                         </div>
@@ -633,11 +633,11 @@ export default function ModelDetail() {
                                             <div className="meta-badge">SAMPLE_{String(index + 1).padStart(2, '0')}</div>
                                         </div>
                                     </div>
-                                </div>
+                                </article>
                             );
                         })}
                     </div>
-                </div>
+                </section>
 
                 {/* Lightbox Modal */}
                 {activeShowcaseImage && (
@@ -772,6 +772,6 @@ export default function ModelDetail() {
                     border-color: white;
                 }
             `}</style>
-        </div >
+        </main>
     );
 }

@@ -564,11 +564,9 @@ export const serveSitemap = onRequest({
             priority: path === '' ? '1.0' : '0.8'
         }));
 
-        // 2. Dynamic Models
-        const modelsSnapshot = await db.collection('models').orderBy('order', 'asc').get();
         modelsSnapshot.forEach(doc => {
             urls.push({
-                loc: `${baseUrl}/models/${doc.id}`,
+                loc: `${baseUrl}/model/${doc.id}`,
                 changefreq: 'weekly',
                 priority: '0.7',
                 lastmod: new Date().toISOString() // Or use implicit today
