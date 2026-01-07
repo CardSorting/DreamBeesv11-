@@ -6,12 +6,31 @@ const MANIFEST_PATH = path.join(TARGET_DIR, 'manifest.json');
 const ENDPOINT_BASE = "https://cardsorting--sdxl-multi-model-model-web-inference.modal.run";
 
 const PROMPTS = [
-    "A group of beautiful anime girls having a tea party in a lush royal garden, detailed dresses, soft sunlight, vibrant flowers, high quality, masterpiece",
-    "Portrait of a magical girl with glowing wings and a starry sky background, intricate jewelry, sparkling eyes, dynamic pose, best quality",
-    "A futuristic classroom scene with cute anime students using holographic tablets, bright colors, clean lines, high resolution",
-    "Two anime characters sharing an umbrella in a scenic rainy street, reflections on the wet pavement, cozy atmosphere, cinematic lighting",
-    "A fantasy warrior princess standing on a cliff overlooking a kingdom, detailed armor, cape blowing in the wind, epic composition",
-    "A cheerful anime idol performing on stage with colorful laser lights and confetti, energetic pose, sparkling outfit, detailed background"
+    "1girl, solo, cybernetic angel, mechanical wings, glowing halo, futuristic city sky, clouds, lens flare, white armor, divine atmosphere, masterpiece, best quality, 8k",
+    "1girl, solo, oni girl, red horns, kimono, katana, cherry blossoms, night, full moon, traditional japanese architecture, fierce expression, intense eyes, masterpiece, best quality",
+    "1girl, solo, librarian, ancient library, floating books, magic scrolls, dust motes, warm candlelight, glasses, intellectual, mysterious, fantasy, masterpiece, best quality",
+    "1girl, solo, pilot, cockpit, mech robot, interface screens, holographic hud, sci-fi, intense battle, sparks, explosions outside, focused, masterpiece, best quality, detailed",
+    "1girl, solo, street artist, spray painting, graffiti wall, urban alley, paint splatters, hoodie, gas mask, colorful, hip hop style, rebellion, masterpiece, best quality",
+    "1girl, solo, ice queen, frozen throne, ice crystals, blizzards, cold blue lighting, elegant gown, tiara, magical, winter fantasy, sharp focus, masterpiece, best quality",
+    "1girl, solo, baker, french bakery, croissants, pastries, morning sunlight, apron, flour on face, cheerful, cozy, warm colors, masterpiece, best quality",
+    "1girl, solo, kunoichi, ninja, rooftop, night, stealth, black outfit, scarf blowing in wind, city lights background, dynamic pose, action, masterpiece, best quality",
+    "1girl, solo, alchemist, chemistry lab, colorful potions, smoke, glassware, protective goggles, experiment, magic, detailed messy room, masterpiece, best quality",
+    "1girl, solo, skater girl, skate park, mid-air trick, skateboard, afternoon sun, wide angle lens, dynamic, sportswear, cool, masterpiece, best quality",
+    "1girl, solo, dragon tamer, fantasy armor, baby dragon on shoulder, mountain peak, epic landscape, clouds, wind, adventure, masterpiece, best quality, cinematic",
+    "1girl, solo, jazz singer, vintage microphone, dim club lighting, spotlight, evening gown, smoke, classy, emotional, retro style, masterpiece, best quality",
+    "1girl, solo, gardener, greenhouse, exotic plants, watering can, sunlight streaming through glass, nature, peaceful, straw hat, sundress, masterpiece, best quality",
+    "1girl, solo, cyborg assassin, neon city rain, glowing red eye, weapons, leather jacket, reflection in puddle, dark cyberpunk, edgy, masterpiece, best quality",
+    "1girl, solo, shrine maiden, fox mask, holding lantern, dark forest, fireflies, mystical, spiritual, glowing lights, ethereal, masterpiece, best quality",
+    "1girl, solo, space princess, zero gravity, floating hair, nebula background, stars, futuristic gown, elegance, cosmic, sci-fi, masterpiece, best quality",
+    "1girl, solo, mechanic, garage, classic car, wrench, grease, tank top, tools, detailed vehicle, american retro, strong, masterpiece, best quality",
+    "1girl, solo, pirate captain, ship deck, ocean waves, storm, sword, pirate hat, treasure map, adventure, dynamic, epic, masterpiece, best quality",
+    "1girl, solo, nurse, futuristic hospital, hologram medical chart, clean white aesthetic, caring expression, sci-fi medical, detailed uniform, masterpiece, best quality",
+    "1girl, solo, violinist, concert hall, playing violin, elegant dress, closed eyes, passion, music notes, spotlight, classical, masterpiece, best quality",
+    "1girl, solo, explorer, jungle ruins, overgrown stone, compass, backpack, sunlight through leaves, adventure, discovery, detailed background, masterpiece, best quality",
+    "1girl, solo, zombie hunter, ruined city, shotgun, survival gear, grit, dirt, intense, action movie style, post-apocalyptic, masterpiece, best quality",
+    "1girl, solo, circus acrobat, traversing tightrope, spotlight, colorful costume, tension, balance, audience below, dynamic angle, masterpiece, best quality",
+    "1girl, solo, gamer girl, rgb room, headset, gaming chair, computer screens, snacks, casual clothes, relaxed, modern, masterpiece, best quality",
+    "1girl, solo, goddess of time, giant clock gears, hourglass, flowing robes, golden light, surreal, abstract background, ethereal, masterpiece, best quality"
 ];
 
 // Ensure directory exists
