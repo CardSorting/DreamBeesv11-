@@ -18,13 +18,14 @@ You can call the endpoint directly using HTTP GET requests.
 | Parameter | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `prompt` | `str` | **Required** | The text prompt for image generation. |
-| `model` | `str` | `"cat-carrier"` | The model to use. Options: `"cat-carrier"`, `"hassaku-illustrious"`, `"nova-furry-xl"`, `"perfect-illustrious"`, `"gray-color"`, `"scyrax-pastel"`, `"ani-detox"`, `"animij-v7"`, `"swijtspot-no1"`, `"qwen-image-2512"`. |
+| `model` | `str` | `"cat-carrier"` | The model to use. Options: `"cat-carrier"`, `"hassaku-illustrious"`, `"nova-furry-xl"`, `"perfect-illustrious"`, `"gray-color"`, `"scyrax-pastel"`, `"ani-detox"`, `"animij-v7"`, `"swijtspot-no1"`, `"wai-illustrious"`. |
 | `negative_prompt` | `str` | `""` | Items to exclude from the image. |
 | `steps` | `int` | `30` | Number of inference steps. Recommended: 25-30. |
 | `cfg` | `float` | `7.0` | Guidance scale. Recommended: 5.0-7.0. |
 | `scheduler` | `str` | `"Euler a"` | Scheduler logic. Options: `"Euler a"`, `"DPM++ 2M Karras"`. |
 
-> **Note:** The `"nova-furry-xl"` model automatically prepends specific quality and activation tags to your prompt, so you don't need to add them manually.
+> **Note:** The `"nova-furry-xl"` model automatically prepends specific quality and activation tags to your prompt.
+> **Note:** The `"wai-illustrious"` model enforces specific quality tags (`masterpiece, best quality...`) and enables a custom High-Res Fix workflow (Upscale 1.5x -> Img2Img) by default.
 
 #### Example: API Request
 ```bash

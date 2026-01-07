@@ -98,6 +98,15 @@ const MODELS = [
         order: 11,
         isActive: true,
         image: '/showcase/qwen-image-2512/cover.png'
+    },
+    {
+        id: 'wai-illustrious',
+        name: 'Wai Illustrious',
+        description: 'High-quality illustrations with enforced quality tags and custom High-Res Fix workflow.',
+        type: 'SDXL',
+        order: 12,
+        isActive: true,
+        image: '/showcase/wai-illustrious/cover.png'
     }
 ];
 
