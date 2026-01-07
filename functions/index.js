@@ -9,6 +9,7 @@ import { createCheckoutSession, constructWebhookEvent, createPortalSession } fro
 import Replicate from "replicate";
 
 import { createRequire } from "module";
+import { GoogleGenAI } from "@google/genai";
 const require = createRequire(import.meta.url);
 
 // Initializing Firebase Admin
@@ -126,9 +127,11 @@ export const generateImage = onDocumentCreated(
             const userRef = db.collection('users').doc(userId);
             const userDoc = await userRef.get();
             let user = userDoc.exists ? userDoc.data() : {};
+            const reelsMissing = user.reels === undefined;
 
             // Default values for new users
             if (!user.credits && user.credits !== 0) user.credits = 30; // Generous starting credits
+            if (reelsMissing) user.reels = 0;
             // Set lastDailyReset to NOW for new users so they don't trigger an immediate reset
             if (!user.lastDailyReset) user.lastDailyReset = new Date();
 
@@ -152,6 +155,9 @@ export const generateImage = onDocumentCreated(
                 const updateData = { lastDailyReset: now };
                 if ((user.credits || 0) < 5) {
                     updateData.credits = 5;
+                }
+                if (reelsMissing) {
+                    updateData.reels = FieldValue.increment(0);
                 }
 
                 await userRef.set(updateData, { merge: true });
@@ -177,6 +183,9 @@ export const generateImage = onDocumentCreated(
             const userUpdate = { lastGenerationTime: now };
             if (!isPro) {
                 userUpdate.credits = FieldValue.increment(-1);
+            }
+            if (reelsMissing) {
+                userUpdate.reels = FieldValue.increment(0);
             }
             await userRef.update(userUpdate);
             // End - moved logic
@@ -1482,3 +1491,88 @@ export const generateVideo = onDocumentCreated(
         }
     }
 );
+
+// ============================================================================
+// Auto-Prompter (Gemini)
+// ============================================================================
+
+export const generateVideoPrompt = onCall(async (request) => {
+    // App Check Verification
+    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
+        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
+    }
+
+    const uid = request.auth?.uid;
+    if (!uid) {
+        throw new HttpsError('unauthenticated', "User must be authenticated");
+    }
+
+    const { image, imageUrl } = request.data; // Expecting base64 data url OR remote URL
+    if ((!image || typeof image !== 'string') && (!imageUrl || typeof imageUrl !== 'string')) {
+        throw new HttpsError('invalid-argument', "Image data or URL is required");
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        console.error("GEMINI_API_KEY is not set in environment variables");
+        throw new HttpsError('internal', "Service configuration error");
+    }
+
+    const PROMPT_GUIDELINES = `
+Single continuous paragraph: Write the entire scene as one unbroken paragraph, using straightforward descriptive language, maintaining strict chronological flow from start to finish.
+Present-tense action verbs: Use active present tense (strides, grips, approaches) and present-progressive forms (running, walking) to create immediacy and ongoing motion.
+Explicit camera behavior: Specify shot type (wide/medium/close-up), camera movement (pushes in/dollies/pans), speed (slowly/rapidly), and technical details (rack focus/shallow depth of field/handheld).
+Precise physical details: Include specific measurements where relevant (2mm eyebrow raise), exact body positions, hand/finger placements, facial micro-expressions, and clothing/fabric behavior.
+Atmospheric environment: Describe lighting quality (golden hour/fluorescent/neon), color temperatures, weather conditions, surface textures, and ambient elements that enhance mood.
+Smooth temporal flow: Connect actions with subtle transitions (as, while, then) ensuring each movement naturally leads to the next without jarring cuts.
+Genre-specific language: Use cinematography terms appropriate to the stated style (documentary authenticity, thriller paranoia, epic grandeur).
+Character specificity: Include age, ethnicity, distinguishing features, clothing, and emotional states shown through observable physical manifestations rather than internal thoughts.
+`;
+
+    try {
+        const ai = new GoogleGenAI({ apiKey });
+
+        let base64Data = "";
+        let mimeType = "image/png";
+
+        if (imageUrl) {
+            // Fetch remote image
+            const response = await fetch(imageUrl);
+            if (!response.ok) throw new Error("Failed to fetch image from URL");
+            const arrayBuffer = await response.arrayBuffer();
+            base64Data = Buffer.from(arrayBuffer).toString('base64');
+            const contentType = response.headers.get('content-type');
+            if (contentType) mimeType = contentType;
+        } else {
+            // Strip base64 prefix if present
+            base64Data = image.replace(/^data:image\/\w+;base64,/, "");
+            const match = image.match(/^data:(image\/\w+);base64,/);
+            if (match) mimeType = match[1];
+        }
+
+        const response = await ai.models.generateContent({
+            model: "gemini-2.0-flash-exp",
+            contents: [
+                {
+                    parts: [
+                        { text: "Analyze the image and write a video generation prompt based on these guidelines:\n" + PROMPT_GUIDELINES },
+                        { inlineData: { mimeType: mimeType, data: base64Data } }
+                    ]
+                }
+            ]
+        });
+
+        let text = response.text;
+        if (typeof text === 'function') {
+            text = text();
+        } else if (!text && response.response) {
+            // Handle different potential response shapes if SDK varies
+            text = response.response.text();
+        }
+
+        return { prompt: text };
+    } catch (error) {
+        console.error("Gemini generation error:", error);
+        throw new HttpsError('internal', "Failed to generate prompt from image: " + error.message);
+    }
+});

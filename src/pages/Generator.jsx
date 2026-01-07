@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SEO from '../components/SEO';
 import ModelSelectorModal from '../components/ModelSelectorModal';
+import ImagePickerModal from '../components/ImagePickerModal';
 import GenerationHistory from '../components/GenerationHistory';
 import { useModel } from '../contexts/ModelContext';
 import { db, functions } from '../firebase';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { useAuth } from '../contexts/AuthContext';
 
-import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, ChevronDown, ChevronUp, Mic, MicOff, Zap, AlertCircle, Share2, Maximize2, Dices, X, Wand2, Monitor, Smartphone, LayoutTemplate, Square, RectangleHorizontal, RectangleVertical, HelpCircle, ThumbsUp, ThumbsDown, Film, Video } from 'lucide-react';
+import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, ChevronDown, ChevronUp, Mic, MicOff, Zap, AlertCircle, Share2, Maximize2, Dices, X, Wand2, Monitor, Smartphone, LayoutTemplate, Square, RectangleHorizontal, RectangleVertical, HelpCircle, ThumbsUp, ThumbsDown, Film, Video, Paperclip, Upload, Type } from 'lucide-react';
 
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -56,6 +57,110 @@ export default function Generator() {
     // Microphone
     const [isListening, setIsListening] = useState(false);
     const speechRecognitionRef = useRef(null);
+
+    // Video Gallery State
+    const [recentImages, setRecentImages] = useState([]);
+    const [analyzingImageId, setAnalyzingImageId] = useState(null);
+    const [isCustomVideoPrompt, setIsCustomVideoPrompt] = useState(false);
+
+    useEffect(() => {
+        setIsCustomVideoPrompt(false);
+    }, [generationMode]);
+
+    useEffect(() => {
+        if (currentUser && generationMode === 'video') {
+            const q = query(
+                collection(db, 'generation_queue'),
+                where('userId', '==', currentUser.uid),
+                where('status', '==', 'completed'),
+                orderBy('createdAt', 'desc'),
+                limit(20)
+            );
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                setRecentImages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            });
+            return () => unsubscribe();
+        }
+    }, [currentUser, generationMode]);
+
+    const handleVideoAutoAnimate = async (image) => {
+        setAnalyzingImageId(image.id);
+        try {
+            // 1. Generate Prompt
+            const generateVideoPromptFn = httpsCallable(functions, 'generateVideoPrompt');
+            const result = await generateVideoPromptFn({ imageUrl: image.imageUrl });
+
+            if (!result.data.prompt) throw new Error("No prompt generated");
+
+            // 2. Start Video Generation
+            const createVideoGenerationRequest = httpsCallable(functions, 'createVideoGenerationRequest');
+
+            // Set global loading states
+            setGenerating(true);
+            setGeneratedImage(null);
+            setCurrentJobType('video');
+
+            const videoResult = await createVideoGenerationRequest({
+                prompt: result.data.prompt,
+                image: image.imageUrl,
+                duration: videoDuration,
+                resolution: videoResolution,
+                aspectRatio: image.aspectRatio || aspectRatio
+            });
+
+            setCurrentJobId(videoResult.data.requestId);
+            setPrompt(result.data.prompt);
+            setReferenceImage(image.imageUrl);
+
+        } catch (error) {
+            console.error("Auto animate error", error);
+            toast.error("Failed to animate image");
+            setGenerating(false);
+        } finally {
+            setAnalyzingImageId(null);
+        }
+    };
+
+    // Auto-Prompt / Image Reference
+    const [referenceImage, setReferenceImage] = useState(null); // URL or Base64
+    const [isAutoPrompting, setIsAutoPrompting] = useState(false);
+    const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
+
+    // Renamed local function to avoid conflict/confusion, we'll use ImagePickerModal exclusively
+    const handlePickerSelect = (result) => {
+        // result: { type: 'gallery'|'upload', data: url|base64 }
+        setReferenceImage(result.data);
+    };
+
+    const handleAutoPrompt = async () => {
+        if (!referenceImage) return toast.error("Please attach an image first");
+
+        setIsAutoPrompting(true);
+        try {
+            const generateVideoPromptFn = httpsCallable(functions, 'generateVideoPrompt');
+            const payload = {};
+            if (referenceImage.startsWith('data:')) {
+                payload.image = referenceImage;
+            } else {
+                payload.imageUrl = referenceImage;
+            }
+            const result = await generateVideoPromptFn(payload);
+
+            if (result.data.prompt) {
+                setPrompt(result.data.prompt);
+                toast.success("Prompt generated!");
+            }
+        } catch (error) {
+            console.error("Auto prompt error", error);
+            toast.error("Failed to auto-prompt");
+        } finally {
+            setIsAutoPrompting(false);
+        }
+    };
+
+    const clearReferenceImage = () => {
+        setReferenceImage(null);
+    };
 
     // --- Effects & Logic ---
 
@@ -224,7 +329,7 @@ export default function Generator() {
                 const createVideoGenerationRequest = httpsCallable(functions, 'createVideoGenerationRequest');
                 const result = await createVideoGenerationRequest({
                     prompt: prompt,
-                    image: null, // Future: Handle Image-to-Video
+                    image: referenceImage, // Use attached image for Image-to-Video
                     duration: videoDuration,
                     resolution: videoResolution,
                     aspectRatio: aspectRatio // Optional
@@ -420,185 +525,397 @@ export default function Generator() {
                             )}
                         </div>
 
-                        {/* Prompt Input Bar - Chat Style */}
-                        <div style={{ padding: '0', background: 'transparent', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                            <div className="glass-panel" style={{
-                                margin: '20px',
-                                padding: '6px', // Inner padding for the border effect
-                                borderRadius: '16px',
-                                background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
-                                boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-                                border: '1px solid rgba(255,255,255,0.05)'
-                            }}>
+                        {/* Prompt Input Bar OR Video Gallery */}
+                        {(generationMode === 'video' && !isCustomVideoPrompt && !generating && !currentJobId && !prompt && !referenceImage) ? (
+                            <div style={{ flex: 1, padding: '32px' }}>
+
                                 <div style={{
-                                    background: 'rgba(0,0,0,0.4)',
-                                    borderRadius: '12px',
-                                    padding: '16px',
+                                    width: '100%',
+                                    maxWidth: '900px',
+                                    margin: '0 auto 32px auto',
+                                    aspectRatio: '16/9',
+                                    background: 'rgba(0,0,0,0.3)',
+                                    borderRadius: '24px',
+                                    border: '1px dashed var(--color-border)',
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    gap: '12px'
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    position: 'relative',
+                                    overflow: 'hidden',
+                                    padding: '40px'
                                 }}>
-                                    <textarea
-                                        value={prompt}
-                                        onChange={(e) => setPrompt(e.target.value)}
-                                        placeholder="Describe your vision..."
-                                        className="custom-scrollbar"
-                                        style={{
-                                            width: '100%',
-                                            background: 'transparent',
-                                            border: 'none',
-                                            color: 'white',
-                                            fontSize: '1.1rem',
-                                            fontWeight: '400',
-                                            resize: 'none',
-                                            minHeight: '160px',
-                                            outline: 'none',
-                                            lineHeight: '1.6',
-                                            fontFamily: '"Outfit", sans-serif', // Ensure premium font
-                                            letterSpacing: '0.01em'
-                                        }}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey && !generating) {
-                                                e.preventDefault();
-                                                handleGenerate();
-                                            }
-                                        }}
-                                    />
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
-                                        <div style={{ display: 'flex', gap: '4px' }}>
-                                            <button
-                                                onClick={toggleListening}
-                                                className={`btn-ghost ${isListening ? 'listening-pulse' : ''}`}
-                                                style={{
-                                                    padding: '8px 12px',
-                                                    borderRadius: '8px',
-                                                    color: isListening ? '#ef4444' : 'var(--color-text-muted)',
-                                                    background: isListening ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
-                                                    transition: 'all 0.2s',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '6px',
-                                                    fontSize: '0.8rem'
-                                                }}
-                                            >
-                                                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
-                                                {isListening && <span>Listening...</span>}
-                                            </button>
-                                            <button
-                                                onClick={() => setPrompt(prev => getEnhancedPrompt(prev))}
-                                                className="btn-ghost"
-                                                title="Magic Enhance"
-                                                style={{
-                                                    padding: '8px',
-                                                    borderRadius: '8px',
-                                                    color: 'var(--color-accent-primary)',
-                                                    transition: 'all 0.2s'
-                                                }}
-                                            >
-                                                <Wand2 size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => setPrompt(getRandomPrompt())}
-                                                className="btn-ghost"
-                                                title="Surprise Me"
-                                                style={{
-                                                    padding: '8px',
-                                                    borderRadius: '8px',
-                                                    color: 'var(--color-text-muted)',
-                                                    transition: 'all 0.2s'
-                                                }}
-                                            >
-                                                <Dices size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    const url = new URL(window.location);
-                                                    url.searchParams.set('prompt', prompt);
-                                                    if (seed !== -1) url.searchParams.set('seed', seed);
-                                                    if (aspectRatio !== '1:1') url.searchParams.set('aspectRatio', aspectRatio);
-                                                    if (steps !== 30) url.searchParams.set('steps', steps);
-                                                    if (cfg !== 7.0) url.searchParams.set('cfg', cfg);
-                                                    if (negPrompt) url.searchParams.set('negPrompt', negPrompt);
-
-                                                    navigator.clipboard.writeText(url.toString());
-                                                    toast.success('Link copied to clipboard');
-                                                }}
-                                                className="btn-ghost"
-                                                title="Share Configuration"
-                                                style={{
-                                                    padding: '8px',
-                                                    borderRadius: '8px',
-                                                    color: 'var(--color-text-muted)',
-                                                    transition: 'all 0.2s'
-                                                }}
-                                            >
-                                                <Share2 size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => setPrompt('')}
-                                                className="btn-ghost"
-                                                title="Clear Prompt"
-                                                style={{
-                                                    padding: '8px',
-                                                    borderRadius: '8px',
-                                                    color: 'var(--color-text-muted)',
-                                                    transition: 'all 0.2s'
-                                                }}
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                                    {/* Header / Instructions */}
+                                    <div style={{ marginBottom: '32px', textAlign: 'center', width: '100%' }}>
+                                        <h2 style={{ fontSize: '1.8rem', fontWeight: '800', color: 'white', marginBottom: '8px', letterSpacing: '-0.02em' }}>
+                                            Create Video
+                                        </h2>
+                                        <div style={{ fontSize: '1rem', color: 'var(--color-text-muted)', maxWidth: '400px', margin: '0 auto', lineHeight: '1.5' }}>
+                                            Turn any image into a cinematic video. Choose an action below to start.
                                         </div>
+                                    </div>
+
+                                    {/* Main Actions Row */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', maxWidth: '600px', width: '100%' }}>
+                                        {/* Upload Card */}
                                         <button
-                                            onClick={handleGenerate}
-                                            disabled={generating || !prompt || (generationMode === 'image' ? credits <= 0 && subscriptionStatus !== 'active' : reels <= 0)}
-                                            className="btn btn-primary generate-btn"
+                                            onClick={() => setIsImagePickerOpen(true)}
+                                            className="action-card"
                                             style={{
-                                                height: '42px',
-                                                padding: '0 32px',
-                                                borderRadius: '10px',
-                                                fontSize: '0.95rem',
-                                                fontWeight: '600',
-                                                letterSpacing: '0.02em',
-                                                boxShadow: '0 0 20px rgba(var(--color-accent-rgb), 0.3)',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '8px'
+                                                padding: '16px', borderRadius: '16px',
+                                                background: 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
+                                                border: '1px solid rgba(255,255,255,0.1)',
+                                                display: 'flex', alignItems: 'center', gap: '12px',
+                                                cursor: 'pointer', color: 'white', transition: 'all 0.2s ease',
+                                                textAlign: 'left'
                                             }}
                                         >
-                                            {generating ? <Loader2 className="animate-spin" size={18} /> : (
-                                                <>
-                                                    <Sparkles size={18} style={{ fill: 'currentColor' }} />
-                                                    Generate
-                                                </>
-                                            )}
+                                            <div style={{
+                                                width: '36px', height: '36px', borderRadius: '50%',
+                                                background: 'rgba(var(--color-accent-rgb), 0.2)', color: 'var(--color-accent-primary)',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                                            }}>
+                                                <Upload size={18} />
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '0.9rem', fontWeight: '600' }}>Upload Image</div>
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>From local device</div>
+                                            </div>
+                                        </button>
+
+                                        {/* Custom Prompt Card */}
+                                        <button
+                                            onClick={() => setIsCustomVideoPrompt(true)}
+                                            className="action-card"
+                                            style={{
+                                                padding: '16px', borderRadius: '16px',
+                                                background: 'rgba(255,255,255,0.02)',
+                                                border: '1px solid rgba(255,255,255,0.05)',
+                                                display: 'flex', alignItems: 'center', gap: '12px',
+                                                cursor: 'pointer', color: 'var(--color-text-muted)', transition: 'all 0.2s ease',
+                                                textAlign: 'left'
+                                            }}
+                                        >
+                                            <div style={{
+                                                width: '36px', height: '36px', borderRadius: '50%',
+                                                background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.8)',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                                            }}>
+                                                <Type size={18} />
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '0.9rem', fontWeight: '600', color: 'rgba(255,255,255,0.9)' }}>Write Prompt</div>
+                                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Describe manually</div>
+                                            </div>
                                         </button>
                                     </div>
                                 </div>
+
+                                {/* Recent History Grid */}
+                                {recentImages.length > 0 && (
+                                    <>
+                                        <div style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px', flexShrink: 0 }}>
+                                            Bring to Life (Recent)
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px' }}>
+                                            {recentImages.map(img => (
+                                                <div key={img.id} style={{ position: 'relative', aspectRatio: '1', borderRadius: '16px', overflow: 'hidden', background: '#000', border: '1px solid rgba(255,255,255,0.1)', transform: 'translateZ(0)' }} className="magic-card">
+                                                    <img
+                                                        src={getOptimizedImageUrl(img.imageUrl)}
+                                                        alt=""
+                                                        style={{
+                                                            width: '100%', height: '100%', objectFit: 'cover',
+                                                            transition: 'transform 0.5s ease',
+                                                            opacity: analyzingImageId === img.id ? 0.5 : 1
+                                                        }}
+                                                    />
+
+                                                    {/* Magic Overlay */}
+                                                    <div className="magic-overlay" style={{
+                                                        position: 'absolute', inset: 0,
+                                                        background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 100%)',
+                                                        opacity: 0, transition: 'all 0.3s ease',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        backdropFilter: 'blur(2px)'
+                                                    }}>
+                                                        <button
+                                                            onClick={() => handleVideoAutoAnimate(img)}
+                                                            disabled={!!analyzingImageId}
+                                                            className="btn-magic"
+                                                            style={{
+                                                                background: 'white', color: 'black', border: 'none',
+                                                                borderRadius: '100px', padding: '10px 20px',
+                                                                fontSize: '0.8rem', fontWeight: '700',
+                                                                display: 'flex', alignItems: 'center', gap: '6px',
+                                                                boxShadow: '0 4px 15px rgba(255,255,255,0.3)',
+                                                                cursor: 'pointer', transform: 'translateY(10px)', transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                                                                whiteSpace: 'nowrap'
+                                                            }}
+                                                        >
+                                                            {analyzingImageId === img.id ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} className="text-purple-600" fill="currentColor" />}
+                                                            {analyzingImageId === img.id ? 'Analyzing...' : 'Magic Animate'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
+
+                                <style>{`
+                                    .action-card:hover { transform: translateY(-4px); background: rgba(255,255,255,0.08) !important; border-color: rgba(255,255,255,0.2) !important; }
+                                    .magic-card:hover img { transform: scale(1.1); }
+                                    .magic-card:hover .magic-overlay { opacity: 1; }
+                                    .magic-card:hover .btn-magic { transform: translateY(0); }
+                                    .btn-magic:hover { transform: scale(1.05) translateY(0) !important; box-shadow: 0 6px 20px rgba(255,255,255,0.5) !important; }
+                                `}</style>
                             </div>
-                        </div>
+                        ) : (
+                            <div style={{ padding: '0', background: 'transparent', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                                <div className="glass-panel" style={{
+                                    margin: '20px',
+                                    padding: '6px', // Inner padding for the border effect
+                                    borderRadius: '16px',
+                                    background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
+                                    boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                                    border: '1px solid rgba(255,255,255,0.05)'
+                                }}>
+                                    <div style={{
+                                        background: 'rgba(0,0,0,0.4)',
+                                        borderRadius: '12px',
+                                        padding: '16px',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '12px'
+                                    }}>
+                                        {referenceImage && (
+                                            <div style={{ position: 'relative', width: 'fit-content', marginBottom: '8px' }}>
+                                                <img
+                                                    src={referenceImage.startsWith('data:') ? referenceImage : getOptimizedImageUrl(referenceImage)}
+                                                    alt="Reference"
+                                                    style={{ height: '80px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)' }}
+                                                />
+                                                <button
+                                                    onClick={clearReferenceImage}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: '-6px',
+                                                        right: '-6px',
+                                                        background: '#ef4444',
+                                                        color: 'white',
+                                                        borderRadius: '50%',
+                                                        width: '18px',
+                                                        height: '18px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        border: 'none',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    <X size={12} />
+                                                </button>
+                                            </div>
+                                        )}
+                                        <textarea
+                                            value={prompt}
+                                            onChange={(e) => setPrompt(e.target.value)}
+                                            placeholder="Describe your vision..."
+                                            className="custom-scrollbar"
+                                            style={{
+                                                width: '100%',
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: 'white',
+                                                fontSize: '1.1rem',
+                                                fontWeight: '400',
+                                                resize: 'none',
+                                                minHeight: '160px',
+                                                outline: 'none',
+                                                lineHeight: '1.6',
+                                                fontFamily: '"Outfit", sans-serif', // Ensure premium font
+                                                letterSpacing: '0.01em'
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey && !generating) {
+                                                    e.preventDefault();
+                                                    handleGenerate();
+                                                }
+                                            }}
+                                        />
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
+                                            <div style={{ display: 'flex', gap: '4px' }}>
+                                                <button
+                                                    onClick={toggleListening}
+                                                    className={`btn-ghost ${isListening ? 'listening-pulse' : ''}`}
+                                                    style={{
+                                                        padding: '8px 12px',
+                                                        borderRadius: '8px',
+                                                        color: isListening ? '#ef4444' : 'var(--color-text-muted)',
+                                                        background: isListening ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
+                                                        transition: 'all 0.2s',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '6px',
+                                                        fontSize: '0.8rem'
+                                                    }}
+                                                >
+                                                    {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                                                    {isListening && <span>Listening...</span>}
+                                                </button>
+
+                                                {generationMode === 'video' && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => setIsImagePickerOpen(true)}
+                                                            className="btn-ghost"
+                                                            title="Attach Image (Gallery/Upload)"
+                                                            style={{
+                                                                padding: '8px',
+                                                                borderRadius: '8px',
+                                                                color: referenceImage ? 'var(--color-accent-primary)' : 'var(--color-text-muted)',
+                                                                transition: 'all 0.2s'
+                                                            }}
+                                                        >
+                                                            <Paperclip size={16} />
+                                                        </button>
+                                                        {referenceImage && (
+                                                            <button
+                                                                onClick={handleAutoPrompt}
+                                                                className={`btn-ghost ${isAutoPrompting ? 'animate-pulse' : ''}`}
+                                                                title="Auto-Write Prompt with Gemini"
+                                                                disabled={isAutoPrompting}
+                                                                style={{
+                                                                    padding: '8px',
+                                                                    borderRadius: '8px',
+                                                                    color: 'var(--color-accent-primary)',
+                                                                    transition: 'all 0.2s',
+                                                                    background: 'rgba(var(--color-accent-rgb), 0.1)'
+                                                                }}
+                                                            >
+                                                                {isAutoPrompting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                                                            </button>
+                                                        )}
+                                                    </>
+                                                )}
+                                                <button
+                                                    onClick={() => setPrompt(prev => getEnhancedPrompt(prev))}
+                                                    className="btn-ghost"
+                                                    title="Magic Enhance"
+                                                    style={{
+                                                        padding: '8px',
+                                                        borderRadius: '8px',
+                                                        color: 'var(--color-accent-primary)',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    <Wand2 size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setPrompt(getRandomPrompt())}
+                                                    className="btn-ghost"
+                                                    title="Surprise Me"
+                                                    style={{
+                                                        padding: '8px',
+                                                        borderRadius: '8px',
+                                                        color: 'var(--color-text-muted)',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    <Dices size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        const url = new URL(window.location);
+                                                        url.searchParams.set('prompt', prompt);
+                                                        if (seed !== -1) url.searchParams.set('seed', seed);
+                                                        if (aspectRatio !== '1:1') url.searchParams.set('aspectRatio', aspectRatio);
+                                                        if (steps !== 30) url.searchParams.set('steps', steps);
+                                                        if (cfg !== 7.0) url.searchParams.set('cfg', cfg);
+                                                        if (negPrompt) url.searchParams.set('negPrompt', negPrompt);
+
+                                                        navigator.clipboard.writeText(url.toString());
+                                                        toast.success('Link copied to clipboard');
+                                                    }}
+                                                    className="btn-ghost"
+                                                    title="Share Configuration"
+                                                    style={{
+                                                        padding: '8px',
+                                                        borderRadius: '8px',
+                                                        color: 'var(--color-text-muted)',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    <Share2 size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setPrompt('')}
+                                                    className="btn-ghost"
+                                                    title="Clear Prompt"
+                                                    style={{
+                                                        padding: '8px',
+                                                        borderRadius: '8px',
+                                                        color: 'var(--color-text-muted)',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                            <button
+                                                onClick={handleGenerate}
+                                                disabled={generating || !prompt || (generationMode === 'image' ? credits <= 0 && subscriptionStatus !== 'active' : reels <= 0)}
+                                                className="btn btn-primary generate-btn"
+                                                style={{
+                                                    height: '42px',
+                                                    padding: '0 32px',
+                                                    borderRadius: '10px',
+                                                    fontSize: '0.95rem',
+                                                    fontWeight: '600',
+                                                    letterSpacing: '0.02em',
+                                                    boxShadow: '0 0 20px rgba(var(--color-accent-rgb), 0.3)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '8px'
+                                                }}
+                                            >
+                                                {generating ? <Loader2 className="animate-spin" size={18} /> : (
+                                                    <>
+                                                        <Sparkles size={18} style={{ fill: 'currentColor' }} />
+                                                        Generate
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Generation History (Internal) */}
-                    <GenerationHistory
-                        onSelect={handleHistorySelect}
-                        selectedJobId={null}
-                        onUsePrompt={(job) => {
-                            console.log("Using prompt from job:", job);
-                            setPrompt(job.prompt);
-                            if (job.modelId && availableModels.length > 0) {
-                                console.log("Attempting to restore model:", job.modelId);
-                                const restoredModel = availableModels.find(m => m.id === job.modelId);
-                                console.log("Found model:", restoredModel);
-                                if (restoredModel) {
-                                    setSelectedModel(restoredModel);
+                    {/* Generation History (Internal) - Hidden in Video Mode */}
+                    {generationMode !== 'video' && (
+                        <GenerationHistory
+                            onSelect={handleHistorySelect}
+                            selectedJobId={null}
+                            onUsePrompt={(job) => {
+                                console.log("Using prompt from job:", job);
+                                setPrompt(job.prompt);
+                                if (job.modelId && availableModels.length > 0) {
+                                    console.log("Attempting to restore model:", job.modelId);
+                                    const restoredModel = availableModels.find(m => m.id === job.modelId);
+                                    console.log("Found model:", restoredModel);
+                                    if (restoredModel) {
+                                        setSelectedModel(restoredModel);
+                                    } else {
+                                        console.warn("Could not find model with ID:", job.modelId);
+                                    }
                                 } else {
-                                    console.warn("Could not find model with ID:", job.modelId);
+                                    console.warn("No modelId in job or availableModels empty", { modelId: job.modelId, modelsCount: availableModels.length });
                                 }
-                            } else {
-                                console.warn("No modelId in job or availableModels empty", { modelId: job.modelId, modelsCount: availableModels.length });
-                            }
-                        }}
-                    />
+                            }}
+                        />
+                    )}
                 </div>
 
 
@@ -705,91 +1022,216 @@ export default function Generator() {
 
                             {/* Aspect Ratio Grid */}
                             {/* Visualization / Simple Mode Content */}
-                            {activeTab === 'simple' && generationMode === 'image' && (
+                            {activeTab === 'simple' && (
                                 <div className="fade-in">
-                                    <label className="setting-label" style={{ marginBottom: '12px' }}>TRY A STYLE</label>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                                        {showcaseImages.slice(0, 9).map((img) => (
-                                            <button
-                                                key={img.id}
-                                                onClick={() => {
-                                                    setPrompt(img.prompt);
-                                                    setGeneratedImage(img.imageUrl);
-                                                }}
-                                                className="hover-card"
-                                                style={{
-                                                    aspectRatio: '1',
-                                                    borderRadius: '12px',
-                                                    overflow: 'hidden',
-                                                    border: '1px solid var(--color-border)',
-                                                    cursor: 'pointer',
-                                                    padding: 0,
-                                                    position: 'relative'
-                                                }}
-                                                title={img.prompt}
-                                            >
-                                                <img
-                                                    src={getOptimizedImageUrl(img.imageUrl)}
-                                                    alt="Style"
-                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                                />
-                                            </button>
-                                        ))}
-                                    </div>
-                                    {showcaseImages.length === 0 && (
-                                        <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>
-                                            Select a model to see examples via showcase
-                                        </div>
-                                    )}
-                                </div>
-                            )}
 
-                            {activeTab === 'advanced' && generationMode === 'image' && (
-                                <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-
-                                    {/* Aspect Ratio (Now in Advanced) */}
-                                    <div>
+                                    {/* Aspect Ratio - Moved to Simple */}
+                                    <div style={{ marginBottom: '24px' }}>
                                         <label className="setting-label">ASPECT RATIO</label>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
                                             {[
-                                                { label: 'Square', value: '1:1', icon: <Square size={18} />, desc: '1:1' },
-                                                { label: 'Landscape', value: '16:9', icon: <Monitor size={18} />, desc: '16:9' },
-                                                { label: 'Portrait', value: '9:16', icon: <Smartphone size={18} />, desc: '9:16' },
-                                                { label: 'Classic L', value: '3:2', icon: <RectangleHorizontal size={18} />, desc: '3:2' },
-                                                { label: 'Classic P', value: '2:3', icon: <RectangleVertical size={18} />, desc: '2:3' }
+                                                { label: '1:1', value: '1:1', icon: <Square size={16} /> },
+                                                { label: '16:9', value: '16:9', icon: <Monitor size={16} /> },
+                                                { label: '9:16', value: '9:16', icon: <Smartphone size={16} /> },
+                                                { label: '3:2', value: '3:2', icon: <RectangleHorizontal size={16} /> },
+                                                { label: '2:3', value: '2:3', icon: <RectangleVertical size={16} /> }
                                             ].map(r => (
                                                 <button
                                                     key={r.value}
                                                     onClick={() => setAspectRatio(r.value)}
                                                     title={r.label}
                                                     style={{
-                                                        padding: '12px 8px',
-                                                        borderRadius: '12px',
+                                                        padding: '10px 4px',
+                                                        borderRadius: '10px',
                                                         border: aspectRatio === r.value ? '1px solid var(--color-accent-primary)' : '1px solid var(--color-border)',
                                                         background: aspectRatio === r.value ? 'rgba(var(--color-accent-rgb), 0.1)' : 'rgba(255,255,255,0.02)',
                                                         color: aspectRatio === r.value ? 'var(--color-accent-primary)' : 'var(--color-text-muted)',
                                                         display: 'flex',
                                                         flexDirection: 'column',
                                                         alignItems: 'center',
-                                                        gap: '8px',
+                                                        gap: '6px',
                                                         cursor: 'pointer',
                                                         transition: 'all 0.2s'
                                                     }}
                                                     className="hover:bg-white/5"
                                                 >
-                                                    <div style={{
-                                                        opacity: aspectRatio === r.value ? 1 : 0.7
-                                                    }}>
-                                                        {r.icon}
-                                                    </div>
-                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-                                                        <span style={{ fontSize: '0.65rem', fontWeight: '600' }}>{r.label}</span>
-                                                        <span style={{ fontSize: '0.55rem', opacity: 0.5 }}>{r.desc}</span>
-                                                    </div>
+                                                    <div style={{ opacity: aspectRatio === r.value ? 1 : 0.7 }}>{r.icon}</div>
+                                                    <span style={{ fontSize: '0.6rem', fontWeight: '600' }}>{r.label}</span>
                                                 </button>
                                             ))}
                                         </div>
                                     </div>
+
+                                    {/* Video Mode: Bring to Life */}
+                                    {generationMode === 'video' && (
+                                        <div style={{ marginBottom: '24px' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                <label className="setting-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: 0 }}>
+                                                    <Sparkles size={12} /> BRING TO LIFE
+                                                </label>
+                                                {referenceImage && (
+                                                    <button
+                                                        onClick={clearReferenceImage}
+                                                        style={{ fontSize: '0.7rem', color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                                    >
+                                                        <Trash2 size={12} /> Clear
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                                                {/* 1. Upload Tile */}
+                                                <button
+                                                    onClick={() => setIsImagePickerOpen(true)}
+                                                    className="hover:bg-white/5"
+                                                    style={{
+                                                        aspectRatio: '1',
+                                                        borderRadius: '12px',
+                                                        border: '1px dashed var(--color-border)',
+                                                        background: 'rgba(255,255,255,0.02)',
+                                                        color: 'var(--color-text-muted)',
+                                                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                                        gap: '4px', cursor: 'pointer',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                    title="Upload / Select Image"
+                                                >
+                                                    <Upload size={18} />
+                                                    <span style={{ fontSize: '0.65rem' }}>Upload</span>
+                                                </button>
+
+                                                {/* 2. Recent Images (Max 8) */}
+                                                {recentImages.slice(0, 8).map((img) => {
+                                                    const isSelected = referenceImage === img.imageUrl;
+                                                    return (
+                                                        <button
+                                                            key={img.id}
+                                                            onClick={() => {
+                                                                if (isSelected) {
+                                                                    clearReferenceImage();
+                                                                } else {
+                                                                    setReferenceImage(img.imageUrl);
+                                                                }
+                                                            }}
+                                                            className="hover-card"
+                                                            style={{
+                                                                aspectRatio: '1',
+                                                                borderRadius: '12px',
+                                                                overflow: 'hidden',
+                                                                border: isSelected ? '2px solid var(--color-accent-primary)' : '1px solid var(--color-border)',
+                                                                cursor: 'pointer',
+                                                                padding: 0,
+                                                                position: 'relative',
+                                                                boxShadow: isSelected ? '0 0 10px rgba(var(--color-accent-rgb), 0.3)' : 'none'
+                                                            }}
+                                                            title={img.prompt || "Recent Generation"}
+                                                        >
+                                                            <img
+                                                                src={getOptimizedImageUrl(img.imageUrl)}
+                                                                alt=""
+                                                                style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: isSelected ? 1 : 0.8 }}
+                                                            />
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '8px', lineHeight: '1.4' }}>
+                                                Select an image from history or upload a new one to animate.
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Image Mode: Styles */}
+                                    {generationMode === 'image' && (
+                                        <div>
+                                            <label className="setting-label" style={{ marginBottom: '12px' }}>TRY A STYLE</label>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                                                {showcaseImages.slice(0, 9).map((img) => (
+                                                    <button
+                                                        key={img.id}
+                                                        onClick={() => {
+                                                            setPrompt(img.prompt);
+                                                            setGeneratedImage(img.imageUrl);
+                                                        }}
+                                                        className="hover-card"
+                                                        style={{
+                                                            aspectRatio: '1',
+                                                            borderRadius: '12px',
+                                                            overflow: 'hidden',
+                                                            border: '1px solid var(--color-border)',
+                                                            cursor: 'pointer',
+                                                            padding: 0,
+                                                            position: 'relative'
+                                                        }}
+                                                        title={img.prompt}
+                                                    >
+                                                        <img
+                                                            src={getOptimizedImageUrl(img.imageUrl)}
+                                                            alt="Style"
+                                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                        />
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            {showcaseImages.length === 0 && (
+                                                <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                                                    Select a model to see examples via showcase
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {activeTab === 'advanced' && (
+                                <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
+                                    {/* Video Settings (Moved to Advanced) */}
+                                    {generationMode === 'video' && (
+                                        <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '24px', borderBottom: '1px solid var(--color-border)' }}>
+                                            <div className="alert-box" style={{ padding: '12px', background: 'rgba(var(--color-accent-rgb), 0.1)', borderRadius: '8px', border: '1px solid var(--color-accent-primary)', color: 'white', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <AlertCircle size={16} />
+                                                <span>Video generation consumes usage-based <b>Reels</b> currency.</span>
+                                            </div>
+
+                                            <div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                    <label className="setting-label">DURATION (SECONDS)</label>
+                                                    <span style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'white' }}>{videoDuration}s</span>
+                                                </div>
+                                                <input type="range" min="5" max="10" step="1" value={videoDuration} onChange={(e) => setVideoDuration(parseInt(e.target.value))} />
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
+                                                    <span>5s</span>
+                                                    <span>10s</span>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="setting-label">RESOLUTION</label>
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '8px' }}>
+                                                    {['1080p', '2k', '4k'].map(res => (
+                                                        <button
+                                                            key={res}
+                                                            onClick={() => setVideoResolution(res)}
+                                                            style={{
+                                                                padding: '10px',
+                                                                borderRadius: '8px',
+                                                                border: videoResolution === res ? '1px solid var(--color-accent-primary)' : '1px solid var(--color-border)',
+                                                                background: videoResolution === res ? 'rgba(var(--color-accent-rgb), 0.1)' : 'rgba(255,255,255,0.02)',
+                                                                color: videoResolution === res ? 'var(--color-accent-primary)' : 'var(--color-text-muted)',
+                                                                cursor: 'pointer',
+                                                                fontSize: '0.85rem',
+                                                                fontWeight: '600'
+                                                            }}
+                                                        >
+                                                            {res}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
 
                                     <div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -868,62 +1310,13 @@ export default function Generator() {
                                     </div>
                                 </div>
                             )}
-
-                            {/* Video Controls (Mode Independent of Tab for now, or put in both) */}
-                            {generationMode === 'video' && (
-                                <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                                    <div className="alert-box" style={{ padding: '12px', background: 'rgba(var(--color-accent-rgb), 0.1)', borderRadius: '8px', border: '1px solid var(--color-accent-primary)', color: 'white', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <AlertCircle size={16} />
-                                        <span>Video generation consumes usage-based <b>Reels</b> currency.</span>
-                                    </div>
-
-                                    <div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                            <label className="setting-label">DURATION (SECONDS)</label>
-                                            <span style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'white' }}>{videoDuration}s</span>
-                                        </div>
-                                        <input type="range" min="5" max="10" step="1" value={videoDuration} onChange={(e) => setVideoDuration(parseInt(e.target.value))} />
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
-                                            <span>5s</span>
-                                            <span>10s</span>
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="setting-label">RESOLUTION</label>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '8px' }}>
-                                            {['1080p', '2k', '4k'].map(res => (
-                                                <button
-                                                    key={res}
-                                                    onClick={() => setVideoResolution(res)}
-                                                    style={{
-                                                        padding: '10px',
-                                                        borderRadius: '8px',
-                                                        background: videoResolution === res ? 'var(--color-accent-primary)' : 'rgba(255,255,255,0.05)',
-                                                        color: videoResolution === res ? 'white' : 'var(--color-text-muted)',
-                                                        border: 'none',
-                                                        cursor: 'pointer',
-                                                        fontWeight: '600',
-                                                        fontSize: '0.85rem'
-                                                    }}
-                                                >
-                                                    {res}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <div style={{ marginTop: '8px', fontSize: '0.75rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>
-                                            {videoResolution === '1080p' ? '18 Reels/sec' : videoResolution === '2k' ? '36 Reels/sec' : '72 Reels/sec'}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
 
             </div>
 
-            {/* Model Selection Modal */}
+            {/* Modals */}
             <ModelSelectorModal
                 isOpen={isModelModalOpen}
                 onClose={() => setIsModelModalOpen(false)}
@@ -933,6 +1326,12 @@ export default function Generator() {
                 })}
                 selectedModel={selectedModel}
                 onSelectModel={setSelectedModel}
+            />
+
+            <ImagePickerModal
+                isOpen={isImagePickerOpen}
+                onClose={() => setIsImagePickerOpen(false)}
+                onSelect={handlePickerSelect}
             />
 
             {/* Fullscreen Modal */}
