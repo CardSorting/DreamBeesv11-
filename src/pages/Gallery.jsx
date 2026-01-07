@@ -85,14 +85,13 @@ export default function Gallery() {
         );
     }, [images, searchQuery]);
 
-    const handleBatchDelete = async () => {
-        if (!window.confirm(`Delete ${selectedIds.length} images? This cannot be undone.`)) return;
-
+    const executeDelete = async (toastId) => {
+        toast.dismiss(toastId);
         const loadToast = toast.loading('Deleting...');
         try {
             const deleteImagesBatch = httpsCallable(functions, 'deleteImagesBatch');
             const result = await deleteImagesBatch({ imageIds: selectedIds });
-            
+
             if (result.data.success) {
                 setImages(prev => prev.filter(img => !selectedIds.includes(img.id)));
                 setSelectedIds([]);
@@ -106,6 +105,89 @@ export default function Gallery() {
         } finally {
             toast.dismiss(loadToast);
         }
+    };
+
+    const handleBatchDelete = () => {
+        toast.custom((t) => (
+            <div className={`${t.visible ? 'animate-enter' : 'animate-leave'}`} style={{
+                maxWidth: '350px',
+                width: '100%',
+                background: '#18181b',
+                color: '#fff',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '16px',
+                boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                        background: 'rgba(239, 68, 68, 0.2)',
+                        padding: '10px',
+                        borderRadius: '50%',
+                        color: '#ef4444'
+                    }}>
+                        <Trash2 size={20} />
+                    </div>
+                    <div>
+                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>Confirm Deletion</h4>
+                        <p style={{ margin: '4px 0 0', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                            Delete {selectedIds.length} image{selectedIds.length > 1 ? 's' : ''}? This action cannot be undone.
+                        </p>
+                    </div>
+                </div>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                    <button
+                        onClick={() => toast.dismiss(t.id)}
+                        style={{
+                            flex: 1,
+                            padding: '10px',
+                            background: 'transparent',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: '8px',
+                            color: '#fff',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem',
+                            fontWeight: '500',
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                        onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={() => executeDelete(t.id)}
+                        style={{
+                            flex: 1,
+                            padding: '10px',
+                            background: '#ef4444',
+                            border: 'none',
+                            borderRadius: '8px',
+                            color: '#fff',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem',
+                            fontWeight: '600',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = '#dc2626'}
+                        onMouseOut={(e) => e.currentTarget.style.background = '#ef4444'}
+                    >
+                        <Trash2 size={16} />
+                        Delete
+                    </button>
+                </div>
+            </div>
+        ), {
+            duration: 8000,
+            id: 'delete-toast'
+        });
     };
 
     const toggleSelection = (id) => {

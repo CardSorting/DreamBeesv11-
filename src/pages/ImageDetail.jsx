@@ -36,7 +36,7 @@ export default function ImageDetail() {
             try {
                 const getImageDetail = httpsCallable(functions, 'getImageDetail');
                 const result = await getImageDetail({ imageId: id });
-                
+
                 if (result.data) {
                     setImage(result.data);
                 } else {
@@ -61,18 +61,104 @@ export default function ImageDetail() {
         toast.success("Copied to clipboard");
     };
 
-    const handleDelete = async () => {
-        if (!window.confirm("Permanently delete this creation?")) return;
+    const executeDelete = async (toastId) => {
+        toast.dismiss(toastId);
+        const loadToast = toast.loading('Deleting...');
         try {
             const deleteImage = httpsCallable(functions, 'deleteImage');
             await deleteImage({ imageId: id });
             navigate('/gallery');
-            toast.success("Deleted");
+            toast.success("Deleted permanently");
         } catch (err) {
             console.error("Error deleting image:", err);
             const errorMessage = err.message || "Deletion failed";
             toast.error(errorMessage);
+        } finally {
+            toast.dismiss(loadToast);
         }
+    };
+
+    const handleDelete = () => {
+        toast.custom((t) => (
+            <div className={`${t.visible ? 'animate-enter' : 'animate-leave'}`} style={{
+                maxWidth: '350px',
+                width: '100%',
+                background: '#18181b',
+                color: '#fff',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '16px',
+                boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                        background: 'rgba(239, 68, 68, 0.2)',
+                        padding: '10px',
+                        borderRadius: '50%',
+                        color: '#ef4444'
+                    }}>
+                        <Trash2 size={20} />
+                    </div>
+                    <div>
+                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>Delete Creation?</h4>
+                        <p style={{ margin: '4px 0 0', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                            This will permanently remove this image from your gallery.
+                        </p>
+                    </div>
+                </div>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                    <button
+                        onClick={() => toast.dismiss(t.id)}
+                        style={{
+                            flex: 1,
+                            padding: '10px',
+                            background: 'transparent',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: '8px',
+                            color: '#fff',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem',
+                            fontWeight: '500',
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                        onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={() => executeDelete(t.id)}
+                        style={{
+                            flex: 1,
+                            padding: '10px',
+                            background: '#ef4444',
+                            border: 'none',
+                            borderRadius: '8px',
+                            color: '#fff',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem',
+                            fontWeight: '600',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '8px',
+                            transition: 'all 0.2s'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = '#dc2626'}
+                        onMouseOut={(e) => e.currentTarget.style.background = '#ef4444'}
+                    >
+                        <Trash2 size={16} />
+                        Delete
+                    </button>
+                </div>
+            </div>
+        ), {
+            duration: 8000,
+            id: 'delete-image-toast'
+        });
     };
 
     if (loading) return (
