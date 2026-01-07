@@ -98,15 +98,6 @@ const MODELS = [
         order: 11,
         isActive: true,
         image: '/showcase/qwen-image-2512/cover.png'
-    },
-    {
-        id: 'miaomiao-harem',
-        name: 'Miaomiao Harem',
-        description: 'High-quality harem anime style model with vibrant details.',
-        type: 'SDXL',
-        order: 12,
-        isActive: true,
-        image: '/showcase/miaomiao-harem/cover.png'
     }
 ];
 
