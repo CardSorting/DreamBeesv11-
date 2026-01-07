@@ -12,6 +12,7 @@ import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 
 
+
 // Initializing Firebase Admin
 // Use the service account key only for local emulation or if env var not set
 // In production (Cloud Functions), initializeApp() uses ADC (default service account)
@@ -45,220 +46,23 @@ const s3Client = new S3Client({
     },
 });
 
-export const generateImage = onDocumentCreated(
+// Image Generation Worker (onTaskDispatched)
+export const processImageTask = onTaskDispatched(
     {
-        document: "generation_queue/{requestId}",
-        timeoutSeconds: 300, // 5 minutes max
-        memory: "1GiB",
-    },
-    async (event) => {
-        const snapshot = event.data;
-        if (!snapshot) {
-            console.log("No data associated with the event");
-            return;
-        }
-
-        const data = snapshot.data();
-        const requestId = event.params.requestId;
-
-        // Prevent infinite loops or re-runs if already processed
-        if (data.status !== "pending") {
-            return;
-        }
-
-        try {
-            // Update status to processing
-            await snapshot.ref.update({ status: "processing" });
-
-            const { prompt, modelId, userId, negative_prompt, steps, cfg, aspectRatio, scheduler } = data;
-
-            // --- Input Validation & Cleaning ---
-            let cleanPrompt = prompt;
-
-            if (!cleanPrompt || typeof cleanPrompt !== 'string') {
-                await snapshot.ref.update({ status: "failed", error: "Invalid prompt" });
-                return;
-            }
-
-            // 1. Remove excessive emojis (if > 5)
-            // Regex to match emojis (simplified common ranges)
-            const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
-            const emojiCount = (cleanPrompt.match(emojiRegex) || []).length;
-            if (emojiCount > 5) {
-                // Strip ALL emojis if excessive
-                cleanPrompt = cleanPrompt.replace(emojiRegex, '');
-            }
-
-            // 2. Collapse repeated punctuation/symbols (e.g. "!!!!" -> "!")
-            // Collapse sequences of 3+ same non-alphanumeric chars to 1
-            cleanPrompt = cleanPrompt.replace(/([^a-zA-Z0-9\s])\1{2,}/g, '$1');
-
-            // 3. Remove long number sequences (5+ digits)
-            cleanPrompt = cleanPrompt.replace(/\d{5,}/g, '');
-
-            // 4. Trim and check length
-            cleanPrompt = cleanPrompt.trim();
-
-            if (cleanPrompt.length < 5) {
-                await snapshot.ref.update({ status: "failed", error: "Prompt too short or invalid after cleaning" });
-                return;
-            }
-
-            // Removed invalid assignment to const 'prompt'
-            // We successfully have 'cleanPrompt' to use for subsequent steps.
-
-            const validAspectRatios = ['1:1', '2:3', '3:2', '9:16', '16:9'];
-            const safeAspectRatio = validAspectRatios.includes(aspectRatio) ? aspectRatio : '1:1';
-
-            // Clamp steps 10-50 (or whatever the API limits are, keep it reasonable)
-            // Default is 30.
-            let safeSteps = parseInt(steps);
-            if (isNaN(safeSteps) || safeSteps < 10) safeSteps = 10;
-            if (safeSteps > 50) safeSteps = 50;
-
-            // Clamp CFG 1-20
-            // Default is 5.0
-            let safeCfg = parseFloat(cfg);
-            if (isNaN(safeCfg) || safeCfg < 1) safeCfg = 1.0;
-            if (safeCfg > 20) safeCfg = 20.0;
-            // ------------------------
-
-            // --- Credit Check Logic ---
-            const userRef = db.collection('users').doc(userId);
-            const userDoc = await userRef.get();
-            let user = userDoc.exists ? userDoc.data() : {};
-            const reelsMissing = user.reels === undefined;
-
-            // Default values for new users
-            if (!user.credits && user.credits !== 0) user.credits = 30; // Generous starting credits
-            if (reelsMissing) user.reels = 0;
-            // Set lastDailyReset to NOW for new users so they don't trigger an immediate reset
-            if (!user.lastDailyReset) user.lastDailyReset = new Date();
-
-            const now = new Date();
-            const lastReset = user.lastDailyReset.toDate ? user.lastDailyReset.toDate() : new Date(user.lastDailyReset);
-            const oneDay = 24 * 60 * 60 * 1000;
-
-            // Daily Reset Logic
-            // Only reset if it's been > 24h AND the user has fewer than 5 credits.
-            // This prevents wiping out the 30 starting credits or purchased packs.
-            if (now - lastReset > oneDay) {
-                if ((user.credits || 0) < 5) {
-                    user.credits = 5; // Top up to daily limit
-                    // We only update lastDailyReset if we actually topped up? 
-                    // Or always update it to mark the new cycle?
-                    // Let's always update it so we check again tomorrow.
-                }
-                user.lastDailyReset = now;
-                // We use set with merge to ensure fields exist, though update is likely fine if user exists.
-                // Using update pattern below.
-                const updateData = { lastDailyReset: now };
-                if ((user.credits || 0) < 5) {
-                    updateData.credits = 5;
-                }
-                if (reelsMissing) {
-                    updateData.reels = FieldValue.increment(0);
-                }
-
-                await userRef.set(updateData, { merge: true });
-
-                // Update local user object so the check below uses correct values
-                if (updateData.credits) user.credits = updateData.credits;
-            }
-
-            // Check subscription
-            const isPro = user.subscriptionStatus === 'active';
-
-            // Start - moved after buffer check in old code, but now we do it before enqueueing
-            // --- Rate Limiting (10s cooldown) ---
-            const lastGenTime = user.lastGenerationTime ? (user.lastGenerationTime.toDate ? user.lastGenerationTime.toDate() : new Date(user.lastGenerationTime)) : new Date(0);
-            if (now - lastGenTime < 10000) { // 10 seconds in ms
-                await snapshot.ref.update({ status: "failed", error: "Rate limit exceeded. Please wait 10 seconds between generations." });
-                return;
-            }
-            // ------------------------------------
-
-            // Deduct credit if not Pro (or deduct for Pro too if we want usage tracking)
-            // For this implementation: Pro = Unlimited, Free = 5 credits.
-            const userUpdate = { lastGenerationTime: now };
-            if (!isPro) {
-                userUpdate.credits = FieldValue.increment(-1);
-            }
-            if (reelsMissing) {
-                userUpdate.reels = FieldValue.increment(0);
-            }
-            await userRef.update(userUpdate);
-            // End - moved logic
-
-
-            // --- Enqueue Background Task for Execution ---
-            // Instead of executing heavy logic here, we enqueue it to Cloud Tasks.
-            // This allows us to use Cloud Tasks' rate limiting to act as a buffer.
-
-            const queue = getFunctions().taskQueue("generateImageTask");
-
-            // Pass all necessary data to the task
-            // We use the cleaned prompt and valid logic from here
-            await queue.enqueue({
-                requestId,
-                userId,
-                prompt: cleanPrompt, // Use the cleaned version
-                originalPrompt: prompt, // Keep original just in case? No, clean is better.
-                negative_prompt: negative_prompt || "",
-                modelId,
-                steps: safeSteps,
-                cfg: safeCfg,
-                aspectRatio: safeAspectRatio,
-                scheduler: scheduler || 'DPM++ 2M Karras'
-            });
-
-            // Update status to 'queued' to indicate it's in the buffer
-            await snapshot.ref.update({ status: "queued" });
-
-            console.log(`Request ${requestId} enqueued to generateImageTask`);
-
-        } catch (error) {
-            console.error("Error queueing image generation:", error);
-            await snapshot.ref.update({
-                status: "failed",
-                error: error.message
-            });
-        }
-    }
-);
-
-// New Cloud Task for processing the image generation
-export const generateImageTask = onTaskDispatched(
-    {
-        retryConfig: {
-            maxAttempts: 3,
-            minBackoffSeconds: 60,
-        },
-        rateLimits: {
-            maxConcurrentDispatches: 2, // Concurrency of 2. With ~8s execution time, this is approx 1 req / 4s.
-            maxDispatchesPerSecond: 1, // Max burst rate (if tasks were instant)
-        },
+        retryConfig: { maxAttempts: 3, minBackoffSeconds: 60 },
+        rateLimits: { maxConcurrentDispatches: 5 }, // Higher limit for images
         memory: "1GiB",
         timeoutSeconds: 300,
     },
     async (req) => {
         const { requestId, userId, prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler } = req.data;
-
-        console.log(`Task processing started for ${requestId}`);
-
-        // Re-establish refs inside task (since it's a separate execution context)
-        const db = getFirestore(); // Admin SDK instance
-
-        // Note: verify the document still exists and is in 'queued' or 'processing' state? 
-        // Or just proceed. Proceeding is robust.
+        const db = getFirestore();
+        const docRef = db.collection("generation_queue").doc(requestId);
 
         try {
-            // Update status to processing (execution started)
-            await db.collection("generation_queue").doc(requestId).update({ status: "processing" });
+            await docRef.update({ status: "processing" });
 
-            if (!B2_KEY_ID) throw new Error("Missing B2 credentials");
-
-            // Define resolution mapping for SDXL
+            // Resolution mapping
             const resolutionMap = {
                 '1:1': { width: 1024, height: 1024 },
                 '2:3': { width: 832, height: 1216 },
@@ -266,174 +70,61 @@ export const generateImageTask = onTaskDispatched(
                 '9:16': { width: 768, height: 1344 },
                 '16:9': { width: 1344, height: 768 }
             };
-
             const resolution = resolutionMap[aspectRatio] || resolutionMap['1:1'];
 
-            // --- Simulated Delay for Cold Starts / Buffering ---
-            // Adjust these values as needed based on observed backend latency
-            const MODEL_DELAYS = {
-                "cat-carrier": 8000,
-                "hassaku-illustrious": 8000,
-                "default": 8000
-            };
-
-            const delayMs = MODEL_DELAYS[modelId] || MODEL_DELAYS["default"];
-            if (delayMs > 0) {
-                console.log(`Applying simulated delay of ${delayMs}ms for model ${modelId || 'unknown'}...`);
-                await new Promise(resolve => setTimeout(resolve, delayMs));
-            }
-            // ----------------------------------------------------
-
-            // 1. Call Model Endpoint
-            console.log(`Generating image for ${requestId} (${aspectRatio} - ${resolution.width}x${resolution.height}) using model ${modelId || 'default'}...`);
-
             let buffer;
-
             if (modelId === 'zit-model') {
-                // ZIT-model specific endpoint (POST)
-                console.log("Using ZIT-model endpoint...");
-
-                // Determine if aspect ratio is directly supported by ZIT
-                // ZIT supports: 1:1, 16:9, 9:16, 4:3, 3:4, 21:9, 9:21
-                const zitSupportedRatios = ['1:1', '16:9', '9:16', '4:3', '3:4', '21:9', '9:21'];
-                const useAspectRatioParam = zitSupportedRatios.includes(aspectRatio);
-
                 const zBody = {
-                    prompt: prompt,
-                    steps: steps, // ZIT recommends 9, but we pass user value (clamped 10-50 currently)
-                    // If supported, pass string, else pass explicit width/height
-                    ...(useAspectRatioParam ? { aspect_ratio: aspectRatio } : { width: resolution.width, height: resolution.height })
+                    prompt, steps,
+                    ...((['1:1', '16:9', '9:16', '4:3', '3:4', '21:9', '9:21'].includes(aspectRatio)) ? { aspect_ratio: aspectRatio } : { width: resolution.width, height: resolution.height })
                 };
-
-                const response = await fetch("https://cardsorting--zit-only-fastapi-app.modal.run/generate", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
+                const resp = await fetch("https://cardsorting--zit-only-fastapi-app.modal.run/generate", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(zBody)
                 });
-
-                if (!response.ok) {
-                    const errText = await response.text();
-                    throw new Error(`ZIT Modal API Error: ${errText}`);
-                }
-
-                const blob = await response.blob();
-                const arrayBuffer = await blob.arrayBuffer();
-                buffer = Buffer.from(arrayBuffer);
-
+                if (!resp.ok) throw new Error(`ZIT Error: ${await resp.text()}`);
+                buffer = Buffer.from(await resp.arrayBuffer());
             } else if (modelId === 'qwen-image-2512') {
-                // Qwen-Image-2512 specific endpoint (POST)
-                console.log("Using Qwen-Image-2512 endpoint...");
-
-                const qBody = {
-                    prompt: prompt,
-                    negative_prompt: negative_prompt || "",
-                    aspect_ratio: aspectRatio // Qwen supports aspect_ratio directly
-                };
-
-                const response = await fetch("https://cardsorting--qwen-image-2512-qwenimage-api-generate.modal.run", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(qBody)
+                const resp = await fetch("https://cardsorting--qwen-image-2512-qwenimage-api-generate.modal.run", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ prompt, negative_prompt, aspect_ratio: aspectRatio })
                 });
-
-                if (!response.ok) {
-                    const errText = await response.text();
-                    throw new Error(`Qwen Modal API Error: ${errText}`);
-                }
-
-                const blob = await response.blob();
-                const arrayBuffer = await blob.arrayBuffer();
-                buffer = Buffer.from(arrayBuffer);
-
+                if (!resp.ok) throw new Error(`Qwen Error: ${await resp.text()}`);
+                buffer = Buffer.from(await resp.arrayBuffer());
             } else {
-                // Default / SDXL Multi-Model Endpoint (GET)
                 const params = new URLSearchParams({
-                    prompt: prompt,
-                    model: modelId || "cat-carrier",
-                    negative_prompt: negative_prompt || "",
-                    steps: steps.toString(),
-                    cfg: cfg.toString(),
-                    width: resolution.width.toString(),
-                    height: resolution.height.toString(),
+                    prompt, model: modelId || "cat-carrier", negative_prompt,
+                    steps: steps.toString(), cfg: cfg.toString(),
+                    width: resolution.width.toString(), height: resolution.height.toString(),
                     scheduler: scheduler || 'DPM++ 2M Karras'
                 });
-
-                const response = await fetch(
-                    `https://cardsorting--sdxl-multi-model-model-web-inference.modal.run?${params.toString()}`,
-                    {
-                        method: "GET"
-                    }
-                );
-
-                if (!response.ok) {
-                    const errText = await response.text();
-                    throw new Error(`Modal API Error: ${errText}`);
-                }
-
-                const blob = await response.blob();
-                const arrayBuffer = await blob.arrayBuffer();
-                buffer = Buffer.from(arrayBuffer);
+                const resp = await fetch(`https://cardsorting--sdxl-multi-model-model-web-inference.modal.run?${params.toString()}`);
+                if (!resp.ok) throw new Error(`Model Error: ${await resp.text()}`);
+                buffer = Buffer.from(await resp.arrayBuffer());
             }
 
-            // 2. Upload to Backblaze B2
+            // Upload to B2
             const filename = `generated/${userId}/${Date.now()}.png`;
-            console.log(`Uploading to B2: ${filename}...`);
-
-            const command = new PutObjectCommand({
-                Bucket: B2_BUCKET,
-                Key: filename,
-                Body: buffer,
-                ContentType: "image/png",
-            });
-
-            await s3Client.send(command);
-            // Construct CDN URL with explicit bucket path
+            await s3Client.send(new PutObjectCommand({ Bucket: B2_BUCKET, Key: filename, Body: buffer, ContentType: "image/png" }));
             const imageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${filename}`;
 
-            // 3. Save to main 'images' collection
-            const imageDoc = {
-                userId,
-                prompt: prompt,
-                negative_prompt: negative_prompt || "",
-                steps: steps,
-                cfg: cfg,
-                aspectRatio: aspectRatio,
-                modelId,
-                imageUrl,
-                createdAt: new Date(),
-                originalrequestId: requestId
-            };
+            // Save result
+            const imageRef = await db.collection("images").add({
+                userId, prompt, negative_prompt, steps, cfg, aspectRatio, modelId, imageUrl, createdAt: new Date(), originalRequestId: requestId
+            });
 
-            const imageRef = await db.collection("images").add(imageDoc);
-            console.log(`Image saved to images/${imageRef.id}`);
-
-            // 4. Update queue status to completed
-            await db.collection("generation_queue").doc(requestId).update({
-                status: "completed",
-                imageUrl: imageUrl,
-                completedAt: new Date(),
-                resultImageId: imageRef.id
+            await docRef.update({
+                status: "completed", imageUrl, completedAt: new Date(), resultImageId: imageRef.id
             });
 
         } catch (error) {
-            console.error("Error generating image in task:", error);
-            await db.collection("generation_queue").doc(requestId).update({
-                status: "failed",
-                error: error.message
-            });
-            // We re-throw if we want Cloud Tasks to retry automatically (based on retryConfig).
-            // However, if it's a deterministic error (like bad prompt), we shouldn't retry.
-            // For now, logging and marking failed is safer to avoid loops, unless it's network error.
-            // Cloud Tasks retry logic handles network errors often before we catch? 
-            // If we catch, we suppress retry.
-            // Let's suppress retry for logic errors.
+            console.error("Task Failed:", error);
+            await docRef.update({ status: "failed", error: error.message });
         }
     }
 );
+
+
 
 export const createStripeCheckout = onCall(async (request) => {
     const { priceId, successUrl, cancelUrl, mode } = request.data;
@@ -702,67 +393,94 @@ export const serveSitemap = onRequest({
 // ============================================================================
 
 export const createGenerationRequest = onCall(async (request) => {
-    // App Check Verification
-    // App Check Verification
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
         console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
-        // throw new HttpsError('failed-precondition', "The function must be called from an App Check verified app.");
     }
 
     const uid = request.auth?.uid;
-
-    if (!uid) {
-        throw new HttpsError('unauthenticated', "User must be authenticated");
-    }
+    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
 
     const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler } = request.data;
 
-    // Input validation
+    // --- Input Validation & Cleaning ---
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 5) {
         throw new HttpsError('invalid-argument', "Prompt is required and must be at least 5 characters");
     }
 
-    if (!modelId || typeof modelId !== 'string') {
-        throw new HttpsError('invalid-argument', "Model ID is required");
+    let cleanPrompt = prompt.trim();
+    const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
+    if ((cleanPrompt.match(emojiRegex) || []).length > 5) {
+        cleanPrompt = cleanPrompt.replace(emojiRegex, '');
     }
+    cleanPrompt = cleanPrompt.replace(/([^a-zA-Z0-9\s])\1{2,}/g, '$1').replace(/\d{5,}/g, '').trim();
+    if (cleanPrompt.length < 5) throw new HttpsError('invalid-argument', "Prompt failed safety cleaning");
 
-    // Validate aspect ratio
     const validAspectRatios = ['1:1', '2:3', '3:2', '9:16', '16:9'];
     const safeAspectRatio = validAspectRatios.includes(aspectRatio) ? aspectRatio : '1:1';
-
-    // Validate and clamp steps (10-50)
-    let safeSteps = parseInt(steps) || 30;
-    if (isNaN(safeSteps) || safeSteps < 10) safeSteps = 10;
-    if (safeSteps > 50) safeSteps = 50;
-
-    // Validate and clamp CFG (1-20)
-    let safeCfg = parseFloat(cfg) || 7.0;
-    if (isNaN(safeCfg) || safeCfg < 1) safeCfg = 1.0;
-    if (safeCfg > 20) safeCfg = 20.0;
-
-    // Validate seed (can be -1 for random or a number)
-    let safeSeed = parseInt(seed) || -1;
-    if (isNaN(safeSeed)) safeSeed = -1;
+    let safeSteps = Math.min(Math.max(parseInt(steps) || 30, 10), 50);
+    let safeCfg = Math.min(Math.max(parseFloat(cfg) || 7.0, 1.0), 20.0);
 
     try {
-        // Create the generation queue entry
+        const userRef = db.collection('users').doc(uid);
+
+        // Atomic Credit/Daily Reset Transaction
+        await db.runTransaction(async (t) => {
+            const userDoc = await t.get(userRef);
+            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+
+            const userData = userDoc.data();
+            const now = new Date();
+            const lastReset = userData.lastDailyReset?.toDate?.() || new Date(0);
+            const isPro = userData.subscriptionStatus === 'active';
+
+            const userUpdate = { lastGenerationTime: now };
+
+            // Daily Reset
+            if (now - lastReset > 24 * 60 * 60 * 1000) {
+                userUpdate.lastDailyReset = now;
+                if ((userData.credits || 0) < 5) userUpdate.credits = 5;
+            }
+
+            // check rate limit (10s)
+            const lastGen = userData.lastGenerationTime?.toDate?.() || new Date(0);
+            if (now - lastGen < 10000) throw new HttpsError('resource-exhausted', "Please wait 10 seconds between generations.");
+
+            // Deduct credits
+            const currentCredits = userUpdate.credits !== undefined ? userUpdate.credits : (userData.credits || 0);
+            if (!isPro) {
+                if (currentCredits < 1) throw new HttpsError('resource-exhausted', "Insufficient credits");
+                userUpdate.credits = (userUpdate.credits || userData.credits) - 1;
+            }
+
+            t.update(userRef, userUpdate);
+        });
+
+        // 1. Create entry in queue
         const docRef = await db.collection('generation_queue').add({
             userId: uid,
-            prompt: prompt.trim(),
+            prompt: cleanPrompt,
             negative_prompt: negative_prompt || "",
-            modelId: modelId,
-            status: 'pending',
+            modelId: modelId || "cat-carrier",
+            status: 'queued',
             aspectRatio: safeAspectRatio,
             steps: safeSteps,
             cfg: safeCfg,
-            seed: safeSeed,
+            seed: seed || -1,
             scheduler: scheduler || 'DPM++ 2M Karras',
             createdAt: new Date()
+        });
+
+        // 2. Enqueue Task
+        const queue = getFunctions().taskQueue('processImageTask');
+        await queue.enqueue({
+            requestId: docRef.id, userId: uid, prompt: cleanPrompt, negative_prompt,
+            modelId, steps: safeSteps, cfg: safeCfg, aspectRatio: safeAspectRatio, scheduler
         });
 
         return { requestId: docRef.id };
     } catch (error) {
         console.error("Error creating generation request:", error);
+        if (error instanceof HttpsError) throw error;
         throw new HttpsError('internal', "Failed to create generation request", error.message);
     }
 });
@@ -1284,172 +1002,160 @@ export const getGenerationHistory = onCall(async (request) => {
 // ============================================================================
 
 export const createVideoGenerationRequest = onCall(async (request) => {
-    // App Check Verification
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
         console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
     }
 
     const uid = request.auth?.uid;
-    if (!uid) {
-        throw new HttpsError('unauthenticated', "User must be authenticated");
-    }
+    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
 
-    const { prompt, image, duration, resolution, aspectRatio } = request.data;
+    const { prompt, image, duration, resolution, aspectRatio, autoPrompt } = request.data;
+    if (!autoPrompt && (!prompt || prompt.length < 5)) throw new HttpsError('invalid-argument', "Prompt required");
+    if (autoPrompt && !image) throw new HttpsError('invalid-argument', "Image required for auto-prompt");
 
-    // Validate inputs
-    if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 5) {
-        throw new HttpsError('invalid-argument', "Prompt is required and must be at least 5 characters");
-    }
-
-    const validResolutions = ['1080p', '2k', '4k'];
-    const safeResolution = validResolutions.includes(resolution) ? resolution : '1080p';
-
-    // Default duration 6s if not specified, verify constraints (5s min, 20s max?)
-    // Video.md says min 5s. Let's assume max is lenient for now but check Pricing.jsx (states 10s-20s).
-    // Let's allow integer.
-    let safeDuration = parseInt(duration) || 6;
-    if (safeDuration < 5) safeDuration = 5;
-    if (safeDuration > 20) safeDuration = 20; // Cap at 20 based on Pricing.jsx hints
-
-    // Calculate Reel Cost
-    // 1080p: 18/s, 2k: 36/s, 4k: 72/s
-    let rate = 18;
-    if (safeResolution === '2k') rate = 36;
-    if (safeResolution === '4k') rate = 72;
-
+    let safeDuration = Math.min(Math.max(parseInt(duration) || 6, 5), 20);
+    const rate = resolution === '4k' ? 72 : (resolution === '2k' ? 36 : 18);
     const totalCost = rate * safeDuration;
 
     try {
         const userRef = db.collection('users').doc(uid);
 
-        await db.runTransaction(async (t) => {
+        // Transaction for credits and concurrency check
+        const requestId = await db.runTransaction(async (t) => {
             const userDoc = await t.get(userRef);
-            if (!userDoc.exists) {
-                throw new HttpsError('not-found', "User not found");
-            }
+            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
 
-            const userData = userDoc.data();
-            const currentReels = userData.reels || 0;
+            // Concurrency check (one active job)
+            const activeJobs = await db.collection('video_queue')
+                .where('userId', '==', uid)
+                .where('status', 'in', ['queued', 'analyzing_prompt', 'processing', 'pending'])
+                .limit(1).get();
+            if (!activeJobs.empty) throw new HttpsError('failed-precondition', "Generation already in progress.");
 
-            if (currentReels < totalCost) {
-                throw new HttpsError('resource-exhausted', `Insufficient Reels. Cost: ${totalCost}, Balance: ${currentReels}`);
-            }
+            const currentReels = userDoc.data().reels || 0;
+            if (currentReels < totalCost) throw new HttpsError('resource-exhausted', "Insufficient Reels");
 
-            t.update(userRef, {
-                reels: FieldValue.increment(-totalCost)
+            t.update(userRef, { reels: FieldValue.increment(-totalCost) });
+
+            const newDocRef = db.collection('video_queue').doc();
+            t.set(newDocRef, {
+                userId: uid,
+                prompt: autoPrompt ? "" : prompt.trim(),
+                autoPrompt: !!autoPrompt,
+                image: image || null,
+                duration: safeDuration,
+                resolution: resolution || '1080p',
+                aspectRatio: aspectRatio || null,
+                cost: totalCost,
+                status: 'queued',
+                createdAt: new Date()
             });
+
+            return newDocRef.id;
         });
 
-        // Add to video queue
-        const docRef = await db.collection('video_queue').add({
-            userId: uid,
-            prompt: prompt.trim(),
-            image: image || null,
-            duration: safeDuration,
-            resolution: safeResolution,
-            aspectRatio: aspectRatio || null, // Optional if LTX supports it
-            cost: totalCost,
-            status: 'pending',
-            createdAt: new Date()
-        });
+        // Enqueue Task
+        const queue = getFunctions().taskQueue('processVideoTask');
+        await queue.enqueue({ requestId });
 
-        return { requestId: docRef.id, cost: totalCost };
-
+        return { requestId, cost: totalCost };
     } catch (error) {
-        console.error("Error creating video request:", error);
+        console.error("Video Request Error:", error);
         if (error instanceof HttpsError) throw error;
         throw new HttpsError('internal', "Failed to create video request", error.message);
     }
 });
 
-export const generateVideo = onDocumentCreated(
+
+
+
+
+
+// Worker Function for Video Generation
+export const processVideoTask = onTaskDispatched(
     {
-        document: "video_queue/{requestId}",
-        timeoutSeconds: 540, // 9 minutes (longer for video)
-        memory: "2GiB", // More memory for potential buffer handling
+        timeoutSeconds: 540,
+        memory: "2GiB",
+        retryConfig: {
+            maxAttempts: 2,
+            minBackoffSeconds: 30,
+        }
     },
-    async (event) => {
-        const snapshot = event.data;
-        if (!snapshot) return;
+    async (request) => {
+        const { requestId } = request.data;
+        if (!requestId) return;
+
+        const docRef = db.collection('video_queue').doc(requestId);
+        const snapshot = await docRef.get();
+        if (!snapshot.exists) return;
 
         const data = snapshot.data();
-        const requestId = event.params.requestId;
-
-        if (data.status !== "pending") return;
+        if (data.status === "completed" || data.status === "failed") return;
 
         try {
-            await snapshot.ref.update({ status: "processing" });
+            let finalPrompt = data.prompt;
+
+            // 1. Handle Auto-Prompting (if needed)
+            if (data.status === 'analyzing_prompt' || (data.autoPrompt && !data.prompt)) {
+                await docRef.update({ status: "analyzing_prompt" });
+                console.log(`Analyzing image for ${requestId}...`);
+                try {
+                    finalPrompt = await generateVisionPrompt(data.image);
+                    await docRef.update({ prompt: finalPrompt });
+                } catch (promptError) {
+                    throw new Error("Vision Analysis Failed: " + promptError.message);
+                }
+            }
+
+            // 2. Start Processing with Replicate
+            await docRef.update({ status: "processing" });
 
             const replicate = new Replicate({
                 auth: process.env.REPLICATE_API_TOKEN,
             });
 
-            // Prepare inputs for LTX-2-Pro
-            // Based on video.md schema
             const input = {
-                prompt: data.prompt,
+                prompt: finalPrompt,
                 duration: data.duration,
                 resolution: data.resolution,
-                generate_audio: true // Default true
+                aspectRatio: data.aspectRatio,
+                generate_audio: true
             };
 
-            if (data.image) {
-                input.image = data.image; // Image-to-video
-            }
+            if (data.image) input.image = data.image;
 
-            console.log(`Starting Replicate prediction for ${requestId} (Cost: ${data.cost} reels)...`);
-
-            // Run prediction (waits for completion)
+            console.log(`Executing Replicate job for ${requestId}...`);
             const output = await replicate.run("lightricks/ltx-2-pro", { input });
 
-            // Output is likely a URL string or array of URLs? 
-            // video.md ex: output.url() or output itself?
-            // "const output = await replicate.run(...)"
-            // "console.log(output.url())" // suggests output is an object with url() method?
-            // Replicate Node SDK `run` usually returns the output value directly (JSON/primitive).
-            // However, `replicate.run` for a model usually waits.
-            // Documentation in video.md says: `//=> "https://replicate.delivery/.../output.mp4"` (comment line 31)
-            // Wait, line 30 says `console.log(output.url())`? That's specific to the file object returned?
-            // Actually standard Replicate SDK `run` returns the output schema.
-            // If output schema is type `uri`, it returns a string (URL) or stream.
-            // Let's assume it returns the URL string or a streamable object. 
-            // Ideally we download it and upload to B2 to persist it (Replicate URLs expire).
-
-            // Let's handle generic "output" which might be the URL string.
             let videoUrl = output;
             if (output && typeof output.url === 'function') {
                 videoUrl = output.url();
             }
 
             if (!videoUrl || typeof videoUrl !== 'string') {
-                // Fallback or inspect
-                console.log("Output structure:", output);
-                // If it's a stream, we might need to handle it. 
-                // But usually for `uri` output type, SDK returns a string URL.
+                throw new Error("No video URL returned from AI model");
             }
 
-            // Download from Replicate
+            // 3. Download and Persist to B2
+            console.log(`Saving result to B2 for ${requestId}...`);
             const response = await fetch(videoUrl);
-            if (!response.ok) throw new Error(`Failed to download video from Replicate: ${response.statusText}`);
-            const arrayBuffer = await response.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
+            if (!response.ok) throw new Error(`Replicate Download Error: ${response.statusText}`);
+            const buffer = Buffer.from(await response.arrayBuffer());
 
-            // Upload to B2
             const filename = `videos/${data.userId}/${Date.now()}.mp4`;
-            const command = new PutObjectCommand({
+            await s3Client.send(new PutObjectCommand({
                 Bucket: B2_BUCKET,
                 Key: filename,
                 Body: buffer,
                 ContentType: "video/mp4",
-            });
+            }));
 
-            await s3Client.send(command);
             const b2Url = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${filename}`;
 
-            // Save to 'videos' collection
+            // 4. Finalize
             const videoDoc = {
                 userId: data.userId,
-                prompt: data.prompt,
+                prompt: finalPrompt,
                 videoUrl: b2Url,
                 duration: data.duration,
                 resolution: data.resolution,
@@ -1460,31 +1166,29 @@ export const generateVideo = onDocumentCreated(
 
             const videoRef = await db.collection("videos").add(videoDoc);
 
-            // Update queue
-            await snapshot.ref.update({
+            await docRef.update({
                 status: "completed",
                 videoUrl: b2Url,
                 completedAt: new Date(),
                 resultVideoId: videoRef.id
             });
 
-        } catch (error) {
-            console.error("Error generating video:", error);
+            console.log(`Video ${requestId} successfully generated!`);
 
-            // Refund logic?
-            // If generation fails, we should probably refund the user.
-            // For now, let's mark failed and log. 
-            // Implementing refund logic is good practice.
+        } catch (error) {
+            console.error(`Task Failed for ${requestId}:`, error);
+
+            // Refund logic
             try {
                 await db.collection('users').doc(data.userId).update({
                     reels: FieldValue.increment(data.cost)
                 });
-                console.log(`Refunded ${data.cost} reels to ${data.userId} due to failure.`);
+                console.log(`Refunded ${data.cost} reels to ${data.userId}`);
             } catch (refundError) {
-                console.error("Failed to refund user:", refundError);
+                console.error("Refund Error:", refundError);
             }
 
-            await snapshot.ref.update({
+            await docRef.update({
                 status: "failed",
                 error: error.message
             });
@@ -1492,30 +1196,17 @@ export const generateVideo = onDocumentCreated(
     }
 );
 
+
+
 // ============================================================================
 // Auto-Prompter (Gemini)
 // ============================================================================
 
-export const generateVideoPrompt = onCall(async (request) => {
-    // App Check Verification
-    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
-        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
-    }
-
-    const uid = request.auth?.uid;
-    if (!uid) {
-        throw new HttpsError('unauthenticated', "User must be authenticated");
-    }
-
-    const { image, imageUrl } = request.data; // Expecting base64 data url OR remote URL
-    if ((!image || typeof image !== 'string') && (!imageUrl || typeof imageUrl !== 'string')) {
-        throw new HttpsError('invalid-argument', "Image data or URL is required");
-    }
-
+// Helper for Vision Prompt Generation
+async function generateVisionPrompt(imageUrl) {
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
-        console.error("OPENROUTER_API_KEY is not set in environment variables");
-        throw new HttpsError('internal', "Service configuration error");
+        throw new Error("OPENROUTER_API_KEY is not set");
     }
 
     const PROMPT_GUIDELINES = `
@@ -1529,65 +1220,66 @@ Genre-specific language: Use cinematography terms appropriate to the stated styl
 Character specificity: Include age, ethnicity, distinguishing features, clothing, and emotional states shown through observable physical manifestations rather than internal thoughts.
 `;
 
+    let imageContentUrl = "";
+    if (imageUrl.trim().startsWith('http')) {
+        imageContentUrl = imageUrl;
+    } else if (imageUrl.trim().startsWith('data:')) {
+        imageContentUrl = imageUrl;
+    } else {
+        imageContentUrl = `data:image/png;base64,${imageUrl}`;
+    }
+
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://dreambees.app",
+            "X-Title": "DreamBees"
+        },
+        body: JSON.stringify({
+            model: "google/gemini-2.0-flash-exp:free",
+            messages: [
+                {
+                    role: "user",
+                    content: [
+                        { type: "text", text: "Analyze the image and write a video generation prompt based on these guidelines:\n" + PROMPT_GUIDELINES },
+                        { type: "image_url", image_url: { url: imageContentUrl } }
+                    ]
+                }
+            ]
+        })
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`OpenRouter API returned ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || "";
+}
+
+
+export const generateVideoPrompt = onCall(async (request) => {
+    // App Check Verification
+    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
+        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
+    }
+
+    const uid = request.auth?.uid;
+    if (!uid) {
+        throw new HttpsError('unauthenticated', "User must be authenticated");
+    }
+
+    const { image, imageUrl } = request.data;
+    if ((!image || typeof image !== 'string') && (!imageUrl || typeof imageUrl !== 'string')) {
+        throw new HttpsError('invalid-argument', "Image data or URL is required");
+    }
+
     try {
-        let imageContentUrl = "";
-
-        if (imageUrl) {
-            imageContentUrl = imageUrl;
-        } else {
-            // Ensure it's a proper data URI for OpenRouter/OpenAI format
-            if (image.trim().startsWith('data:')) {
-                imageContentUrl = image;
-            } else {
-                // Determine mime type if possible or default to png
-                // If the client sent raw base64 (which the previous code stripped), we need to add the prefix back.
-                // The previous code had strict regex matching for mime type.
-                // Let's attempt to guess or default.
-                imageContentUrl = `data:image/png;base64,${image}`;
-            }
-        }
-
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${apiKey}`,
-                "Content-Type": "application/json",
-                "HTTP-Referer": "https://dreambees.app",
-                "X-Title": "DreamBees"
-            },
-            body: JSON.stringify({
-                model: "google/gemini-2.0-flash-exp:free",
-                messages: [
-                    {
-                        role: "user",
-                        content: [
-                            {
-                                type: "text",
-                                text: "Analyze the image and write a video generation prompt based on these guidelines:\n" + PROMPT_GUIDELINES
-                            },
-                            {
-                                type: "image_url",
-                                image_url: {
-                                    url: imageContentUrl
-                                }
-                            }
-                        ]
-                    }
-                ]
-            })
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("OpenRouter API Error:", errorText);
-            throw new Error(`OpenRouter API returned ${response.status}: ${errorText}`);
-        }
-
-        const data = await response.json();
-        const generatedText = data.choices?.[0]?.message?.content || "";
-
-        return { prompt: generatedText };
-
+        const prompt = await generateVisionPrompt(imageUrl || image);
+        return { prompt };
     } catch (error) {
         console.error("OpenRouter generation error:", error);
         throw new HttpsError('internal', "Failed to generate prompt from image: " + error.message);

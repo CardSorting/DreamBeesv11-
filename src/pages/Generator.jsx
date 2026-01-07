@@ -83,53 +83,51 @@ export default function Generator() {
         }
     }, [currentUser, generationMode]);
 
-    const handleVideoAutoAnimate = async (image) => {
-        setAnalyzingImageId(image.id);
+    const triggerVideoAnimation = async (imageUrl, imageId = null, imgAspectRatio = null) => {
+        // Immediate UI feedback & Race Condition Prevention (Client-side)
+        if (generating) return;
+
+        if (imageId) setAnalyzingImageId(imageId);
+        setGenerating(true);
+        setGeneratedImage(null);
+        setCurrentJobType('video');
+        setReferenceImage(imageUrl);
+        setPrompt("Analyzing image..."); // Temporary placeholder
+
         try {
-            // 1. Generate Prompt
-            const generateVideoPromptFn = httpsCallable(functions, 'generateVideoPrompt');
-            const result = await generateVideoPromptFn({ imageUrl: image.imageUrl });
-
-            if (!result.data.prompt) throw new Error("No prompt generated");
-
-            // 2. Start Video Generation
             const createVideoGenerationRequest = httpsCallable(functions, 'createVideoGenerationRequest');
 
-            // Set global loading states
-            setGenerating(true);
-            setGeneratedImage(null);
-            setCurrentJobType('video');
-
             const videoResult = await createVideoGenerationRequest({
-                prompt: result.data.prompt,
-                image: image.imageUrl,
+                autoPrompt: true,
+                image: imageUrl,
                 duration: videoDuration,
                 resolution: videoResolution,
-                aspectRatio: image.aspectRatio || aspectRatio
+                aspectRatio: imgAspectRatio || aspectRatio
             });
 
             setCurrentJobId(videoResult.data.requestId);
-            setPrompt(result.data.prompt);
-            setReferenceImage(image.imageUrl);
 
         } catch (error) {
-            console.error("Auto animate error", error);
+            console.error("Video generation error", error);
 
-            // Handle Gemini Rate Limits (429) - Free Tier Quota
-            if (error.code === 429 || error.message?.includes('429') || error.message?.includes('RESOURCE_EXHAUSTED')) {
-                toast.error("AI Server is busy (High Traffic). Please try again in a few seconds.", {
-                    duration: 5000,
-                    icon: '🚦'
-                });
-            } else {
-                toast.error("Failed to animate image. Please try again.");
+            let errorMessage = "Failed to animate image. Please try again.";
+
+            if (error.message?.includes('concurrency') || error.message?.includes('progress')) {
+                errorMessage = "You already have a video generation in progress.";
+            } else if (error.code === 'resource-exhausted') {
+                errorMessage = "Insufficient Reels balance.";
             }
 
+            toast.error(errorMessage);
             setGenerating(false);
+            setPrompt("");
+            setReferenceImage(null);
         } finally {
             setAnalyzingImageId(null);
         }
     };
+
+    const handleVideoAutoAnimate = (image) => triggerVideoAnimation(image.imageUrl, image.id, image.aspectRatio);
 
     // Auto-Prompt / Image Reference
     const [referenceImage, setReferenceImage] = useState(null); // URL or Base64
@@ -139,7 +137,11 @@ export default function Generator() {
     // Renamed local function to avoid conflict/confusion, we'll use ImagePickerModal exclusively
     const handlePickerSelect = (result) => {
         // result: { type: 'gallery'|'upload', data: url|base64 }
-        setReferenceImage(result.data);
+        if (generationMode === 'video') {
+            triggerVideoAnimation(result.data);
+        } else {
+            setReferenceImage(result.data);
+        }
     };
 
     const handleAutoPrompt = async () => {
@@ -1046,7 +1048,7 @@ export default function Generator() {
                                                 {/* 1. Upload Tile */}
                                                 <button
                                                     onClick={() => setIsImagePickerOpen(true)}
-                                                    className="hover:bg-white/5"
+                                                    className="carousel-item"
                                                     style={{
                                                         aspectRatio: '1',
                                                         borderRadius: '12px',
@@ -1055,7 +1057,9 @@ export default function Generator() {
                                                         color: 'var(--color-text-muted)',
                                                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                                                         gap: '4px', cursor: 'pointer',
-                                                        transition: 'all 0.2s'
+                                                        transition: 'all 0.2s',
+                                                        position: 'relative',
+                                                        padding: 0
                                                     }}
                                                     title="Upload / Select Image"
                                                 >
@@ -1066,17 +1070,13 @@ export default function Generator() {
                                                 {/* 2. Recent Images (Max 8) */}
                                                 {recentImages.slice(0, 8).map((img) => {
                                                     const isSelected = referenceImage === img.imageUrl;
+                                                    const isAnalyzing = analyzingImageId === img.id;
                                                     return (
                                                         <button
                                                             key={img.id}
-                                                            onClick={() => {
-                                                                if (isSelected) {
-                                                                    clearReferenceImage();
-                                                                } else {
-                                                                    setReferenceImage(img.imageUrl);
-                                                                }
-                                                            }}
-                                                            className="hover-card"
+                                                            onClick={() => handleVideoAutoAnimate(img)}
+                                                            disabled={!!analyzingImageId}
+                                                            className="carousel-item"
                                                             style={{
                                                                 aspectRatio: '1',
                                                                 borderRadius: '12px',
@@ -1085,15 +1085,36 @@ export default function Generator() {
                                                                 cursor: 'pointer',
                                                                 padding: 0,
                                                                 position: 'relative',
-                                                                boxShadow: isSelected ? '0 0 10px rgba(var(--color-accent-rgb), 0.3)' : 'none'
+                                                                transition: 'all 0.2s',
+                                                                background: '#000'
                                                             }}
-                                                            title={img.prompt || "Recent Generation"}
+                                                            title={img.prompt || "Animate this image"}
                                                         >
                                                             <img
                                                                 src={getOptimizedImageUrl(img.imageUrl)}
                                                                 alt=""
-                                                                style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: isSelected ? 1 : 0.8 }}
+                                                                style={{
+                                                                    width: '100%',
+                                                                    height: '100%',
+                                                                    objectFit: 'cover',
+                                                                    opacity: (isSelected || isAnalyzing) ? 1 : 0.7,
+                                                                    transition: 'opacity 0.2s'
+                                                                }}
                                                             />
+                                                            <div className="hover-overlay" style={{
+                                                                position: 'absolute', inset: 0,
+                                                                background: 'rgba(0,0,0,0.4)',
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                opacity: 0, transition: 'opacity 0.2s',
+                                                                backdropFilter: 'blur(2px)'
+                                                            }}>
+                                                                <Video size={14} color="white" fill="white" />
+                                                            </div>
+                                                            {isAnalyzing && (
+                                                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}>
+                                                                    <Loader2 size={16} className="animate-spin" color="white" />
+                                                                </div>
+                                                            )}
                                                         </button>
                                                     );
                                                 })}
