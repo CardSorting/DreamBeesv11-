@@ -1,116 +1,77 @@
-# ZIT-model API Documentation
+# Qwen-Image-2512 API Documentation
 
-This API provides access to the Z-Image-Turbo (ZIT) image generation model hosted on Modal. It is optimized for low-latency generation using SDNQ quantization and memory snapshots.
+This API allows you to generate images using the Qwen-Image-2512 model deployed on Modal.
 
-## Service: `ZITService`
+## Endpoint
 
-The main entry point is the `ZITService` class.
+**URL**: `https://cardsorting--qwen-image-2512-qwenimage-api-generate.modal.run`
 
-### Method: `generate`
+**Method**: `POST`
 
-Generates an image based on the provided prompt.
+## Request Headers
 
-**Signature:**
+| Header | Value |
+|--------|-------|
+| `Content-Type` | `application/json` |
 
-```python
-def generate(
-    self,
-    prompt: str,
-    steps: int = 8,
-    width: int = 1024,
-    height: int = 1024,
-    seed: int | None = None,
-) -> bytes:
-```
+## Request Body
 
-**Parameters:**
+The API accepts a JSON object with the following parameters:
 
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `prompt` | `str` | *Required* | The text prompt to generate the image from. |
-| `steps` | `int` | `9` | Number of inference steps. Recommended: 9. |
-| `aspect_ratio` | `str` | `None` | Optional aspect ratio (e.g., "16:9", "1:1", "9:16"). Overrides width/height if set. |
-| `width` | `int` | `1024` | Width of the generated image. Ignored if `aspect_ratio` is set. |
-| `height` | `int` | `1024` | Height of the generated image. Ignored if `aspect_ratio` is set. |
-| `seed` | `int \| None` | `None` | Random seed for reproducibility. |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `prompt` | string | Yes | - | The text description of the image to generate. |
+| `negative_prompt` | string | No | "" | Text describing what to exclude from the image. |
+| `aspect_ratio` | string | No | "16:9" | Aspect ratio of the output image. |
 
-**Supported Aspect Ratios:**
-*   `1:1` (1024x1024)
-*   `16:9` (1344x768)
-*   `9:16` (768x1344)
-*   `4:3` (1152x864)
-*   `3:4` (864x1152)
-*   `21:9` (1536x640)
-*   `9:21` (640x1536)
+**Available Aspect Ratios:**
+- "1:1" (1280x1280)
+- "16:9" (1584x896)
+- "9:16" (896x1584)
+- "4:3" (1440x1080)
+- "3:4" (1080x1440)
+- "3:2" (1584x1056)
+- "2:3" (1056x1584)
 
-**Returns:**
+## Response
 
-*   `bytes`: The generated image data in PNG format.
+- **Content-Type**: `image/png`
+- **Body**: Binary PNG image data.
 
-### Usage Example
+## Usage Examples
 
-To use this endpoint, you need the `modal` client installed (`pip install modal`).
-
-```python
-import modal
-
-# Connect to the deployed function
-f = modal.Function.lookup("zit-only", "ZITService.generate")
-
-# Call the function remotely
-png_bytes = f.remote(
-    prompt="cyberpunk city street at night, neon lights, rain",
-    steps=9,
-    aspect_ratio="21:9"
-)
-
-# Save the result
-with open("output.png", "wb") as f:
-    f.write(png_bytes)
-    print("Image saved to output.png")
-```
-
-## HTTP API
-
-You can also use the deployed FastAPI endpoint directly via HTTP.
-
-**Endpoint:** `https://cardsorting--zit-only-fastapi-app.modal.run/generate`  
-**Method:** `POST`
-
-**Request Body (JSON):**
-
-```json
-{
-  "prompt": "your prompt here",
-  "steps": 9,
-  "aspect_ratio": "16:9",
-  "seed": 42
-}
-```
-
-**Curl Example:**
+### cURL
 
 ```bash
-curl -X POST "https://cardsorting--zit-only-fastapi-app.modal.run/generate" \
-     -H "Content-Type: application/json" \
-     -d '{"prompt": "cinematic landscape", "aspect_ratio": "21:9"}' \
-     --output generated_image.png
+curl -X POST "https://cardsorting--qwen-image-2512-qwenimage-api-generate.modal.run" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "A futuristic city floating in the clouds, golden hour lighting",
+    "negative_prompt": "low quality, blur",
+    "aspect_ratio": "16:9"
+  }' \
+  --output generated_image.png
 ```
 
+### Python
 
-## Setup & Deployment
+```python
+import requests
 
-1.  **Download Weights**:
-    Initialize the Modal Volume with the model weights:
-    ```bash
-    modal run app.py::download_model
-    ```
+url = "https://cardsorting--qwen-image-2512-qwenimage-api-generate.modal.run"
 
-2.  **Deploy**:
-    Deploy the API to Modal:
-    ```bash
-    modal deploy app.py
-    ```
+payload = {
+    "prompt": "A majestic lion sitting on a throne, digital art style",
+    "negative_prompt": "deformed, blurry",
+    "aspect_ratio": "1:1"
+}
 
-3.  **Cold Starts**:
-    The service is configured with `enable_memory_snapshot=True`. The first request after deployment or scale-up may take slightly longer (though optimized by the snapshot), but subsequent requests will benefit from the restored memory state.
+response = requests.post(url, json=payload)
+
+if response.status_code == 200:
+    with open("output.png", "wb") as f:
+        f.write(response.content)
+    print("Image saved successfully!")
+else:
+    print(f"Error: {response.status_code} - {response.text}")
+```

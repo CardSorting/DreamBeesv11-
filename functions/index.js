@@ -312,6 +312,33 @@ export const generateImageTask = onTaskDispatched(
                 const arrayBuffer = await blob.arrayBuffer();
                 buffer = Buffer.from(arrayBuffer);
 
+            } else if (modelId === 'qwen-image-2512') {
+                // Qwen-Image-2512 specific endpoint (POST)
+                console.log("Using Qwen-Image-2512 endpoint...");
+
+                const qBody = {
+                    prompt: prompt,
+                    negative_prompt: negative_prompt || "",
+                    aspect_ratio: aspectRatio // Qwen supports aspect_ratio directly
+                };
+
+                const response = await fetch("https://cardsorting--qwen-image-2512-qwenimage-api-generate.modal.run", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(qBody)
+                });
+
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(`Qwen Modal API Error: ${errText}`);
+                }
+
+                const blob = await response.blob();
+                const arrayBuffer = await blob.arrayBuffer();
+                buffer = Buffer.from(arrayBuffer);
+
             } else {
                 // Default / SDXL Multi-Model Endpoint (GET)
                 const params = new URLSearchParams({
@@ -760,7 +787,7 @@ export const getUserImages = onCall(async (request) => {
         let filteredImages = images;
         if (searchQuery && typeof searchQuery === 'string' && searchQuery.trim().length > 0) {
             const queryLower = searchQuery.toLowerCase();
-            filteredImages = images.filter(img => 
+            filteredImages = images.filter(img =>
                 img.prompt?.toLowerCase().includes(queryLower)
             );
         }

@@ -1,0 +1,56 @@
+[
+  {
+    "url": "/showcase/qwen-image-2512/cover.png",
+    "prompt": "A bioluminescent jungle at night where every plant emits a soft blue or purple glow, huge alien flowers, glowing insects, atmospheric fog, 8k, mysterious",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1767755846866_1.png",
+    "prompt": "A steampunk space station built from brass and copper gears, steam pipes, victorian aesthetics in zero gravity, nebula background, intricate details",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1767755928005_2.png",
+    "prompt": "A vast desert where the dunes are made of crushed crystal, giant jagged crystal formations rising from the sand, twin suns setting, prismatic light refractions",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1767756008916_3.png",
+    "prompt": "Close up portrait of a samurai with a face half made of sleek white metal, neon katana, rainy holographic city background, intense gaze, cinematic",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1767756089959_4.png",
+    "prompt": "Islands floating in a sky filled with clouds and hot air balloons, waterfalls cascading into the void beneath, fantasy art style, vibrant colors",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1767756170876_5.png",
+    "prompt": "A seemingly microscopic view of a moss forest looking like huge trees, tiny glowing creatures, macro photography, depth of field",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  }
+]

@@ -89,6 +89,24 @@ const MODELS = [
         type: 'SDXL', // Kept as SDXL for UI compatibility for now, or use 'ZIT' if UI handles it. Using SDXL to ensure it shows up in default filters.
         order: 10,
         isActive: true
+    },
+    {
+        id: 'qwen-image-2512',
+        name: 'Qwen Image 2.5 12B',
+        description: 'Advanced Qwen model for high-fidelity image generation.',
+        type: 'SDXL',
+        order: 11,
+        isActive: true,
+        image: '/showcase/qwen-image-2512/cover.png'
+    },
+    {
+        id: 'miaomiao-harem',
+        name: 'Miaomiao Harem',
+        description: 'High-quality harem anime style model with vibrant details.',
+        type: 'SDXL',
+        order: 12,
+        isActive: true,
+        image: '/showcase/miaomiao-harem/cover.png'
     }
 ];
 
@@ -105,7 +123,9 @@ async function seedModels() {
             await docRef.set(model);
             console.log(`✓ Created model: ${model.name} (${model.id})`);
         } else {
-            console.log(`- Model exists: ${model.name} (${model.id})`);
+            // Update existing model with new config
+            await docRef.set(model, { merge: true });
+            console.log(`↻ Updated model: ${model.name} (${model.id})`);
         }
     }
 
