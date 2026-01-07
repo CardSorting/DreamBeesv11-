@@ -31,7 +31,7 @@ export default function Navbar() {
         { path: '/generate', label: 'Studio', icon: Zap },
         { path: '/models', label: 'Engine', icon: Settings },
         { path: '/gallery', label: 'Gallery', icon: LayoutGrid },
-        { path: '/pricing', label: 'Pro', icon: Hexagon },
+        { path: '/pricing', label: 'Refill', icon: Hexagon },
     ];
 
     return (
@@ -130,17 +130,6 @@ export default function Navbar() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     {currentUser ? (
                         <>
-                            <div style={{
-                                padding: '6px 14px',
-                                background: 'rgba(255,255,255,0.05)',
-                                borderRadius: '99px',
-                                fontSize: '0.8rem',
-                                border: '1px solid rgba(255,255,255,0.05)',
-                                color: 'var(--color-text-muted)'
-                            }} className="hidden-mobile">
-                                <span style={{ color: 'white', fontWeight: 700 }}>{credits}</span> Credits
-                            </div>
-
                             <button
                                 onClick={handleLogout}
                                 className="hidden-mobile"
@@ -212,7 +201,6 @@ export default function Navbar() {
                             ))}
                             <div style={{ height: '1px', background: 'var(--color-border)', margin: '8px 0' }} />
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 8px' }}>
-                                <span style={{ color: 'var(--color-text-muted)' }}>Credits: <span style={{ color: 'white' }}>{credits}</span></span>
                                 <button onClick={() => { handleLogout(); setIsMenuOpen(false); }} style={{ color: '#ef4444', fontWeight: 600 }}>Sign Out</button>
                             </div>
                         </>

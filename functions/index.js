@@ -526,23 +526,32 @@ export const stripeWebhook = onRequest(async (req, res) => {
                     planTier: 'pro'
                 }, { merge: true });
             } else if (mode === 'payment') {
-                // Handle One-Time Credit Packs
-                // Recover the line items or check the amount_total to imply the pack?
-                // Better to use the Price ID if possible, but session object doesn't always have line items expanded.
-                // However, we can map amount_total to credits for simplicity as our prices are unique.
-
+                // Handle One-Time Credit Packs & Reel Packs
+                // Map Amount (in cents) to Credits or Reels
                 const amount = session.amount_total;
                 let creditsToAdd = 0;
+                let reelsToAdd = 0;
 
-                // Map Amount (in cents) to Credits
-                if (amount === 499) creditsToAdd = 100;       // Starter
-                else if (amount === 1999) creditsToAdd = 500; // Pro
-                else if (amount === 4999) creditsToAdd = 1500;// Studio
+                // Credit Packs (odd ending or specific values)
+                if (amount === 499) creditsToAdd = 100;        // Starter
+                else if (amount === 1999) creditsToAdd = 500;  // Pro
+                else if (amount === 4999) creditsToAdd = 1500; // Studio
+
+                // Reel Packs (Video Generation)
+                else if (amount === 600) reelsToAdd = 600;     // Reels Starter
+                else if (amount === 1500) reelsToAdd = 1500;   // Reels Creator
+                else if (amount === 3500) reelsToAdd = 3600;   // Reels Pro (with bonus)
+                else if (amount === 8500) reelsToAdd = 9000;   // Reels Studio (with bonus)
 
                 if (creditsToAdd > 0) {
-                    console.log(`Adding ${creditsToAdd} credits to user ${userId} for one-time payment of $${amount / 100}`);
+                    console.log(`Adding ${creditsToAdd} credits to user ${userId} for payment of $${amount / 100}`);
                     await db.collection('users').doc(userId).update({
                         credits: FieldValue.increment(creditsToAdd)
+                    });
+                } else if (reelsToAdd > 0) {
+                    console.log(`Adding ${reelsToAdd} reels to user ${userId} for payment of $${amount / 100}`);
+                    await db.collection('users').doc(userId).update({
+                        reels: FieldValue.increment(reelsToAdd)
                     });
                 } else {
                     console.warn(`Unknown payment amount: ${amount} for user ${userId}`);
