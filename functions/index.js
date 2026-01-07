@@ -431,8 +431,10 @@ export const createStripeCheckout = onCall(async (request) => {
     const email = request.auth.token.email;
 
     // App Check Verification
-    if (request.app == undefined) {
-        throw new Error("The function must be called from an App Check verified app.");
+    // App Check Verification
+    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
+        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
+        // throw new HttpsError('failed-precondition', "The function must be called from an App Check verified app.");
     }
 
     if (!uid) {
@@ -684,7 +686,8 @@ export const createGenerationRequest = onCall(async (request) => {
     // App Check Verification
     // App Check Verification
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
-        throw new HttpsError('failed-precondition', "The function must be called from an App Check verified app.");
+        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
+        // throw new HttpsError('failed-precondition', "The function must be called from an App Check verified app.");
     }
 
     const uid = request.auth?.uid;
@@ -753,7 +756,8 @@ export const getUserImages = onCall(async (request) => {
     // App Check Verification
     // App Check Verification
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
-        throw new HttpsError('failed-precondition', "The function must be called from an App Check verified app.");
+        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
+        // throw new HttpsError('failed-precondition', "The function must be called from an App Check verified app.");
     }
 
     const uid = request.auth?.uid;
@@ -814,8 +818,10 @@ export const getUserImages = onCall(async (request) => {
 
 export const getImageDetail = onCall(async (request) => {
     // App Check Verification
-    if (request.app == undefined) {
-        throw new Error("The function must be called from an App Check verified app.");
+    // App Check Verification
+    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
+        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
+        // throw new HttpsError('failed-precondition', "The function must be called from an App Check verified app.");
     }
 
     const uid = request.auth?.uid;
@@ -859,8 +865,10 @@ export const getImageDetail = onCall(async (request) => {
 
 export const deleteImage = onCall(async (request) => {
     // App Check Verification
-    if (request.app == undefined) {
-        throw new Error("The function must be called from an App Check verified app.");
+    // App Check Verification
+    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
+        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
+        // throw new HttpsError('failed-precondition', "The function must be called from an App Check verified app.");
     }
 
     const uid = request.auth?.uid;
@@ -903,8 +911,10 @@ export const deleteImage = onCall(async (request) => {
 
 export const deleteImagesBatch = onCall(async (request) => {
     // App Check Verification
-    if (request.app == undefined) {
-        throw new Error("The function must be called from an App Check verified app.");
+    // App Check Verification
+    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
+        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
+        // throw new HttpsError('failed-precondition', "The function must be called from an App Check verified app.");
     }
 
     const uid = request.auth?.uid;
@@ -978,8 +988,10 @@ export const deleteImagesBatch = onCall(async (request) => {
 
 export const rateGeneration = onCall(async (request) => {
     // App Check Verification
-    if (request.app == undefined) {
-        throw new Error("The function must be called from an App Check verified app.");
+    // App Check Verification
+    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
+        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
+        // throw new HttpsError('failed-precondition', "The function must be called from an App Check verified app.");
     }
 
     const uid = request.auth?.uid;
@@ -1087,8 +1099,10 @@ export const rateGeneration = onCall(async (request) => {
 
 export const rateShowcaseImage = onCall(async (request) => {
     // App Check Verification
-    if (request.app == undefined) {
-        throw new Error("The function must be called from an App Check verified app.");
+    // App Check Verification
+    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
+        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
+        // throw new HttpsError('failed-precondition', "The function must be called from an App Check verified app.");
     }
 
     const uid = request.auth?.uid;
@@ -1138,7 +1152,8 @@ export const getGenerationHistory = onCall(async (request) => {
     // App Check Verification
     // App Check Verification
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
-        throw new HttpsError('failed-precondition', "The function must be called from an App Check verified app.");
+        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
+        // throw new HttpsError('failed-precondition', "The function must be called from an App Check verified app.");
     }
 
     const uid = request.auth?.uid;
