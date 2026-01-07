@@ -4,7 +4,7 @@ import { functions } from '../firebase';
 import { httpsCallable } from 'firebase/functions';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
-import { Loader2, Search, Download, Trash2, X, ExternalLink, Calendar, Info, Check, Plus } from 'lucide-react';
+import { Loader2, Search, Download, Trash2, X, ExternalLink, Calendar, Info, Check, Plus, Film } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getOptimizedImageUrl } from '../utils';
 
@@ -298,17 +298,36 @@ export default function Gallery() {
                                 animationDelay: `${i * 0.05}s` // Dynamic stagger
                             }}
                         >
-                            <img
-                                src={getOptimizedImageUrl(img.imageUrl)}
-                                alt={img.prompt || "User generated artwork"}
-                                style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
-                            />
+                            {img.type === 'video' ? (
+                                <>
+                                    <video
+                                        src={img.videoUrl || img.imageUrl}
+                                        muted
+                                        loop
+                                        playsInline
+                                        onMouseOver={e => e.target.play()}
+                                        onMouseOut={e => { e.target.pause(); e.target.currentTime = 0; }}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    />
+                                    <div style={{ position: 'absolute', top: '12px', right: '12px', background: 'rgba(0,0,0,0.6)', borderRadius: '4px', padding: '4px 8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <Film size={12} color="white" />
+                                        <span style={{ fontSize: '0.7rem', color: 'white', fontWeight: '600' }}>VIDEO</span>
+                                    </div>
+                                </>
+                            ) : (
+                                <img
+                                    src={getOptimizedImageUrl(img.imageUrl)}
+                                    alt={img.prompt || "User generated artwork"}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
+                                />
+                            )}
 
                             {/* Hover Overlay - Minimal */}
                             <div className="gallery-overlay" style={{
                                 position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
                                 opacity: isSelectionMode ? 0 : 0, transition: 'opacity 0.2s',
-                                display: 'flex', alignItems: 'flex-end', padding: '20px'
+                                display: 'flex', alignItems: 'flex-end', padding: '20px',
+                                pointerEvents: 'none'
                             }}>
                                 <p style={{ color: 'white', fontSize: '0.9rem', fontWeight: '500', lineClamp: 2, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                                     {img.prompt}

@@ -107,6 +107,15 @@ const MODELS = [
         order: 12,
         isActive: true,
         image: '/showcase/wai-illustrious/cover.png'
+    },
+    {
+        id: 'lightricks-ltx-2-pro',
+        name: 'LTX 2 Pro',
+        description: 'High-quality video generation model by Lightricks.',
+        type: 'Video',
+        category: 'reels', // Frontend identifier for currency/logic
+        order: 13,
+        isActive: true
     }
 ];
 

@@ -8,7 +8,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { useAuth } from '../contexts/AuthContext';
 
-import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, ChevronDown, ChevronUp, Mic, MicOff, Zap, AlertCircle, Share2, Maximize2, Dices, X, Wand2, Monitor, Smartphone, LayoutTemplate, Square, RectangleHorizontal, RectangleVertical, HelpCircle, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, ChevronDown, ChevronUp, Mic, MicOff, Zap, AlertCircle, Share2, Maximize2, Dices, X, Wand2, Monitor, Smartphone, LayoutTemplate, Square, RectangleHorizontal, RectangleVertical, HelpCircle, ThumbsUp, ThumbsDown, Film, Video } from 'lucide-react';
 
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -42,8 +42,16 @@ export default function Generator() {
     const [seed, setSeed] = useState(parseInt(searchParams.get('seed')) || -1);
 
     // Monetization
+    // Monetization
     const [credits, setCredits] = useState(null);
+    const [reels, setReels] = useState(null);
     const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+
+    // Video State
+    const [generationMode, setGenerationMode] = useState('image'); // 'image' | 'video'
+    const [videoDuration, setVideoDuration] = useState(5);
+    const [videoResolution, setVideoResolution] = useState('1080p');
+    const [currentJobType, setCurrentJobType] = useState('image');
 
     // Microphone
     const [isListening, setIsListening] = useState(false);
@@ -57,6 +65,7 @@ export default function Generator() {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 setCredits(data.credits !== undefined ? data.credits : 5);
+                setReels(data.reels !== undefined ? data.reels : 0);
                 setSubscriptionStatus(data.subscriptionStatus);
             } else {
                 setCredits(5);
@@ -143,17 +152,34 @@ export default function Generator() {
         return () => clearInterval(interval);
     }, [generating]);
 
+    // Auto-Switch Model on Mode Change
+    useEffect(() => {
+        if (!selectedModel || availableModels.length === 0) return;
+
+        if (generationMode === 'video' && selectedModel.type !== 'Video') {
+            const videoModel = availableModels.find(m => m.type === 'Video');
+            if (videoModel) setSelectedModel(videoModel);
+        } else if (generationMode === 'image' && selectedModel.type === 'Video') {
+            const imageModel = availableModels.find(m => m.type !== 'Video' && m.id === 'zit-model') || availableModels.find(m => m.type !== 'Video');
+            if (imageModel) setSelectedModel(imageModel);
+        }
+    }, [generationMode, availableModels, selectedModel, setSelectedModel]);
+
     // Firestore Job Listener
     useEffect(() => {
         if (!currentJobId) return;
-        const unsub = onSnapshot(doc(db, "generation_queue", currentJobId), (docSnap) => {
+
+        const collectionName = currentJobType === 'video' ? 'video_queue' : 'generation_queue';
+        const unsub = onSnapshot(doc(db, collectionName, currentJobId), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 setActiveJob({ id: docSnap.id, ...data }); // Keep active job synced
+
                 if (data.status === 'completed') {
                     setProgress(100);
                     setTimeout(() => {
-                        setGeneratedImage(data.imageUrl);
+                        // For video, imageUrl might be videoUrl
+                        setGeneratedImage(currentJobType === 'video' ? data.videoUrl : data.imageUrl);
                         setGenerating(false);
                         setCurrentJobId(null);
                     }, 500);
@@ -165,25 +191,58 @@ export default function Generator() {
             }
         });
         return () => unsub();
-    }, [currentJobId]);
+    }, [currentJobId, currentJobType]);
 
     const handleGenerate = async () => {
         if (!prompt || !selectedModel) return;
+
+        // Mode Specific Checks
+        if (generationMode === 'video') {
+            // Calculate estimated cost (simple client-side check)
+            let rate = 18;
+            if (videoResolution === '2k') rate = 36;
+            if (videoResolution === '4k') rate = 72;
+            const estCost = rate * videoDuration;
+
+            if (reels < estCost) {
+                toast.error(`Insufficient Reels. Need ~${estCost}, have ${reels}.`);
+                return;
+            }
+        } else {
+            if (credits <= 0 && subscriptionStatus !== 'active') {
+                toast.error("Insufficient Credits");
+                return;
+            }
+        }
+
         setGenerating(true);
         setGeneratedImage(null);
+        setCurrentJobType(generationMode);
 
         try {
-            const createGenerationRequest = httpsCallable(functions, 'createGenerationRequest');
-            const result = await createGenerationRequest({
-                prompt: prompt,
-                negative_prompt: negPrompt,
-                modelId: selectedModel.id,
-                aspectRatio: aspectRatio,
-                steps: steps,
-                cfg: cfg,
-                seed: seed
-            });
-            setCurrentJobId(result.data.requestId);
+            if (generationMode === 'video') {
+                const createVideoGenerationRequest = httpsCallable(functions, 'createVideoGenerationRequest');
+                const result = await createVideoGenerationRequest({
+                    prompt: prompt,
+                    image: null, // Future: Handle Image-to-Video
+                    duration: videoDuration,
+                    resolution: videoResolution,
+                    aspectRatio: aspectRatio // Optional
+                });
+                setCurrentJobId(result.data.requestId);
+            } else {
+                const createGenerationRequest = httpsCallable(functions, 'createGenerationRequest');
+                const result = await createGenerationRequest({
+                    prompt: prompt,
+                    negative_prompt: negPrompt,
+                    modelId: selectedModel.id,
+                    aspectRatio: aspectRatio,
+                    steps: steps,
+                    cfg: cfg,
+                    seed: seed
+                });
+                setCurrentJobId(result.data.requestId);
+            }
         } catch (error) {
             console.error("Queue error", error);
             setGenerating(false);
@@ -239,10 +298,33 @@ export default function Generator() {
 
                     {/* Header Info (Mobile only mostly, or subtle) */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: '700', letterSpacing: '-0.02em', color: 'white' }}>Studio</h1>
-                        {subscriptionStatus !== 'active' && (
-                            <div style={{ fontSize: '0.85rem', color: credits > 0 ? 'var(--color-text-muted)' : '#ef4444', fontWeight: '600' }}>
-                                {credits} CREDITS REMAINING
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <h1 style={{ fontSize: '1.5rem', fontWeight: '700', letterSpacing: '-0.02em', color: 'white' }}>Studio</h1>
+                            {/* Mode Toggle */}
+                            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '2px' }}>
+                                <button
+                                    onClick={() => setGenerationMode('image')}
+                                    style={{ padding: '4px 8px', borderRadius: '6px', background: generationMode === 'image' ? 'var(--color-accent-primary)' : 'transparent', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', gap: '4px', alignItems: 'center', fontSize: '0.8rem' }}
+                                >
+                                    <ImageIcon size={14} /> Image
+                                </button>
+                                <button
+                                    onClick={() => setGenerationMode('video')}
+                                    style={{ padding: '4px 8px', borderRadius: '6px', background: generationMode === 'video' ? 'var(--color-accent-primary)' : 'transparent', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', gap: '4px', alignItems: 'center', fontSize: '0.8rem' }}
+                                >
+                                    <Film size={14} /> Video
+                                </button>
+                            </div>
+                        </div>
+
+                        {(generationMode === 'image' && subscriptionStatus !== 'active') && (
+                            <div style={{ fontSize: '0.85rem', color: credits > 0 ? 'var(--color-text-muted)' : '#ef4444', fontWeight: '600', fontFamily: 'monospace' }}>
+                                {credits} CREDITS
+                            </div>
+                        )}
+                        {(generationMode === 'video') && (
+                            <div style={{ fontSize: '0.85rem', color: reels > 0 ? 'var(--color-text-muted)' : '#ef4444', fontWeight: '600', fontFamily: 'monospace' }}>
+                                {reels} REELS
                             </div>
                         )}
                     </div>
@@ -266,7 +348,17 @@ export default function Generator() {
                                 </div>
                             ) : generatedImage ? (
                                 <div className="fade-in" style={{ position: 'absolute', inset: 0, padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <img src={getOptimizedImageUrl(generatedImage)} alt={`Generated artwork for prompt: ${prompt}`} style={{ width: '100%', height: '100%', boxShadow: '0 0 50px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
+                                    {generatedImage.endsWith('.mp4') ? (
+                                        <video
+                                            src={generatedImage}
+                                            controls
+                                            autoPlay
+                                            loop
+                                            style={{ width: '100%', height: '100%', boxShadow: '0 0 50px rgba(0,0,0,0.5)', objectFit: 'contain' }}
+                                        />
+                                    ) : (
+                                        <img src={getOptimizedImageUrl(generatedImage)} alt={`Generated artwork for prompt: ${prompt}`} style={{ width: '100%', height: '100%', boxShadow: '0 0 50px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
+                                    )}
                                     <div style={{ position: 'absolute', bottom: '20px', right: '20px', display: 'flex', gap: '12px' }}>
                                         {/* Ranking Actions */}
                                         <div style={{ display: 'flex', gap: '8px', marginRight: '16px', background: 'rgba(0,0,0,0.6)', borderRadius: '8px', padding: '4px', border: '1px solid rgba(255,255,255,0.2)' }}>
@@ -322,7 +414,7 @@ export default function Generator() {
                                 </div>
                             ) : (
                                 <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', opacity: 0.3 }}>
-                                    <ImageIcon size={64} style={{ marginBottom: '16px' }} />
+                                    {generationMode === 'video' ? <Film size={64} style={{ marginBottom: '16px' }} /> : <ImageIcon size={64} style={{ marginBottom: '16px' }} />}
                                     <div style={{ fontSize: '1.2rem', fontWeight: '500' }}>Ready to Dream</div>
                                 </div>
                             )}
@@ -458,7 +550,7 @@ export default function Generator() {
                                         </div>
                                         <button
                                             onClick={handleGenerate}
-                                            disabled={generating || !prompt || (credits <= 0 && subscriptionStatus !== 'active')}
+                                            disabled={generating || !prompt || (generationMode === 'image' ? credits <= 0 && subscriptionStatus !== 'active' : reels <= 0)}
                                             className="btn btn-primary generate-btn"
                                             style={{
                                                 height: '42px',
@@ -613,7 +705,7 @@ export default function Generator() {
 
                             {/* Aspect Ratio Grid */}
                             {/* Visualization / Simple Mode Content */}
-                            {activeTab === 'simple' && (
+                            {activeTab === 'simple' && generationMode === 'image' && (
                                 <div className="fade-in">
                                     <label className="setting-label" style={{ marginBottom: '12px' }}>TRY A STYLE</label>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
@@ -652,7 +744,7 @@ export default function Generator() {
                                 </div>
                             )}
 
-                            {activeTab === 'advanced' && (
+                            {activeTab === 'advanced' && generationMode === 'image' && (
                                 <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
                                     {/* Aspect Ratio (Now in Advanced) */}
@@ -776,6 +868,55 @@ export default function Generator() {
                                     </div>
                                 </div>
                             )}
+
+                            {/* Video Controls (Mode Independent of Tab for now, or put in both) */}
+                            {generationMode === 'video' && (
+                                <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                    <div className="alert-box" style={{ padding: '12px', background: 'rgba(var(--color-accent-rgb), 0.1)', borderRadius: '8px', border: '1px solid var(--color-accent-primary)', color: 'white', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <AlertCircle size={16} />
+                                        <span>Video generation consumes usage-based <b>Reels</b> currency.</span>
+                                    </div>
+
+                                    <div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                            <label className="setting-label">DURATION (SECONDS)</label>
+                                            <span style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'white' }}>{videoDuration}s</span>
+                                        </div>
+                                        <input type="range" min="5" max="10" step="1" value={videoDuration} onChange={(e) => setVideoDuration(parseInt(e.target.value))} />
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
+                                            <span>5s</span>
+                                            <span>10s</span>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="setting-label">RESOLUTION</label>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '8px' }}>
+                                            {['1080p', '2k', '4k'].map(res => (
+                                                <button
+                                                    key={res}
+                                                    onClick={() => setVideoResolution(res)}
+                                                    style={{
+                                                        padding: '10px',
+                                                        borderRadius: '8px',
+                                                        background: videoResolution === res ? 'var(--color-accent-primary)' : 'rgba(255,255,255,0.05)',
+                                                        color: videoResolution === res ? 'white' : 'var(--color-text-muted)',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        fontWeight: '600',
+                                                        fontSize: '0.85rem'
+                                                    }}
+                                                >
+                                                    {res}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <div style={{ marginTop: '8px', fontSize: '0.75rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>
+                                            {videoResolution === '1080p' ? '18 Reels/sec' : videoResolution === '2k' ? '36 Reels/sec' : '72 Reels/sec'}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -786,7 +927,10 @@ export default function Generator() {
             <ModelSelectorModal
                 isOpen={isModelModalOpen}
                 onClose={() => setIsModelModalOpen(false)}
-                models={availableModels}
+                models={availableModels.filter(m => {
+                    if (generationMode === 'video') return m.type === 'Video';
+                    return m.type !== 'Video';
+                })}
                 selectedModel={selectedModel}
                 onSelectModel={setSelectedModel}
             />

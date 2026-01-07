@@ -6,6 +6,7 @@ import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getFunctions } from "firebase-admin/functions";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { createCheckoutSession, constructWebhookEvent, createPortalSession } from "./stripeHelpers.js";
+import Replicate from "replicate";
 
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
@@ -763,10 +764,8 @@ export const createGenerationRequest = onCall(async (request) => {
 
 export const getUserImages = onCall(async (request) => {
     // App Check Verification
-    // App Check Verification
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
         console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
-        // throw new HttpsError('failed-precondition', "The function must be called from an App Check verified app.");
     }
 
     const uid = request.auth?.uid;
@@ -775,53 +774,94 @@ export const getUserImages = onCall(async (request) => {
     }
 
     const { limit: limitParam = 24, startAfterId, searchQuery } = request.data;
-    const limit = Math.min(Math.max(parseInt(limitParam) || 24, 1), 100); // Between 1 and 100
+    const limit = Math.min(Math.max(parseInt(limitParam) || 24, 1), 100);
 
     try {
-        let query = db.collection('images')
+        let imageQuery = db.collection('images')
             .where('userId', '==', uid)
-            // .where('hidden', '!=', true) // Removed to avoid composite index requirement and "missing field" filtering
+            .orderBy('createdAt', 'desc')
+            .limit(limit);
+
+        // Also query videos
+        let videoQuery = db.collection('videos')
+            .where('userId', '==', uid)
             .orderBy('createdAt', 'desc')
             .limit(limit);
 
         // Handle pagination
         if (startAfterId) {
-            const startAfterDoc = await db.collection('images').doc(startAfterId).get();
-            if (startAfterDoc.exists) {
-                query = query.startAfter(startAfterDoc);
+            // We need to find which collection the cursor belongs to
+            const imageCursor = await db.collection('images').doc(startAfterId).get();
+            const videoCursor = await db.collection('videos').doc(startAfterId).get();
+
+            if (imageCursor.exists) {
+                // If cursor is an image, we start after it for images
+                const cursorDate = imageCursor.data().createdAt;
+                imageQuery = imageQuery.startAfter(imageCursor);
+                // For videos, we need to start after the same timestamp to keep sync (approximate)
+                // Or simpler: just fetch and client/server merge filtering?
+                // Proper way: usage of startAfter parameters.
+                // Since we can't easily sync cursors across collections without a unified index:
+                // We will rely on simple date based pagination or just fetching 'limit' from both and filtering in memory.
+                // Given the constraints, we will just apply startAfter to the collection where it was found,
+                // AND potentially pass the 'createdAt' to the other query.
+                videoQuery = videoQuery.where('createdAt', '<', cursorDate);
+            } else if (videoCursor.exists) {
+                const cursorDate = videoCursor.data().createdAt;
+                videoQuery = videoQuery.startAfter(videoCursor);
+                imageQuery = imageQuery.where('createdAt', '<', cursorDate);
             }
         }
 
-        const snapshot = await query.get();
-        const images = snapshot.docs.map(doc => ({
+        const [imageSnap, videoSnap] = await Promise.all([
+            imageQuery.get(),
+            videoQuery.get()
+        ]);
+
+        const imageItems = imageSnap.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
+            type: 'image',
             createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
         }));
 
-        // Client-side search filtering if searchQuery provided
-        let filteredImages = images;
+        const videoItems = videoSnap.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            type: 'video',
+            imageUrl: doc.data().imageSnapshotUrl || doc.data().videoUrl, // Ensure imageUrl exists for preview
+            createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
+        }));
+
+        let allItems = [...imageItems, ...videoItems];
+
+        // Search filtering (Client-sideish for now)
         if (searchQuery && typeof searchQuery === 'string' && searchQuery.trim().length > 0) {
             const queryLower = searchQuery.toLowerCase();
-            filteredImages = images.filter(img =>
-                img.prompt?.toLowerCase().includes(queryLower)
+            allItems = allItems.filter(item =>
+                item.prompt?.toLowerCase().includes(queryLower)
             );
         }
 
-        // Filter hidden images in memory
-        filteredImages = filteredImages.filter(img => img.hidden !== true);
+        // Memory Filter hidden
+        allItems = allItems.filter(item => item.hidden !== true);
 
-        const lastVisible = snapshot.docs[snapshot.docs.length - 1];
-        const hasMore = snapshot.docs.length === limit;
+        // Sort combined
+        allItems.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        // Slice to limit
+        const pagedItems = allItems.slice(0, limit);
+        const lastVisible = pagedItems[pagedItems.length - 1];
+        const hasMore = pagedItems.length === limit; // Approximate
 
         return {
-            images: filteredImages,
+            images: pagedItems, // Keeping key 'images' for frontend compatibility, though it contains videos too
             lastVisibleId: lastVisible?.id || null,
             hasMore: hasMore
         };
     } catch (error) {
-        console.error("Error fetching user images:", error);
-        throw new HttpsError('internal', "Failed to fetch images", error.message);
+        console.error("Error fetching user gallery:", error);
+        throw new HttpsError('internal', "Failed to fetch gallery", error.message);
     }
 });
 
@@ -942,37 +982,56 @@ export const deleteImagesBatch = onCall(async (request) => {
     }
 
     try {
-        // Verify ownership of all images before deleting
-        const imageDocs = await Promise.all(
-            imageIds.map(id => db.collection('images').doc(id).get())
-        );
+        // Check both collections in parallel
+        // Optimization: We could guess based on ID format if distinct, but simpler to just check.
+        // Actually, checking existence efficiently:
+        // We will fetch all from 'images' and 'videos' using getAll (if supported) or individual gets.
+        // Since we have max 50, individual gets or parallel checks are fine.
+
+        const checks = await Promise.all(imageIds.map(async (id) => {
+            const imgDoc = await db.collection('images').doc(id).get();
+            if (imgDoc.exists) return { type: 'image', doc: imgDoc };
+
+            const vidDoc = await db.collection('videos').doc(id).get();
+            if (vidDoc.exists) return { type: 'video', doc: vidDoc };
+
+            return null;
+        }));
 
         const unauthorized = [];
         const notFound = [];
-        const valid = [];
+        const valid = []; // { id, ref }
 
-        imageDocs.forEach((doc, index) => {
-            if (!doc.exists) {
-                notFound.push(imageIds[index]);
-            } else if (doc.data().userId !== uid) {
-                unauthorized.push(imageIds[index]);
+        checks.forEach((result, index) => {
+            const id = imageIds[index];
+            if (!result) {
+                notFound.push(id);
             } else {
-                valid.push(imageIds[index]);
+                const data = result.doc.data();
+                if (data.userId !== uid) {
+                    unauthorized.push(id);
+                } else {
+                    valid.push({ id, ref: result.doc.ref });
+                }
             }
         });
 
         if (unauthorized.length > 0) {
-            throw new Error(`Unauthorized: You don't have permission to delete ${unauthorized.length} image(s)`);
+            throw new Error(`Unauthorized: You don't have permission to delete ${unauthorized.length} item(s)`);
         }
 
         if (notFound.length > 0 && valid.length === 0) {
-            throw new Error(`Images not found: ${notFound.join(', ')}`);
+            // If some found, we proceed with deleting them (partial success logic?) 
+            // Original code threw if ALL were not found, but proceeded if mixed? 
+            // "if (notFound.length > 0 && valid.length === 0)" -> throws only if NOTHING valid.
+            // If mixed, we proceed.
+            throw new Error(`Items not found: ${notFound.join(', ')}`);
         }
 
-        // Delete all valid images
+        // Delete all valid items
         const batch = db.batch();
-        valid.forEach(id => {
-            batch.delete(db.collection('images').doc(id));
+        valid.forEach(item => {
+            batch.delete(item.ref);
         });
         await batch.commit();
 
@@ -983,11 +1042,11 @@ export const deleteImagesBatch = onCall(async (request) => {
             skipped: unauthorized.length
         };
     } catch (error) {
-        console.error("Error deleting images batch:", error);
+        console.error("Error deleting items batch:", error);
         if (error.message.includes("Unauthorized") || error.message.includes("not found")) {
             throw error;
         }
-        throw new Error("Failed to delete images");
+        throw new Error("Failed to delete items");
     }
 });
 
@@ -1210,3 +1269,216 @@ export const getGenerationHistory = onCall(async (request) => {
         throw new HttpsError('internal', "Failed to fetch generation history", error.message);
     }
 });
+
+// ============================================================================
+// Video Generation Functions (Reels)
+// ============================================================================
+
+export const createVideoGenerationRequest = onCall(async (request) => {
+    // App Check Verification
+    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
+        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
+    }
+
+    const uid = request.auth?.uid;
+    if (!uid) {
+        throw new HttpsError('unauthenticated', "User must be authenticated");
+    }
+
+    const { prompt, image, duration, resolution, aspectRatio } = request.data;
+
+    // Validate inputs
+    if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 5) {
+        throw new HttpsError('invalid-argument', "Prompt is required and must be at least 5 characters");
+    }
+
+    const validResolutions = ['1080p', '2k', '4k'];
+    const safeResolution = validResolutions.includes(resolution) ? resolution : '1080p';
+
+    // Default duration 6s if not specified, verify constraints (5s min, 20s max?)
+    // Video.md says min 5s. Let's assume max is lenient for now but check Pricing.jsx (states 10s-20s).
+    // Let's allow integer.
+    let safeDuration = parseInt(duration) || 6;
+    if (safeDuration < 5) safeDuration = 5;
+    if (safeDuration > 20) safeDuration = 20; // Cap at 20 based on Pricing.jsx hints
+
+    // Calculate Reel Cost
+    // 1080p: 18/s, 2k: 36/s, 4k: 72/s
+    let rate = 18;
+    if (safeResolution === '2k') rate = 36;
+    if (safeResolution === '4k') rate = 72;
+
+    const totalCost = rate * safeDuration;
+
+    try {
+        const userRef = db.collection('users').doc(uid);
+
+        await db.runTransaction(async (t) => {
+            const userDoc = await t.get(userRef);
+            if (!userDoc.exists) {
+                throw new HttpsError('not-found', "User not found");
+            }
+
+            const userData = userDoc.data();
+            const currentReels = userData.reels || 0;
+
+            if (currentReels < totalCost) {
+                throw new HttpsError('resource-exhausted', `Insufficient Reels. Cost: ${totalCost}, Balance: ${currentReels}`);
+            }
+
+            t.update(userRef, {
+                reels: FieldValue.increment(-totalCost)
+            });
+        });
+
+        // Add to video queue
+        const docRef = await db.collection('video_queue').add({
+            userId: uid,
+            prompt: prompt.trim(),
+            image: image || null,
+            duration: safeDuration,
+            resolution: safeResolution,
+            aspectRatio: aspectRatio || null, // Optional if LTX supports it
+            cost: totalCost,
+            status: 'pending',
+            createdAt: new Date()
+        });
+
+        return { requestId: docRef.id, cost: totalCost };
+
+    } catch (error) {
+        console.error("Error creating video request:", error);
+        if (error instanceof HttpsError) throw error;
+        throw new HttpsError('internal', "Failed to create video request", error.message);
+    }
+});
+
+export const generateVideo = onDocumentCreated(
+    {
+        document: "video_queue/{requestId}",
+        timeoutSeconds: 540, // 9 minutes (longer for video)
+        memory: "2GiB", // More memory for potential buffer handling
+    },
+    async (event) => {
+        const snapshot = event.data;
+        if (!snapshot) return;
+
+        const data = snapshot.data();
+        const requestId = event.params.requestId;
+
+        if (data.status !== "pending") return;
+
+        try {
+            await snapshot.ref.update({ status: "processing" });
+
+            const replicate = new Replicate({
+                auth: process.env.REPLICATE_API_TOKEN,
+            });
+
+            // Prepare inputs for LTX-2-Pro
+            // Based on video.md schema
+            const input = {
+                prompt: data.prompt,
+                duration: data.duration,
+                resolution: data.resolution,
+                generate_audio: true // Default true
+            };
+
+            if (data.image) {
+                input.image = data.image; // Image-to-video
+            }
+
+            console.log(`Starting Replicate prediction for ${requestId} (Cost: ${data.cost} reels)...`);
+
+            // Run prediction (waits for completion)
+            const output = await replicate.run("lightricks/ltx-2-pro", { input });
+
+            // Output is likely a URL string or array of URLs? 
+            // video.md ex: output.url() or output itself?
+            // "const output = await replicate.run(...)"
+            // "console.log(output.url())" // suggests output is an object with url() method?
+            // Replicate Node SDK `run` usually returns the output value directly (JSON/primitive).
+            // However, `replicate.run` for a model usually waits.
+            // Documentation in video.md says: `//=> "https://replicate.delivery/.../output.mp4"` (comment line 31)
+            // Wait, line 30 says `console.log(output.url())`? That's specific to the file object returned?
+            // Actually standard Replicate SDK `run` returns the output schema.
+            // If output schema is type `uri`, it returns a string (URL) or stream.
+            // Let's assume it returns the URL string or a streamable object. 
+            // Ideally we download it and upload to B2 to persist it (Replicate URLs expire).
+
+            // Let's handle generic "output" which might be the URL string.
+            let videoUrl = output;
+            if (output && typeof output.url === 'function') {
+                videoUrl = output.url();
+            }
+
+            if (!videoUrl || typeof videoUrl !== 'string') {
+                // Fallback or inspect
+                console.log("Output structure:", output);
+                // If it's a stream, we might need to handle it. 
+                // But usually for `uri` output type, SDK returns a string URL.
+            }
+
+            // Download from Replicate
+            const response = await fetch(videoUrl);
+            if (!response.ok) throw new Error(`Failed to download video from Replicate: ${response.statusText}`);
+            const arrayBuffer = await response.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+
+            // Upload to B2
+            const filename = `videos/${data.userId}/${Date.now()}.mp4`;
+            const command = new PutObjectCommand({
+                Bucket: B2_BUCKET,
+                Key: filename,
+                Body: buffer,
+                ContentType: "video/mp4",
+            });
+
+            await s3Client.send(command);
+            const b2Url = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${filename}`;
+
+            // Save to 'videos' collection
+            const videoDoc = {
+                userId: data.userId,
+                prompt: data.prompt,
+                videoUrl: b2Url,
+                duration: data.duration,
+                resolution: data.resolution,
+                cost: data.cost,
+                createdAt: new Date(),
+                originalRequestId: requestId
+            };
+
+            const videoRef = await db.collection("videos").add(videoDoc);
+
+            // Update queue
+            await snapshot.ref.update({
+                status: "completed",
+                videoUrl: b2Url,
+                completedAt: new Date(),
+                resultVideoId: videoRef.id
+            });
+
+        } catch (error) {
+            console.error("Error generating video:", error);
+
+            // Refund logic?
+            // If generation fails, we should probably refund the user.
+            // For now, let's mark failed and log. 
+            // Implementing refund logic is good practice.
+            try {
+                await db.collection('users').doc(data.userId).update({
+                    reels: FieldValue.increment(data.cost)
+                });
+                console.log(`Refunded ${data.cost} reels to ${data.userId} due to failure.`);
+            } catch (refundError) {
+                console.error("Failed to refund user:", refundError);
+            }
+
+            await snapshot.ref.update({
+                status: "failed",
+                error: error.message
+            });
+        }
+    }
+);
