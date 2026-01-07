@@ -114,7 +114,17 @@ export default function Generator() {
 
         } catch (error) {
             console.error("Auto animate error", error);
-            toast.error("Failed to animate image");
+
+            // Handle Gemini Rate Limits (429) - Free Tier Quota
+            if (error.code === 429 || error.message?.includes('429') || error.message?.includes('RESOURCE_EXHAUSTED')) {
+                toast.error("AI Server is busy (High Traffic). Please try again in a few seconds.", {
+                    duration: 5000,
+                    icon: '🚦'
+                });
+            } else {
+                toast.error("Failed to animate image. Please try again.");
+            }
+
             setGenerating(false);
         } finally {
             setAnalyzingImageId(null);
@@ -526,151 +536,104 @@ export default function Generator() {
                         </div>
 
                         {/* Prompt Input Bar OR Video Gallery */}
-                        {(generationMode === 'video' && !isCustomVideoPrompt && !generating && !currentJobId && !prompt && !referenceImage) ? (
-                            <div style={{ flex: 1, padding: '32px' }}>
-
-                                <div style={{
-                                    width: '100%',
-                                    maxWidth: '900px',
-                                    margin: '0 auto 32px auto',
-                                    aspectRatio: '16/9',
-                                    background: 'rgba(0,0,0,0.3)',
-                                    borderRadius: '24px',
-                                    border: '1px dashed var(--color-border)',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    position: 'relative',
-                                    overflow: 'hidden',
-                                    padding: '40px'
-                                }}>
-                                    {/* Header / Instructions */}
-                                    <div style={{ marginBottom: '32px', textAlign: 'center', width: '100%' }}>
-                                        <h2 style={{ fontSize: '1.8rem', fontWeight: '800', color: 'white', marginBottom: '8px', letterSpacing: '-0.02em' }}>
-                                            Create Video
-                                        </h2>
-                                        <div style={{ fontSize: '1rem', color: 'var(--color-text-muted)', maxWidth: '400px', margin: '0 auto', lineHeight: '1.5' }}>
-                                            Turn any image into a cinematic video. Choose an action below to start.
-                                        </div>
+                        {/* Prompt Input / Video Carousel Switch */}
+                        {generationMode === 'video' ? (
+                            /* Video Mode: Recent Images Carousel (Replaces Prompt Form) */
+                            <div style={{
+                                padding: '24px',
+                                borderTop: '1px solid rgba(255,255,255,0.08)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '16px'
+                            }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ fontSize: '0.9rem', fontWeight: '600', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <Sparkles size={14} className="text-purple-400" />
+                                        Bring to Life (Recent)
                                     </div>
-
-                                    {/* Main Actions Row */}
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', maxWidth: '600px', width: '100%' }}>
-                                        {/* Upload Card */}
-                                        <button
-                                            onClick={() => setIsImagePickerOpen(true)}
-                                            className="action-card"
-                                            style={{
-                                                padding: '16px', borderRadius: '16px',
-                                                background: 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
-                                                border: '1px solid rgba(255,255,255,0.1)',
-                                                display: 'flex', alignItems: 'center', gap: '12px',
-                                                cursor: 'pointer', color: 'white', transition: 'all 0.2s ease',
-                                                textAlign: 'left'
-                                            }}
-                                        >
-                                            <div style={{
-                                                width: '36px', height: '36px', borderRadius: '50%',
-                                                background: 'rgba(var(--color-accent-rgb), 0.2)', color: 'var(--color-accent-primary)',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                                            }}>
-                                                <Upload size={18} />
-                                            </div>
-                                            <div>
-                                                <div style={{ fontSize: '0.9rem', fontWeight: '600' }}>Upload Image</div>
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>From local device</div>
-                                            </div>
-                                        </button>
-
-                                        {/* Custom Prompt Card */}
-                                        <button
-                                            onClick={() => setIsCustomVideoPrompt(true)}
-                                            className="action-card"
-                                            style={{
-                                                padding: '16px', borderRadius: '16px',
-                                                background: 'rgba(255,255,255,0.02)',
-                                                border: '1px solid rgba(255,255,255,0.05)',
-                                                display: 'flex', alignItems: 'center', gap: '12px',
-                                                cursor: 'pointer', color: 'var(--color-text-muted)', transition: 'all 0.2s ease',
-                                                textAlign: 'left'
-                                            }}
-                                        >
-                                            <div style={{
-                                                width: '36px', height: '36px', borderRadius: '50%',
-                                                background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.8)',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                                            }}>
-                                                <Type size={18} />
-                                            </div>
-                                            <div>
-                                                <div style={{ fontSize: '0.9rem', fontWeight: '600', color: 'rgba(255,255,255,0.9)' }}>Write Prompt</div>
-                                                <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>Describe manually</div>
-                                            </div>
-                                        </button>
-                                    </div>
+                                    <Link to="/gallery" style={{ fontSize: '0.8rem', color: 'var(--color-accent-primary)', textDecoration: 'none' }}>
+                                        View All
+                                    </Link>
                                 </div>
 
-                                {/* Recent History Grid */}
-                                {recentImages.length > 0 && (
-                                    <>
-                                        <div style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '12px', flexShrink: 0 }}>
-                                            Bring to Life (Recent)
-                                        </div>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px' }}>
-                                            {recentImages.map(img => (
-                                                <div key={img.id} style={{ position: 'relative', aspectRatio: '1', borderRadius: '16px', overflow: 'hidden', background: '#000', border: '1px solid rgba(255,255,255,0.1)', transform: 'translateZ(0)' }} className="magic-card">
-                                                    <img
-                                                        src={getOptimizedImageUrl(img.imageUrl)}
-                                                        alt=""
-                                                        style={{
-                                                            width: '100%', height: '100%', objectFit: 'cover',
-                                                            transition: 'transform 0.5s ease',
-                                                            opacity: analyzingImageId === img.id ? 0.5 : 1
-                                                        }}
-                                                    />
-
-                                                    {/* Magic Overlay */}
-                                                    <div className="magic-overlay" style={{
-                                                        position: 'absolute', inset: 0,
-                                                        background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 100%)',
-                                                        opacity: 0, transition: 'all 0.3s ease',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        backdropFilter: 'blur(2px)'
+                                {recentImages.length > 0 ? (
+                                    <div className="custom-scrollbar" style={{
+                                        display: 'flex',
+                                        gap: '12px',
+                                        overflowX: 'auto',
+                                        paddingBottom: '12px',
+                                        scrollBehavior: 'smooth'
+                                    }}>
+                                        {recentImages.map(img => (
+                                            <button
+                                                key={img.id}
+                                                onClick={() => handleVideoAutoAnimate(img)}
+                                                disabled={!!analyzingImageId}
+                                                className="carousel-item"
+                                                style={{
+                                                    flexShrink: 0,
+                                                    width: '140px',
+                                                    aspectRatio: '1',
+                                                    borderRadius: '16px',
+                                                    overflow: 'hidden',
+                                                    border: '1px solid rgba(255,255,255,0.1)',
+                                                    position: 'relative',
+                                                    cursor: 'pointer',
+                                                    padding: 0,
+                                                    background: '#000',
+                                                    transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)'
+                                                }}
+                                            >
+                                                <img
+                                                    src={getOptimizedImageUrl(img.imageUrl)}
+                                                    alt=""
+                                                    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: analyzingImageId === img.id ? 0.5 : 1 }}
+                                                />
+                                                <div className="hover-overlay" style={{
+                                                    position: 'absolute', inset: 0,
+                                                    background: 'rgba(0,0,0,0.4)',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    opacity: 0, transition: 'opacity 0.2s',
+                                                    backdropFilter: 'blur(2px)'
+                                                }}>
+                                                    <div style={{
+                                                        background: 'white', color: 'black',
+                                                        borderRadius: '50%', padding: '10px',
+                                                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
                                                     }}>
-                                                        <button
-                                                            onClick={() => handleVideoAutoAnimate(img)}
-                                                            disabled={!!analyzingImageId}
-                                                            className="btn-magic"
-                                                            style={{
-                                                                background: 'white', color: 'black', border: 'none',
-                                                                borderRadius: '100px', padding: '10px 20px',
-                                                                fontSize: '0.8rem', fontWeight: '700',
-                                                                display: 'flex', alignItems: 'center', gap: '6px',
-                                                                boxShadow: '0 4px 15px rgba(255,255,255,0.3)',
-                                                                cursor: 'pointer', transform: 'translateY(10px)', transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                                                                whiteSpace: 'nowrap'
-                                                            }}
-                                                        >
-                                                            {analyzingImageId === img.id ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} className="text-purple-600" fill="currentColor" />}
-                                                            {analyzingImageId === img.id ? 'Analyzing...' : 'Magic Animate'}
-                                                        </button>
+                                                        <Video size={18} fill="currentColor" />
                                                     </div>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </>
+                                                {analyzingImageId === img.id && (
+                                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}>
+                                                        <Loader2 size={24} className="animate-spin" color="white" />
+                                                    </div>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div style={{
+                                        padding: '40px',
+                                        textAlign: 'center',
+                                        color: 'var(--color-text-muted)',
+                                        border: '1px dashed rgba(255,255,255,0.1)',
+                                        borderRadius: '16px',
+                                        background: 'rgba(255,255,255,0.02)'
+                                    }}>
+                                        <ImageIcon size={32} style={{ marginBottom: '12px', opacity: 0.5 }} />
+                                        <div style={{ fontSize: '0.9rem' }}>No recent images found.</div>
+                                        <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Generate or upload an image to animate it.</div>
+                                    </div>
                                 )}
-
                                 <style>{`
-                                    .action-card:hover { transform: translateY(-4px); background: rgba(255,255,255,0.08) !important; border-color: rgba(255,255,255,0.2) !important; }
-                                    .magic-card:hover img { transform: scale(1.1); }
-                                    .magic-card:hover .magic-overlay { opacity: 1; }
-                                    .magic-card:hover .btn-magic { transform: translateY(0); }
-                                    .btn-magic:hover { transform: scale(1.05) translateY(0) !important; box-shadow: 0 6px 20px rgba(255,255,255,0.5) !important; }
+                                    .carousel-item:hover .hover-overlay { opacity: 1; }
+                                    .carousel-item:hover { transform: translateY(-4px) scale(1.02); border-color: var(--color-accent-primary) !important; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 10; }
                                 `}</style>
                             </div>
                         ) : (
+                            /* Image Mode: Standard Prompt Form */
                             <div style={{ padding: '0', background: 'transparent', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
                                 <div className="glass-panel" style={{
                                     margin: '20px',

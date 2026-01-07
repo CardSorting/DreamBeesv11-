@@ -9,8 +9,8 @@ import { createCheckoutSession, constructWebhookEvent, createPortalSession } fro
 import Replicate from "replicate";
 
 import { createRequire } from "module";
-import { GoogleGenAI } from "@google/genai";
 const require = createRequire(import.meta.url);
+
 
 // Initializing Firebase Admin
 // Use the service account key only for local emulation or if env var not set
@@ -1512,9 +1512,9 @@ export const generateVideoPrompt = onCall(async (request) => {
         throw new HttpsError('invalid-argument', "Image data or URL is required");
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
+    const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
-        console.error("GEMINI_API_KEY is not set in environment variables");
+        console.error("OPENROUTER_API_KEY is not set in environment variables");
         throw new HttpsError('internal', "Service configuration error");
     }
 
@@ -1530,49 +1530,66 @@ Character specificity: Include age, ethnicity, distinguishing features, clothing
 `;
 
     try {
-        const ai = new GoogleGenAI({ apiKey });
-
-        let base64Data = "";
-        let mimeType = "image/png";
+        let imageContentUrl = "";
 
         if (imageUrl) {
-            // Fetch remote image
-            const response = await fetch(imageUrl);
-            if (!response.ok) throw new Error("Failed to fetch image from URL");
-            const arrayBuffer = await response.arrayBuffer();
-            base64Data = Buffer.from(arrayBuffer).toString('base64');
-            const contentType = response.headers.get('content-type');
-            if (contentType) mimeType = contentType;
+            imageContentUrl = imageUrl;
         } else {
-            // Strip base64 prefix if present
-            base64Data = image.replace(/^data:image\/\w+;base64,/, "");
-            const match = image.match(/^data:(image\/\w+);base64,/);
-            if (match) mimeType = match[1];
+            // Ensure it's a proper data URI for OpenRouter/OpenAI format
+            if (image.trim().startsWith('data:')) {
+                imageContentUrl = image;
+            } else {
+                // Determine mime type if possible or default to png
+                // If the client sent raw base64 (which the previous code stripped), we need to add the prefix back.
+                // The previous code had strict regex matching for mime type.
+                // Let's attempt to guess or default.
+                imageContentUrl = `data:image/png;base64,${image}`;
+            }
         }
 
-        const response = await ai.models.generateContent({
-            model: "gemini-2.0-flash-exp",
-            contents: [
-                {
-                    parts: [
-                        { text: "Analyze the image and write a video generation prompt based on these guidelines:\n" + PROMPT_GUIDELINES },
-                        { inlineData: { mimeType: mimeType, data: base64Data } }
-                    ]
-                }
-            ]
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://dreambees.app",
+                "X-Title": "DreamBees"
+            },
+            body: JSON.stringify({
+                model: "google/gemini-2.0-flash-exp:free",
+                messages: [
+                    {
+                        role: "user",
+                        content: [
+                            {
+                                type: "text",
+                                text: "Analyze the image and write a video generation prompt based on these guidelines:\n" + PROMPT_GUIDELINES
+                            },
+                            {
+                                type: "image_url",
+                                image_url: {
+                                    url: imageContentUrl
+                                }
+                            }
+                        ]
+                    }
+                ]
+            })
         });
 
-        let text = response.text;
-        if (typeof text === 'function') {
-            text = text();
-        } else if (!text && response.response) {
-            // Handle different potential response shapes if SDK varies
-            text = response.response.text();
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("OpenRouter API Error:", errorText);
+            throw new Error(`OpenRouter API returned ${response.status}: ${errorText}`);
         }
 
-        return { prompt: text };
+        const data = await response.json();
+        const generatedText = data.choices?.[0]?.message?.content || "";
+
+        return { prompt: generatedText };
+
     } catch (error) {
-        console.error("Gemini generation error:", error);
+        console.error("OpenRouter generation error:", error);
         throw new HttpsError('internal', "Failed to generate prompt from image: " + error.message);
     }
 });
