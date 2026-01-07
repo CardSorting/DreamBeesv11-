@@ -1001,77 +1001,7 @@ export const getGenerationHistory = onCall(async (request) => {
 // Video Generation Functions (Reels)
 // ============================================================================
 
-export const createVideoGenerationRequest = onCall(async (request) => {
-    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
-        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
-    }
-
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
-
-    const { prompt, image, duration, resolution, aspectRatio, autoPrompt } = request.data;
-    if (!autoPrompt && (!prompt || prompt.length < 5)) throw new HttpsError('invalid-argument', "Prompt required");
-    if (autoPrompt && !image) throw new HttpsError('invalid-argument', "Image required for auto-prompt");
-
-    let safeDuration = Math.min(Math.max(parseInt(duration) || 6, 5), 20);
-    const rate = resolution === '4k' ? 72 : (resolution === '2k' ? 36 : 18);
-    const totalCost = rate * safeDuration;
-
-    try {
-        const userRef = db.collection('users').doc(uid);
-
-        // Transaction for credits and concurrency check
-        const requestId = await db.runTransaction(async (t) => {
-            const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
-
-            // Concurrency check (one active job)
-            const activeJobs = await db.collection('video_queue')
-                .where('userId', '==', uid)
-                .where('status', 'in', ['queued', 'analyzing_prompt', 'processing', 'pending'])
-                .limit(1).get();
-            if (!activeJobs.empty) throw new HttpsError('failed-precondition', "Generation already in progress.");
-
-            const currentReels = userDoc.data().reels || 0;
-            if (currentReels < totalCost) throw new HttpsError('resource-exhausted', "Insufficient Reels");
-
-            t.update(userRef, { reels: FieldValue.increment(-totalCost) });
-
-            const newDocRef = db.collection('video_queue').doc();
-            t.set(newDocRef, {
-                userId: uid,
-                prompt: autoPrompt ? "" : prompt.trim(),
-                autoPrompt: !!autoPrompt,
-                image: image || null,
-                duration: safeDuration,
-                resolution: resolution || '1080p',
-                aspectRatio: aspectRatio || null,
-                cost: totalCost,
-                status: 'queued',
-                createdAt: new Date()
-            });
-
-            return newDocRef.id;
-        });
-
-        // Enqueue Task
-        const queue = getFunctions().taskQueue('processVideoTask');
-        await queue.enqueue({ requestId });
-
-        return { requestId, cost: totalCost };
-    } catch (error) {
-        console.error("Video Request Error:", error);
-        if (error instanceof HttpsError) throw error;
-        throw new HttpsError('internal', "Failed to create video request", error.message);
-    }
-});
-
-
-
-
-
-
-// Worker Function for Video Generation
+// Video Generation Worker
 export const processVideoTask = onTaskDispatched(
     {
         timeoutSeconds: 540,
@@ -1093,21 +1023,20 @@ export const processVideoTask = onTaskDispatched(
         if (data.status === "completed" || data.status === "failed") return;
 
         try {
+            // Note: In the new async flow, we expect the prompt to be already analyzed or provided.
+            // If it's still empty but autoPrompt was true, we fallback to a safe error or use provided image description.
             let finalPrompt = data.prompt;
 
-            // 1. Handle Auto-Prompting (if needed)
-            if (data.status === 'analyzing_prompt' || (data.autoPrompt && !data.prompt)) {
-                await docRef.update({ status: "analyzing_prompt" });
-                console.log(`Analyzing image for ${requestId}...`);
-                try {
-                    finalPrompt = await generateVisionPrompt(data.image);
-                    await docRef.update({ prompt: finalPrompt });
-                } catch (promptError) {
-                    throw new Error("Vision Analysis Failed: " + promptError.message);
+            if (!finalPrompt || finalPrompt.length < 5) {
+                if (data.image) {
+                    // We really should have an analyzed prompt by now. 
+                    // If not, we fail and ask user to use the analysis tool first.
+                    throw new Error("No prompt provided. Please use the Auto-Prompt tool first for image-to-video.");
+                } else {
+                    throw new Error("Generation prompt is empty or too short.");
                 }
             }
 
-            // 2. Start Processing with Replicate
             await docRef.update({ status: "processing" });
 
             const replicate = new Replicate({
@@ -1136,7 +1065,7 @@ export const processVideoTask = onTaskDispatched(
                 throw new Error("No video URL returned from AI model");
             }
 
-            // 3. Download and Persist to B2
+            // Download and Persist to B2
             console.log(`Saving result to B2 for ${requestId}...`);
             const response = await fetch(videoUrl);
             if (!response.ok) throw new Error(`Replicate Download Error: ${response.statusText}`);
@@ -1152,7 +1081,7 @@ export const processVideoTask = onTaskDispatched(
 
             const b2Url = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${filename}`;
 
-            // 4. Finalize
+            // Finalize
             const videoDoc = {
                 userId: data.userId,
                 prompt: finalPrompt,
@@ -1173,15 +1102,14 @@ export const processVideoTask = onTaskDispatched(
                 resultVideoId: videoRef.id
             });
 
-            console.log(`Video ${requestId} successfully generated!`);
-
         } catch (error) {
             console.error(`Task Failed for ${requestId}:`, error);
 
             // Refund logic
             try {
-                await db.collection('users').doc(data.userId).update({
-                    reels: FieldValue.increment(data.cost)
+                const userRef = db.collection('users').doc(data.userId);
+                await db.runTransaction(async (t) => {
+                    t.update(userRef, { reels: FieldValue.increment(data.cost) });
                 });
                 console.log(`Refunded ${data.cost} reels to ${data.userId}`);
             } catch (refundError) {
@@ -1198,8 +1126,10 @@ export const processVideoTask = onTaskDispatched(
 
 
 
+
+
 // ============================================================================
-// Auto-Prompter (Gemini)
+// Asynchronous Image Analysis Queue
 // ============================================================================
 
 // Helper for Vision Prompt Generation
@@ -1260,28 +1190,119 @@ Character specificity: Include age, ethnicity, distinguishing features, clothing
     return data.choices?.[0]?.message?.content || "";
 }
 
-
-export const generateVideoPrompt = onCall(async (request) => {
-    // App Check Verification
-    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
-        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
-    }
-
+export const createAnalysisRequest = onCall(async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) {
-        throw new HttpsError('unauthenticated', "User must be authenticated");
-    }
+    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
 
     const { image, imageUrl } = request.data;
-    if ((!image || typeof image !== 'string') && (!imageUrl || typeof imageUrl !== 'string')) {
+    if (!image && !imageUrl) {
         throw new HttpsError('invalid-argument', "Image data or URL is required");
     }
 
     try {
+        const docRef = await db.collection('analysis_queue').add({
+            userId: uid,
+            image: image || null,
+            imageUrl: imageUrl || null,
+            status: 'queued',
+            createdAt: new Date()
+        });
+        return { requestId: docRef.id };
+    } catch (error) {
+        console.error("Analysis Request Error:", error);
+        throw new HttpsError('internal', "Failed to create analysis request");
+    }
+});
+
+export const onAnalysisQueueCreated = onDocumentCreated("analysis_queue/{requestId}", async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) return;
+
+    const data = snapshot.data();
+    const requestId = event.params.requestId;
+
+    try {
+        await snapshot.ref.update({ status: 'analyzing' });
+
+        const prompt = await generateVisionPrompt(data.imageUrl || data.image);
+
+        await snapshot.ref.update({
+            status: 'completed',
+            prompt: prompt,
+            completedAt: new Date()
+        });
+    } catch (error) {
+        console.error(`Analysis failed for ${requestId}:`, error);
+        await snapshot.ref.update({
+            status: 'failed',
+            error: error.message
+        });
+    }
+});
+
+// Deprecated blocking function - keep for compatibility for a few cycles
+export const generateVideoPrompt = onCall(async (request) => {
+    const { image, imageUrl } = request.data;
+    try {
         const prompt = await generateVisionPrompt(imageUrl || image);
         return { prompt };
     } catch (error) {
-        console.error("OpenRouter generation error:", error);
-        throw new HttpsError('internal', "Failed to generate prompt from image: " + error.message);
+        throw new HttpsError('internal', error.message);
+    }
+});
+
+export const createVideoGenerationRequest = onCall(async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
+
+    const { prompt, image, duration, resolution, aspectRatio } = request.data;
+    if (!prompt || prompt.length < 5) throw new HttpsError('invalid-argument', "Prompt required");
+
+    let safeDuration = Math.min(Math.max(parseInt(duration) || 6, 5), 20);
+    const rate = resolution === '4k' ? 72 : (resolution === '2k' ? 36 : 18);
+    const totalCost = rate * safeDuration;
+
+    try {
+        const userRef = db.collection('users').doc(uid);
+
+        const requestId = await db.runTransaction(async (t) => {
+            const userDoc = await t.get(userRef);
+            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+
+            const activeJobs = await db.collection('video_queue')
+                .where('userId', '==', uid)
+                .where('status', 'in', ['queued', 'processing', 'pending'])
+                .limit(1).get();
+            if (!activeJobs.empty) throw new HttpsError('failed-precondition', "Generation already in progress.");
+
+            const currentReels = userDoc.data().reels || 0;
+            if (currentReels < totalCost) throw new HttpsError('resource-exhausted', "Insufficient Reels");
+
+            t.update(userRef, { reels: FieldValue.increment(-totalCost) });
+
+            const newDocRef = db.collection('video_queue').doc();
+            t.set(newDocRef, {
+                userId: uid,
+                prompt: prompt.trim(),
+                image: image || null,
+                duration: safeDuration,
+                resolution: resolution || '1080p',
+                aspectRatio: aspectRatio || null,
+                cost: totalCost,
+                status: 'queued',
+                createdAt: new Date()
+            });
+
+            return newDocRef.id;
+        });
+
+        const queue = getFunctions().taskQueue('processVideoTask');
+        await queue.enqueue({ requestId });
+
+        return { requestId, cost: totalCost };
+    } catch (error) {
+        console.error("Video Request Error:", error);
+        if (error instanceof HttpsError) throw error;
+        throw new HttpsError('internal', "Failed to create video request", error.message);
     }
 });

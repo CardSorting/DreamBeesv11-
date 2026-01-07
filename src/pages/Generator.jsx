@@ -149,23 +149,45 @@ export default function Generator() {
 
         setIsAutoPrompting(true);
         try {
-            const generateVideoPromptFn = httpsCallable(functions, 'generateVideoPrompt');
+            const createAnalysisRequestFn = httpsCallable(functions, 'createAnalysisRequest');
             const payload = {};
             if (referenceImage.startsWith('data:')) {
                 payload.image = referenceImage;
             } else {
                 payload.imageUrl = referenceImage;
             }
-            const result = await generateVideoPromptFn(payload);
+            const { data } = await createAnalysisRequestFn(payload);
+            const requestId = data.requestId;
 
-            if (result.data.prompt) {
-                setPrompt(result.data.prompt);
-                toast.success("Prompt generated!");
-            }
+            // Subscribe to results
+            const unsub = onSnapshot(doc(db, "analysis_queue", requestId), (snapshot) => {
+                if (snapshot.exists()) {
+                    const status = snapshot.data().status;
+                    if (status === 'completed') {
+                        setPrompt(snapshot.data().prompt);
+                        toast.success("Prompt generated!");
+                        setIsAutoPrompting(false);
+                        unsub();
+                    } else if (status === 'failed') {
+                        toast.error("Analysis failed: " + snapshot.data().error);
+                        setIsAutoPrompting(false);
+                        unsub();
+                    }
+                }
+            });
+
+            // Auto-cleanup subscriber if it takes too long
+            setTimeout(() => {
+                unsub();
+                if (isAutoPrompting) {
+                    setIsAutoPrompting(false);
+                    toast.error("Analysis timeout. Please try again.");
+                }
+            }, 60000); // 1 minute timeout
+
         } catch (error) {
-            console.error("Auto prompt error", error);
-            toast.error("Failed to auto-prompt");
-        } finally {
+            console.error("Auto prompt request error", error);
+            toast.error("Failed to start analysis");
             setIsAutoPrompting(false);
         }
     };
