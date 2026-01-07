@@ -1,5 +1,5 @@
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
-import { onCall, onRequest } from "firebase-functions/v2/https";
+import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
 import { onTaskDispatched } from "firebase-functions/v2/tasks";
 import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
@@ -682,24 +682,26 @@ export const serveSitemap = onRequest({
 
 export const createGenerationRequest = onCall(async (request) => {
     // App Check Verification
-    if (request.app == undefined) {
-        throw new Error("The function must be called from an App Check verified app.");
+    // App Check Verification
+    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
+        throw new HttpsError('failed-precondition', "The function must be called from an App Check verified app.");
     }
 
     const uid = request.auth?.uid;
+
     if (!uid) {
-        throw new Error("Unauthenticated");
+        throw new HttpsError('unauthenticated', "User must be authenticated");
     }
 
     const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler } = request.data;
 
     // Input validation
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 5) {
-        throw new Error("Prompt is required and must be at least 5 characters");
+        throw new HttpsError('invalid-argument', "Prompt is required and must be at least 5 characters");
     }
 
     if (!modelId || typeof modelId !== 'string') {
-        throw new Error("Model ID is required");
+        throw new HttpsError('invalid-argument', "Model ID is required");
     }
 
     // Validate aspect ratio
@@ -739,7 +741,7 @@ export const createGenerationRequest = onCall(async (request) => {
         return { requestId: docRef.id };
     } catch (error) {
         console.error("Error creating generation request:", error);
-        throw new Error("Failed to create generation request");
+        throw new HttpsError('internal', "Failed to create generation request", error.message);
     }
 });
 
@@ -749,13 +751,14 @@ export const createGenerationRequest = onCall(async (request) => {
 
 export const getUserImages = onCall(async (request) => {
     // App Check Verification
-    if (request.app == undefined) {
-        throw new Error("The function must be called from an App Check verified app.");
+    // App Check Verification
+    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
+        throw new HttpsError('failed-precondition', "The function must be called from an App Check verified app.");
     }
 
     const uid = request.auth?.uid;
     if (!uid) {
-        throw new Error("Unauthenticated");
+        throw new HttpsError('unauthenticated', "User must be authenticated");
     }
 
     const { limit: limitParam = 24, startAfterId, searchQuery } = request.data;
@@ -764,7 +767,7 @@ export const getUserImages = onCall(async (request) => {
     try {
         let query = db.collection('images')
             .where('userId', '==', uid)
-            .where('hidden', '!=', true)
+            // .where('hidden', '!=', true) // Removed to avoid composite index requirement and "missing field" filtering
             .orderBy('createdAt', 'desc')
             .limit(limit);
 
@@ -792,6 +795,9 @@ export const getUserImages = onCall(async (request) => {
             );
         }
 
+        // Filter hidden images in memory
+        filteredImages = filteredImages.filter(img => img.hidden !== true);
+
         const lastVisible = snapshot.docs[snapshot.docs.length - 1];
         const hasMore = snapshot.docs.length === limit;
 
@@ -802,7 +808,7 @@ export const getUserImages = onCall(async (request) => {
         };
     } catch (error) {
         console.error("Error fetching user images:", error);
-        throw new Error("Failed to fetch images");
+        throw new HttpsError('internal', "Failed to fetch images", error.message);
     }
 });
 
@@ -1130,13 +1136,15 @@ export const rateShowcaseImage = onCall(async (request) => {
 
 export const getGenerationHistory = onCall(async (request) => {
     // App Check Verification
-    if (request.app == undefined) {
-        throw new Error("The function must be called from an App Check verified app.");
+    // App Check Verification
+    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
+        throw new HttpsError('failed-precondition', "The function must be called from an App Check verified app.");
     }
 
     const uid = request.auth?.uid;
+
     if (!uid) {
-        throw new Error("Unauthenticated");
+        throw new HttpsError('unauthenticated', "User must be authenticated");
     }
 
     const { limit: limitParam = 20, startAfterId } = request.data;
@@ -1146,7 +1154,7 @@ export const getGenerationHistory = onCall(async (request) => {
         let query = db.collection('generation_queue')
             .where('userId', '==', uid)
             .where('status', '==', 'completed')
-            .where('hidden', '!=', true)
+            // .where('hidden', '!=', true) // Removed
             .orderBy('createdAt', 'desc')
             .limit(limit);
 
@@ -1163,7 +1171,7 @@ export const getGenerationHistory = onCall(async (request) => {
             id: doc.id,
             ...doc.data(),
             createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
-        }));
+        })).filter(job => job.hidden !== true); // Memory filter
 
         const lastVisible = snapshot.docs[snapshot.docs.length - 1];
         const hasMore = snapshot.docs.length === limit;
@@ -1175,6 +1183,6 @@ export const getGenerationHistory = onCall(async (request) => {
         };
     } catch (error) {
         console.error("Error fetching generation history:", error);
-        throw new Error("Failed to fetch generation history");
+        throw new HttpsError('internal', "Failed to fetch generation history", error.message);
     }
 });
