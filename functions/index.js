@@ -2284,7 +2284,7 @@ const handleTransformPrompt = async (request) => {
                 "X-Title": "DreamBees"
             },
             body: JSON.stringify({
-                model: "google/gemini-2.5-flash-image", // Or just flash if image model not needed for text-to-text
+                model: "google/gemini-2.5-flash", // Or just flash if image model not needed for text-to-text
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: prompt }
