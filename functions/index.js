@@ -4,7 +4,7 @@ import { onTaskDispatched } from "firebase-functions/v2/tasks";
 import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getFunctions } from "firebase-admin/functions";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { createCheckoutSession, constructWebhookEvent, createPortalSession } from "./stripeHelpers.js";
 import Replicate from "replicate";
 import sharp from "sharp";
@@ -65,18 +65,77 @@ async function fetchWithTimeout(resource, options = {}) {
     return response;
 }
 
+/**
+ * Verifies if files exist in B2 storage and returns their URLs if found
+ * @param {string} originalFilename - The filename of the original image
+ * @param {string} thumbFilename - The filename of the thumbnail
+ * @returns {Promise<{imageUrl: string|null, thumbnailUrl: string|null}>}
+ */
+async function verifyB2FilesExist(originalFilename, thumbFilename) {
+    const result = { imageUrl: null, thumbnailUrl: null };
+    
+    try {
+        // Check original image
+        if (originalFilename) {
+            try {
+                await s3Client.send(new HeadObjectCommand({
+                    Bucket: B2_BUCKET,
+                    Key: originalFilename
+                }));
+                result.imageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalFilename}`;
+                console.log(`[B2 Verification] Original file exists: ${originalFilename}`);
+            } catch (headError) {
+                if (headError.name !== 'NotFound') {
+                    console.warn(`[B2 Verification] Error checking original file: ${headError.message}`);
+                } else {
+                    console.log(`[B2 Verification] Original file not found: ${originalFilename}`);
+                }
+            }
+        }
+        
+        // Check thumbnail
+        if (thumbFilename) {
+            try {
+                await s3Client.send(new HeadObjectCommand({
+                    Bucket: B2_BUCKET,
+                    Key: thumbFilename
+                }));
+                result.thumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbFilename}`;
+                console.log(`[B2 Verification] Thumbnail file exists: ${thumbFilename}`);
+            } catch (headError) {
+                if (headError.name !== 'NotFound') {
+                    console.warn(`[B2 Verification] Error checking thumbnail: ${headError.message}`);
+                } else {
+                    console.log(`[B2 Verification] Thumbnail file not found: ${thumbFilename}`);
+                }
+            }
+        }
+    } catch (error) {
+        console.error(`[B2 Verification] Unexpected error during verification: ${error.message}`);
+    }
+    
+    return result;
+}
+
 // Image Generation Worker (onTaskDispatched)
 export const processImageTask = onTaskDispatched(
     {
         retryConfig: { maxAttempts: 3, minBackoffSeconds: 60 },
         rateLimits: { maxConcurrentDispatches: 5 }, // Higher limit for images
         memory: "1GiB",
-        timeoutSeconds: 300,
+        timeoutSeconds: 540,
     },
     async (req) => {
         const { requestId, userId, prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler } = req.data;
         const db = getFirestore();
         const docRef = db.collection("generation_queue").doc(requestId);
+        
+        // Track filenames for recovery in case of timeout
+        let originalFilename = null;
+        let thumbFilename = null;
+        let imageUrl = null;
+        let thumbnailUrl = null;
+        let lqip = null;
 
         try {
             await docRef.update({ status: "processing" });
@@ -99,12 +158,14 @@ export const processImageTask = onTaskDispatched(
                 };
                 response = await fetchWithTimeout("https://cardsorting--zit-only-fastapi-app.modal.run/generate", {
                     method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(zBody)
+                    body: JSON.stringify(zBody),
+                    timeout: 180000
                 });
             } else if (modelId === 'qwen-image-2512') {
                 response = await fetchWithTimeout("https://cardsorting--qwen-image-2512-qwenimage-api-generate.modal.run", {
                     method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ prompt, negative_prompt, aspect_ratio: aspectRatio })
+                    body: JSON.stringify({ prompt, negative_prompt, aspect_ratio: aspectRatio }),
+                    timeout: 180000
                 });
             } else {
                 const params = new URLSearchParams({
@@ -120,7 +181,7 @@ export const processImageTask = onTaskDispatched(
                     throw new Error("Prompt is too long for this model (URL length limit exceeded). Please shorten your prompt.");
                 }
 
-                response = await fetchWithTimeout(url);
+                response = await fetchWithTimeout(url, { timeout: 180000 });
             }
 
             if (!response.ok) {
@@ -436,12 +497,12 @@ export const processImageTask = onTaskDispatched(
                 .resize(20, 20, { fit: 'inside' })
                 .webp({ quality: 20 })
                 .toBuffer();
-            const lqip = `data:image/webp;base64,${lqipBuffer.toString('base64')}`;
+            lqip = `data:image/webp;base64,${lqipBuffer.toString('base64')}`;
 
             // Upload to B2
             const baseFolder = `generated/${userId}/${Date.now()}`;
-            const originalFilename = `${baseFolder}.webp`;
-            const thumbFilename = `${baseFolder}_thumb.webp`;
+            originalFilename = `${baseFolder}.webp`;
+            thumbFilename = `${baseFolder}_thumb.webp`;
 
             // Parallel upload
             await Promise.all([
@@ -459,8 +520,8 @@ export const processImageTask = onTaskDispatched(
                 }))
             ]);
 
-            const imageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalFilename}`;
-            const thumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbFilename}`;
+            imageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalFilename}`;
+            thumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbFilename}`;
 
             // Save result
             const imageRef = await db.collection("images").add({
@@ -490,9 +551,189 @@ export const processImageTask = onTaskDispatched(
             console.log(`Image generation completed successfully for ${requestId}. Image saved to: ${imageUrl}`);
 
         } catch (error) {
-            console.error("Task Failed:", error);
+            console.error(`[${requestId}] Task Failed:`, error);
+            console.error(`[${requestId}] Error name: ${error.name}, message: ${error.message}`);
+            console.error(`[${requestId}] Error stack: ${error.stack || 'No stack trace'}`);
+            console.error(`[${requestId}] Error code: ${error.code || 'No code'}`);
 
-            // Refund Logic
+            // Enhanced timeout/abort error detection
+            const errorMessageLower = (error.message || '').toLowerCase();
+            const errorNameLower = (error.name || '').toLowerCase();
+            const errorStackLower = (error.stack || '').toLowerCase();
+            
+            const isTimeoutError = 
+                error.name === 'AbortError' ||
+                error.code === 'DEADLINE_EXCEEDED' ||
+                error.code === 'ABORTED' ||
+                errorNameLower.includes('abort') ||
+                errorMessageLower.includes('aborted') ||
+                errorMessageLower.includes('timeout') ||
+                errorMessageLower.includes('operation is aborted') ||
+                errorMessageLower.includes('deadline exceeded') ||
+                errorMessageLower.includes('function execution took longer') ||
+                errorStackLower.includes('timeout') ||
+                errorStackLower.includes('deadline');
+
+            console.log(`[${requestId}] Timeout detection: ${isTimeoutError ? 'TIMEOUT DETECTED' : 'Not a timeout'}`);
+            console.log(`[${requestId}] Image URLs in memory - imageUrl: ${imageUrl ? 'YES' : 'NO'}, thumbnailUrl: ${thumbnailUrl ? 'YES' : 'NO'}`);
+            console.log(`[${requestId}] Tracked filenames - originalFilename: ${originalFilename || 'NONE'}, thumbFilename: ${thumbFilename || 'NONE'}`);
+
+            // Recovery logic: Attempt recovery for all errors, with special handling for timeouts
+            // Recovery is more likely to succeed for timeouts, but we should check for any error
+            let recoveryAttempted = false;
+            let recoverySucceeded = false;
+
+            try {
+                console.log(`[${requestId}] Starting recovery process...`);
+                
+                // Step 1: Check Firestore queue document status
+                const queueDoc = await docRef.get();
+                if (!queueDoc.exists) {
+                    console.log(`[${requestId}] Recovery: Queue document does not exist, cannot recover`);
+                } else {
+                    const queueData = queueDoc.data();
+                    console.log(`[${requestId}] Recovery: Queue document status: ${queueData.status}, has imageUrl: ${!!queueData.imageUrl}`);
+                    
+                    // Case 1: Image URL exists in Firestore but status isn't completed
+                    if (queueData.imageUrl && queueData.status !== 'completed') {
+                        recoveryAttempted = true;
+                        console.log(`[${requestId}] Recovery: Case 1 - Image URL found in Firestore, marking as completed...`);
+                        await docRef.update({
+                            status: "completed",
+                            completedAt: new Date()
+                        });
+                        recoverySucceeded = true;
+                        console.log(`[${requestId}] Recovery: Case 1 SUCCESS - Firestore updated to completed`);
+                    }
+                    // Case 2: No image URL in Firestore, but we have URLs in memory
+                    else if (!queueData.imageUrl && imageUrl && thumbnailUrl) {
+                        recoveryAttempted = true;
+                        console.log(`[${requestId}] Recovery: Case 2 - Saving image from memory URLs to Firestore...`);
+                        
+                        // Save result to images collection
+                        const imageRef = await db.collection("images").add({
+                            userId,
+                            prompt,
+                            negative_prompt,
+                            steps,
+                            cfg,
+                            aspectRatio,
+                            modelId,
+                            imageUrl,
+                            thumbnailUrl,
+                            lqip,
+                            createdAt: new Date(),
+                            originalRequestId: requestId
+                        });
+                        
+                        // Update queue document
+                        await docRef.update({
+                            status: "completed",
+                            imageUrl,
+                            thumbnailUrl,
+                            lqip,
+                            completedAt: new Date(),
+                            resultImageId: imageRef.id
+                        });
+                        
+                        recoverySucceeded = true;
+                        console.log(`[${requestId}] Recovery: Case 2 SUCCESS - Image saved to Firestore from memory URLs`);
+                    }
+                    // Case 3: No URLs in memory, but we have tracked filenames - verify in B2
+                    else if (!imageUrl && originalFilename && thumbFilename) {
+                        recoveryAttempted = true;
+                        console.log(`[${requestId}] Recovery: Case 3 - No URLs in memory, verifying files in B2...`);
+                        
+                        const b2Verification = await verifyB2FilesExist(originalFilename, thumbFilename);
+                        
+                        if (b2Verification.imageUrl && b2Verification.thumbnailUrl) {
+                            console.log(`[${requestId}] Recovery: Case 3 - B2 verification SUCCESS, files exist. Saving to Firestore...`);
+                            
+                            // Reconstruct imageUrl and thumbnailUrl from B2 verification
+                            imageUrl = b2Verification.imageUrl;
+                            thumbnailUrl = b2Verification.thumbnailUrl;
+                            
+                            // Get queue data again to check if imageUrl was set meanwhile
+                            const queueDocRecheck = await docRef.get();
+                            const queueDataRecheck = queueDocRecheck.exists ? queueDocRecheck.data() : {};
+                            
+                            // Only save if still not in Firestore
+                            if (!queueDataRecheck.imageUrl) {
+                                // Save result to images collection
+                                const imageRef = await db.collection("images").add({
+                                    userId,
+                                    prompt,
+                                    negative_prompt,
+                                    steps,
+                                    cfg,
+                                    aspectRatio,
+                                    modelId,
+                                    imageUrl,
+                                    thumbnailUrl,
+                                    lqip,
+                                    createdAt: new Date(),
+                                    originalRequestId: requestId
+                                });
+                                
+                                // Update queue document
+                                await docRef.update({
+                                    status: "completed",
+                                    imageUrl,
+                                    thumbnailUrl,
+                                    lqip,
+                                    completedAt: new Date(),
+                                    resultImageId: imageRef.id
+                                });
+                                
+                                recoverySucceeded = true;
+                                console.log(`[${requestId}] Recovery: Case 3 SUCCESS - Image verified in B2 and saved to Firestore`);
+                            } else {
+                                // Image was already saved by another process, just mark as completed
+                                await docRef.update({
+                                    status: "completed",
+                                    completedAt: new Date()
+                                });
+                                recoverySucceeded = true;
+                                console.log(`[${requestId}] Recovery: Case 3 - Image was already in Firestore, marked as completed`);
+                            }
+                        } else {
+                            console.log(`[${requestId}] Recovery: Case 3 FAILED - Files not found in B2. imageUrl: ${b2Verification.imageUrl ? 'YES' : 'NO'}, thumbnailUrl: ${b2Verification.thumbnailUrl ? 'YES' : 'NO'}`);
+                        }
+                    }
+                    // Case 4: For timeout errors, check if queue has imageUrl even if we don't have it in memory
+                    else if (isTimeoutError && !imageUrl && queueData.imageUrl) {
+                        recoveryAttempted = true;
+                        console.log(`[${requestId}] Recovery: Case 4 - Timeout error, imageUrl found in Firestore but not in memory, marking as completed...`);
+                        await docRef.update({
+                            status: "completed",
+                            completedAt: new Date()
+                        });
+                        recoverySucceeded = true;
+                        console.log(`[${requestId}] Recovery: Case 4 SUCCESS - Queue document updated to completed`);
+                    } else {
+                        console.log(`[${requestId}] Recovery: No recovery path available. Status: ${queueData.status}, has imageUrl: ${!!queueData.imageUrl}, has memory URLs: ${!!(imageUrl && thumbnailUrl)}, has filenames: ${!!(originalFilename && thumbFilename)}`);
+                    }
+                }
+            } catch (recoveryError) {
+                console.error(`[${requestId}] Recovery attempt failed with error:`, recoveryError);
+                console.error(`[${requestId}] Recovery error details - name: ${recoveryError.name}, message: ${recoveryError.message}`);
+                recoverySucceeded = false;
+            }
+            
+            // If recovery succeeded, exit early without refunding or marking as failed
+            if (recoverySucceeded) {
+                console.log(`[${requestId}] Recovery completed successfully. Exiting without refund or failure status.`);
+                return;
+            }
+            
+            // Log recovery failure
+            if (recoveryAttempted) {
+                console.warn(`[${requestId}] Recovery was attempted but did not succeed. Proceeding with error handling.`);
+            } else if (isTimeoutError) {
+                console.warn(`[${requestId}] Timeout detected but no recovery path available. Proceeding with error handling.`);
+            }
+
+            // Refund Logic (only if not a timeout recovery)
             try {
                 const userRef = db.collection('users').doc(userId);
                 await db.runTransaction(async (t) => {
