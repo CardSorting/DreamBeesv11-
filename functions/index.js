@@ -2061,6 +2061,63 @@ const enhancePromptWithGemini = async (prompt) => {
     return data.choices?.[0]?.message?.content || prompt;
 };
 
+// Helper for Vision-based Style Transformation
+const transformImageWithGemini = async (imageUrl, styleName, instructions, intensity = 'medium') => {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) throw new Error("OPENROUTER_API_KEY is not set");
+
+    let imageContentUrl = "";
+    if (imageUrl.trim().startsWith('http')) {
+        imageContentUrl = imageUrl;
+    } else if (imageUrl.trim().startsWith('data:')) {
+        imageContentUrl = imageUrl;
+    } else {
+        imageContentUrl = `data:image/png;base64,${imageUrl}`;
+    }
+
+    const systemPrompt = `
+    You are an expert AI artist. Your task is to analyze the provided image and rewrite a text-to-image prompt to recreate it in the "${styleName}" style.
+    
+    Style Instructions: "${instructions}"
+    Intensity: ${intensity} based on a scale of low/medium/high.
+
+    1. Analyze the subject, composition, lighting, and mood of the input image.
+    2. Write a high-quality SDXL prompt that preserves the SUBJECT and COMPOSITON of the input image, but applies the visual aesthetics of "${styleName}".
+    3. Ensure the prompt includes specific keywords relevant to the style (e.g., medium, lighting, color palette, artist references).
+    4. Return ONLY the prompt text. No "Here is the prompt" prefix.
+    `;
+
+    const response = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://dreambeesai.com",
+            "X-Title": "DreamBees"
+        },
+        body: JSON.stringify({
+            model: "google/gemini-2.5-flash", // Flash supports vision
+            messages: [
+                {
+                    role: "user",
+                    content: [
+                        { type: "text", text: systemPrompt },
+                        { type: "image_url", image_url: { url: imageContentUrl } }
+                    ]
+                }
+            ]
+        })
+    });
+
+    if (!response.ok) {
+        const err = await response.text();
+        throw new Error(`OpenRouter Error: ${err}`);
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || "";
+};
+
 // Queue Creation Handler
 const handleCreateEnhanceRequest = async (request) => {
     const uid = request.auth?.uid;
@@ -2252,6 +2309,24 @@ const handleTransformPrompt = async (request) => {
     }
 };
 
+// Image Transform Handler
+const handleTransformImage = async (request) => {
+    // App Check Verification
+    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
+        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
+    }
+    const { imageUrl, styleName, instructions, intensity } = request.data;
+    if (!imageUrl) throw new HttpsError('invalid-argument', "Image URL is required");
+
+    try {
+        const newPrompt = await transformImageWithGemini(imageUrl, styleName, instructions, intensity);
+        return { prompt: newPrompt };
+    } catch (error) {
+        console.error("Transform Image Error:", error);
+        throw new HttpsError('internal', "Failed to transform image", error.message);
+    }
+};
+
 export const api = onCall(async (request) => {
     // Basic App Check logging (Warn Mode) - centralized here
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
@@ -2267,7 +2342,8 @@ export const api = onCall(async (request) => {
             case 'createStripeCheckout': return handleCreateStripeCheckout(request);
             case 'createStripePortalSession': return handleCreateStripePortalSession(request);
             case 'createEnhanceRequest': return handleCreateEnhanceRequest(request);
-            case 'transformPrompt': return handleTransformPrompt(request); // New action
+            case 'transformPrompt': return handleTransformPrompt(request);
+            case 'transformImage': return handleTransformImage(request); // New action
             case 'generateVideoPrompt': return handleGenerateVideoPrompt(request);
             case 'getGenerationHistory': return handleGetGenerationHistory(request);
             case 'getImageDetail': return handleGetImageDetail(request);

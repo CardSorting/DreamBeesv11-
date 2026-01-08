@@ -3,7 +3,7 @@ import { db } from '../firebase';
 import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { getOptimizedImageUrl, getLCPAttributes, preloadImage } from '../utils';
-import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, Wand2 } from 'lucide-react';
 
 const getTimeAgo = (timestamp) => {
     if (!timestamp) return '';
@@ -21,7 +21,7 @@ const getTimeAgo = (timestamp) => {
 };
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt }) {
+export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt, onRestyle }) {
     const { currentUser } = useAuth();
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -231,6 +231,19 @@ export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt
 
                                 {/* Actions */}
                                 <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', width: '100%' }}>
+                                    {onRestyle && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onRestyle(job);
+                                            }}
+                                            className="btn-mini-action"
+                                            title="Restyle this image (Reuse Seed)"
+                                            style={{ width: '32px', flexShrink: 0 }}
+                                        >
+                                            <Wand2 size={12} />
+                                        </button>
+                                    )}
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
@@ -242,7 +255,7 @@ export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt
                                         }}
                                         className="btn-mini-action"
                                         title="Use Prompt"
-                                        style={{ width: '100%' }}
+                                        style={{ flex: 1 }}
                                     >
                                         <span style={{ fontSize: '0.65rem', fontWeight: '600' }}>USE</span>
                                     </button>

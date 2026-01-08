@@ -55,6 +55,7 @@ export default function Generator() {
 
     // Video State
     const [generationMode, setGenerationMode] = useState('image'); // 'image' | 'video'
+    const [magicMode, setMagicMode] = useState(false); // Magic Auto-Enhance Mode
     const [videoDuration, setVideoDuration] = useState(6);
     const [videoResolution, setVideoResolution] = useState('1080p');
     const [currentJobType, setCurrentJobType] = useState('image');
@@ -470,13 +471,62 @@ export default function Generator() {
                 let finalPrompt = prompt;
                 let finalNegativePrompt = negPrompt;
 
-                // Apply Style Registry (Tags Only - Safe Mode)
+                // Magic Mode: Transform Prompt First
+                if (magicMode && activeStyleId) {
+                    try {
+                        const styleObj = STYLE_REGISTRY.find(s => s.id === activeStyleId);
+                        if (styleObj && styleObj.instruction) {
+
+                            // Vision Transform (if no prompt but image exists OR if user specifically wants image-based rewrite)
+                            // We prioritize Vision if referenceImage is set in Magic Mode
+                            if (referenceImage) {
+                                toast.loading(`Magic Vision Restyling...`, { id: 'magic-gen', duration: 8000 });
+                                const transformResult = await api({
+                                    action: 'transformImage',
+                                    imageUrl: referenceImage, // Can be URL or Base64
+                                    styleName: styleObj.label,
+                                    intensity: styleIntensity,
+                                    instructions: styleObj.instruction
+                                });
+
+                                if (transformResult.data.prompt) {
+                                    finalPrompt = transformResult.data.prompt;
+                                    setPrompt(finalPrompt);
+                                    toast.success("Prompt generated from image!", { id: 'magic-gen' });
+                                }
+                            }
+                            // Text Transform (Classic)
+                            else if (prompt) {
+                                toast.loading(`Magic rewriting prompt...`, { id: 'magic-gen', duration: 3000 });
+                                const transformResult = await api({
+                                    action: 'transformPrompt',
+                                    prompt: prompt,
+                                    styleName: styleObj.label,
+                                    intensity: styleIntensity,
+                                    instructions: styleObj.instruction
+                                });
+
+                                if (transformResult.data.prompt) {
+                                    finalPrompt = transformResult.data.prompt;
+                                    setPrompt(finalPrompt);
+                                    toast.success("Prompt rewritten!", { id: 'magic-gen' });
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Magic transform failed, falling back to tags", err);
+                        toast.error("Magic rewrite failed, using standard style tags", { id: 'magic-gen' });
+                        // Fallback proceeds below...
+                    }
+                }
+
+                // Apply Style Registry (Tags Only - Safe Mode / Reinforcement)
                 if (activeStyleId) {
                     const styleData = getStylePrompt(activeStyleId, styleIntensity);
 
-                    // Append style tags (even if Magic Rewrite was used, these help reinforcement)
+                    // Append style tags (If Magic Mode ran, these act as reinforcement. If not, they are the primary style)
                     if (styleData.tags.length > 0) {
-                        finalPrompt = `${prompt}, ${styleData.tags.join(', ')}`;
+                        finalPrompt = `${finalPrompt}, ${styleData.tags.join(', ')}`;
                     }
 
                     // Append Negatives
@@ -986,30 +1036,56 @@ export default function Generator() {
                                                 <Trash2 size={16} />
                                             </button>
                                         </div>
-                                        <button
-                                            onClick={handleGenerate}
-                                            disabled={generating || !prompt || (generationMode === 'image' ? credits <= 0 && subscriptionStatus !== 'active' : reels <= 0)}
-                                            className="btn btn-primary generate-btn"
-                                            style={{
-                                                height: '42px',
-                                                padding: '0 32px',
-                                                borderRadius: '10px',
-                                                fontSize: '0.95rem',
-                                                fontWeight: '600',
-                                                letterSpacing: '0.02em',
-                                                boxShadow: '0 0 20px rgba(var(--color-accent-rgb), 0.3)',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '8px'
-                                            }}
-                                        >
-                                            {generating ? <Loader2 className="animate-spin" size={18} /> : (
-                                                <>
-                                                    <Sparkles size={18} style={{ fill: 'currentColor' }} />
-                                                    Generate
-                                                </>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            {/* Magic Mode Toggle */}
+                                            {!generating && generationMode === 'image' && activeStyleId && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '0 8px', borderRadius: '8px', border: magicMode ? '1px solid var(--color-accent-primary)' : '1px solid transparent', transition: 'all 0.2s' }}>
+                                                    <span style={{ fontSize: '0.75rem', color: magicMode ? 'var(--color-accent-primary)' : 'var(--color-text-muted)', fontWeight: '600' }}>Magic Mode</span>
+                                                    <button
+                                                        onClick={e => { e.stopPropagation(); setMagicMode(!magicMode); }}
+                                                        style={{
+                                                            width: '32px', height: '18px', background: magicMode ? 'var(--color-accent-primary)' : 'rgba(255,255,255,0.2)',
+                                                            borderRadius: '10px', position: 'relative', border: 'none', cursor: 'pointer', transition: 'background 0.2s'
+                                                        }}
+                                                        title="Automatically rewrite prompt with selected style before generating"
+                                                    >
+                                                        <div style={{
+                                                            width: '14px', height: '14px', background: 'white', borderRadius: '50%',
+                                                            position: 'absolute', top: '2px', left: magicMode ? '16px' : '2px', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                                                        }} />
+                                                    </button>
+                                                </div>
                                             )}
-                                        </button>
+
+                                            <button
+                                                onClick={handleGenerate}
+                                                disabled={generating || (!prompt && !referenceImage)}
+                                                className="btn-primary"
+                                                style={{
+                                                    padding: '10px 24px',
+                                                    fontSize: '1rem',
+                                                    fontWeight: '600',
+                                                    background: generating ? 'var(--color-surface-hover)' : 'var(--color-accent-primary)',
+                                                    border: 'none',
+                                                    borderRadius: '10px',
+                                                    color: 'white',
+                                                    cursor: generating || (!prompt && !referenceImage) ? 'not-allowed' : 'pointer',
+                                                    opacity: generating || (!prompt && !referenceImage) ? 0.7 : 1,
+                                                    boxShadow: magicMode && activeStyleId && !generating ? '0 0 20px rgba(var(--color-accent-rgb), 0.5)' : '0 0 20px rgba(var(--color-accent-rgb), 0.3)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '8px',
+                                                    transition: 'all 0.3s'
+                                                }}
+                                            >
+                                                {generating ? <Loader2 className="animate-spin" size={18} /> : (
+                                                    <>
+                                                        {magicMode && activeStyleId ? <Wand2 size={18} fill="currentColor" className="animate-pulse" /> : <Sparkles size={18} style={{ fill: 'currentColor' }} />}
+                                                        {magicMode && activeStyleId ? 'Magic Generate' : 'Generate'}
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1025,16 +1101,44 @@ export default function Generator() {
                                 console.log("Using prompt from job:", job);
                                 setPrompt(job.prompt);
                                 if (job.modelId && availableModels.length > 0) {
-                                    console.log("Attempting to restore model:", job.modelId);
                                     const restoredModel = availableModels.find(m => m.id === job.modelId);
-                                    console.log("Found model:", restoredModel);
                                     if (restoredModel) {
                                         setSelectedModel(restoredModel);
-                                    } else {
-                                        console.warn("Could not find model with ID:", job.modelId);
                                     }
-                                } else {
-                                    console.warn("No modelId in job or availableModels empty", { modelId: job.modelId, modelsCount: availableModels.length });
+                                }
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            onRestyle={async (job) => {
+                                console.log("Init Restyle:", job);
+
+                                // Reset text states
+                                setPrompt("");
+                                setReferenceImage(null);
+                                setMagicMode(true);
+                                setGenerationMode('image');
+
+                                // Load Image as Reference (Get optimized/cached URL if poss)
+                                const imageUrl = job.imageUrl || job.thumbnailUrl;
+                                if (imageUrl) {
+                                    // We need to fetch the image and convert to base64 or blob to define it as 'referenceImage'
+                                    // For now, we assume our backend can handle the URL if we pass it, 
+                                    // BUT handleGenerate expects 'referenceImage' to be a file object or base64 usually? 
+                                    // Actually, looking at handleGenerate, it passes 'image: referenceImage'.
+                                    // If referenceImage is a string URL, the backend must handle it. 
+                                    // Let's verify if 'referenceImage' state supports string URL.
+                                    try {
+                                        // Simple proxy: just set the URL. The backend 'createGenerationRequest' (Img2Video) uses it.
+                                        // But for 'transformImage', we need to pass it explicitly.
+                                        // Let's use a special state or just create a File object?
+                                        // Simplest: Just use the URL string.
+                                        setReferenceImage(imageUrl);
+
+                                        toast.success("Image loaded! Select a style & Magic Generate.", { icon: '🪄' });
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    } catch (e) {
+                                        console.error("Failed to load image for restyle", e);
+                                        toast.error("Could not load image for restyling");
+                                    }
                                 }
                             }}
                         />
