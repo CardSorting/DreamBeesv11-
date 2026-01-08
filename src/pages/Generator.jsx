@@ -14,6 +14,7 @@ import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, Chev
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { getOptimizedImageUrl } from '../utils';
+import { STYLE_REGISTRY, getStylePrompt, GLOBAL_NEGATIVES } from '../data/styles';
 
 const api = httpsCallable(functions, 'api');
 
@@ -44,11 +45,12 @@ export default function Generator() {
     const [negPrompt, setNegPrompt] = useState(searchParams.get('negPrompt') || "");
     const [seed, setSeed] = useState(parseInt(searchParams.get('seed')) || -1);
 
-    // Monetization
-    // Monetization
-    const [credits, setCredits] = useState(null);
     const [reels, setReels] = useState(null);
     const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+
+    // Style Registry State
+    const [activeStyleId, setActiveStyleId] = useState(null);
+    const [styleIntensity, setStyleIntensity] = useState('medium');
 
     // Video State
     const [generationMode, setGenerationMode] = useState('image'); // 'image' | 'video'
@@ -441,10 +443,30 @@ export default function Generator() {
                 setCurrentJobId(result.data.requestId);
             } else {
                 const api = httpsCallable(functions, 'api');
+
+                let finalPrompt = prompt;
+                let finalNegativePrompt = negPrompt;
+
+                // Apply Style Registry
+                if (activeStyleId) {
+                    const styleData = getStylePrompt(activeStyleId, styleIntensity);
+                    if (styleData.tags.length > 0) {
+                        finalPrompt = `${prompt}, ${styleData.tags.join(', ')}`;
+                    }
+
+                    const combinedNegatives = [
+                        negPrompt,
+                        ...GLOBAL_NEGATIVES,
+                        ...styleData.negatives
+                    ].filter(Boolean).join(', '); // Filter out empty strings if negPrompt is empty
+
+                    finalNegativePrompt = combinedNegatives;
+                }
+
                 const result = await api({
                     action: 'createGenerationRequest',
-                    prompt: prompt,
-                    negative_prompt: negPrompt,
+                    prompt: finalPrompt,
+                    negative_prompt: finalNegativePrompt,
                     modelId: selectedModel.id,
                     aspectRatio: aspectRatio,
                     steps: steps,
@@ -1111,7 +1133,15 @@ export default function Generator() {
                                     {/* Image Mode: Styles */}
                                     {generationMode === 'image' && (
                                         <div>
-                                            <label className="setting-label" style={{ marginBottom: '12px' }}>TRY A STYLE</label>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
+                                                <label className="setting-label" style={{ marginBottom: 0 }}>PROMPT TEMPLATES</label>
+                                                <div className="tooltip-container" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                                    <HelpCircle size={12} color="var(--color-text-muted)" style={{ cursor: 'help' }} />
+                                                    <div className="tooltip-content">
+                                                        Selecting a template will overwrite your current prompt.
+                                                    </div>
+                                                </div>
+                                            </div>
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                                                 {showcaseImages.slice(0, 9).map((img) => (
                                                     <button
@@ -1143,6 +1173,126 @@ export default function Generator() {
                                             {showcaseImages.length === 0 && (
                                                 <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>
                                                     Select a model to see examples via showcase
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Style Registry UI */}
+                                    {generationMode === 'image' && (
+                                        <div className="fade-in" style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                                <label className="setting-label" style={{ marginBottom: 0 }}>STYLE REGISTRY</label>
+                                                {activeStyleId && (
+                                                    <button
+                                                        onClick={() => setActiveStyleId(null)}
+                                                        style={{ fontSize: '0.7rem', color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                                    >
+                                                        <X size={12} /> Clear
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* Style Grid */}
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '16px' }}>
+                                                {STYLE_REGISTRY.map(style => {
+                                                    const isSelected = activeStyleId === style.id;
+                                                    return (
+                                                        <button
+                                                            key={style.id}
+                                                            onClick={() => setActiveStyleId(isSelected ? null : style.id)}
+                                                            className="hover-scale"
+                                                            style={{
+                                                                position: 'relative',
+                                                                aspectRatio: '3/4',
+                                                                borderRadius: '16px',
+                                                                overflow: 'hidden',
+                                                                border: isSelected ? '2px solid var(--color-accent-primary)' : '1px solid var(--color-border)',
+                                                                padding: 0,
+                                                                cursor: 'pointer',
+                                                                transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
+                                                                boxShadow: isSelected ? '0 10px 30px -10px rgba(var(--color-accent-rgb), 0.5)' : 'none'
+                                                            }}
+                                                        >
+                                                            {/* Background Image */}
+                                                            <div style={{ position: 'absolute', inset: 0 }}>
+                                                                <img
+                                                                    src={style.image}
+                                                                    alt={style.label}
+                                                                    style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }}
+                                                                />
+                                                                {/* Gradient Overlay */}
+                                                                <div style={{
+                                                                    position: 'absolute', inset: 0,
+                                                                    background: isSelected
+                                                                        ? 'linear-gradient(to top, rgba(var(--color-accent-rgb), 0.9) 0%, rgba(var(--color-accent-rgb), 0.2) 50%, rgba(0,0,0,0) 100%)'
+                                                                        : 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0) 100%)'
+                                                                }} />
+                                                            </div>
+
+                                                            {/* Content */}
+                                                            <div style={{
+                                                                position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px',
+                                                                display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+                                                                zIndex: 10
+                                                            }}>
+                                                                <span style={{
+                                                                    color: 'white', fontWeight: '700', fontSize: '0.95rem',
+                                                                    textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+                                                                    textAlign: 'left'
+                                                                }}>
+                                                                    {style.label}
+                                                                </span>
+                                                                {isSelected && (
+                                                                    <div style={{
+                                                                        marginTop: '4px', fontSize: '0.7rem', color: 'rgba(255,255,255,0.9)',
+                                                                        display: 'flex', alignItems: 'center', gap: '4px'
+                                                                    }}>
+                                                                        <Sparkles size={10} /> Active
+                                                                    </div>
+                                                                )}
+                                                            </div>
+
+                                                            {/* Selection Ring Glow (Pseudo-element simulation) */}
+                                                            {isSelected && (
+                                                                <div style={{
+                                                                    position: 'absolute', inset: 0,
+                                                                    border: '2px solid rgba(255,255,255,0.3)',
+                                                                    borderRadius: '14px',
+                                                                    pointerEvents: 'none'
+                                                                }} />
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* Intensity Selector (Only if Style Selected) */}
+                                            {activeStyleId && (
+                                                <div className="fade-in">
+                                                    <label className="setting-label">INTENSITY</label>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '10px' }}>
+                                                        {['soft', 'medium', 'hard'].map(level => (
+                                                            <button
+                                                                key={level}
+                                                                onClick={() => setStyleIntensity(level)}
+                                                                style={{
+                                                                    padding: '6px',
+                                                                    borderRadius: '6px',
+                                                                    background: styleIntensity === level ? 'var(--color-accent-primary)' : 'transparent',
+                                                                    color: styleIntensity === level ? 'white' : 'var(--color-text-muted)',
+                                                                    fontSize: '0.75rem',
+                                                                    fontWeight: '600',
+                                                                    border: 'none',
+                                                                    cursor: 'pointer',
+                                                                    textTransform: 'capitalize',
+                                                                    transition: 'all 0.2s'
+                                                                }}
+                                                            >
+                                                                {level}
+                                                            </button>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
