@@ -823,10 +823,39 @@ export default function Generator() {
                                                 </button>
                                             </div>
                                         )}
+                                        {activeStyleId && (
+                                            <div className="fade-in" style={{
+                                                position: 'absolute',
+                                                top: '12px',
+                                                right: '12px',
+                                                background: 'rgba(var(--color-accent-rgb), 0.15)',
+                                                border: '1px solid rgba(var(--color-accent-rgb), 0.3)',
+                                                borderRadius: '6px',
+                                                padding: '4px 8px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '6px',
+                                                color: 'var(--color-accent-primary)',
+                                                fontSize: '0.75rem',
+                                                fontWeight: '600',
+                                                zIndex: 10,
+                                                pointerEvents: 'none' // Don't block clicks if it overlaps something
+                                            }}>
+                                                <Sparkles size={12} fill="currentColor" />
+                                                {STYLE_REGISTRY.find(s => s.id === activeStyleId)?.label} Active
+                                            </div>
+                                        )}
+
                                         <textarea
                                             value={prompt}
                                             onChange={(e) => setPrompt(e.target.value)}
-                                            placeholder={referenceImage ? "Click the Sparkles icon above to analyze this image..." : "Describe your vision..."}
+                                            placeholder={
+                                                referenceImage
+                                                    ? "Click the Sparkles icon below to analyze this image..."
+                                                    : activeStyleId
+                                                        ? `Describe your scene, then click the Magic Wand to rewrite it in ${STYLE_REGISTRY.find(s => s.id === activeStyleId)?.label} style...`
+                                                        : "Describe your vision..."
+                                            }
                                             className="custom-scrollbar"
                                             style={{
                                                 width: '100%',
@@ -839,8 +868,9 @@ export default function Generator() {
                                                 minHeight: '160px',
                                                 outline: 'none',
                                                 lineHeight: '1.6',
-                                                fontFamily: '"Outfit", sans-serif', // Ensure premium font
-                                                letterSpacing: '0.01em'
+                                                fontFamily: '"Outfit", sans-serif',
+                                                letterSpacing: '0.01em',
+                                                paddingTop: activeStyleId ? '32px' : '0' // Make room for badge if needed, though badge is absolute right
                                             }}
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter' && !e.shiftKey && !generating) {
@@ -849,135 +879,137 @@ export default function Generator() {
                                                 }
                                             }}
                                         />
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
-                                            <div style={{ display: 'flex', gap: '4px' }}>
-                                                <button
-                                                    onClick={toggleListening}
-                                                    className={`btn-ghost ${isListening ? 'listening-pulse' : ''}`}
-                                                    style={{
-                                                        padding: '8px 12px',
-                                                        borderRadius: '8px',
-                                                        color: isListening ? '#ef4444' : 'var(--color-text-muted)',
-                                                        background: isListening ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
-                                                        transition: 'all 0.2s',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '6px',
-                                                        fontSize: '0.8rem'
-                                                    }}
-                                                >
-                                                    {isListening ? <MicOff size={16} /> : <Mic size={16} />}
-                                                    {isListening && <span>Listening...</span>}
-                                                </button>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
+                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                            <button
+                                                onClick={toggleListening}
+                                                className={`btn-ghost ${isListening ? 'listening-pulse' : ''}`}
+                                                style={{
+                                                    padding: '8px 12px',
+                                                    borderRadius: '8px',
+                                                    color: isListening ? '#ef4444' : 'var(--color-text-muted)',
+                                                    background: isListening ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
+                                                    transition: 'all 0.2s',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '6px',
+                                                    fontSize: '0.8rem'
+                                                }}
+                                            >
+                                                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                                                {isListening && <span>Listening...</span>}
+                                            </button>
 
+                                            <button
+                                                onClick={() => setIsImagePickerOpen(true)}
+                                                className="btn-ghost"
+                                                title={generationMode === 'video' ? "Attach Image to Animate" : "Upload Reference Image for Prompt Analysis"}
+                                                style={{
+                                                    padding: '8px',
+                                                    borderRadius: '8px',
+                                                    color: referenceImage ? 'var(--color-accent-primary)' : 'var(--color-text-muted)',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                <Paperclip size={16} />
+                                            </button>
+                                            {referenceImage && (
                                                 <button
-                                                    onClick={() => setIsImagePickerOpen(true)}
-                                                    className="btn-ghost"
-                                                    title={generationMode === 'video' ? "Attach Image to Animate" : "Upload Reference Image for Prompt Analysis"}
-                                                    style={{
-                                                        padding: '8px',
-                                                        borderRadius: '8px',
-                                                        color: referenceImage ? 'var(--color-accent-primary)' : 'var(--color-text-muted)',
-                                                        transition: 'all 0.2s'
-                                                    }}
-                                                >
-                                                    <Paperclip size={16} />
-                                                </button>
-                                                {referenceImage && (
-                                                    <button
-                                                        onClick={handleAutoPrompt}
-                                                        className={`btn-ghost ${isAutoPrompting ? 'animate-pulse' : ''}`}
-                                                        title="Analyze image with Gemini to auto-generate a detailed prompt"
-                                                        disabled={isAutoPrompting}
-                                                        style={{
-                                                            padding: '8px',
-                                                            borderRadius: '8px',
-                                                            color: 'var(--color-accent-primary)',
-                                                            transition: 'all 0.2s',
-                                                            background: 'rgba(var(--color-accent-rgb), 0.1)'
-                                                        }}
-                                                    >
-                                                        {isAutoPrompting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                                                    </button>
-                                                )}
-                                                <button
-                                                    onClick={handleMagicEnhance}
-                                                    className={`btn-ghost ${isEnhancing ? 'animate-pulse' : ''}`}
-                                                    title={activeStyleId ? "Rewrite prompt in current Style (Gemini)" : "Magic Enhance with Gemini"}
-                                                    disabled={isEnhancing}
+                                                    onClick={handleAutoPrompt}
+                                                    className={`btn-ghost ${isAutoPrompting ? 'animate-pulse' : ''}`}
+                                                    title="Analyze image with Gemini to auto-generate a detailed prompt"
+                                                    disabled={isAutoPrompting}
                                                     style={{
                                                         padding: '8px',
                                                         borderRadius: '8px',
                                                         color: 'var(--color-accent-primary)',
-                                                        transition: 'all 0.2s'
+                                                        transition: 'all 0.2s',
+                                                        background: 'rgba(var(--color-accent-rgb), 0.1)'
                                                     }}
                                                 >
-                                                    {isEnhancing ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
+                                                    {isAutoPrompting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                                                 </button>
-
-                                                <button
-                                                    onClick={() => {
-                                                        const url = new URL(window.location);
-                                                        url.searchParams.set('prompt', prompt);
-                                                        if (seed !== -1) url.searchParams.set('seed', seed);
-                                                        if (aspectRatio !== '1:1') url.searchParams.set('aspectRatio', aspectRatio);
-                                                        if (steps !== 30) url.searchParams.set('steps', steps);
-                                                        if (cfg !== 7.0) url.searchParams.set('cfg', cfg);
-                                                        if (negPrompt) url.searchParams.set('negPrompt', negPrompt);
-
-                                                        navigator.clipboard.writeText(url.toString());
-                                                        toast.success('Link copied to clipboard');
-                                                    }}
-                                                    className="btn-ghost"
-                                                    title="Share Configuration"
-                                                    style={{
-                                                        padding: '8px',
-                                                        borderRadius: '8px',
-                                                        color: 'var(--color-text-muted)',
-                                                        transition: 'all 0.2s'
-                                                    }}
-                                                >
-                                                    <Share2 size={16} />
-                                                </button>
-                                                <button
-                                                    onClick={() => setPrompt('')}
-                                                    className="btn-ghost"
-                                                    title="Clear Prompt"
-                                                    style={{
-                                                        padding: '8px',
-                                                        borderRadius: '8px',
-                                                        color: 'var(--color-text-muted)',
-                                                        transition: 'all 0.2s'
-                                                    }}
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            </div>
+                                            )}
                                             <button
-                                                onClick={handleGenerate}
-                                                disabled={generating || !prompt || (generationMode === 'image' ? credits <= 0 && subscriptionStatus !== 'active' : reels <= 0)}
-                                                className="btn btn-primary generate-btn"
+                                                onClick={handleMagicEnhance}
+                                                className={`btn-ghost ${isEnhancing ? 'animate-pulse' : ''}`}
+                                                title={activeStyleId ? "Rewrite prompt in current Style (Gemini)" : "Magic Enhance with Gemini"}
+                                                disabled={isEnhancing}
                                                 style={{
-                                                    height: '42px',
-                                                    padding: '0 32px',
-                                                    borderRadius: '10px',
-                                                    fontSize: '0.95rem',
-                                                    fontWeight: '600',
-                                                    letterSpacing: '0.02em',
-                                                    boxShadow: '0 0 20px rgba(var(--color-accent-rgb), 0.3)',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '8px'
+                                                    padding: '8px',
+                                                    borderRadius: '8px',
+                                                    color: activeStyleId ? '#ffffff' : 'var(--color-accent-primary)',
+                                                    background: activeStyleId ? 'var(--color-accent-primary)' : 'transparent',
+                                                    boxShadow: activeStyleId ? '0 0 15px rgba(var(--color-accent-rgb), 0.4)' : 'none',
+                                                    transition: 'all 0.2s'
                                                 }}
                                             >
-                                                {generating ? <Loader2 className="animate-spin" size={18} /> : (
-                                                    <>
-                                                        <Sparkles size={18} style={{ fill: 'currentColor' }} />
-                                                        Generate
-                                                    </>
-                                                )}
+                                                {isEnhancing ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
+                                            </button>
+
+                                            <button
+                                                onClick={() => {
+                                                    const url = new URL(window.location);
+                                                    url.searchParams.set('prompt', prompt);
+                                                    if (seed !== -1) url.searchParams.set('seed', seed);
+                                                    if (aspectRatio !== '1:1') url.searchParams.set('aspectRatio', aspectRatio);
+                                                    if (steps !== 30) url.searchParams.set('steps', steps);
+                                                    if (cfg !== 7.0) url.searchParams.set('cfg', cfg);
+                                                    if (negPrompt) url.searchParams.set('negPrompt', negPrompt);
+
+                                                    navigator.clipboard.writeText(url.toString());
+                                                    toast.success('Link copied to clipboard');
+                                                }}
+                                                className="btn-ghost"
+                                                title="Share Configuration"
+                                                style={{
+                                                    padding: '8px',
+                                                    borderRadius: '8px',
+                                                    color: 'var(--color-text-muted)',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                <Share2 size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => setPrompt('')}
+                                                className="btn-ghost"
+                                                title="Clear Prompt"
+                                                style={{
+                                                    padding: '8px',
+                                                    borderRadius: '8px',
+                                                    color: 'var(--color-text-muted)',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                <Trash2 size={16} />
                                             </button>
                                         </div>
+                                        <button
+                                            onClick={handleGenerate}
+                                            disabled={generating || !prompt || (generationMode === 'image' ? credits <= 0 && subscriptionStatus !== 'active' : reels <= 0)}
+                                            className="btn btn-primary generate-btn"
+                                            style={{
+                                                height: '42px',
+                                                padding: '0 32px',
+                                                borderRadius: '10px',
+                                                fontSize: '0.95rem',
+                                                fontWeight: '600',
+                                                letterSpacing: '0.02em',
+                                                boxShadow: '0 0 20px rgba(var(--color-accent-rgb), 0.3)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px'
+                                            }}
+                                        >
+                                            {generating ? <Loader2 className="animate-spin" size={18} /> : (
+                                                <>
+                                                    <Sparkles size={18} style={{ fill: 'currentColor' }} />
+                                                    Generate
+                                                </>
+                                            )}
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -1576,30 +1608,32 @@ export default function Generator() {
             />
 
             {/* Fullscreen Modal */}
-            {isFullscreen && generatedImage && (
-                <div style={{
-                    position: 'fixed', inset: 0, zIndex: 9999,
-                    background: 'rgba(0,0,0,0.95)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    animation: 'fadeIn 0.2s ease-out'
-                }} onClick={() => setIsFullscreen(false)}>
-                    <button
-                        onClick={() => setIsFullscreen(false)}
-                        style={{
-                            position: 'absolute', top: '24px', right: '24px',
-                            background: 'transparent', border: 'none', color: 'white', cursor: 'pointer'
-                        }}
-                    >
-                        <X size={32} />
-                    </button>
-                    <img
-                        src={generatedImage}
-                        alt="Full Preview"
-                        style={{ maxWidth: '95vw', maxHeight: '95vh', objectFit: 'contain', boxShadow: '0 0 100px rgba(0,0,0,0.8)' }}
-                        onClick={(e) => e.stopPropagation()}
-                    />
-                </div>
-            )}
+            {
+                isFullscreen && generatedImage && (
+                    <div style={{
+                        position: 'fixed', inset: 0, zIndex: 9999,
+                        background: 'rgba(0,0,0,0.95)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        animation: 'fadeIn 0.2s ease-out'
+                    }} onClick={() => setIsFullscreen(false)}>
+                        <button
+                            onClick={() => setIsFullscreen(false)}
+                            style={{
+                                position: 'absolute', top: '24px', right: '24px',
+                                background: 'transparent', border: 'none', color: 'white', cursor: 'pointer'
+                            }}
+                        >
+                            <X size={32} />
+                        </button>
+                        <img
+                            src={generatedImage}
+                            alt="Full Preview"
+                            style={{ maxWidth: '95vw', maxHeight: '95vh', objectFit: 'contain', boxShadow: '0 0 100px rgba(0,0,0,0.8)' }}
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </div>
+                )
+            }
 
             <style>{`
                 .setting-label {
