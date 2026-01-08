@@ -28,8 +28,9 @@ export default function Gallery() {
         async function fetchInitial() {
             if (!currentUser) return;
             try {
-                const getUserImages = httpsCallable(functions, 'getUserImages');
-                const result = await getUserImages({
+                const api = httpsCallable(functions, 'api');
+                const result = await api({
+                    action: 'getUserImages',
                     limit: LIMIT,
                     searchQuery: searchQuery || undefined
                 });
@@ -66,8 +67,9 @@ export default function Gallery() {
         if (!currentUser || !lastVisibleId || loadingMore || !hasMore) return;
         setLoadingMore(true);
         try {
-            const getUserImages = httpsCallable(functions, 'getUserImages');
-            const result = await getUserImages({
+            const api = httpsCallable(functions, 'api');
+            const result = await api({
+                action: 'getUserImages',
                 limit: LIMIT,
                 startAfterId: lastVisibleId,
                 startAfterCollection: lastVisibleType,
@@ -108,8 +110,8 @@ export default function Gallery() {
         toast.dismiss(toastId);
         const loadToast = toast.loading('Deleting...');
         try {
-            const deleteImagesBatch = httpsCallable(functions, 'deleteImagesBatch');
-            const result = await deleteImagesBatch({ imageIds: selectedIds });
+            const api = httpsCallable(functions, 'api');
+            const result = await api({ action: 'deleteImagesBatch', imageIds: selectedIds });
 
             if (result.data.success) {
                 setImages(prev => prev.filter(img => !selectedIds.includes(img.id)));

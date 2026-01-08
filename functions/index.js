@@ -47,6 +47,24 @@ const s3Client = new S3Client({
     },
 });
 
+const VALID_MODELS = [
+    'cat-carrier', 'hassaku-illustrious', 'nova-furry-xl', 'perfect-illustrious',
+    'gray-color', 'scyrax-pastel', 'ani-detox', 'animij-v7', 'swijtspot-no1',
+    'zit-model', 'qwen-image-2512', 'wai-illustrious'
+];
+
+async function fetchWithTimeout(resource, options = {}) {
+    const { timeout = 60000 } = options;
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+    const response = await fetch(resource, {
+        ...options,
+        signal: controller.signal
+    });
+    clearTimeout(id);
+    return response;
+}
+
 // Image Generation Worker (onTaskDispatched)
 export const processImageTask = onTaskDispatched(
     {
@@ -73,25 +91,21 @@ export const processImageTask = onTaskDispatched(
             };
             const resolution = resolutionMap[aspectRatio] || resolutionMap['1:1'];
 
-            let buffer;
+            let response;
             if (modelId === 'zit-model') {
                 const zBody = {
                     prompt, steps,
                     ...((['1:1', '16:9', '9:16', '4:3', '3:4', '21:9', '9:21'].includes(aspectRatio)) ? { aspect_ratio: aspectRatio } : { width: resolution.width, height: resolution.height })
                 };
-                const resp = await fetch("https://cardsorting--zit-only-fastapi-app.modal.run/generate", {
+                response = await fetchWithTimeout("https://cardsorting--zit-only-fastapi-app.modal.run/generate", {
                     method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(zBody)
                 });
-                if (!resp.ok) throw new Error(`ZIT Error: ${await resp.text()}`);
-                buffer = Buffer.from(await resp.arrayBuffer());
             } else if (modelId === 'qwen-image-2512') {
-                const resp = await fetch("https://cardsorting--qwen-image-2512-qwenimage-api-generate.modal.run", {
+                response = await fetchWithTimeout("https://cardsorting--qwen-image-2512-qwenimage-api-generate.modal.run", {
                     method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ prompt, negative_prompt, aspect_ratio: aspectRatio })
                 });
-                if (!resp.ok) throw new Error(`Qwen Error: ${await resp.text()}`);
-                buffer = Buffer.from(await resp.arrayBuffer());
             } else {
                 const params = new URLSearchParams({
                     prompt, model: modelId || "cat-carrier", negative_prompt,
@@ -99,10 +113,32 @@ export const processImageTask = onTaskDispatched(
                     width: resolution.width.toString(), height: resolution.height.toString(),
                     scheduler: scheduler || 'DPM++ 2M Karras'
                 });
-                const resp = await fetch(`https://cardsorting--sdxl-multi-model-model-web-inference.modal.run?${params.toString()}`);
-                if (!resp.ok) throw new Error(`Model Error: ${await resp.text()}`);
-                buffer = Buffer.from(await resp.arrayBuffer());
+                const url = `https://cardsorting--sdxl-multi-model-model-web-inference.modal.run?${params.toString()}`;
+
+                // Defensive check for URL length to prevent 414 errors or silent truncation
+                if (url.length > 2048) {
+                    throw new Error("Prompt is too long for this model (URL length limit exceeded). Please shorten your prompt.");
+                }
+
+                response = await fetchWithTimeout(url);
             }
+
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`Model Provider Error (${response.status}): ${errText}`);
+            }
+
+            // Check for JSON error response even with 200 OK (some APIs do this)
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                // Peek at body to see if it's an error
+                // Note: we can't easily peek and then read as buffer unless we clone, but better to assume 
+                // if it's JSON and we expect bytes, it might be an error or base64. 
+                // For now, let's treat it as potential error if it's small? 
+                // Actually, let's just let Sharp try to parse it. If it fails, Sharp will throw.
+            }
+
+            buffer = Buffer.from(await response.arrayBuffer());
 
             // Process Image with Sharp
             const sharpImg = sharp(buffer);
@@ -172,8 +208,25 @@ export const processImageTask = onTaskDispatched(
                 resultImageId: imageRef.id
             });
 
+
+
         } catch (error) {
             console.error("Task Failed:", error);
+
+            // Refund Logic
+            try {
+                const userRef = db.collection('users').doc(userId);
+                await db.runTransaction(async (t) => {
+                    const userDoc = await t.get(userRef);
+                    if (userDoc.exists && userDoc.data().subscriptionStatus !== 'active') {
+                        t.update(userRef, { credits: FieldValue.increment(1) });
+                    }
+                });
+                console.log(`Refunded 1 credit to ${userId}`);
+            } catch (refundError) {
+                console.error("Refund Error:", refundError);
+            }
+
             await docRef.update({ status: "failed", error: error.message });
         }
     }
@@ -181,7 +234,7 @@ export const processImageTask = onTaskDispatched(
 
 
 
-export const createStripeCheckout = onCall(async (request) => {
+const handleCreateStripeCheckout = async (request) => {
     const { priceId, successUrl, cancelUrl, mode } = request.data;
     const uid = request.auth.uid;
     const email = request.auth.token.email;
@@ -221,9 +274,9 @@ export const createStripeCheckout = onCall(async (request) => {
         console.error("Stripe Checkout Error:", error);
         throw new Error("Failed to create checkout session");
     }
-});
+};
 
-export const createStripePortalSession = onCall(async (request) => {
+const handleCreateStripePortalSession = async (request) => {
     const { returnUrl } = request.data;
     const uid = request.auth.uid;
 
@@ -251,7 +304,7 @@ export const createStripePortalSession = onCall(async (request) => {
         console.error("Stripe Portal Error:", error);
         throw new Error("Failed to create portal session");
     }
-});
+};
 
 export const stripeWebhook = onRequest(async (req, res) => {
     const signature = req.headers['stripe-signature'];
@@ -447,7 +500,7 @@ export const serveSitemap = onRequest({
 // Generation Request Functions
 // ============================================================================
 
-export const createGenerationRequest = onCall(async (request) => {
+const handleCreateGenerationRequest = async (request) => {
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
         console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
     }
@@ -460,6 +513,10 @@ export const createGenerationRequest = onCall(async (request) => {
     // --- Input Validation & Cleaning ---
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 5) {
         throw new HttpsError('invalid-argument', "Prompt is required and must be at least 5 characters");
+    }
+
+    if (modelId && !VALID_MODELS.includes(modelId)) {
+        throw new HttpsError('invalid-argument', `Invalid model ID: ${modelId}. Supported models: ${VALID_MODELS.join(', ')}`);
     }
 
     let cleanPrompt = prompt.trim();
@@ -477,11 +534,22 @@ export const createGenerationRequest = onCall(async (request) => {
 
     try {
         const userRef = db.collection('users').doc(uid);
+        const queueRef = db.collection('generation_queue').doc(); // Create ref outside
 
         // Atomic Credit/Daily Reset Transaction
         await db.runTransaction(async (t) => {
             const userDoc = await t.get(userRef);
             if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+
+            // 1. Concurrency Check (Max 5 active jobs)
+            const activeJobsQuery = db.collection('generation_queue')
+                .where('userId', '==', uid)
+                .where('status', 'in', ['queued', 'processing'])
+                .limit(5); // Fail fast if > 5
+            const activeJobs = await t.get(activeJobsQuery);
+            if (activeJobs.size >= 5) {
+                throw new HttpsError('resource-exhausted', "Too many active generations. Please wait for some to complete.");
+            }
 
             const userData = userDoc.data();
             const now = new Date();
@@ -496,55 +564,57 @@ export const createGenerationRequest = onCall(async (request) => {
                 if ((userData.credits || 0) < 5) userUpdate.credits = 5;
             }
 
-            // check rate limit (10s)
+            // check rate limit (5s) - Reduced from 10s to be friendlier since we have strict concurrency limit now
             const lastGen = userData.lastGenerationTime?.toDate?.() || new Date(0);
-            if (now - lastGen < 10000) throw new HttpsError('resource-exhausted', "Please wait 10 seconds between generations.");
+            if (now - lastGen < 5000) throw new HttpsError('resource-exhausted', "Please slow down.");
 
             // Deduct credits
-            const currentCredits = userUpdate.credits !== undefined ? userUpdate.credits : (userData.credits || 0);
+            // Re-calculate current credits based on potentail daily reset
+            let effectiveCredits = (userUpdate.credits !== undefined) ? userUpdate.credits : (userData.credits || 0);
+
             if (!isPro) {
-                if (currentCredits < 1) throw new HttpsError('resource-exhausted', "Insufficient credits");
-                userUpdate.credits = (userUpdate.credits || userData.credits) - 1;
+                if (effectiveCredits < 1) throw new HttpsError('resource-exhausted', "Insufficient credits");
+                userUpdate.credits = effectiveCredits - 1;
             }
 
             t.update(userRef, userUpdate);
+
+            // Create Queue Item ATOMICALLY
+            t.set(queueRef, {
+                userId: uid,
+                prompt: cleanPrompt,
+                negative_prompt: negative_prompt || "",
+                modelId: modelId || "cat-carrier",
+                status: 'queued',
+                aspectRatio: safeAspectRatio,
+                steps: safeSteps,
+                cfg: safeCfg,
+                seed: seed || -1,
+                scheduler: scheduler || 'DPM++ 2M Karras',
+                createdAt: new Date()
+            });
         });
 
-        // 1. Create entry in queue
-        const docRef = await db.collection('generation_queue').add({
-            userId: uid,
-            prompt: cleanPrompt,
-            negative_prompt: negative_prompt || "",
-            modelId: modelId || "cat-carrier",
-            status: 'queued',
-            aspectRatio: safeAspectRatio,
-            steps: safeSteps,
-            cfg: safeCfg,
-            seed: seed || -1,
-            scheduler: scheduler || 'DPM++ 2M Karras',
-            createdAt: new Date()
-        });
-
-        // 2. Enqueue Task
+        // 2. Enqueue Task (Only if transaction succeeded)
         const queue = getFunctions().taskQueue('processImageTask');
         await queue.enqueue({
-            requestId: docRef.id, userId: uid, prompt: cleanPrompt, negative_prompt,
+            requestId: queueRef.id, userId: uid, prompt: cleanPrompt, negative_prompt,
             modelId, steps: safeSteps, cfg: safeCfg, aspectRatio: safeAspectRatio, scheduler
         });
 
-        return { requestId: docRef.id };
+        return { requestId: queueRef.id };
     } catch (error) {
         console.error("Error creating generation request:", error);
         if (error instanceof HttpsError) throw error;
         throw new HttpsError('internal', "Failed to create generation request", error.message);
     }
-});
+};
 
 // ============================================================================
 // Image Management Functions
 // ============================================================================
 
-export const getUserImages = onCall(async (request) => {
+const handleGetUserImages = async (request) => {
     // App Check Verification
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
         console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
@@ -672,9 +742,9 @@ export const getUserImages = onCall(async (request) => {
         console.error("Error fetching user gallery:", error);
         throw new HttpsError('internal', "Failed to fetch gallery", error.message);
     }
-});
+};
 
-export const getImageDetail = onCall(async (request) => {
+const handleGetImageDetail = async (request) => {
     // App Check Verification
     // App Check Verification
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
@@ -719,9 +789,9 @@ export const getImageDetail = onCall(async (request) => {
         }
         throw new Error("Failed to fetch image");
     }
-});
+};
 
-export const deleteImage = onCall(async (request) => {
+const handleDeleteImage = async (request) => {
     // App Check Verification
     // App Check Verification
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
@@ -765,9 +835,9 @@ export const deleteImage = onCall(async (request) => {
         }
         throw new Error("Failed to delete image");
     }
-});
+};
 
-export const deleteImagesBatch = onCall(async (request) => {
+const handleDeleteImagesBatch = async (request) => {
     // App Check Verification
     // App Check Verification
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
@@ -857,13 +927,13 @@ export const deleteImagesBatch = onCall(async (request) => {
         }
         throw new Error("Failed to delete items");
     }
-});
+};
 
 // ============================================================================
 // Rating Functions
 // ============================================================================
 
-export const rateGeneration = onCall(async (request) => {
+const handleRateGeneration = async (request) => {
     // App Check Verification
     // App Check Verification
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
@@ -972,9 +1042,9 @@ export const rateGeneration = onCall(async (request) => {
         }
         throw new Error("Failed to rate generation");
     }
-});
+};
 
-export const rateShowcaseImage = onCall(async (request) => {
+const handleRateShowcaseImage = async (request) => {
     // App Check Verification
     // App Check Verification
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
@@ -1019,13 +1089,13 @@ export const rateShowcaseImage = onCall(async (request) => {
         }
         throw new Error("Failed to rate showcase image");
     }
-});
+};
 
 // ============================================================================
 // History Functions
 // ============================================================================
 
-export const getGenerationHistory = onCall(async (request) => {
+const handleGetGenerationHistory = async (request) => {
     // App Check Verification
     // App Check Verification
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
@@ -1077,7 +1147,7 @@ export const getGenerationHistory = onCall(async (request) => {
         console.error("Error fetching generation history:", error);
         throw new HttpsError('internal', "Failed to fetch generation history", error.message);
     }
-});
+};
 
 // ============================================================================
 // Video Generation Functions (Reels)
@@ -1162,7 +1232,7 @@ export const processVideoTask = onTaskDispatched(
 
             // Download and Persist to B2
             console.log(`Saving result to B2 for ${requestId}...`);
-            const response = await fetch(videoUrl);
+            const response = await fetchWithTimeout(videoUrl, { timeout: 30000 });
             if (!response.ok) throw new Error(`Replicate Download Error: ${response.statusText}`);
             const buffer = Buffer.from(await response.arrayBuffer());
 
@@ -1254,16 +1324,17 @@ Character specificity: Include age, ethnicity, distinguishing features, clothing
         imageContentUrl = `data:image/png;base64,${imageUrl}`;
     }
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const response = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
+        timeout: 30000,
         method: "POST",
         headers: {
             "Authorization": `Bearer ${apiKey}`,
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://dreambees.app",
+            "HTTP-Referer": "https://dreambeesai.com",
             "X-Title": "DreamBees"
         },
         body: JSON.stringify({
-            model: "google/gemini-2.0-flash-exp:free",
+            model: "google/gemini-3-flash-preview",
             messages: [
                 {
                     role: "user",
@@ -1285,7 +1356,7 @@ Character specificity: Include age, ethnicity, distinguishing features, clothing
     return data.choices?.[0]?.message?.content || "";
 }
 
-export const createAnalysisRequest = onCall(async (request) => {
+const handleCreateAnalysisRequest = async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
 
@@ -1307,7 +1378,7 @@ export const createAnalysisRequest = onCall(async (request) => {
         console.error("Analysis Request Error:", error);
         throw new HttpsError('internal', "Failed to create analysis request");
     }
-});
+};
 
 export const onAnalysisQueueCreated = onDocumentCreated("analysis_queue/{requestId}", async (event) => {
     const snapshot = event.data;
@@ -1336,7 +1407,7 @@ export const onAnalysisQueueCreated = onDocumentCreated("analysis_queue/{request
 });
 
 // Deprecated blocking function - keep for compatibility for a few cycles
-export const generateVideoPrompt = onCall(async (request) => {
+const handleGenerateVideoPrompt = async (request) => {
     const { image, imageUrl } = request.data;
     try {
         const prompt = await generateVisionPrompt(imageUrl || image);
@@ -1344,17 +1415,33 @@ export const generateVideoPrompt = onCall(async (request) => {
     } catch (error) {
         throw new HttpsError('internal', error.message);
     }
-});
+};
 
-export const createVideoGenerationRequest = onCall(async (request) => {
+const handleCreateVideoGenerationRequest = async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
 
     const { prompt, image, duration, resolution, aspectRatio } = request.data;
-    if ((!prompt || prompt.length < 5) && !image) throw new HttpsError('invalid-argument', "Prompt required (or provide an image for auto-captioning)");
 
-    let safeDuration = Math.min(Math.max(parseInt(duration) || 6, 5), 20);
-    const rate = resolution === '4k' ? 72 : (resolution === '2k' ? 36 : 18);
+    // 1. Strict Input Validation
+    if ((!prompt || typeof prompt !== 'string' || prompt.length < 5) && !image) {
+        throw new HttpsError('invalid-argument', "Prompt required (or provide an image for auto-captioning)");
+    }
+
+    // Validate Duration
+    const allowedDurations = [5, 10];
+    const safeDuration = allowedDurations.includes(parseInt(duration)) ? parseInt(duration) : 5;
+
+    // Validate Resolution
+    const allowedResolutions = ['720p', '1080p', '2k', '4k'];
+    const safeResolution = allowedResolutions.includes(resolution) ? resolution : '1080p';
+
+    // Validate Aspect Ratio (Optional)
+    const validAspectRatios = ['16:9', '9:16', '1:1', '21:9', '9:21'];
+    const safeAspectRatio = (aspectRatio && validAspectRatios.includes(aspectRatio)) ? aspectRatio : null;
+
+    // Calculate Cost
+    const rate = safeResolution === '4k' ? 72 : (safeResolution === '2k' ? 36 : 18);
     const totalCost = rate * safeDuration;
 
     try {
@@ -1364,33 +1451,44 @@ export const createVideoGenerationRequest = onCall(async (request) => {
             const userDoc = await t.get(userRef);
             if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
 
-            const activeJobs = await db.collection('video_queue')
+            // 2. Transactional Concurrency Check
+            // We use t.get() on the query to ensure we see consistent state within the transaction
+            const activeJobsQuery = db.collection('video_queue')
                 .where('userId', '==', uid)
                 .where('status', 'in', ['queued', 'processing', 'pending'])
-                .limit(1).get();
-            if (!activeJobs.empty) throw new HttpsError('failed-precondition', "Generation already in progress.");
+                .limit(1);
 
+            const activeJobs = await t.get(activeJobsQuery);
+            if (!activeJobs.empty) throw new HttpsError('failed-precondition', "You already have a video generation in progress.");
+
+            // 3. Check Balance
             const currentReels = userDoc.data().reels || 0;
-            if (currentReels < totalCost) throw new HttpsError('resource-exhausted', "Insufficient Reels");
+            if (currentReels < totalCost) throw new HttpsError('resource-exhausted', `Insufficient Reels. Need ${totalCost}, have ${currentReels}.`);
 
+            // 4. Execution
+            // Deduct balance
             t.update(userRef, { reels: FieldValue.increment(-totalCost) });
 
+            // Create Job
             const newDocRef = db.collection('video_queue').doc();
             t.set(newDocRef, {
                 userId: uid,
-                prompt: prompt.trim(),
+                prompt: prompt ? prompt.trim() : "",
                 image: image || null,
                 duration: safeDuration,
-                resolution: resolution || '1080p',
-                aspectRatio: aspectRatio || null,
+                resolution: safeResolution,
+                aspectRatio: safeAspectRatio,
                 cost: totalCost,
                 status: 'queued',
-                createdAt: new Date()
+                createdAt: new Date(),
+                userAgent: request.context?.userAgent || "web"
             });
 
             return newDocRef.id;
         });
 
+        // 5. Enqueue Task (Post-Transaction)
+        // If transaction failed, we wouldn't reach here
         const queue = getFunctions().taskQueue('processVideoTask');
         await queue.enqueue({ requestId });
 
@@ -1398,6 +1496,37 @@ export const createVideoGenerationRequest = onCall(async (request) => {
     } catch (error) {
         console.error("Video Request Error:", error);
         if (error instanceof HttpsError) throw error;
-        throw new HttpsError('internal', "Failed to create video request", error.message);
+        // Obscure internal errors but log them
+        throw new HttpsError('internal', "Failed to create video request. Please try again.");
+    }
+};
+
+// ============================================================================
+// Unified API
+// ============================================================================
+
+export const api = onCall(async (request) => {
+    // Basic App Check logging (Warn Mode) - centralized here
+    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
+        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
+    }
+
+    const { action } = request.data;
+    switch (action) {
+        case 'createGenerationRequest': return handleCreateGenerationRequest(request);
+        case 'createVideoGenerationRequest': return handleCreateVideoGenerationRequest(request);
+        case 'createAnalysisRequest': return handleCreateAnalysisRequest(request);
+        case 'createStripeCheckout': return handleCreateStripeCheckout(request);
+        case 'createStripePortalSession': return handleCreateStripePortalSession(request);
+        case 'generateVideoPrompt': return handleGenerateVideoPrompt(request);
+        case 'getGenerationHistory': return handleGetGenerationHistory(request);
+        case 'getImageDetail': return handleGetImageDetail(request);
+        case 'getUserImages': return handleGetUserImages(request);
+        case 'rateGeneration': return handleRateGeneration(request);
+        case 'rateShowcaseImage': return handleRateShowcaseImage(request);
+        case 'deleteImage': return handleDeleteImage(request);
+        case 'deleteImagesBatch': return handleDeleteImagesBatch(request);
+        default:
+            throw new HttpsError('invalid-argument', `Unknown action: ${action}`);
     }
 });

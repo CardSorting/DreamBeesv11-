@@ -34,8 +34,8 @@ export default function ImageDetail() {
         async function fetchImage() {
             setLoading(true);
             try {
-                const getImageDetail = httpsCallable(functions, 'getImageDetail');
-                const result = await getImageDetail({ imageId: id });
+                const api = httpsCallable(functions, 'api');
+                const result = await api({ action: 'getImageDetail', imageId: id });
 
                 if (result.data) {
                     setImage(result.data);
@@ -65,8 +65,8 @@ export default function ImageDetail() {
         toast.dismiss(toastId);
         const loadToast = toast.loading('Deleting...');
         try {
-            const deleteImage = httpsCallable(functions, 'deleteImage');
-            await deleteImage({ imageId: id });
+            const api = httpsCallable(functions, 'api');
+            await api({ action: 'deleteImage', imageId: id });
             navigate('/gallery');
             toast.success("Deleted permanently");
         } catch (err) {

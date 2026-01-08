@@ -95,9 +95,9 @@ export default function Generator() {
         setPrompt("Analyzing image..."); // Temporary placeholder
 
         try {
-            const createVideoGenerationRequest = httpsCallable(functions, 'createVideoGenerationRequest');
-
-            const videoResult = await createVideoGenerationRequest({
+            const api = httpsCallable(functions, 'api');
+            const videoResult = await api({
+                action: 'createVideoGenerationRequest',
                 autoPrompt: true,
                 image: imageUrl,
                 duration: videoDuration,
@@ -149,14 +149,14 @@ export default function Generator() {
 
         setIsAutoPrompting(true);
         try {
-            const createAnalysisRequestFn = httpsCallable(functions, 'createAnalysisRequest');
-            const payload = {};
+            const api = httpsCallable(functions, 'api');
+            const payload = { action: 'createAnalysisRequest' };
             if (referenceImage.startsWith('data:')) {
                 payload.image = referenceImage;
             } else {
                 payload.imageUrl = referenceImage;
             }
-            const { data } = await createAnalysisRequestFn(payload);
+            const { data } = await api(payload);
             const requestId = data.requestId;
 
             // Subscribe to results
@@ -360,8 +360,9 @@ export default function Generator() {
 
         try {
             if (generationMode === 'video') {
-                const createVideoGenerationRequest = httpsCallable(functions, 'createVideoGenerationRequest');
-                const result = await createVideoGenerationRequest({
+                const api = httpsCallable(functions, 'api');
+                const result = await api({
+                    action: 'createVideoGenerationRequest',
                     prompt: prompt,
                     image: referenceImage, // Use attached image for Image-to-Video
                     duration: videoDuration,
@@ -370,8 +371,9 @@ export default function Generator() {
                 });
                 setCurrentJobId(result.data.requestId);
             } else {
-                const createGenerationRequest = httpsCallable(functions, 'createGenerationRequest');
-                const result = await createGenerationRequest({
+                const api = httpsCallable(functions, 'api');
+                const result = await api({
+                    action: 'createGenerationRequest',
                     prompt: prompt,
                     negative_prompt: negPrompt,
                     modelId: selectedModel.id,

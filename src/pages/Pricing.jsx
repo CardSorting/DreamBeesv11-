@@ -77,8 +77,9 @@ export default function Pricing() {
         }
         setLoading(true);
         try {
-            const createStripeCheckout = httpsCallable(functions, 'createStripeCheckout');
-            const result = await createStripeCheckout({
+            const api = httpsCallable(functions, 'api');
+            const result = await api({
+                action: 'createStripeCheckout',
                 priceId: priceId,
                 successUrl: window.location.origin + '/generator?success=true',
                 cancelUrl: window.location.origin + '/pricing?canceled=true',

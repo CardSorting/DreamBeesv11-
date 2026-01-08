@@ -166,9 +166,9 @@ export function ModelProvider({ children }) {
             console.log(`[Batch] Flushing ${queueSnapshot.size} ratings...`);
 
             // Process each rating through cloud function
-            const rateGenerationFn = httpsCallable(functions, 'rateGeneration');
+            const api = httpsCallable(functions, 'api');
             const promises = Array.from(queueSnapshot.values()).map(({ jobId, rating }) => {
-                return rateGenerationFn({ jobId, rating }).catch(err => {
+                return api({ action: 'rateGeneration', jobId, rating }).catch(err => {
                     console.error(`[Batch] Failed to rate ${jobId}:`, err);
                     return null;
                 });
@@ -206,8 +206,8 @@ export function ModelProvider({ children }) {
 
         try {
             console.log(`[Rate Showcase] Rating ${rating} for ${imageId}`);
-            const rateShowcaseImageFn = httpsCallable(functions, 'rateShowcaseImage');
-            await rateShowcaseImageFn({ imageId, rating });
+            const api = httpsCallable(functions, 'api');
+            await api({ action: 'rateShowcaseImage', imageId, rating });
 
             // Optimistically update cache
             setShowcaseCache(prev => {

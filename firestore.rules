@@ -41,5 +41,19 @@ service cloud.firestore {
     match /model_showcase_images/{imageId} {
       allow read: if true;
     }
+
+    // Video Queue: Users can read/write their own video requests
+    match /video_queue/{requestId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Analysis Queue: Users can read/write their own analysis requests
+    match /analysis_queue/{requestId} {
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
   }
 }
