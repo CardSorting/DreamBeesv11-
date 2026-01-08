@@ -18,6 +18,7 @@ export default function Gallery() {
     const { currentUser } = useAuth();
 
     const [lastVisibleId, setLastVisibleId] = useState(null);
+    const [lastVisibleType, setLastVisibleType] = useState(null);
     const [hasMore, setHasMore] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const LIMIT = 24;
@@ -36,7 +37,12 @@ export default function Gallery() {
                 const data = result.data;
                 setImages(data.images || []);
                 setLastVisibleId(data.lastVisibleId);
+                setLastVisibleType(data.lastVisibleType);
                 setHasMore(data.hasMore);
+
+                if (data.warnings) {
+                    data.warnings.forEach(w => toast.error(w, { duration: 4000 }));
+                }
 
             } catch (err) {
                 console.error("Error fetching images:", err);
@@ -57,6 +63,7 @@ export default function Gallery() {
             const result = await getUserImages({
                 limit: LIMIT,
                 startAfterId: lastVisibleId,
+                startAfterCollection: lastVisibleType,
                 searchQuery: searchQuery || undefined
             });
 
@@ -64,9 +71,14 @@ export default function Gallery() {
             if (data.images && data.images.length > 0) {
                 setImages(prev => [...prev, ...data.images]);
                 setLastVisibleId(data.lastVisibleId);
+                setLastVisibleType(data.lastVisibleType);
                 setHasMore(data.hasMore);
             } else {
                 setHasMore(false);
+            }
+
+            if (data.warnings) {
+                data.warnings.forEach(w => toast.error(w, { duration: 4000 }));
             }
         } catch (err) {
             console.error("Error loading more:", err);

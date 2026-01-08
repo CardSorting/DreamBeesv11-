@@ -500,7 +500,7 @@ export const getUserImages = onCall(async (request) => {
         throw new HttpsError('unauthenticated', "User must be authenticated");
     }
 
-    const { limit: limitParam = 24, startAfterId, searchQuery } = request.data;
+    const { limit: limitParam = 24, startAfterId, startAfterCollection, searchQuery } = request.data;
     const limit = Math.min(Math.max(parseInt(limitParam) || 24, 1), 100);
 
     try {
@@ -509,7 +509,6 @@ export const getUserImages = onCall(async (request) => {
             .orderBy('createdAt', 'desc')
             .limit(limit);
 
-        // Also query videos
         let videoQuery = db.collection('videos')
             .where('userId', '==', uid)
             .orderBy('createdAt', 'desc')
@@ -517,48 +516,79 @@ export const getUserImages = onCall(async (request) => {
 
         // Handle pagination
         if (startAfterId) {
-            // We need to find which collection the cursor belongs to
-            const imageCursor = await db.collection('images').doc(startAfterId).get();
-            const videoCursor = await db.collection('videos').doc(startAfterId).get();
+            let cursorDoc = null;
+            let cursorType = startAfterCollection;
 
-            if (imageCursor.exists) {
-                // If cursor is an image, we start after it for images
-                const cursorDate = imageCursor.data().createdAt;
-                imageQuery = imageQuery.startAfter(imageCursor);
-                // For videos, we need to start after the same timestamp to keep sync (approximate)
-                // Or simpler: just fetch and client/server merge filtering?
-                // Proper way: usage of startAfter parameters.
-                // Since we can't easily sync cursors across collections without a unified index:
-                // We will rely on simple date based pagination or just fetching 'limit' from both and filtering in memory.
-                // Given the constraints, we will just apply startAfter to the collection where it was found,
-                // AND potentially pass the 'createdAt' to the other query.
-                videoQuery = videoQuery.where('createdAt', '<', cursorDate);
-            } else if (videoCursor.exists) {
-                const cursorDate = videoCursor.data().createdAt;
-                videoQuery = videoQuery.startAfter(videoCursor);
-                imageQuery = imageQuery.where('createdAt', '<', cursorDate);
+            // If we have a hint, try that first
+            if (cursorType === 'image') {
+                const snap = await db.collection('images').doc(startAfterId).get();
+                if (snap.exists) cursorDoc = snap;
+            } else if (cursorType === 'video') {
+                const snap = await db.collection('videos').doc(startAfterId).get();
+                if (snap.exists) cursorDoc = snap;
+            }
+
+            // Fallback: If no hint or hint failed, try discovery
+            if (!cursorDoc) {
+                const [imgSnap, vidSnap] = await Promise.all([
+                    db.collection('images').doc(startAfterId).get(),
+                    db.collection('videos').doc(startAfterId).get()
+                ]);
+                if (imgSnap.exists) {
+                    cursorDoc = imgSnap;
+                    cursorType = 'image';
+                } else if (vidSnap.exists) {
+                    cursorDoc = vidSnap;
+                    cursorType = 'video';
+                }
+            }
+
+            if (cursorDoc) {
+                const cursorDate = cursorDoc.data().createdAt;
+                if (cursorType === 'image') {
+                    imageQuery = imageQuery.startAfter(cursorDoc);
+                    videoQuery = videoQuery.where('createdAt', '<', cursorDate);
+                } else {
+                    videoQuery = videoQuery.startAfter(cursorDoc);
+                    imageQuery = imageQuery.where('createdAt', '<', cursorDate);
+                }
             }
         }
 
-        const [imageSnap, videoSnap] = await Promise.all([
+        // Use Promise.allSettled for "Degraded Mode" resilience
+        const [imageRes, videoRes] = await Promise.allSettled([
             imageQuery.get(),
             videoQuery.get()
         ]);
 
-        const imageItems = imageSnap.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            type: 'image',
-            createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
-        }));
+        const warnings = [];
+        let imageItems = [];
+        let videoItems = [];
 
-        const videoItems = videoSnap.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            type: 'video',
-            imageUrl: doc.data().imageSnapshotUrl || doc.data().videoUrl, // Ensure imageUrl exists for preview
-            createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
-        }));
+        if (imageRes.status === 'fulfilled') {
+            imageItems = imageRes.value.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                type: 'image',
+                createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
+            }));
+        } else {
+            console.error("Image collection fetch failed:", imageRes.reason);
+            warnings.push("Images temporarily unavailable");
+        }
+
+        if (videoRes.status === 'fulfilled') {
+            videoItems = videoRes.value.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                type: 'video',
+                imageUrl: doc.data().imageSnapshotUrl || doc.data().videoUrl,
+                createdAt: doc.data().createdAt?.toDate?.()?.toISOString() || doc.data().createdAt
+            }));
+        } else {
+            console.error("Video collection fetch failed:", videoRes.reason);
+            warnings.push("Videos temporarily unavailable");
+        }
 
         let allItems = [...imageItems, ...videoItems];
 
@@ -570,21 +600,18 @@ export const getUserImages = onCall(async (request) => {
             );
         }
 
-        // Memory Filter hidden
         allItems = allItems.filter(item => item.hidden !== true);
-
-        // Sort combined
         allItems.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-        // Slice to limit
         const pagedItems = allItems.slice(0, limit);
         const lastVisible = pagedItems[pagedItems.length - 1];
-        const hasMore = pagedItems.length === limit; // Approximate
 
         return {
-            images: pagedItems, // Keeping key 'images' for frontend compatibility, though it contains videos too
+            images: pagedItems,
             lastVisibleId: lastVisible?.id || null,
-            hasMore: hasMore
+            lastVisibleType: lastVisible?.type || null, // Hint for next page
+            hasMore: pagedItems.length === limit,
+            warnings: warnings.length > 0 ? warnings : undefined
         };
     } catch (error) {
         console.error("Error fetching user gallery:", error);
