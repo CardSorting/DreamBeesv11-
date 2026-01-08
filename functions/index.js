@@ -1113,7 +1113,20 @@ export const processVideoTask = onTaskDispatched(
                 if (data.image) {
                     // We really should have an analyzed prompt by now. 
                     // If not, we fail and ask user to use the analysis tool first.
-                    throw new Error("No prompt provided. Please use the Auto-Prompt tool first for image-to-video.");
+                    console.log(`Auto-prompting for video ${requestId}...`);
+                    try {
+                        const generatedPrompt = await generateVisionPrompt(data.image);
+                        if (generatedPrompt && generatedPrompt.length > 5) {
+                            finalPrompt = generatedPrompt;
+                            // Update the doc so we have record of the prompt
+                            await docRef.update({ prompt: finalPrompt });
+                        } else {
+                            throw new Error("Failed to generate prompt from image");
+                        }
+                    } catch (err) {
+                        console.error("Auto-prompt failed:", err);
+                        throw new Error("Failed to auto-generate prompt from image. Please try adding a text prompt manually.");
+                    }
                 } else {
                     throw new Error("Generation prompt is empty or too short.");
                 }
@@ -1338,7 +1351,7 @@ export const createVideoGenerationRequest = onCall(async (request) => {
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
 
     const { prompt, image, duration, resolution, aspectRatio } = request.data;
-    if (!prompt || prompt.length < 5) throw new HttpsError('invalid-argument', "Prompt required");
+    if ((!prompt || prompt.length < 5) && !image) throw new HttpsError('invalid-argument', "Prompt required (or provide an image for auto-captioning)");
 
     let safeDuration = Math.min(Math.max(parseInt(duration) || 6, 5), 20);
     const rate = resolution === '4k' ? 72 : (resolution === '2k' ? 36 : 18);
