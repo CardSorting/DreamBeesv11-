@@ -69,9 +69,47 @@ export default function Generator() {
 
     const handleMagicEnhance = async () => {
         if (isEnhancing) return;
+        
+        // IMPORTANT: Check referenceImage from current state at call time
+        // React state updates are async, so we need to check the actual current value
+        // Also check activeJob as fallback if referenceImage is null (might be cleared)
+        let currentReferenceImage = referenceImage;
+        const currentPrompt = prompt;
+        
+        // Fallback 1: If referenceImage is null but we have an activeJob with an image, use it
+        // This can happen if the user clicked "Apply Style & Generate" after viewing a generated image
+        if (!currentReferenceImage && activeJob && (activeJob.imageUrl || activeJob.thumbnailUrl)) {
+            console.log("[handleMagicEnhance] ReferenceImage is null, using activeJob image as fallback");
+            currentReferenceImage = activeJob.imageUrl || activeJob.thumbnailUrl;
+            // Update state so it persists
+            setReferenceImage(currentReferenceImage);
+        }
+        
+        // Fallback 2: If referenceImage is null but we have a generatedImage displayed, use it
+        // This handles the case where user wants to restyle the currently displayed image
+        if (!currentReferenceImage && generatedImage) {
+            console.log("[handleMagicEnhance] ReferenceImage is null, using generatedImage as fallback");
+            currentReferenceImage = generatedImage;
+            // Update state so it persists
+            setReferenceImage(currentReferenceImage);
+        }
+        
         // Allow enhancement if there is a prompt OR a reference image
-        if (!prompt && !referenceImage) return;
+        if (!currentPrompt && !currentReferenceImage) {
+            console.log("[handleMagicEnhance] Early return: no prompt and no referenceImage");
+            return;
+        }
         setIsEnhancing(true);
+        
+        console.log("[handleMagicEnhance] Called with:", {
+            prompt: currentPrompt ? `${currentPrompt.substring(0, 30)}...` : null,
+            referenceImage: currentReferenceImage ? `${currentReferenceImage.substring(0, 50)}...` : null,
+            activeStyleId,
+            referenceImageType: typeof currentReferenceImage,
+            referenceImageLength: currentReferenceImage ? currentReferenceImage.length : 0,
+            hasActiveJob: !!activeJob,
+            activeJobImageUrl: activeJob?.imageUrl ? `${activeJob.imageUrl.substring(0, 50)}...` : null
+        });
 
         // Helper to validate referenceImage
         const isReferenceImageValid = (img) => {
@@ -80,11 +118,22 @@ export default function Generator() {
 
         try {
             const api = httpsCallable(functions, 'api');
-            const hasValidReferenceImage = isReferenceImageValid(referenceImage);
-            const hasValidPrompt = prompt && typeof prompt === 'string' && prompt.trim().length > 0;
+            // Use the captured values to avoid stale closure issues
+            const hasValidReferenceImage = isReferenceImageValid(currentReferenceImage);
+            const hasValidPrompt = currentPrompt && typeof currentPrompt === 'string' && currentPrompt.trim().length > 0;
+
+            console.log("[handleMagicEnhance] State check:", {
+                hasValidReferenceImage,
+                hasValidPrompt,
+                referenceImage: currentReferenceImage ? `${currentReferenceImage.substring(0, 50)}...` : null,
+                activeStyleId,
+                prompt: currentPrompt ? `${currentPrompt.substring(0, 30)}...` : null,
+                rawReferenceImage: currentReferenceImage
+            });
 
             // Priority 1: Image Transformation (when referenceImage exists)
             if (hasValidReferenceImage) {
+                console.log("[handleMagicEnhance] Using image transformation path");
                 if (!activeStyleId) {
                     toast.error("Please select a style to transform the image", { id: 'style-magic' });
                     setIsEnhancing(false);
@@ -98,13 +147,25 @@ export default function Generator() {
                     return;
                 }
 
-                toast.loading(`Applying ${styleObj.label} magic to image...`, { id: 'style-magic' });
+                // Immediate visual feedback
+                toast.loading(`Starting ${styleObj.label} transformation...`, { id: 'style-magic' });
 
                 try {
                     // Vision Transformation (Image -> Image)
+                    console.log("[handleMagicEnhance] Calling transformImage with:", {
+                        imageUrl: currentReferenceImage,
+                        styleName: styleObj.label,
+                        intensity: styleIntensity
+                    });
+                    
+                    // Update progress message
+                    setTimeout(() => {
+                        toast.loading(`Sending image to AI for ${styleObj.label} transformation...`, { id: 'style-magic' });
+                    }, 500);
+                    
                     const transformResult = await api({
                         action: 'transformImage',
-                        imageUrl: referenceImage,
+                        imageUrl: currentReferenceImage,
                         styleName: styleObj.label,
                         intensity: styleIntensity,
                         instructions: styleObj.instruction
@@ -113,7 +174,12 @@ export default function Generator() {
                     console.log("[handleMagicEnhance] transformImage result:", transformResult);
 
                     if (transformResult?.data?.imageUrl) {
+                        // Update progress message before showing result
+                        toast.loading(`Processing transformed image...`, { id: 'style-magic' });
+                        
+                        // Set the image immediately for instant visual feedback
                         setGeneratedImage(transformResult.data.imageUrl);
+                        
                         // Optionally set the active job for rating if the backend returns it
                         if (transformResult.data.imageId) {
                             setActiveJob({
@@ -125,7 +191,16 @@ export default function Generator() {
                         }
 
                         setReferenceImage(null); // Clear reference after success
-                        toast.success(`${styleObj.label} style applied!`, { id: 'style-magic' });
+                        
+                        // Success message with delay for smooth transition
+                        setTimeout(() => {
+                            toast.success(`✨ ${styleObj.label} transformation complete!`, { 
+                                id: 'style-magic',
+                                duration: 3000,
+                                icon: '🎨'
+                            });
+                        }, 100);
+                        
                         setIsEnhancing(false);
                         return;
                     } else {
@@ -134,7 +209,7 @@ export default function Generator() {
                 } catch (error) {
                     console.error("[handleMagicEnhance] transformImage error:", error);
                     const errorMessage = error.message || error.code || "Failed to transform image";
-                    toast.error(`Image transformation failed: ${errorMessage}`, { id: 'style-magic' });
+                    toast.error(`Transformation failed: ${errorMessage}`, { id: 'style-magic', duration: 4000 });
                     setIsEnhancing(false);
                     return; // Don't fall through to other paths
                 }
@@ -142,16 +217,18 @@ export default function Generator() {
 
             // Priority 2: Prompt Transformation (when prompt exists and no referenceImage)
             if (hasValidPrompt) {
+                console.log("[handleMagicEnhance] Using prompt transformation path (no referenceImage)");
                 if (activeStyleId) {
                     const styleObj = STYLE_REGISTRY.find(s => s.id === activeStyleId);
                     if (styleObj && styleObj.instruction) {
-                        toast.loading(`Applying ${styleObj.label} magic to prompt...`, { id: 'style-magic' });
+                        // Immediate feedback
+                        toast.loading(`Transforming prompt with ${styleObj.label} style...`, { id: 'style-magic' });
 
                         try {
                             // Prompt Transformation (Text -> Text)
                             const transformResult = await api({
                                 action: 'transformPrompt',
-                                prompt: prompt,
+                                prompt: currentPrompt,
                                 styleName: styleObj.label,
                                 intensity: styleIntensity,
                                 instructions: styleObj.instruction
@@ -166,17 +243,25 @@ export default function Generator() {
                                 return;
                             }
 
+                            // Optimistic update - set prompt immediately
                             setPrompt(newPrompt);
-                            toast.success(`${styleObj.label} style applied!`, { id: 'style-magic' });
+                            
+                            toast.success(`✨ Prompt transformed with ${styleObj.label}!`, { 
+                                id: 'style-magic',
+                                duration: 2000,
+                                icon: '✨'
+                            });
                             setIsEnhancing(false);
 
                             // Auto-trigger generation with the new prompt
-                            handleGenerate(newPrompt);
+                            setTimeout(() => {
+                                handleGenerate(newPrompt);
+                            }, 300); // Small delay for smooth transition
                             return; // Exit early
                         } catch (error) {
                             console.error("[handleMagicEnhance] transformPrompt error:", error);
                             const errorMessage = error.message || error.code || "Failed to transform prompt";
-                            toast.error(`Prompt transformation failed: ${errorMessage}`, { id: 'style-magic' });
+                            toast.error(`Prompt transformation failed: ${errorMessage}`, { id: 'style-magic', duration: 4000 });
                             setIsEnhancing(false);
                             return;
                         }
@@ -184,8 +269,9 @@ export default function Generator() {
                 }
 
                 // Case 3: No Style - Standard Enhancement (prompt exists but no style)
+                console.log("[handleMagicEnhance] Using standard enhancement path (no style)");
                 try {
-                    const result = await api({ action: 'createEnhanceRequest', prompt });
+                    const result = await api({ action: 'createEnhanceRequest', prompt: currentPrompt });
                     const requestId = result.data.requestId;
 
                     const unsubscribe = onSnapshot(doc(db, 'enhance_queue', requestId), (snapshot) => {
@@ -529,6 +615,17 @@ export default function Generator() {
         // Use override if provided, otherwise state. Ensure it's a string.
         const effectivePrompt = (typeof promptOverride === 'string' ? promptOverride : prompt);
 
+        // SAFEGUARD: If referenceImage exists with activeStyleId, use image transformation instead
+        const isReferenceImageValid = (img) => {
+            return img && typeof img === 'string' && img.trim().length > 0;
+        };
+        
+        if (isReferenceImageValid(referenceImage) && activeStyleId && generationMode === 'image') {
+            console.log("[handleGenerate] Detected referenceImage + style, redirecting to handleMagicEnhance for image transformation");
+            await handleMagicEnhance();
+            return;
+        }
+
         if (!effectivePrompt || !selectedModel) return;
 
         // Mode Specific Checks
@@ -720,7 +817,51 @@ export default function Generator() {
                                             style={{ width: '100%', height: '100%', boxShadow: '0 0 50px rgba(0,0,0,0.5)', objectFit: 'contain' }}
                                         />
                                     ) : (
-                                        <img src={getOptimizedImageUrl(generatedImage)} alt={`Generated artwork for prompt: ${prompt}`} style={{ width: '100%', height: '100%', boxShadow: '0 0 50px rgba(0,0,0,0.5)', objectFit: 'contain' }} />
+                                        <>
+                                            <img 
+                                                src={getOptimizedImageUrl(generatedImage)} 
+                                                alt={`Generated artwork for prompt: ${prompt}`} 
+                                                style={{ 
+                                                    width: '100%', 
+                                                    height: '100%', 
+                                                    boxShadow: '0 0 50px rgba(0,0,0,0.5)', 
+                                                    objectFit: 'contain',
+                                                    opacity: isEnhancing ? 0.3 : 1,
+                                                    transition: 'opacity 0.3s ease'
+                                                }} 
+                                            />
+                                            {isEnhancing && (
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    inset: 0,
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    background: 'rgba(0,0,0,0.7)',
+                                                    backdropFilter: 'blur(4px)',
+                                                    zIndex: 10
+                                                }}>
+                                                    <Loader2 size={48} className="animate-spin" style={{ color: 'var(--color-accent-primary)', marginBottom: '16px' }} />
+                                                    <div style={{ 
+                                                        fontSize: '1.1rem', 
+                                                        fontWeight: '600', 
+                                                        color: 'white',
+                                                        textAlign: 'center',
+                                                        marginBottom: '8px'
+                                                    }}>
+                                                        Transforming Image...
+                                                    </div>
+                                                    <div style={{ 
+                                                        fontSize: '0.85rem', 
+                                                        color: 'var(--color-text-muted)',
+                                                        textAlign: 'center'
+                                                    }}>
+                                                        Applying style transformation
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                     <div style={{ position: 'absolute', bottom: '20px', right: '20px', display: 'flex', gap: '12px' }}>
                                         {/* Ranking Actions */}
@@ -904,11 +1045,22 @@ export default function Generator() {
                                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                                             fontSize: '0.9rem', fontWeight: '600',
                                             cursor: isEnhancing || (!prompt && !referenceImage) ? 'not-allowed' : 'pointer',
-                                            opacity: isEnhancing || (!prompt && !referenceImage) ? 0.7 : 1
+                                            opacity: isEnhancing || (!prompt && !referenceImage) ? 0.7 : 1,
+                                            position: 'relative',
+                                            overflow: 'hidden'
                                         }}
                                     >
-                                        {isEnhancing ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
-                                        {activeStyleId ? "Apply Style & Generate" : "Enhance Prompt"}
+                                        {isEnhancing ? (
+                                            <>
+                                                <Loader2 size={16} className="animate-spin" />
+                                                <span>Processing...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Wand2 size={16} />
+                                                {activeStyleId ? "Apply Style & Generate" : "Enhance Prompt"}
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                                 <div className="glass-panel" style={{
@@ -1162,35 +1314,27 @@ export default function Generator() {
                                 window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
                             onRestyle={async (job) => {
-                                console.log("Init Restyle:", job);
+                                console.log("[onRestyle] Init Restyle:", job);
 
-                                // Reset text states
-                                setPrompt("");
-                                setReferenceImage(null);
-                                setGenerationMode('image');
-
-                                // Load Image as Reference (Get optimized/cached URL if poss)
+                                // Load Image as Reference FIRST (before clearing prompt)
+                                // This ensures referenceImage is set before any other state changes
                                 const imageUrl = job.imageUrl || job.thumbnailUrl;
+                                console.log("[onRestyle] Setting referenceImage to:", imageUrl);
+                                
                                 if (imageUrl) {
-                                    // We need to fetch the image and convert to base64 or blob to define it as 'referenceImage'
-                                    // For now, we assume our backend can handle the URL if we pass it, 
-                                    // BUT handleGenerate expects 'referenceImage' to be a file object or base64 usually? 
-                                    // Actually, looking at handleGenerate, it passes 'image: referenceImage'.
-                                    // If referenceImage is a string URL, the backend must handle it. 
-                                    // Let's verify if 'referenceImage' state supports string URL.
-                                    try {
-                                        // Simple proxy: just set the URL. The backend 'createGenerationRequest' (Img2Video) uses it.
-                                        // But for 'transformImage', we need to pass it explicitly.
-                                        // Let's use a special state or just create a File object?
-                                        // Simplest: Just use the URL string.
-                                        setReferenceImage(imageUrl);
-
-                                        toast.success("Image loaded! Select a style & Restyle.", { icon: '🪄' });
-                                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                                    } catch (e) {
-                                        console.error("Failed to load image for restyle", e);
-                                        toast.error("Could not load image for restyling");
-                                    }
+                                    // Set reference image first
+                                    setReferenceImage(imageUrl);
+                                    
+                                    // Then reset other states
+                                    setPrompt("");
+                                    setGenerationMode('image');
+                                    
+                                    console.log("[onRestyle] Reference image set, ready for style selection");
+                                    toast.success("Image loaded! Select a style & click 'Apply Style & Generate'.", { icon: '🪄' });
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                } else {
+                                    console.error("[onRestyle] No image URL found in job:", job);
+                                    toast.error("Could not load image for restyling - no image URL found");
                                 }
                             }}
                         />

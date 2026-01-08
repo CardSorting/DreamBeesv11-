@@ -2063,28 +2063,59 @@ const enhancePromptWithGemini = async (prompt) => {
 
 // Helper for Vision-based Style Transformation (using Replicate Nano Banana)
 const transformImageWithGemini = async (imageUrl, styleName, instructions, intensity = 'medium', userId = 'system') => {
+    if (!process.env.REPLICATE_API_TOKEN) {
+        throw new Error("REPLICATE_API_TOKEN environment variable is not set");
+    }
+    
     const replicate = new Replicate({
         auth: process.env.REPLICATE_API_TOKEN,
     });
 
     // Prepare inputs
+    // Note: nano-banana-pro only supports "jpg" or "png" for output_format, not "webp"
+    // We'll request PNG and convert to WebP ourselves for consistency
     const input = {
         prompt: `Analyze the subject, composition, and mood of the input image and recreate it in the "${styleName}" style. ${instructions}. Match the subject and composition exactly but apply the visual aesthetics of ${styleName}. Intensity: ${intensity}.`,
         aspect_ratio: "match_input_image",
         image_input: [imageUrl],
-        output_format: "webp"
+        output_format: "png" // nano-banana-pro only accepts "jpg" or "png"
     };
 
     console.log(`[Transform] Calling Replicate with style: ${styleName}, intensity: ${intensity}`);
-    const output = await replicate.run("google/nano-banana-pro", { input });
+    console.log(`[Transform] Input:`, JSON.stringify(input, null, 2));
+    
+    let output;
+    try {
+        output = await replicate.run("google/nano-banana-pro", { input });
+        console.log(`[Transform] Replicate output type:`, typeof output);
+        console.log(`[Transform] Replicate output:`, JSON.stringify(output, null, 2));
+    } catch (replicateError) {
+        console.error(`[Transform] Replicate API error:`, replicateError);
+        throw new Error(`Replicate API call failed: ${replicateError.message || replicateError}`);
+    }
 
-    // Replicate returns a ReadableStream or URL depending on version/client
-    // Based on the example, output is an object with .url()
-    const resultUrl = typeof output.url === 'function' ? output.url() : (Array.isArray(output) ? output[0] : output);
+    // Replicate returns different formats depending on the model
+    // Try multiple ways to extract the URL
+    let resultUrl = null;
+    
+    if (typeof output === 'string') {
+        resultUrl = output;
+    } else if (Array.isArray(output)) {
+        resultUrl = output[0];
+    } else if (output && typeof output.url === 'function') {
+        resultUrl = output.url();
+    } else if (output && output.url) {
+        resultUrl = output.url;
+    } else if (output && output[0]) {
+        resultUrl = output[0];
+    }
 
-    if (!resultUrl) throw new Error("Replicate failed to return an image URL");
+    if (!resultUrl) {
+        console.error(`[Transform] Failed to extract URL from Replicate output:`, output);
+        throw new Error(`Replicate failed to return an image URL. Output: ${JSON.stringify(output)}`);
+    }
 
-    console.log(`[Transform] Replicate output URL: ${resultUrl}`);
+    console.log(`[Transform] Extracted result URL: ${resultUrl}`);
 
     // Download, Process with Sharp and Upload to B2 (similar to processImageTask)
     const imgResponse = await fetchWithTimeout(resultUrl);
@@ -2354,11 +2385,29 @@ const handleTransformImage = async (request) => {
     if (!imageUrl) throw new HttpsError('invalid-argument', "Image URL is required");
 
     try {
+        console.log(`[handleTransformImage] Starting transformation for user ${uid}`, {
+            imageUrl: imageUrl.substring(0, 100),
+            styleName,
+            intensity
+        });
         const result = await transformImageWithGemini(imageUrl, styleName, instructions, intensity, uid);
+        console.log(`[handleTransformImage] Transformation successful:`, {
+            imageId: result.imageId,
+            imageUrl: result.imageUrl.substring(0, 100)
+        });
         return result; // Returns { imageUrl, thumbnailUrl, lqip, imageId }
     } catch (error) {
-        console.error("Transform Image Error:", error);
-        throw new HttpsError('internal', "Failed to transform image", error.message);
+        console.error("[handleTransformImage] Transform Image Error:", {
+            message: error.message,
+            code: error.code,
+            stack: error.stack,
+            imageUrl: imageUrl?.substring(0, 100),
+            styleName,
+            userId: uid
+        });
+        // Pass through the original error message for better debugging
+        const errorMessage = error.message || "Unknown error occurred";
+        throw new HttpsError('internal', `Failed to transform image: ${errorMessage}`, error);
     }
 };
 
