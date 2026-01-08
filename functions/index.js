@@ -128,20 +128,299 @@ export const processImageTask = onTaskDispatched(
                 throw new Error(`Model Provider Error (${response.status}): ${errText}`);
             }
 
-            // Check for JSON error response even with 200 OK (some APIs do this)
-            const contentType = response.headers.get("content-type");
-            if (contentType && contentType.includes("application/json")) {
-                // Peek at body to see if it's an error
-                // Note: we can't easily peek and then read as buffer unless we clone, but better to assume 
-                // if it's JSON and we expect bytes, it might be an error or base64. 
-                // For now, let's treat it as potential error if it's small? 
-                // Actually, let's just let Sharp try to parse it. If it fails, Sharp will throw.
+            // Comprehensive response logging for diagnostics
+            const contentType = response.headers.get("content-type") || "";
+            const contentLength = response.headers.get("content-length");
+            const allHeaders = Object.fromEntries(response.headers.entries());
+            
+            console.log(`[${requestId}] Response received from Modal:`);
+            console.log(`  Status: ${response.status}`);
+            console.log(`  Content-Type: ${contentType || '(missing)'}`);
+            console.log(`  Content-Length: ${contentLength || '(unknown)'}`);
+            console.log(`  Headers: ${JSON.stringify(allHeaders)}`);
+
+            // Clone response immediately to enable multiple read attempts
+            const clonedResponse = response.clone();
+            const firstBytesClone = response.clone();
+
+            // Helper function to detect image format by magic bytes
+            const detectImageFormat = (buffer) => {
+                if (buffer.length < 4) return null;
+                // PNG: 89 50 4E 47
+                if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
+                    return 'image/png';
+                }
+                // JPEG: FF D8 FF
+                if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
+                    return 'image/jpeg';
+                }
+                // WebP: RIFF...WEBP
+                if (buffer.length >= 12 && 
+                    buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
+                    buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
+                    return 'image/webp';
+                }
+                return null;
+            };
+
+            // Helper function to read first bytes for magic byte detection
+            const readFirstBytes = async (responseToRead, numBytes = 12) => {
+                const arrayBuffer = await responseToRead.arrayBuffer();
+                if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+                    return null;
+                }
+                const buffer = Buffer.from(arrayBuffer);
+                return buffer.slice(0, Math.min(numBytes, buffer.length));
+            };
+
+            // Helper function to check if bytes look like JSON start
+            const looksLikeJSON = (buffer) => {
+                if (!buffer || buffer.length === 0) return false;
+                const firstChar = String.fromCharCode(buffer[0]);
+                return firstChar === '{' || firstChar === '[' || firstChar === '"';
+            };
+
+            let imageBuffer;
+            let responseProcessed = false;
+            let responsePreview = null;
+
+            try {
+                // Step 1: Read first bytes to detect format early (using a clone to avoid consuming main response)
+                console.log(`[${requestId}] Reading first bytes for format detection...`);
+                const firstBytes = await readFirstBytes(firstBytesClone, 12);
+                
+                if (!firstBytes || firstBytes.length === 0) {
+                    throw new Error("Response body is empty");
+                }
+
+                // Detect image format from magic bytes (prioritize this over content-type)
+                const detectedFormat = detectImageFormat(firstBytes);
+                const isLikelyImage = detectedFormat !== null;
+                const isLikelyJSON = looksLikeJSON(firstBytes);
+
+                console.log(`[${requestId}] First bytes analysis:`);
+                console.log(`  Detected format: ${detectedFormat || 'unknown'}`);
+                console.log(`  Likely image: ${isLikelyImage}`);
+                console.log(`  Likely JSON: ${isLikelyJSON}`);
+
+                // Step 2: Determine processing strategy
+                if (isLikelyImage) {
+                    // Definitely an image - process as binary
+                    console.log(`[${requestId}] Processing as image response (detected format: ${detectedFormat})...`);
+                    const arrayBuffer = await clonedResponse.arrayBuffer();
+                    if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+                        throw new Error("Response arrayBuffer is empty");
+                    }
+                    imageBuffer = Buffer.from(arrayBuffer);
+                    responseProcessed = true;
+                    console.log(`[${requestId}] Extracted ${imageBuffer.length} bytes from image response`);
+                } else if (contentType.includes("application/json") || (isLikelyJSON && !contentType.includes("image/"))) {
+                    // Try JSON first, with fallback to image if JSON parsing fails
+                    console.log(`[${requestId}] Processing as JSON response...`);
+                    try {
+                        const jsonData = await clonedResponse.json();
+                        console.log(`[${requestId}] Received JSON response, checking for image data...`);
+                        console.log(`[${requestId}] JSON keys: ${Object.keys(jsonData).join(', ')}`);
+                        const jsonPreview = JSON.stringify(jsonData).substring(0, 200);
+                        console.log(`[${requestId}] JSON preview: ${jsonPreview}...`);
+                        responsePreview = jsonPreview;
+                    
+                        // Check for base64 image in common fields
+                        let base64Image = jsonData.image || jsonData.data || jsonData.output || jsonData.result;
+                        
+                        if (typeof base64Image === 'string') {
+                            // Handle base64 strings (with or without data URI prefix)
+                            if (base64Image.startsWith('data:')) {
+                                // Extract base64 part from data URI
+                                const matches = base64Image.match(/^data:image\/[^;]+;base64,(.+)$/);
+                                if (matches && matches[1]) {
+                                    imageBuffer = Buffer.from(matches[1], 'base64');
+                                    responseProcessed = true;
+                                } else {
+                                    throw new Error("Invalid base64 data URI format in JSON response");
+                                }
+                            } else if (base64Image.length > 100) {
+                                // Assume it's a raw base64 string
+                                try {
+                                    imageBuffer = Buffer.from(base64Image, 'base64');
+                                    responseProcessed = true;
+                                } catch (e) {
+                                    console.error("Failed to decode base64:", e);
+                                    // Check if it might be a URL instead
+                                    if (base64Image.startsWith('http')) {
+                                        const imgResponse = await fetchWithTimeout(base64Image);
+                                        if (!imgResponse.ok) throw new Error(`Failed to fetch image from URL: ${imgResponse.statusText}`);
+                                        imageBuffer = Buffer.from(await imgResponse.arrayBuffer());
+                                        responseProcessed = true;
+                                    } else {
+                                        throw new Error("JSON response contains invalid base64 image data");
+                                    }
+                                }
+                            }
+                        } else if (jsonData.url || jsonData.imageUrl || jsonData.image_url) {
+                            // JSON contains an image URL
+                            const imageUrl = jsonData.url || jsonData.imageUrl || jsonData.image_url;
+                            console.log(`[${requestId}] Fetching image from URL: ${imageUrl}`);
+                            const imgResponse = await fetchWithTimeout(imageUrl);
+                            if (!imgResponse.ok) throw new Error(`Failed to fetch image from URL: ${imgResponse.statusText}`);
+                            imageBuffer = Buffer.from(await imgResponse.arrayBuffer());
+                            responseProcessed = true;
+                        } else if (Array.isArray(jsonData) && jsonData.length > 0 && typeof jsonData[0] === 'string' && jsonData[0].startsWith('http')) {
+                            // Response is an array with URLs
+                            const imageUrl = jsonData[0];
+                            console.log(`[${requestId}] Fetching image from array URL: ${imageUrl}`);
+                            const imgResponse = await fetchWithTimeout(imageUrl);
+                            if (!imgResponse.ok) throw new Error(`Failed to fetch image from URL: ${imgResponse.statusText}`);
+                            imageBuffer = Buffer.from(await imgResponse.arrayBuffer());
+                            responseProcessed = true;
+                        } else {
+                            // Try to find image URL or base64 in nested structures
+                            const jsonStr = JSON.stringify(jsonData);
+                            const urlMatch = jsonStr.match(/https?:\/\/[^\s"']+\.(png|jpg|jpeg|webp|gif)/i);
+                            if (urlMatch) {
+                                const imageUrl = urlMatch[0];
+                                console.log(`[${requestId}] Found image URL in JSON: ${imageUrl}`);
+                                const imgResponse = await fetchWithTimeout(imageUrl);
+                                if (!imgResponse.ok) throw new Error(`Failed to fetch image from URL: ${imgResponse.statusText}`);
+                                imageBuffer = Buffer.from(await imgResponse.arrayBuffer());
+                                responseProcessed = true;
+                            } else {
+                                // JSON parsing succeeded but no image found - try fallback to raw image parsing
+                                throw new Error("JSON response does not contain recognizable image data (base64, URL, or image field)");
+                            }
+                        }
+                    } catch (jsonError) {
+                        console.warn(`[${requestId}] JSON parsing failed or no image in JSON, attempting fallback to raw image parsing...`);
+                        console.warn(`[${requestId}] JSON error: ${jsonError.message}`);
+                        
+                        // Fallback: Try processing as raw image bytes
+                        // Note: We need to use the original response since clonedResponse was consumed by json()
+                        const fallbackResponse = response.clone();
+                        const arrayBuffer = await fallbackResponse.arrayBuffer();
+                        if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+                            throw new Error(`JSON parsing failed and response body is empty. JSON error: ${jsonError.message}`);
+                        }
+                        const tempBuffer = Buffer.from(arrayBuffer);
+                        const fallbackFormat = detectImageFormat(tempBuffer);
+                        
+                        if (fallbackFormat) {
+                            console.log(`[${requestId}] Fallback successful: Detected image format ${fallbackFormat}`);
+                            imageBuffer = tempBuffer;
+                            responseProcessed = true;
+                        } else {
+                            // Neither JSON nor image worked
+                            throw new Error(`Failed to process as JSON or image. JSON error: ${jsonError.message}. First bytes do not match known image formats.`);
+                        }
+                    }
+                } else if (contentType.includes("image/")) {
+                    // Content-type says image but magic bytes don't match - still try to process
+                    console.log(`[${requestId}] Processing as image response (content-type: ${contentType})...`);
+                    const arrayBuffer = await clonedResponse.arrayBuffer();
+                    if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+                        throw new Error("Response arrayBuffer is empty");
+                    }
+                    imageBuffer = Buffer.from(arrayBuffer);
+                    responseProcessed = true;
+                    console.log(`[${requestId}] Extracted ${imageBuffer.length} bytes from image response`);
+                } else {
+                    // Unknown content-type - try image first (most common case), then JSON
+                    console.log(`[${requestId}] Unknown content-type, attempting image detection first...`);
+                    const arrayBuffer = await clonedResponse.arrayBuffer();
+                    if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+                        throw new Error("Response arrayBuffer is empty");
+                    }
+                    const tempBuffer = Buffer.from(arrayBuffer);
+                    const detectedFormat2 = detectImageFormat(tempBuffer);
+                    
+                    if (detectedFormat2) {
+                        console.log(`[${requestId}] Detected image format by magic bytes: ${detectedFormat2}`);
+                        imageBuffer = tempBuffer;
+                        responseProcessed = true;
+                    } else if (looksLikeJSON(tempBuffer)) {
+                        // Try JSON as fallback
+                        console.log(`[${requestId}] Attempting JSON parsing as fallback...`);
+                        try {
+                            const jsonStr = tempBuffer.toString('utf-8');
+                            const jsonData = JSON.parse(jsonStr);
+                            responsePreview = JSON.stringify(jsonData).substring(0, 200);
+                            throw new Error("JSON detected but image extraction from JSON is not supported in this path. Use explicit JSON content-type.");
+                        } catch (jsonParseError) {
+                            throw new Error(`Could not determine response format. JSON parse error: ${jsonParseError.message}. First bytes: ${Array.from(tempBuffer.slice(0, 12)).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' ')}`);
+                        }
+                    } else {
+                        // Try to process as raw image bytes anyway (fallback)
+                        console.log(`[${requestId}] No magic bytes detected, attempting to process as raw image bytes...`);
+                        imageBuffer = tempBuffer;
+                        responseProcessed = true;
+                    }
+                }
+
+                // Validation checks
+                if (!responseProcessed) {
+                    throw new Error("Failed to determine response type - content-type was not JSON or image, and magic byte detection failed");
+                }
+
+                if (!imageBuffer || imageBuffer.length === 0) {
+                    throw new Error("Failed to extract image data from response - imageBuffer is empty");
+                }
+
+                // Validate image buffer contains reasonable data
+                if (imageBuffer.length < 100) {
+                    throw new Error(`Image buffer is too small (${imageBuffer.length} bytes) - likely not a valid image`);
+                }
+
+                // Verify it's actually an image by checking magic bytes
+                const validatedFormat = detectImageFormat(imageBuffer);
+                if (!validatedFormat && !contentType.includes("application/json")) {
+                    console.warn(`[${requestId}] Warning: Image buffer does not match known image format magic bytes. Proceeding anyway...`);
+                } else if (validatedFormat) {
+                    console.log(`[${requestId}] Validated image format: ${validatedFormat}`);
+                }
+
+            } catch (error) {
+                // Enhanced error logging with response details
+                console.error(`[${requestId}] Error processing response:`, error.message);
+                console.error(`[${requestId}] Response status: ${response.status}`);
+                console.error(`[${requestId}] Response content-type: ${contentType || '(missing)'}`);
+                console.error(`[${requestId}] Response processed flag: ${responseProcessed}`);
+                
+                // Always try to log response preview for diagnostics
+                try {
+                    // Use cloned response if available, otherwise clone original
+                    const previewResponse = clonedResponse || response.clone();
+                    const textPreview = await previewResponse.text();
+                    const previewLength = Math.min(500, textPreview.length);
+                    console.error(`[${requestId}] Response preview (first ${previewLength} chars): ${textPreview.substring(0, previewLength)}`);
+                    
+                    // Also try to show first bytes as hex
+                    if (textPreview.length > 0) {
+                        const firstBytesHex = Array.from(Buffer.from(textPreview.substring(0, 12), 'utf-8'))
+                            .map(b => `0x${b.toString(16).padStart(2, '0')}`)
+                            .join(' ');
+                        console.error(`[${requestId}] First bytes (hex): ${firstBytesHex}`);
+                    }
+                } catch (previewError) {
+                    console.error(`[${requestId}] Could not read response preview: ${previewError.message}`);
+                    // If we have a cached preview from JSON parsing attempt, use it
+                    if (responsePreview) {
+                        console.error(`[${requestId}] Cached response preview: ${responsePreview}`);
+                    }
+                }
+                
+                throw new Error(`Failed to process Modal response: ${error.message}`);
             }
 
-            const buffer = Buffer.from(await response.arrayBuffer());
+            // Log success after validation
+            console.log(`[${requestId}] Successfully extracted image buffer (${imageBuffer.length} bytes)`);
 
             // Process Image with Sharp
-            const sharpImg = sharp(buffer);
+            let sharpImg;
+            try {
+                sharpImg = sharp(imageBuffer);
+            } catch (sharpError) {
+                console.error(`Sharp initialization failed for ${requestId}:`, sharpError);
+                throw new Error(`Failed to initialize image processor: ${sharpError.message}`);
+            }
 
             // 1. Convert Original to WebP
             const webpBuffer = await sharpImg.webp({ quality: 90 }).toBuffer();
@@ -208,7 +487,7 @@ export const processImageTask = onTaskDispatched(
                 resultImageId: imageRef.id
             });
 
-
+            console.log(`Image generation completed successfully for ${requestId}. Image saved to: ${imageUrl}`);
 
         } catch (error) {
             console.error("Task Failed:", error);

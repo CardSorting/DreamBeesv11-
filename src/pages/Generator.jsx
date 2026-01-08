@@ -61,10 +61,8 @@ export default function Generator() {
     // Video Gallery State
     const [recentImages, setRecentImages] = useState([]);
     const [analyzingImageId, setAnalyzingImageId] = useState(null);
-    const [isCustomVideoPrompt, setIsCustomVideoPrompt] = useState(false);
 
     useEffect(() => {
-        setIsCustomVideoPrompt(false);
         if (generationMode === 'video') {
             setActiveTab('advanced');
         }
