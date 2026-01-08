@@ -1,1 +1,10 @@
-[]
+[
+    {
+        "url": "https://placehold.co/1024x768.png?text=Showcase+1",
+        "prompt": "Test showcase video 1"
+    },
+    {
+        "url": "https://placehold.co/1024x768.png?text=Showcase+2",
+        "prompt": "Test showcase video 2"
+    }
+]
