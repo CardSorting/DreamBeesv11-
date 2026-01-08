@@ -16,8 +16,6 @@ import toast from 'react-hot-toast';
 import { getOptimizedImageUrl } from '../utils';
 import { STYLE_REGISTRY, getStylePrompt, GLOBAL_NEGATIVES } from '../data/styles';
 
-const api = httpsCallable(functions, 'api');
-
 
 export default function Generator() {
     const [searchParams] = useSearchParams();
@@ -70,103 +68,157 @@ export default function Generator() {
     const [isEnhancing, setIsEnhancing] = useState(false);
 
     const handleMagicEnhance = async () => {
-        if (!prompt || isEnhancing) return;
+        if (isEnhancing) return;
+        // Allow enhancement if there is a prompt OR a reference image
+        if (!prompt && !referenceImage) return;
         setIsEnhancing(true);
+
+        // Helper to validate referenceImage
+        const isReferenceImageValid = (img) => {
+            return img && typeof img === 'string' && img.trim().length > 0;
+        };
 
         try {
             const api = httpsCallable(functions, 'api');
+            const hasValidReferenceImage = isReferenceImageValid(referenceImage);
+            const hasValidPrompt = prompt && typeof prompt === 'string' && prompt.trim().length > 0;
 
-            // Case 1: Active Style - Use it to transform image or rewrite prompt
-            if (activeStyleId) {
+            // Priority 1: Image Transformation (when referenceImage exists)
+            if (hasValidReferenceImage) {
+                if (!activeStyleId) {
+                    toast.error("Please select a style to transform the image", { id: 'style-magic' });
+                    setIsEnhancing(false);
+                    return;
+                }
+
                 const styleObj = STYLE_REGISTRY.find(s => s.id === activeStyleId);
-                if (styleObj && styleObj.instruction) {
-                    toast.loading(`Applying ${styleObj.label} magic...`, { id: 'style-magic' });
+                if (!styleObj || !styleObj.instruction) {
+                    toast.error("Selected style is missing instructions for image transformation", { id: 'style-magic' });
+                    setIsEnhancing(false);
+                    return;
+                }
 
-                    if (referenceImage) {
-                        // Vision Transformation (Image -> Image)
-                        const transformResult = await api({
-                            action: 'transformImage',
-                            imageUrl: referenceImage,
-                            styleName: styleObj.label,
-                            intensity: styleIntensity,
-                            instructions: styleObj.instruction
-                        });
+                toast.loading(`Applying ${styleObj.label} magic to image...`, { id: 'style-magic' });
 
-                        console.log("[handleMagicEnhance] transformImage result:", transformResult);
+                try {
+                    // Vision Transformation (Image -> Image)
+                    const transformResult = await api({
+                        action: 'transformImage',
+                        imageUrl: referenceImage,
+                        styleName: styleObj.label,
+                        intensity: styleIntensity,
+                        instructions: styleObj.instruction
+                    });
 
-                        if (transformResult.data.imageUrl) {
-                            setGeneratedImage(transformResult.data.imageUrl);
-                            // Optionally set the active job for rating if the backend returns it
-                            if (transformResult.data.imageId) {
-                                setActiveJob({
-                                    id: transformResult.data.imageId,
-                                    imageUrl: transformResult.data.imageUrl,
-                                    thumbnailUrl: transformResult.data.thumbnailUrl,
-                                    prompt: `Vision Transformation: ${styleObj.label}`
-                                });
-                            }
+                    console.log("[handleMagicEnhance] transformImage result:", transformResult);
 
-                            setReferenceImage(null); // Clear reference after success
-                            toast.success(`${styleObj.label} style applied!`, { id: 'style-magic' });
-                            setIsEnhancing(false);
-                            return;
-                        } else {
-                            throw new Error("Transformation failed to return an image");
-                        }
-                    } else {
-                        // Prompt Transformation (Text -> Text)
-                        const transformResult = await api({
-                            action: 'transformPrompt',
-                            prompt: prompt,
-                            styleName: styleObj.label,
-                            intensity: styleIntensity,
-                            instructions: styleObj.instruction
-                        });
-
-                        console.log("[handleMagicEnhance] transformPrompt result:", transformResult);
-                        const newPrompt = transformResult.data.prompt;
-
-                        if (!newPrompt) {
-                            toast.error("Restyle returned empty prompt", { id: 'style-magic' });
-                            setIsEnhancing(false);
-                            return;
+                    if (transformResult?.data?.imageUrl) {
+                        setGeneratedImage(transformResult.data.imageUrl);
+                        // Optionally set the active job for rating if the backend returns it
+                        if (transformResult.data.imageId) {
+                            setActiveJob({
+                                id: transformResult.data.imageId,
+                                imageUrl: transformResult.data.imageUrl,
+                                thumbnailUrl: transformResult.data.thumbnailUrl,
+                                prompt: `Vision Transformation: ${styleObj.label}`
+                            });
                         }
 
-                        setPrompt(newPrompt);
+                        setReferenceImage(null); // Clear reference after success
                         toast.success(`${styleObj.label} style applied!`, { id: 'style-magic' });
                         setIsEnhancing(false);
-
-                        // Auto-trigger generation with the new prompt
-                        handleGenerate(newPrompt);
-                        return; // Exit early
+                        return;
+                    } else {
+                        throw new Error("Transformation failed to return an image");
                     }
+                } catch (error) {
+                    console.error("[handleMagicEnhance] transformImage error:", error);
+                    const errorMessage = error.message || error.code || "Failed to transform image";
+                    toast.error(`Image transformation failed: ${errorMessage}`, { id: 'style-magic' });
+                    setIsEnhancing(false);
+                    return; // Don't fall through to other paths
                 }
             }
 
-            // Case 2: No Style - Standard Enhancement
-            const result = await api({ action: 'createEnhanceRequest', prompt });
-            const requestId = result.data.requestId;
+            // Priority 2: Prompt Transformation (when prompt exists and no referenceImage)
+            if (hasValidPrompt) {
+                if (activeStyleId) {
+                    const styleObj = STYLE_REGISTRY.find(s => s.id === activeStyleId);
+                    if (styleObj && styleObj.instruction) {
+                        toast.loading(`Applying ${styleObj.label} magic to prompt...`, { id: 'style-magic' });
 
-            const unsubscribe = onSnapshot(doc(db, 'enhance_queue', requestId), (snapshot) => {
-                if (!snapshot.exists()) return;
-                const data = snapshot.data();
+                        try {
+                            // Prompt Transformation (Text -> Text)
+                            const transformResult = await api({
+                                action: 'transformPrompt',
+                                prompt: prompt,
+                                styleName: styleObj.label,
+                                intensity: styleIntensity,
+                                instructions: styleObj.instruction
+                            });
 
-                if (data.status === 'completed') {
-                    setPrompt(data.prompt);
-                    toast.success("Magic enhanced!");
-                    setIsEnhancing(false);
-                    unsubscribe();
-                } else if (data.status === 'failed') {
-                    console.error("Enhance failed:", data.error);
-                    toast.error("Failed: " + (data.error || "Unknown error"));
-                    setIsEnhancing(false);
-                    unsubscribe();
+                            console.log("[handleMagicEnhance] transformPrompt result:", transformResult);
+                            const newPrompt = transformResult?.data?.prompt;
+
+                            if (!newPrompt) {
+                                toast.error("Style transformation returned empty prompt", { id: 'style-magic' });
+                                setIsEnhancing(false);
+                                return;
+                            }
+
+                            setPrompt(newPrompt);
+                            toast.success(`${styleObj.label} style applied!`, { id: 'style-magic' });
+                            setIsEnhancing(false);
+
+                            // Auto-trigger generation with the new prompt
+                            handleGenerate(newPrompt);
+                            return; // Exit early
+                        } catch (error) {
+                            console.error("[handleMagicEnhance] transformPrompt error:", error);
+                            const errorMessage = error.message || error.code || "Failed to transform prompt";
+                            toast.error(`Prompt transformation failed: ${errorMessage}`, { id: 'style-magic' });
+                            setIsEnhancing(false);
+                            return;
+                        }
+                    }
                 }
-            });
+
+                // Case 3: No Style - Standard Enhancement (prompt exists but no style)
+                try {
+                    const result = await api({ action: 'createEnhanceRequest', prompt });
+                    const requestId = result.data.requestId;
+
+                    const unsubscribe = onSnapshot(doc(db, 'enhance_queue', requestId), (snapshot) => {
+                        if (!snapshot.exists()) return;
+                        const data = snapshot.data();
+
+                        if (data.status === 'completed') {
+                            setPrompt(data.prompt);
+                            toast.success("Magic enhanced!", { id: 'style-magic' });
+                            setIsEnhancing(false);
+                            unsubscribe();
+                        } else if (data.status === 'failed') {
+                            console.error("Enhance failed:", data.error);
+                            toast.error("Failed: " + (data.error || "Unknown error"), { id: 'style-magic' });
+                            setIsEnhancing(false);
+                            unsubscribe();
+                        }
+                    });
+                } catch (error) {
+                    console.error("[handleMagicEnhance] createEnhanceRequest error:", error);
+                    toast.error("Failed to enhance prompt", { id: 'style-magic' });
+                    setIsEnhancing(false);
+                }
+                return;
+            }
+
+            // Fallback: If we get here, something unexpected happened
+            toast.error("Unable to process: please provide an image or prompt", { id: 'style-magic' });
+            setIsEnhancing(false);
 
         } catch (error) {
-            console.error(error);
-            toast.error("Failed to enhance prompt");
+            console.error("[handleMagicEnhance] Unexpected error:", error);
+            toast.error("Failed to process request: " + (error.message || "Unknown error"), { id: 'style-magic' });
             setIsEnhancing(false);
         }
     };
