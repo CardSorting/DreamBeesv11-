@@ -76,37 +76,70 @@ export default function Generator() {
         try {
             const api = httpsCallable(functions, 'api');
 
-            // Case 1: Active Style - Use it to rewrite prompt
+            // Case 1: Active Style - Use it to transform image or rewrite prompt
             if (activeStyleId) {
                 const styleObj = STYLE_REGISTRY.find(s => s.id === activeStyleId);
                 if (styleObj && styleObj.instruction) {
                     toast.loading(`Applying ${styleObj.label} magic...`, { id: 'style-magic' });
 
-                    const transformResult = await api({
-                        action: 'transformPrompt',
-                        prompt: prompt,
-                        styleName: styleObj.label,
-                        intensity: styleIntensity,
-                        instructions: styleObj.instruction
-                    });
+                    if (referenceImage) {
+                        // Vision Transformation (Image -> Image)
+                        const transformResult = await api({
+                            action: 'transformImage',
+                            imageUrl: referenceImage,
+                            styleName: styleObj.label,
+                            intensity: styleIntensity,
+                            instructions: styleObj.instruction
+                        });
 
-                    console.log("[handleMagicEnhance] transformResult:", transformResult);
-                    const newPrompt = transformResult.data.prompt;
-                    console.log("[handleMagicEnhance] newPrompt:", newPrompt);
+                        console.log("[handleMagicEnhance] transformImage result:", transformResult);
 
-                    if (!newPrompt) {
-                        toast.error("Restyle returned empty prompt", { id: 'style-magic' });
+                        if (transformResult.data.imageUrl) {
+                            setGeneratedImage(transformResult.data.imageUrl);
+                            // Optionally set the active job for rating if the backend returns it
+                            if (transformResult.data.imageId) {
+                                setActiveJob({
+                                    id: transformResult.data.imageId,
+                                    imageUrl: transformResult.data.imageUrl,
+                                    thumbnailUrl: transformResult.data.thumbnailUrl,
+                                    prompt: `Vision Transformation: ${styleObj.label}`
+                                });
+                            }
+
+                            setReferenceImage(null); // Clear reference after success
+                            toast.success(`${styleObj.label} style applied!`, { id: 'style-magic' });
+                            setIsEnhancing(false);
+                            return;
+                        } else {
+                            throw new Error("Transformation failed to return an image");
+                        }
+                    } else {
+                        // Prompt Transformation (Text -> Text)
+                        const transformResult = await api({
+                            action: 'transformPrompt',
+                            prompt: prompt,
+                            styleName: styleObj.label,
+                            intensity: styleIntensity,
+                            instructions: styleObj.instruction
+                        });
+
+                        console.log("[handleMagicEnhance] transformPrompt result:", transformResult);
+                        const newPrompt = transformResult.data.prompt;
+
+                        if (!newPrompt) {
+                            toast.error("Restyle returned empty prompt", { id: 'style-magic' });
+                            setIsEnhancing(false);
+                            return;
+                        }
+
+                        setPrompt(newPrompt);
+                        toast.success(`${styleObj.label} style applied!`, { id: 'style-magic' });
                         setIsEnhancing(false);
-                        return;
+
+                        // Auto-trigger generation with the new prompt
+                        handleGenerate(newPrompt);
+                        return; // Exit early
                     }
-
-                    setPrompt(newPrompt);
-                    toast.success(`${styleObj.label} style applied!`, { id: 'style-magic' });
-                    setIsEnhancing(false);
-
-                    // Auto-trigger generation with the new prompt
-                    handleGenerate(newPrompt);
-                    return; // Exit early
                 }
             }
 

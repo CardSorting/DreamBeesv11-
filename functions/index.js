@@ -2061,61 +2061,94 @@ const enhancePromptWithGemini = async (prompt) => {
     return data.choices?.[0]?.message?.content || prompt;
 };
 
-// Helper for Vision-based Style Transformation
-const transformImageWithGemini = async (imageUrl, styleName, instructions, intensity = 'medium') => {
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) throw new Error("OPENROUTER_API_KEY is not set");
-
-    let imageContentUrl = "";
-    if (imageUrl.trim().startsWith('http')) {
-        imageContentUrl = imageUrl;
-    } else if (imageUrl.trim().startsWith('data:')) {
-        imageContentUrl = imageUrl;
-    } else {
-        imageContentUrl = `data:image/png;base64,${imageUrl}`;
-    }
-
-    const systemPrompt = `
-    You are an expert AI artist. Your task is to analyze the provided image and rewrite a text-to-image prompt to recreate it in the "${styleName}" style.
-    
-    Style Instructions: "${instructions}"
-    Intensity: ${intensity} based on a scale of low/medium/high.
-
-    1. Analyze the subject, composition, lighting, and mood of the input image.
-    2. Write a high-quality SDXL prompt that preserves the SUBJECT and COMPOSITON of the input image, but applies the visual aesthetics of "${styleName}".
-    3. Ensure the prompt includes specific keywords relevant to the style (e.g., medium, lighting, color palette, artist references).
-    4. Return ONLY the prompt text. No "Here is the prompt" prefix.
-    `;
-
-    const response = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://dreambeesai.com",
-            "X-Title": "DreamBees"
-        },
-        body: JSON.stringify({
-            model: "google/gemini-3-pro-image-preview", // Updated to Gemini 3.0 Pro Image Preview
-            messages: [
-                {
-                    role: "user",
-                    content: [
-                        { type: "text", text: systemPrompt },
-                        { type: "image_url", image_url: { url: imageContentUrl } }
-                    ]
-                }
-            ]
-        })
+// Helper for Vision-based Style Transformation (using Replicate Nano Banana)
+const transformImageWithGemini = async (imageUrl, styleName, instructions, intensity = 'medium', userId = 'system') => {
+    const replicate = new Replicate({
+        auth: process.env.REPLICATE_API_TOKEN,
     });
 
-    if (!response.ok) {
-        const err = await response.text();
-        throw new Error(`OpenRouter Error: ${err}`);
-    }
+    // Prepare inputs
+    const input = {
+        prompt: `Analyze the subject, composition, and mood of the input image and recreate it in the "${styleName}" style. ${instructions}. Match the subject and composition exactly but apply the visual aesthetics of ${styleName}. Intensity: ${intensity}.`,
+        aspect_ratio: "match_input_image",
+        image_input: [imageUrl],
+        output_format: "webp"
+    };
 
-    const data = await response.json();
-    return data.choices?.[0]?.message?.content || "";
+    console.log(`[Transform] Calling Replicate with style: ${styleName}, intensity: ${intensity}`);
+    const output = await replicate.run("google/nano-banana-pro", { input });
+
+    // Replicate returns a ReadableStream or URL depending on version/client
+    // Based on the example, output is an object with .url()
+    const resultUrl = typeof output.url === 'function' ? output.url() : (Array.isArray(output) ? output[0] : output);
+
+    if (!resultUrl) throw new Error("Replicate failed to return an image URL");
+
+    console.log(`[Transform] Replicate output URL: ${resultUrl}`);
+
+    // Download, Process with Sharp and Upload to B2 (similar to processImageTask)
+    const imgResponse = await fetchWithTimeout(resultUrl);
+    if (!imgResponse.ok) throw new Error(`Failed to fetch image from Replicate: ${imgResponse.statusText}`);
+    const imageBuffer = Buffer.from(await imgResponse.arrayBuffer());
+
+    const sharpImg = sharp(imageBuffer);
+    const webpBuffer = await sharpImg.webp({ quality: 90 }).toBuffer();
+
+    // Create Thumbnail
+    const thumbBuffer = await sharpImg
+        .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 80 })
+        .toBuffer();
+
+    // Create LQIP
+    const lqipBuffer = await sharpImg
+        .resize(20, 20, { fit: 'inside' })
+        .webp({ quality: 20 })
+        .toBuffer();
+    const lqip = `data:image/webp;base64,${lqipBuffer.toString('base64')}`;
+
+    // Upload to B2
+    const baseFolder = `generated/${userId}/transformed_${Date.now()}`;
+    const originalFilename = `${baseFolder}.webp`;
+    const thumbFilename = `${baseFolder}_thumb.webp`;
+
+    await Promise.all([
+        s3Client.send(new PutObjectCommand({
+            Bucket: B2_BUCKET,
+            Key: originalFilename,
+            Body: webpBuffer,
+            ContentType: "image/webp"
+        })),
+        s3Client.send(new PutObjectCommand({
+            Bucket: B2_BUCKET,
+            Key: thumbFilename,
+            Body: thumbBuffer,
+            ContentType: "image/webp"
+        }))
+    ]);
+
+    const finalImageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalFilename}`;
+    const finalThumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbFilename}`;
+
+    // Save to Firestore 'images' collection
+    const imageRef = await db.collection("images").add({
+        userId,
+        prompt: input.prompt,
+        aspectRatio: "match_input_image",
+        modelId: "google/nano-banana-pro",
+        imageUrl: finalImageUrl,
+        thumbnailUrl: finalThumbnailUrl,
+        lqip,
+        createdAt: new Date(),
+        type: 'restyled'
+    });
+
+    return {
+        imageUrl: finalImageUrl,
+        thumbnailUrl: finalThumbnailUrl,
+        lqip,
+        imageId: imageRef.id
+    };
 };
 
 // Queue Creation Handler
@@ -2316,11 +2349,13 @@ const handleTransformImage = async (request) => {
         console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
     }
     const { imageUrl, styleName, instructions, intensity } = request.data;
+    const uid = request.auth?.uid || 'anonymous';
+
     if (!imageUrl) throw new HttpsError('invalid-argument', "Image URL is required");
 
     try {
-        const newPrompt = await transformImageWithGemini(imageUrl, styleName, instructions, intensity);
-        return { prompt: newPrompt };
+        const result = await transformImageWithGemini(imageUrl, styleName, instructions, intensity, uid);
+        return result; // Returns { imageUrl, thumbnailUrl, lqip, imageId }
     } catch (error) {
         console.error("Transform Image Error:", error);
         throw new HttpsError('internal', "Failed to transform image", error.message);
