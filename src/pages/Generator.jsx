@@ -50,7 +50,7 @@ export default function Generator() {
 
     // Video State
     const [generationMode, setGenerationMode] = useState('image'); // 'image' | 'video'
-    const [videoDuration, setVideoDuration] = useState(5);
+    const [videoDuration, setVideoDuration] = useState(6);
     const [videoResolution, setVideoResolution] = useState('1080p');
     const [currentJobType, setCurrentJobType] = useState('image');
 
@@ -65,6 +65,9 @@ export default function Generator() {
 
     useEffect(() => {
         setIsCustomVideoPrompt(false);
+        if (generationMode === 'video') {
+            setActiveTab('advanced');
+        }
     }, [generationMode]);
 
     useEffect(() => {
@@ -94,21 +97,44 @@ export default function Generator() {
         setReferenceImage(imageUrl);
         setPrompt("Analyzing image..."); // Temporary placeholder
 
+        const MAX_RETRIES = 3;
+        let retries = 0;
+        let success = false;
+
         try {
             const api = httpsCallable(functions, 'api');
-            const videoResult = await api({
-                action: 'createVideoGenerationRequest',
-                autoPrompt: true,
-                image: imageUrl,
-                duration: videoDuration,
-                resolution: videoResolution,
-                aspectRatio: imgAspectRatio || aspectRatio
-            });
 
-            setCurrentJobId(videoResult.data.requestId);
+            while (retries < MAX_RETRIES && !success) {
+                try {
+                    const videoResult = await api({
+                        action: 'createVideoGenerationRequest',
+                        autoPrompt: true,
+                        image: imageUrl,
+                        duration: videoDuration,
+                        resolution: videoResolution,
+                        aspectRatio: imgAspectRatio || aspectRatio
+                    });
+
+                    setCurrentJobId(videoResult.data.requestId);
+                    success = true; // Exit loop on success
+                } catch (innerError) {
+                    console.error(`Video generation attempt ${retries + 1} failed:`, innerError);
+
+                    // Check if we should retry (internal error or generic failure)
+                    const isRetryable = innerError.message?.includes('internal') || innerError.code === 'internal';
+
+                    if (isRetryable && retries < MAX_RETRIES - 1) {
+                        retries++;
+                        await new Promise(resolve => setTimeout(resolve, 2000 * Math.pow(2, retries))); // Exponential backoff (2s, 4s...)
+                        console.log(`Retrying video generation (Attempt ${retries + 1})...`);
+                    } else {
+                        throw innerError; // Rethrow to outer catch if not retryable or max retries reached
+                    }
+                }
+            }
 
         } catch (error) {
-            console.error("Video generation error", error);
+            console.error("Video generation error final", error);
 
             let errorMessage = "Failed to animate image. Please try again.";
 
@@ -116,6 +142,8 @@ export default function Generator() {
                 errorMessage = "You already have a video generation in progress.";
             } else if (error.code === 'resource-exhausted') {
                 errorMessage = "Insufficient Reels balance.";
+            } else if (error.message?.includes('internal')) {
+                errorMessage = "Server error. Please try again later.";
             }
 
             toast.error(errorMessage);
@@ -917,30 +945,32 @@ export default function Generator() {
                             <Sliders size={16} /> PARAMETERS
                         </div>
 
-                        {/* Tabs */}
-                        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '4px', marginBottom: '24px' }}>
-                            {['simple', 'advanced'].map(tab => (
-                                <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab)}
-                                    style={{
-                                        flex: 1,
-                                        padding: '8px',
-                                        borderRadius: '8px',
-                                        background: activeTab === tab ? 'var(--color-accent-primary)' : 'transparent',
-                                        color: activeTab === tab ? 'white' : 'var(--color-text-muted)',
-                                        fontSize: '0.85rem',
-                                        fontWeight: '600',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        textTransform: 'capitalize',
-                                        transition: 'all 0.2s'
-                                    }}
-                                >
-                                    {tab}
-                                </button>
-                            ))}
-                        </div>
+                        {/* Tabs - Hidden in Video Mode */}
+                        {generationMode !== 'video' && (
+                            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '4px', marginBottom: '24px' }}>
+                                {['simple', 'advanced'].map(tab => (
+                                    <button
+                                        key={tab}
+                                        onClick={() => setActiveTab(tab)}
+                                        style={{
+                                            flex: 1,
+                                            padding: '8px',
+                                            borderRadius: '8px',
+                                            background: activeTab === tab ? 'var(--color-accent-primary)' : 'transparent',
+                                            color: activeTab === tab ? 'white' : 'var(--color-text-muted)',
+                                            fontSize: '0.85rem',
+                                            fontWeight: '600',
+                                            border: 'none',
+                                            cursor: 'pointer',
+                                            textTransform: 'capitalize',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        {tab}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                             {/* Model Selector Trigger */}
@@ -1051,104 +1081,6 @@ export default function Generator() {
                                         </div>
                                     </div>
 
-                                    {/* Video Mode: Bring to Life */}
-                                    {generationMode === 'video' && (
-                                        <div style={{ marginBottom: '24px' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                                <label className="setting-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: 0 }}>
-                                                    <Sparkles size={12} /> BRING TO LIFE
-                                                </label>
-                                                {referenceImage && (
-                                                    <button
-                                                        onClick={clearReferenceImage}
-                                                        style={{ fontSize: '0.7rem', color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                                                    >
-                                                        <Trash2 size={12} /> Clear
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                                                {/* 1. Upload Tile */}
-                                                <button
-                                                    onClick={() => setIsImagePickerOpen(true)}
-                                                    className="carousel-item"
-                                                    style={{
-                                                        aspectRatio: '1',
-                                                        borderRadius: '12px',
-                                                        border: '1px dashed var(--color-border)',
-                                                        background: 'rgba(255,255,255,0.02)',
-                                                        color: 'var(--color-text-muted)',
-                                                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                                        gap: '4px', cursor: 'pointer',
-                                                        transition: 'all 0.2s',
-                                                        position: 'relative',
-                                                        padding: 0
-                                                    }}
-                                                    title="Upload / Select Image"
-                                                >
-                                                    <Upload size={18} />
-                                                    <span style={{ fontSize: '0.65rem' }}>Upload</span>
-                                                </button>
-
-                                                {/* 2. Recent Images (Max 8) */}
-                                                {recentImages.slice(0, 8).map((img) => {
-                                                    const isSelected = referenceImage === img.imageUrl;
-                                                    const isAnalyzing = analyzingImageId === img.id;
-                                                    return (
-                                                        <button
-                                                            key={img.id}
-                                                            onClick={() => handleVideoAutoAnimate(img)}
-                                                            disabled={!!analyzingImageId}
-                                                            className="carousel-item"
-                                                            style={{
-                                                                aspectRatio: '1',
-                                                                borderRadius: '12px',
-                                                                overflow: 'hidden',
-                                                                border: isSelected ? '2px solid var(--color-accent-primary)' : '1px solid var(--color-border)',
-                                                                cursor: 'pointer',
-                                                                padding: 0,
-                                                                position: 'relative',
-                                                                transition: 'all 0.2s',
-                                                                background: '#000'
-                                                            }}
-                                                            title={img.prompt || "Animate this image"}
-                                                        >
-                                                            <img
-                                                                src={getOptimizedImageUrl(img.imageUrl)}
-                                                                alt=""
-                                                                style={{
-                                                                    width: '100%',
-                                                                    height: '100%',
-                                                                    objectFit: 'cover',
-                                                                    opacity: (isSelected || isAnalyzing) ? 1 : 0.7,
-                                                                    transition: 'opacity 0.2s'
-                                                                }}
-                                                            />
-                                                            <div className="hover-overlay" style={{
-                                                                position: 'absolute', inset: 0,
-                                                                background: 'rgba(0,0,0,0.4)',
-                                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                                opacity: 0, transition: 'opacity 0.2s',
-                                                                backdropFilter: 'blur(2px)'
-                                                            }}>
-                                                                <Video size={14} color="white" fill="white" />
-                                                            </div>
-                                                            {isAnalyzing && (
-                                                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}>
-                                                                    <Loader2 size={16} className="animate-spin" color="white" />
-                                                                </div>
-                                                            )}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginTop: '8px', lineHeight: '1.4' }}>
-                                                Select an image from history or upload a new one to animate.
-                                            </div>
-                                        </div>
-                                    )}
 
                                     {/* Image Mode: Styles */}
                                     {generationMode === 'image' && (
@@ -1208,15 +1140,41 @@ export default function Generator() {
                                                     <label className="setting-label">DURATION (SECONDS)</label>
                                                     <span style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'white' }}>{videoDuration}s</span>
                                                 </div>
-                                                <input type="range" min="5" max="10" step="1" value={videoDuration} onChange={(e) => setVideoDuration(parseInt(e.target.value))} />
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
-                                                    <span>5s</span>
-                                                    <span>10s</span>
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                                                    {[6, 8, 10].map((dur) => (
+                                                        <button
+                                                            key={dur}
+                                                            onClick={() => setVideoDuration(dur)}
+                                                            style={{
+                                                                padding: '10px',
+                                                                borderRadius: '8px',
+                                                                border: videoDuration === dur ? '1px solid var(--color-accent-primary)' : '1px solid var(--color-border)',
+                                                                background: videoDuration === dur ? 'rgba(var(--color-accent-rgb), 0.1)' : 'rgba(255,255,255,0.02)',
+                                                                color: videoDuration === dur ? 'var(--color-accent-primary)' : 'var(--color-text-muted)',
+                                                                cursor: 'pointer',
+                                                                fontSize: '0.9rem',
+                                                                fontWeight: '600',
+                                                                transition: 'all 0.2s'
+                                                            }}
+                                                        >
+                                                            {dur}s
+                                                        </button>
+                                                    ))}
                                                 </div>
                                             </div>
 
                                             <div>
-                                                <label className="setting-label">RESOLUTION</label>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                    <label className="setting-label">RESOLUTION</label>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        <div className="tooltip-container" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                                            <HelpCircle size={12} color="var(--color-text-muted)" style={{ cursor: 'help' }} />
+                                                            <div className="tooltip-content">
+                                                                Higher resolutions consume more reels and take longer to generate.
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '8px' }}>
                                                     {['1080p', '2k', '4k'].map(res => (
                                                         <button
@@ -1236,6 +1194,75 @@ export default function Generator() {
                                                             {res}
                                                         </button>
                                                     ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Bring to Life (Moved to Advanced for Video) */}
+                                            <div style={{ marginTop: '12px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                                    <label className="setting-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: 0 }}>
+                                                        <Sparkles size={12} /> BRING TO LIFE
+                                                    </label>
+                                                    {referenceImage && (
+                                                        <button
+                                                            onClick={clearReferenceImage}
+                                                            style={{ fontSize: '0.7rem', color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                                        >
+                                                            <Trash2 size={12} /> Clear
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                                                    <button
+                                                        onClick={() => setIsImagePickerOpen(true)}
+                                                        className="carousel-item"
+                                                        style={{
+                                                            aspectRatio: '1',
+                                                            borderRadius: '12px',
+                                                            border: '1px dashed var(--color-border)',
+                                                            background: 'rgba(255,255,255,0.02)',
+                                                            color: 'var(--color-text-muted)',
+                                                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                                                            gap: '4px', cursor: 'pointer',
+                                                            transition: 'all 0.2s',
+                                                            position: 'relative',
+                                                            padding: 0
+                                                        }}
+                                                    >
+                                                        <Upload size={18} />
+                                                        <span style={{ fontSize: '0.65rem' }}>Upload</span>
+                                                    </button>
+                                                    {recentImages.slice(0, 8).map((img) => {
+                                                        const isSelected = referenceImage === img.imageUrl;
+                                                        const isAnalyzing = analyzingImageId === img.id;
+                                                        return (
+                                                            <button
+                                                                key={img.id}
+                                                                onClick={() => handleVideoAutoAnimate(img)}
+                                                                disabled={!!analyzingImageId}
+                                                                className="carousel-item"
+                                                                style={{
+                                                                    aspectRatio: '1',
+                                                                    borderRadius: '12px',
+                                                                    overflow: 'hidden',
+                                                                    border: isSelected ? '2px solid var(--color-accent-primary)' : '1px solid var(--color-border)',
+                                                                    cursor: 'pointer',
+                                                                    padding: 0,
+                                                                    position: 'relative',
+                                                                    transition: 'all 0.2s',
+                                                                    background: '#000'
+                                                                }}
+                                                            >
+                                                                <img src={getOptimizedImageUrl(img.imageUrl)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: (isSelected || isAnalyzing) ? 1 : 0.7 }} />
+                                                                {isAnalyzing && (
+                                                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}>
+                                                                        <Loader2 size={16} className="animate-spin" color="white" />
+                                                                    </div>
+                                                                )}
+                                                            </button>
+                                                        );
+                                                    })}
                                                 </div>
                                             </div>
                                         </div>
