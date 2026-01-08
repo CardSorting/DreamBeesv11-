@@ -3,7 +3,7 @@ import SEO from '../components/SEO';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
 import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight, X, Download, Copy, RefreshCw, ThumbsUp, ThumbsDown } from 'lucide-react';
-import { getOptimizedImageUrl } from '../utils';
+import { getOptimizedImageUrl, getLCPAttributes, getImageSrcSet } from '../utils';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -276,7 +276,8 @@ export default function ModelDetail() {
                             scheduler: doc.scheduler,
                             aspectRatio: doc.aspectRatio,
                             rating: doc.rating,
-                            id: doc.id
+                            id: doc.id,
+                            thumbnailUrl: doc.thumbnailUrl ? getOptimizedImageUrl(doc.thumbnailUrl) : null
                         };
                     });
 
@@ -313,10 +314,10 @@ export default function ModelDetail() {
                     // Also optimize all URLs to use CDN
                     let normalizedSeeds = seeds.map(s => {
                         const base = typeof s === 'string' ? { url: s } : s;
-                        return { 
-                            ...base, 
+                        return {
+                            ...base,
                             url: getOptimizedImageUrl(base.url || base.imageUrl || s),
-                            isCurated: true 
+                            isCurated: true
                         };
                     });
 
@@ -392,7 +393,7 @@ export default function ModelDetail() {
         .filter(img => {
             // Ensure valid image
             if (!img || !img.url || typeof img.url !== 'string' || img.url.length <= 5) return false;
-            
+
             // Show all valid images regardless of creator
             return true;
         })
@@ -609,8 +610,11 @@ export default function ModelDetail() {
                                     <div className="image-card">
                                         <div className="image-wrapper" style={{ aspectRatio: ratio }}>
                                             <img
-                                                src={getOptimizedImageUrl(imgItem.url || imgItem.imageUrl || (typeof imgItem === 'string' ? imgItem : ''))}
+                                                src={getOptimizedImageUrl(imgItem.thumbnailUrl || imgItem.url || imgItem.imageUrl || (typeof imgItem === 'string' ? imgItem : ''))}
+                                                srcset={getImageSrcSet(imgItem)}
+                                                sizes="(max-width: 500px) 50vw, (max-width: 1200px) 25vw, 20vw"
                                                 alt={`Showcase generation: ${imgItem.prompt ? imgItem.prompt.slice(0, 50) + "..." : "AI Artwork"}`}
+                                                {...getLCPAttributes(index, 6)}
                                             />
                                             {/* Standard Tile Overlay */}
                                             <div style={{

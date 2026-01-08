@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
-import { getOptimizedImageUrl } from '../utils';
+import { getOptimizedImageUrl, getLCPAttributes } from '../utils';
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 
 const getTimeAgo = (timestamp) => {
@@ -163,9 +163,9 @@ export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt
                             whileHover={{ y: -4, boxShadow: '0 10px 20px rgba(0,0,0,0.5)' }}
                         >
                             <img
-                                src={getOptimizedImageUrl(job.imageUrl)}
+                                src={getOptimizedImageUrl(job.thumbnailUrl || job.imageUrl)}
                                 alt={`Previously generated image: ${job.prompt}`}
-                                loading="lazy"
+                                {...getLCPAttributes(history.indexOf(job), 5)}
                                 style={{
                                     width: '100%',
                                     height: '100%',

@@ -1,11 +1,11 @@
 
 export const getOptimizedImageUrl = (url) => {
     if (!url) return url;
-    
+
     // Handle relative URLs - if they're showcase images, they should stay relative
     // Otherwise, ensure they're absolute URLs
     if (typeof url !== 'string') return url;
-    
+
     // Already a CDN URL - ensure it has the correct bucket path
     if (url.startsWith('https://cdn.dreambeesai.com')) {
         // Fix malformed CDN URLs that are missing the bucket path
@@ -22,7 +22,7 @@ export const getOptimizedImageUrl = (url) => {
         }
         return url;
     }
-    
+
     // Check if it's a raw Backblaze B2 public URL - convert to CDN
     if (url.includes('backblazeb2.com')) {
         // Replace any B2 endpoint with CDN
@@ -35,7 +35,7 @@ export const getOptimizedImageUrl = (url) => {
             return url.replace('https://f005.backblazeb2.com', 'https://cdn.dreambeesai.com');
         }
     }
-    
+
     // Check if it's a B2 public URL without the file path
     if (url.includes('backblazeb2.com') && !url.includes('/file/')) {
         // Extract the path and prepend the bucket
@@ -43,7 +43,7 @@ export const getOptimizedImageUrl = (url) => {
         const path = urlObj.pathname;
         return `https://cdn.dreambeesai.com/file/printeregg${path}`;
     }
-    
+
     // For generated images that might be in B2, ensure CDN
     if (url.includes('/generated/') && !url.includes('cdn.dreambeesai.com') && !url.startsWith('/')) {
         // This might be a B2 URL, try to convert
@@ -60,14 +60,40 @@ export const getOptimizedImageUrl = (url) => {
             }
         }
     }
-    
+
     // Return relative URLs as-is (for local showcase images)
     if (url.startsWith('/')) {
         return url;
     }
-    
+
     return url;
 };
+
+/**
+ * Generates LCP-optimized attributes for an image based on its index
+ * @param {number} index - The position of the image in a grid
+ * @param {number} threshold - Number of items to prioritize (default 4)
+ */
+export const getLCPAttributes = (index, threshold = 4) => {
+    const isPriority = index < threshold;
+    return {
+        loading: isPriority ? "eager" : "lazy",
+        fetchpriority: isPriority ? "high" : "auto",
+        decoding: isPriority ? "sync" : "async"
+    };
+};
+
+/**
+ * Generates a srcset string for an image if a thumbnail is available
+ */
+export const getImageSrcSet = (img) => {
+    if (!img || !img.imageUrl) return undefined;
+    if (img.thumbnailUrl) {
+        return `${getOptimizedImageUrl(img.thumbnailUrl)} 512w, ${getOptimizedImageUrl(img.imageUrl)} 1024w`;
+    }
+    return undefined;
+};
+
 const RANDOM_PROMPTS = [
     "A futuristic city with neon lights reflecting on wet pavement, cybernetic citizens walking, towering skyscrapers, cinematic lighting, 8k resolution.",
     "A serene japanese garden with cherry blossoms falling, a koi pond, traditional architecture, soft sunlight, highly detailed.",

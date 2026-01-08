@@ -7,6 +7,7 @@ import { getFunctions } from "firebase-admin/functions";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { createCheckoutSession, constructWebhookEvent, createPortalSession } from "./stripeHelpers.js";
 import Replicate from "replicate";
+import sharp from "sharp";
 
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
@@ -103,18 +104,63 @@ export const processImageTask = onTaskDispatched(
                 buffer = Buffer.from(await resp.arrayBuffer());
             }
 
+            // Process Image with Sharp
+            const sharpImg = sharp(buffer);
+
+            // 1. Convert Original to WebP
+            const webpBuffer = await sharpImg.webp({ quality: 90 }).toBuffer();
+
+            // 2. Create Thumbnail (e.g., 512px width)
+            const thumbBuffer = await sharpImg
+                .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
+                .webp({ quality: 80 })
+                .toBuffer();
+
             // Upload to B2
-            const filename = `generated/${userId}/${Date.now()}.png`;
-            await s3Client.send(new PutObjectCommand({ Bucket: B2_BUCKET, Key: filename, Body: buffer, ContentType: "image/png" }));
-            const imageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${filename}`;
+            const baseFolder = `generated/${userId}/${Date.now()}`;
+            const originalFilename = `${baseFolder}.webp`;
+            const thumbFilename = `${baseFolder}_thumb.webp`;
+
+            // Parallel upload
+            await Promise.all([
+                s3Client.send(new PutObjectCommand({
+                    Bucket: B2_BUCKET,
+                    Key: originalFilename,
+                    Body: webpBuffer,
+                    ContentType: "image/webp"
+                })),
+                s3Client.send(new PutObjectCommand({
+                    Bucket: B2_BUCKET,
+                    Key: thumbFilename,
+                    Body: thumbBuffer,
+                    ContentType: "image/webp"
+                }))
+            ]);
+
+            const imageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalFilename}`;
+            const thumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbFilename}`;
 
             // Save result
             const imageRef = await db.collection("images").add({
-                userId, prompt, negative_prompt, steps, cfg, aspectRatio, modelId, imageUrl, createdAt: new Date(), originalRequestId: requestId
+                userId,
+                prompt,
+                negative_prompt,
+                steps,
+                cfg,
+                aspectRatio,
+                modelId,
+                imageUrl,
+                thumbnailUrl, // Add thumbnail URL
+                createdAt: new Date(),
+                originalRequestId: requestId
             });
 
             await docRef.update({
-                status: "completed", imageUrl, completedAt: new Date(), resultImageId: imageRef.id
+                status: "completed",
+                imageUrl,
+                thumbnailUrl, // Update queue doc too
+                completedAt: new Date(),
+                resultImageId: imageRef.id
             });
 
         } catch (error) {
