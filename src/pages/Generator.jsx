@@ -55,7 +55,7 @@ export default function Generator() {
 
     // Video State
     const [generationMode, setGenerationMode] = useState('image'); // 'image' | 'video'
-    const [magicMode, setMagicMode] = useState(false); // Magic Auto-Enhance Mode
+
     const [videoDuration, setVideoDuration] = useState(6);
     const [videoResolution, setVideoResolution] = useState('1080p');
     const [currentJobType, setCurrentJobType] = useState('image');
@@ -471,54 +471,8 @@ export default function Generator() {
                 let finalPrompt = prompt;
                 let finalNegativePrompt = negPrompt;
 
-                // Magic Mode: Transform Prompt First
-                if (magicMode && activeStyleId) {
-                    try {
-                        const styleObj = STYLE_REGISTRY.find(s => s.id === activeStyleId);
-                        if (styleObj && styleObj.instruction) {
+                // Magic Mode Auto-Transform logic removed in favor of explicit "Enhance" button workflow.
 
-                            // Vision Transform (if no prompt but image exists OR if user specifically wants image-based rewrite)
-                            // We prioritize Vision if referenceImage is set in Magic Mode
-                            if (referenceImage) {
-                                toast.loading(`Magic Vision Restyling...`, { id: 'magic-gen', duration: 8000 });
-                                const transformResult = await api({
-                                    action: 'transformImage',
-                                    imageUrl: referenceImage, // Can be URL or Base64
-                                    styleName: styleObj.label,
-                                    intensity: styleIntensity,
-                                    instructions: styleObj.instruction
-                                });
-
-                                if (transformResult.data.prompt) {
-                                    finalPrompt = transformResult.data.prompt;
-                                    setPrompt(finalPrompt);
-                                    toast.success("Prompt generated from image!", { id: 'magic-gen' });
-                                }
-                            }
-                            // Text Transform (Classic)
-                            else if (prompt) {
-                                toast.loading(`Magic rewriting prompt...`, { id: 'magic-gen', duration: 3000 });
-                                const transformResult = await api({
-                                    action: 'transformPrompt',
-                                    prompt: prompt,
-                                    styleName: styleObj.label,
-                                    intensity: styleIntensity,
-                                    instructions: styleObj.instruction
-                                });
-
-                                if (transformResult.data.prompt) {
-                                    finalPrompt = transformResult.data.prompt;
-                                    setPrompt(finalPrompt);
-                                    toast.success("Prompt rewritten!", { id: 'magic-gen' });
-                                }
-                            }
-                        }
-                    } catch (err) {
-                        console.error("Magic transform failed, falling back to tags", err);
-                        toast.error("Magic rewrite failed, using standard style tags", { id: 'magic-gen' });
-                        // Fallback proceeds below...
-                    }
-                }
 
                 // Apply Style Registry (Tags Only - Safe Mode / Reinforcement)
                 if (activeStyleId) {
@@ -981,22 +935,35 @@ export default function Generator() {
                                                     {isAutoPrompting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                                                 </button>
                                             )}
-                                            <button
-                                                onClick={handleMagicEnhance}
-                                                className={`btn-ghost ${isEnhancing ? 'animate-pulse' : ''}`}
-                                                title={activeStyleId ? "Rewrite prompt in current Style (Gemini)" : "Magic Enhance with Gemini"}
-                                                disabled={isEnhancing}
-                                                style={{
-                                                    padding: '8px',
-                                                    borderRadius: '8px',
-                                                    color: activeStyleId ? '#ffffff' : 'var(--color-accent-primary)',
-                                                    background: activeStyleId ? 'var(--color-accent-primary)' : 'transparent',
-                                                    boxShadow: activeStyleId ? '0 0 15px rgba(var(--color-accent-rgb), 0.4)' : 'none',
-                                                    transition: 'all 0.2s'
-                                                }}
-                                            >
-                                                {isEnhancing ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
-                                            </button>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <button
+                                                    onClick={handleMagicEnhance}
+                                                    className={`btn-secondary ${isEnhancing ? 'animate-pulse' : ''}`}
+                                                    title={activeStyleId ? "Rewrite prompt in current Style (Gemini)" : "Magic Enhance with Gemini"}
+                                                    disabled={isEnhancing || (!prompt && !referenceImage)}
+                                                    style={{
+                                                        padding: '8px 12px',
+                                                        borderRadius: '8px',
+                                                        color: activeStyleId ? '#ffffff' : 'var(--color-accent-primary)',
+                                                        background: activeStyleId ? 'var(--color-accent-primary)' : 'rgba(var(--color-accent-rgb), 0.1)',
+                                                        border: activeStyleId ? 'none' : '1px solid var(--color-accent-primary)',
+                                                        transition: 'all 0.2s',
+                                                        display: 'flex', alignItems: 'center', gap: '6px',
+                                                        fontSize: '0.8rem', fontWeight: '600'
+                                                    }}
+                                                >
+                                                    {isEnhancing ? <Loader2 size={14} className="animate-spin" /> : <Wand2 size={14} />}
+                                                    {activeStyleId ? "Apply Style" : "Enhance"}
+                                                </button>
+                                                <div className="tooltip-container" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                                    <HelpCircle size={14} color="var(--color-text-muted)" style={{ cursor: 'help' }} />
+                                                    <div className="tooltip-content" style={{ width: '180px', bottom: '100%', marginBottom: '10px', right: '-10px' }}>
+                                                        {activeStyleId
+                                                            ? "Rewrite your prompt to match the selected style."
+                                                            : "Use Gemini AI to enhance your prompt with better details."}
+                                                    </div>
+                                                </div>
+                                            </div>
 
                                             <button
                                                 onClick={() => {
@@ -1038,24 +1005,7 @@ export default function Generator() {
                                         </div>
                                         <div style={{ display: 'flex', gap: '8px' }}>
                                             {/* Magic Mode Toggle */}
-                                            {!generating && generationMode === 'image' && activeStyleId && (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '0 8px', borderRadius: '8px', border: magicMode ? '1px solid var(--color-accent-primary)' : '1px solid transparent', transition: 'all 0.2s' }}>
-                                                    <span style={{ fontSize: '0.75rem', color: magicMode ? 'var(--color-accent-primary)' : 'var(--color-text-muted)', fontWeight: '600' }}>Magic Mode</span>
-                                                    <button
-                                                        onClick={e => { e.stopPropagation(); setMagicMode(!magicMode); }}
-                                                        style={{
-                                                            width: '32px', height: '18px', background: magicMode ? 'var(--color-accent-primary)' : 'rgba(255,255,255,0.2)',
-                                                            borderRadius: '10px', position: 'relative', border: 'none', cursor: 'pointer', transition: 'background 0.2s'
-                                                        }}
-                                                        title="Automatically rewrite prompt with selected style before generating"
-                                                    >
-                                                        <div style={{
-                                                            width: '14px', height: '14px', background: 'white', borderRadius: '50%',
-                                                            position: 'absolute', top: '2px', left: magicMode ? '16px' : '2px', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
-                                                        }} />
-                                                    </button>
-                                                </div>
-                                            )}
+
 
                                             <button
                                                 onClick={handleGenerate}
@@ -1071,7 +1021,7 @@ export default function Generator() {
                                                     color: 'white',
                                                     cursor: generating || (!prompt && !referenceImage) ? 'not-allowed' : 'pointer',
                                                     opacity: generating || (!prompt && !referenceImage) ? 0.7 : 1,
-                                                    boxShadow: magicMode && activeStyleId && !generating ? '0 0 20px rgba(var(--color-accent-rgb), 0.5)' : '0 0 20px rgba(var(--color-accent-rgb), 0.3)',
+                                                    boxShadow: '0 0 20px rgba(var(--color-accent-rgb), 0.3)',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     gap: '8px',
@@ -1080,8 +1030,8 @@ export default function Generator() {
                                             >
                                                 {generating ? <Loader2 className="animate-spin" size={18} /> : (
                                                     <>
-                                                        {magicMode && activeStyleId ? <Wand2 size={18} fill="currentColor" className="animate-pulse" /> : <Sparkles size={18} style={{ fill: 'currentColor' }} />}
-                                                        {magicMode && activeStyleId ? 'Magic Generate' : 'Generate'}
+                                                        <Sparkles size={18} style={{ fill: 'currentColor' }} />
+                                                        {activeStyleId ? 'Restyle' : 'Generate'}
                                                     </>
                                                 )}
                                             </button>
@@ -1114,7 +1064,6 @@ export default function Generator() {
                                 // Reset text states
                                 setPrompt("");
                                 setReferenceImage(null);
-                                setMagicMode(true);
                                 setGenerationMode('image');
 
                                 // Load Image as Reference (Get optimized/cached URL if poss)
@@ -1133,7 +1082,7 @@ export default function Generator() {
                                         // Simplest: Just use the URL string.
                                         setReferenceImage(imageUrl);
 
-                                        toast.success("Image loaded! Select a style & Magic Generate.", { icon: '🪄' });
+                                        toast.success("Image loaded! Select a style & Restyle.", { icon: '🪄' });
                                         window.scrollTo({ top: 0, behavior: 'smooth' });
                                     } catch (e) {
                                         console.error("Failed to load image for restyle", e);
