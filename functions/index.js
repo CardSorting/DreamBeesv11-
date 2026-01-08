@@ -2096,7 +2096,7 @@ const transformImageWithGemini = async (imageUrl, styleName, instructions, inten
             "X-Title": "DreamBees"
         },
         body: JSON.stringify({
-            model: "google/gemini-2.5-flash", // Flash supports vision
+            model: "google/gemini-3-pro-image-preview", // Updated to Gemini 3.0 Pro Image Preview
             messages: [
                 {
                     role: "user",
