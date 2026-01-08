@@ -73,7 +73,7 @@ async function fetchWithTimeout(resource, options = {}) {
  */
 async function verifyB2FilesExist(originalFilename, thumbFilename) {
     const result = { imageUrl: null, thumbnailUrl: null };
-    
+
     try {
         // Check original image
         if (originalFilename) {
@@ -92,7 +92,7 @@ async function verifyB2FilesExist(originalFilename, thumbFilename) {
                 }
             }
         }
-        
+
         // Check thumbnail
         if (thumbFilename) {
             try {
@@ -113,7 +113,7 @@ async function verifyB2FilesExist(originalFilename, thumbFilename) {
     } catch (error) {
         console.error(`[B2 Verification] Unexpected error during verification: ${error.message}`);
     }
-    
+
     return result;
 }
 
@@ -129,7 +129,7 @@ export const processImageTask = onTaskDispatched(
         const { requestId, userId, prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler } = req.data;
         const db = getFirestore();
         const docRef = db.collection("generation_queue").doc(requestId);
-        
+
         // Track filenames for recovery in case of timeout
         let originalFilename = null;
         let thumbFilename = null;
@@ -193,7 +193,7 @@ export const processImageTask = onTaskDispatched(
             const contentType = response.headers.get("content-type") || "";
             const contentLength = response.headers.get("content-length");
             const allHeaders = Object.fromEntries(response.headers.entries());
-            
+
             console.log(`[${requestId}] Response received from Modal:`);
             console.log(`  Status: ${response.status}`);
             console.log(`  Content-Type: ${contentType || '(missing)'}`);
@@ -216,7 +216,7 @@ export const processImageTask = onTaskDispatched(
                     return 'image/jpeg';
                 }
                 // WebP: RIFF...WEBP
-                if (buffer.length >= 12 && 
+                if (buffer.length >= 12 &&
                     buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
                     buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
                     return 'image/webp';
@@ -249,7 +249,7 @@ export const processImageTask = onTaskDispatched(
                 // Step 1: Read first bytes to detect format early (using a clone to avoid consuming main response)
                 console.log(`[${requestId}] Reading first bytes for format detection...`);
                 const firstBytes = await readFirstBytes(firstBytesClone, 12);
-                
+
                 if (!firstBytes || firstBytes.length === 0) {
                     throw new Error("Response body is empty");
                 }
@@ -285,10 +285,10 @@ export const processImageTask = onTaskDispatched(
                         const jsonPreview = JSON.stringify(jsonData).substring(0, 200);
                         console.log(`[${requestId}] JSON preview: ${jsonPreview}...`);
                         responsePreview = jsonPreview;
-                    
+
                         // Check for base64 image in common fields
                         let base64Image = jsonData.image || jsonData.data || jsonData.output || jsonData.result;
-                        
+
                         if (typeof base64Image === 'string') {
                             // Handle base64 strings (with or without data URI prefix)
                             if (base64Image.startsWith('data:')) {
@@ -353,7 +353,7 @@ export const processImageTask = onTaskDispatched(
                     } catch (jsonError) {
                         console.warn(`[${requestId}] JSON parsing failed or no image in JSON, attempting fallback to raw image parsing...`);
                         console.warn(`[${requestId}] JSON error: ${jsonError.message}`);
-                        
+
                         // Fallback: Try processing as raw image bytes
                         // Note: We need to use the original response since clonedResponse was consumed by json()
                         const fallbackResponse = response.clone();
@@ -363,7 +363,7 @@ export const processImageTask = onTaskDispatched(
                         }
                         const tempBuffer = Buffer.from(arrayBuffer);
                         const fallbackFormat = detectImageFormat(tempBuffer);
-                        
+
                         if (fallbackFormat) {
                             console.log(`[${requestId}] Fallback successful: Detected image format ${fallbackFormat}`);
                             imageBuffer = tempBuffer;
@@ -392,7 +392,7 @@ export const processImageTask = onTaskDispatched(
                     }
                     const tempBuffer = Buffer.from(arrayBuffer);
                     const detectedFormat2 = detectImageFormat(tempBuffer);
-                    
+
                     if (detectedFormat2) {
                         console.log(`[${requestId}] Detected image format by magic bytes: ${detectedFormat2}`);
                         imageBuffer = tempBuffer;
@@ -444,7 +444,7 @@ export const processImageTask = onTaskDispatched(
                 console.error(`[${requestId}] Response status: ${response.status}`);
                 console.error(`[${requestId}] Response content-type: ${contentType || '(missing)'}`);
                 console.error(`[${requestId}] Response processed flag: ${responseProcessed}`);
-                
+
                 // Always try to log response preview for diagnostics
                 try {
                     // Use cloned response if available, otherwise clone original
@@ -452,7 +452,7 @@ export const processImageTask = onTaskDispatched(
                     const textPreview = await previewResponse.text();
                     const previewLength = Math.min(500, textPreview.length);
                     console.error(`[${requestId}] Response preview (first ${previewLength} chars): ${textPreview.substring(0, previewLength)}`);
-                    
+
                     // Also try to show first bytes as hex
                     if (textPreview.length > 0) {
                         const firstBytesHex = Array.from(Buffer.from(textPreview.substring(0, 12), 'utf-8'))
@@ -467,7 +467,7 @@ export const processImageTask = onTaskDispatched(
                         console.error(`[${requestId}] Cached response preview: ${responsePreview}`);
                     }
                 }
-                
+
                 throw new Error(`Failed to process Modal response: ${error.message}`);
             }
 
@@ -560,8 +560,8 @@ export const processImageTask = onTaskDispatched(
             const errorMessageLower = (error.message || '').toLowerCase();
             const errorNameLower = (error.name || '').toLowerCase();
             const errorStackLower = (error.stack || '').toLowerCase();
-            
-            const isTimeoutError = 
+
+            const isTimeoutError =
                 error.name === 'AbortError' ||
                 error.code === 'DEADLINE_EXCEEDED' ||
                 error.code === 'ABORTED' ||
@@ -585,7 +585,7 @@ export const processImageTask = onTaskDispatched(
 
             try {
                 console.log(`[${requestId}] Starting recovery process...`);
-                
+
                 // Step 1: Check Firestore queue document status
                 const queueDoc = await docRef.get();
                 if (!queueDoc.exists) {
@@ -593,7 +593,7 @@ export const processImageTask = onTaskDispatched(
                 } else {
                     const queueData = queueDoc.data();
                     console.log(`[${requestId}] Recovery: Queue document status: ${queueData.status}, has imageUrl: ${!!queueData.imageUrl}`);
-                    
+
                     // Case 1: Image URL exists in Firestore but status isn't completed
                     if (queueData.imageUrl && queueData.status !== 'completed') {
                         recoveryAttempted = true;
@@ -609,7 +609,7 @@ export const processImageTask = onTaskDispatched(
                     else if (!queueData.imageUrl && imageUrl && thumbnailUrl) {
                         recoveryAttempted = true;
                         console.log(`[${requestId}] Recovery: Case 2 - Saving image from memory URLs to Firestore...`);
-                        
+
                         // Save result to images collection
                         const imageRef = await db.collection("images").add({
                             userId,
@@ -625,7 +625,7 @@ export const processImageTask = onTaskDispatched(
                             createdAt: new Date(),
                             originalRequestId: requestId
                         });
-                        
+
                         // Update queue document
                         await docRef.update({
                             status: "completed",
@@ -635,7 +635,7 @@ export const processImageTask = onTaskDispatched(
                             completedAt: new Date(),
                             resultImageId: imageRef.id
                         });
-                        
+
                         recoverySucceeded = true;
                         console.log(`[${requestId}] Recovery: Case 2 SUCCESS - Image saved to Firestore from memory URLs`);
                     }
@@ -643,20 +643,20 @@ export const processImageTask = onTaskDispatched(
                     else if (!imageUrl && originalFilename && thumbFilename) {
                         recoveryAttempted = true;
                         console.log(`[${requestId}] Recovery: Case 3 - No URLs in memory, verifying files in B2...`);
-                        
+
                         const b2Verification = await verifyB2FilesExist(originalFilename, thumbFilename);
-                        
+
                         if (b2Verification.imageUrl && b2Verification.thumbnailUrl) {
                             console.log(`[${requestId}] Recovery: Case 3 - B2 verification SUCCESS, files exist. Saving to Firestore...`);
-                            
+
                             // Reconstruct imageUrl and thumbnailUrl from B2 verification
                             imageUrl = b2Verification.imageUrl;
                             thumbnailUrl = b2Verification.thumbnailUrl;
-                            
+
                             // Get queue data again to check if imageUrl was set meanwhile
                             const queueDocRecheck = await docRef.get();
                             const queueDataRecheck = queueDocRecheck.exists ? queueDocRecheck.data() : {};
-                            
+
                             // Only save if still not in Firestore
                             if (!queueDataRecheck.imageUrl) {
                                 // Save result to images collection
@@ -674,7 +674,7 @@ export const processImageTask = onTaskDispatched(
                                     createdAt: new Date(),
                                     originalRequestId: requestId
                                 });
-                                
+
                                 // Update queue document
                                 await docRef.update({
                                     status: "completed",
@@ -684,7 +684,7 @@ export const processImageTask = onTaskDispatched(
                                     completedAt: new Date(),
                                     resultImageId: imageRef.id
                                 });
-                                
+
                                 recoverySucceeded = true;
                                 console.log(`[${requestId}] Recovery: Case 3 SUCCESS - Image verified in B2 and saved to Firestore`);
                             } else {
@@ -719,13 +719,13 @@ export const processImageTask = onTaskDispatched(
                 console.error(`[${requestId}] Recovery error details - name: ${recoveryError.name}, message: ${recoveryError.message}`);
                 recoverySucceeded = false;
             }
-            
+
             // If recovery succeeded, exit early without refunding or marking as failed
             if (recoverySucceeded) {
                 console.log(`[${requestId}] Recovery completed successfully. Exiting without refund or failure status.`);
                 return;
             }
-            
+
             // Log recovery failure
             if (recoveryAttempted) {
                 console.warn(`[${requestId}] Recovery was attempted but did not succeed. Proceeding with error handling.`);
@@ -1941,7 +1941,7 @@ Character specificity: Include age, ethnicity, distinguishing features, clothing
             "X-Title": "DreamBees"
         },
         body: JSON.stringify({
-            model: "google/gemini-3-flash-preview",
+            model: "google/gemini-2.5-flash",
             messages: [
                 {
                     role: "user",
@@ -2023,6 +2023,92 @@ const handleGenerateVideoPrompt = async (request) => {
         throw new HttpsError('internal', error.message);
     }
 };
+
+// Helper for Gemini Prompt Enhancement
+const enhancePromptWithGemini = async (prompt) => {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) throw new Error("OPENROUTER_API_KEY is not set");
+
+    const response = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://dreambeesai.com",
+            "X-Title": "DreamBees"
+        },
+        body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+                {
+                    role: "system",
+                    content: "You are an expert AI art prompt engineer specializing in Stable Diffusion XL (SDXL). Enhance the user's prompt with high-quality descriptors for lighting, composition, texture, and artistic style. Use format: 'Subject description, art style, lighting, camera details, additional tags'. Keep it concise but potent. Return ONLY the enhanced prompt."
+                },
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ]
+        })
+    });
+
+    if (!response.ok) {
+        const err = await response.text();
+        throw new Error(`OpenRouter Error: ${err}`);
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || prompt;
+};
+
+// Queue Creation Handler
+const handleCreateEnhanceRequest = async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
+
+    const { prompt } = request.data;
+    if (!prompt) throw new HttpsError('invalid-argument', "Prompt is required");
+
+    try {
+        const docRef = await db.collection('enhance_queue').add({
+            userId: uid,
+            originalPrompt: prompt,
+            status: 'queued',
+            createdAt: new Date()
+        });
+        return { requestId: docRef.id };
+    } catch (error) {
+        console.error("Enhance Request Error:", error);
+        throw new HttpsError('internal', "Failed to create enhance request");
+    }
+};
+
+// Queue Trigger
+export const onEnhanceQueueCreated = onDocumentCreated("enhance_queue/{requestId}", async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) return;
+
+    const data = snapshot.data();
+    const requestId = event.params.requestId;
+
+    try {
+        await snapshot.ref.update({ status: 'processing' });
+
+        const enhancedPrompt = await enhancePromptWithGemini(data.originalPrompt);
+
+        await snapshot.ref.update({
+            status: 'completed',
+            prompt: enhancedPrompt,
+            completedAt: new Date()
+        });
+    } catch (error) {
+        console.error(`Enhance failed for ${requestId}:`, error);
+        await snapshot.ref.update({
+            status: 'failed',
+            error: error.message
+        });
+    }
+});
 
 const handleCreateVideoGenerationRequest = async (request) => {
     const uid = request.auth?.uid;
@@ -2126,6 +2212,7 @@ export const api = onCall(async (request) => {
             case 'createAnalysisRequest': return handleCreateAnalysisRequest(request);
             case 'createStripeCheckout': return handleCreateStripeCheckout(request);
             case 'createStripePortalSession': return handleCreateStripePortalSession(request);
+            case 'createEnhanceRequest': return handleCreateEnhanceRequest(request);
             case 'generateVideoPrompt': return handleGenerateVideoPrompt(request);
             case 'getGenerationHistory': return handleGetGenerationHistory(request);
             case 'getImageDetail': return handleGetImageDetail(request);

@@ -9,11 +9,13 @@ import { doc, onSnapshot, collection, query, where, orderBy, limit } from 'fireb
 import { httpsCallable } from 'firebase/functions';
 import { useAuth } from '../contexts/AuthContext';
 
-import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, ChevronDown, ChevronUp, Mic, MicOff, Zap, AlertCircle, Share2, Maximize2, Dices, X, Wand2, Monitor, Smartphone, LayoutTemplate, Square, RectangleHorizontal, RectangleVertical, HelpCircle, ThumbsUp, ThumbsDown, Film, Video, Paperclip, Upload, Type } from 'lucide-react';
+import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, ChevronDown, ChevronUp, Mic, MicOff, Zap, AlertCircle, Share2, Maximize2, X, Wand2, Monitor, Smartphone, LayoutTemplate, Square, RectangleHorizontal, RectangleVertical, HelpCircle, ThumbsUp, ThumbsDown, Film, Video, Paperclip, Upload, Type } from 'lucide-react';
 
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { getOptimizedImageUrl, getRandomPrompt, getEnhancedPrompt } from '../utils';
+import { getOptimizedImageUrl } from '../utils';
+
+const api = httpsCallable(functions, 'api');
 
 
 export default function Generator() {
@@ -61,6 +63,43 @@ export default function Generator() {
     // Video Gallery State
     const [recentImages, setRecentImages] = useState([]);
     const [analyzingImageId, setAnalyzingImageId] = useState(null);
+    const [isEnhancing, setIsEnhancing] = useState(false);
+
+    const handleMagicEnhance = async () => {
+        if (!prompt || isEnhancing) return;
+        setIsEnhancing(true);
+
+        // Cleanup listener ref if exists (though usually handled by closure/useEffect, but here we do ad-hoc)
+        // For simplicity in this component structure, we'll just set up a one-off listener.
+
+        try {
+            const result = await api({ action: 'createEnhanceRequest', prompt });
+            const requestId = result.data.requestId;
+
+            const unsubscribe = onSnapshot(doc(db, 'enhance_queue', requestId), (snapshot) => {
+                if (!snapshot.exists()) return;
+                const data = snapshot.data();
+
+                if (data.status === 'completed') {
+                    setPrompt(data.prompt);
+                    toast.success("Magic enhanced!");
+                    setIsEnhancing(false);
+                    unsubscribe();
+                } else if (data.status === 'failed') {
+                    console.error("Enhance failed:", data.error);
+                    toast.error("Failed to enhance prompt: " + (data.error || "Unknown error"));
+                    setIsEnhancing(false);
+                    unsubscribe();
+                }
+                // If 'queued' or 'processing', keeps loading
+            });
+
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to start enhancement");
+            setIsEnhancing(false);
+        }
+    };
 
     useEffect(() => {
         if (generationMode === 'video') {
@@ -814,9 +853,10 @@ export default function Generator() {
                                                     </button>
                                                 )}
                                                 <button
-                                                    onClick={() => setPrompt(prev => getEnhancedPrompt(prev))}
-                                                    className="btn-ghost"
-                                                    title="Magic Enhance"
+                                                    onClick={handleMagicEnhance}
+                                                    className={`btn-ghost ${isEnhancing ? 'animate-pulse' : ''}`}
+                                                    title="Magic Enhance with Gemini"
+                                                    disabled={isEnhancing}
                                                     style={{
                                                         padding: '8px',
                                                         borderRadius: '8px',
@@ -824,21 +864,9 @@ export default function Generator() {
                                                         transition: 'all 0.2s'
                                                     }}
                                                 >
-                                                    <Wand2 size={16} />
+                                                    {isEnhancing ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
                                                 </button>
-                                                <button
-                                                    onClick={() => setPrompt(getRandomPrompt())}
-                                                    className="btn-ghost"
-                                                    title="Surprise Me"
-                                                    style={{
-                                                        padding: '8px',
-                                                        borderRadius: '8px',
-                                                        color: 'var(--color-text-muted)',
-                                                        transition: 'all 0.2s'
-                                                    }}
-                                                >
-                                                    <Dices size={16} />
-                                                </button>
+
                                                 <button
                                                     onClick={() => {
                                                         const url = new URL(window.location);
