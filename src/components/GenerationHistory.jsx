@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
-import { getOptimizedImageUrl, getLCPAttributes } from '../utils';
+import { getOptimizedImageUrl, getLCPAttributes, preloadImage } from '../utils';
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 
 const getTimeAgo = (timestamp) => {
@@ -49,6 +49,12 @@ export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt
             const isNewItem = history.length > 0 && jobs.length > 0 && jobs[0].id !== history[0].id;
             setHistory(jobs);
             setLoading(false);
+
+            // Programmatic Preloading for LCP
+            jobs.slice(0, 5).forEach(job => {
+                const preloadUrl = getOptimizedImageUrl(job.thumbnailUrl || job.imageUrl);
+                preloadImage(preloadUrl, 'auto'); // History is secondary but good to preload
+            });
 
             if (isNewItem && scrollContainerRef.current) {
                 setTimeout(() => {
@@ -162,17 +168,32 @@ export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt
                             }}
                             whileHover={{ y: -4, boxShadow: '0 10px 20px rgba(0,0,0,0.5)' }}
                         >
-                            <img
-                                src={getOptimizedImageUrl(job.thumbnailUrl || job.imageUrl)}
-                                alt={`Previously generated image: ${job.prompt}`}
-                                {...getLCPAttributes(history.indexOf(job), 5)}
-                                style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    objectFit: 'cover',
-                                    transition: 'transform 0.4s ease',
-                                }}
-                            />
+                            <div style={{
+                                width: '100%',
+                                height: '100%',
+                                position: 'relative',
+                                background: job.lqip ? `url(${job.lqip}) center/cover no-repeat` : 'rgba(255,255,255,0.03)',
+                                filter: job.lqip ? 'blur(10px)' : 'none',
+                                overflow: 'hidden'
+                            }}>
+                                <img
+                                    src={getOptimizedImageUrl(job.thumbnailUrl || job.imageUrl)}
+                                    alt={`Previously generated image: ${job.prompt}`}
+                                    {...getLCPAttributes(history.indexOf(job), 5)}
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'cover',
+                                        transition: 'transform 0.4s ease',
+                                        position: 'relative',
+                                        zIndex: 1,
+                                        filter: 'none'
+                                    }}
+                                    onLoad={(e) => {
+                                        e.target.parentElement.style.filter = 'none';
+                                    }}
+                                />
+                            </div>
 
                             {/* Hover Overlay */}
                             <div className="history-overlay">

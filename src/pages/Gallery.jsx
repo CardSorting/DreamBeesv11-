@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Loader2, Search, Download, Trash2, X, ExternalLink, Calendar, Info, Check, Plus, Film } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getOptimizedImageUrl, getLCPAttributes, getImageSrcSet } from '../utils';
+import { getOptimizedImageUrl, getLCPAttributes, getImageSrcSet, preloadImage } from '../utils';
 
 export default function Gallery() {
     const navigate = useNavigate();
@@ -35,10 +35,17 @@ export default function Gallery() {
                 });
 
                 const data = result.data;
-                setImages(data.images || []);
+                const newImages = data.images || [];
+                setImages(newImages);
                 setLastVisibleId(data.lastVisibleId);
                 setLastVisibleType(data.lastVisibleType);
                 setHasMore(data.hasMore);
+
+                // Programmatic Preloading for LCP
+                newImages.slice(0, 4).forEach(img => {
+                    const preloadUrl = getOptimizedImageUrl(img.thumbnailUrl || img.imageUrl);
+                    preloadImage(preloadUrl, 'high');
+                });
 
                 if (data.warnings) {
                     data.warnings.forEach(w => toast.error(w, { duration: 4000 }));
@@ -327,14 +334,35 @@ export default function Gallery() {
                                     </div>
                                 </>
                             ) : (
-                                <img
-                                    src={getOptimizedImageUrl(img.thumbnailUrl || img.imageUrl)}
-                                    srcset={getImageSrcSet(img)}
-                                    sizes="(max-width: 768px) 100vw, 300px"
-                                    alt={img.prompt || "User generated artwork"}
-                                    {...getLCPAttributes(i, 4)}
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)' }}
-                                />
+                                <div className="image-card-inner" style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    position: 'relative',
+                                    background: img.lqip ? `url(${img.lqip}) center/cover no-repeat` : 'rgba(255,255,255,0.03)',
+                                    filter: img.lqip ? 'blur(10px)' : 'none',
+                                    overflow: 'hidden'
+                                }}>
+                                    <img
+                                        src={getOptimizedImageUrl(img.thumbnailUrl || img.imageUrl)}
+                                        srcset={getImageSrcSet(img)}
+                                        sizes="(max-width: 768px) 100vw, 300px"
+                                        alt={img.prompt || "User generated artwork"}
+                                        {...getLCPAttributes(i, 4)}
+                                        style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            objectFit: 'cover',
+                                            transition: 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                                            position: 'relative',
+                                            zIndex: 1,
+                                            filter: 'none' // Ensure image itself is not blurred
+                                        }}
+                                        onLoad={(e) => {
+                                            // Optional: remove blur on load from parent
+                                            e.target.parentElement.style.filter = 'none';
+                                        }}
+                                    />
+                                </div>
                             )}
 
                             {/* Hover Overlay - Minimal */}

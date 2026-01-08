@@ -3,7 +3,7 @@ import SEO from '../components/SEO';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
 import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight, X, Download, Copy, RefreshCw, ThumbsUp, ThumbsDown } from 'lucide-react';
-import { getOptimizedImageUrl, getLCPAttributes, getImageSrcSet } from '../utils';
+import { getOptimizedImageUrl, getLCPAttributes, getImageSrcSet, preloadImage } from '../utils';
 import { db } from '../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
@@ -277,7 +277,8 @@ export default function ModelDetail() {
                             aspectRatio: doc.aspectRatio,
                             rating: doc.rating,
                             id: doc.id,
-                            thumbnailUrl: doc.thumbnailUrl ? getOptimizedImageUrl(doc.thumbnailUrl) : null
+                            thumbnailUrl: doc.thumbnailUrl ? getOptimizedImageUrl(doc.thumbnailUrl) : null,
+                            lqip: doc.lqip || null
                         };
                     });
 
@@ -291,6 +292,12 @@ export default function ModelDetail() {
                             : dbImages;
                         setShowcaseImages(displayImages);
                         hasValidData = true;
+
+                        // Programmatic Preloading for LCP
+                        displayImages.slice(0, 6).forEach(img => {
+                            const preloadUrl = getOptimizedImageUrl(img.thumbnailUrl || img.url || img.imageUrl);
+                            preloadImage(preloadUrl, 'high');
+                        });
                     }
                 }
 
@@ -608,13 +615,28 @@ export default function ModelDetail() {
                                     }}
                                 >
                                     <div className="image-card">
-                                        <div className="image-wrapper" style={{ aspectRatio: ratio }}>
+                                        <div className="image-wrapper" style={{
+                                            aspectRatio: ratio,
+                                            background: imgItem.lqip ? `url(${imgItem.lqip}) center/cover no-repeat` : 'rgba(255,255,255,0.03)',
+                                            filter: imgItem.lqip ? 'blur(10px)' : 'none',
+                                            transition: 'filter 0.5s ease',
+                                            overflow: 'hidden'
+                                        }}>
                                             <img
                                                 src={getOptimizedImageUrl(imgItem.thumbnailUrl || imgItem.url || imgItem.imageUrl || (typeof imgItem === 'string' ? imgItem : ''))}
                                                 srcset={getImageSrcSet(imgItem)}
                                                 sizes="(max-width: 500px) 50vw, (max-width: 1200px) 25vw, 20vw"
                                                 alt={`Showcase generation: ${imgItem.prompt ? imgItem.prompt.slice(0, 50) + "..." : "AI Artwork"}`}
                                                 {...getLCPAttributes(index, 6)}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    objectFit: 'cover',
+                                                    filter: 'none'
+                                                }}
+                                                onLoad={(e) => {
+                                                    e.target.parentElement.style.filter = 'none';
+                                                }}
                                             />
                                             {/* Standard Tile Overlay */}
                                             <div style={{

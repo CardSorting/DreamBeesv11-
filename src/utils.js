@@ -94,6 +94,27 @@ export const getImageSrcSet = (img) => {
     return undefined;
 };
 
+/**
+ * Programmatically injects a preload link into the head
+ * @param {string} url - The URL to preload
+ * @param {string} priority - The fetch priority ('high', 'low', 'auto')
+ */
+export const preloadImage = (url, priority = 'auto') => {
+    if (!url || typeof document === 'undefined') return;
+
+    // Check if already preloaded
+    if (document.querySelector(`link[href="${url}"]`)) return;
+
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'image';
+    link.href = url;
+    if (priority !== 'auto') {
+        link.setAttribute('fetchpriority', priority);
+    }
+    document.head.appendChild(link);
+};
+
 const RANDOM_PROMPTS = [
     "A futuristic city with neon lights reflecting on wet pavement, cybernetic citizens walking, towering skyscrapers, cinematic lighting, 8k resolution.",
     "A serene japanese garden with cherry blossoms falling, a koi pond, traditional architecture, soft sunlight, highly detailed.",

@@ -116,6 +116,13 @@ export const processImageTask = onTaskDispatched(
                 .webp({ quality: 80 })
                 .toBuffer();
 
+            // 3. Create LQIP (Low Quality Image Placeholder - 20px)
+            const lqipBuffer = await sharpImg
+                .resize(20, 20, { fit: 'inside' })
+                .webp({ quality: 20 })
+                .toBuffer();
+            const lqip = `data:image/webp;base64,${lqipBuffer.toString('base64')}`;
+
             // Upload to B2
             const baseFolder = `generated/${userId}/${Date.now()}`;
             const originalFilename = `${baseFolder}.webp`;
@@ -151,6 +158,7 @@ export const processImageTask = onTaskDispatched(
                 modelId,
                 imageUrl,
                 thumbnailUrl, // Add thumbnail URL
+                lqip, // Add LQIP
                 createdAt: new Date(),
                 originalRequestId: requestId
             });
@@ -159,6 +167,7 @@ export const processImageTask = onTaskDispatched(
                 status: "completed",
                 imageUrl,
                 thumbnailUrl, // Update queue doc too
+                lqip, // Add LQIP
                 completedAt: new Date(),
                 resultImageId: imageRef.id
             });
