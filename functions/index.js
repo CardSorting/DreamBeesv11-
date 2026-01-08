@@ -1153,6 +1153,52 @@ const handleGetGenerationHistory = async (request) => {
 // Video Generation Functions (Reels)
 // ============================================================================
 
+// Helper to find the first media URL in a potentially nested object or array
+function findPrimaryUrl(output) {
+    if (!output) return null;
+
+    // 1. Direct string
+    if (typeof output === 'string') {
+        if (output.startsWith('http') && (output.includes('replicate.delivery') || output.match(/\.(mp4|webp|png|jpg|jpeg|gif)/i))) {
+            return output;
+        }
+    }
+
+    // 2. Array: recurse on first element
+    if (Array.isArray(output) && output.length > 0) {
+        return findPrimaryUrl(output[0]);
+    }
+
+    // 3. Object: recurse on known properties first, then all keys
+    if (typeof output === 'object') {
+        // Standard Replicate/OpenAI properties
+        if (output.output) {
+            const result = findPrimaryUrl(output.output);
+            if (result) return result;
+        }
+        if (output.url && typeof output.url !== 'function') {
+            const result = findPrimaryUrl(output.url);
+            if (result) return result;
+        }
+        if (typeof output.url === 'function') {
+            try { return findPrimaryUrl(output.url()); } catch (e) { }
+        }
+
+        // Exhaustive scan
+        for (const key of Object.keys(output)) {
+            // Avoid recursion into huge circular objects if any (unlikely for API response)
+            if (key === 'urls' || key === 'metrics') continue;
+            const val = output[key];
+            if (val && (typeof val === 'string' || typeof val === 'object')) {
+                const result = findPrimaryUrl(val);
+                if (result) return result;
+            }
+        }
+    }
+
+    return null;
+}
+
 // Video Generation Worker
 export const processVideoTask = onTaskDispatched(
     {
@@ -1237,26 +1283,11 @@ export const processVideoTask = onTaskDispatched(
             console.log(`Executing Replicate job for ${requestId}...`);
             const output = await replicate.run("lightricks/ltx-2-pro", { input });
 
-            let videoUrl = null;
+            const videoUrl = findPrimaryUrl(output);
 
-            if (typeof output === 'string') {
-                videoUrl = output;
-            } else if (Array.isArray(output) && output.length > 0 && typeof output[0] === 'string') {
-                videoUrl = output[0];
-            } else if (output && typeof output === 'object') {
-                if (output.output && typeof output.output === 'string') {
-                    videoUrl = output.output;
-                } else if (output.url && typeof output.url === 'function') { // replicate-js specific
-                    videoUrl = output.url();
-                } else if (output.toString() === '[object Object]') {
-                    // Try to see if it has a direct url property just in case
-                    if (typeof output.url === 'string') videoUrl = output.url;
-                }
-            }
-
-            if (!videoUrl || typeof videoUrl !== 'string') {
-                console.error("Replicate Unexpected Output:", JSON.stringify(output, null, 2));
-                throw new Error("No video URL returned from AI model. Check logs for output structure.");
+            if (!videoUrl) {
+                console.error("Replicate Unexpected Output Structure:", JSON.stringify(output, null, 2));
+                throw new Error("No video URL could be extracted from AI model response. Debug info in logs.");
             }
 
             // Download and Persist to B2
