@@ -192,6 +192,10 @@ export default function Generator() {
                     if (status === 'completed') {
                         setPrompt(snapshot.data().prompt);
                         toast.success("Prompt generated!");
+                        // Clear image after successful prompt generation to avoid confusion
+                        if (generationMode === 'image') {
+                            setReferenceImage(null);
+                        }
                         setIsAutoPrompting(false);
                         unsub();
                     } else if (status === 'failed') {
@@ -735,7 +739,7 @@ export default function Generator() {
                                         <textarea
                                             value={prompt}
                                             onChange={(e) => setPrompt(e.target.value)}
-                                            placeholder="Describe your vision..."
+                                            placeholder={referenceImage ? "Click the Sparkles icon above to analyze this image..." : "Describe your vision..."}
                                             className="custom-scrollbar"
                                             style={{
                                                 width: '100%',
@@ -779,39 +783,35 @@ export default function Generator() {
                                                     {isListening && <span>Listening...</span>}
                                                 </button>
 
-                                                {generationMode === 'video' && (
-                                                    <>
-                                                        <button
-                                                            onClick={() => setIsImagePickerOpen(true)}
-                                                            className="btn-ghost"
-                                                            title="Attach Image (Gallery/Upload)"
-                                                            style={{
-                                                                padding: '8px',
-                                                                borderRadius: '8px',
-                                                                color: referenceImage ? 'var(--color-accent-primary)' : 'var(--color-text-muted)',
-                                                                transition: 'all 0.2s'
-                                                            }}
-                                                        >
-                                                            <Paperclip size={16} />
-                                                        </button>
-                                                        {referenceImage && (
-                                                            <button
-                                                                onClick={handleAutoPrompt}
-                                                                className={`btn-ghost ${isAutoPrompting ? 'animate-pulse' : ''}`}
-                                                                title="Auto-Write Prompt with Gemini"
-                                                                disabled={isAutoPrompting}
-                                                                style={{
-                                                                    padding: '8px',
-                                                                    borderRadius: '8px',
-                                                                    color: 'var(--color-accent-primary)',
-                                                                    transition: 'all 0.2s',
-                                                                    background: 'rgba(var(--color-accent-rgb), 0.1)'
-                                                                }}
-                                                            >
-                                                                {isAutoPrompting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                                                            </button>
-                                                        )}
-                                                    </>
+                                                <button
+                                                    onClick={() => setIsImagePickerOpen(true)}
+                                                    className="btn-ghost"
+                                                    title={generationMode === 'video' ? "Attach Image to Animate" : "Upload Reference Image for Prompt Analysis"}
+                                                    style={{
+                                                        padding: '8px',
+                                                        borderRadius: '8px',
+                                                        color: referenceImage ? 'var(--color-accent-primary)' : 'var(--color-text-muted)',
+                                                        transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    <Paperclip size={16} />
+                                                </button>
+                                                {referenceImage && (
+                                                    <button
+                                                        onClick={handleAutoPrompt}
+                                                        className={`btn-ghost ${isAutoPrompting ? 'animate-pulse' : ''}`}
+                                                        title="Analyze image with Gemini to auto-generate a detailed prompt"
+                                                        disabled={isAutoPrompting}
+                                                        style={{
+                                                            padding: '8px',
+                                                            borderRadius: '8px',
+                                                            color: 'var(--color-accent-primary)',
+                                                            transition: 'all 0.2s',
+                                                            background: 'rgba(var(--color-accent-rgb), 0.1)'
+                                                        }}
+                                                    >
+                                                        {isAutoPrompting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+                                                    </button>
                                                 )}
                                                 <button
                                                     onClick={() => setPrompt(prev => getEnhancedPrompt(prev))}
