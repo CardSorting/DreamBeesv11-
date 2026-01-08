@@ -138,7 +138,7 @@ export const processImageTask = onTaskDispatched(
                 // Actually, let's just let Sharp try to parse it. If it fails, Sharp will throw.
             }
 
-            buffer = Buffer.from(await response.arrayBuffer());
+            const buffer = Buffer.from(await response.arrayBuffer());
 
             // Process Image with Sharp
             const sharpImg = sharp(buffer);
@@ -1197,7 +1197,7 @@ function findPrimaryUrl(output) {
 
         // Dedicated check for replicate-js .url() method
         if (typeof output.url === 'function') {
-            try { return findPrimaryUrl(output.url()); } catch (e) { }
+            try { return findPrimaryUrl(output.url()); } catch { }
         }
 
         // Exhaustive scan (descend into every property)
@@ -1278,8 +1278,6 @@ export const processVideoTask = onTaskDispatched(
             // Note: LTX specific params
             // frame_rate: 24 (default)
             // length: 97, 129, etc.
-
-            const frameCount = data.duration === 10 ? 257 : 129; // 10s ~ 257 frames, 5s ~ 129 frames
 
             const allowedDurations = [6, 8, 10];
             let safeDuration = parseInt(data.duration);
@@ -1601,21 +1599,27 @@ export const api = onCall(async (request) => {
     }
 
     const { action } = request.data;
-    switch (action) {
-        case 'createGenerationRequest': return handleCreateGenerationRequest(request);
-        case 'createVideoGenerationRequest': return handleCreateVideoGenerationRequest(request);
-        case 'createAnalysisRequest': return handleCreateAnalysisRequest(request);
-        case 'createStripeCheckout': return handleCreateStripeCheckout(request);
-        case 'createStripePortalSession': return handleCreateStripePortalSession(request);
-        case 'generateVideoPrompt': return handleGenerateVideoPrompt(request);
-        case 'getGenerationHistory': return handleGetGenerationHistory(request);
-        case 'getImageDetail': return handleGetImageDetail(request);
-        case 'getUserImages': return handleGetUserImages(request);
-        case 'rateGeneration': return handleRateGeneration(request);
-        case 'rateShowcaseImage': return handleRateShowcaseImage(request);
-        case 'deleteImage': return handleDeleteImage(request);
-        case 'deleteImagesBatch': return handleDeleteImagesBatch(request);
-        default:
-            throw new HttpsError('invalid-argument', `Unknown action: ${action}`);
+    try {
+        switch (action) {
+            case 'createGenerationRequest': return handleCreateGenerationRequest(request);
+            case 'createVideoGenerationRequest': return handleCreateVideoGenerationRequest(request);
+            case 'createAnalysisRequest': return handleCreateAnalysisRequest(request);
+            case 'createStripeCheckout': return handleCreateStripeCheckout(request);
+            case 'createStripePortalSession': return handleCreateStripePortalSession(request);
+            case 'generateVideoPrompt': return handleGenerateVideoPrompt(request);
+            case 'getGenerationHistory': return handleGetGenerationHistory(request);
+            case 'getImageDetail': return handleGetImageDetail(request);
+            case 'getUserImages': return handleGetUserImages(request);
+            case 'rateGeneration': return handleRateGeneration(request);
+            case 'rateShowcaseImage': return handleRateShowcaseImage(request);
+            case 'deleteImage': return handleDeleteImage(request);
+            case 'deleteImagesBatch': return handleDeleteImagesBatch(request);
+            default:
+                throw new HttpsError('invalid-argument', `Unknown action: ${action}`);
+        }
+    } catch (error) {
+        console.error(`API Error [${action}]:`, error);
+        if (error instanceof HttpsError) throw error;
+        throw new HttpsError('internal', error.message || "An unexpected error occurred");
     }
 });
