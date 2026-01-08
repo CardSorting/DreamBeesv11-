@@ -1159,39 +1159,56 @@ function findPrimaryUrl(output) {
 
     // 1. Direct string
     if (typeof output === 'string') {
-        if (output.startsWith('http') && (output.includes('replicate.delivery') || output.match(/\.(mp4|webp|png|jpg|jpeg|gif)/i))) {
-            return output;
+        const cleanOutput = output.trim();
+        if (cleanOutput.startsWith('http')) {
+            // Check for common media extensions or replicate/s3 patterns
+            if (cleanOutput.includes('replicate.delivery') ||
+                cleanOutput.match(/\.(mp4|webp|png|jpg|jpeg|gif|mov|m4v)/i) ||
+                cleanOutput.includes('b2.content') ||
+                cleanOutput.includes('amazonaws.com')) {
+                return cleanOutput;
+            }
         }
     }
 
-    // 2. Array: recurse on first element
+    // 2. Array: recurse on all elements until a URL is found
     if (Array.isArray(output) && output.length > 0) {
-        return findPrimaryUrl(output[0]);
+        for (const item of output) {
+            const found = findPrimaryUrl(item);
+            if (found) return found;
+        }
+        return null; // None found in array
     }
 
-    // 3. Object: recurse on known properties first, then all keys
+    // 3. Object: recurse on known properties first, then exhaustive scan
     if (typeof output === 'object') {
-        // Standard Replicate/OpenAI properties
-        if (output.output) {
-            const result = findPrimaryUrl(output.output);
-            if (result) return result;
+        // Detailed logging for debugging unknown objects
+        const keys = Object.keys(output);
+        console.log(`Parsing output object. Type: ${output.constructor?.name || 'Object'}, Keys: ${keys.join(', ')}`);
+
+        // Standard known properties (Replicate / OpenAI / Claude)
+        const commonPaths = ['output', 'url', 'urls', 'result', 'data'];
+        for (const path of commonPaths) {
+            if (output[path]) {
+                const found = findPrimaryUrl(output[path]);
+                if (found) return found;
+            }
         }
-        if (output.url && typeof output.url !== 'function') {
-            const result = findPrimaryUrl(output.url);
-            if (result) return result;
-        }
+
+        // Dedicated check for replicate-js .url() method
         if (typeof output.url === 'function') {
             try { return findPrimaryUrl(output.url()); } catch (e) { }
         }
 
-        // Exhaustive scan
-        for (const key of Object.keys(output)) {
-            // Avoid recursion into huge circular objects if any (unlikely for API response)
-            if (key === 'urls' || key === 'metrics') continue;
+        // Exhaustive scan (descend into every property)
+        for (const key of keys) {
+            // Avoid recursion into system/meta fields
+            if (['metrics', 'logs', 'error', 'status', 'created_at', 'started_at', 'completed_at'].includes(key)) continue;
+
             const val = output[key];
             if (val && (typeof val === 'string' || typeof val === 'object')) {
-                const result = findPrimaryUrl(val);
-                if (result) return result;
+                const found = findPrimaryUrl(val);
+                if (found) return found;
             }
         }
     }
@@ -1281,12 +1298,24 @@ export const processVideoTask = onTaskDispatched(
             if (data.image) input.image = data.image;
 
             console.log(`Executing Replicate job for ${requestId}...`);
-            const output = await replicate.run("lightricks/ltx-2-pro", { input });
+            const prediction = await replicate.predictions.create({
+                model: "lightricks/ltx-2-pro",
+                input: input
+            });
+            console.log(`Prediction ${prediction.id} created for ${requestId}. Status: ${prediction.status}`);
 
-            const videoUrl = findPrimaryUrl(output);
+            const result = await replicate.wait(prediction);
+            console.log(`Prediction ${prediction.id} completed. Final Status: ${result.status}`);
+
+            if (result.status === "failed") {
+                console.error("Replicate Prediction Failed:", result.error);
+                throw new Error(`AI Model Error: ${result.error || "Unknown Failure"}`);
+            }
+
+            const videoUrl = findPrimaryUrl(result);
 
             if (!videoUrl) {
-                console.error("Replicate Unexpected Output Structure:", JSON.stringify(output, null, 2));
+                console.error("Replicate Unexpected Output Structure:", JSON.stringify(result, null, 2));
                 throw new Error("No video URL could be extracted from AI model response. Debug info in logs.");
             }
 
@@ -1488,66 +1517,21 @@ const handleCreateVideoGenerationRequest = async (request) => {
         throw new HttpsError('invalid-argument', "Prompt required (or provide an image for auto-captioning)");
     }
 
-    // Validate duration for LTX-2-Pro (6, 8, 10)
-    if (duration && ![6, 8, 10].includes(duration)) {
-        throw new HttpsError('invalid-argument', "Duration must be 6, 8, or 10 seconds.");
-    }
-
-    // LTX-2-Pro supports 6, 8, or 10 seconds (default 6)
-    if (duration && ![6, 8, 10].includes(duration)) {
-        throw new HttpsError('invalid-argument', "Duration must be 6, 8, or 10 seconds.");
-    }
-
-    // ... validation ...
-
-    const requestId = await db.runTransaction(async (t) => {
-        // ... (transaction logic remains the same)
-        const userRef = db.collection('users').doc(uid);
-        const userDoc = await t.get(userRef);
-        // ...
-
-        // Calculate cost: 10 reels for 6s, 15 for 8s, 20 for 10s (example, or flat rate)
-        // Let's keep it simple or based on user's existing logic.
-        // Assuming user uses 'duration' to calculate cost elsewhere or flat cost.
-        // For now, let's just proceed.
-
-        // ...
-        const docRef = db.collection('video_queue').doc();
-        t.set(docRef, {
-            // ...
-        });
-        return docRef.id;
-    });
-
-    // ...
-
-    // 2. Trigger Cloud Task or Run Inline (using inline for now per existing flow)
-    // ...
-    // Inside processVideoTask or similar if logic is split, but here we see inline Replicate call in previous steps? 
-    // Wait, the viewed file in Step 130 showed logic in `onCall` or `processVideoTask`?
-    // Actually, Step 130 showed `processVideoTask` logic in `functions/index.js`. 
-    // The snippet I am editing here seems to be `handleCreateVideoGenerationRequest` from Step 157.
-    // The Replicate call logic is in `processVideoTask` (lines ~1208 in Step 130).
-    // I need to edit TWO places: Validation in `handleCreate` and Mapping in `processVideoTask`.
-
-    // Let's do `processVideoTask` first in a separate replace call or combined if close.
-    // They are far apart (~line 1200 vs ~1430). I will use `multi_replace_file_content`.
-
-
-    // Validate Duration
-    const allowedDurations = [5, 10];
-    const safeDuration = allowedDurations.includes(parseInt(duration)) ? parseInt(duration) : 5;
+    // Validate Duration for lightricks/ltx-2-pro (6, 8, 10 supported)
+    const allowedDurations = [6, 8, 10];
+    const safeDuration = allowedDurations.includes(parseInt(duration)) ? parseInt(duration) : 6;
 
     // Validate Resolution
     const allowedResolutions = ['720p', '1080p', '2k', '4k'];
     const safeResolution = allowedResolutions.includes(resolution) ? resolution : '1080p';
 
-    // Validate Aspect Ratio (Optional)
-    const validAspectRatios = ['16:9', '9:16', '1:1', '21:9', '9:21'];
-    const safeAspectRatio = (aspectRatio && validAspectRatios.includes(aspectRatio)) ? aspectRatio : null;
+    // Validate Aspect Ratio
+    const validAspectRatios = ['16:9', '9:16', '1:1', '21:9', '9:21', '3:2', '2:3'];
+    const safeAspectRatio = (aspectRatio && validAspectRatios.includes(aspectRatio)) ? aspectRatio : '3:2';
 
-    // Calculate Cost
-    const rate = safeResolution === '4k' ? 72 : (safeResolution === '2k' ? 36 : 18);
+    // Calculate Cost based on resolution and duration
+    // Base rates: 1080p -> 3 per sec, 2k -> 6 per sec, 4k -> 12 per sec
+    const rate = safeResolution === '4k' ? 12 : (safeResolution === '2k' ? 6 : 3);
     const totalCost = rate * safeDuration;
 
     try {
@@ -1558,7 +1542,6 @@ const handleCreateVideoGenerationRequest = async (request) => {
             if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
 
             // 2. Transactional Concurrency Check
-            // We use t.get() on the query to ensure we see consistent state within the transaction
             const activeJobsQuery = db.collection('video_queue')
                 .where('userId', '==', uid)
                 .where('status', 'in', ['queued', 'processing', 'pending'])
@@ -1569,7 +1552,9 @@ const handleCreateVideoGenerationRequest = async (request) => {
 
             // 3. Check Balance
             const currentReels = userDoc.data().reels || 0;
-            if (currentReels < totalCost) throw new HttpsError('resource-exhausted', `Insufficient Reels. Need ${totalCost}, have ${currentReels}.`);
+            if (currentReels < totalCost) {
+                throw new HttpsError('resource-exhausted', `Insufficient Reels. Need ${totalCost}, have ${currentReels}.`);
+            }
 
             // 4. Execution
             // Deduct balance
@@ -1594,7 +1579,6 @@ const handleCreateVideoGenerationRequest = async (request) => {
         });
 
         // 5. Enqueue Task (Post-Transaction)
-        // If transaction failed, we wouldn't reach here
         const queue = getFunctions().taskQueue('processVideoTask');
         await queue.enqueue({ requestId });
 
@@ -1602,8 +1586,7 @@ const handleCreateVideoGenerationRequest = async (request) => {
     } catch (error) {
         console.error("Video Request Error:", error);
         if (error instanceof HttpsError) throw error;
-        // Obscure internal errors but log them
-        throw new HttpsError('internal', "Failed to create video request. Please try again.");
+        throw new HttpsError('internal', "Failed to create video request. " + error.message);
     }
 };
 

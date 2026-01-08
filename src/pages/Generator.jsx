@@ -1268,81 +1268,85 @@ export default function Generator() {
                                         </div>
                                     )}
 
-                                    <div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                            <label className="setting-label">SEED</label>
-                                            <button
-                                                onClick={() => setSeed(seed === -1 ? Math.floor(Math.random() * 1000000000) : -1)}
-                                                style={{ fontSize: '0.7rem', color: 'var(--color-accent-primary)', background: 'transparent', border: 'none', cursor: 'pointer' }}
-                                            >
-                                                {seed === -1 ? 'RANDOM' : 'CUSTOM'}
-                                            </button>
-                                        </div>
-                                        <div style={{ display: 'flex', gap: '8px' }}>
-                                            <input
-                                                type="number"
-                                                value={seed === -1 ? '' : seed}
-                                                onChange={(e) => setSeed(parseInt(e.target.value) || -1)}
-                                                placeholder="Random (-1)"
-                                                style={{
-                                                    width: '100%',
-                                                    background: 'rgba(0,0,0,0.3)',
-                                                    border: '1px solid var(--color-border)',
-                                                    borderRadius: '8px',
-                                                    padding: '8px 12px',
-                                                    color: 'white',
-                                                    fontSize: '0.9rem'
-                                                }}
-                                            />
-                                            <button
-                                                onClick={() => setSeed(Math.floor(Math.random() * 1000000000))}
-                                                className="btn-ghost"
-                                                title="Roll Seed"
-                                                style={{ padding: '8px', borderRadius: '8px', color: 'white', border: '1px solid var(--color-border)' }}
-                                            >
-                                                <Dices size={18} />
-                                            </button>
-                                        </div>
-                                    </div>
+                                    {generationMode !== 'video' && (
+                                        <>
+                                            <div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                    <label className="setting-label">SEED</label>
+                                                    <button
+                                                        onClick={() => setSeed(seed === -1 ? Math.floor(Math.random() * 1000000000) : -1)}
+                                                        style={{ fontSize: '0.7rem', color: 'var(--color-accent-primary)', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                                                    >
+                                                        {seed === -1 ? 'RANDOM' : 'CUSTOM'}
+                                                    </button>
+                                                </div>
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <input
+                                                        type="number"
+                                                        value={seed === -1 ? '' : seed}
+                                                        onChange={(e) => setSeed(parseInt(e.target.value) || -1)}
+                                                        placeholder="Random (-1)"
+                                                        style={{
+                                                            width: '100%',
+                                                            background: 'rgba(0,0,0,0.3)',
+                                                            border: '1px solid var(--color-border)',
+                                                            borderRadius: '8px',
+                                                            padding: '8px 12px',
+                                                            color: 'white',
+                                                            fontSize: '0.9rem'
+                                                        }}
+                                                    />
+                                                    <button
+                                                        onClick={() => setSeed(Math.floor(Math.random() * 1000000000))}
+                                                        className="btn-ghost"
+                                                        title="Roll Seed"
+                                                        style={{ padding: '8px', borderRadius: '8px', color: 'white', border: '1px solid var(--color-border)' }}
+                                                    >
+                                                        <Dices size={18} />
+                                                    </button>
+                                                </div>
+                                            </div>
 
-                                    {/* Sliders */}
-                                    <div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                            <label className="setting-label">STEPS</label>
-                                            <span style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'white' }}>{steps}</span>
-                                        </div>
-                                        <input type="range" min="10" max="50" value={steps} onChange={(e) => setSteps(Number(e.target.value))} />
-                                    </div>
+                                            {/* Sliders */}
+                                            <div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                    <label className="setting-label">STEPS</label>
+                                                    <span style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'white' }}>{steps}</span>
+                                                </div>
+                                                <input type="range" min="10" max="50" value={steps} onChange={(e) => setSteps(Number(e.target.value))} />
+                                            </div>
 
-                                    <div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                            <label className="setting-label">GUIDANCE SCALE</label>
-                                            <span style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'white' }}>{cfg}</span>
-                                        </div>
-                                        <input type="range" min="1" max="20" step="0.5" value={cfg} onChange={(e) => setCfg(Number(e.target.value))} />
-                                    </div>
+                                            <div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                                    <label className="setting-label">GUIDANCE SCALE</label>
+                                                    <span style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'white' }}>{cfg}</span>
+                                                </div>
+                                                <input type="range" min="1" max="20" step="0.5" value={cfg} onChange={(e) => setCfg(Number(e.target.value))} />
+                                            </div>
 
-                                    {/* Negative Prompt */}
-                                    <div>
-                                        <label className="setting-label">NEGATIVE PROMPT</label>
-                                        <textarea
-                                            value={negPrompt}
-                                            onChange={(e) => setNegPrompt(e.target.value)}
-                                            placeholder="blur, watermark, low quality..."
-                                            style={{
-                                                width: '100%',
-                                                background: 'rgba(0,0,0,0.3)',
-                                                border: '1px solid var(--color-border)',
-                                                borderRadius: '8px',
-                                                padding: '12px',
-                                                color: 'var(--color-text-main)',
-                                                fontSize: '0.85rem',
-                                                resize: 'vertical',
-                                                minHeight: '80px',
-                                                fontFamily: 'inherit'
-                                            }}
-                                        />
-                                    </div>
+                                            {/* Negative Prompt */}
+                                            <div>
+                                                <label className="setting-label">NEGATIVE PROMPT</label>
+                                                <textarea
+                                                    value={negPrompt}
+                                                    onChange={(e) => setNegPrompt(e.target.value)}
+                                                    placeholder="blur, watermark, low quality..."
+                                                    style={{
+                                                        width: '100%',
+                                                        background: 'rgba(0,0,0,0.3)',
+                                                        border: '1px solid var(--color-border)',
+                                                        borderRadius: '8px',
+                                                        padding: '12px',
+                                                        color: 'var(--color-text-main)',
+                                                        fontSize: '0.85rem',
+                                                        resize: 'vertical',
+                                                        minHeight: '80px',
+                                                        fontFamily: 'inherit'
+                                                    }}
+                                                />
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </div>
