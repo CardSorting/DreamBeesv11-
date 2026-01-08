@@ -2,6 +2,7 @@ export const cinematicStyles = [
     {
         id: "spooky_cinema",
         label: "Spooky Cinema",
+        instruction: "Transform this into a dark, horror-themed cinematic scene. Use low-key lighting, deep shadows, and a blue/green color grade. Make it feel eerie and suspenseful.",
         tags: {
             lighting: [
                 "(cinematic lighting:1.2)",

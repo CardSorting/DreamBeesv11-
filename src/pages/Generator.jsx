@@ -45,6 +45,7 @@ export default function Generator() {
     const [negPrompt, setNegPrompt] = useState(searchParams.get('negPrompt') || "");
     const [seed, setSeed] = useState(parseInt(searchParams.get('seed')) || -1);
 
+    const [credits, setCredits] = useState(5);
     const [reels, setReels] = useState(null);
     const [subscriptionStatus, setSubscriptionStatus] = useState(null);
 
@@ -71,10 +72,31 @@ export default function Generator() {
         if (!prompt || isEnhancing) return;
         setIsEnhancing(true);
 
-        // Cleanup listener ref if exists (though usually handled by closure/useEffect, but here we do ad-hoc)
-        // For simplicity in this component structure, we'll just set up a one-off listener.
-
         try {
+            const api = httpsCallable(functions, 'api');
+
+            // Case 1: Active Style - Use it to rewrite prompt
+            if (activeStyleId) {
+                const styleObj = STYLE_REGISTRY.find(s => s.id === activeStyleId);
+                if (styleObj && styleObj.instruction) {
+                    toast.loading(`Applying ${styleObj.label} magic...`, { id: 'style-magic' });
+
+                    const transformResult = await api({
+                        action: 'transformPrompt',
+                        prompt: prompt,
+                        styleName: styleObj.label,
+                        intensity: styleIntensity,
+                        instructions: styleObj.instruction
+                    });
+
+                    setPrompt(transformResult.data.prompt);
+                    toast.success(`${styleObj.label} style applied!`, { id: 'style-magic' });
+                    setIsEnhancing(false);
+                    return; // Exit early
+                }
+            }
+
+            // Case 2: No Style - Standard Enhancement
             const result = await api({ action: 'createEnhanceRequest', prompt });
             const requestId = result.data.requestId;
 
@@ -89,19 +111,20 @@ export default function Generator() {
                     unsubscribe();
                 } else if (data.status === 'failed') {
                     console.error("Enhance failed:", data.error);
-                    toast.error("Failed to enhance prompt: " + (data.error || "Unknown error"));
+                    toast.error("Failed: " + (data.error || "Unknown error"));
                     setIsEnhancing(false);
                     unsubscribe();
                 }
-                // If 'queued' or 'processing', keeps loading
             });
 
         } catch (error) {
             console.error(error);
-            toast.error("Failed to start enhancement");
+            toast.error("Failed to enhance prompt");
             setIsEnhancing(false);
         }
     };
+
+
 
     useEffect(() => {
         if (generationMode === 'video') {
@@ -447,18 +470,21 @@ export default function Generator() {
                 let finalPrompt = prompt;
                 let finalNegativePrompt = negPrompt;
 
-                // Apply Style Registry
+                // Apply Style Registry (Tags Only - Safe Mode)
                 if (activeStyleId) {
                     const styleData = getStylePrompt(activeStyleId, styleIntensity);
+
+                    // Append style tags (even if Magic Rewrite was used, these help reinforcement)
                     if (styleData.tags.length > 0) {
                         finalPrompt = `${prompt}, ${styleData.tags.join(', ')}`;
                     }
 
+                    // Append Negatives
                     const combinedNegatives = [
                         negPrompt,
                         ...GLOBAL_NEGATIVES,
                         ...styleData.negatives
-                    ].filter(Boolean).join(', '); // Filter out empty strings if negPrompt is empty
+                    ].filter(Boolean).join(', ');
 
                     finalNegativePrompt = combinedNegatives;
                 }
@@ -877,7 +903,7 @@ export default function Generator() {
                                                 <button
                                                     onClick={handleMagicEnhance}
                                                     className={`btn-ghost ${isEnhancing ? 'animate-pulse' : ''}`}
-                                                    title="Magic Enhance with Gemini"
+                                                    title={activeStyleId ? "Rewrite prompt in current Style (Gemini)" : "Magic Enhance with Gemini"}
                                                     disabled={isEnhancing}
                                                     style={{
                                                         padding: '8px',

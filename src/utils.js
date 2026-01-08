@@ -78,7 +78,7 @@ export const getLCPAttributes = (index, threshold = 4) => {
     const isPriority = index < threshold;
     return {
         loading: isPriority ? "eager" : "lazy",
-        fetchpriority: isPriority ? "high" : "auto",
+        fetchPriority: isPriority ? "high" : "auto",
         decoding: isPriority ? "sync" : "async"
     };
 };

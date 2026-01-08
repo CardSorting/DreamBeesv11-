@@ -2198,6 +2198,60 @@ const handleCreateVideoGenerationRequest = async (request) => {
 // Unified API
 // ============================================================================
 
+// Helper for Style Transformation (Nano Banana)
+const handleTransformPrompt = async (request) => {
+    const { prompt, styleName, intensity, instructions } = request.data;
+
+    // Basic validation
+    if (!prompt) throw new HttpsError('invalid-argument', "Prompt is required");
+
+    // Use OpenRouter with Gemini 2.5 Flash
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) throw new HttpsError('internal', "Service configuration error");
+
+    const systemPrompt = `You represent the visual style '${styleName}'. 
+    Rewrite the user's prompt to reflect this style with ${intensity} intensity.
+    Keep the core subject but completely transform the visual descriptors, lighting, and atmosphere to match the style.
+    
+    Style Instructions: ${instructions}
+    
+    Return ONLY the modified prompt text. Do not add quotes or explanations.`;
+
+    try {
+        const response = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://dreambeesai.com",
+                "X-Title": "DreamBees"
+            },
+            body: JSON.stringify({
+                model: "google/gemini-2.5-flash-image", // Or just flash if image model not needed for text-to-text
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: prompt }
+                ]
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.text();
+            console.error("OpenRouter Error:", err);
+            throw new Error(`AI Provider Error: ${err}`);
+        }
+
+        const data = await response.json();
+        const transformedPrompt = data.choices?.[0]?.message?.content || prompt;
+
+        return { prompt: transformedPrompt };
+
+    } catch (error) {
+        console.error("Transform Prompt Error:", error);
+        throw new HttpsError('internal', "Failed to transform prompt");
+    }
+};
+
 export const api = onCall(async (request) => {
     // Basic App Check logging (Warn Mode) - centralized here
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
@@ -2213,6 +2267,7 @@ export const api = onCall(async (request) => {
             case 'createStripeCheckout': return handleCreateStripeCheckout(request);
             case 'createStripePortalSession': return handleCreateStripePortalSession(request);
             case 'createEnhanceRequest': return handleCreateEnhanceRequest(request);
+            case 'transformPrompt': return handleTransformPrompt(request); // New action
             case 'generateVideoPrompt': return handleGenerateVideoPrompt(request);
             case 'getGenerationHistory': return handleGetGenerationHistory(request);
             case 'getImageDetail': return handleGetImageDetail(request);
