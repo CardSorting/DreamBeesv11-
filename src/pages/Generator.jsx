@@ -69,13 +69,13 @@ export default function Generator() {
 
     const handleMagicEnhance = async () => {
         if (isEnhancing) return;
-        
+
         // IMPORTANT: Check referenceImage from current state at call time
         // React state updates are async, so we need to check the actual current value
         // Also check activeJob as fallback if referenceImage is null (might be cleared)
         let currentReferenceImage = referenceImage;
         const currentPrompt = prompt;
-        
+
         // Fallback 1: If referenceImage is null but we have an activeJob with an image, use it
         // This can happen if the user clicked "Apply Style & Generate" after viewing a generated image
         if (!currentReferenceImage && activeJob && (activeJob.imageUrl || activeJob.thumbnailUrl)) {
@@ -84,7 +84,7 @@ export default function Generator() {
             // Update state so it persists
             setReferenceImage(currentReferenceImage);
         }
-        
+
         // Fallback 2: If referenceImage is null but we have a generatedImage displayed, use it
         // This handles the case where user wants to restyle the currently displayed image
         if (!currentReferenceImage && generatedImage) {
@@ -93,14 +93,14 @@ export default function Generator() {
             // Update state so it persists
             setReferenceImage(currentReferenceImage);
         }
-        
+
         // Allow enhancement if there is a prompt OR a reference image
         if (!currentPrompt && !currentReferenceImage) {
             console.log("[handleMagicEnhance] Early return: no prompt and no referenceImage");
             return;
         }
         setIsEnhancing(true);
-        
+
         console.log("[handleMagicEnhance] Called with:", {
             prompt: currentPrompt ? `${currentPrompt.substring(0, 30)}...` : null,
             referenceImage: currentReferenceImage ? `${currentReferenceImage.substring(0, 50)}...` : null,
@@ -147,8 +147,13 @@ export default function Generator() {
                     return;
                 }
 
-                // Immediate visual feedback
-                toast.loading(`Starting ${styleObj.label} transformation...`, { id: 'style-magic' });
+                // Immediate visual feedback - show original image with overlay
+                // This gives instant feedback that something is happening
+                if (currentReferenceImage && !generatedImage) {
+                    setGeneratedImage(currentReferenceImage); // Show original immediately
+                }
+
+                toast.loading(`✨ Starting ${styleObj.label} transformation...`, { id: 'style-magic' });
 
                 try {
                     // Vision Transformation (Image -> Image)
@@ -157,12 +162,26 @@ export default function Generator() {
                         styleName: styleObj.label,
                         intensity: styleIntensity
                     });
-                    
-                    // Update progress message
-                    setTimeout(() => {
-                        toast.loading(`Sending image to AI for ${styleObj.label} transformation...`, { id: 'style-magic' });
-                    }, 500);
-                    
+
+                    // Progressive progress updates for better perceived responsiveness
+                    const progressUpdates = [
+                        { delay: 300, message: `📤 Uploading image to AI...` },
+                        { delay: 800, message: `🎨 AI is transforming with ${styleObj.label} style...` },
+                        { delay: 2000, message: `⚙️ Processing transformation...` },
+                        { delay: 4000, message: `✨ Finalizing your transformed image...` }
+                    ];
+
+                    const progressTimers = progressUpdates.map(({ delay, message }) =>
+                        setTimeout(() => {
+                            toast.loading(message, { id: 'style-magic' });
+                        }, delay)
+                    );
+
+                    // Clear progress timers when done
+                    const clearProgressTimers = () => {
+                        progressTimers.forEach(timer => clearTimeout(timer));
+                    };
+
                     const transformResult = await api({
                         action: 'transformImage',
                         imageUrl: currentReferenceImage,
@@ -171,15 +190,28 @@ export default function Generator() {
                         instructions: styleObj.instruction
                     });
 
+                    clearProgressTimers(); // Clear any pending progress updates
                     console.log("[handleMagicEnhance] transformImage result:", transformResult);
 
                     if (transformResult?.data?.imageUrl) {
-                        // Update progress message before showing result
-                        toast.loading(`Processing transformed image...`, { id: 'style-magic' });
-                        
-                        // Set the image immediately for instant visual feedback
-                        setGeneratedImage(transformResult.data.imageUrl);
-                        
+                        // Use thumbnail if available for faster initial display
+                        const imageToShow = transformResult.data.thumbnailUrl || transformResult.data.imageUrl;
+
+                        // Preload the full image in background
+                        const img = new Image();
+                        img.src = transformResult.data.imageUrl;
+
+                        // Update progress message
+                        toast.loading(`🎉 Loading your transformed image...`, { id: 'style-magic' });
+
+                        // Set thumbnail immediately for instant feedback
+                        setGeneratedImage(imageToShow);
+
+                        // When full image loads, switch to it seamlessly
+                        img.onload = () => {
+                            setGeneratedImage(transformResult.data.imageUrl);
+                        };
+
                         // Optionally set the active job for rating if the backend returns it
                         if (transformResult.data.imageId) {
                             setActiveJob({
@@ -191,19 +223,20 @@ export default function Generator() {
                         }
 
                         setReferenceImage(null); // Clear reference after success
-                        
-                        // Success message with delay for smooth transition
+
+                        // Success message with smooth transition
                         setTimeout(() => {
-                            toast.success(`✨ ${styleObj.label} transformation complete!`, { 
+                            toast.success(`✨ ${styleObj.label} transformation complete!`, {
                                 id: 'style-magic',
                                 duration: 3000,
                                 icon: '🎨'
                             });
-                        }, 100);
-                        
+                        }, 200);
+
                         setIsEnhancing(false);
                         return;
                     } else {
+                        clearProgressTimers();
                         throw new Error("Transformation failed to return an image");
                     }
                 } catch (error) {
@@ -221,8 +254,8 @@ export default function Generator() {
                 if (activeStyleId) {
                     const styleObj = STYLE_REGISTRY.find(s => s.id === activeStyleId);
                     if (styleObj && styleObj.instruction) {
-                        // Immediate feedback
-                        toast.loading(`Transforming prompt with ${styleObj.label} style...`, { id: 'style-magic' });
+                        // Immediate feedback with progressive updates
+                        toast.loading(`✨ Transforming prompt with ${styleObj.label}...`, { id: 'style-magic' });
 
                         try {
                             // Prompt Transformation (Text -> Text)
@@ -243,20 +276,27 @@ export default function Generator() {
                                 return;
                             }
 
-                            // Optimistic update - set prompt immediately
+                            // Progressive prompt update for smooth visual effect
+                            toast.loading(`✨ Applying ${styleObj.label} style to prompt...`, { id: 'style-magic' });
+
+                            // Smooth transition - update prompt immediately
                             setPrompt(newPrompt);
-                            
-                            toast.success(`✨ Prompt transformed with ${styleObj.label}!`, { 
-                                id: 'style-magic',
-                                duration: 2000,
-                                icon: '✨'
-                            });
+
+                            // Success feedback
+                            setTimeout(() => {
+                                toast.success(`✨ Prompt transformed with ${styleObj.label}!`, {
+                                    id: 'style-magic',
+                                    duration: 2000,
+                                    icon: '✨'
+                                });
+                            }, 100);
+
                             setIsEnhancing(false);
 
-                            // Auto-trigger generation with the new prompt
+                            // Auto-trigger generation with smooth delay
                             setTimeout(() => {
                                 handleGenerate(newPrompt);
-                            }, 300); // Small delay for smooth transition
+                            }, 400); // Slightly longer delay for better perceived responsiveness
                             return; // Exit early
                         } catch (error) {
                             console.error("[handleMagicEnhance] transformPrompt error:", error);
@@ -596,8 +636,8 @@ export default function Generator() {
                 if (data.status === 'completed') {
                     setProgress(100);
                     setTimeout(() => {
-                        // For video, imageUrl might be videoUrl
-                        setGeneratedImage(currentJobType === 'video' ? data.videoUrl : data.imageUrl);
+                        // Robustly check for video URL first (it's distinct in backend)
+                        setGeneratedImage(data.videoUrl || data.imageUrl);
                         setGenerating(false);
                         setCurrentJobId(null);
                     }, 500);
@@ -619,7 +659,7 @@ export default function Generator() {
         const isReferenceImageValid = (img) => {
             return img && typeof img === 'string' && img.trim().length > 0;
         };
-        
+
         if (isReferenceImageValid(referenceImage) && activeStyleId && generationMode === 'image') {
             console.log("[handleGenerate] Detected referenceImage + style, redirecting to handleMagicEnhance for image transformation");
             await handleMagicEnhance();
@@ -794,6 +834,17 @@ export default function Generator() {
 
                         {/* Result View or Placeholder */}
                         <div style={{ flex: 1, background: '#050505', borderRadius: 'var(--radius-md) var(--radius-md) 0 0', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {/* Animation styles for loading indicators */}
+                            <style>{`
+                                @keyframes fadeIn {
+                                    from { opacity: 0; }
+                                    to { opacity: 1; }
+                                }
+                                @keyframes pulse {
+                                    0%, 100% { opacity: 0.4; transform: scale(1); }
+                                    50% { opacity: 1; transform: scale(1.2); }
+                                }
+                            `}</style>
                             {generating ? (
                                 <div style={{ textAlign: 'center', width: '100%' }}>
                                     <div style={{ fontSize: '3rem', fontWeight: '800', color: 'rgba(255,255,255,0.1)', letterSpacing: '-0.05em' }} className="animate-pulse-slow">
@@ -808,7 +859,7 @@ export default function Generator() {
                                 </div>
                             ) : generatedImage ? (
                                 <div className="fade-in" style={{ position: 'absolute', inset: 0, padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    {generatedImage.endsWith('.mp4') ? (
+                                    {/\.(mp4|webm|mov|mkv)($|\?)/i.test(generatedImage) ? (
                                         <video
                                             src={generatedImage}
                                             controls
@@ -818,17 +869,24 @@ export default function Generator() {
                                         />
                                     ) : (
                                         <>
-                                            <img 
-                                                src={getOptimizedImageUrl(generatedImage)} 
-                                                alt={`Generated artwork for prompt: ${prompt}`} 
-                                                style={{ 
-                                                    width: '100%', 
-                                                    height: '100%', 
-                                                    boxShadow: '0 0 50px rgba(0,0,0,0.5)', 
+                                            <img
+                                                src={getOptimizedImageUrl(generatedImage)}
+                                                alt={`Generated artwork for prompt: ${prompt}`}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    boxShadow: '0 0 50px rgba(0,0,0,0.5)',
                                                     objectFit: 'contain',
-                                                    opacity: isEnhancing ? 0.3 : 1,
-                                                    transition: 'opacity 0.3s ease'
-                                                }} 
+                                                    opacity: isEnhancing ? 0.4 : 1,
+                                                    filter: isEnhancing ? 'blur(2px)' : 'none',
+                                                    transition: 'opacity 0.4s ease, filter 0.4s ease',
+                                                    transform: isEnhancing ? 'scale(0.98)' : 'scale(1)',
+                                                    transformOrigin: 'center'
+                                                }}
+                                                onLoad={(e) => {
+                                                    // Smooth fade-in when image loads
+                                                    e.target.style.opacity = '1';
+                                                }}
                                             />
                                             {isEnhancing && (
                                                 <div style={{
@@ -838,26 +896,56 @@ export default function Generator() {
                                                     flexDirection: 'column',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
-                                                    background: 'rgba(0,0,0,0.7)',
-                                                    backdropFilter: 'blur(4px)',
-                                                    zIndex: 10
+                                                    background: 'rgba(0,0,0,0.75)',
+                                                    backdropFilter: 'blur(8px)',
+                                                    zIndex: 10,
+                                                    animation: 'fadeIn 0.3s ease-in'
                                                 }}>
-                                                    <Loader2 size={48} className="animate-spin" style={{ color: 'var(--color-accent-primary)', marginBottom: '16px' }} />
-                                                    <div style={{ 
-                                                        fontSize: '1.1rem', 
-                                                        fontWeight: '600', 
-                                                        color: 'white',
-                                                        textAlign: 'center',
-                                                        marginBottom: '8px'
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        alignItems: 'center',
+                                                        gap: '20px'
                                                     }}>
-                                                        Transforming Image...
-                                                    </div>
-                                                    <div style={{ 
-                                                        fontSize: '0.85rem', 
-                                                        color: 'var(--color-text-muted)',
-                                                        textAlign: 'center'
-                                                    }}>
-                                                        Applying style transformation
+                                                        <Loader2 size={56} className="animate-spin" style={{ color: 'var(--color-accent-primary)' }} />
+                                                        <div style={{ textAlign: 'center' }}>
+                                                            <div style={{
+                                                                fontSize: '1.2rem',
+                                                                fontWeight: '700',
+                                                                color: 'white',
+                                                                marginBottom: '8px',
+                                                                letterSpacing: '0.5px'
+                                                            }}>
+                                                                Transforming Image
+                                                            </div>
+                                                            <div style={{
+                                                                fontSize: '0.9rem',
+                                                                color: 'var(--color-text-muted)',
+                                                                opacity: 0.9
+                                                            }}>
+                                                                AI is applying the style transformation...
+                                                            </div>
+                                                        </div>
+                                                        {/* Animated progress dots */}
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            gap: '8px',
+                                                            marginTop: '8px'
+                                                        }}>
+                                                            {[0, 1, 2].map((i) => (
+                                                                <div
+                                                                    key={i}
+                                                                    style={{
+                                                                        width: '8px',
+                                                                        height: '8px',
+                                                                        borderRadius: '50%',
+                                                                        background: 'var(--color-accent-primary)',
+                                                                        animation: `pulse 1.4s ease-in-out ${i * 0.2}s infinite`,
+                                                                        opacity: 0.7
+                                                                    }}
+                                                                />
+                                                            ))}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
@@ -1320,15 +1408,15 @@ export default function Generator() {
                                 // This ensures referenceImage is set before any other state changes
                                 const imageUrl = job.imageUrl || job.thumbnailUrl;
                                 console.log("[onRestyle] Setting referenceImage to:", imageUrl);
-                                
+
                                 if (imageUrl) {
                                     // Set reference image first
                                     setReferenceImage(imageUrl);
-                                    
+
                                     // Then reset other states
                                     setPrompt("");
                                     setGenerationMode('image');
-                                    
+
                                     console.log("[onRestyle] Reference image set, ready for style selection");
                                     toast.success("Image loaded! Select a style & click 'Apply Style & Generate'.", { icon: '🪄' });
                                     window.scrollTo({ top: 0, behavior: 'smooth' });
