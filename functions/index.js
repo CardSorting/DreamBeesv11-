@@ -1092,9 +1092,9 @@ const handleCreateGenerationRequest = async (request) => {
             // Re-calculate current credits based on potentail daily reset
             let effectiveCredits = (userUpdate.credits !== undefined) ? userUpdate.credits : (userData.credits || 0);
 
-            // Cost Calculation: Qwen models are expensive ($2.5/hr vs $1.1/hr), so they cost 2 credits.
+            // Cost Calculation: Qwen models are expensive ($2.5/hr vs $1.1/hr), so they cost 1.5 credits.
             // Standard models (SDXL, etc.) cost 0.5 credits ($0.125) to achieve ~40% margin.
-            const cost = (modelId === 'qwen-image-2512') ? 2 : 0.5;
+            const cost = (modelId === 'qwen-image-2512') ? 1.5 : 0.5;
 
             if (!isPro) {
                 if (effectiveCredits < cost) throw new HttpsError('resource-exhausted', `Insufficient credits. This model requires ${cost} credits.`);
@@ -1987,7 +1987,7 @@ const handleCreateAnalysisRequest = async (request) => {
         return { requestId: docRef.id };
     } catch (error) {
         console.error("Analysis Request Error:", error);
-        throw new HttpsError('internal', "Failed to create analysis request");
+        throw new HttpsError('internal', `Failed to create analysis request: ${error.message}`);
     }
 };
 
@@ -2259,8 +2259,8 @@ const handleCreateVideoGenerationRequest = async (request) => {
     const safeAspectRatio = (aspectRatio && validAspectRatios.includes(aspectRatio)) ? aspectRatio : '3:2';
 
     // Calculate Cost based on resolution and duration
-    // Base rates: 1080p -> 9 per sec, 2k -> 18 per sec, 4k -> 36 per sec
-    const rate = safeResolution === '4k' ? 36 : (safeResolution === '2k' ? 18 : 9);
+    // Base rates (Reduced by ~30%): 1080p -> 6 per sec, 2k -> 13 per sec, 4k -> 25 per sec
+    const rate = safeResolution === '4k' ? 25 : (safeResolution === '2k' ? 13 : 6);
     const totalCost = rate * safeDuration;
 
     try {

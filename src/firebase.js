@@ -22,7 +22,7 @@ if (typeof window !== "undefined") {
   // Enable debug token for local development (both dev and preview modes)
   if (import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-    console.debug('Firebase App Check: Debug token enabled for localhost');
+    console.debug('Firebase App Check: Debug token enabled for localhost. Token:', self.FIREBASE_APPCHECK_DEBUG_TOKEN);
   }
 
   try {

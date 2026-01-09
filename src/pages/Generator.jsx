@@ -13,7 +13,7 @@ import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, Chev
 
 import { Link, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { getOptimizedImageUrl } from '../utils';
+import { getOptimizedImageUrl, compressImage } from '../utils';
 import { STYLE_REGISTRY, getStylePrompt, GLOBAL_NEGATIVES } from '../data/styles';
 
 
@@ -157,8 +157,16 @@ export default function Generator() {
 
                 try {
                     // Vision Transformation (Image -> Image)
+
+                    // Compress if base64 before upload
+                    let processedImage = currentReferenceImage;
+                    if (processedImage && processedImage.startsWith('data:')) {
+                        console.log(`[Magic] Compressing reference image...`);
+                        processedImage = await compressImage(processedImage, 1024, 0.7);
+                    }
+
                     console.log("[handleMagicEnhance] Calling transformImage with:", {
-                        imageUrl: currentReferenceImage,
+                        imageUrl: processedImage ? (processedImage.startsWith('data:') ? 'base64...' : processedImage) : null,
                         styleName: styleObj.label,
                         intensity: styleIntensity
                     });
@@ -184,7 +192,7 @@ export default function Generator() {
 
                     const transformResult = await api({
                         action: 'transformImage',
-                        imageUrl: currentReferenceImage,
+                        imageUrl: processedImage,
                         styleName: styleObj.label,
                         intensity: styleIntensity,
                         instructions: styleObj.instruction
@@ -241,7 +249,12 @@ export default function Generator() {
                     }
                 } catch (error) {
                     console.error("[handleMagicEnhance] transformImage error:", error);
-                    const errorMessage = error.message || error.code || "Failed to transform image";
+                    let errorMessage = error.message || error.code || "Failed to transform image";
+
+                    if (errorMessage.includes('INVALID_ARGUMENT') || errorMessage.includes('too large')) {
+                        errorMessage = "Image too large. Compression failed.";
+                    }
+
                     toast.error(`Transformation failed: ${errorMessage}`, { id: 'style-magic', duration: 4000 });
                     setIsEnhancing(false);
                     return; // Don't fall through to other paths
@@ -391,12 +404,19 @@ export default function Generator() {
         try {
             const api = httpsCallable(functions, 'api');
 
+            // Compress image if base64 to avoid Firestore limits
+            let processedImage = imageUrl;
+            if (imageUrl && imageUrl.startsWith('data:')) {
+                console.log(`[Video] Compressing input image...`);
+                processedImage = await compressImage(imageUrl, 1024, 0.7);
+            }
+
             while (retries < MAX_RETRIES && !success) {
                 try {
                     const videoResult = await api({
                         action: 'createVideoGenerationRequest',
                         autoPrompt: true,
-                        image: imageUrl,
+                        image: processedImage,
                         duration: videoDuration,
                         resolution: videoResolution,
                         aspectRatio: imgAspectRatio || aspectRatio
@@ -431,6 +451,8 @@ export default function Generator() {
                 errorMessage = "Insufficient Reels balance.";
             } else if (error.message?.includes('internal')) {
                 errorMessage = "Server error. Please try again later.";
+            } else if (error.message?.includes('INVALID_ARGUMENT')) {
+                errorMessage = "Image too large or invalid format.";
             }
 
             toast.error(errorMessage);
@@ -467,7 +489,11 @@ export default function Generator() {
             const api = httpsCallable(functions, 'api');
             const payload = { action: 'createAnalysisRequest' };
             if (referenceImage.startsWith('data:')) {
-                payload.image = referenceImage;
+                // Compress image to avoid Firestore 1MB limit
+                // Use 1024px max dimension and 0.7 quality to stay safe
+                const compressedImage = await compressImage(referenceImage, 1024, 0.7);
+                console.log(`Compressed image: ${referenceImage.length} -> ${compressedImage.length} bytes`);
+                payload.image = compressedImage;
             } else {
                 payload.imageUrl = referenceImage;
             }
@@ -506,7 +532,8 @@ export default function Generator() {
 
         } catch (error) {
             console.error("Auto prompt request error", error);
-            toast.error("Failed to start analysis");
+            console.error("Auto prompt error details:", error.message, error.code, error.details);
+            toast.error(`Failed to start analysis: ${error.message}`);
             setIsAutoPrompting(false);
         }
     };
@@ -694,10 +721,18 @@ export default function Generator() {
         try {
             if (generationMode === 'video') {
                 const api = httpsCallable(functions, 'api');
+
+                // Compress image if base64 before upload
+                let processedImage = referenceImage;
+                if (processedImage && processedImage.startsWith('data:')) {
+                    console.log(`[Video] Compressing reference image...`);
+                    processedImage = await compressImage(processedImage, 1024, 0.7);
+                }
+
                 const result = await api({
                     action: 'createVideoGenerationRequest',
                     prompt: effectivePrompt,
-                    image: referenceImage, // Use attached image for Image-to-Video
+                    image: processedImage, // Use compressed image
                     duration: videoDuration,
                     resolution: videoResolution,
                     aspectRatio: aspectRatio // Optional
@@ -747,7 +782,13 @@ export default function Generator() {
             console.error("Queue error", error);
             setGenerating(false);
             const errorMessage = error.message || error.code || "Failed to create generation request";
-            toast.error(errorMessage);
+
+            // Helpful user messaging for payload errors
+            if (errorMessage.includes('INVALID_ARGUMENT') || errorMessage.includes('too large')) {
+                toast.error("Image too large. Compression failed.");
+            } else {
+                toast.error(errorMessage);
+            }
         }
     };
 

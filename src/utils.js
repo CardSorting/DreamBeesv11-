@@ -114,3 +114,52 @@ export const preloadImage = (url, priority = 'auto') => {
     }
     document.head.appendChild(link);
 };
+
+/**
+ * Compresses a base64 image data URL to ensure it fits within Firestore limits (1MB).
+ * Resizes to max dimension and reduces quality.
+ * @param {string} dataUrl - The base64 image string
+ * @param {number} maxWidth - Max width/height (default 1024)
+ * @param {number} quality - JPEG quality 0-1 (default 0.7)
+ * @returns {Promise<string>} - Compressed data URL
+ */
+export const compressImage = async (dataUrl, maxWidth = 1024, quality = 0.7) => {
+    // If not a data URL or empty, return as is
+    if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) {
+        return dataUrl;
+    }
+
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous"; // Handle cross-origin if helpful, though mostly for URLs
+        img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+
+            // Resize if too large
+            if (width > maxWidth || height > maxWidth) {
+                if (width > height) {
+                    height = Math.round(height * (maxWidth / width));
+                    width = maxWidth;
+                } else {
+                    width = Math.round(width * (maxWidth / height));
+                    height = maxWidth;
+                }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Convert to JPEG (usually smaller than PNG for photos)
+            const compressedParams = dataUrl.includes('image/png') && quality > 0.9 ?
+                ['image/png'] : ['image/jpeg', quality];
+
+            resolve(canvas.toDataURL(...compressedParams));
+        };
+        img.onerror = (error) => reject(new Error("Failed to load image for compression"));
+        img.src = dataUrl;
+    });
+};

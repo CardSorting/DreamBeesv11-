@@ -36,7 +36,7 @@ const REEL_PACKS = [
         reels: 600,
         price: '6.00',
         id: 'price_1Sn17SIA2zQnWbn5MloTdTqZ',
-        features: ['~3× 1080p videos (10s)', 'Access to standard video models', 'Private gallery']
+        features: ['~10× 1080p videos (10s)', 'Access to standard video models', 'Private gallery']
     },
     {
         name: 'Reels Creator',
@@ -44,21 +44,21 @@ const REEL_PACKS = [
         price: '15.00',
         id: 'price_1Sn17TIA2zQnWbn5ZXOyQbbU',
         isPopular: true,
-        features: ['~2× 2K videos (20s) or ~8× 1080p (10s)', 'Access to HD video models', 'Private gallery', 'Commercial license']
+        features: ['~5× 2K videos (20s) or ~25× 1080p (10s)', 'Access to HD video models', 'Private gallery', 'Commercial license']
     },
     {
         name: 'Reels Pro',
         reels: 3600,
         price: '35.00',
         id: 'price_1Sn17TIA2zQnWbn5d7pa8iB8',
-        features: ['~5× 2K videos (20s)', 'Priority generation speed', 'Private gallery', 'Commercial license']
+        features: ['~13× 2K videos (20s)', 'Priority generation speed', 'Private gallery', 'Commercial license']
     },
     {
         name: 'Reels Studio',
         reels: 9000,
         price: '85.00',
         id: 'price_1Sn17TIA2zQnWbn5pR1T6V5g',
-        features: ['~6× 4K videos (20s)', 'Max generation speed', 'Private gallery', 'Commercial license', 'Priority support']
+        features: ['~18× 4K videos (20s)', 'Max generation speed', 'Private gallery', 'Commercial license', 'Priority support']
     }
 ];
 
@@ -104,10 +104,15 @@ export default function Pricing() {
                 <h1 style={{ fontSize: 'clamp(3rem, 6vw, 5rem)', fontWeight: '800', letterSpacing: '-0.04em', lineHeight: '1', marginBottom: '32px', color: 'white' }}>
                     Pay as you go.
                 </h1>
-                <p style={{ fontSize: '1.2rem', color: 'var(--color-text-muted)', lineHeight: '1.6' }}>
+                <p style={{ fontSize: '1.2rem', color: 'var(--color-text-muted)', lineHeight: '1.6', mb: '1rem' }}>
                     Purchase <b>Credits</b> for images or <b>Reels</b> for videos.<br />
                     Separate currencies for specialized creative needs.
                 </p>
+                {currencyType === 'credits' && (
+                    <p style={{ fontSize: '1rem', color: 'var(--color-text-dim)', marginTop: '12px' }}>
+                        Standard models cost <b>0.5 credits</b>. Premium models (like Qwen) cost <b>2 credits</b>.
+                    </p>
+                )}
             </div>
 
             {/* Currency Toggle */}
@@ -207,13 +212,13 @@ export default function Pricing() {
                                 </h4>
                                 <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     <li style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-dim)' }}>
-                                        <span>1080p</span> <span style={{ color: 'white' }}>18 Reels / sec</span>
+                                        <span>1080p</span> <span style={{ color: 'white' }}>6 Reels / sec</span>
                                     </li>
                                     <li style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-dim)' }}>
-                                        <span>2K</span> <span style={{ color: 'white' }}>36 Reels / sec</span>
+                                        <span>2K</span> <span style={{ color: 'white' }}>13 Reels / sec</span>
                                     </li>
                                     <li style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-dim)' }}>
-                                        <span>4K</span> <span style={{ color: 'white' }}>72 Reels / sec</span>
+                                        <span>4K</span> <span style={{ color: 'white' }}>25 Reels / sec</span>
                                     </li>
                                 </ul>
                             </div>
