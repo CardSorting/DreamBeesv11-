@@ -208,7 +208,6 @@ const VisualizerCanvas = forwardRef(({
             ref={canvasRef}
             width={width}
             height={height}
-            className="w-full h-full object-cover"
         />
     );
 });

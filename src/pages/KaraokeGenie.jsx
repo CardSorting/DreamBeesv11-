@@ -420,7 +420,7 @@ const KaraokeGenie = () => {
                     <ArrowLeft className="kg-icon" /> Back to Studio
                 </button>
 
-                <div className={`kg-canvas-container ${aspectRatio === '16:9' ? 'aspect-16-9' : 'aspect-9-16'}`} style={aspectRatio === '9:16' ? { height: '80vh' } : { width: '80vw' }}>
+                <div className={`kg-canvas-container ${aspectRatio === '16:9' ? 'aspect-16-9' : 'aspect-9-16'}`} style={aspectRatio === '9:16' ? { maxHeight: '80vh' } : { maxWidth: '80vw' }}>
                     <VisualizerCanvas
                         ref={visualizerRef}
                         lyrics={parsedLyrics}
