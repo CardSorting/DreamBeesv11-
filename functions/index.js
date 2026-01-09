@@ -8,6 +8,7 @@ import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s
 import { createCheckoutSession, constructWebhookEvent, createPortalSession } from "./stripeHelpers.js";
 import Replicate from "replicate";
 import { OpenRouter } from "@openrouter/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import sharp from "sharp";
 
 import { createRequire } from "module";
@@ -2467,16 +2468,16 @@ const handleGenerateLyrics = async (request) => {
     }
 
     const uid = request.auth?.uid;
-    // Allow unauthenticated for now based on previous flow, OR enforce it? 
-    // The previous service used client-side key, so it was "public" if exposed.
-    // Ideally we enforce auth.
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
 
     const { audioBase64, mimeType, rawText, songDuration, mode } = request.data;
-    const apiKey = process.env.OPENROUTER_API_KEY;
+
+    // Use GOOGLE_API_KEY or GEMINI_API_KEY for the official SDK. 
+    // Fallback to OPENROUTER_API_KEY only if the user accidentally set it there, but it likely won't work with this SDK.
+    const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || process.env.OPENROUTER_API_KEY;
 
     if (!apiKey) {
-        console.error("OPENROUTER_API_KEY not set");
+        console.error("GOOGLE_API_KEY/GEMINI_API_KEY not set");
         throw new HttpsError('internal', "Service configuration error");
     }
 
@@ -2510,66 +2511,97 @@ const handleGenerateLyrics = async (request) => {
         throw error;
     }
 
-    const client = new OpenRouter({ apiKey });
-
     try {
-        let response;
+        // --- Defensive Input Validation ---
+
+        // 1. Validate MIME Type (Audio Mode)
+        const ALLOWED_MIME_TYPES = [
+            'audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/x-wav',
+            'audio/ogg', 'audio/x-m4a', 'audio/webm', 'audio/flac'
+        ];
+
         if (mode === 'audio') {
-            if (!audioBase64 || !mimeType) throw new HttpsError('invalid-argument', "Audio data required");
+            if (!audioBase64 || !mimeType) {
+                throw new HttpsError('invalid-argument', "Audio data and mimeType are required");
+            }
 
-            // Simple mapping for format
-            let format = 'mp3';
-            if (mimeType.includes('wav')) format = 'wav';
-            else if (mimeType.includes('ogg')) format = 'oga';
+            if (!ALLOWED_MIME_TYPES.includes(mimeType)) {
+                console.error(`[handleGenerateLyrics] Invalid MIME type: ${mimeType}`);
+                throw new HttpsError('invalid-argument', `Unsupported audio format: ${mimeType}. Supported: MP3, WAV, OGG, WebM, M4A.`);
+            }
 
-            console.log(`[handleGenerateLyrics] Processing audio for user ${uid}, format: ${format}`);
+            // 2. Validate Base64 Integrity (Simple check)
+            const base64Regex = /^[A-Za-z0-9+/=]+$/;
+            if (!base64Regex.test(audioBase64)) {
+                console.error(`[handleGenerateLyrics] Invalid Base64 data`);
+                throw new HttpsError('invalid-argument', "Invalid audio data format (Base64 corruption).");
+            }
 
-            response = await client.chat.send({
-                model: "google/gemini-2.5-flash",
-                messages: [
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": "Listen to this audio. Transcribe the lyrics and format them as a standard LRC file. Timestamps must be extremely accurate to the vocals [mm:ss.xx]. Return ONLY the LRC content, no code blocks."
-                            },
-                            {
-                                "type": "input_audio",
-                                "input_audio": {
-                                    "data": audioBase64,
-                                    "format": format
-                                }
-                            }
-                        ]
-                    }
-                ]
-            });
+            // Check max size approx (20MB ~ 28MB base64) - Optional but good practice
+            if (audioBase64.length > 30 * 1024 * 1024) {
+                throw new HttpsError('resource-exhausted', "Audio file too large (max ~20MB).");
+            }
+        }
+
+        // 3. Validate Text Length (Text Mode)
+        if (mode === 'text') {
+            if (!rawText || rawText.length > 50000) {
+                throw new HttpsError('invalid-argument', "Text required and must be under 50,000 characters.");
+            }
+        }
+
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+        // Use gemini-2.0-flash-exp for best multimodal performance
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+
+        let result;
+
+        if (mode === 'audio') {
+            console.log(`[handleGenerateLyrics] Processing audio for user ${uid}, mimeType: ${mimeType}`);
+
+            const prompt = "Listen to this audio. Transcribe the lyrics and format them as a standard LRC file. Timestamps must be extremely accurate to the vocals [mm:ss.xx]. Return ONLY the LRC content, no code blocks.";
+
+            const audioPart = {
+                inlineData: {
+                    data: audioBase64,
+                    mimeType: mimeType
+                }
+            };
+
+            result = await model.generateContent([prompt, audioPart]);
+
         } else if (mode === 'text') {
-            if (!rawText) throw new HttpsError('invalid-argument', "Text required");
-
             const prompt = `Convert these lyrics to LRC format for a ${Math.floor(songDuration || 180)}s song. Distribute lines evenly. Return ONLY LRC content. Lyrics: ${rawText}`;
             console.log(`[handleGenerateLyrics] Processing text for user ${uid}`);
 
-            response = await client.chat.send({
-                model: "google/gemini-2.5-flash",
-                messages: [
-                    { role: "user", content: prompt }
-                ]
-            });
+            result = await model.generateContent(prompt);
         } else {
             throw new HttpsError('invalid-argument', "Invalid mode. Must be 'audio' or 'text'");
         }
 
-        // Validate response
-        if (!response || !response.choices || response.choices.length === 0) {
-            console.error("[handleGenerateLyrics] Empty response from OpenRouter", JSON.stringify(response));
-            throw new HttpsError('internal', "Failed to receive valid response from AI provider");
-        }
+        const response = await result.response;
+        let text = response.text() || "";
 
-        let text = response.choices[0].message.content || "";
         // Clean markdown
         text = text.replace(/```lrc/g, '').replace(/```/g, '').trim();
+
+        // --- Defensive Output Validation ---
+
+        if (!text) {
+            console.error("[handleGenerateLyrics] Generated text is empty");
+            throw new Error("AI generated empty response.");
+        }
+
+        // 4. Validate LRC Format
+        // Minimal valid LRC has at least one timestamp [mm:ss.xx]
+        const lrcTimestampRegex = /\[\d{2}:\d{2}\.\d{2}\]/;
+        if (!lrcTimestampRegex.test(text)) {
+            console.error("[handleGenerateLyrics] Invalid LRC format generated:", text.substring(0, 100));
+            // Fallback: If it's just plain text, maybe we could return it, but user expects LRC.
+            // We'll throw to let them try again or handle it.
+            throw new Error("Generated content is not a valid LRC format (missing timestamps).");
+        }
 
         return { text };
 
@@ -2592,6 +2624,9 @@ const handleGenerateLyrics = async (request) => {
             console.error("Failed to refund credits:", refundError);
         }
 
+        if (error instanceof HttpsError) throw error;
+
+        // Improve error message for GoogleGenerativeAI errors
         throw new HttpsError('internal', `Lyric generation failed: ${error.message}`);
     }
 };
@@ -2623,7 +2658,7 @@ export const api = onCall(async (request) => {
             case 'deleteImage': return handleDeleteImage(request);
             case 'deleteImagesBatch': return handleDeleteImagesBatch(request);
             default:
-                throw new HttpsError('invalid-argument', `Unknown action: ${action}`);
+                throw new HttpsError('invalid-argument', `Unknown action (deploy_check): ${action}`);
         }
     } catch (error) {
         console.error(`API Error [${action}]:`, error);
