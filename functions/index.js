@@ -2488,7 +2488,7 @@ const handleGenerateLyrics = async (request) => {
     console.log(`[handleGenerateLyrics] Using API Key from: ${keySource}`);
     console.log(`[handleGenerateLyrics] Key Prefix: ${apiKey.substring(0, 5)}...`);
 
-    const COST = 1; // 1 credit per generation
+    const COST = 2; // 2 credits per generation
 
     // 1. Deduct Credits (Transaction, skips for Pro users)
     try {
