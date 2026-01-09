@@ -862,9 +862,9 @@ export const stripeWebhook = onRequest(async (req, res) => {
                 let reelsToAdd = 0;
 
                 // Credit Packs (odd ending or specific values)
-                if (amount === 499) creditsToAdd = 100;        // Starter
-                else if (amount === 1999) creditsToAdd = 500;  // Pro
-                else if (amount === 4999) creditsToAdd = 1500; // Studio
+                if (amount === 499) creditsToAdd = 20;         // Starter ($0.25/credit)
+                else if (amount === 1999) creditsToAdd = 80;   // Pro ($0.25/credit)
+                else if (amount === 4999) creditsToAdd = 200;  // Studio ($0.25/credit)
 
                 // Reel Packs (Video Generation)
                 else if (amount === 600) reelsToAdd = 600;     // Reels Starter
@@ -1092,9 +1092,13 @@ const handleCreateGenerationRequest = async (request) => {
             // Re-calculate current credits based on potentail daily reset
             let effectiveCredits = (userUpdate.credits !== undefined) ? userUpdate.credits : (userData.credits || 0);
 
+            // Cost Calculation: Qwen models are expensive ($2.5/hr vs $1.1/hr), so they cost 2 credits.
+            // Standard models (SDXL, etc.) cost 0.5 credits ($0.125) to achieve ~40% margin.
+            const cost = (modelId === 'qwen-image-2512') ? 2 : 0.5;
+
             if (!isPro) {
-                if (effectiveCredits < 1) throw new HttpsError('resource-exhausted', "Insufficient credits");
-                userUpdate.credits = effectiveCredits - 1;
+                if (effectiveCredits < cost) throw new HttpsError('resource-exhausted', `Insufficient credits. This model requires ${cost} credits.`);
+                userUpdate.credits = effectiveCredits - cost;
             }
 
             t.update(userRef, userUpdate);
@@ -2066,7 +2070,7 @@ const transformImageWithGemini = async (imageUrl, styleName, instructions, inten
     if (!process.env.REPLICATE_API_TOKEN) {
         throw new Error("REPLICATE_API_TOKEN environment variable is not set");
     }
-    
+
     const replicate = new Replicate({
         auth: process.env.REPLICATE_API_TOKEN,
     });
@@ -2083,7 +2087,7 @@ const transformImageWithGemini = async (imageUrl, styleName, instructions, inten
 
     console.log(`[Transform] Calling Replicate with style: ${styleName}, intensity: ${intensity}`);
     console.log(`[Transform] Input:`, JSON.stringify(input, null, 2));
-    
+
     let output;
     try {
         output = await replicate.run("google/nano-banana-pro", { input });
@@ -2097,7 +2101,7 @@ const transformImageWithGemini = async (imageUrl, styleName, instructions, inten
     // Replicate returns different formats depending on the model
     // Try multiple ways to extract the URL
     let resultUrl = null;
-    
+
     if (typeof output === 'string') {
         resultUrl = output;
     } else if (Array.isArray(output)) {
@@ -2255,8 +2259,8 @@ const handleCreateVideoGenerationRequest = async (request) => {
     const safeAspectRatio = (aspectRatio && validAspectRatios.includes(aspectRatio)) ? aspectRatio : '3:2';
 
     // Calculate Cost based on resolution and duration
-    // Base rates: 1080p -> 3 per sec, 2k -> 6 per sec, 4k -> 12 per sec
-    const rate = safeResolution === '4k' ? 12 : (safeResolution === '2k' ? 6 : 3);
+    // Base rates: 1080p -> 9 per sec, 2k -> 18 per sec, 4k -> 36 per sec
+    const rate = safeResolution === '4k' ? 36 : (safeResolution === '2k' ? 18 : 9);
     const totalCost = rate * safeDuration;
 
     try {
@@ -2380,9 +2384,40 @@ const handleTransformImage = async (request) => {
         console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
     }
     const { imageUrl, styleName, instructions, intensity } = request.data;
-    const uid = request.auth?.uid || 'anonymous';
+    const uid = request.auth?.uid;
 
+    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
     if (!imageUrl) throw new HttpsError('invalid-argument', "Image URL is required");
+
+    const COST = 8;
+
+    // 1. Deduct Credits (Transaction)
+    try {
+        await db.runTransaction(async (t) => {
+            const userRef = db.collection('users').doc(uid);
+            const userDoc = await t.get(userRef);
+
+            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+
+            const userData = userDoc.data();
+            const isPro = userData.subscriptionStatus === 'active';
+
+            // Skip cost for Pro users (consistent with standard generation)
+            if (isPro) return;
+
+            const credits = userData.credits || 0;
+            if (credits < COST) {
+                throw new HttpsError('resource-exhausted', `Insufficient credits. This transformation costs ${COST} credits.`);
+            }
+
+            t.update(userRef, {
+                credits: FieldValue.increment(-COST)
+            });
+        });
+    } catch (error) {
+        console.error("Credit deduction failed:", error);
+        throw error; // Transaction failed, stop here
+    }
 
     try {
         console.log(`[handleTransformImage] Starting transformation for user ${uid}`, {
@@ -2399,15 +2434,27 @@ const handleTransformImage = async (request) => {
     } catch (error) {
         console.error("[handleTransformImage] Transform Image Error:", {
             message: error.message,
-            code: error.code,
-            stack: error.stack,
-            imageUrl: imageUrl?.substring(0, 100),
-            styleName,
-            userId: uid
+            uid,
+            styleName
         });
-        // Pass through the original error message for better debugging
-        const errorMessage = error.message || "Unknown error occurred";
-        throw new HttpsError('internal', `Failed to transform image: ${errorMessage}`, error);
+
+        // Refund credits on failure
+        try {
+            const userRef = db.collection('users').doc(uid);
+            const userDoc = await userRef.get();
+            const isPro = userDoc.data()?.subscriptionStatus === 'active';
+
+            if (!isPro) {
+                await userRef.update({
+                    credits: FieldValue.increment(COST)
+                });
+                console.log(`[handleTransformImage] Refunded ${COST} credits to ${uid} due to failure`);
+            }
+        } catch (refundError) {
+            console.error("Failed to refund credits:", refundError);
+        }
+
+        throw new HttpsError('internal', "Transformation failed: " + error.message);
     }
 };
 

@@ -8,14 +8,14 @@ import SEO from '../components/SEO';
 const CREDIT_PACKS = [
     {
         name: 'Starter Pack',
-        credits: 100,
+        credits: 20,
         price: '4.99',
         id: 'price_1SmMWqIA2zQnWbn58u3TzNWC',
         features: ['Access to all models', 'Standard generation speed', 'Private gallery']
     },
     {
         name: 'Pro Pack',
-        credits: 500,
+        credits: 80,
         price: '19.99',
         id: 'price_1SmMWqIA2zQnWbn5gj16f4Rx',
         isPopular: true,
@@ -23,7 +23,7 @@ const CREDIT_PACKS = [
     },
     {
         name: 'Studio Pack',
-        credits: 1500,
+        credits: 200,
         price: '49.99',
         id: 'price_1SmMWqIA2zQnWbn5ogGzTmcc',
         features: ['Access to all models', 'Max generation speed', 'Private gallery', 'Commercial license', 'Priority support']
