@@ -20,6 +20,7 @@ import { Privacy, Terms, Cookies } from './pages/Legal';
 import { Blog as PlaceholderBlog, Careers, Brand, Api, Showcase } from './pages/Misc';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
+import KaraokeGenie from './pages/KaraokeGenie';
 
 function PrivateRoute({ children }) {
   const { currentUser } = useAuth();
@@ -93,6 +94,7 @@ function App() {
                 <Route path="/brand" element={<Brand />} />
                 <Route path="/api" element={<Api />} />
                 <Route path="/showcase" element={<Showcase />} />
+                <Route path="/karaoke" element={<KaraokeGenie />} />
               </Routes>
             </div>
             <Footer />

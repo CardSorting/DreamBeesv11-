@@ -7,6 +7,7 @@ import { getFunctions } from "firebase-admin/functions";
 import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { createCheckoutSession, constructWebhookEvent, createPortalSession } from "./stripeHelpers.js";
 import Replicate from "replicate";
+import { OpenRouter } from "@openrouter/sdk";
 import sharp from "sharp";
 
 import { createRequire } from "module";
@@ -2458,6 +2459,143 @@ const handleTransformImage = async (request) => {
     }
 };
 
+// Handle Lyric Generation (Karaoke)
+const handleGenerateLyrics = async (request) => {
+    // App Check Verification (Warn Mode)
+    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
+        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
+    }
+
+    const uid = request.auth?.uid;
+    // Allow unauthenticated for now based on previous flow, OR enforce it? 
+    // The previous service used client-side key, so it was "public" if exposed.
+    // Ideally we enforce auth.
+    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
+
+    const { audioBase64, mimeType, rawText, songDuration, mode } = request.data;
+    const apiKey = process.env.OPENROUTER_API_KEY;
+
+    if (!apiKey) {
+        console.error("OPENROUTER_API_KEY not set");
+        throw new HttpsError('internal', "Service configuration error");
+    }
+
+    const COST = 1; // 1 credit per generation
+
+    // 1. Deduct Credits (Transaction, skips for Pro users)
+    try {
+        await db.runTransaction(async (t) => {
+            const userRef = db.collection('users').doc(uid);
+            const userDoc = await t.get(userRef);
+
+            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+
+            const userData = userDoc.data();
+            const isPro = userData.subscriptionStatus === 'active';
+
+            // Skip cost for Pro users
+            if (isPro) return;
+
+            const credits = userData.credits || 0;
+            if (credits < COST) {
+                throw new HttpsError('resource-exhausted', `Insufficient credits. Lyric generation costs ${COST} credit.`);
+            }
+
+            t.update(userRef, {
+                credits: FieldValue.increment(-COST)
+            });
+        });
+    } catch (error) {
+        console.error("Credit deduction failed:", error);
+        throw error;
+    }
+
+    const client = new OpenRouter({ apiKey });
+
+    try {
+        let response;
+        if (mode === 'audio') {
+            if (!audioBase64 || !mimeType) throw new HttpsError('invalid-argument', "Audio data required");
+
+            // Simple mapping for format
+            let format = 'mp3';
+            if (mimeType.includes('wav')) format = 'wav';
+            else if (mimeType.includes('ogg')) format = 'oga';
+
+            console.log(`[handleGenerateLyrics] Processing audio for user ${uid}, format: ${format}`);
+
+            response = await client.chat.send({
+                model: "google/gemini-2.5-flash",
+                messages: [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": "Listen to this audio. Transcribe the lyrics and format them as a standard LRC file. Timestamps must be extremely accurate to the vocals [mm:ss.xx]. Return ONLY the LRC content, no code blocks."
+                            },
+                            {
+                                "type": "input_audio",
+                                "input_audio": {
+                                    "data": audioBase64,
+                                    "format": format
+                                }
+                            }
+                        ]
+                    }
+                ]
+            });
+        } else if (mode === 'text') {
+            if (!rawText) throw new HttpsError('invalid-argument', "Text required");
+
+            const prompt = `Convert these lyrics to LRC format for a ${Math.floor(songDuration || 180)}s song. Distribute lines evenly. Return ONLY LRC content. Lyrics: ${rawText}`;
+            console.log(`[handleGenerateLyrics] Processing text for user ${uid}`);
+
+            response = await client.chat.send({
+                model: "google/gemini-2.5-flash",
+                messages: [
+                    { role: "user", content: prompt }
+                ]
+            });
+        } else {
+            throw new HttpsError('invalid-argument', "Invalid mode. Must be 'audio' or 'text'");
+        }
+
+        // Validate response
+        if (!response || !response.choices || response.choices.length === 0) {
+            console.error("[handleGenerateLyrics] Empty response from OpenRouter", JSON.stringify(response));
+            throw new HttpsError('internal', "Failed to receive valid response from AI provider");
+        }
+
+        let text = response.choices[0].message.content || "";
+        // Clean markdown
+        text = text.replace(/```lrc/g, '').replace(/```/g, '').trim();
+
+        return { text };
+
+    } catch (error) {
+        console.error("[handleGenerateLyrics] Error:", error);
+
+        // Refund credits on failure
+        try {
+            const userRef = db.collection('users').doc(uid);
+            const userDoc = await userRef.get();
+            const isPro = userDoc.data()?.subscriptionStatus === 'active';
+
+            if (!isPro) {
+                await userRef.update({
+                    credits: FieldValue.increment(COST) // Refund 1 credit
+                });
+                console.log(`[handleGenerateLyrics] Refunded ${COST} credit to ${uid} due to failure`);
+            }
+        } catch (refundError) {
+            console.error("Failed to refund credits:", refundError);
+        }
+
+        throw new HttpsError('internal', `Lyric generation failed: ${error.message}`);
+    }
+};
+
 export const api = onCall(async (request) => {
     // Basic App Check logging (Warn Mode) - centralized here
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
@@ -2474,7 +2612,8 @@ export const api = onCall(async (request) => {
             case 'createStripePortalSession': return handleCreateStripePortalSession(request);
             case 'createEnhanceRequest': return handleCreateEnhanceRequest(request);
             case 'transformPrompt': return handleTransformPrompt(request);
-            case 'transformImage': return handleTransformImage(request); // New action
+            case 'transformImage': return handleTransformImage(request);
+            case 'generateLyrics': return handleGenerateLyrics(request); // New action
             case 'generateVideoPrompt': return handleGenerateVideoPrompt(request);
             case 'getGenerationHistory': return handleGetGenerationHistory(request);
             case 'getImageDetail': return handleGetImageDetail(request);
