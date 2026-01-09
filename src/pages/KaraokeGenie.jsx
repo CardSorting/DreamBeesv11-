@@ -7,6 +7,7 @@ import {
 import VisualizerCanvas from '../components/VisualizerCanvas';
 import { parseLrc, formatTime } from '../utils/lrcParser';
 import { generateLrcFromAudio } from '../services/geminiService';
+import './KaraokeGenie.css'; // Re-enabled custom CSS
 
 const fileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -17,7 +18,6 @@ const fileToBase64 = (file) => {
     });
 };
 
-// Recorder State Enums since we don't have TS enums
 const RecorderState = {
     IDLE: 'idle',
     RECORDING: 'recording',
@@ -101,7 +101,7 @@ const KaraokeGenie = () => {
         const analyserNode = ctx.createAnalyser();
         analyserNode.fftSize = 256;
 
-        // Check if source already exists to avoid reconnection errors if re-initializing
+        // Check if source already exists (handling React Strict Mode double invoke potentially)
         if (!sourceNodeRef.current) {
             const source = ctx.createMediaElementSource(audioRef.current);
             source.connect(analyserNode);
@@ -229,48 +229,47 @@ const KaraokeGenie = () => {
     // --- Render Steps ---
 
     const renderUpload = () => (
-        <div className="flex flex-col items-center justify-center min-h-[80vh] animate-in fade-in zoom-in-95 duration-700">
-            <div className="text-center mb-10 relative">
-                <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-64 h-64 bg-indigo-500/20 rounded-full blur-[100px]" />
-                <h1 className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-200 via-white to-indigo-200 tracking-tighter mb-4">
+        <div className="kg-layout kg-animate-zoom">
+            <div className="kg-upload-header">
+                <div className="kg-glow-bg" />
+                <h1 className="kg-title">
                     KaraokeGenie
                 </h1>
-                <p className="text-slate-400 text-lg font-light tracking-wide">
+                <p className="kg-subtitle">
                     AI-POWERED LYRIC VISUALIZER
                 </p>
             </div>
 
-            <label className="group relative cursor-pointer w-full max-w-2xl aspect-[4/1]">
-                <input type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" />
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500" />
-                <div className="absolute inset-0 bg-slate-900 border border-slate-700 group-hover:border-indigo-500/50 rounded-2xl flex flex-col items-center justify-center gap-3 transition-all duration-300">
-                    <Upload className="w-8 h-8 text-indigo-400 group-hover:scale-110 transition-transform" />
+            <label className="kg-dropzone">
+                <input type="file" accept="audio/*" onChange={handleAudioUpload} className="hidden" style={{ display: 'none' }} />
+                <div className="kg-dropzone-bg">
+                    <Upload className="kg-drop-icon" />
                     <div className="text-center">
-                        <span className="text-slate-200 font-medium text-lg">Drop your audio file</span>
-                        <p className="text-slate-500 text-sm mt-1">WAV, MP3, OGG up to 25MB</p>
+                        <span className="kg-drop-text">Drop your audio file</span>
+                        <p className="kg-drop-subtext">WAV, MP3, OGG up to 25MB</p>
                     </div>
                 </div>
             </label>
 
             {errorMsg && (
-                <div className="mt-8 text-red-400 bg-red-950/30 px-4 py-2 rounded border border-red-900 flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4" /> {errorMsg}
+                <div className="kg-error-toast" style={{ position: 'relative', marginTop: '2rem', top: 'auto', right: 'auto' }}>
+                    <AlertCircle className="kg-icon-sm" /> {errorMsg}
                 </div>
             )}
         </div>
     );
 
     const renderProcessing = () => (
-        <div className="flex flex-col items-center justify-center min-h-[80vh] max-w-md mx-auto animate-in fade-in duration-500">
-            <div className="w-16 h-16 mb-8 relative">
-                <div className="absolute inset-0 border-4 border-slate-800 rounded-full" />
-                <div className="absolute inset-0 border-4 border-indigo-500 rounded-full border-t-transparent animate-spin" />
-                <Sparkles className="absolute inset-0 m-auto text-indigo-400 w-6 h-6 animate-pulse" />
+        <div className="kg-layout kg-animate-fade">
+            <div className="kg-spinner-container">
+                <div className="kg-spinner-bg" />
+                <div className="kg-spinner-active" />
+                <Sparkles className="kg-spinner-icon" />
             </div>
 
-            <h2 className="text-2xl font-bold text-white mb-8">Analyzing Track...</h2>
+            <h2 className="text-2xl font-bold mb-8" style={{ fontSize: '1.5rem', marginBottom: '2rem' }}>Analyzing Track...</h2>
 
-            <div className="w-full space-y-3">
+            <div className="kg-status-list" style={{ maxWidth: '400px' }}>
                 <StatusRow
                     icon={Music}
                     label="Transcribing Lyrics"
@@ -279,72 +278,64 @@ const KaraokeGenie = () => {
             </div>
 
             {errorMsg && (
-                <div className="mt-8 w-full text-red-400 bg-red-950/30 px-4 py-3 rounded border border-red-900 flex items-center justify-between gap-2">
-                    <span className="text-sm">{errorMsg}</span>
-                    <button onClick={() => setCurrentStep('upload')} className="text-xs bg-red-900/50 hover:bg-red-800 px-2 py-1 rounded">Try Again</button>
+                <div className="kg-status-row" style={{ marginTop: '2rem', borderColor: 'var(--kg-danger)' }}>
+                    <div style={{ color: 'var(--kg-danger)', fontSize: '0.875rem' }}>{errorMsg}</div>
+                    <button onClick={() => setCurrentStep('upload')} style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--kg-danger)', border: 'none', padding: '0.25rem 0.5rem', borderRadius: '4px', cursor: 'pointer' }}>Try Again</button>
                 </div>
             )}
         </div>
     );
 
     const renderStudio = () => {
-        // Determine container size based on aspect ratio
-        const containerClass = aspectRatio === '16:9'
-            ? "aspect-video w-full max-h-full"
-            : "aspect-[9/16] h-full max-h-full";
-
-        const canvasWidth = aspectRatio === '16:9' ? 1920 : 1080;
-        const canvasHeight = aspectRatio === '16:9' ? 1080 : 1920;
-
         return (
-            <div className="flex h-screen overflow-hidden bg-slate-950">
+            <div className="kg-studio-container">
                 {/* CENTER: STAGE */}
-                <div className="flex-1 flex flex-col relative z-10">
+                <div className="kg-main-stage">
                     {/* Header */}
-                    <div className="h-14 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900/30 backdrop-blur-md">
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => setCurrentStep('upload')} className="flex items-center gap-2 text-slate-500 hover:text-white transition-colors text-sm">
-                                <ArrowLeft className="w-4 h-4" /> Start Over
+                    <div className="kg-toolbar">
+                        <div className="kg-toolbar-left">
+                            <button onClick={() => setCurrentStep('upload')} className="kg-btn-text">
+                                <ArrowLeft className="kg-icon-sm" /> Start Over
                             </button>
-                            <div className="h-4 w-px bg-slate-800"></div>
-                            <div className="flex bg-slate-800/50 rounded-lg p-0.5">
+                            <div style={{ height: '1rem', width: '1px', background: 'var(--kg-border)' }}></div>
+                            <div className="kg-toggle-group">
                                 <button
                                     onClick={() => setAspectRatio('16:9')}
-                                    className={`px-3 py-1 rounded-md text-xs font-medium flex items-center gap-2 transition-all ${aspectRatio === '16:9' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
+                                    className={`kg-toggle-btn ${aspectRatio === '16:9' ? 'active' : ''}`}
                                 >
-                                    <Monitor className="w-3 h-3" /> 16:9
+                                    <Monitor className="kg-icon-sm" /> 16:9
                                 </button>
                                 <button
                                     onClick={() => setAspectRatio('9:16')}
-                                    className={`px-3 py-1 rounded-md text-xs font-medium flex items-center gap-2 transition-all ${aspectRatio === '9:16' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-200'}`}
+                                    className={`kg-toggle-btn ${aspectRatio === '9:16' ? 'active' : ''}`}
                                 >
-                                    <Smartphone className="w-3 h-3" /> 9:16
+                                    <Smartphone className="kg-icon-sm" /> 9:16
                                 </button>
                             </div>
                         </div>
 
-                        <div className="font-semibold text-slate-200 text-sm tracking-wide flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                        <div className="kg-mode-badge">
+                            <span className="kg-dot"></span>
                             STUDIO MODE
                         </div>
 
                         <button
                             onClick={() => setCurrentStep('export')}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-2"
+                            className="kg-btn-primary"
                         >
-                            Export <ChevronRight className="w-4 h-4" />
+                            Export <ChevronRight className="kg-icon-sm" />
                         </button>
                     </div>
 
                     {/* Canvas Area */}
-                    <div className="flex-1 bg-black relative flex items-center justify-center overflow-hidden p-8">
-                        <div className={`${containerClass} shadow-2xl ring-1 ring-slate-800 relative bg-slate-900 rounded-lg overflow-hidden transition-all duration-500`}>
+                    <div className="kg-canvas-wrapper">
+                        <div className={`kg-canvas-container ${aspectRatio === '16:9' ? 'aspect-16-9' : 'aspect-9-16'}`}>
                             <VisualizerCanvas
                                 ref={visualizerRef}
                                 lyrics={parsedLyrics}
                                 currentTime={currentTime}
-                                width={canvasWidth}
-                                height={canvasHeight}
+                                width={aspectRatio === '16:9' ? 1920 : 1080}
+                                height={aspectRatio === '16:9' ? 1080 : 1920}
                                 isPlaying={isPlaying}
                                 analyser={analyser}
                             />
@@ -352,23 +343,23 @@ const KaraokeGenie = () => {
                     </div>
 
                     {/* Bottom Transport Bar */}
-                    <div className="h-20 bg-slate-900 border-t border-slate-800 flex items-center px-6 gap-6">
+                    <div className="kg-transport">
                         <button
                             onClick={togglePlay}
-                            className="w-12 h-12 flex items-center justify-center bg-white text-black hover:scale-105 rounded-full transition-all shadow-lg shadow-white/10"
+                            className="kg-play-btn"
                         >
-                            {isPlaying ? <Pause className="fill-current w-5 h-5" /> : <Play className="fill-current w-5 h-5 ml-1" />}
+                            {isPlaying ? <Pause className="kg-icon" /> : <Play className="kg-icon" style={{ marginLeft: '2px' }} />}
                         </button>
 
-                        <div className="flex-1 flex flex-col gap-2">
-                            <div className="flex justify-between text-xs font-mono text-slate-400">
+                        <div className="kg-timeline-control">
+                            <div className="kg-time-labels">
                                 <span>{formatTime(currentTime)}</span>
                                 <span>{formatTime(duration)}</span>
                             </div>
-                            <div className="relative group h-2 bg-slate-800 rounded-full cursor-pointer">
+                            <div className="kg-slider-track">
                                 <div
-                                    className="absolute left-0 top-0 bottom-0 bg-indigo-500 rounded-full group-hover:bg-indigo-400 transition-colors"
-                                    style={{ width: `${(currentTime / duration) * 100}%` }}
+                                    className="kg-slider-fill"
+                                    style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
                                 />
                                 <input
                                     type="range"
@@ -380,41 +371,41 @@ const KaraokeGenie = () => {
                                         if (audioRef.current) audioRef.current.currentTime = t;
                                         setCurrentTime(t);
                                     }}
-                                    className="absolute inset-0 w-full opacity-0 cursor-pointer"
+                                    className="kg-slider-input"
                                 />
                             </div>
                         </div>
 
-                        <div className="w-32 flex flex-col gap-1">
-                            <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Volume</span>
+                        <div className="kg-volume-control">
+                            <span className="kg-label-mini">Volume</span>
                             <input
                                 type="range" min="0" max="1" step="0.05"
                                 value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))}
-                                className="h-1 bg-slate-700 rounded-full accent-slate-300 cursor-pointer"
+                                className="kg-range-mini"
                             />
                         </div>
                     </div>
                 </div>
 
                 {/* RIGHT SIDEBAR: LYRICS */}
-                <div className="w-80 bg-slate-900/50 border-l border-slate-800 flex flex-col backdrop-blur-xl z-20">
-                    <div className="p-4 border-b border-slate-800 font-bold text-slate-400 text-xs uppercase tracking-wider flex items-center gap-2">
-                        <Edit3 className="w-3 h-3" /> Lyrics Editor
+                <div className="kg-sidebar">
+                    <div className="kg-sidebar-header">
+                        <Edit3 className="kg-icon-sm" /> Lyrics Editor
                     </div>
                     <textarea
-                        className="flex-1 bg-transparent p-4 text-sm font-mono text-slate-300 resize-none outline-none focus:bg-slate-800/50 transition-colors"
+                        className="kg-lyrics-area"
                         value={lrcContent}
                         onChange={(e) => setLrcContent(e.target.value)}
                         spellCheck={false}
                     />
-                    <div className="p-4 border-t border-slate-800 bg-slate-900/80">
+                    <div className="kg-sidebar-footer">
                         <button
                             onClick={() => {
                                 if (audioFile) startProcessing(audioFile);
                             }}
-                            className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded border border-slate-700 flex items-center justify-center gap-2 transition-all"
+                            className="kg-btn-secondary"
                         >
-                            <RefreshCw className="w-3 h-3" /> Regenerate Analysis
+                            <RefreshCw className="kg-icon-sm" /> Regenerate Analysis
                         </button>
                     </div>
                 </div>
@@ -423,61 +414,53 @@ const KaraokeGenie = () => {
     };
 
     const renderExport = () => {
-        // Export logic also needs to respect Aspect Ratio for display
-        const containerClass = aspectRatio === '16:9'
-            ? "relative w-[80vw] aspect-video"
-            : "relative h-[80vh] aspect-[9/16]";
-
-        const canvasWidth = aspectRatio === '16:9' ? 1920 : 1080;
-        const canvasHeight = aspectRatio === '16:9' ? 1080 : 1920;
-
         return (
-            <div className="flex flex-col items-center justify-center h-screen bg-black relative">
-                <div className="absolute top-8 left-8 z-50">
-                    <button onClick={() => setCurrentStep('studio')} className="text-white/50 hover:text-white flex items-center gap-2 transition-colors">
-                        <ArrowLeft className="w-5 h-5" /> Back to Studio
-                    </button>
-                </div>
+            <div className="kg-full-screen" style={{ justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+                <button onClick={() => setCurrentStep('studio')} className="kg-back-btn-float">
+                    <ArrowLeft className="kg-icon" /> Back to Studio
+                </button>
 
-                <div className={`${containerClass} bg-black shadow-2xl ring-1 ring-slate-800 rounded-lg overflow-hidden group transition-all duration-500`}>
+                <div className={`kg-canvas-container ${aspectRatio === '16:9' ? 'aspect-16-9' : 'aspect-9-16'}`} style={aspectRatio === '9:16' ? { height: '80vh' } : { width: '80vw' }}>
                     <VisualizerCanvas
                         ref={visualizerRef}
                         lyrics={parsedLyrics}
                         currentTime={currentTime}
-                        width={canvasWidth}
-                        height={canvasHeight}
+                        width={aspectRatio === '16:9' ? 1920 : 1080}
+                        height={aspectRatio === '16:9' ? 1080 : 1920}
                         isPlaying={isPlaying}
                         analyser={analyser}
                     />
 
                     {/* Overlay Controls for Export */}
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-center justify-center backdrop-blur-sm">
+                    <div className="kg-export-overlay">
                         {recorderState === RecorderState.IDLE || recorderState === RecorderState.COMPLETED ? (
                             <button
                                 onClick={startRecording}
-                                className="bg-white text-black px-10 py-5 rounded-full font-bold text-xl hover:scale-110 transition-transform shadow-[0_0_50px_rgba(255,255,255,0.3)] flex items-center gap-4"
+                                className="kg-btn-record"
                             >
-                                <div className="w-4 h-4 bg-red-600 rounded-full animate-pulse" />
+                                <div className="kg-dot-record" />
                                 START RECORDING
                             </button>
                         ) : (
-                            <div className="flex flex-col items-center gap-4">
-                                <div className="w-16 h-16 border-4 border-white/20 border-t-red-500 rounded-full animate-spin" />
-                                <span className="text-white font-mono tracking-widest uppercase">Recording in progress</span>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                                <div className="kg-spinner-container">
+                                    <div className="kg-spinner-active" style={{ borderColor: 'white', borderTopColor: 'var(--kg-danger)' }} />
+                                </div>
+                                <span style={{ color: 'white', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Recording...</span>
                             </div>
                         )}
                     </div>
 
                     {recorderState === RecorderState.RECORDING && (
-                        <div className="absolute top-8 right-8 flex items-center gap-2 bg-red-600 text-white px-4 py-1.5 rounded font-bold animate-pulse z-20">
+                        <div style={{ position: 'absolute', top: '2rem', right: '2rem', background: 'var(--kg-danger)', color: 'white', padding: '0.5rem 1rem', borderRadius: '4px', fontWeight: 'bold', zIndex: 20 }}>
                             REC
                         </div>
                     )}
                 </div>
 
                 {recorderState === RecorderState.COMPLETED && (
-                    <div className="mt-8 flex items-center gap-2 text-green-400 animate-in slide-in-from-bottom-4">
-                        <CheckCircle2 className="w-5 h-5" />
+                    <div className="kg-success-msg">
+                        <CheckCircle2 className="kg-icon" />
                         <span>Video saved successfully</span>
                     </div>
                 )}
@@ -490,10 +473,10 @@ const KaraokeGenie = () => {
             <audio ref={audioRef} src={audioSrc || undefined} crossOrigin="anonymous" />
 
             {errorMsg && currentStep !== 'processing' && currentStep !== 'upload' && (
-                <div className="fixed top-4 right-4 z-[100] bg-red-500 text-white px-6 py-4 rounded shadow-2xl animate-in slide-in-from-top-4 flex items-center gap-4">
-                    <AlertCircle className="w-5 h-5" />
+                <div className="kg-error-toast">
+                    <AlertCircle className="kg-icon" />
                     {errorMsg}
-                    <button onClick={() => setErrorMsg(null)} className="ml-2 opacity-50 hover:opacity-100">✕</button>
+                    <button onClick={() => setErrorMsg(null)} style={{ marginLeft: '0.5rem', background: 'transparent', border: 'none', color: 'white', opacity: 0.7, cursor: 'pointer' }}>✕</button>
                 </div>
             )}
 
@@ -507,15 +490,15 @@ const KaraokeGenie = () => {
 
 // Sub-component for Processing UI
 const StatusRow = ({ icon: Icon, label, status }) => (
-    <div className="bg-slate-900 border border-slate-800 p-4 rounded flex items-center justify-between w-full">
-        <div className="flex items-center gap-4 text-slate-300">
-            <Icon className="w-5 h-5 text-indigo-400" />
-            <span className="font-medium">{label}</span>
+    <div className="kg-status-row">
+        <div className="kg-status-label">
+            <Icon className="kg-icon kg-icon-primary" />
+            <span>{label}</span>
         </div>
-        {status === 'loading' && <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />}
-        {status === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-500" />}
-        {status === 'error' && <AlertCircle className="w-5 h-5 text-red-500" />}
-        {status === 'idle' && <div className="w-2 h-2 bg-slate-700 rounded-full" />}
+        {status === 'loading' && <Loader2 className="kg-icon kg-icon-primary" style={{ animation: 'kg-spin 1s linear infinite' }} />}
+        {status === 'success' && <CheckCircle2 className="kg-icon" style={{ color: 'var(--kg-success)' }} />}
+        {status === 'error' && <AlertCircle className="kg-icon" style={{ color: 'var(--kg-danger)' }} />}
+        {status === 'idle' && <div style={{ width: '0.5rem', height: '0.5rem', background: '#334155', borderRadius: '50%' }} />}
     </div>
 );
 

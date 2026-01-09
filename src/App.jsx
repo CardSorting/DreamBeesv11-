@@ -32,7 +32,7 @@ function App() {
     <Router>
       <AuthProvider>
         <ModelProvider>
-          <div className="app" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+          <div className="app" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100%' }}>
             <Toaster
               position="top-right"
               toastOptions={{
