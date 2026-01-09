@@ -2282,9 +2282,26 @@ const handleCreateVideoGenerationRequest = async (request) => {
             if (!activeJobs.empty) throw new HttpsError('failed-precondition', "You already have a video generation in progress.");
 
             // 3. Check Balance
-            const currentReels = userDoc.data().reels || 0;
-            if (currentReels < totalCost) {
-                throw new HttpsError('resource-exhausted', `Insufficient Reels. Need ${totalCost}, have ${currentReels}.`);
+            // 3. Check Balance with Robust Validation
+
+            // Sanity Check: Cost
+            if (typeof totalCost !== 'number' || totalCost <= 0) {
+                throw new HttpsError('internal', "Configuration Error: Invalid video cost.");
+            }
+
+            const userData = userDoc.data();
+            let reels = userData.reels;
+
+            // Strict Type Validation
+            if (typeof reels !== 'number') {
+                console.warn(`[handleCreateVideoGenerationRequest] User ${uid} has invalid 'reels' field type (${typeof reels}). Treating as 0.`);
+                reels = 0;
+            }
+
+            console.log(`[handleCreateVideoGenerationRequest] Reel Audit - User: ${uid}, Pre-balance: ${reels}, Cost: ${totalCost}`);
+
+            if (reels < totalCost) {
+                throw new HttpsError('resource-exhausted', `Insufficient Reels. Current: ${reels}, Required: ${totalCost}.`);
             }
 
             // 4. Execution
@@ -2407,9 +2424,22 @@ const handleTransformImage = async (request) => {
             // Skip cost for Pro users (consistent with standard generation)
             if (isPro) return;
 
-            const credits = userData.credits || 0;
+            // Sanity Check: Cost
+            if (typeof COST !== 'number' || COST <= 0) {
+                throw new HttpsError('internal', "Configuration Error: Invalid transformation cost.");
+            }
+
+            // Strict Type Validation
+            let credits = userData.credits;
+            if (typeof credits !== 'number') {
+                console.warn(`[handleTransformImage] User ${uid} has invalid 'credits' field type (${typeof credits}). Treating as 0.`);
+                credits = 0;
+            }
+
+            console.log(`[handleTransformImage] Credit Audit - User: ${uid}, Pre-balance: ${credits}, Cost: ${COST}`);
+
             if (credits < COST) {
-                throw new HttpsError('resource-exhausted', `Insufficient credits. This transformation costs ${COST} credits.`);
+                throw new HttpsError('resource-exhausted', `Insufficient credits. Current: ${credits}, Required: ${COST}.`);
             }
 
             t.update(userRef, {
@@ -2498,15 +2528,29 @@ const handleGenerateLyrics = async (request) => {
 
             if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
 
+            // Sanity Check: Ensure COST is valid positive number
+            if (typeof COST !== 'number' || COST <= 0) {
+                throw new HttpsError('internal', "Configuration Error: Invalid operation cost.");
+            }
+
             const userData = userDoc.data();
             const isPro = userData.subscriptionStatus === 'active';
 
             // Skip cost for Pro users
             if (isPro) return;
 
-            const credits = userData.credits || 0;
+            // Strict Type Validation for Credits
+            let credits = userData.credits;
+            if (typeof credits !== 'number') {
+                console.warn(`[handleGenerateLyrics] User ${uid} has invalid 'credits' field type (${typeof credits}). Treating as 0.`);
+                credits = 0;
+            }
+
+            console.log(`[handleGenerateLyrics] Credit Audit - User: ${uid}, Pre-balance: ${credits}, Cost: ${COST}`);
+
+            // Insufficient Funds Check (Prevent Negative Balance)
             if (credits < COST) {
-                throw new HttpsError('resource-exhausted', `Insufficient credits. Lyric generation costs ${COST} credit.`);
+                throw new HttpsError('resource-exhausted', `Insufficient credits. Current: ${credits}, Required: ${COST}.`);
             }
 
             t.update(userRef, {
