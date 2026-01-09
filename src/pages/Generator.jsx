@@ -117,7 +117,7 @@ export default function Generator() {
         };
 
         try {
-            const api = httpsCallable(functions, 'api');
+            const api = httpsCallable(functions, 'api', { timeout: 540000 }); // 9 minute timeout
             // Use the captured values to avoid stale closure issues
             const hasValidReferenceImage = isReferenceImageValid(currentReferenceImage);
             const hasValidPrompt = currentPrompt && typeof currentPrompt === 'string' && currentPrompt.trim().length > 0;
@@ -397,12 +397,34 @@ export default function Generator() {
         setReferenceImage(imageUrl);
         setPrompt("Analyzing image..."); // Temporary placeholder
 
+        // Progressive progress updates for Video Animation
+        const progressUpdates = [
+            { delay: 500, message: `🎬 Preparing video studio...` },
+            { delay: 1500, message: `📤 Uploading image for analysis...` },
+            { delay: 3500, message: `🤖 Analyzing scene composition...` },
+            { delay: 6000, message: `🎥 Configuring camera motion...` },
+            { delay: 9000, message: `✨ Queuing generation job...` }
+        ];
+
+        const progressTimers = progressUpdates.map(({ delay, message }) =>
+            setTimeout(() => {
+                toast.loading(message, { id: 'video-animate' });
+            }, delay)
+        );
+
+        const clearProgressTimers = () => {
+            progressTimers.forEach(timer => clearTimeout(timer));
+        };
+
+        // Initial toast
+        toast.loading("Starting video animation...", { id: 'video-animate' });
+
         const MAX_RETRIES = 3;
         let retries = 0;
         let success = false;
 
         try {
-            const api = httpsCallable(functions, 'api');
+            const api = httpsCallable(functions, 'api', { timeout: 540000 }); // 9 minute timeout
 
             // Compress image if base64 to avoid Firestore limits
             let processedImage = imageUrl;
@@ -424,6 +446,10 @@ export default function Generator() {
 
                     setCurrentJobId(videoResult.data.requestId);
                     success = true; // Exit loop on success
+
+                    clearProgressTimers();
+                    toast.success("Video job finished setup!", { id: 'video-animate' });
+
                 } catch (innerError) {
                     console.error(`Video generation attempt ${retries + 1} failed:`, innerError);
 
@@ -434,6 +460,7 @@ export default function Generator() {
                         retries++;
                         await new Promise(resolve => setTimeout(resolve, 2000 * Math.pow(2, retries))); // Exponential backoff (2s, 4s...)
                         console.log(`Retrying video generation (Attempt ${retries + 1})...`);
+                        toast.loading(`Retrying... (Attempt ${retries + 1})`, { id: 'video-animate' });
                     } else {
                         throw innerError; // Rethrow to outer catch if not retryable or max retries reached
                     }
@@ -441,6 +468,7 @@ export default function Generator() {
             }
 
         } catch (error) {
+            clearProgressTimers();
             console.error("Video generation error final", error);
 
             let errorMessage = "Failed to animate image. Please try again.";
@@ -455,7 +483,7 @@ export default function Generator() {
                 errorMessage = "Image too large or invalid format.";
             }
 
-            toast.error(errorMessage);
+            toast.error(errorMessage, { id: 'video-animate' });
             setGenerating(false);
             setPrompt("");
             setReferenceImage(null);
@@ -485,8 +513,29 @@ export default function Generator() {
         if (!referenceImage) return toast.error("Please attach an image first");
 
         setIsAutoPrompting(true);
+
+        // Progressive progress updates
+        const progressUpdates = [
+            { delay: 500, message: `📤 Uploading image to analysis engine...` },
+            { delay: 1500, message: `🧠 AI feels inspired...` },
+            { delay: 3500, message: `📝 Drafting detailed prompt...` },
+            { delay: 6000, message: `✨ Polishing description...` }
+        ];
+
+        const progressTimers = progressUpdates.map(({ delay, message }) =>
+            setTimeout(() => {
+                toast.loading(message, { id: 'auto-prompt' });
+            }, delay)
+        );
+
+        const clearProgressTimers = () => {
+            progressTimers.forEach(timer => clearTimeout(timer));
+        };
+
         try {
-            const api = httpsCallable(functions, 'api');
+            toast.loading("Starting analysis...", { id: 'auto-prompt' });
+
+            const api = httpsCallable(functions, 'api', { timeout: 540000 }); // 9 minute timeout
             const payload = { action: 'createAnalysisRequest' };
             if (referenceImage.startsWith('data:')) {
                 // Compress image to avoid Firestore 1MB limit
@@ -505,8 +554,10 @@ export default function Generator() {
                 if (snapshot.exists()) {
                     const status = snapshot.data().status;
                     if (status === 'completed') {
+                        clearProgressTimers();
                         setPrompt(snapshot.data().prompt);
-                        toast.success("Prompt generated!");
+                        toast.success("Prompt generated!", { id: 'auto-prompt' });
+
                         // Clear image after successful prompt generation to avoid confusion
                         if (generationMode === 'image') {
                             setReferenceImage(null);
@@ -514,7 +565,8 @@ export default function Generator() {
                         setIsAutoPrompting(false);
                         unsub();
                     } else if (status === 'failed') {
-                        toast.error("Analysis failed: " + snapshot.data().error);
+                        clearProgressTimers();
+                        toast.error("Analysis failed: " + snapshot.data().error, { id: 'auto-prompt' });
                         setIsAutoPrompting(false);
                         unsub();
                     }
@@ -525,15 +577,24 @@ export default function Generator() {
             setTimeout(() => {
                 unsub();
                 if (isAutoPrompting) {
+                    clearProgressTimers();
                     setIsAutoPrompting(false);
-                    toast.error("Analysis timeout. Please try again.");
+                    toast.error("Analysis timeout. Please try again.", { id: 'auto-prompt' });
                 }
-            }, 60000); // 1 minute timeout
+            }, 180000); // 3 minute timeout (increased from 60s)
+
+            // Reassuring toast for long waits
+            setTimeout(() => {
+                if (isAutoPrompting) {
+                    toast.loading("Still working on it... complex scenes take time!", { id: 'auto-prompt' });
+                }
+            }, 45000);
 
         } catch (error) {
+            clearProgressTimers();
             console.error("Auto prompt request error", error);
             console.error("Auto prompt error details:", error.message, error.code, error.details);
-            toast.error(`Failed to start analysis: ${error.message}`);
+            toast.error(`Failed to start analysis: ${error.message}`, { id: 'auto-prompt' });
             setIsAutoPrompting(false);
         }
     };
@@ -720,7 +781,7 @@ export default function Generator() {
 
         try {
             if (generationMode === 'video') {
-                const api = httpsCallable(functions, 'api');
+                const api = httpsCallable(functions, 'api', { timeout: 540000 }); // 9 minute timeout
 
                 // Compress image if base64 before upload
                 let processedImage = referenceImage;
@@ -739,10 +800,31 @@ export default function Generator() {
                 });
                 setCurrentJobId(result.data.requestId);
             } else {
-                const api = httpsCallable(functions, 'api');
+                const api = httpsCallable(functions, 'api', { timeout: 540000 }); // 9 minute timeout
 
                 let finalPrompt = effectivePrompt;
                 let finalNegativePrompt = negPrompt;
+
+                // Progressive progress updates for Standard Generation
+                const progressUpdates = [
+                    { delay: 500, message: `🚀 Queueing request...` },
+                    { delay: 1500, message: `🎨 Allocating GPU resources...` },
+                    { delay: 3500, message: `🖌️ Painting your vision...` },
+                    { delay: 6000, message: `✨ Refining details...` }
+                ];
+
+                const progressTimers = progressUpdates.map(({ delay, message }) =>
+                    setTimeout(() => {
+                        toast.loading(message, { id: 'gen-image' });
+                    }, delay)
+                );
+
+                const clearProgressTimers = () => {
+                    progressTimers.forEach(timer => clearTimeout(timer));
+                };
+
+                // Initial toast
+                toast.loading("Starting generation...", { id: 'gen-image' });
 
                 // Magic Mode Auto-Transform logic removed in favor of explicit "Enhance" button workflow.
 
@@ -766,17 +848,26 @@ export default function Generator() {
                     finalNegativePrompt = combinedNegatives;
                 }
 
-                const result = await api({
-                    action: 'createGenerationRequest',
-                    prompt: finalPrompt,
-                    negative_prompt: finalNegativePrompt,
-                    modelId: selectedModel.id,
-                    aspectRatio: aspectRatio,
-                    steps: steps,
-                    cfg: cfg,
-                    seed: seed
-                });
-                setCurrentJobId(result.data.requestId);
+                try {
+                    const result = await api({
+                        action: 'createGenerationRequest',
+                        prompt: finalPrompt,
+                        negative_prompt: finalNegativePrompt,
+                        modelId: selectedModel.id,
+                        aspectRatio: aspectRatio,
+                        steps: steps,
+                        cfg: cfg,
+                        seed: seed
+                    });
+
+                    setCurrentJobId(result.data.requestId);
+                    clearProgressTimers();
+                    toast.success("Generation started!", { id: 'gen-image' });
+
+                } catch (innerError) {
+                    clearProgressTimers();
+                    throw innerError;
+                }
             }
         } catch (error) {
             console.error("Queue error", error);
@@ -785,9 +876,9 @@ export default function Generator() {
 
             // Helpful user messaging for payload errors
             if (errorMessage.includes('INVALID_ARGUMENT') || errorMessage.includes('too large')) {
-                toast.error("Image too large. Compression failed.");
+                toast.error("Image too large. Compression failed.", { id: generationMode === 'image' ? 'gen-image' : undefined });
             } else {
-                toast.error(errorMessage);
+                toast.error(errorMessage, { id: generationMode === 'image' ? 'gen-image' : undefined });
             }
         }
     };
