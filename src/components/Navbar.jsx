@@ -36,10 +36,12 @@ export default function Navbar() {
         { path: '/pricing', label: 'Refill', icon: Hexagon },
     ];
 
+    const limitWidth = ['/dressup', '/karaoke', '/generate'].includes(location.pathname);
+
     return (
         <div style={{
-            position: 'fixed',
-            top: '20px',
+            position: limitWidth ? 'relative' : 'fixed',
+            top: limitWidth ? '0' : '20px',
             left: 0,
             right: 0,
             display: 'flex',

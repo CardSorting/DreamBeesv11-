@@ -910,14 +910,14 @@ export default function Generator() {
 
     if (loading) {
         return (
-            <div style={{ paddingTop: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', color: 'white' }}>
+            <div style={{ paddingTop: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', color: 'white' }}>
                 <Loader2 className="animate-spin" size={32} />
             </div>
         );
     }
 
     return (
-        <div style={{ paddingTop: '140px', paddingBottom: '40px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ paddingTop: '24px', paddingBottom: '40px', display: 'flex', flexDirection: 'column' }}>
             <SEO
                 title="Studio"
                 description="Professional AI Image Generation Studio. Create art with SDXL and Flux models using our high-performance inference engine."

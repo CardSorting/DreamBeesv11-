@@ -178,10 +178,7 @@ export default function DressUp() {
                         {/* Recent User Stickers */}
                         {userImages.length > 0 && (
                             <div className="sticker-collection">
-                                <div className="sticker-header">
-                                    <h3 className="sticker-title">Pick a Friend 🧸</h3>
-                                    <p className="sticker-subtitle">Tap a photo to dress them up again!</p>
-                                </div>
+                                <h3 className="sticker-title">Who do you want to dress up? 🎭</h3>
                                 <div className="sticker-scroll">
                                     {userImages.map(img => (
                                         <button
