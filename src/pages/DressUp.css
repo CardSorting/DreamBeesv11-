@@ -279,10 +279,10 @@
 /* Messy Items Grid */
 .items-grid {
     flex: 1;
-    padding: 16px;
+    padding: 24px;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: 32px;
     overflow-y: hidden;
     /* Hide scroll now that we have paging */
     align-content: start;
