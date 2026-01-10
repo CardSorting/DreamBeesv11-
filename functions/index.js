@@ -1043,11 +1043,8 @@ const handleCreateGenerationRequest = async (request) => {
 
             const userUpdate = { lastGenerationTime: now };
 
-            // Daily Reset
-            if (now - lastReset > 24 * 60 * 60 * 1000) {
-                userUpdate.lastDailyReset = now;
-                if ((userData.credits || 0) < 5) userUpdate.credits = 5;
-            }
+            // Daily Reset Logic Removed
+            // if (now - lastReset > 24 * 60 * 60 * 1000) ...
 
             // check rate limit (5s) - Reduced from 10s to be friendlier since we have strict concurrency limit now
             const lastGen = userData.lastGenerationTime?.toDate?.() || new Date(0);
