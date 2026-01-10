@@ -8,9 +8,10 @@ export default function Footer() {
             borderTop: '1px solid var(--color-border)',
             background: 'var(--color-bg)',
             padding: '120px 0 60px',
-            marginTop: 'auto',
             position: 'relative',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            width: '100%',
+            zIndex: 10
         }}>
             <div className="container">
 

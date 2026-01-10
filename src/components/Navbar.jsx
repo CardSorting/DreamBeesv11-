@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Menu, X, Hexagon, LogOut, LayoutGrid, Zap, Settings, User, Music } from 'lucide-react';
+import { Menu, X, Hexagon, LogOut, LayoutGrid, Zap, Settings, User, Music, Sparkles } from 'lucide-react';
 import { useModel } from '../contexts/ModelContext';
 
 export default function Navbar() {
@@ -32,6 +32,7 @@ export default function Navbar() {
         { path: '/models', label: 'Engine', icon: Settings },
         { path: '/gallery', label: 'Gallery', icon: LayoutGrid },
         { path: '/karaoke', label: 'Karaoke', icon: Music },
+        { path: '/dressup', label: 'Dress Up', icon: Sparkles },
         { path: '/pricing', label: 'Refill', icon: Hexagon },
     ];
 

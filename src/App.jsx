@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ModelProvider } from './contexts/ModelContext';
 import { Toaster } from 'react-hot-toast';
@@ -21,10 +21,69 @@ import { Blog as PlaceholderBlog, Careers, Brand, Api, Showcase } from './pages/
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import KaraokeGenie from './pages/KaraokeGenie';
+import DressUp from './pages/DressUp';
 
 function PrivateRoute({ children }) {
   const { currentUser } = useAuth();
   return currentUser ? children : <Navigate to="/auth" />;
+}
+
+function Layout() {
+  const { pathname } = useLocation();
+  const isLanding = pathname === '/';
+
+  return (
+    <div className="app-layout">
+      <Navbar />
+      <main className="app-main">
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/generate" element={
+            <PrivateRoute>
+              <Generator />
+            </PrivateRoute>
+          } />
+          <Route path="/gallery" element={
+            <PrivateRoute>
+              <Gallery />
+            </PrivateRoute>
+          } />
+          <Route path="/gallery/:id" element={
+            <PrivateRoute>
+              <ImageDetail />
+            </PrivateRoute>
+          } />
+          <Route path="/models" element={<Models />} />
+          <Route path="/model/:id" element={<ModelDetail />} />
+          <Route path="/features" element={<Features />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/cookies" element={<Cookies />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:id" element={<BlogPost />} />
+          <Route path="/careers" element={<Careers />} />
+          <Route path="/brand" element={<Brand />} />
+          <Route path="/api" element={<Api />} />
+          <Route path="/showcase" element={<Showcase />} />
+          <Route path="/karaoke" element={<KaraokeGenie />} />
+          <Route path="/dressup" element={
+            <PrivateRoute>
+              <DressUp />
+            </PrivateRoute>
+          } />
+        </Routes>
+      </main>
+      {!isLanding && (
+        <div className="app-footer">
+          <Footer />
+        </div>
+      )}
+    </div>
+  );
 }
 
 function App() {
@@ -32,73 +91,33 @@ function App() {
     <Router>
       <AuthProvider>
         <ModelProvider>
-          <div className="app" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100%' }}>
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: '#18181b',
-                  color: '#fff',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '12px',
-                  backdropFilter: 'blur(10px)',
-                  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#18181b',
+                color: '#fff',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                backdropFilter: 'blur(10px)',
+                boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+              },
+              success: {
+                iconTheme: {
+                  primary: '#8b5cf6',
+                  secondary: '#fff',
                 },
-                success: {
-                  iconTheme: {
-                    primary: '#8b5cf6',
-                    secondary: '#fff',
-                  },
+              },
+              error: {
+                iconTheme: {
+                  primary: '#ef4444',
+                  secondary: '#fff',
                 },
-                error: {
-                  iconTheme: {
-                    primary: '#ef4444',
-                    secondary: '#fff',
-                  },
-                },
-              }}
-            />
-            <Navbar />
-            <div style={{ flex: 1 }}>
-              <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/generate" element={
-                  <PrivateRoute>
-                    <Generator />
-                  </PrivateRoute>
-                } />
-                <Route path="/gallery" element={
-                  <PrivateRoute>
-                    <Gallery />
-                  </PrivateRoute>
-                } />
-                <Route path="/gallery/:id" element={
-                  <PrivateRoute>
-                    <ImageDetail />
-                  </PrivateRoute>
-                } />
-                <Route path="/models" element={<Models />} />
-                <Route path="/model/:id" element={<ModelDetail />} />
-                <Route path="/features" element={<Features />} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/contact" element={<Contact />} />
-                <Route path="/privacy" element={<Privacy />} />
-                <Route path="/terms" element={<Terms />} />
-                <Route path="/cookies" element={<Cookies />} />
-                <Route path="/blog" element={<Blog />} />
-                <Route path="/blog/:id" element={<BlogPost />} />
-                <Route path="/careers" element={<Careers />} />
-                <Route path="/brand" element={<Brand />} />
-                <Route path="/api" element={<Api />} />
-                <Route path="/showcase" element={<Showcase />} />
-                <Route path="/karaoke" element={<KaraokeGenie />} />
-              </Routes>
-            </div>
-            <Footer />
-          </div>
+              },
+            }}
+          />
+          <Layout />
         </ModelProvider>
       </AuthProvider>
     </Router>

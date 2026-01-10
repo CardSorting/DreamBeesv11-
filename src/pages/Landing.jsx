@@ -310,6 +310,30 @@ export default function Landing() {
                 </div>
             </section>
 
+            {/* Simplified Inline Footer */}
+            <footer style={{
+                padding: '40px 20px',
+                borderTop: '1px solid var(--color-border)',
+                background: 'var(--color-bg)',
+                textAlign: 'center'
+            }}>
+                <div className="container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px' }}>
+                    <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                        <Link to="/about" style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>About</Link>
+                        <Link to="/blog" style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Blog</Link>
+                        <Link to="/pricing" style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Pricing</Link>
+                        <Link to="/contact" style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Contact</Link>
+                    </div>
+                    <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                        <Link to="/privacy" style={{ color: 'var(--color-zinc-600)', fontSize: '0.85rem' }}>Privacy</Link>
+                        <Link to="/terms" style={{ color: 'var(--color-zinc-600)', fontSize: '0.85rem' }}>Terms</Link>
+                    </div>
+                    <div style={{ color: 'var(--color-zinc-700)', fontSize: '0.85rem' }}>
+                        © {new Date().getFullYear()} DreamBeesAI. All rights reserved.
+                    </div>
+                </div>
+            </footer>
+
         </div>
     );
 }
