@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
     Play, Pause, Music, AlertCircle, CheckCircle2,
     Loader2, Sparkles, ChevronRight, Upload, RefreshCw,
-    Edit3, ArrowLeft, Smartphone, Monitor
+    Edit3, ArrowLeft, Smartphone, Monitor, Download, XCircle
 } from 'lucide-react';
+import VideoExporter from '../components/VideoExporter';
 import VisualizerCanvas from '../components/VisualizerCanvas';
 import { parseLrc, formatTime } from '../utils/lrcParser';
 import { generateLrcFromAudio } from '../services/geminiService';
@@ -20,7 +21,7 @@ const fileToBase64 = (file) => {
 
 const RecorderState = {
     IDLE: 'idle',
-    RECORDING: 'recording',
+    EXPORTING: 'exporting',
     COMPLETED: 'completed'
 };
 
@@ -46,6 +47,7 @@ const KaraokeGenie = () => {
     // Status
     const [processingStatus, setProcessingStatus] = useState({ lyrics: 'idle' });
     const [recorderState, setRecorderState] = useState(RecorderState.IDLE);
+    const [exportProgress, setExportProgress] = useState(0);
     const [errorMsg, setErrorMsg] = useState(null);
 
     // Audio Graph
@@ -54,7 +56,7 @@ const KaraokeGenie = () => {
     // Refs
     const audioRef = useRef(null);
     const visualizerRef = useRef(null);
-    const mediaRecorderRef = useRef(null);
+    const exporterRef = useRef(null);
     const audioContextRef = useRef(null);
     const sourceNodeRef = useRef(null);
 
@@ -73,7 +75,6 @@ const KaraokeGenie = () => {
         const updateDuration = () => setDuration(audio.duration);
         const onEnded = () => {
             setIsPlaying(false);
-            if (recorderState === RecorderState.RECORDING) finishRecording();
         };
 
         audio.addEventListener('timeupdate', updateTime);
@@ -84,7 +85,7 @@ const KaraokeGenie = () => {
             audio.removeEventListener('loadedmetadata', updateDuration);
             audio.removeEventListener('ended', onEnded);
         };
-    }, [recorderState]);
+    }, []);
 
     // Volume
     useEffect(() => {
@@ -173,57 +174,48 @@ const KaraokeGenie = () => {
         setIsPlaying(!isPlaying);
     };
 
-    const startRecording = async () => {
-        if (!audioRef.current || !visualizerRef.current) return;
-        setRecorderState(RecorderState.RECORDING);
+    const startExport = async () => {
+        if (!audioFile) return;
+        setRecorderState(RecorderState.EXPORTING);
+        setExportProgress(0);
 
         try {
-            const canvas = visualizerRef.current.getCanvas();
-            if (!canvas) throw new Error("Canvas missing");
-            if (!audioContextRef.current) initAudioSystem();
-            const ctx = audioContextRef.current;
-            if (ctx.state === 'suspended') await ctx.resume();
+            const exporter = new VideoExporter(
+                audioFile,
+                parsedLyrics,
+                aspectRatio,
+                (progress) => setExportProgress(Math.round(progress))
+            );
 
-            const dest = ctx.createMediaStreamDestination();
-            if (sourceNodeRef.current) sourceNodeRef.current.connect(dest);
+            exporterRef.current = exporter;
 
-            const canvasStream = canvas.captureStream(30);
-            const audioTrack = dest.stream.getAudioTracks()[0];
-            if (audioTrack) canvasStream.addTrack(audioTrack);
+            const blob = await exporter.start();
 
-            const recorder = new MediaRecorder(canvasStream, { mimeType: 'video/webm;codecs=vp9' });
-            const chunks = [];
-            recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
+            // Download
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `karaoke_genie_${Date.now()}.mp4`;
+            a.click();
 
-            recorder.onstop = () => {
-                const blob = new Blob(chunks, { type: 'video/webm' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `karaoke_genie_${Date.now()}.webm`;
-                a.click();
-                setRecorderState(RecorderState.COMPLETED);
-                setTimeout(() => setRecorderState(RecorderState.IDLE), 3000);
-            };
-
-            mediaRecorderRef.current = recorder;
-            audioRef.current.currentTime = 0;
-            setCurrentTime(0);
-            recorder.start();
-            audioRef.current.play();
-            setIsPlaying(true);
+            setRecorderState(RecorderState.COMPLETED);
         } catch (err) {
-            setErrorMsg("Recording Error: " + err.message);
-            setRecorderState(RecorderState.IDLE);
+            if (err.message === 'Cancelled') {
+                setRecorderState(RecorderState.IDLE);
+            } else {
+                console.error(err);
+                setErrorMsg("Export Failed: " + err.message);
+                setRecorderState(RecorderState.IDLE);
+            }
         }
     };
 
-    const finishRecording = () => {
-        if (mediaRecorderRef.current?.state === 'recording') {
-            mediaRecorderRef.current.stop();
-            audioRef.current?.pause();
-            setIsPlaying(false);
+    const cancelExport = () => {
+        if (exporterRef.current) {
+            exporterRef.current.cancel();
+            exporterRef.current = null;
         }
+        setRecorderState(RecorderState.IDLE);
     };
 
     // --- Render Steps ---
@@ -432,30 +424,60 @@ const KaraokeGenie = () => {
                     />
 
                     {/* Overlay Controls for Export */}
-                    <div className="kg-export-overlay">
+                    <div className="kg-export-overlay" style={{ padding: '2rem' }}>
                         {recorderState === RecorderState.IDLE || recorderState === RecorderState.COMPLETED ? (
-                            <button
-                                onClick={startRecording}
-                                className="kg-btn-record"
-                            >
-                                <div className="kg-dot-record" />
-                                START RECORDING
-                            </button>
+                            <div className="flex flex-col items-center gap-4">
+                                <button
+                                    onClick={startExport}
+                                    className="kg-btn-record"
+                                    style={{ background: 'var(--kg-primary)', color: 'white' }}
+                                >
+                                    <Download className="kg-icon-sm" />
+                                    EXPORT MP4 VIDEO
+                                </button>
+                                {recorderState === RecorderState.COMPLETED && (
+                                    <button
+                                        onClick={() => setRecorderState(RecorderState.IDLE)}
+                                        className="kg-btn-text"
+                                        style={{ marginTop: '1rem', color: '#94a3b8' }}
+                                    >
+                                        Create New Export
+                                    </button>
+                                )}
+                            </div>
                         ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', width: '300px' }}>
                                 <div className="kg-spinner-container">
-                                    <div className="kg-spinner-active" style={{ borderColor: 'white', borderTopColor: 'var(--kg-danger)' }} />
+                                    <div className="kg-spinner-active" style={{ borderColor: 'white', borderTopColor: 'var(--kg-primary)' }} />
                                 </div>
-                                <span style={{ color: 'white', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Recording...</span>
+                                <span style={{ color: 'white', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                                    Rendering Video... {exportProgress}%
+                                </span>
+                                {/* Progress Bar */}
+                                <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.2)', borderRadius: '2px', marginTop: '0.5rem' }}>
+                                    <div style={{ width: `${exportProgress}%`, height: '100%', background: 'var(--kg-primary)', borderRadius: '2px', transition: 'width 0.2s' }} />
+                                </div>
+
+                                <button
+                                    onClick={cancelExport}
+                                    style={{
+                                        marginTop: '1rem',
+                                        background: 'rgba(239,68,68,0.2)',
+                                        color: '#ef4444',
+                                        border: '1px solid rgba(239,68,68,0.2)',
+                                        padding: '0.5rem 1rem',
+                                        borderRadius: '4px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    <XCircle size={16} /> Cancel
+                                </button>
                             </div>
                         )}
                     </div>
-
-                    {recorderState === RecorderState.RECORDING && (
-                        <div style={{ position: 'absolute', top: '2rem', right: '2rem', background: 'var(--kg-danger)', color: 'white', padding: '0.5rem 1rem', borderRadius: '4px', fontWeight: 'bold', zIndex: 20 }}>
-                            REC
-                        </div>
-                    )}
                 </div>
 
                 {recorderState === RecorderState.COMPLETED && (
