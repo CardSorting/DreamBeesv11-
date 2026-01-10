@@ -12,7 +12,7 @@ const MAIN_CATEGORIES = {
     'Costumes 🦸': ['Super Hero ⚡', 'Space Explorer 🚀', 'Fairy Princess 🧚‍♀️', 'Pirate Captain 🏴‍☠️', 'Dinosaur Suit 🦖', 'Magician 🎩', 'Robot 🤖'],
     'Roles 🕵️': ['Doctor 🩺', 'Firefighter 🚒', 'Chef 🍳', 'Artist 🎨', 'Rock Star 🎸', 'Detective 🔍'],
     'Fashion 👗': [], // Triggers drill-down
-    'Accessories 🕶️': ['Cool Sunglasses 🕶️', 'Crown 👑', 'Funny Hat 🎩', 'Bow Tie 🎀', 'Scarf 🧣', 'Headphones 🎧', 'Flower Crown 🌸'],
+    'Accessories 🕶️': [], // Triggers drill-down
     'Hair Color 💇‍♀️': ['Pink Hair 🩷', 'Blue Hair 💙', 'Rainbow Hair 🌈', 'Green Hair 💚', 'Golden Blonde 💛', 'Red Hair ❤️', 'Purple Hair 💜'],
     'Makeup 💄': ['Clown Face 🤡', 'Face Paint 🎨', 'Glitter ✨', 'Cat Whiskers 🐱', 'Superhero Mask 🎭', 'Butterfly Face Paint 🦋'],
     'Vibes ✨': ['Rainbow Power 🌈', 'Underwater 🐠', 'Outer Space 🌌', 'Candy Land 🍭', 'Spooky House 👻', 'Sunshine Day ☀️', 'Winter Wonderland ❄️'],
@@ -28,12 +28,19 @@ const FASHION_COLLECTION = {
     'Sleep & Swim 🌙': ['Comfy Pajamas 🛌', 'Onesie 🦄', 'Swimsuit 🩱', 'Rash Guard 🏄‍♂️', 'Bathrobe 🧖']
 };
 
+const ACCESSORIES_COLLECTION = {
+    'Headwear 🎩': ['Baseball Cap 🧢', 'Beanie 🧶', 'Cowboy Hat 🤠', 'Crown 👑', 'Flower Crown 🌸', 'Space Helmet 👨‍🚀'],
+    'Eyewear 🕶️': ['Cool Sunglasses 🕶️', 'Heart Glasses 🩷', 'Harry Potter Glasses 👓', 'Star Glasses ⭐', 'Aviators 🕶️'],
+    'Jewelry 💎': ['Pearl Necklace 📿', 'Gold Chain 🥇', 'Diamond Earrings 💎', 'Friendship Bracelet 🧶', 'Magic Ring 💍'],
+    'Props 🎈': ['Magic Wand 🪄', 'Balloon 🎈', 'Teddy Bear 🧸', 'Guitar 🎸', 'Soccer Ball ⚽', 'Microphone 🎤']
+};
+
 const LOADING_MSG = "MAKING MAGIC...";
 
 export default function DressUp() {
     const { currentUser } = useAuth();
     const [currentImage, setCurrentImage] = useState(null); // base64
-    const [viewMode, setViewMode] = useState('main'); // 'main' | 'fashion'
+    const [viewMode, setViewMode] = useState('main'); // 'main' | 'fashion' | 'accessories'
     const [activeTab, setActiveTab] = useState('Costumes 🦸');
     const [page, setPage] = useState(0);
     const [generating, setGenerating] = useState(false);
@@ -114,6 +121,9 @@ export default function DressUp() {
         if (tab === 'Fashion 👗') {
             setViewMode('fashion');
             setActiveTab(Object.keys(FASHION_COLLECTION)[0]); // Default to first subcategory
+        } else if (tab === 'Accessories 🕶️') {
+            setViewMode('accessories');
+            setActiveTab(Object.keys(ACCESSORIES_COLLECTION)[0]);
         } else {
             setActiveTab(tab);
         }
@@ -122,6 +132,12 @@ export default function DressUp() {
     const handleBackToMain = () => {
         setViewMode('main');
         setActiveTab('Costumes 🦸');
+    };
+
+    const getCurrentItems = () => {
+        if (viewMode === 'fashion') return FASHION_COLLECTION[activeTab] || [];
+        if (viewMode === 'accessories') return ACCESSORIES_COLLECTION[activeTab] || [];
+        return MAIN_CATEGORIES[activeTab] || [];
     };
 
     const handleDressUp = async (item) => {
@@ -133,9 +149,19 @@ export default function DressUp() {
             const api = httpsCallable(functions, 'api');
             let prompt = "";
 
+            // --- Costumes & Vibes ---
             if (activeTab.includes('Costumes')) {
                 prompt = `A fun, colorful photo of the subject wearing a ${item} costume. Friendly, cute, high quality.`;
-            } else if (activeTab.includes('Tops')) {
+            } else if (activeTab.includes('Vibes')) {
+                prompt = `Make the image look like ${item}. Bright colors, fun atmosphere, kid-friendly.`;
+            } else if (activeTab.includes('Roles')) {
+                prompt = `Dress the subject as a ${item}. Cute uniform, props, friendly style.`;
+            } else if (activeTab.includes('Backgrounds')) {
+                prompt = `Change the background to a ${item}. Colorful, illustrated style but photorealistic lighting.`;
+            }
+
+            // --- Fashion ---
+            else if (activeTab.includes('Tops')) {
                 prompt = `A stylish photo of the subject wearing a ${item} on their torso. Modern fashion, cute style, high quality photoshoot.`;
             } else if (activeTab.includes('Bottoms')) {
                 prompt = `A stylish photo of the subject wearing ${item} on their legs. Modern fashion, cute style, high quality photoshoot.`;
@@ -147,18 +173,24 @@ export default function DressUp() {
                 prompt = `A stylish photo of the subject wearing ${item} on their feet. Modern fashion, cute style.`;
             } else if (activeTab.includes('Sleep') || activeTab.includes('Swim')) {
                 prompt = `A cute photo of the subject wearing ${item}. Kid-friendly, comfy and fun style.`;
-            } else if (activeTab.includes('Hair')) {
+            }
+
+            // --- Accessories ---
+            else if (activeTab.includes('Headwear')) {
+                prompt = `The subject wearing a ${item} on their head. Cute, well-fitted style.`;
+            } else if (activeTab.includes('Eyewear')) {
+                prompt = `The subject wearing ${item} on their eyes. Fun, stylish look.`;
+            } else if (activeTab.includes('Jewelry')) {
+                prompt = `The subject wearing a ${item}. Sparkly, cute accessory detail.`;
+            } else if (activeTab.includes('Props')) {
+                prompt = `The subject holding a ${item}. Happy, playful pose with the prop.`;
+            }
+
+            // --- Details ---
+            else if (activeTab.includes('Hair')) {
                 prompt = `The subject with ${item}. Keep the same face but change hair color to vibrant ${item}. High quality, realistic hair texture.`;
             } else if (activeTab.includes('Makeup')) {
                 prompt = `The subject with ${item} on their face. Fun, kid-friendly face paint or makeup style. High quality, clear details.`;
-            } else if (activeTab.includes('Accessories')) {
-                prompt = `The subject wearing ${item}. Cute accessory integration, high quality photo.`;
-            } else if (activeTab.includes('Vibes')) {
-                prompt = `Make the image look like ${item}. Bright colors, fun atmosphere, kid-friendly.`;
-            } else if (activeTab.includes('Roles')) {
-                prompt = `Dress the subject as a ${item}. Cute uniform, props, friendly style.`;
-            } else if (activeTab.includes('Backgrounds')) {
-                prompt = `Change the background to a ${item}. Colorful, illustrated style but photorealistic lighting.`;
             }
 
             const result = await api({
@@ -268,7 +300,7 @@ export default function DressUp() {
                 </div>
 
                 <div className="tab-container">
-                    {viewMode === 'fashion' && (
+                    {viewMode !== 'main' && (
                         <button
                             onClick={handleBackToMain}
                             className="tab-btn back-btn"
@@ -288,8 +320,18 @@ export default function DressUp() {
                                 {tab}
                             </button>
                         ))
-                    ) : (
+                    ) : viewMode === 'fashion' ? (
                         Object.keys(FASHION_COLLECTION).map(tab => (
+                            <button
+                                key={tab}
+                                onClick={() => handleTabClick(tab)}
+                                className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
+                            >
+                                {tab}
+                            </button>
+                        ))
+                    ) : (
+                        Object.keys(ACCESSORIES_COLLECTION).map(tab => (
                             <button
                                 key={tab}
                                 onClick={() => handleTabClick(tab)}
@@ -302,8 +344,8 @@ export default function DressUp() {
                 </div>
 
                 <div className="items-grid">
-                    {(viewMode === 'main' ? MAIN_CATEGORIES[activeTab] : FASHION_COLLECTION[activeTab])
-                        ?.slice(page * 6, (page + 1) * 6)
+                    {getCurrentItems()
+                        .slice(page * 6, (page + 1) * 6)
                         .map((item, index) => (
                             <button
                                 key={item}
@@ -327,15 +369,15 @@ export default function DressUp() {
                     </button>
 
                     <div className="page-dots">
-                        {Array.from({ length: Math.max(1, Math.ceil(((viewMode === 'main' ? MAIN_CATEGORIES[activeTab] : FASHION_COLLECTION[activeTab])?.length || 0) / 6)) }).map((_, i) => (
+                        {Array.from({ length: Math.max(1, Math.ceil((getCurrentItems().length || 0) / 6)) }).map((_, i) => (
                             <div key={i} className={`page-dot ${i === page ? 'active' : ''}`} />
                         ))}
                     </div>
 
                     <button
                         className="btn-arrow"
-                        onClick={() => setPage(p => Math.min(Math.ceil(((viewMode === 'main' ? MAIN_CATEGORIES[activeTab] : FASHION_COLLECTION[activeTab])?.length || 0) / 6) - 1, p + 1))}
-                        disabled={page >= Math.ceil(((viewMode === 'main' ? MAIN_CATEGORIES[activeTab] : FASHION_COLLECTION[activeTab])?.length || 0) / 6) - 1}
+                        onClick={() => setPage(p => Math.min(Math.ceil((getCurrentItems().length || 0) / 6) - 1, p + 1))}
+                        disabled={page >= Math.ceil((getCurrentItems().length || 0) / 6) - 1}
                     >
                         <ChevronRight size={32} />
                     </button>
