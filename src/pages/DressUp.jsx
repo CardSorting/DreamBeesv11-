@@ -9,7 +9,7 @@ import { compressImage } from '../utils';
 import './DressUp.css';
 
 const MAIN_CATEGORIES = {
-    'Costumes 🦸': ['Super Hero ⚡', 'Space Explorer 🚀', 'Fairy Princess 🧚‍♀️', 'Pirate Captain 🏴‍☠️', 'Dinosaur Suit 🦖', 'Magician 🎩', 'Robot 🤖'],
+    'Costumes 🦸': [], // Triggers drill-down
     'Roles 🕵️': ['Doctor 🩺', 'Firefighter 🚒', 'Chef 🍳', 'Artist 🎨', 'Rock Star 🎸', 'Detective 🔍'],
     'Fashion 👗': [], // Triggers drill-down
     'Accessories 🕶️': [], // Triggers drill-down
@@ -25,14 +25,29 @@ const FASHION_COLLECTION = {
     'Dresses 👗': ['Summer Sundress ☀️', 'Fancy Ball Gown 💃', 'Party Dress 🎉', 'Flower Girl Dress 🌸'],
     'Outerwear 🧥': ['Winter Puffer Coat ❄️', 'Denim Jacket 🧥', 'Yellow Raincoat 🌧️', 'School Blazer 🏫'],
     'Footwear 👟': ['Cool Sneakers 👟', 'Cowboy Boots 🤠', 'Summer Sandals ☀️', 'Ballet Flats 🩰', 'Rain Boots ☔'],
-    'Sleep & Swim 🌙': ['Comfy Pajamas 🛌', 'Onesie 🦄', 'Swimsuit 🩱', 'Rash Guard 🏄‍♂️', 'Bathrobe 🧖']
+    'Sleep & Swim 🌙': ['Comfy Pajamas 🛌', 'Onesie 🦄', 'Swimsuit 🩱', 'Rash Guard 🏄‍♂️', 'Bathrobe 🧖'],
+    'Sports Gear ⚽': ['Soccer Jersey ⚽', 'Tennis Outfit 🎾', 'Karate Gi 🥋', 'Baseball Uniform ⚾', 'Basketball Jersey 🏀', 'Gymnast Leotard 🤸‍♀️'],
+    'Party Wear 🎉': ['Tuxedo 🤵', 'Sparkly Vest ✨', 'Sequin Dress 👗', 'Bowtie Suit 🎀', 'Fancy Blazer 🧥', 'Gala Gown 💃']
 };
 
 const ACCESSORIES_COLLECTION = {
-    'Headwear 🎩': ['Baseball Cap 🧢', 'Beanie 🧶', 'Cowboy Hat 🤠', 'Crown 👑', 'Flower Crown 🌸', 'Space Helmet 👨‍🚀'],
-    'Eyewear 🕶️': ['Cool Sunglasses 🕶️', 'Heart Glasses 🩷', 'Harry Potter Glasses 👓', 'Star Glasses ⭐', 'Aviators 🕶️'],
-    'Jewelry 💎': ['Pearl Necklace 📿', 'Gold Chain 🥇', 'Diamond Earrings 💎', 'Friendship Bracelet 🧶', 'Magic Ring 💍'],
-    'Props 🎈': ['Magic Wand 🪄', 'Balloon 🎈', 'Teddy Bear 🧸', 'Guitar 🎸', 'Soccer Ball ⚽', 'Microphone 🎤']
+    'Headwear 🎩': ['Baseball Cap 🧢', 'Beanie 🧶', 'Cowboy Hat 🤠', 'Crown 👑', 'Flower Crown 🌸', 'Space Helmet 👨‍🚀', 'Viking Helmet 🛡️', 'Chef Hat 🍳', 'Party Hat 🥳', 'Cat Ears 🐱', 'Beret 🎨', 'Sombrero 🇲🇽'],
+    'Eyewear 🕶️': ['Cool Sunglasses 🕶️', 'Heart Glasses 🩷', 'Harry Potter Glasses 👓', 'Star Glasses ⭐', 'Aviators 🕶️', '3D Glasses 🎬', 'Ski Goggles 🏂', 'Monocle 🧐', 'VR Headset 🥽', 'Masquerade Mask 🎭'],
+    'Jewelry 💎': ['Pearl Necklace 📿', 'Gold Chain 🥇', 'Diamond Earrings 💎', 'Friendship Bracelet 🧶', 'Magic Ring 💍', 'Locket 💖', 'Shell Necklace 🐚', 'Sparkly Brooch ✨', 'Choker 🎀', 'Wristwatch ⌚'],
+    'Props 🎈': ['Magic Wand 🪄', 'Balloon 🎈', 'Teddy Bear 🧸', 'Guitar 🎸', 'Soccer Ball ⚽', 'Microphone 🎤', 'Flower Bouquet 💐', 'Umbrella ☂️', 'Ice Cream 🍦', 'Skateboard 🛹', 'Book 📖', 'Lantern 🏮'],
+    'Bags & Packs 🎒': ['Backpack 🎒', 'Tote Bag 🛍️', 'Fanny Pack 👝', 'Purse 👜', 'Messenger Bag 💼', 'Picnic Basket 🧺'],
+    'Capes & Wings 🦋': ['Superhero Cape 🦸', 'Fairy Wings 🧚‍♀️', 'Butterfly Wings 🦋', 'Vampire Cape 🧛', 'Angel Wings 👼', 'Dragon Wings 🐉'],
+    'Scarves & Gloves 🧣': ['Wool Scarf 🧣', 'Mittens 🧤', 'Magic Gloves ✨', 'Silk Scarf 🧣', 'Boxing Gloves 🥊', 'Winter Gloves ❄️']
+};
+
+const COSTUMES_COLLECTION = {
+    'Fantasy 🧚‍♀️': ['Fairy Princess 🧚‍♀️', 'Pirate Captain 🏴‍☠️', 'Magician 🎩', 'Mermaid 🧜‍♀️', 'Knight 🛡️', 'Elf 🧝', 'Wizard 🧙‍♂️', 'Dragon 🐉', 'Unicorn 🦄', 'King 👑', 'Queen 👸', 'Gnome 🍄'],
+    'Heroes 🚀': ['Super Hero ⚡', 'Space Explorer 🚀', 'Robot 🤖', 'Alien 👽', 'Cyborg 🦾', 'Astronaut 👩‍🚀', 'Villain 🦹', 'Power Ranger 🛡️', 'Mech Suit 🦾', 'Time Traveler ⏳'],
+    'Animals 🦁': ['Dinosaur Suit 🦖', 'Lion 🦁', 'Bear 🐻', 'Bunny 🐰', 'Shark 🦈', 'Tiger 🐯', 'Panda 🐼', 'Penguin 🐧', 'Bumblebee 🐝', 'Ladybug 🐞', 'Monkey 🐒', 'Chicken 🐔'],
+    'Spooky 👻': ['Vampire 🧛', 'Ghost 👻', 'Mummy 🤕', 'Skeleton 💀', 'Witch 🧙‍♀️', 'Werewolf 🐺', 'Pumpkin 🎃', 'Bat 🦇', 'Frankenstein 🧟', 'Devil 😈', 'Grim Reaper 💀'],
+    'Food 🍔': ['Hot Dog Suit 🌭', 'Banana 🍌', 'Cupcake 🧁', 'Pizza Slice 🍕', 'Taco 🌮', 'Donut 🍩'],
+    'Historical 🏛️': ['Viking 🛡️', 'Pharaoh 🇪🇬', 'Caveman 🍖', 'Roman Soldier ⚔️', 'Cowboy 🤠', 'Ninja 🥷'],
+    'Storybook 📖': ['Little Red Riding Hood 🐺', 'Big Bad Wolf 🐺', 'Prince Charming 👑', 'Pinocchio 🤥', 'Alice in Wonderland 🐰', 'Peter Pan 🧚']
 };
 
 const LOADING_MSG = "MAKING MAGIC...";
@@ -40,8 +55,8 @@ const LOADING_MSG = "MAKING MAGIC...";
 export default function DressUp() {
     const { currentUser } = useAuth();
     const [currentImage, setCurrentImage] = useState(null); // base64
-    const [viewMode, setViewMode] = useState('main'); // 'main' | 'fashion' | 'accessories'
-    const [activeTab, setActiveTab] = useState('Costumes 🦸');
+    const [viewMode, setViewMode] = useState('main'); // 'main' | 'fashion' | 'accessories' | 'costumes'
+    const [activeTab, setActiveTab] = useState('Roles 🕵️'); // Default to Roles since Costumes is now a drill-down
     const [page, setPage] = useState(0);
     const [generating, setGenerating] = useState(false);
     const [userImages, setUserImages] = useState([]);
@@ -124,6 +139,9 @@ export default function DressUp() {
         } else if (tab === 'Accessories 🕶️') {
             setViewMode('accessories');
             setActiveTab(Object.keys(ACCESSORIES_COLLECTION)[0]);
+        } else if (tab === 'Costumes 🦸') {
+            setViewMode('costumes');
+            setActiveTab(Object.keys(COSTUMES_COLLECTION)[0]);
         } else {
             setActiveTab(tab);
         }
@@ -131,12 +149,13 @@ export default function DressUp() {
 
     const handleBackToMain = () => {
         setViewMode('main');
-        setActiveTab('Costumes 🦸');
+        setActiveTab('Roles 🕵️'); // Fallback to Roles
     };
 
     const getCurrentItems = () => {
         if (viewMode === 'fashion') return FASHION_COLLECTION[activeTab] || [];
         if (viewMode === 'accessories') return ACCESSORIES_COLLECTION[activeTab] || [];
+        if (viewMode === 'costumes') return COSTUMES_COLLECTION[activeTab] || [];
         return MAIN_CATEGORIES[activeTab] || [];
     };
 
@@ -150,8 +169,14 @@ export default function DressUp() {
             let prompt = "";
 
             // --- Costumes & Vibes ---
-            if (activeTab.includes('Costumes')) {
-                prompt = `A fun, colorful photo of the subject wearing a ${item} costume. Friendly, cute, high quality.`;
+            if (activeTab.includes('Fantasy')) {
+                prompt = `A magical photo of the subject dressed as a ${item}. Fantasy style, cute, high quality.`;
+            } else if (activeTab.includes('Heroes')) {
+                prompt = `A cool photo of the subject dressed as a ${item}. Sci-fi or superhero style, dynamic, high quality.`;
+            } else if (activeTab.includes('Animals')) {
+                prompt = `A cute photo of the subject wearing a ${item} costume. Fun, animal theme, high quality.`;
+            } else if (activeTab.includes('Spooky')) {
+                prompt = `A fun Halloween photo of the subject dressed as a ${item}. Spooky but cute, high quality.`;
             } else if (activeTab.includes('Vibes')) {
                 prompt = `Make the image look like ${item}. Bright colors, fun atmosphere, kid-friendly.`;
             } else if (activeTab.includes('Roles')) {
@@ -330,8 +355,18 @@ export default function DressUp() {
                                 {tab}
                             </button>
                         ))
-                    ) : (
+                    ) : viewMode === 'accessories' ? (
                         Object.keys(ACCESSORIES_COLLECTION).map(tab => (
+                            <button
+                                key={tab}
+                                onClick={() => handleTabClick(tab)}
+                                className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
+                            >
+                                {tab}
+                            </button>
+                        ))
+                    ) : (
+                        Object.keys(COSTUMES_COLLECTION).map(tab => (
                             <button
                                 key={tab}
                                 onClick={() => handleTabClick(tab)}

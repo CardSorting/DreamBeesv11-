@@ -235,8 +235,8 @@
     padding: 16px;
     gap: 8px;
     background: rgba(255, 255, 255, 0.3);
-    min-height: 140px;
-    /* Prevent jump when switching modes */
+    min-height: 250px;
+    /* Increased to 250px to fit ~4 rows of tabs safely */
     align-content: flex-start;
 }
 
