@@ -231,9 +231,9 @@
 /* File Tabs (Sticky Note Look) */
 .tab-container {
     display: flex;
+    flex-wrap: wrap;
     padding: 16px;
     gap: 8px;
-    overflow-x: auto;
     background: rgba(255, 255, 255, 0.3);
 }
 
@@ -275,6 +275,8 @@
     transform: translateY(-2px) rotate(0deg);
     z-index: 2;
 }
+
+
 
 /* Messy Items Grid */
 .items-grid {

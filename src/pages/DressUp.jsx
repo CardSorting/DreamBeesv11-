@@ -10,8 +10,12 @@ import './DressUp.css';
 
 const WARDROBE_CATEGORIES = {
     'Costumes 🦸': ['Super Hero ⚡', 'Space Explorer 🚀', 'Fairy Princess 🧚‍♀️', 'Pirate Captain 🏴‍☠️', 'Dinosaur Suit 🦖', 'Magician 🎩', 'Robot 🤖'],
-    'Vibes ✨': ['Rainbow Power 🌈', 'Underwater 🐠', 'Outer Space 🌌', 'Candy Land 🍭', 'Spooky House 👻', 'Sunshine Day ☀️', 'Winter Wonderland ❄️'],
     'Roles 🕵️': ['Doctor 🩺', 'Firefighter 🚒', 'Chef 🍳', 'Artist 🎨', 'Rock Star 🎸', 'Detective 🔍'],
+    'Fashion 👗': ['Ball Gown 💃', 'Cool Hoodie 🧥', 'Party Dress 👗', 'Denim Jacket 👖', 'Pajamas 🛌', 'Soccer Uniform ⚽', 'Winter Coat 🧥', 'Summer Oufit ☀️'],
+    'Accessories 🕶️': ['Cool Sunglasses 🕶️', 'Crown 👑', 'Funny Hat 🎩', 'Bow Tie 🎀', 'Scarf 🧣', 'Headphones 🎧', 'Flower Crown 🌸'],
+    'Hair Color 💇‍♀️': ['Pink Hair 🩷', 'Blue Hair 💙', 'Rainbow Hair 🌈', 'Green Hair 💚', 'Golden Blonde 💛', 'Red Hair ❤️', 'Purple Hair 💜'],
+    'Makeup 💄': ['Clown Face 🤡', 'Face Paint 🎨', 'Glitter ✨', 'Cat Whiskers 🐱', 'Superhero Mask 🎭', 'Butterfly Face Paint 🦋'],
+    'Vibes ✨': ['Rainbow Power 🌈', 'Underwater 🐠', 'Outer Space 🌌', 'Candy Land 🍭', 'Spooky House 👻', 'Sunshine Day ☀️', 'Winter Wonderland ❄️'],
     'Backgrounds 🏰': ['Treehouse 🌳', 'Toy Store 🧸', 'Magic Castle 🏰', 'Playground 🛝', 'Moon Surface 🌕']
 };
 
@@ -104,10 +108,24 @@ export default function DressUp() {
         try {
             const api = httpsCallable(functions, 'api');
             let prompt = "";
-            if (activeTab.includes('Costumes')) prompt = `A fun, colorful photo of the subject wearing a ${item} costume. Friendly, cute, high quality.`;
-            else if (activeTab.includes('Vibes')) prompt = `Make the image look like ${item}. Bright colors, fun atmosphere, kid-friendly.`;
-            else if (activeTab.includes('Roles')) prompt = `Dress the subject as a ${item}. Cute uniform, props, friendly style.`;
-            else if (activeTab.includes('Backgrounds')) prompt = `Change the background to a ${item}. Colorful, illustrated style but photorealistic lighting.`;
+
+            if (activeTab.includes('Costumes')) {
+                prompt = `A fun, colorful photo of the subject wearing a ${item} costume. Friendly, cute, high quality.`;
+            } else if (activeTab.includes('Fashion')) {
+                prompt = `A stylish photo of the subject wearing ${item}. Modern fashion, cute style, high quality photoshoot.`;
+            } else if (activeTab.includes('Hair')) {
+                prompt = `The subject with ${item}. Keep the same face but change hair color to vibrant ${item}. High quality, realistic hair texture.`;
+            } else if (activeTab.includes('Makeup')) {
+                prompt = `The subject with ${item} on their face. Fun, kid-friendly face paint or makeup style. High quality, clear details.`;
+            } else if (activeTab.includes('Accessories')) {
+                prompt = `The subject wearing ${item}. Cute accessory integration, high quality photo.`;
+            } else if (activeTab.includes('Vibes')) {
+                prompt = `Make the image look like ${item}. Bright colors, fun atmosphere, kid-friendly.`;
+            } else if (activeTab.includes('Roles')) {
+                prompt = `Dress the subject as a ${item}. Cute uniform, props, friendly style.`;
+            } else if (activeTab.includes('Backgrounds')) {
+                prompt = `Change the background to a ${item}. Colorful, illustrated style but photorealistic lighting.`;
+            }
 
             const result = await api({
                 action: 'dressUp',
