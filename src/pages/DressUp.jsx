@@ -1,80 +1,82 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, Upload, Sparkles, Wand2 } from 'lucide-react';
+import { Upload, X, RotateCcw, Sparkles, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { compressImage } from '../utils';
 import './DressUp.css';
 
 const WARDROBE_CATEGORIES = {
-    Outfits: ['Casual', 'Formal', 'Space Suit', 'Superhero', 'Bikini', 'Winter Coat', 'Cyber Armor', 'Wizard Robe'],
-    Vibes: ['Happy', 'Cyberpunk', 'Gothic', 'Minimalist', 'Retro', 'Dreamy', 'Dark Fantasy'],
-    Roles: ['Doctor', 'Firefighter', 'Chef', 'Pilot', 'Artist', 'Warrior', 'Mage'],
-    Backgrounds: ['Beach', 'City', 'Forest', 'Space', 'Studio', 'Cyber City', 'Fantasy Castle']
+    'Costumes 🦸': ['Super Hero ⚡', 'Space Explorer 🚀', 'Fairy Princess 🧚‍♀️', 'Pirate Captain 🏴‍☠️', 'Dinosaur Suit 🦖', 'Magician 🎩', 'Robot 🤖'],
+    'Vibes ✨': ['Rainbow Power 🌈', 'Underwater 🐠', 'Outer Space 🌌', 'Candy Land 🍭', 'Spooky House 👻', 'Sunshine Day ☀️', 'Winter Wonderland ❄️'],
+    'Roles 🕵️': ['Doctor 🩺', 'Firefighter 🚒', 'Chef 🍳', 'Artist 🎨', 'Rock Star 🎸', 'Detective 🔍'],
+    'Backgrounds 🏰': ['Treehouse 🌳', 'Toy Store 🧸', 'Magic Castle 🏰', 'Playground 🛝', 'Moon Surface 🌕']
 };
+
+const LOADING_MSG = "MAKING MAGIC...";
 
 export default function DressUp() {
     const { currentUser } = useAuth();
     const [currentImage, setCurrentImage] = useState(null); // base64
-    const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState('Outfits');
+    const [activeTab, setActiveTab] = useState('Costumes 🦸');
+    const [page, setPage] = useState(0);
+    const [generating, setGenerating] = useState(false);
+
+    // Reset page when tab changes
+    useEffect(() => {
+        setPage(0);
+    }, [activeTab]);
+
 
     const handleFileUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Convert to base64
         const reader = new FileReader();
         reader.onloadend = async () => {
             const base64 = reader.result;
-            // Compress/Resize
             try {
                 const compressed = await compressImage(base64, 1024, 0.8);
                 setCurrentImage(compressed);
             } catch (err) {
-                toast.error('Failed to process image');
+                toast.error('Oops! Could not open that picture.');
             }
         };
         reader.readAsDataURL(file);
     };
 
     const handleDefaultPick = async (type) => {
-        setLoading(true);
-        const toastId = toast.loading(`Generating a ${type}...`);
+        setGenerating(true);
         try {
             const api = httpsCallable(functions, 'api');
             const result = await api({
                 action: 'dressUp',
-                prompt: `A cute ${type}, paper doll style, full body, white background. High quality.`
+                prompt: `A cute, friendly photo of a ${type}, bright studio lighting, colorful background, high quality.`
             });
 
             if (result.data.image) {
                 setCurrentImage(`data:image/png;base64,${result.data.image}`);
-                toast.success("Character ready!", { id: toastId });
             }
         } catch (error) {
             console.error(error);
-            toast.error("Failed to generate: " + error.message, { id: toastId });
+            toast.error("Oops! Something went wrong.");
         }
-        setLoading(false);
+        setGenerating(false);
     };
 
     const handleDressUp = async (item) => {
-        if (!currentImage) {
-            toast.error("Please upload or pick a character first");
-            return;
-        }
-        setLoading(true);
-        const toastId = toast.loading("Changing style...", { icon: '✨' });
+        if (!currentImage) return toast.error("Pick a friend to dress up first!");
+
+        setGenerating(true);
 
         try {
             const api = httpsCallable(functions, 'api');
             let prompt = "";
-            if (activeTab === 'Outfits') prompt = `Change the character's outfit to ${item}. Maintain pose and identity.`;
-            else if (activeTab === 'Vibes') prompt = `Apply a ${item} vibe to the image.`;
-            else if (activeTab === 'Roles') prompt = `Dress the character as a ${item}.`;
-            else if (activeTab === 'Backgrounds') prompt = `Change the background to ${item}. Keep character same.`;
+            if (activeTab.includes('Costumes')) prompt = `A fun, colorful photo of the subject wearing a ${item} costume. Friendly, cute, high quality.`;
+            else if (activeTab.includes('Vibes')) prompt = `Make the image look like ${item}. Bright colors, fun atmosphere, kid-friendly.`;
+            else if (activeTab.includes('Roles')) prompt = `Dress the subject as a ${item}. Cute uniform, props, friendly style.`;
+            else if (activeTab.includes('Backgrounds')) prompt = `Change the background to a ${item}. Colorful, illustrated style but photorealistic lighting.`;
 
             const result = await api({
                 action: 'dressUp',
@@ -84,126 +86,140 @@ export default function DressUp() {
 
             if (result.data.image) {
                 setCurrentImage(`data:image/png;base64,${result.data.image}`);
-                toast.success("Updated!", { id: toastId });
+                toast.success("Ta-da! Look at that!", {
+                    icon: '🎉',
+                    style: { background: '#FFD700', color: '#000', fontWeight: 'bold' }
+                });
             } else {
-                throw new Error("No image returned");
+                throw new Error("No image generated");
             }
         } catch (error) {
             console.error(error);
-            toast.error("Failed to update: " + error.message, { id: toastId });
+            toast.error("Oh no! The magic failed. Try again!", { icon: '🪄' });
         }
-        setLoading(false);
+        setGenerating(false);
     };
 
     return (
-        <div className="dressup-container">
-            <div className="dressup-grid">
-                {/* Left: Image Display */}
-                <div className="image-panel group">
-                    {loading && (
-                        <div className="loading-overlay animate-in">
-                            <Loader2 className="loader-icon" />
-                            <p className="loading-text">Designing...</p>
+        <div className="playroom-layout">
+
+            {/* LEFT: THE STAGE */}
+            <div className="playroom-stage">
+
+                {generating && (
+                    <div className="magic-overlay">
+                        <div className="magic-content">
+                            {/* Wand icon instead of sparkles for "Creating" vibe */}
+                            <Sparkles className="spinning-sparkle" size={80} strokeWidth={3} />
+                            <h3 className="magic-text">
+                                {LOADING_MSG}
+                            </h3>
                         </div>
-                    )}
+                    </div>
+                )}
 
-                    <div className="bg-grid" />
-
-                    {currentImage ? (
-                        <div className="character-image-wrapper">
-                            <img
-                                src={currentImage}
-                                alt="Character"
-                                className="character-image"
-                            />
+                {currentImage ? (
+                    <div className="stage-content animate-pop">
+                        <div className="paper-frame">
+                            <img src={currentImage} alt="Subject" className="paper-doll-image" />
                         </div>
-                    ) : (
-                        <div className="empty-state">
-                            <div className="space-y-2 mb-8">
-                                <h2 className="title-gradient">
-                                    DreamBees Dress Up
-                                </h2>
-                                <p>Upload a character or pick one to start styling.</p>
-                            </div>
 
-                            <div className="flex justify-center mb-6">
-                                <label className="upload-label">
-                                    <Upload size={20} />
-                                    Upload Photo
-                                    <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
-                                </label>
-                            </div>
-
-                            <div className="divider">
-                                <span className="divider-line"></span>
-                                OR
-                                <span className="divider-line"></span>
-                            </div>
-
-                            <div className="pick-buttons">
-                                <button
-                                    onClick={() => handleDefaultPick('cat')}
-                                    className="pick-btn group/btn"
-                                >
-                                    <span>🐱</span>
-                                    <span>Pick a Cat</span>
-                                </button>
-                                <button
-                                    onClick={() => handleDefaultPick('bee')}
-                                    className="pick-btn group/btn"
-                                >
-                                    <span>🐝</span>
-                                    <span>Pick a Bee</span>
-                                </button>
-                            </div>
+                        <button
+                            onClick={() => setCurrentImage(null)}
+                            className="btn-reset"
+                            title="Start Over"
+                        >
+                            <RotateCcw size={24} />
+                            <span>Start Over</span>
+                        </button>
+                    </div>
+                ) : (
+                    <div className="stage-empty animate-slide-up">
+                        <div className="empty-title-container">
+                            <h1 className="playful-title">
+                                Magic Dress Up
+                            </h1>
+                            <p className="playful-subtitle">
+                                Pick a friend to start playing!
+                            </p>
                         </div>
-                    )}
+
+                        <div className="action-buttons">
+                            <label className="btn-big btn-primary">
+                                <Camera size={24} />
+                                <span>Upload Photo</span>
+                                <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
+                            </label>
+
+                            <button onClick={() => handleDefaultPick('cute cat')} className="btn-big btn-secondary">
+                                <Sparkles size={24} />
+                                <span>Use a Cat</span>
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* RIGHT: TOY CHEST */}
+            <div className="toy-chest">
+                <div className="chest-header">
+                    <h2>Toy Box</h2>
                 </div>
 
-                {/* Right: Controls */}
-                <div className="controls-panel">
-                    <div className="wardrobe-card">
-                        <div className="tabs">
-                            {Object.keys(WARDROBE_CATEGORIES).map(tab => (
-                                <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab)}
-                                    className={`tab-btn ${activeTab === tab ? 'active' : 'inactive'}`}
-                                >
-                                    {tab}
-                                </button>
-                            ))}
-                        </div>
+                <div className="tab-container">
+                    {Object.keys(WARDROBE_CATEGORIES).map(tab => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
+                        >
+                            {tab}
+                        </button>
+                    ))}
+                </div>
 
-                        <div className="items-grid">
-                            {WARDROBE_CATEGORIES[activeTab].map(item => (
-                                <button
-                                    key={item}
-                                    onClick={() => handleDressUp(item)}
-                                    disabled={!currentImage || loading}
-                                    className="item-btn group"
-                                >
-                                    <span className="item-text">
-                                        {item}
-                                    </span>
-                                    <Wand2 size={16} className="item-icon" />
-                                </button>
-                            ))}
-                        </div>
+                <div className="items-grid">
+                    {WARDROBE_CATEGORIES[activeTab]
+                        .slice(page * 6, (page + 1) * 6)
+                        .map((item, index) => (
+                            <button
+                                key={item}
+                                className="grid-item-btn"
+                                onClick={() => !generating && handleDressUp(item)}
+                                disabled={generating}
+                            >
+                                <span className="item-label">{item}</span>
+                            </button>
+                        ))}
+                </div>
 
-                        {currentImage && (
-                            <div className="reset-container">
-                                <button
-                                    onClick={() => setCurrentImage(null)}
-                                    className="reset-btn"
-                                >
-                                    Start Over
-                                </button>
-                            </div>
-                        )}
+                {/* Pagination Controls */}
+                {/* Pagination Controls - Always Visible (Placeholder if 1 page) */}
+                <div className="pagination-controls">
+                    <button
+                        className="btn-arrow"
+                        onClick={() => setPage(p => Math.max(0, p - 1))}
+                        disabled={page === 0}
+                    >
+                        <ChevronLeft size={32} />
+                    </button>
+
+                    <div className="page-dots">
+                        {Array.from({ length: Math.max(1, Math.ceil(WARDROBE_CATEGORIES[activeTab].length / 6)) }).map((_, i) => (
+                            <div key={i} className={`page-dot ${i === page ? 'active' : ''}`} />
+                        ))}
                     </div>
+
+                    <button
+                        className="btn-arrow"
+                        onClick={() => setPage(p => Math.min(Math.ceil(WARDROBE_CATEGORIES[activeTab].length / 6) - 1, p + 1))}
+                        disabled={page >= Math.ceil(WARDROBE_CATEGORIES[activeTab].length / 6) - 1}
+                    >
+                        <ChevronRight size={32} />
+                    </button>
                 </div>
             </div>
+
         </div>
     );
 }
