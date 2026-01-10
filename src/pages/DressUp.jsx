@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { httpsCallable } from 'firebase/functions';
-import { functions } from '../firebase';
+import { functions, db } from '../firebase';
+import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { Upload, X, RotateCcw, Sparkles, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -22,11 +23,28 @@ export default function DressUp() {
     const [activeTab, setActiveTab] = useState('Costumes 🦸');
     const [page, setPage] = useState(0);
     const [generating, setGenerating] = useState(false);
+    const [userImages, setUserImages] = useState([]);
 
     // Reset page when tab changes
     useEffect(() => {
         setPage(0);
     }, [activeTab]);
+
+    // Fetch user's recent images for "Stickers"
+    useEffect(() => {
+        if (!currentUser) return;
+        const q = query(
+            collection(db, 'generation_queue'),
+            where('userId', '==', currentUser.uid),
+            where('status', '==', 'completed'),
+            orderBy('createdAt', 'desc'),
+            limit(10)
+        );
+        return onSnapshot(q, (snapshot) => {
+            const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setUserImages(docs);
+        });
+    }, [currentUser]);
 
 
     const handleFileUpload = async (e) => {
@@ -63,6 +81,19 @@ export default function DressUp() {
             toast.error("Oops! Something went wrong.");
         }
         setGenerating(false);
+    };
+
+    const handleHistoryPick = async (imageUrl) => {
+        try {
+            const response = await fetch(imageUrl);
+            const blob = await response.blob();
+            const reader = new FileReader();
+            reader.onloadend = () => setCurrentImage(reader.result);
+            reader.readAsDataURL(blob);
+        } catch (err) {
+            console.error("Failed to load sticker:", err);
+            toast.error("Could not peel that sticker! 😢");
+        }
     };
 
     const handleDressUp = async (item) => {
@@ -143,6 +174,27 @@ export default function DressUp() {
                                 Pick a friend to start playing!
                             </p>
                         </div>
+
+                        {/* Recent User Stickers */}
+                        {userImages.length > 0 && (
+                            <div className="sticker-collection">
+                                <div className="sticker-header">
+                                    <h3 className="sticker-title">Pick a Friend 🧸</h3>
+                                    <p className="sticker-subtitle">Tap a photo to dress them up again!</p>
+                                </div>
+                                <div className="sticker-scroll">
+                                    {userImages.map(img => (
+                                        <button
+                                            key={img.id}
+                                            className="sticker-btn"
+                                            onClick={() => handleHistoryPick(img.imageUrl)}
+                                        >
+                                            <img src={img.thumbnailUrl || img.imageUrl} alt="Sticker" />
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="action-buttons">
                             <label className="btn-big btn-primary">

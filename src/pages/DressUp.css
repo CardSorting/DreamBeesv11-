@@ -447,3 +447,95 @@
     text-shadow: 4px 4px 0px white;
     margin-top: 24px;
 }
+
+/* --- My Stickers (User Templates) --- */
+.sticker-collection {
+    margin-bottom: 32px;
+    background: #fff;
+    padding: 20px;
+    border-radius: 24px;
+    border: var(--border-thick);
+    box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.1);
+    /* Pop out more */
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative;
+}
+
+/* Washi tape effect for the collection */
+.sticker-collection::after {
+    content: '';
+    position: absolute;
+    top: -12px;
+    right: 40px;
+    width: 100px;
+    height: 24px;
+    background: rgba(255, 107, 107, 0.7);
+    transform: rotate(2deg);
+    border: 1px dashed rgba(255, 255, 255, 0.5);
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.sticker-header {
+    margin-bottom: 16px;
+    text-align: left;
+    padding-left: 4px;
+}
+
+.sticker-title {
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--color-text-ink);
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+}
+
+.sticker-subtitle {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    font-family: var(--font-comic);
+}
+
+.sticker-scroll {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+.sticker-btn {
+    flex-shrink: 0;
+    width: 80px;
+    height: 80px;
+    border: var(--border-thick);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    background: white;
+    padding: 0;
+    transition: all 0.2s;
+    box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.1);
+}
+
+.sticker-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sticker-btn:hover {
+    transform: scale(1.1) rotate(3deg);
+    z-index: 10;
+    border-color: var(--color-primary);
+}
+
+.sticker-scroll::-webkit-scrollbar {
+    height: 8px;
+}
+
+.sticker-scroll::-webkit-scrollbar-thumb {
+    background: var(--color-text-ink);
+    border-radius: 99px;
+}
