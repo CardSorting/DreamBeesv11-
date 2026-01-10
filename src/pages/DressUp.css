@@ -235,6 +235,9 @@
     padding: 16px;
     gap: 8px;
     background: rgba(255, 255, 255, 0.3);
+    min-height: 140px;
+    /* Prevent jump when switching modes */
+    align-content: flex-start;
 }
 
 .tab-btn {
@@ -245,13 +248,19 @@
     font-size: 1rem;
     color: var(--color-text-ink);
     background: white;
-    border: var(--border-thin);
+    border: var(--border-thick);
     border-radius: 8px;
     cursor: pointer;
     white-space: nowrap;
     box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
     transition: all 0.2s;
     /* Slight random tilts for tabs too */
+    min-width: 120px;
+    /* Ensure consistency */
+    display: flex;
+    /* Centering text */
+    justify-content: center;
+    align-items: center;
 }
 
 .tab-btn:nth-child(odd) {
@@ -284,10 +293,14 @@
     padding: 24px;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    /* Enforce 3 rows */
     gap: 32px;
     overflow-y: hidden;
     /* Hide scroll now that we have paging */
     align-content: start;
+    min-height: 480px;
+    /* Prevent jump when fewer items */
 }
 
 /* --- Grid Item Big Update --- */

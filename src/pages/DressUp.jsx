@@ -8,10 +8,10 @@ import toast from 'react-hot-toast';
 import { compressImage } from '../utils';
 import './DressUp.css';
 
-const WARDROBE_CATEGORIES = {
+const MAIN_CATEGORIES = {
     'Costumes 🦸': ['Super Hero ⚡', 'Space Explorer 🚀', 'Fairy Princess 🧚‍♀️', 'Pirate Captain 🏴‍☠️', 'Dinosaur Suit 🦖', 'Magician 🎩', 'Robot 🤖'],
     'Roles 🕵️': ['Doctor 🩺', 'Firefighter 🚒', 'Chef 🍳', 'Artist 🎨', 'Rock Star 🎸', 'Detective 🔍'],
-    'Fashion 👗': ['Ball Gown 💃', 'Cool Hoodie 🧥', 'Party Dress 👗', 'Denim Jacket 👖', 'Pajamas 🛌', 'Soccer Uniform ⚽', 'Winter Coat 🧥', 'Summer Oufit ☀️'],
+    'Fashion 👗': [], // Triggers drill-down
     'Accessories 🕶️': ['Cool Sunglasses 🕶️', 'Crown 👑', 'Funny Hat 🎩', 'Bow Tie 🎀', 'Scarf 🧣', 'Headphones 🎧', 'Flower Crown 🌸'],
     'Hair Color 💇‍♀️': ['Pink Hair 🩷', 'Blue Hair 💙', 'Rainbow Hair 🌈', 'Green Hair 💚', 'Golden Blonde 💛', 'Red Hair ❤️', 'Purple Hair 💜'],
     'Makeup 💄': ['Clown Face 🤡', 'Face Paint 🎨', 'Glitter ✨', 'Cat Whiskers 🐱', 'Superhero Mask 🎭', 'Butterfly Face Paint 🦋'],
@@ -19,11 +19,21 @@ const WARDROBE_CATEGORIES = {
     'Backgrounds 🏰': ['Treehouse 🌳', 'Toy Store 🧸', 'Magic Castle 🏰', 'Playground 🛝', 'Moon Surface 🌕']
 };
 
+const FASHION_COLLECTION = {
+    'Tops 👚': ['Cool Hoodie 🧥', 'Graphic T-Shirt 👕', 'Blouse 👚', 'Cozy Sweater 🧶', 'Tank Top 🎽', 'Flannel Shirt 🟥'],
+    'Bottoms 👖': ['Denim Jeans 👖', 'Sparkly Skirt 👗', 'Cargo Shorts 🩳', 'Leggings 🏃‍♀️', 'Pajama Pants 🛌'],
+    'Dresses 👗': ['Summer Sundress ☀️', 'Fancy Ball Gown 💃', 'Party Dress 🎉', 'Flower Girl Dress 🌸'],
+    'Outerwear 🧥': ['Winter Puffer Coat ❄️', 'Denim Jacket 🧥', 'Yellow Raincoat 🌧️', 'School Blazer 🏫'],
+    'Footwear 👟': ['Cool Sneakers 👟', 'Cowboy Boots 🤠', 'Summer Sandals ☀️', 'Ballet Flats 🩰', 'Rain Boots ☔'],
+    'Sleep & Swim 🌙': ['Comfy Pajamas 🛌', 'Onesie 🦄', 'Swimsuit 🩱', 'Rash Guard 🏄‍♂️', 'Bathrobe 🧖']
+};
+
 const LOADING_MSG = "MAKING MAGIC...";
 
 export default function DressUp() {
     const { currentUser } = useAuth();
     const [currentImage, setCurrentImage] = useState(null); // base64
+    const [viewMode, setViewMode] = useState('main'); // 'main' | 'fashion'
     const [activeTab, setActiveTab] = useState('Costumes 🦸');
     const [page, setPage] = useState(0);
     const [generating, setGenerating] = useState(false);
@@ -100,6 +110,20 @@ export default function DressUp() {
         }
     };
 
+    const handleTabClick = (tab) => {
+        if (tab === 'Fashion 👗') {
+            setViewMode('fashion');
+            setActiveTab(Object.keys(FASHION_COLLECTION)[0]); // Default to first subcategory
+        } else {
+            setActiveTab(tab);
+        }
+    };
+
+    const handleBackToMain = () => {
+        setViewMode('main');
+        setActiveTab('Costumes 🦸');
+    };
+
     const handleDressUp = async (item) => {
         if (!currentImage) return toast.error("Pick a friend to dress up first!");
 
@@ -111,8 +135,18 @@ export default function DressUp() {
 
             if (activeTab.includes('Costumes')) {
                 prompt = `A fun, colorful photo of the subject wearing a ${item} costume. Friendly, cute, high quality.`;
-            } else if (activeTab.includes('Fashion')) {
-                prompt = `A stylish photo of the subject wearing ${item}. Modern fashion, cute style, high quality photoshoot.`;
+            } else if (activeTab.includes('Tops')) {
+                prompt = `A stylish photo of the subject wearing a ${item} on their torso. Modern fashion, cute style, high quality photoshoot.`;
+            } else if (activeTab.includes('Bottoms')) {
+                prompt = `A stylish photo of the subject wearing ${item} on their legs. Modern fashion, cute style, high quality photoshoot.`;
+            } else if (activeTab.includes('Dresses')) {
+                prompt = `A stylish photo of the subject wearing a ${item}. Modern fashion, cute style, high quality photoshoot.`;
+            } else if (activeTab.includes('Outerwear')) {
+                prompt = `A stylish photo of the subject wearing a ${item} over their clothes. Modern fashion, cute style.`;
+            } else if (activeTab.includes('Footwear')) {
+                prompt = `A stylish photo of the subject wearing ${item} on their feet. Modern fashion, cute style.`;
+            } else if (activeTab.includes('Sleep') || activeTab.includes('Swim')) {
+                prompt = `A cute photo of the subject wearing ${item}. Kid-friendly, comfy and fun style.`;
             } else if (activeTab.includes('Hair')) {
                 prompt = `The subject with ${item}. Keep the same face but change hair color to vibrant ${item}. High quality, realistic hair texture.`;
             } else if (activeTab.includes('Makeup')) {
@@ -234,20 +268,42 @@ export default function DressUp() {
                 </div>
 
                 <div className="tab-container">
-                    {Object.keys(WARDROBE_CATEGORIES).map(tab => (
+                    {viewMode === 'fashion' && (
                         <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
+                            onClick={handleBackToMain}
+                            className="tab-btn back-btn"
+                            style={{ background: '#ffeaa7' }}
                         >
-                            {tab}
+                            <ChevronLeft size={16} /> Wardrobe
                         </button>
-                    ))}
+                    )}
+
+                    {viewMode === 'main' ? (
+                        Object.keys(MAIN_CATEGORIES).map(tab => (
+                            <button
+                                key={tab}
+                                onClick={() => handleTabClick(tab)}
+                                className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
+                            >
+                                {tab}
+                            </button>
+                        ))
+                    ) : (
+                        Object.keys(FASHION_COLLECTION).map(tab => (
+                            <button
+                                key={tab}
+                                onClick={() => handleTabClick(tab)}
+                                className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
+                            >
+                                {tab}
+                            </button>
+                        ))
+                    )}
                 </div>
 
                 <div className="items-grid">
-                    {WARDROBE_CATEGORIES[activeTab]
-                        .slice(page * 6, (page + 1) * 6)
+                    {(viewMode === 'main' ? MAIN_CATEGORIES[activeTab] : FASHION_COLLECTION[activeTab])
+                        ?.slice(page * 6, (page + 1) * 6)
                         .map((item, index) => (
                             <button
                                 key={item}
@@ -261,7 +317,6 @@ export default function DressUp() {
                 </div>
 
                 {/* Pagination Controls */}
-                {/* Pagination Controls - Always Visible (Placeholder if 1 page) */}
                 <div className="pagination-controls">
                     <button
                         className="btn-arrow"
@@ -272,15 +327,15 @@ export default function DressUp() {
                     </button>
 
                     <div className="page-dots">
-                        {Array.from({ length: Math.max(1, Math.ceil(WARDROBE_CATEGORIES[activeTab].length / 6)) }).map((_, i) => (
+                        {Array.from({ length: Math.max(1, Math.ceil(((viewMode === 'main' ? MAIN_CATEGORIES[activeTab] : FASHION_COLLECTION[activeTab])?.length || 0) / 6)) }).map((_, i) => (
                             <div key={i} className={`page-dot ${i === page ? 'active' : ''}`} />
                         ))}
                     </div>
 
                     <button
                         className="btn-arrow"
-                        onClick={() => setPage(p => Math.min(Math.ceil(WARDROBE_CATEGORIES[activeTab].length / 6) - 1, p + 1))}
-                        disabled={page >= Math.ceil(WARDROBE_CATEGORIES[activeTab].length / 6) - 1}
+                        onClick={() => setPage(p => Math.min(Math.ceil(((viewMode === 'main' ? MAIN_CATEGORIES[activeTab] : FASHION_COLLECTION[activeTab])?.length || 0) / 6) - 1, p + 1))}
+                        disabled={page >= Math.ceil(((viewMode === 'main' ? MAIN_CATEGORIES[activeTab] : FASHION_COLLECTION[activeTab])?.length || 0) / 6) - 1}
                     >
                         <ChevronRight size={32} />
                     </button>
