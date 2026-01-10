@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { functions, db } from '../firebase';
-import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, onSnapshot, doc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { Upload, X, RotateCcw, Sparkles, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -224,12 +224,41 @@ export default function DressUp() {
                 prompt: prompt
             });
 
-            if (result.data.image) {
+            // Expect requestId from queue-based backend
+            const { requestId } = result.data;
+
+            if (requestId) {
+                // Poll/Listen for completion
+                const unsubscribe = onSnapshot(doc(db, "generation_queue", requestId), (docSnap) => {
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        if (data.status === 'completed' && data.imageUrl) {
+                            setCurrentImage(data.imageUrl); // Use the URL
+                            toast.success("Ta-da! Look at that!", {
+                                icon: '🎉',
+                                style: { background: '#FFD700', color: '#000', fontWeight: 'bold' }
+                            });
+                            setGenerating(false);
+                            unsubscribe();
+                        } else if (data.status === 'failed') {
+                            setGenerating(false);
+                            toast.error(`Magic failed: ${data.error || 'Unknown error'}`, { icon: '🪄' });
+                            unsubscribe();
+                        }
+                    }
+                }, (error) => {
+                    console.error("Queue listener error:", error);
+                    setGenerating(false);
+                    toast.error("Error tracking magic", { icon: '🪄' });
+                });
+            } else if (result.data.image) {
+                // Fallback for old synchronous behavior (just in case)
                 setCurrentImage(`data:image/png;base64,${result.data.image}`);
                 toast.success("Ta-da! Look at that!", {
                     icon: '🎉',
                     style: { background: '#FFD700', color: '#000', fontWeight: 'bold' }
                 });
+                setGenerating(false);
             } else {
                 throw new Error("No image generated");
             }
@@ -243,8 +272,11 @@ export default function DressUp() {
             } else {
                 toast.error("Oh no! The magic failed. Try again!", { icon: '🪄' });
             }
+            // Only stop generating if we didn't start a listener (listener handles it on success/fail)
+            if (!error.message.includes('No Request ID')) {
+                setGenerating(false);
+            }
         }
-        setGenerating(false);
     };
 
     return (

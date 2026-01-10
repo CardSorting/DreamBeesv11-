@@ -2624,42 +2624,43 @@ const handleGenerateLyrics = async (request) => {
     }
 };
 
-const handleDressUp = async (request) => {
+const handleCreateDressUpRequest = async (request) => {
+    // Basic App Check logging (Warn Mode)
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
         console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
     }
 
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
+    const { image, prompt } = request.data;
+    const uid = request.auth.uid;
 
-    const { prompt, image } = request.data;
-    if (!prompt) throw new HttpsError('invalid-argument', "Prompt is required");
+    if (!uid) {
+        throw new HttpsError('unauthenticated', "User must be authenticated");
+    }
 
-    const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new HttpsError('internal', "API Key configuration error");
+    if (!image || !prompt) {
+        throw new HttpsError('invalid-argument', "Image and prompt are required.");
+    }
 
-    const COST = 1.5; // 1.5 credits per generation
+    const db = getFirestore();
+    const userRef = db.collection('users').doc(uid);
+    const queueRef = db.collection('generation_queue').doc(); // Create new document ID
 
-    // 1. Deduct Credits (Transaction)
+    const COST = 4;
+
     try {
         await db.runTransaction(async (t) => {
-            const userRef = db.collection('users').doc(uid);
             const userDoc = await t.get(userRef);
 
-            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+            if (!userDoc.exists) {
+                throw new HttpsError('not-found', "User not found.");
+            }
 
             const userData = userDoc.data();
-
-            // Strict Type Validation for Credits
             let credits = userData.credits;
-            if (typeof credits !== 'number') {
-                console.warn(`[handleDressUp] User ${uid} has invalid 'credits' field type (${typeof credits}). Treating as 0.`);
-                credits = 0;
-            }
+            if (typeof credits !== 'number') credits = 0;
 
             console.log(`[handleDressUp] Credit Audit - User: ${uid}, Pre-balance: ${credits}, Cost: ${COST}`);
 
-            // Insufficient Funds Check
             if (credits < COST) {
                 throw new HttpsError('resource-exhausted', `Insufficient credits. Current: ${credits}, Required: ${COST}.`);
             }
@@ -2667,75 +2668,170 @@ const handleDressUp = async (request) => {
             t.update(userRef, {
                 credits: FieldValue.increment(-COST)
             });
+
+            // Create Queue Item
+            t.set(queueRef, {
+                userId: uid,
+                prompt: prompt,
+                status: 'queued',
+                type: 'dress-up',
+                cost: COST,
+                createdAt: new Date()
+            });
         });
+
+        // Enqueue Task
+        const queue = getFunctions().taskQueue('processDressUpTask');
+        await queue.enqueue({
+            requestId: queueRef.id,
+            userId: uid,
+            image: image, // Pass the base64 image to the task
+            prompt: prompt,
+            cost: COST
+        });
+
+        return { requestId: queueRef.id };
+
     } catch (error) {
         console.error("Credit deduction failed:", error);
         throw error;
     }
+};
+// Dress Up Worker
+export const processDressUpTask = onTaskDispatched(
+    {
+        retryConfig: { maxAttempts: 3, minBackoffSeconds: 60 },
+        rateLimits: { maxConcurrentDispatches: 3 },
+        memory: "1GiB",
+        timeoutSeconds: 300,
+    },
+    async (req) => {
+        const { requestId, userId, image, prompt, cost } = req.data;
+        const db = getFirestore();
+        const docRef = db.collection("generation_queue").doc(requestId);
 
-    const ai = new GoogleGenAI({ apiKey });
+        try {
+            await docRef.update({ status: "processing" });
 
-    try {
-        const contents = [];
+            const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+            const ai = new GoogleGenAI({ apiKey });
+            const contents = [];
 
-        if (image) {
-            // Ensure we have clean base64
-            const cleanBase64 = image.includes('base64,') ? image.split('base64,')[1] : image;
-            contents.push({
-                inlineData: {
-                    mimeType: "image/png",
-                    data: cleanBase64
-                }
+            if (image) {
+                const cleanBase64 = image.includes('base64,') ? image.split('base64,')[1] : image;
+                contents.push({
+                    inlineData: {
+                        mimeType: "image/png",
+                        data: cleanBase64
+                    }
+                });
+            }
+            contents.push({ text: prompt });
+
+            const response = await ai.models.generateContent({
+                model: "gemini-2.5-flash-image",
+                contents: contents
             });
-        }
 
-        contents.push({ text: prompt });
-
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-image",
-            contents: contents
-        });
-
-        let generatedImage = null;
-
-        // Check for candidates
-        const candidate = response.candidates?.[0];
-        if (candidate?.content?.parts) {
-            for (const part of candidate.content.parts) {
-                if (part.inlineData) {
-                    generatedImage = part.inlineData.data;
-                    break;
+            let generatedImageBase64 = null;
+            const candidate = response.candidates?.[0];
+            if (candidate?.content?.parts) {
+                for (const part of candidate.content.parts) {
+                    if (part.inlineData) {
+                        generatedImageBase64 = part.inlineData.data;
+                        break;
+                    }
                 }
             }
-        }
 
-        if (!generatedImage) {
-            console.error("No image generated by Gemini 2.5 Flash Image");
-            // Check if there's text output explaining why
-            const textPart = candidate?.content?.parts?.find(p => p.text);
-            if (textPart) console.error("Model output text:", textPart.text);
-            throw new Error("Model did not return an image.");
-        }
+            if (!generatedImageBase64) {
+                const textPart = candidate?.content?.parts?.find(p => p.text);
+                throw new Error(textPart ? `Model output text: ${textPart.text}` : "Model did not return an image.");
+            }
 
-        return { image: generatedImage }; // Return base64 string
+            // --- B2 Upload Logic (Similar to processImageTask) ---
+            const imageBuffer = Buffer.from(generatedImageBase64, 'base64');
+            const sharpImg = sharp(imageBuffer);
 
-    } catch (error) {
-        console.error("Dress Up Error:", error);
+            // 1. WebP Original
+            const webpBuffer = await sharpImg.webp({ quality: 90 }).toBuffer();
+            // 2. Thumbnail
+            const thumbBuffer = await sharpImg
+                .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
+                .webp({ quality: 80 })
+                .toBuffer();
+            // 3. LQIP
+            const lqipBuffer = await sharpImg
+                .resize(20, 20, { fit: 'inside' })
+                .webp({ quality: 20 })
+                .toBuffer();
+            const lqip = `data:image/webp;base64,${lqipBuffer.toString('base64')}`;
 
-        // Refund credits on failure
-        try {
-            const userRef = db.collection('users').doc(uid);
-            await userRef.update({
-                credits: FieldValue.increment(COST) // Refund credits
+            const baseFolder = `generated/${userId}/${Date.now()}`;
+            const originalFilename = `${baseFolder}.webp`;
+            const thumbFilename = `${baseFolder}_thumb.webp`;
+
+            await Promise.all([
+                s3Client.send(new PutObjectCommand({
+                    Bucket: B2_BUCKET,
+                    Key: originalFilename,
+                    Body: webpBuffer,
+                    ContentType: "image/webp"
+                })),
+                s3Client.send(new PutObjectCommand({
+                    Bucket: B2_BUCKET,
+                    Key: thumbFilename,
+                    Body: thumbBuffer,
+                    ContentType: "image/webp"
+                }))
+            ]);
+
+            const imageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalFilename}`;
+            const thumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbFilename}`;
+
+            // Save to 'images' collection for gallery/history
+            const imageRef = await db.collection("images").add({
+                userId,
+                prompt,
+                modelId: "gemini-2.5-flash-image",
+                imageUrl,
+                thumbnailUrl,
+                lqip,
+                createdAt: new Date(),
+                originalRequestId: requestId,
+                type: 'dress-up'
             });
-            console.log(`[handleDressUp] Refunded ${COST} credits to ${uid} due to failure`);
-        } catch (refundError) {
-            console.error("Failed to refund credits:", refundError);
-        }
 
-        throw new HttpsError('internal', "Failed to generate dress up image: " + error.message);
+            // Update Queue Doc
+            await docRef.update({
+                status: "completed",
+                imageUrl,
+                thumbnailUrl,
+                lqip,
+                completedAt: new Date(),
+                resultImageId: imageRef.id
+            });
+
+            console.log(`[processDressUpTask] Success for ${requestId}`);
+
+        } catch (error) {
+            console.error(`[processDressUpTask] Failed for ${requestId}:`, error);
+
+            // Refund Logic
+            try {
+                const userRef = db.collection('users').doc(userId);
+                await userRef.update({
+                    credits: FieldValue.increment(cost)
+                });
+                console.log(`[processDressUpTask] Refunded ${cost} credits to ${userId}`);
+            } catch (refundError) {
+                console.error("Failed to refund credits:", refundError);
+            }
+
+            await docRef.update({ status: "failed", error: error.message });
+        }
     }
-};
+);
 
 export const api = onCall(async (request) => {
     // Basic App Check logging (Warn Mode) - centralized here
@@ -2754,7 +2850,7 @@ export const api = onCall(async (request) => {
             case 'createEnhanceRequest': return handleCreateEnhanceRequest(request);
             case 'transformPrompt': return handleTransformPrompt(request);
             case 'transformImage': return handleTransformImage(request);
-            case 'dressUp': return handleDressUp(request);
+            case 'dressUp': return handleCreateDressUpRequest(request);
             case 'generateLyrics': return handleGenerateLyrics(request); // New action
             case 'generateVideoPrompt': return handleGenerateVideoPrompt(request);
             case 'getGenerationHistory': return handleGetGenerationHistory(request);
