@@ -741,7 +741,7 @@ export const processImageTask = onTaskDispatched(
                 const userRef = db.collection('users').doc(userId);
                 await db.runTransaction(async (t) => {
                     const userDoc = await t.get(userRef);
-                    if (userDoc.exists && userDoc.data().subscriptionStatus !== 'active') {
+                    if (userDoc.exists) {
                         t.update(userRef, { credits: FieldValue.increment(1) });
                     }
                 });
@@ -850,13 +850,8 @@ export const stripeWebhook = onRequest(async (req, res) => {
             const mode = session.mode; // 'subscription' or 'payment'
 
             if (mode === 'subscription') {
-                // Update user to active subscription
-                await db.collection('users').doc(userId).set({
-                    subscriptionStatus: 'active',
-                    stripeCustomerId: customerId,
-                    credits: 1000, // Monthly allowance
-                    planTier: 'pro'
-                }, { merge: true });
+                // Subscription logic removed
+                console.warn(`Subscription mode used for user ${userId} but subscriptions are disabled.`);
             } else if (mode === 'payment') {
                 // Handle One-Time Credit Packs & Reel Packs
                 // Map Amount (in cents) to Credits or Reels
@@ -891,46 +886,14 @@ export const stripeWebhook = onRequest(async (req, res) => {
             }
 
         } else if (event.type === 'invoice.payment_succeeded') {
-            const invoice = event.data.object;
-            // distinct from 'checkout.session.completed', this handles RENEWALS
-            if (invoice.billing_reason === 'subscription_cycle') {
-                const customerId = invoice.customer;
-                const usersSnapshot = await db.collection('users').where('stripeCustomerId', '==', customerId).get();
-
-                if (!usersSnapshot.empty) {
-                    usersSnapshot.forEach(async (doc) => {
-                        console.log(`Renewing credits for user ${doc.id}`);
-                        await doc.ref.update({
-                            credits: 1000,
-                            subscriptionStatus: 'active'
-                        });
-                    });
-                }
-            }
+            // Invoice payment logic removed
+            console.log("Invoice payment succeeded event received (ignored)");
         } else if (event.type === 'customer.subscription.updated') {
-            const subscription = event.data.object;
-            const customerId = subscription.customer;
-            const status = subscription.status; // active, past_due, unpaid, canceled
-
-            // Map Stripe status to our app status
-            // We only really care if it becomes NOT active/trialing
-            const isActive = status === 'active' || status === 'trialing';
-            const appStatus = isActive ? 'active' : 'inactive';
-
-            const usersSnapshot = await db.collection('users').where('stripeCustomerId', '==', customerId).get();
-            usersSnapshot.forEach(async (doc) => {
-                await doc.ref.update({ subscriptionStatus: appStatus });
-            });
-
+            // Subscription update logic removed
+            console.log("Subscription updated event received (ignored)");
         } else if (event.type === 'customer.subscription.deleted') {
-            const subscription = event.data.object;
-            const customerId = subscription.customer;
-
-            // Find user by stripeCustomerId (simple query)
-            const usersSnapshot = await db.collection('users').where('stripeCustomerId', '==', customerId).get();
-            usersSnapshot.forEach(async (doc) => {
-                await doc.ref.update({ subscriptionStatus: 'inactive' });
-            });
+            // Subscription deleted logic removed
+            console.log("Subscription deleted event received (ignored)");
         }
         res.json({ received: true });
     } catch (err) {
@@ -1077,7 +1040,6 @@ const handleCreateGenerationRequest = async (request) => {
             const userData = userDoc.data();
             const now = new Date();
             const lastReset = userData.lastDailyReset?.toDate?.() || new Date(0);
-            const isPro = userData.subscriptionStatus === 'active';
 
             const userUpdate = { lastGenerationTime: now };
 
@@ -1097,12 +1059,12 @@ const handleCreateGenerationRequest = async (request) => {
 
             // Cost Calculation: Qwen models are expensive ($2.5/hr vs $1.1/hr), so they cost 1.5 credits.
             // Standard models (SDXL, etc.) cost 0.5 credits ($0.125) to achieve ~40% margin.
+            // Cost Calculation: Qwen models are expensive ($2.5/hr vs $1.1/hr), so they cost 1.5 credits.
+            // Standard models (SDXL, etc.) cost 0.5 credits ($0.125) to achieve ~40% margin.
             const cost = (modelId === 'qwen-image-2512') ? 1.5 : 0.5;
 
-            if (!isPro) {
-                if (effectiveCredits < cost) throw new HttpsError('resource-exhausted', `Insufficient credits. This model requires ${cost} credits.`);
-                userUpdate.credits = effectiveCredits - cost;
-            }
+            if (effectiveCredits < cost) throw new HttpsError('resource-exhausted', `Insufficient credits. This model requires ${cost} credits.`);
+            userUpdate.credits = effectiveCredits - cost;
 
             t.update(userRef, userUpdate);
 
@@ -2420,10 +2382,7 @@ const handleTransformImage = async (request) => {
             if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
 
             const userData = userDoc.data();
-            const isPro = userData.subscriptionStatus === 'active';
-
-            // Skip cost for Pro users (consistent with standard generation)
-            if (isPro) return;
+            // const isPro = userData.subscriptionStatus === 'active'; // Removed
 
             // Sanity Check: Cost
             if (typeof COST !== 'number' || COST <= 0) {
@@ -2473,16 +2432,10 @@ const handleTransformImage = async (request) => {
 
         // Refund credits on failure
         try {
-            const userRef = db.collection('users').doc(uid);
-            const userDoc = await userRef.get();
-            const isPro = userDoc.data()?.subscriptionStatus === 'active';
-
-            if (!isPro) {
-                await userRef.update({
-                    credits: FieldValue.increment(COST)
-                });
-                console.log(`[handleTransformImage] Refunded ${COST} credits to ${uid} due to failure`);
-            }
+            await userRef.update({
+                credits: FieldValue.increment(COST)
+            });
+            console.log(`[handleTransformImage] Refunded ${COST} credits to ${uid} due to failure`);
         } catch (refundError) {
             console.error("Failed to refund credits:", refundError);
         }
@@ -2535,10 +2488,7 @@ const handleGenerateLyrics = async (request) => {
             }
 
             const userData = userDoc.data();
-            const isPro = userData.subscriptionStatus === 'active';
-
-            // Skip cost for Pro users
-            if (isPro) return;
+            // const isPro = userData.subscriptionStatus === 'active'; // Removed
 
             // Strict Type Validation for Credits
             let credits = userData.credits;
@@ -2662,16 +2612,10 @@ const handleGenerateLyrics = async (request) => {
 
         // Refund credits on failure
         try {
-            const userRef = db.collection('users').doc(uid);
-            const userDoc = await userRef.get();
-            const isPro = userDoc.data()?.subscriptionStatus === 'active';
-
-            if (!isPro) {
-                await userRef.update({
-                    credits: FieldValue.increment(COST) // Refund 1 credit
-                });
-                console.log(`[handleGenerateLyrics] Refunded ${COST} credit to ${uid} due to failure`);
-            }
+            await userRef.update({
+                credits: FieldValue.increment(COST) // Refund 1 credit
+            });
+            console.log(`[handleGenerateLyrics] Refunded ${COST} credit to ${uid} due to failure`);
         } catch (refundError) {
             console.error("Failed to refund credits:", refundError);
         }
@@ -2696,6 +2640,41 @@ const handleDressUp = async (request) => {
 
     const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
     if (!apiKey) throw new HttpsError('internal', "API Key configuration error");
+
+    const COST = 1.5; // 1.5 credits per generation
+
+    // 1. Deduct Credits (Transaction)
+    try {
+        await db.runTransaction(async (t) => {
+            const userRef = db.collection('users').doc(uid);
+            const userDoc = await t.get(userRef);
+
+            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+
+            const userData = userDoc.data();
+
+            // Strict Type Validation for Credits
+            let credits = userData.credits;
+            if (typeof credits !== 'number') {
+                console.warn(`[handleDressUp] User ${uid} has invalid 'credits' field type (${typeof credits}). Treating as 0.`);
+                credits = 0;
+            }
+
+            console.log(`[handleDressUp] Credit Audit - User: ${uid}, Pre-balance: ${credits}, Cost: ${COST}`);
+
+            // Insufficient Funds Check
+            if (credits < COST) {
+                throw new HttpsError('resource-exhausted', `Insufficient credits. Current: ${credits}, Required: ${COST}.`);
+            }
+
+            t.update(userRef, {
+                credits: FieldValue.increment(-COST)
+            });
+        });
+    } catch (error) {
+        console.error("Credit deduction failed:", error);
+        throw error;
+    }
 
     const ai = new GoogleGenAI({ apiKey });
 
@@ -2745,6 +2724,18 @@ const handleDressUp = async (request) => {
 
     } catch (error) {
         console.error("Dress Up Error:", error);
+
+        // Refund credits on failure
+        try {
+            const userRef = db.collection('users').doc(uid);
+            await userRef.update({
+                credits: FieldValue.increment(COST) // Refund credits
+            });
+            console.log(`[handleDressUp] Refunded ${COST} credits to ${uid} due to failure`);
+        } catch (refundError) {
+            console.error("Failed to refund credits:", refundError);
+        }
+
         throw new HttpsError('internal', "Failed to generate dress up image: " + error.message);
     }
 };

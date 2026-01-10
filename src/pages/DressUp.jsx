@@ -235,7 +235,14 @@ export default function DressUp() {
             }
         } catch (error) {
             console.error(error);
-            toast.error("Oh no! The magic failed. Try again!", { icon: '🪄' });
+            if (error.message.includes('Insufficient credits')) {
+                toast("You need more credits for this magic!", {
+                    icon: '🪙',
+                    style: { background: '#FFF3CD', color: '#856404', fontWeight: 'bold' }
+                });
+            } else {
+                toast.error("Oh no! The magic failed. Try again!", { icon: '🪄' });
+            }
         }
         setGenerating(false);
     };
