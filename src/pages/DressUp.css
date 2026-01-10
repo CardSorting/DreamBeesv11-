@@ -288,27 +288,31 @@
     align-content: start;
 }
 
+/* --- Grid Item Big Update --- */
 .grid-item-btn {
     background: white;
     border: var(--border-thick);
-    border-radius: 16px;
-    padding: 12px;
+    border-radius: 20px;
+    padding: 16px;
     font-family: var(--font-comic);
-    font-size: 0.95rem;
+    font-size: 1.2rem;
     font-weight: 800;
     color: var(--color-text-ink);
     cursor: pointer;
-    /* Squishy shadow */
-    box-shadow: 0 4px 0 #bdc3c7;
+    box-shadow: 0 6px 0 #bdc3c7;
     transition: all 0.1s;
 
-    min-height: 80px;
+    min-height: 120px;
     display: flex;
     justify-content: center;
     align-items: center;
     text-align: center;
     line-height: 1.2;
 }
+
+/* ... existing n-th child rotations ... */
+
+
 
 /* The Messy Rotation (The Phase 3 Special) */
 .grid-item-btn:nth-child(4n+1) {
@@ -514,10 +518,10 @@
 
 .sticker-btn {
     flex-shrink: 0;
-    width: 100px;
-    height: 100px;
+    width: 130px;
+    height: 130px;
     border: 3px solid black;
-    border-radius: 16px;
+    border-radius: 20px;
     overflow: hidden;
     cursor: pointer;
     background: white;
