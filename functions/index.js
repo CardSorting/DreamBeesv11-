@@ -3056,8 +3056,9 @@ export const processSlideshowTask = onTaskDispatched(
             const currentDoc = await docRef.get();
             const currentData = currentDoc.data();
             let results = currentData.results || [];
+            let resultImageId = currentData.resultImageId;
 
-            // Optimistic UI: Initialize placeholders if starting fresh
+            // Optimistic UI & Early Persistence
             if (results.length === 0) {
                 console.log(`[processSlideshowTask] Initializing optimistic placeholders for ${requestId}`);
                 results = prompts.map((p, idx) => ({
@@ -3067,7 +3068,44 @@ export const processSlideshowTask = onTaskDispatched(
                     imageUrl: null,
                     thumbnailUrl: null
                 }));
-                await docRef.update({ results });
+
+                // Create the permanent Gallery Entry IMMEDIATELY so it shows up
+                const slideshowRef = await db.collection("images").add({
+                    userId,
+                    prompt: prompts[0], // Cover prompt
+                    modelId: "gemini-2.5-flash-image",
+                    imageUrl: null, // No image yet
+                    thumbnailUrl: null,
+                    lqip: null,
+                    createdAt: new Date(),
+                    originalRequestId: requestId,
+                    type: 'slideshow',
+                    slides: results,
+                    slideCount: results.length,
+                    status: 'processing' // Mark as processing
+                });
+                resultImageId = slideshowRef.id;
+
+                await docRef.update({
+                    results,
+                    resultImageId // Link the transient queue to permanent gallery
+                });
+            } else if (!resultImageId) {
+                // If resuming legacy job without gallery ID, create one now
+                const slideshowRef = await db.collection("images").add({
+                    userId,
+                    prompt: prompts[0],
+                    modelId: "gemini-2.5-flash-image",
+                    imageUrl: null,
+                    createdAt: new Date(),
+                    originalRequestId: requestId,
+                    type: 'slideshow',
+                    slides: results,
+                    slideCount: results.length,
+                    status: 'processing'
+                });
+                resultImageId = slideshowRef.id;
+                await docRef.update({ resultImageId });
             }
 
             console.log(`[processSlideshowTask] Resuming ${requestId}. Checking against ${results.length} slides.`);
@@ -3082,13 +3120,20 @@ export const processSlideshowTask = onTaskDispatched(
                     continue;
                 }
 
+                // Also skip if it ALREADY failed, so we don't retry forever on dead prompt
+                if (results[i]?.status === 'failed') {
+                    console.log(`[processSlideshowTask] Skipping slide ${i + 1} (previous failure)`);
+                    continue;
+                }
+
                 const prompt = prompts[i];
                 console.log(`[processSlideshowTask] Generating slide ${i + 1}/${prompts.length} for ${requestId}`);
 
-                // Retry Loop for Rate Limits (429)
+                // Retry Loop for Rate Limits (429) AND Global Fault Tolerance
                 let generatedImageBase64 = null;
                 let attempts = 0;
                 const MAX_RETRIES = 3;
+                let slideError = null;
 
                 while (attempts < MAX_RETRIES && !generatedImageBase64) {
                     try {
@@ -3111,6 +3156,12 @@ export const processSlideshowTask = onTaskDispatched(
                         });
 
                         const candidate = response.candidates?.[0];
+
+                        // Safety Check - Gemini sometimes returns candidate but blocked by safety
+                        if (candidate?.finishReason === 'SAFETY') {
+                            throw new Error("Blocked by Safety Filter");
+                        }
+
                         if (candidate?.content?.parts) {
                             for (const part of candidate.content.parts) {
                                 if (part.inlineData) {
@@ -3125,21 +3176,46 @@ export const processSlideshowTask = onTaskDispatched(
                     } catch (genError) {
                         attempts++;
                         console.warn(`[processSlideshowTask] Attempt ${attempts} failed for slide ${i + 1}:`, genError.message);
+                        slideError = genError.message;
 
                         // Check for Rate Limit (429) or Overloaded (503)
                         if (genError.message.includes('429') || genError.message.includes('503') || genError.message.includes('quota')) {
                             const delay = Math.pow(2, attempts) * 2000; // 4s, 8s, 16s...
                             console.log(`[processSlideshowTask] Rate limited. Waiting ${delay}ms...`);
                             await new Promise(r => setTimeout(r, delay));
+                        } else if (genError.message.includes("Safety")) {
+                            // If Safety, don't retry. Fail immediately.
+                            break;
                         } else {
-                            // If it's not a transient error, throw immediately unless we want to be very resilient
-                            if (attempts === MAX_RETRIES) throw genError;
+                            // If it's not a transient error, maybe wait a bit anyway?
+                            await new Promise(r => setTimeout(r, 1000));
                         }
                     }
                 }
 
                 if (!generatedImageBase64) {
-                    throw new Error(`Model did not return an image for slide ${i + 1} after retries`);
+                    // SLIDE FAILURE HANDLER
+                    // Instead of crashing the whole slideshow, mark this slide as failed and continue.
+                    console.error(`[processSlideshowTask] Permamently failed slide ${i + 1}. Reason: ${slideError}`);
+
+                    results[i] = {
+                        ...results[i],
+                        status: 'failed',
+                        error: slideError || "Generation failed",
+                        imageUrl: null // Maybe set a placeholder error image URL?
+                    };
+
+                    // Update store so frontend knows it failed
+                    await docRef.update({ results });
+
+                    // Update Gallery too
+                    if (resultImageId) {
+                        await db.collection("images").doc(resultImageId).update({
+                            slides: results
+                        });
+                    }
+
+                    continue; // MOVE TO NEXT SLIDE
                 }
 
                 // Upload to B2
@@ -3197,46 +3273,30 @@ export const processSlideshowTask = onTaskDispatched(
                     results: results
                 });
 
+                // Update Gallery incrementally as well
+                if (resultImageId) {
+                    // If this is the first successful image (or first slide), update the main cover too
+                    const updateData = { slides: results };
+                    if (i === 0 || (!updateData.imageUrl && imageUrl)) {
+                        updateData.imageUrl = imageUrl;
+                        updateData.thumbnailUrl = thumbnailUrl;
+                        updateData.lqip = lqip;
+                    }
+
+                    await db.collection("images").doc(resultImageId).update(updateData);
+                }
+
                 // Space out requests to avoid rate limits
                 if (i < prompts.length - 1) {
                     await new Promise(resolve => setTimeout(resolve, 3000)); // Increased to 3s
                 }
             }
 
-            // Save all results to 'images' collection (individual entries or one group? Typically individual for gallery)
-            // But for the slideshow, we return the array.
-            // Let's create one "primary" image entry for the gallery (the first one) and maybe others linked?
-            // For simplicity and DreamBees logic, let's save the *first* one as the main result for the gallery,
-            // but return ALL of them to the frontend.
-
-            // Actually, we should probably save them all if user wants to see them later. 
-            // Better yet, just save them all as hidden=false so they show up.
-
-            // Save all results as a SINGLE "Slideshow" entry to prevent gallery clutter
-            // The first slide acts as the cover.
-            const coverSlide = results[0];
-            const slideshowRef = await db.collection("images").add({
-                userId,
-                prompt: coverSlide.prompt,
-                modelId: "gemini-2.5-flash-image",
-                imageUrl: coverSlide.imageUrl,
-                thumbnailUrl: coverSlide.thumbnailUrl,
-                lqip: coverSlide.lqip,
-                createdAt: new Date(),
-                originalRequestId: requestId,
-                type: 'slideshow', // distinctive type
-                slides: results,   // Store all slides in the doc
-                slideCount: results.length
-            });
-
-            const imageIds = [slideshowRef.id];
-
-            // Update Queue Doc with ALL results
+            // Update Queue Doc with ALL results (Final Pass)
             await docRef.update({
                 status: "completed",
-                results: results, // Array of {imageUrl, thumbnailUrl}
-                completedAt: new Date(),
-                resultImageIds: imageIds
+                results: results,
+                completedAt: new Date()
             });
 
             console.log(`[processSlideshowTask] Success for ${requestId}. Generated ${results.length} slides.`);
