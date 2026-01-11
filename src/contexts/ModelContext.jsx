@@ -51,8 +51,8 @@ export function ModelProvider({ children }) {
                     // Only set default if no saved model and no current selection
                     // Use a ref to check current state without causing dependency issues
                     if (!targetModel && !selectedModel) {
-                        // Default to ZIT-model if not saved
-                        targetModel = models.find(m => m.id === 'zit-model') || models[0];
+                        // Default to wai-illustrious if not saved
+                        targetModel = models.find(m => m.id === 'wai-illustrious') || models[0];
                     }
 
                     if (targetModel && (!selectedModel || selectedModel.id !== targetModel.id)) {
