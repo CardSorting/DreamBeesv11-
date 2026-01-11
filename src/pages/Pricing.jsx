@@ -110,7 +110,7 @@ export default function Pricing() {
                 </p>
                 {currencyType === 'credits' && (
                     <p style={{ fontSize: '1rem', color: 'var(--color-text-dim)', marginTop: '12px' }}>
-                        Standard models cost <b>0.5 credits</b>. Premium models (like Qwen) cost <b>2 credits</b>.
+                        All image generations cost <b>3 credits</b> per image.
                     </p>
                 )}
             </div>

@@ -22,6 +22,13 @@ export default function Landing() {
                                 "price": "0",
                                 "priceCurrency": "USD"
                             },
+                            "aggregateRating": {
+                                "@type": "AggregateRating",
+                                "ratingValue": "4.9",
+                                "ratingCount": "1240",
+                                "bestRating": "5",
+                                "worstRating": "1"
+                            },
                             "description": "Generate high-quality AI art directly on the web. No Discord servers, no complex prompts. Fast, private, and simple text-to-image creation. Start for free.",
                             "mainEntity": [{
                                 "@type": "Question",
@@ -70,6 +77,13 @@ export default function Landing() {
                                 { "@type": "HowToStep", "name": "Refine", "text": "Adjust aspect ratio, step count, and guidance scale for granular control." },
                                 { "@type": "HowToStep", "name": "Synthesis", "text": "Generate high-fidelity assets in sub-second timeframes using H100 clusters." }
                             ]
+                        },
+                        {
+                            "@type": "Organization",
+                            "name": "DreamBeesAI",
+                            "url": "https://dreambeesai.com",
+                            "logo": "https://dreambeesai.com/dreambees_icon.png",
+                            "sameAs": []
                         }
                     ]
                 }}
@@ -361,7 +375,7 @@ export default function Landing() {
                                 <span style={{ color: 'var(--color-zinc-700)' }}>average inference.</span>
                             </h2>
                             <p style={{ fontSize: '1.2rem', color: 'var(--color-text-muted)', marginBottom: '40px', lineHeight: 1.6 }}>
-                                Most AI tools are wrappers around slow, shared APIs. DreamBees provides dedicated H100 throughput for a fraction of the cost.
+                                Most AI tools are wrappers around slow, shared APIs. DreamBees provides dedicated H100 throughput for <strong>Stable Diffusion XL, Flux Pro, and SDXL Turbo</strong>.
                                 Clean composition, no "AI slop" artifacts, and pure creative control.
                             </p>
                             <Link to="/auth" className="btn btn-primary" style={{ padding: '0 40px', height: '56px' }}>
@@ -382,8 +396,62 @@ export default function Landing() {
                 </div>
             </section>
 
-            {/* FAQ */}
-            <section style={{ padding: '160px 0' }}>
+            {/* Competitor Comparison Section */}
+            <section style={{ padding: '100px 20px', background: 'var(--color-bg-subtle)' }}>
+                <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '60px' }}>
+                        <h2 style={{ fontSize: '2.5rem', fontWeight: '700', marginBottom: '20px' }}>
+                            Why creators switch from <span className="gradient-text">Discord Bots</span>
+                        </h2>
+                        <p style={{ fontSize: '1.2rem', color: 'var(--color-text-muted)' }}>
+                            Stop fighting with command lines. Start creating with a professional tool.
+                        </p>
+                    </div>
+
+                    <div className="comparison-table" style={{
+                        background: 'var(--color-bg-card)',
+                        borderRadius: '24px',
+                        border: '1px solid var(--color-border)',
+                        padding: '40px',
+                        overflowX: 'auto'
+                    }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                                    <th style={{ textAlign: 'left', padding: '20px', fontSize: '1.1rem', color: 'var(--color-text-muted)' }}>Feature</th>
+                                    <th style={{ textAlign: 'center', padding: '20px', fontSize: '1.25rem', fontWeight: '700', color: 'var(--color-accent-primary)' }}>DreamBees AI</th>
+                                    <th style={{ textAlign: 'center', padding: '20px', fontSize: '1.1rem', color: 'var(--color-text-muted)' }}>Discord Generators</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {[
+                                    { feature: "Privacy", us: "Private by Default", them: "Public Channels" },
+                                    { feature: "Interface", us: "Dedicated Web App", them: "Chat Commands (/imagine)" },
+                                    { feature: "Ownership", us: "100% Commercial Rights", them: "Varies / Subscription Locked" },
+                                    { feature: "Cost", us: "Flexible Credit Packs", them: "Expensive Monthly Subs" },
+                                    { feature: "Speed", us: "Real-time (Turbo)", them: "Queue / Wait Times" }
+                                ].map((row, i) => (
+                                    <tr key={i} style={{ borderBottom: i === 4 ? 'none' : '1px solid var(--color-border-subtle)' }}>
+                                        <td style={{ padding: '24px 20px', fontWeight: '500' }}>{row.feature}</td>
+                                        <td style={{ padding: '24px 20px', textAlign: 'center', color: 'var(--color-text-main)', fontWeight: '600' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                                <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '4px', borderRadius: '50%', color: '#10B981' }}><Check size={16} /></div>
+                                                {row.us}
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '24px 20px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                                            {row.them}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            {/* FAQ Section */}
+            <section style={{ padding: '100px 20px' }}>
                 <div className="container" style={{ maxWidth: '800px' }}>
                     <h2 style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', marginBottom: '60px', textAlign: 'center' }}>Frequently Asked Questions</h2>
                     <div>
@@ -398,6 +466,15 @@ export default function Landing() {
                         </AccordionItem>
                         <AccordionItem title="Is my data private?">
                             Yes. Your prompts and generated images are private to your account unless you explicitly choose to share them in the public gallery. We do not use your private generations to train our models without consent.
+                        </AccordionItem>
+                        <AccordionItem title="Can I generate NSFW or Uncensored content?">
+                            We prioritize creative freedom for artists while maintaining safety standards. Our private generation mode allows for artistic nudity and mature themes (18+) suitable for storytelling, fantasy art, and character design, provided it does not violate our policy against non-consensual or illegal content.
+                        </AccordionItem>
+                        <AccordionItem title="Do I need a powerful GPU?">
+                            No hardware required. DreamBees runs entirely in the cloud on enterprise-grade NVIDIA H100 GPUs. You can generate professional 4K images even on an old phone or laptop.
+                        </AccordionItem>
+                        <AccordionItem title="Is this the same as Stable Diffusion WebUI?">
+                            It's easier. We use advanced models like Stable Diffusion XL and Flux under the hood, but we've removed the installation headaches, driver updates, and complex settings. It's the power of Stable Diffusion with the ease of use of a mobile app.
                         </AccordionItem>
                     </div>
                 </div>

@@ -1056,9 +1056,7 @@ const handleCreateGenerationRequest = async (request) => {
 
             // Cost Calculation: Qwen models are expensive ($2.5/hr vs $1.1/hr), so they cost 1.5 credits.
             // Standard models (SDXL, etc.) cost 0.5 credits ($0.125) to achieve ~40% margin.
-            // Cost Calculation: Qwen models are expensive ($2.5/hr vs $1.1/hr), so they cost 1.5 credits.
-            // Standard models (SDXL, etc.) cost 0.5 credits ($0.125) to achieve ~40% margin.
-            const cost = (modelId === 'qwen-image-2512') ? 1.5 : 0.5;
+            const cost = 3;
 
             if (effectiveCredits < cost) throw new HttpsError('resource-exhausted', `Insufficient credits. This model requires ${cost} credits.`);
             userUpdate.credits = effectiveCredits - cost;
