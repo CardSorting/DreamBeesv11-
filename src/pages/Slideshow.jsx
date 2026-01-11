@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db, functions } from '../firebase';
 import { httpsCallable } from 'firebase/functions';
-import { doc, onSnapshot, collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { Button } from '../components/Slideshow/Button';
 import { ImageUploader } from '../components/Slideshow/ImageUploader';
@@ -37,7 +37,7 @@ export default function Slideshow() {
     const [results, setResults] = useState([]);
     const [requestId, setRequestId] = useState(null);
     const [activeSlideIndex, setActiveSlideIndex] = useState(0);
-    const [history, setHistory] = useState([]);
+    // history state removed
 
     // Settings
     const [language, setLanguage] = useState('English');
@@ -53,55 +53,7 @@ export default function Slideshow() {
         setPreviewUrl(null);
     };
 
-    // Fetch History
-    useEffect(() => {
-        if (!currentUser) return;
-
-        const q = query(
-            collection(db, 'generation_queue'),
-            where('userId', '==', currentUser.uid),
-            orderBy('createdAt', 'desc'),
-            limit(10)
-        );
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const items = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            setHistory(items);
-        }, (err) => {
-            console.error("History fetch error:", err);
-            // Fallback strategy if index is missing
-            const qFallback = query(
-                collection(db, 'generation_queue'),
-                where('userId', '==', currentUser.uid),
-                limit(20)
-            );
-            onSnapshot(qFallback, (snap) => {
-                const items = snap.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                })).sort((a, b) => b.createdAt - a.createdAt);
-                setHistory(items);
-            });
-        });
-
-        return () => unsubscribe();
-    }, [currentUser]);
-
-    const resumeTask = (item) => {
-        if (item.status === 'processing' || item.status === 'queued') {
-            setRequestId(item.id);
-            setCurrentStep('processing');
-            setMode(item.mode || 'slideshow');
-        } else if (item.status === 'completed') {
-            setResults(item.results || []);
-            setMode(item.mode || 'slideshow');
-            setCurrentStep('result');
-            setActiveSlideIndex(0);
-        }
-    };
+    // Cycle loading messages
 
     // Cycle loading messages
     useEffect(() => {
@@ -338,37 +290,7 @@ export default function Slideshow() {
                             </div>
                         </div>
 
-                        {/* Recent Activity Section */}
-                        {history.length > 0 && (
-                            <div className="history-section">
-                                <h3 className="history-title">Recent Activity</h3>
-                                <div className="history-grid">
-                                    {history.map(item => (
-                                        <div
-                                            key={item.id}
-                                            className={`history-card ${item.status}`}
-                                            onClick={() => resumeTask(item)}
-                                        >
-                                            <div className="history-icon">
-                                                {item.status === 'completed' && <Sparkles size={16} />}
-                                                {item.status === 'processing' && <Loader2 size={16} className="animate-spin" />}
-                                                {item.status === 'queued' && <Loader2 size={16} />}
-                                                {item.status === 'failed' && <div className="text-red-500">!</div>}
-                                            </div>
-                                            <div className="history-info">
-                                                <div className="history-mode">{item.mode || 'Generation'}</div>
-                                                <div className="history-time">
-                                                    {item.createdAt?.toDate ? item.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                                                </div>
-                                            </div>
-                                            <div className="history-status status-badge">
-                                                {item.status}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+
                     </>
                 )}
 
