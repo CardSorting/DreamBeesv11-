@@ -51,7 +51,7 @@ const s3Client = new S3Client({
 });
 
 const VALID_MODELS = [
-    'cat-carrier', 'hassaku-illustrious', 'nova-furry-xl', 'perfect-illustrious',
+    'nova-furry-xl', 'perfect-illustrious',
     'gray-color', 'scyrax-pastel', 'ani-detox', 'animij-v7', 'swijtspot-no1',
     'zit-model', 'qwen-image-2512', 'wai-illustrious'
 ];
@@ -172,12 +172,12 @@ export const processImageTask = onTaskDispatched(
                 });
             } else {
                 const params = new URLSearchParams({
-                    prompt, model: modelId || "cat-carrier", negative_prompt,
+                    prompt, model: modelId || "wai-illustrious", negative_prompt,
                     steps: steps.toString(), cfg: cfg.toString(),
                     width: resolution.width.toString(), height: resolution.height.toString(),
                     scheduler: scheduler || 'DPM++ 2M Karras'
                 });
-                const url = `https://cardsorting--sdxl-multi-model-model-web-inference.modal.run?${params.toString()}`;
+                const url = `https://mariecoderinc--sdxl-multi-model-model-web-inference.modal.run?${params.toString()}`;
 
                 // Defensive check for URL length to prevent 414 errors or silent truncation
                 if (url.length > 2048) {

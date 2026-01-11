@@ -51,9 +51,9 @@ vi.mock('../contexts/AuthContext', () => ({
 
 vi.mock('../contexts/ModelContext', () => ({
     useModel: () => ({
-        selectedModel: { id: 'cat-carrier', name: 'Cat Carrier' },
+        selectedModel: { id: 'wai-illustrious', name: 'Wai Illustrious' },
         setSelectedModel: vi.fn(),
-        availableModels: [{ id: 'cat-carrier', name: 'Cat Carrier' }],
+        availableModels: [{ id: 'wai-illustrious', name: 'Wai Illustrious' }],
         loading: false,
         getShowcaseImages: vi.fn(() => Promise.resolve([])),
         rateGeneration: vi.fn()
@@ -105,7 +105,7 @@ describe('Generator - handleMagicEnhance', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        
+
         // Setup mock API
         mockApi = vi.fn();
         mockOnSnapshot = vi.fn();
@@ -127,7 +127,7 @@ describe('Generator - handleMagicEnhance', () => {
 
             // Render component - would need to set up state properly
             // For now, we'll test the logic unit-style
-            
+
             const referenceImage = 'https://example.com/test-image.jpg';
             const activeStyleId = 'test-style-1';
             const styleObj = mockStyleRegistry.find(s => s.id === activeStyleId);
@@ -157,7 +157,7 @@ describe('Generator - handleMagicEnhance', () => {
             // This scenario should trigger error toast
             // In the actual component, this would show:
             // toast.error("Please select a style to transform the image", { id: 'style-magic' });
-            
+
             expect(referenceImage).toBeTruthy();
             expect(activeStyleId).toBeFalsy();
             // When both conditions are true, error should be shown
@@ -293,7 +293,7 @@ describe('Generator - handleMagicEnhance', () => {
 
             expect(hasValidReferenceImage).toBe(true);
             expect(hasValidPrompt).toBe(true);
-            
+
             // Priority 1 (image transformation) should be checked first
             // So prompt transformation should not be executed
         });

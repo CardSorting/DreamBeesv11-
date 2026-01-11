@@ -9,22 +9,7 @@ admin.initializeApp({
 const db = admin.firestore();
 
 const MODELS = [
-    {
-        id: 'cat-carrier',
-        name: 'Cat Carrier',
-        description: 'A versatile model for general purpose generation, excellent for characters and scenes.',
-        type: 'SDXL',
-        order: 1,
-        isActive: true
-    },
-    {
-        id: 'hassaku-illustrious',
-        name: 'Hassaku Illustrious',
-        description: 'Specialized for high-quality illustration and digital art styles.',
-        type: 'SDXL',
-        order: 2,
-        isActive: true
-    },
+
     {
         id: 'nova-furry-xl',
         name: 'Nova Furry XL',
