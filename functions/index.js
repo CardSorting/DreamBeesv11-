@@ -2970,7 +2970,7 @@ const handleCreateSlideshowGeneration = async (request) => {
     const userRef = db.collection('users').doc(uid);
     const queueRef = db.collection('generation_queue').doc(); // Create new document ID
 
-    const COST = safeMode === 'slideshow' ? 4 : 1; // 4 credits for slideshow (8 slides), 1 for poster
+    const COST = safeMode === 'slideshow' ? 5 : 1; // 5 credits for slideshow (8 slides), 1 for poster
 
     try {
         await db.runTransaction(async (t) => {
