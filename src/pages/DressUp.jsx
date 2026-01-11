@@ -72,7 +72,7 @@ export default function DressUp() {
         const q = query(
             collection(db, 'generation_queue'),
             where('userId', '==', currentUser.uid),
-            where('status', '==', 'completed'),
+            // Show all statuses so we see 'processing' too
             orderBy('createdAt', 'desc'),
             limit(10)
         );
@@ -331,10 +331,22 @@ export default function DressUp() {
                                     {userImages.map(img => (
                                         <button
                                             key={img.id}
-                                            className="sticker-btn"
-                                            onClick={() => handleHistoryPick(img.imageUrl)}
+                                            className={`sticker-btn ${img.status === 'processing' ? 'processing' : ''}`}
+                                            onClick={() => img.status === 'completed' && handleHistoryPick(img.imageUrl)}
+                                            disabled={img.status === 'processing' || img.status === 'failed'}
+                                            style={{ position: 'relative' }}
                                         >
-                                            <img src={img.thumbnailUrl || img.imageUrl} alt="Sticker" />
+                                            {img.status === 'completed' ? (
+                                                <img src={img.thumbnailUrl || img.imageUrl} alt="Sticker" />
+                                            ) : img.status === 'processing' ? (
+                                                <div className="flex-center" style={{ width: '100%', height: '100%', background: '#27272a' }}>
+                                                    <Sparkles className="animate-spin text-yellow-400" size={20} />
+                                                </div>
+                                            ) : (
+                                                <div className="flex-center" style={{ width: '100%', height: '100%', background: '#27272a' }}>
+                                                    <X className="text-red-500" size={20} />
+                                                </div>
+                                            )}
                                         </button>
                                     ))}
                                 </div>

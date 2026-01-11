@@ -2726,27 +2726,51 @@ export const processDressUpTask = onTaskDispatched(
                     }
                 });
             }
-            contents.push({ text: prompt });
 
-            const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash-image",
-                contents: contents
+            // 1. EARLY PERSISTENCE: Create Gallery Entry Immediately
+            // This ensures it appears in the user's history instantly as "Processing"
+            const imageRef = await db.collection("images").add({
+                userId,
+                prompt,
+                modelId: "gemini-2.5-flash-image",
+                imageUrl: null, // No image yet
+                thumbnailUrl: null,
+                lqip: null,
+                createdAt: new Date(),
+                originalRequestId: requestId,
+                type: 'dress-up',
+                status: 'processing'
             });
 
-            let generatedImageBase64 = null;
-            const candidate = response.candidates?.[0];
-            if (candidate?.content?.parts) {
-                for (const part of candidate.content.parts) {
-                    if (part.inlineData) {
-                        generatedImageBase64 = part.inlineData.data;
-                        break;
-                    }
-                }
-            }
+            // Link Queue to Gallery immediately
+            await docRef.update({
+                resultImageId: imageRef.id,
+                status: 'processing'
+            });
+
+            console.log(`[processDressUpTask] processing ${requestId}, gallery doc: ${imageRef.id}`);
+
+            // --- Gemini Call (Using gemini-2.5-flash-image) ---
+            const model = ai.getGenerativeModel({ model: "gemini-2.5-flash-image" });
+
+            const result = await model.generateContent({
+                contents: [
+                    {
+                        inlineData: {
+                            mimeType: "image/png",
+                            data: cleanBase64
+                        }
+                    },
+                    { text: prompt }
+                ]
+            });
+
+            const response = await result.response;
+            const generatedImageBase64 = response.text() ? null :
+                (response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || null);
 
             if (!generatedImageBase64) {
-                const textPart = candidate?.content?.parts?.find(p => p.text);
-                throw new Error(textPart ? `Model output text: ${textPart.text}` : "Model did not return an image.");
+                throw new Error("No image data returned from Gemini");
             }
 
             // --- B2 Upload Logic (Similar to processImageTask) ---
@@ -2789,17 +2813,13 @@ export const processDressUpTask = onTaskDispatched(
             const imageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalFilename}`;
             const thumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbFilename}`;
 
-            // Save to 'images' collection for gallery/history
-            const imageRef = await db.collection("images").add({
-                userId,
-                prompt,
-                modelId: "gemini-2.5-flash-image",
+            // UPDATE the existing gallery doc with success
+            await imageRef.update({
                 imageUrl,
                 thumbnailUrl,
                 lqip,
-                createdAt: new Date(),
-                originalRequestId: requestId,
-                type: 'dress-up'
+                status: 'completed',
+                completedAt: new Date()
             });
 
             // Update Queue Doc
