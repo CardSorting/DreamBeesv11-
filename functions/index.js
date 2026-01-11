@@ -2833,6 +2833,433 @@ export const processDressUpTask = onTaskDispatched(
     }
 );
 
+// ============================================================================
+// Slideshow / Infographic Logic
+// ============================================================================
+
+const SLIDESHOW_STYLE_INSTRUCTION = `
+*** MASTER VISUAL INSTRUCTION ***
+STYLE: Premium Anime Infographic (Vector Art Style).
+AESTHETIC: "Kawaii Future" - clean lines, pastel gradients, and high-readability typography.
+CHARACTER: A consistent Pink-Haired Nekomimi (Cat-Girl) wearing a white/pink sci-fi school uniform. She is the presenter.
+
+KEY VISUAL RULES:
+1. BACKGROUND: Clean, soft cream (#FFFDF5) or very pale pink background. NO cluttered backgrounds.
+2. CONTAINERS: Content must be inside rounded, "glassmorphic" or pastel-colored content blocks with soft drop shadows.
+3. TYPOGRAPHY: Big, BOLD headers. Sans-serif modern fonts (like Fredoka or Nunito). Text must be dark gray/blue for contrast.
+4. CONSISTENCY: This is part of a slide deck. Maintain uniform margins and header styles.
+`;
+
+const SLIDESHOW_MASTER_PROMPT = `Transform this image into a professional nekomimi anime cat-girl children’s educational infographic.
+
+${SLIDESHOW_STYLE_INSTRUCTION}
+
+LAYOUT STRUCTURE:
+1. TITLE HEADER: Big, colorful title block at the top.
+2. MAIN CONTENT AREA: The source image transformed into a clean, educational diagram or illustration.
+   - Use "Call-out" bubbles to explain details.
+   - Nekomimi character pointing at the most important part.
+3. SIDEBAR: "Fun Facts" list with cute icons.
+4. FOOTER: "Designed by #MEOWACC" logo.
+
+Make it look like a high-end educational poster sold in a museum shop.`;
+
+const getSlidePrompts = (language) => [
+    // SLIDE 1: Title Card
+    `GENERATE SLIDE 1 of 8: TITLE CARD.
+   ${SLIDESHOW_STYLE_INSTRUCTION}
+   CONTENT FOCUS:
+   - Center Stage: The Nekomimi character waving excitedly (Full Body).
+   - Text: A MASSIVE, colorful, playful Title derived from the image topic.
+   - Subtitle: "Let's Learn Together!" in a pill-shaped button.
+   - Decor: Floating sparkles, hearts, and geometric shapes (triangles, circles).
+   OUTPUT LANGUAGE: ${language}.`,
+
+    // SLIDE 2: Agenda
+    `GENERATE SLIDE 2 of 8: LEARNING MAP.
+   ${SLIDESHOW_STYLE_INSTRUCTION}
+   CONTENT FOCUS:
+   - Layout: A winding "Game Map" path or a clean Checklist.
+   - Content: 3-4 checkpoints showing what we will learn.
+   - Character: Nekomimi holding a flag at the "Start" of the path.
+   - Style: Video game level select screen aesthetic but educational.
+   OUTPUT LANGUAGE: ${language}.`,
+
+    // SLIDE 3: Vocabulary
+    `GENERATE SLIDE 3 of 8: VOCABULARY.
+   ${SLIDESHOW_STYLE_INSTRUCTION}
+   CONTENT FOCUS:
+   - Layout: A 2x2 Grid of "Trading Cards".
+   - Content: 4 key terms from the source image. Each card has an icon/illustration and a bold label.
+   - Character: Peeking over the top of the grid, adjusting her glasses.
+   - Style: Clean, card-based interface.
+   OUTPUT LANGUAGE: ${language}.`,
+
+    // SLIDE 4: Main Concept (Diagram)
+    `GENERATE SLIDE 4 of 8: CORE CONCEPT.
+   ${SLIDESHOW_STYLE_INSTRUCTION}
+   CONTENT FOCUS:
+   - Layout: Central "Hero" Diagram.
+   - Content: A simplified, cute vector version of the main subject from the source image.
+   - Character: "Vanna White" pose, presenting the diagram with an open hand.
+   - Details: Clear lines connecting parts to labels.
+   OUTPUT LANGUAGE: ${language}.`,
+
+    // SLIDE 5: Process / How-to
+    `GENERATE SLIDE 5 of 8: HOW IT WORKS.
+   ${SLIDESHOW_STYLE_INSTRUCTION}
+   CONTENT FOCUS:
+   - Layout: Horizontal Flowchart (Left -> Right).
+   - Content: 3 distinct steps (Step 1 -> Step 2 -> Step 3) explaining the function.
+   - Character: Mini-versions of the Nekomimi acting out each step.
+   - Style: Arrows, action lines, and clear sequencing.
+   OUTPUT LANGUAGE: ${language}.`,
+
+    // SLIDE 6: Analysis
+    `GENERATE SLIDE 6 of 8: DEEP DIVE.
+   ${SLIDESHOW_STYLE_INSTRUCTION}
+   CONTENT FOCUS:
+   - Layout: Split Screen (Image Left, Text Right).
+   - Content: Left side is a zoomed-in detail. Right side is 3 bullet points explaining it.
+   - Character: Holding a giant magnifying glass over the detail.
+   - Style: Scientific observation but cute.
+   OUTPUT LANGUAGE: ${language}.`,
+
+    // SLIDE 7: Real World Application
+    `GENERATE SLIDE 7 of 8: REAL WORLD.
+   ${SLIDESHOW_STYLE_INSTRUCTION}
+   CONTENT FOCUS:
+   - Layout: "Thought Bubble" cloud.
+   - Content: A central scene showing the topic used in daily life.
+   - Character: Dressed in a costume relevant to the topic (e.g., if science, a lab coat; if nature, a safari hat).
+   - Text: "Why is this important?" header.
+   OUTPUT LANGUAGE: ${language}.`,
+
+    // SLIDE 8: Quiz/Summary
+    `GENERATE SLIDE 8 of 8: QUIZ TIME.
+   ${SLIDESHOW_STYLE_INSTRUCTION}
+   CONTENT FOCUS:
+   - Layout: "Pop Quiz" Interface.
+   - Content: One big question with 2 visual answer choices (A vs B).
+   - Character: Holding a "Correct!" sign or a trophy.
+   - Bottom: "Great Job!" banner.
+   OUTPUT LANGUAGE: ${language}.`
+];
+
+const handleCreateSlideshowGeneration = async (request) => {
+    // Basic App Check logging (Warn Mode)
+    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
+        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
+    }
+
+    const { image, mode, language } = request.data;
+    const uid = request.auth.uid;
+
+    if (!uid) {
+        throw new HttpsError('unauthenticated', "User must be authenticated");
+    }
+
+    if (!image) {
+        throw new HttpsError('invalid-argument', "Image is required.");
+    }
+
+    const safeLanguage = language || 'English';
+    const safeMode = mode || 'poster';
+
+    const db = getFirestore();
+    const userRef = db.collection('users').doc(uid);
+    const queueRef = db.collection('generation_queue').doc(); // Create new document ID
+
+    const COST = safeMode === 'slideshow' ? 4 : 1; // 4 credits for slideshow (8 slides), 1 for poster
+
+    try {
+        await db.runTransaction(async (t) => {
+            const userDoc = await t.get(userRef);
+
+            if (!userDoc.exists) {
+                throw new HttpsError('not-found', "User not found.");
+            }
+
+            const userData = userDoc.data();
+            let credits = userData.credits;
+            if (typeof credits !== 'number') credits = 0;
+
+            console.log(`[handleSlideshow] Credit Audit - User: ${uid}, Pre-balance: ${credits}, Cost: ${COST}`);
+
+            if (credits < COST) {
+                throw new HttpsError('resource-exhausted', `Insufficient credits. Current: ${credits}, Required: ${COST}.`);
+            }
+
+            t.update(userRef, {
+                credits: FieldValue.increment(-COST)
+            });
+
+            // Create Queue Item
+            t.set(queueRef, {
+                userId: uid,
+                status: 'queued',
+                type: 'slideshow',
+                mode: safeMode,
+                language: safeLanguage,
+                cost: COST,
+                createdAt: new Date()
+            });
+        });
+
+        // Enqueue Task
+        const queue = getFunctions().taskQueue('processSlideshowTask');
+        await queue.enqueue({
+            requestId: queueRef.id,
+            userId: uid,
+            image: image, // Pass the base64 image to the task
+            mode: safeMode,
+            language: safeLanguage,
+            cost: COST
+        });
+
+        return { requestId: queueRef.id };
+
+    } catch (error) {
+        console.error("Credit deduction failed:", error);
+        throw error;
+    }
+};
+
+// Slideshow Worker
+export const processSlideshowTask = onTaskDispatched(
+    {
+        retryConfig: { maxAttempts: 3, minBackoffSeconds: 60 },
+        rateLimits: { maxConcurrentDispatches: 3 },
+        memory: "2GiB",
+        timeoutSeconds: 540,
+    },
+    async (req) => {
+        const { requestId, userId, image, mode, language, cost } = req.data;
+        const db = getFirestore();
+        const docRef = db.collection("generation_queue").doc(requestId);
+
+        try {
+            await docRef.update({ status: "processing" });
+
+            const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
+            const ai = new GoogleGenAI({ apiKey });
+
+            const prompts = [];
+            if (mode === 'poster') {
+                const languageInstruction = `\n\nOUTPUT LANGUAGE RULE: The entire infographic text MUST be written in ${language}. Ensure cultural nuances, educational terms, and slang are adapted specifically for this language audience.`;
+                prompts.push(SLIDESHOW_MASTER_PROMPT + languageInstruction);
+            } else {
+                prompts.push(...getSlidePrompts(language));
+            }
+
+            // 1. Check for existing progress (Resume Logic)
+            const currentDoc = await docRef.get();
+            const currentData = currentDoc.data();
+            let results = currentData.results || [];
+
+            // Optimistic UI: Initialize placeholders if starting fresh
+            if (results.length === 0) {
+                console.log(`[processSlideshowTask] Initializing optimistic placeholders for ${requestId}`);
+                results = prompts.map((p, idx) => ({
+                    slideIndex: idx,
+                    prompt: p, // Send prompt text immediately so frontend can show it
+                    status: 'pending',
+                    imageUrl: null,
+                    thumbnailUrl: null
+                }));
+                await docRef.update({ results });
+            }
+
+            console.log(`[processSlideshowTask] Resuming ${requestId}. Checking against ${results.length} slides.`);
+
+            const cleanBase64 = image.includes('base64,') ? image.split('base64,')[1] : image;
+
+            // Sequential generation to maintain order and avoid rate limits
+            for (let i = 0; i < prompts.length; i++) {
+                // SKIP if already generated (status completed or imageUrl exists)
+                if (results[i]?.status === 'completed' || results[i]?.imageUrl) {
+                    console.log(`[processSlideshowTask] Skipping slide ${i + 1} (already completed)`);
+                    continue;
+                }
+
+                const prompt = prompts[i];
+                console.log(`[processSlideshowTask] Generating slide ${i + 1}/${prompts.length} for ${requestId}`);
+
+                // Retry Loop for Rate Limits (429)
+                let generatedImageBase64 = null;
+                let attempts = 0;
+                const MAX_RETRIES = 3;
+
+                while (attempts < MAX_RETRIES && !generatedImageBase64) {
+                    try {
+                        const response = await ai.models.generateContent({
+                            model: "gemini-2.5-flash-image",
+                            contents: [
+                                {
+                                    inlineData: {
+                                        mimeType: "image/png",
+                                        data: cleanBase64
+                                    }
+                                },
+                                { text: prompt }
+                            ],
+                            config: {
+                                imageConfig: {
+                                    imageSize: '2K'
+                                }
+                            }
+                        });
+
+                        const candidate = response.candidates?.[0];
+                        if (candidate?.content?.parts) {
+                            for (const part of candidate.content.parts) {
+                                if (part.inlineData) {
+                                    generatedImageBase64 = part.inlineData.data;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!generatedImageBase64) throw new Error("No image data in response");
+
+                    } catch (genError) {
+                        attempts++;
+                        console.warn(`[processSlideshowTask] Attempt ${attempts} failed for slide ${i + 1}:`, genError.message);
+
+                        // Check for Rate Limit (429) or Overloaded (503)
+                        if (genError.message.includes('429') || genError.message.includes('503') || genError.message.includes('quota')) {
+                            const delay = Math.pow(2, attempts) * 2000; // 4s, 8s, 16s...
+                            console.log(`[processSlideshowTask] Rate limited. Waiting ${delay}ms...`);
+                            await new Promise(r => setTimeout(r, delay));
+                        } else {
+                            // If it's not a transient error, throw immediately unless we want to be very resilient
+                            if (attempts === MAX_RETRIES) throw genError;
+                        }
+                    }
+                }
+
+                if (!generatedImageBase64) {
+                    throw new Error(`Model did not return an image for slide ${i + 1} after retries`);
+                }
+
+                // Upload to B2
+                const imageBuffer = Buffer.from(generatedImageBase64, 'base64');
+                const sharpImg = sharp(imageBuffer);
+
+                // 1. WebP Original
+                const webpBuffer = await sharpImg.webp({ quality: 90 }).toBuffer();
+                // 2. Thumbnail
+                const thumbBuffer = await sharpImg
+                    .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
+                    .webp({ quality: 80 })
+                    .toBuffer();
+
+                // 3. LQIP
+                const lqipBuffer = await sharpImg
+                    .resize(20, 20, { fit: 'inside' })
+                    .webp({ quality: 20 })
+                    .toBuffer();
+                const lqip = `data:image/webp;base64,${lqipBuffer.toString('base64')}`;
+
+                const baseFolder = `generated/${userId}/${Date.now()}_${i}`;
+                const originalFilename = `${baseFolder}.webp`;
+                const thumbFilename = `${baseFolder}_thumb.webp`;
+
+                await Promise.all([
+                    s3Client.send(new PutObjectCommand({
+                        Bucket: B2_BUCKET,
+                        Key: originalFilename,
+                        Body: webpBuffer,
+                        ContentType: "image/webp"
+                    })),
+                    s3Client.send(new PutObjectCommand({
+                        Bucket: B2_BUCKET,
+                        Key: thumbFilename,
+                        Body: thumbBuffer,
+                        ContentType: "image/webp"
+                    }))
+                ]);
+
+                const imageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalFilename}`;
+                const thumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbFilename}`;
+
+                // Update the specific placeholder with real data
+                results[i] = {
+                    ...results[i],
+                    imageUrl,
+                    thumbnailUrl,
+                    lqip,
+                    status: 'completed'
+                };
+
+                // Update progress incrementally
+                await docRef.update({
+                    results: results
+                });
+
+                // Space out requests to avoid rate limits
+                if (i < prompts.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 3000)); // Increased to 3s
+                }
+            }
+
+            // Save all results to 'images' collection (individual entries or one group? Typically individual for gallery)
+            // But for the slideshow, we return the array.
+            // Let's create one "primary" image entry for the gallery (the first one) and maybe others linked?
+            // For simplicity and DreamBees logic, let's save the *first* one as the main result for the gallery,
+            // but return ALL of them to the frontend.
+
+            // Actually, we should probably save them all if user wants to see them later. 
+            // Better yet, just save them all as hidden=false so they show up.
+
+            // Save all results as a SINGLE "Slideshow" entry to prevent gallery clutter
+            // The first slide acts as the cover.
+            const coverSlide = results[0];
+            const slideshowRef = await db.collection("images").add({
+                userId,
+                prompt: coverSlide.prompt,
+                modelId: "gemini-2.5-flash-image",
+                imageUrl: coverSlide.imageUrl,
+                thumbnailUrl: coverSlide.thumbnailUrl,
+                lqip: coverSlide.lqip,
+                createdAt: new Date(),
+                originalRequestId: requestId,
+                type: 'slideshow', // distinctive type
+                slides: results,   // Store all slides in the doc
+                slideCount: results.length
+            });
+
+            const imageIds = [slideshowRef.id];
+
+            // Update Queue Doc with ALL results
+            await docRef.update({
+                status: "completed",
+                results: results, // Array of {imageUrl, thumbnailUrl}
+                completedAt: new Date(),
+                resultImageIds: imageIds
+            });
+
+            console.log(`[processSlideshowTask] Success for ${requestId}. Generated ${results.length} slides.`);
+
+        } catch (error) {
+            console.error(`[processSlideshowTask] Failed for ${requestId}:`, error);
+
+            // Refund Logic
+            try {
+                const userRef = db.collection('users').doc(userId);
+                await userRef.update({
+                    credits: FieldValue.increment(cost)
+                });
+                console.log(`[processSlideshowTask] Refunded ${cost} credits to ${userId}`);
+            } catch (refundError) {
+                console.error("Failed to refund credits:", refundError);
+            }
+
+            await docRef.update({ status: "failed", error: error.message });
+        }
+    }
+);
+
 export const api = onCall(async (request) => {
     // Basic App Check logging (Warn Mode) - centralized here
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
@@ -2851,6 +3278,7 @@ export const api = onCall(async (request) => {
             case 'transformPrompt': return handleTransformPrompt(request);
             case 'transformImage': return handleTransformImage(request);
             case 'dressUp': return handleCreateDressUpRequest(request);
+            case 'createSlideshowGeneration': return handleCreateSlideshowGeneration(request);
             case 'generateLyrics': return handleGenerateLyrics(request); // New action
             case 'generateVideoPrompt': return handleGenerateVideoPrompt(request);
             case 'getGenerationHistory': return handleGetGenerationHistory(request);

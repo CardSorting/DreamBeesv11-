@@ -20,6 +20,7 @@ export default function ImageDetail() {
     const [loading, setLoading] = useState(!location.state?.image);
 
     const [showFullPrompt, setShowFullPrompt] = useState(false);
+    const [activeSlideIndex, setActiveSlideIndex] = useState(0);
 
     const { availableModels } = useModel();
     const modelName = image ? (availableModels.find(m => m.id === image.modelId)?.name || 'SDXL Model') : 'Loading...';
@@ -204,21 +205,88 @@ export default function ImageDetail() {
             <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
                 {/* Left: Image Canvas (Theater Mode) */}
+                {/* Left: Image Canvas (Theater Mode) */}
                 <div style={{
                     flex: 1,
                     background: '#050505',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    padding: '40px'
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    padding: '40px',
+                    position: 'relative'
                 }}>
-                    <img
-                        src={getOptimizedImageUrl(image.imageUrl)}
-                        alt={image.prompt || "Generated Image Detail"}
-                        style={{
-                            maxWidth: '100%', maxHeight: '100%',
-                            boxShadow: '0 0 50px rgba(0,0,0,0.5)',
-                            objectFit: 'contain'
-                        }}
-                    />
+                    {image.slides && image.slides.length > 0 ? (
+                        /* SLIDESHOW MODE */
+                        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
+                            {/* Main Slide */}
+                            <div style={{ position: 'relative', maxWidth: '100%', maxHeight: '80%' }}>
+                                <img
+                                    src={getOptimizedImageUrl(image.slides[activeSlideIndex || 0].imageUrl)}
+                                    alt={`Slide ${(activeSlideIndex || 0) + 1}`}
+                                    style={{
+                                        maxWidth: '100%', maxHeight: '60vh',
+                                        boxShadow: '0 0 50px rgba(0,0,0,0.5)',
+                                        objectFit: 'contain'
+                                    }}
+                                />
+
+                                {/* Navigation Arrows */}
+                                <button
+                                    onClick={() => setActiveSlideIndex(prev => Math.max(0, prev - 1))}
+                                    disabled={activeSlideIndex === 0}
+                                    style={{
+                                        position: 'absolute', left: '-50px', top: '50%', transform: 'translateY(-50%)',
+                                        background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%',
+                                        width: '40px', height: '40px', color: 'white', cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        opacity: activeSlideIndex === 0 ? 0.3 : 1
+                                    }}
+                                >
+                                    <ChevronLeft />
+                                </button>
+                                <button
+                                    onClick={() => setActiveSlideIndex(prev => Math.min(image.slides.length - 1, prev + 1))}
+                                    disabled={activeSlideIndex === image.slides.length - 1}
+                                    style={{
+                                        position: 'absolute', right: '-50px', top: '50%', transform: 'translateY(-50%)',
+                                        background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%',
+                                        width: '40px', height: '40px', color: 'white', cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        opacity: activeSlideIndex === image.slides.length - 1 ? 0.3 : 1
+                                    }}
+                                >
+                                    <ChevronRight />
+                                </button>
+                            </div>
+
+                            {/* Thumbnail Strip */}
+                            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', maxWidth: '100%', padding: '10px' }}>
+                                {image.slides.map((slide, idx) => (
+                                    <div
+                                        key={idx}
+                                        onClick={() => setActiveSlideIndex(idx)}
+                                        style={{
+                                            width: '60px', height: '60px',
+                                            borderRadius: '8px', overflow: 'hidden',
+                                            border: (activeSlideIndex || 0) === idx ? '2px solid var(--color-accent-primary)' : '2px solid transparent',
+                                            cursor: 'pointer', opacity: (activeSlideIndex || 0) === idx ? 1 : 0.6
+                                        }}
+                                    >
+                                        <img src={slide.thumbnailUrl || slide.imageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                        /* SINGLE IMAGE MODE */
+                        <img
+                            src={getOptimizedImageUrl(image.imageUrl)}
+                            alt={image.prompt || "Generated Image Detail"}
+                            style={{
+                                maxWidth: '100%', maxHeight: '100%',
+                                boxShadow: '0 0 50px rgba(0,0,0,0.5)',
+                                objectFit: 'contain'
+                            }}
+                        />
+                    )}
                 </div>
 
                 {/* Right: Inspector Panel */}
@@ -241,7 +309,7 @@ export default function ImageDetail() {
                             transition: 'max-height 0.3s ease'
                         }}>
                             <p style={{ fontSize: '1.1rem', lineHeight: '1.6', color: 'white', fontWeight: '400', wordBreak: 'break-word' }}>
-                                {image.prompt}
+                                {image.slides ? image.slides[activeSlideIndex]?.prompt : image.prompt}
                             </p>
                             {!showFullPrompt && isLongPrompt && (
                                 <div style={{

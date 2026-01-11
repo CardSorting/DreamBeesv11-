@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Menu, X, Hexagon, LogOut, LayoutGrid, Zap, Settings, User, Music, Sparkles } from 'lucide-react';
+import { Menu, X, Hexagon, LogOut, LayoutGrid, Zap, Settings, User, Music, Sparkles, Presentation } from 'lucide-react';
 import { useModel } from '../contexts/ModelContext';
 
 export default function Navbar() {
@@ -33,10 +33,11 @@ export default function Navbar() {
         { path: '/gallery', label: 'Gallery', icon: LayoutGrid },
         { path: '/karaoke', label: 'Karaoke', icon: Music },
         { path: '/dressup', label: 'Dress Up', icon: Sparkles },
+        { path: '/slideshow', label: 'Infographic', icon: Presentation },
         { path: '/pricing', label: 'Refill', icon: Hexagon },
     ];
 
-    const limitWidth = ['/dressup', '/karaoke', '/generate'].includes(location.pathname);
+    const limitWidth = ['/dressup', '/karaoke', '/generate', '/slideshow'].includes(location.pathname);
 
     return (
         <div style={{

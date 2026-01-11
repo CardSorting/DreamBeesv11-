@@ -22,6 +22,7 @@ import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import KaraokeGenie from './pages/KaraokeGenie';
 import DressUp from './pages/DressUp';
+import Slideshow from './pages/Slideshow';
 
 function PrivateRoute({ children }) {
   const { currentUser } = useAuth();
@@ -73,6 +74,11 @@ function Layout() {
           <Route path="/dressup" element={
             <PrivateRoute>
               <DressUp />
+            </PrivateRoute>
+          } />
+          <Route path="/slideshow" element={
+            <PrivateRoute>
+              <Slideshow />
             </PrivateRoute>
           } />
         </Routes>
