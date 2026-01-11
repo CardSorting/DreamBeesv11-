@@ -36,7 +36,7 @@ const REEL_PACKS = [
         reels: 600,
         price: '6.00',
         id: 'price_1Sn17SIA2zQnWbn5MloTdTqZ',
-        features: ['~10× 1080p videos (10s)', 'Access to standard video models', 'Private gallery']
+        features: ['~5× 1080p videos (10s)', 'Access to standard video models', 'Private gallery']
     },
     {
         name: 'Reels Creator',
@@ -44,21 +44,21 @@ const REEL_PACKS = [
         price: '15.00',
         id: 'price_1Sn17TIA2zQnWbn5ZXOyQbbU',
         isPopular: true,
-        features: ['~5× 2K videos (20s) or ~25× 1080p (10s)', 'Access to HD video models', 'Private gallery', 'Commercial license']
+        features: ['~3× 2K videos (20s) or ~12× 1080p (10s)', 'Access to HD video models', 'Private gallery', 'Commercial license']
     },
     {
         name: 'Reels Pro',
         reels: 3600,
         price: '35.00',
         id: 'price_1Sn17TIA2zQnWbn5d7pa8iB8',
-        features: ['~13× 2K videos (20s)', 'Priority generation speed', 'Private gallery', 'Commercial license']
+        features: ['~7× 2K videos (20s)', 'Priority generation speed', 'Private gallery', 'Commercial license']
     },
     {
         name: 'Reels Studio',
         reels: 9000,
         price: '85.00',
         id: 'price_1Sn17TIA2zQnWbn5pR1T6V5g',
-        features: ['~18× 4K videos (20s)', 'Max generation speed', 'Private gallery', 'Commercial license', 'Priority support']
+        features: ['~9× 4K videos (20s)', 'Max generation speed', 'Private gallery', 'Commercial license', 'Priority support']
     }
 ];
 
@@ -110,7 +110,7 @@ export default function Pricing() {
                 </p>
                 {currencyType === 'credits' && (
                     <p style={{ fontSize: '1rem', color: 'var(--color-text-dim)', marginTop: '12px' }}>
-                        All image generations cost <b>3 credits</b> per image.
+                        All image generations cost <b>6 credits</b> per image.
                     </p>
                 )}
             </div>
@@ -170,7 +170,7 @@ export default function Pricing() {
                         </div>
                         <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '24px', display: 'inline-block', textAlign: 'center' }}>
                             <span style={{ color: currencyType === 'reels' ? 'var(--color-accent-primary)' : 'var(--color-primary)', fontWeight: '600' }}>
-                                {pack.credits ? `${pack.credits} Credits` : `${pack.reels} Reels`}
+                                {pack.credits ? `${pack.credits} Credits (~${Math.floor(pack.credits / 6)} images)` : `${pack.reels} Reels`}
                             </span>
                         </div>
                         <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', padding: 0 }}>
@@ -212,13 +212,13 @@ export default function Pricing() {
                                 </h4>
                                 <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     <li style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-dim)' }}>
-                                        <span>1080p</span> <span style={{ color: 'white' }}>6 Reels / sec</span>
+                                        <span>1080p</span> <span style={{ color: 'white' }}>12 Reels / sec</span>
                                     </li>
                                     <li style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-dim)' }}>
-                                        <span>2K</span> <span style={{ color: 'white' }}>13 Reels / sec</span>
+                                        <span>2K</span> <span style={{ color: 'white' }}>26 Reels / sec</span>
                                     </li>
                                     <li style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--color-text-dim)' }}>
-                                        <span>4K</span> <span style={{ color: 'white' }}>25 Reels / sec</span>
+                                        <span>4K</span> <span style={{ color: 'white' }}>50 Reels / sec</span>
                                     </li>
                                 </ul>
                             </div>

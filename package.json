@@ -17,6 +17,8 @@
     "@aws-sdk/client-s3": "^3.962.0",
     "@google/genai": "^1.35.0",
     "@openrouter/sdk": "^0.3.11",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
     "dotenv": "^17.2.3",
     "firebase": "^12.7.0",
     "framer-motion": "^12.23.26",
@@ -26,7 +28,8 @@
     "react-dom": "^19.2.0",
     "react-helmet-async": "^2.0.5",
     "react-hot-toast": "^2.6.0",
-    "react-router-dom": "^7.11.0"
+    "react-router-dom": "^7.11.0",
+    "three": "^0.182.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

@@ -372,7 +372,7 @@ export default function DressUp() {
             {/* RIGHT: TOY CHEST */}
             <div className="toy-chest">
                 <div className="chest-header">
-                    <h2>Toy Box</h2>
+                    <h2>Toy Box <span style={{ fontSize: '0.8rem', opacity: 0.7, fontWeight: 'normal' }}>(5 Credits)</span></h2>
                 </div>
 
                 <div className="tab-container">

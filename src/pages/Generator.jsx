@@ -759,9 +759,9 @@ export default function Generator() {
         // Mode Specific Checks
         if (generationMode === 'video') {
             // Calculate estimated cost (simple client-side check)
-            let rate = 18;
-            if (videoResolution === '2k') rate = 36;
-            if (videoResolution === '4k') rate = 72;
+            let rate = 12;
+            if (videoResolution === '2k') rate = 26;
+            if (videoResolution === '4k') rate = 50;
             const estCost = rate * videoDuration;
 
             if (reels < estCost) {
@@ -769,8 +769,8 @@ export default function Generator() {
                 return;
             }
         } else {
-            if (credits <= 0 && subscriptionStatus !== 'active') {
-                toast.error("Insufficient Credits");
+            if (credits < 6 && subscriptionStatus !== 'active') {
+                toast.error("Insufficient Credits (Requires 6)");
                 return;
             }
         }

@@ -1056,7 +1056,7 @@ const handleCreateGenerationRequest = async (request) => {
 
             // Cost Calculation: Qwen models are expensive ($2.5/hr vs $1.1/hr), so they cost 1.5 credits.
             // Standard models (SDXL, etc.) cost 0.5 credits ($0.125) to achieve ~40% margin.
-            const cost = 3;
+            const cost = 6;
 
             if (effectiveCredits < cost) throw new HttpsError('resource-exhausted', `Insufficient credits. This model requires ${cost} credits.`);
             userUpdate.credits = effectiveCredits - cost;
@@ -1068,7 +1068,7 @@ const handleCreateGenerationRequest = async (request) => {
                 userId: uid,
                 prompt: cleanPrompt,
                 negative_prompt: negative_prompt || "",
-                modelId: modelId || "cat-carrier",
+                modelId: modelId || "wai-illustrious",
                 status: 'queued',
                 aspectRatio: safeAspectRatio,
                 steps: safeSteps,
@@ -2219,8 +2219,8 @@ const handleCreateVideoGenerationRequest = async (request) => {
     const safeAspectRatio = (aspectRatio && validAspectRatios.includes(aspectRatio)) ? aspectRatio : '3:2';
 
     // Calculate Cost based on resolution and duration
-    // Base rates (Reduced by ~30%): 1080p -> 6 per sec, 2k -> 13 per sec, 4k -> 25 per sec
-    const rate = safeResolution === '4k' ? 25 : (safeResolution === '2k' ? 13 : 6);
+    // Base rates (Doubled): 1080p -> 12 per sec, 2k -> 26 per sec, 4k -> 50 per sec
+    const rate = safeResolution === '4k' ? 50 : (safeResolution === '2k' ? 26 : 12);
     const totalCost = rate * safeDuration;
 
     try {
@@ -2366,7 +2366,7 @@ const handleTransformImage = async (request) => {
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
     if (!imageUrl) throw new HttpsError('invalid-argument', "Image URL is required");
 
-    const COST = 8;
+    const COST = 5;
 
     // 1. Deduct Credits (Transaction)
     try {
@@ -2467,7 +2467,7 @@ const handleGenerateLyrics = async (request) => {
     console.log(`[handleGenerateLyrics] Using API Key from: ${keySource}`);
     console.log(`[handleGenerateLyrics] Key Prefix: ${apiKey.substring(0, 5)}...`);
 
-    const COST = 2; // 2 credits per generation
+    const COST = 3; // 3 credits per generation
 
     // 1. Deduct Credits (Transaction, skips for Pro users)
     try {
@@ -2643,7 +2643,7 @@ const handleCreateDressUpRequest = async (request) => {
     const userRef = db.collection('users').doc(uid);
     const queueRef = db.collection('generation_queue').doc(); // Create new document ID
 
-    const COST = 4;
+    const COST = 5;
 
     try {
         await db.runTransaction(async (t) => {
@@ -2988,7 +2988,7 @@ const handleCreateSlideshowGeneration = async (request) => {
     const userRef = db.collection('users').doc(uid);
     const queueRef = db.collection('generation_queue').doc(); // Create new document ID
 
-    const COST = safeMode === 'slideshow' ? 5 : 1; // 5 credits for slideshow (8 slides), 1 for poster
+    const COST = safeMode === 'slideshow' ? 15 : 5; // 15 credits for slideshow (8 slides), 5 for poster
 
     try {
         await db.runTransaction(async (t) => {
