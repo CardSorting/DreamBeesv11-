@@ -6,9 +6,9 @@ const SEO = ({ title, description, keywords, image, type = 'website', structured
     const location = useLocation();
     const siteUrl = 'https://dreambeesai.com'; // Replace with actual domain
     const currentUrl = `${siteUrl}${location.pathname}`;
-    const defaultTitle = 'DreamBeesAI - Advanced AI Image Generator';
-    const defaultDescription = 'Create stunning AI-generated images with DreamBeesAI. Use advanced models like Flux, SDXL, and more to bring your imagination to life.';
-    const defaultKeywords = 'AI image generator, text to image, stable diffusion, flux, midjourney alternative, AI art';
+    const defaultTitle = 'AI Image Generator - Text to Image Online (No Discord Required)';
+    const defaultDescription = 'Generate high-quality AI art directly on the web. No Discord servers, no complex prompts. Fast, private, and simple text-to-image creation. Start for free.';
+    const defaultKeywords = 'AI image generator, text to image without discord, simple ai art tool, ai art generator, stable diffusion online, flux ai';
     const defaultImage = `${siteUrl}/dreambees_icon.png`;
 
     const metaTitle = title ? `${title} | DreamBeesAI` : defaultTitle;

@@ -2,28 +2,81 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, Zap, Shield, ArrowRight, Layers, ChevronDown, Cpu, Expand, Clock, Check, Plus, Minus } from 'lucide-react';
 import SEO from '../components/SEO';
+import './LandingRefined.css';
 
 export default function Landing() {
     return (
-        <div className="landing-page bg-grid" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <main className="landing-page bg-grid" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+            <div className="film-grain"></div>
             <SEO
                 structuredData={{
                     "@context": "https://schema.org",
-                    "@type": "SoftwareApplication",
-                    "name": "DreamBeesAI",
-                    "applicationCategory": "DesignApplication",
-                    "operatingSystem": "Web",
-                    "offers": {
-                        "@type": "Offer",
-                        "price": "0",
-                        "priceCurrency": "USD"
-                    },
-                    "description": "Create stunning AI-generated images with DreamBeesAI. Use advanced models like Flux, SDXL, and more to bring your imagination to life."
+                    "@graph": [
+                        {
+                            "@type": "SoftwareApplication",
+                            "name": "DreamBeesAI",
+                            "applicationCategory": "DesignApplication",
+                            "operatingSystem": "Web",
+                            "offers": {
+                                "@type": "Offer",
+                                "price": "0",
+                                "priceCurrency": "USD"
+                            },
+                            "description": "Generate high-quality AI art directly on the web. No Discord servers, no complex prompts. Fast, private, and simple text-to-image creation. Start for free.",
+                            "mainEntity": [{
+                                "@type": "Question",
+                                "name": "Can I use the images for commercial work?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "Yes. You own 100% of the rights to any image you generate on DreamBees. You can use them for commercial projects, merchandise, or any other purpose without restriction."
+                                }
+                            }, {
+                                "@type": "Question",
+                                "name": "Is DreamBees free to use?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "New users receive 30 free credits to get started with no credit card required. After that, we offer affordable flexible credit packs."
+                                }
+                            }, {
+                                "@type": "Question",
+                                "name": "Is this better than Midjourney?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "DreamBees offers a similar high-quality output but works directly in your web browser with a simple interface. No Discord server is required, and your images are private by default."
+                                }
+                            }, {
+                                "@type": "Question",
+                                "name": "Can I generate Anime and Realistic styles?",
+                                "acceptedAnswer": {
+                                    "@type": "Answer",
+                                    "text": "Yes! We support specialized models for Anime, Photorealism, 3D Art, and Digital Painting. You can switch styles instantly."
+                                }
+                            }]
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [{
+                                "@type": "ListItem",
+                                "position": 1,
+                                "name": "Home",
+                                "item": "https://dreambeesai.com"
+                            }]
+                        },
+                        {
+                            "@type": "HowTo",
+                            "name": "How to Generate AI Art in 3 Steps",
+                            "step": [
+                                { "@type": "HowToStep", "name": "Prompt", "text": "Describe your vision in natural language using our semantic engine." },
+                                { "@type": "HowToStep", "name": "Refine", "text": "Adjust aspect ratio, step count, and guidance scale for granular control." },
+                                { "@type": "HowToStep", "name": "Synthesis", "text": "Generate high-fidelity assets in sub-second timeframes using H100 clusters." }
+                            ]
+                        }
+                    ]
                 }}
             />
 
             {/* Hero Section */}
-            <section style={{
+            <header style={{
                 position: 'relative',
                 minHeight: '100vh',
                 display: 'flex',
@@ -72,39 +125,43 @@ export default function Landing() {
                                 marginRight: '10px',
                                 boxShadow: '0 0 10px var(--color-accent-primary)'
                             }}></span>
-                            NEXT GENERATION SYNTHESIS
+                            SIMPLE AI ART TOOL
                         </span>
                     </div>
 
                     <h1 className="fade-in hero-title-gradient" style={{
-                        fontSize: 'clamp(3.5rem, 10vw, 8rem)',
+                        fontSize: 'clamp(3.5rem, 8vw, 6rem)',
                         fontWeight: '800',
-                        lineHeight: 0.9,
-                        letterSpacing: '-0.04em',
+                        lineHeight: 1.1,
+                        letterSpacing: '-0.02em',
                         marginBottom: '32px',
                         animationDelay: '0.1s',
                         color: 'white' // Fallback
                     }}>
-                        DREAM <br />
-                        <span className="text-glow-accent">BEES</span>
+                        AI Image Generator: <br />
+                        <span className="text-glow-accent">Create Art Without Discord</span>
                     </h1>
 
                     <p className="fade-in" style={{
-                        fontSize: 'clamp(1.1rem, 3vw, 1.5rem)',
+                        fontSize: 'clamp(1.1rem, 3vw, 1.3rem)',
                         color: 'var(--color-zinc-400)',
-                        maxWidth: '640px',
+                        maxWidth: '720px',
                         margin: '0 auto 48px',
-                        lineHeight: 1.5,
+                        lineHeight: 1.6,
                         animationDelay: '0.2s',
                         fontWeight: '400'
                     }}>
-                        The professional platform for high-performance generative art.
-                        Engineered for speed, precision, and boundless creativity.
+                        Generate stunned characters and concept art in seconds.
+                        No servers to join, no complex setup—just powerful, private creation tools for every style.
+                        <br />
+                        <span style={{ fontSize: '0.9rem', opacity: 0.8, marginTop: '8px', display: 'block' }}>
+                            Optimized for Anime • Photorealism • 3D Assets
+                        </span>
                     </p>
 
                     <div className="fade-in" style={{ animationDelay: '0.3s', display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
                         <Link to="/auth" className="btn btn-primary" style={{ height: '56px', padding: '0 40px', fontSize: '1rem' }}>
-                            Start Creating
+                            Start Creating for Free
                         </Link>
                         <Link to="/gallery" className="btn btn-outline" style={{ height: '56px', padding: '0 40px', fontSize: '1rem' }}>
                             View Gallery
@@ -115,7 +172,7 @@ export default function Landing() {
                 <div style={{ position: 'absolute', bottom: '40px', left: 0, right: 0, display: 'flex', justifyContent: 'center', opacity: 0.5 }}>
                     <ChevronDown className="animate-bounce" color="var(--color-text-muted)" size={24} style={{ animationDuration: '2s' }} />
                 </div>
-            </section>
+            </header>
 
             {/* Infinite Marquee */}
             <section style={{ borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-subtle)' }}>
@@ -133,51 +190,53 @@ export default function Landing() {
                     </div>
 
                     <div className="bento-grid">
-                        {/* Large Card: Instant Inference */}
-                        <BentoCard colSpan={8} title="Instant Inference" icon={Zap}>
+                        {/* Large Card: Speed Benefit */}
+                        <BentoCard colSpan={8} title="Generate in Seconds" icon={Zap}>
                             <div style={{ padding: '0 32px 32px', color: 'var(--color-text-muted)' }}>
                                 <p style={{ fontSize: '1.1rem', lineHeight: 1.6, maxWidth: '90%' }}>
-                                    Powered by H100 GPU clusters for sub-second latent diffusion generation.
-                                    Eliminate wait times and stay in your creative flow state.
+                                    Stop waiting in queues. Our optimized H100 clusters deliver high-resolution results in under 1 second.
+                                    Stay in your creative flow state with instant feedback.
                                 </p>
                                 <div style={{ marginTop: '24px', display: 'flex', gap: '24px' }}>
                                     <div className="spec-badge">
-                                        <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-zinc-400)' }}>LATENCY</span>
-                                        <span style={{ fontSize: '1.5rem', fontWeight: '600', color: 'var(--color-accent-primary)' }}>{'<'}800ms</span>
+                                        <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-zinc-400)' }}>GENERATION TIME</span>
+                                        <span style={{ fontSize: '1.5rem', fontWeight: '600', color: 'var(--color-accent-primary)' }}>{'<'}0.8s</span>
                                     </div>
                                     <div className="spec-badge">
-                                        <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-zinc-400)' }}>UPTIME</span>
-                                        <span style={{ fontSize: '1.5rem', fontWeight: '600', color: 'white' }}>99.9%</span>
+                                        <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--color-zinc-400)' }}>QUALITY</span>
+                                        <span style={{ fontSize: '1.5rem', fontWeight: '600', color: 'white' }}>HD / 4K</span>
                                     </div>
                                 </div>
                             </div>
                         </BentoCard>
 
-                        {/* Small Card: Security */}
-                        <BentoCard colSpan={4} title="Enterprise Security" icon={Shield}>
+                        {/* Small Card: Privacy Benefit */}
+                        <BentoCard colSpan={4} title="Your Art is Private" icon={Shield}>
                             <div style={{ padding: '0 32px 32px', color: 'var(--color-text-muted)' }}>
-                                <p>Private galleries, secure storage, and full commercial usage rights for all assets.</p>
+                                <p>No public community feed required. Your prompts and generated images are private to your personal gallery by default.</p>
                             </div>
                         </BentoCard>
 
-                        {/* Medium Card: Control */}
-                        <BentoCard colSpan={6} title="Precision Control" icon={Layers}>
+                        {/* Medium Card: Consistency Benefit */}
+                        <BentoCard colSpan={6} title="Consistent Characters" icon={Layers}>
                             <div style={{ padding: '0 32px 32px', color: 'var(--color-text-muted)' }}>
-                                <p style={{ marginBottom: '16px' }}>Full control over generation parameters including Steps, CFG Scale, and Seed.</p>
+                                <p style={{ marginBottom: '16px' }}>
+                                    Keep character faces and styles consistent across multiple scenes using advanced seed control and negative prompting.
+                                </p>
                                 <div style={{ background: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '8px', fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--color-zinc-400)' }}>
-                                    <div>Steps: 50</div>
-                                    <div>CFG: 7.5</div>
-                                    <div>Sampler: Euler a</div>
+                                    <div>✓ Seed Locking</div>
+                                    <div>✓ Negative Prompts</div>
+                                    <div>✓ Aspect Ratio Control</div>
                                 </div>
                             </div>
                         </BentoCard>
 
-                        {/* Medium Card: Models */}
-                        <BentoCard colSpan={6} title="Multi-Model Support" icon={Cpu}>
+                        {/* Medium Card: Versatility Benefit */}
+                        <BentoCard colSpan={6} title="Anime, Realistic, & 3D" icon={Cpu}>
                             <div style={{ padding: '0 32px 32px', color: 'var(--color-text-muted)' }}>
-                                <p style={{ marginBottom: '24px' }}>Access the world's most advanced open-source models.</p>
+                                <p style={{ marginBottom: '24px' }}>Switch between specialized models for any art style instantly.</p>
                                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                                    {['SDXL 1.0', 'Flux Pro', 'Midjourney V6 (Soon)'].map(m => (
+                                    {['Anime V4', 'Photorealism', '3D Render', 'Oil Painting'].map(m => (
                                         <span key={m} style={{ padding: '4px 12px', background: 'rgba(255,255,255,0.1)', borderRadius: '99px', fontSize: '0.8rem' }}>{m}</span>
                                     ))}
                                 </div>
@@ -230,17 +289,70 @@ export default function Landing() {
                     </div>
 
                     <div className="spec-list">
-                        <SpecItem label="Generation Engine" value="Stable Diffusion XL Turbo" />
-                        <SpecItem label="Max Resolution" value="1024 x 1024" />
-                        <SpecItem label="Inference Time" value="~0.8 Seconds" />
-                        <SpecItem label="Output Format" value="PNG / WEBP" />
-                        <SpecItem label="Color Depth" value="24-bit True Color" />
-                        <SpecItem label="License" value="Commercial / MIT" />
+                        <SpecItem label="Anime Characters" value="Optimized" />
+                        <SpecItem label="Photorealism" value="Supported" />
+                        <SpecItem label="Commercial Usage" value="Included" />
+                        <SpecItem label="Resolution" value="Up to 4K" />
+                        <SpecItem label="Privacy" value="Private by default" />
+                        <SpecItem label="Downloads" value="PNG / WEBP" />
                     </div>
                 </div>
             </section>
-            {/* Sales Pitch / Value Prop */}
+            {/* Trust Signals */}
+            <section style={{ borderTop: '1px solid var(--color-border)', borderBottom: '1px solid var(--color-border)', background: 'var(--color-bg-subtle)', padding: '40px 0' }}>
+                <div className="container">
+                    <div style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: '32px', textAlign: 'center' }}>
+                        <div>
+                            <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--color-accent-primary)' }}>1M+</div>
+                            <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Images Generated</div>
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--color-accent-primary)' }}>100%</div>
+                            <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Royalty Free</div>
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--color-accent-primary)' }}>4.9/5</div>
+                            <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>User Rating</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Use Cases Section */}
             <section style={{ padding: '160px 0', background: 'var(--color-bg)' }}>
+                <div className="container">
+                    <div style={{ textAlign: 'center', marginBottom: '80px' }}>
+                        <h2 style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', marginBottom: '16px' }}>Built for Creators</h2>
+                        <p style={{ color: 'var(--color-text-muted)', fontSize: '1.2rem' }}>From concept art to final assets, one tool for every workflow.</p>
+                    </div>
+
+                    <div className="grid-use-cases" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+                        <UseCaseCard
+                            title="Game Development"
+                            desc="Generate isometric sprites, textures, and concept art for your indie games."
+                            tags={['Sprites', 'Textures', 'Concept Art']}
+                        />
+                        <UseCaseCard
+                            title="Storytelling & Publishing"
+                            desc="Create consistent characters and book covers for novels and webtoons."
+                            tags={['Book Covers', 'Webtoons', 'Characters']}
+                        />
+                        <UseCaseCard
+                            title="Marketing & Ads"
+                            desc="Stop using generic stock photos. Generate unique brand assets in seconds."
+                            tags={['Social Media', 'Ads', 'Banners']}
+                        />
+                        <UseCaseCard
+                            title="Architecture & Design"
+                            desc="Visualize interior designs and architectural concepts with photorealism."
+                            tags={['Interiors', 'Renders', 'Visualization']}
+                        />
+                    </div>
+                </div>
+            </section>
+
+            {/* Sales Pitch / Value Prop */}
+            <section style={{ padding: '160px 0', background: 'var(--color-bg)', borderTop: '1px solid var(--color-border)' }}>
                 <div className="container">
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '80px', alignItems: 'center' }}>
                         <div>
@@ -334,7 +446,7 @@ export default function Landing() {
                 </div>
             </footer>
 
-        </div>
+        </main>
     );
 }
 
@@ -426,6 +538,13 @@ function MarqueeImages() {
     // Triple the array to ensure smooth seamless loop
     const displayImages = [...baseImages, ...baseImages, ...baseImages];
 
+    // SEO: Keyword bank for alt tags
+    const altKeywords = [
+        "AI Anime Character Art", "Photorealistic AI Portrait", "Cyberpunk Cityscape Concept",
+        "Fantasy RPG Asset", "3D Rendered Isometric Art", "Oil Painting Style AI",
+        "Sci-Fi Concept Design", "Digital Art Illustration", "Cloud Rendering AI"
+    ];
+
     return (
         <div style={{
             display: 'flex',
@@ -453,7 +572,9 @@ function MarqueeImages() {
                 >
                     <img
                         src={src}
-                        alt={`Generative art created with AI: ${src.split('/').pop()}`}
+                        width="320"
+                        height="240"
+                        alt={altKeywords[i % altKeywords.length]}
                         style={{
                             width: '100%',
                             height: '100%',
@@ -638,4 +759,29 @@ function InteractiveDemo() {
             `}</style>
         </div>
     );
+}
+
+function UseCaseCard({ title, desc, tags }) {
+    return (
+        <div className="use-case-card">
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '12px', fontWeight: '600' }}>{title}</h3>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.95rem', lineHeight: 1.5, marginBottom: '24px' }}>
+                {desc}
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {tags.map(tag => (
+                    <span key={tag} style={{
+                        fontSize: '0.75rem',
+                        padding: '4px 10px',
+                        background: 'rgba(255,255,255,0.05)',
+                        borderRadius: '99px',
+                        color: 'var(--color-zinc-400)',
+                        border: '1px solid rgba(255,255,255,0.05)'
+                    }}>
+                        {tag}
+                    </span>
+                ))}
+            </div>
+        </div>
+    )
 }
