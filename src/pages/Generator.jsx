@@ -43,8 +43,7 @@ export default function Generator() {
     const [negPrompt, setNegPrompt] = useState(searchParams.get('negPrompt') || "");
     const [seed, setSeed] = useState(parseInt(searchParams.get('seed')) || -1);
 
-    const [credits, setCredits] = useState(5);
-    const [turboCredits, setTurboCredits] = useState(0);
+    const [zaps, setZaps] = useState(5);
     const [reels, setReels] = useState(null);
     const [subscriptionStatus, setSubscriptionStatus] = useState(null);
 
@@ -614,12 +613,11 @@ export default function Generator() {
         const unsub = onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                setCredits(data.credits !== undefined ? data.credits : 5);
-                setTurboCredits(data.turbo_credits !== undefined ? data.turbo_credits : 0);
+                setZaps(data.zaps !== undefined ? data.zaps : (data.credits !== undefined ? data.credits : 5));
                 setReels(data.reels !== undefined ? data.reels : 0);
                 setSubscriptionStatus(data.subscriptionStatus);
             } else {
-                setCredits(5);
+                setZaps(5);
                 setSubscriptionStatus('inactive');
             }
         });
@@ -774,13 +772,9 @@ export default function Generator() {
                 return;
             }
         } else {
-            if (useTurbo) {
-                if (turboCredits < 1) {
-                    toast.error("Insufficient Turbo Credits (Requires 1)");
-                    return;
-                }
-            } else if (credits < 6 && subscriptionStatus !== 'active') {
-                toast.error("Insufficient Credits (Requires 6)");
+            const cost = useTurbo ? 1 : (subscriptionStatus === 'active' ? 0 : 0.5);
+            if (zaps < cost) {
+                toast.error(`Insufficient Zaps ⚡ (Need ${cost}, have ${zaps.toFixed(1)})`);
                 return;
             }
         }
@@ -961,8 +955,8 @@ export default function Generator() {
                         </div>
 
                         {(generationMode === 'image') && (
-                            <div style={{ fontSize: '0.9rem', color: credits > 0 ? 'var(--color-text-muted)' : '#ef4444', fontWeight: '700', fontFamily: 'Outfit', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Zap size={14} fill="currentColor" /> {Math.floor(credits)}
+                            <div style={{ fontSize: '0.9rem', color: zaps > 0 ? 'var(--color-text-muted)' : '#ef4444', fontWeight: '700', fontFamily: 'Outfit', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Zap size={14} fill="currentColor" /> {zaps.toFixed(1)}
                             </div>
                         )}
                         {(generationMode === 'video') && (

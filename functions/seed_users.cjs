@@ -25,8 +25,13 @@ async function seedUsers() {
 
     for (const doc of snapshot.docs) {
         const data = doc.data();
-        if (data.reels === undefined) {
-            batch.update(doc.ref, { reels: 0 });
+        const updates = {};
+        if (data.reels === undefined) updates.reels = 0;
+        if (data.zaps === undefined) updates.zaps = 0;
+        if (data.subscriptionStatus === undefined) updates.subscriptionStatus = 'inactive';
+
+        if (Object.keys(updates).length > 0) {
+            batch.update(doc.ref, updates);
             updatedCount++;
             operationCount++;
 

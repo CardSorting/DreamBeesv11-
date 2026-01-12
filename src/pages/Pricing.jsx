@@ -26,14 +26,14 @@ const SUBSCRIPTION_PLANS = [
 const ZAP_PACKS = [
     {
         name: 'Starter Zaps',
-        credits: 50, // 50 Zaps
+        zaps: 50,
         price: '5.00',
         id: 'price_1SotScIA2zQnWbn5fMli7VZY',
         features: ['50 Turbo Images', '100 Standard Images', 'No Expiry']
     },
     {
         name: 'Creator Zaps',
-        credits: 250, // 250 Zaps
+        zaps: 250,
         price: '20.00',
         id: 'price_1SotScIA2zQnWbn5KdlWpyGU',
         features: ['250 Turbo Images', '500 Standard Images', 'No Expiry']
@@ -96,7 +96,7 @@ export default function Pricing() {
                 priceId: priceId,
                 successUrl: window.location.origin + '/generator?success=true',
                 cancelUrl: window.location.origin + '/pricing?canceled=true',
-                mode: 'payment' // Note: Subscriptions should use mode: 'subscription', but for now utilizing payment flow or updated webhook logic
+                mode: currencyType === 'membership' ? 'subscription' : 'payment'
             });
             window.location.href = result.data.url;
         } catch (error) {
@@ -190,7 +190,7 @@ export default function Pricing() {
 
                         <div style={{ fontSize: '1.1rem', color: 'var(--color-text-muted)', marginBottom: '24px' }}>
                             {/* Descriptive text based on type */}
-                            {currencyType === 'zaps' && <span>⚡ {pack.credits} Zaps incl.</span>}
+                            {currencyType === 'zaps' && <span>⚡ {pack.zaps} Zaps incl.</span>}
                             {currencyType === 'reels' && <span>🎞️ {pack.reels} Reels incl.</span>}
                             {currencyType === 'membership' && <span>Everything you need to create.</span>}
                         </div>

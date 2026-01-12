@@ -784,10 +784,10 @@ export const processImageTask = onTaskDispatched(
                 await db.runTransaction(async (t) => {
                     const userDoc = await t.get(userRef);
                     if (userDoc.exists) {
-                        t.update(userRef, { credits: FieldValue.increment(1) });
+                        t.update(userRef, { zaps: FieldValue.increment(1) });
                     }
                 });
-                console.log(`Refunded 1 credit to ${userId}`);
+                console.log(`Refunded 1 zap to ${userId}`);
             } catch (refundError) {
                 console.error("Refund Error:", refundError);
             }
@@ -896,20 +896,23 @@ export const stripeWebhook = onRequest(async (req, res) => {
                 await db.collection('users').doc(userId).update({
                     subscriptionStatus: 'active',
                     subscriptionId: session.subscription,
-                    // Give them a starter bonus of Zaps if new sub? For now, just active status.
-                    // monthlyZaps: 500 // Could be handled by a separate webhook for invoice.payment_succeeded
+                    stripeCustomerId: customerId,
+                    zaps: FieldValue.increment(500) // Initial allocation
                 });
             } else if (mode === 'payment') {
-                // Handle One-Time Credit Packs & Reel Packs
-                // Map Amount (in cents) to Credits or Reels
+                // Handle One-Time Zap Packs & Reel Packs
                 const amount = session.amount_total;
-                let creditsToAdd = 0;
+                let zapsToAdd = 0;
                 let reelsToAdd = 0;
 
-                // Credit Packs (odd ending or specific values)
-                if (amount === 499) creditsToAdd = 20;         // Starter ($0.25/credit)
-                else if (amount === 1999) creditsToAdd = 80;   // Pro ($0.25/credit)
-                else if (amount === 4999) creditsToAdd = 200;  // Studio ($0.25/credit)
+                // Zap Packs
+                if (amount === 500) zapsToAdd = 50;    // Starter Pack (50 Zaps)
+                else if (amount === 2000) zapsToAdd = 250;  // Creator Pack (250 Zaps)
+                // Legacy support
+                else if (amount === 499) zapsToAdd = 20;
+                else if (amount === 1999) zapsToAdd = 80;
+                else if (amount === 4999) zapsToAdd = 200;
+                else if (amount === 999) zapsToAdd = 100;
 
                 // Reel Packs (Video Generation)
                 else if (amount === 600) reelsToAdd = 600;     // Reels Starter
@@ -917,25 +920,17 @@ export const stripeWebhook = onRequest(async (req, res) => {
                 else if (amount === 3500) reelsToAdd = 3600;   // Reels Pro (with bonus)
                 else if (amount === 8500) reelsToAdd = 9000;   // Reels Studio (with bonus)
 
-                // Turbo Packs (H100)
-                // Turbo Packs (Zaps)
-                else if (amount === 999) {
-                    // $9.99 legacy catch (treat as 100 Zaps)
-                    creditsToAdd = 100;
-                }
-                // New Zap Packs
-                else if (amount === 500) creditsToAdd = 50;    // Starter Pack (50 Zaps)
-                else if (amount === 2000) creditsToAdd = 250;  // Creator Pack (250 Zaps)
-
-                if (creditsToAdd > 0) {
-                    console.log(`Adding ${creditsToAdd} credits to user ${userId} for payment of $${amount / 100}`);
+                if (zapsToAdd > 0) {
+                    console.log(`Adding ${zapsToAdd} zaps to user ${userId} for payment of $${amount / 100}`);
                     await db.collection('users').doc(userId).update({
-                        credits: FieldValue.increment(creditsToAdd)
+                        zaps: FieldValue.increment(zapsToAdd),
+                        stripeCustomerId: customerId // Ensure it's saved even for payments
                     });
                 } else if (reelsToAdd > 0) {
                     console.log(`Adding ${reelsToAdd} reels to user ${userId} for payment of $${amount / 100}`);
                     await db.collection('users').doc(userId).update({
-                        reels: FieldValue.increment(reelsToAdd)
+                        reels: FieldValue.increment(reelsToAdd),
+                        stripeCustomerId: customerId
                     });
                 } else {
                     console.warn(`Unknown payment amount: ${amount} for user ${userId}`);
@@ -943,14 +938,35 @@ export const stripeWebhook = onRequest(async (req, res) => {
             }
 
         } else if (event.type === 'invoice.payment_succeeded') {
-            // Invoice payment logic removed
-            console.log("Invoice payment succeeded event received (ignored)");
-        } else if (event.type === 'customer.subscription.updated') {
-            // Subscription update logic removed
-            console.log("Subscription updated event received (ignored)");
+            const invoice = event.data.object;
+            const customerId = invoice.customer;
+
+            // Only add Zaps for RECURRING subscription payments (not the first one which is handled by checkout.session.completed)
+            // Actually, Stripe sends invoice.payment_succeeded for the first one too.
+            // To prevent double-crediting, we can check if billing_reason is 'subscription_create'
+            if (invoice.billing_reason === 'subscription_cycle') {
+                const userSnapshot = await db.collection('users').where('stripeCustomerId', '==', customerId).limit(1).get();
+                if (!userSnapshot.empty) {
+                    const userId = userSnapshot.docs[0].id;
+                    console.log(`[Subscription] Renewed for user ${userId}. Adding 500 Zaps.`);
+                    await db.collection('users').doc(userId).update({
+                        zaps: FieldValue.increment(500),
+                        subscriptionStatus: 'active'
+                    });
+                }
+            }
         } else if (event.type === 'customer.subscription.deleted') {
-            // Subscription deleted logic removed
-            console.log("Subscription deleted event received (ignored)");
+            const subscription = event.data.object;
+            const customerId = subscription.customer;
+
+            const userSnapshot = await db.collection('users').where('stripeCustomerId', '==', customerId).limit(1).get();
+            if (!userSnapshot.empty) {
+                const userId = userSnapshot.docs[0].id;
+                console.log(`[Subscription] Canceled for user ${userId}`);
+                await db.collection('users').doc(userId).update({
+                    subscriptionStatus: 'inactive'
+                });
+            }
         }
         res.json({ received: true });
     } catch (err) {
@@ -1115,18 +1131,9 @@ const handleCreateGenerationRequest = async (request) => {
             const lastGen = userData.lastGenerationTime?.toDate?.() || new Date(0);
             if (now - lastGen < 5000) throw new HttpsError('resource-exhausted', "Please slow down.");
 
-            // Deduct credits
-            // Re-calculate current credits based on potentail daily reset
-            let effectiveCredits = (userUpdate.credits !== undefined) ? userUpdate.credits : (userData.credits || 0);
-
-            // const isSubscriber = userData.subscriptionStatus === 'active'; // Already defined above
-
-            // New "Zap" Pricing Model
-            // 1 Credit = 1 Zap (~$0.10 value for Turbo, ~$0.01 value for Standard)
-            // But we use the "Cent Model" where 1 Zap = $0.10 conceptually?
-            // Wait, previous plan: 1 Zap = 1 Turbo Gen.
-            // Non-Sub Standard = 0.5 Zaps.
-            // Sub Standard = 0 Zaps (Free).
+            // Deduct zaps
+            // Re-calculate current zaps based on potential daily reset
+            let effectiveZaps = (userUpdate.zaps !== undefined) ? userUpdate.zaps : (userData.zaps || 0);
 
             let cost = 0;
 
@@ -1142,15 +1149,11 @@ const handleCreateGenerationRequest = async (request) => {
                 }
             }
 
-
-
-            if (effectiveCredits < cost && cost > 0) {
-                throw new HttpsError('resource-exhausted', `Insufficient Zaps ⚡. You have ${effectiveCredits.toFixed(1)} but need ${cost}.`);
+            if (effectiveZaps < cost && cost > 0) {
+                throw new HttpsError('resource-exhausted', `Insufficient Zaps ⚡. You have ${effectiveZaps.toFixed(1)} but need ${cost}.`);
             }
 
-            userUpdate.credits = effectiveCredits - cost;
-
-            // Legacy clean up (optional: ignore old turbo_credits or merge them later)
+            userUpdate.zaps = effectiveZaps - cost;
 
             t.update(userRef, userUpdate);
 
@@ -2478,7 +2481,7 @@ const handleTransformImage = async (request) => {
 
     const COST = 5;
 
-    // 1. Deduct Credits (Transaction)
+    // Deduct Zaps (Transaction)
     try {
         await db.runTransaction(async (t) => {
             const userRef = db.collection('users').doc(uid);
@@ -2495,24 +2498,24 @@ const handleTransformImage = async (request) => {
             }
 
             // Strict Type Validation
-            let credits = userData.credits;
-            if (typeof credits !== 'number') {
-                console.warn(`[handleTransformImage] User ${uid} has invalid 'credits' field type (${typeof credits}). Treating as 0.`);
-                credits = 0;
+            let zaps = userData.zaps;
+            if (typeof zaps !== 'number') {
+                console.warn(`[handleTransformImage] User ${uid} has invalid 'zaps' field type (${typeof zaps}). Treating as 0.`);
+                zaps = 0;
             }
 
-            console.log(`[handleTransformImage] Credit Audit - User: ${uid}, Pre-balance: ${credits}, Cost: ${COST}`);
+            console.log(`[handleTransformImage] Zap Audit - User: ${uid}, Pre-balance: ${zaps}, Cost: ${COST}`);
 
-            if (credits < COST) {
-                throw new HttpsError('resource-exhausted', `Insufficient credits. Current: ${credits}, Required: ${COST}.`);
+            if (zaps < COST) {
+                throw new HttpsError('resource-exhausted', `Insufficient Zaps ⚡. Current: ${zaps}, Required: ${COST}.`);
             }
 
             t.update(userRef, {
-                credits: FieldValue.increment(-COST)
+                zaps: FieldValue.increment(-COST)
             });
         });
     } catch (error) {
-        console.error("Credit deduction failed:", error);
+        console.error("Zap deduction failed:", error);
         throw error; // Transaction failed, stop here
     }
 
@@ -2535,14 +2538,14 @@ const handleTransformImage = async (request) => {
             styleName
         });
 
-        // Refund credits on failure
+        // Refund zaps on failure
         try {
-            await userRef.update({
-                credits: FieldValue.increment(COST)
+            await db.collection('users').doc(uid).update({
+                zaps: FieldValue.increment(COST)
             });
-            console.log(`[handleTransformImage] Refunded ${COST} credits to ${uid} due to failure`);
+            console.log(`[handleTransformImage] Refunded ${COST} zaps to ${uid} due to failure`);
         } catch (refundError) {
-            console.error("Failed to refund credits:", refundError);
+            console.error("Failed to refund zaps:", refundError);
         }
 
         throw new HttpsError('internal', "Transformation failed: " + error.message);
@@ -2596,21 +2599,21 @@ const handleGenerateLyrics = async (request) => {
             // const isPro = userData.subscriptionStatus === 'active'; // Removed
 
             // Strict Type Validation for Credits
-            let credits = userData.credits;
-            if (typeof credits !== 'number') {
-                console.warn(`[handleGenerateLyrics] User ${uid} has invalid 'credits' field type (${typeof credits}). Treating as 0.`);
-                credits = 0;
+            let zaps = userData.zaps;
+            if (typeof zaps !== 'number') {
+                console.warn(`[handleGenerateLyrics] User ${uid} has invalid 'zaps' field type (${typeof zaps}). Treating as 0.`);
+                zaps = 0;
             }
 
-            console.log(`[handleGenerateLyrics] Credit Audit - User: ${uid}, Pre-balance: ${credits}, Cost: ${COST}`);
+            console.log(`[handleGenerateLyrics] Zap Audit - User: ${uid}, Pre-balance: ${zaps}, Cost: ${COST}`);
 
             // Insufficient Funds Check (Prevent Negative Balance)
-            if (credits < COST) {
-                throw new HttpsError('resource-exhausted', `Insufficient credits. Current: ${credits}, Required: ${COST}.`);
+            if (zaps < COST) {
+                throw new HttpsError('resource-exhausted', `Insufficient Zaps ⚡. Current: ${zaps}, Required: ${COST}.`);
             }
 
             t.update(userRef, {
-                credits: FieldValue.increment(-COST)
+                zaps: FieldValue.increment(-COST)
             });
         });
     } catch (error) {
@@ -2715,14 +2718,14 @@ const handleGenerateLyrics = async (request) => {
     } catch (error) {
         console.error("[handleGenerateLyrics] Error:", error);
 
-        // Refund credits on failure
+        // Refund zaps on failure
         try {
             await userRef.update({
-                credits: FieldValue.increment(COST) // Refund 1 credit
+                zaps: FieldValue.increment(COST) // Refund
             });
-            console.log(`[handleGenerateLyrics] Refunded ${COST} credit to ${uid} due to failure`);
+            console.log(`[handleGenerateLyrics] Refunded ${COST} zaps to ${uid} due to failure`);
         } catch (refundError) {
-            console.error("Failed to refund credits:", refundError);
+            console.error("Failed to refund zaps:", refundError);
         }
 
         if (error instanceof HttpsError) throw error;
@@ -2764,17 +2767,17 @@ const handleCreateDressUpRequest = async (request) => {
             }
 
             const userData = userDoc.data();
-            let credits = userData.credits;
-            if (typeof credits !== 'number') credits = 0;
+            let zaps = userData.zaps;
+            if (typeof zaps !== 'number') zaps = 0;
 
-            console.log(`[handleDressUp] Credit Audit - User: ${uid}, Pre-balance: ${credits}, Cost: ${COST}`);
+            console.log(`[handleDressUp] Zap Audit - User: ${uid}, Pre-balance: ${zaps}, Cost: ${COST}`);
 
-            if (credits < COST) {
-                throw new HttpsError('resource-exhausted', `Insufficient credits. Current: ${credits}, Required: ${COST}.`);
+            if (zaps < COST) {
+                throw new HttpsError('resource-exhausted', `Insufficient Zaps ⚡. Current: ${zaps}, Required: ${COST}.`);
             }
 
             t.update(userRef, {
-                credits: FieldValue.increment(-COST)
+                zaps: FieldValue.increment(-COST)
             });
 
             // Create Queue Item
@@ -2949,11 +2952,11 @@ export const processDressUpTask = onTaskDispatched(
             try {
                 const userRef = db.collection('users').doc(userId);
                 await userRef.update({
-                    credits: FieldValue.increment(cost)
+                    zaps: FieldValue.increment(cost)
                 });
-                console.log(`[processDressUpTask] Refunded ${cost} credits to ${userId}`);
+                console.log(`[processDressUpTask] Refunded ${cost} zaps to ${userId}`);
             } catch (refundError) {
-                console.error("Failed to refund credits:", refundError);
+                console.error("Failed to refund zaps:", refundError);
             }
 
             await docRef.update({ status: "failed", error: error.message });
@@ -3109,17 +3112,17 @@ const handleCreateSlideshowGeneration = async (request) => {
             }
 
             const userData = userDoc.data();
-            let credits = userData.credits;
-            if (typeof credits !== 'number') credits = 0;
+            let zaps = userData.zaps;
+            if (typeof zaps !== 'number') zaps = 0;
 
-            console.log(`[handleSlideshow] Credit Audit - User: ${uid}, Pre-balance: ${credits}, Cost: ${COST}`);
+            console.log(`[handleSlideshow] Zap Audit - User: ${uid}, Pre-balance: ${zaps}, Cost: ${COST}`);
 
-            if (credits < COST) {
-                throw new HttpsError('resource-exhausted', `Insufficient credits. Current: ${credits}, Required: ${COST}.`);
+            if (zaps < COST) {
+                throw new HttpsError('resource-exhausted', `Insufficient Zaps ⚡. Current: ${zaps}, Required: ${COST}.`);
             }
 
             t.update(userRef, {
-                credits: FieldValue.increment(-COST)
+                zaps: FieldValue.increment(-COST)
             });
 
             // Create Queue Item
@@ -3436,11 +3439,11 @@ export const processSlideshowTask = onTaskDispatched(
             try {
                 const userRef = db.collection('users').doc(userId);
                 await userRef.update({
-                    credits: FieldValue.increment(cost)
+                    zaps: FieldValue.increment(cost)
                 });
-                console.log(`[processSlideshowTask] Refunded ${cost} credits to ${userId}`);
+                console.log(`[processSlideshowTask] Refunded ${cost} zaps to ${userId}`);
             } catch (refundError) {
-                console.error("Failed to refund credits:", refundError);
+                console.error("Failed to refund zaps:", refundError);
             }
 
             await docRef.update({ status: "failed", error: error.message });

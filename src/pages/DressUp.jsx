@@ -59,6 +59,9 @@ export default function DressUp() {
     const [activeTab, setActiveTab] = useState('Roles 🕵️'); // Default to Roles since Costumes is now a drill-down
     const [page, setPage] = useState(0);
     const [generating, setGenerating] = useState(false);
+    const [zaps, setZaps] = useState(0);
+    const [reels, setReels] = useState(0);
+    const [subscriptionStatus, setSubscriptionStatus] = useState('inactive');
     const [userImages, setUserImages] = useState([]);
 
     // Reset page when tab changes
@@ -69,17 +72,30 @@ export default function DressUp() {
     // Fetch user's recent images for "Stickers"
     useEffect(() => {
         if (!currentUser) return;
+        const unsubUser = onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setZaps(data.zaps !== undefined ? data.zaps : (data.credits !== undefined ? data.credits : 0));
+                setReels(data.reels || 0);
+                setSubscriptionStatus(data.subscriptionStatus || 'inactive');
+            }
+        });
+
         const q = query(
             collection(db, 'generation_queue'),
             where('userId', '==', currentUser.uid),
-            // Show all statuses so we see 'processing' too
             orderBy('createdAt', 'desc'),
             limit(10)
         );
-        return onSnapshot(q, (snapshot) => {
+        const unsubQueue = onSnapshot(q, (snapshot) => {
             const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setUserImages(docs);
         });
+
+        return () => {
+            unsubUser();
+            unsubQueue();
+        };
     }, [currentUser]);
 
 
@@ -264,9 +280,9 @@ export default function DressUp() {
             }
         } catch (error) {
             console.error(error);
-            if (error.message.includes('Insufficient credits')) {
-                toast("You need more credits for this magic!", {
-                    icon: '🪙',
+            if (error.message.includes('Insufficient Zaps') || error.message.includes('resource-exhausted')) {
+                toast("You need more Zaps ⚡ for this magic!", {
+                    icon: '⚡',
                     style: { background: '#FFF3CD', color: '#856404', fontWeight: 'bold' }
                 });
             } else {
@@ -372,7 +388,7 @@ export default function DressUp() {
             {/* RIGHT: TOY CHEST */}
             <div className="toy-chest">
                 <div className="chest-header">
-                    <h2>Toy Box <span style={{ fontSize: '0.8rem', opacity: 0.7, fontWeight: 'normal' }}>(5 Credits)</span></h2>
+                    <h2>Toy Box <span style={{ fontSize: '0.8rem', opacity: 0.7, fontWeight: 'normal' }}>({zaps.toFixed(1)} Zaps)</span></h2>
                 </div>
 
                 <div className="tab-container">

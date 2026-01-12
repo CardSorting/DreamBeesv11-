@@ -1,9 +1,7 @@
-
 const admin = require('firebase-admin');
-const serviceAccount = require('../functions/dreambees-app-gen-v1-firebase-adminsdk-fbsvc-195fd20c32.json');
 
 admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
+    projectId: 'dreambees-alchemist'
 });
 
 const db = admin.firestore();
