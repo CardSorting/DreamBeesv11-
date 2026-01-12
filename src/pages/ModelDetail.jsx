@@ -2,243 +2,28 @@ import React, { useEffect, useState, useMemo } from 'react';
 import SEO from '../components/SEO';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
-import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight, X, Download, Copy, RefreshCw, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight, X, Copy, RefreshCw, ThumbsUp, ThumbsDown, Loader2, LayoutGrid, Square, Film, Heart, Share2, Bookmark, MoreHorizontal, BadgeCheck, Activity, Info } from 'lucide-react';
+import LazyImage from '../components/LazyImage';
+import ShowcaseModal from '../components/ShowcaseModal';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getOptimizedImageUrl, getLCPAttributes, getImageSrcSet, preloadImage } from '../utils';
 import { db } from '../firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 
-const ShowcaseModal = ({ image, onClose, model }) => {
-    const { rateShowcaseImage } = useModel();
-    const navigate = useNavigate();
-    if (!image) return null;
-
-    return (
-        <div style={{
-            position: 'fixed', inset: 0, zIndex: 1000,
-            background: 'var(--color-bg)',
-            display: 'flex', flexDirection: 'column',
-            animation: 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-        }}>
-            {/* Top Bar */}
-            <div style={{
-                height: '60px', borderBottom: '1px solid var(--color-border)',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '0 20px', background: 'var(--color-bg)'
-            }}>
-                <button
-                    onClick={onClose}
-                    className="flex-center"
-                    style={{ gap: '8px', color: 'var(--color-text-muted)', fontSize: '0.9rem', fontWeight: '500', transition: 'color 0.2s', background: 'none', border: 'none', cursor: 'pointer' }}
-                >
-                    <ArrowLeft size={16} /> Back to Gallery
-                </button>
-
-                <div className="flex-center" style={{ gap: '12px' }}>
-                    <button
-                        onClick={async () => {
-                            try {
-                                const imageUrl = getOptimizedImageUrl(image.url || image);
-                                const response = await fetch(imageUrl);
-                                const blob = await response.blob();
-                                const url = window.URL.createObjectURL(blob);
-                                const link = document.createElement('a');
-                                link.href = url;
-                                link.download = `db-showcase.png`;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                                window.URL.revokeObjectURL(url);
-                            } catch (e) {
-                                console.error("Download failed", e);
-                                window.open(image.url || image, '_blank');
-                            }
-                        }}
-                        className="btn-ghost"
-                        title="Download"
-                    >
-                        <Download size={18} />
-                    </button>
-                    <button onClick={onClose} className="btn-ghost" title="Close" style={{ marginLeft: '12px' }}>
-                        <X size={24} />
-                    </button>
-                </div>
-            </div>
-
-            {/* Split Layout */}
-            <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-
-                {/* Image View */}
-                <div style={{
-                    flex: 1,
-                    background: '#050505',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    padding: '40px',
-                    position: 'relative'
-                }}>
-                    <img
-                        src={getOptimizedImageUrl(image.url || image)}
-                        alt={image.prompt ? `Showcase: ${image.prompt}` : "Model Showcase Detail"}
-                        style={{
-                            maxWidth: '100%', maxHeight: '100%',
-                            boxShadow: '0 0 50px rgba(0,0,0,0.5)',
-                            objectFit: 'contain'
-                        }}
-                    />
-                </div>
-
-                {/* Info Panel */}
-                <div style={{
-                    width: '400px',
-                    borderLeft: '1px solid var(--color-border)',
-                    background: 'var(--color-bg)',
-                    overflowY: 'auto',
-                    padding: '32px'
-                }}>
-                    <div style={{ marginBottom: '40px' }}>
-                        <label className="meta-label">PROMPT</label>
-                        <p style={{ fontSize: '1.1rem', lineHeight: '1.6', color: 'white', fontWeight: '400', fontStyle: 'italic', opacity: 0.8 }}>
-                            {image.prompt ? `"${image.prompt}"` : `"This is a curated showcase generation demonstrating the capabilities of ${model?.name || 'this model'}. High-fidelity details and texture handling are key characteristics shown here."`}
-                        </p>
-                    </div>
-
-                    {/* Ranking UI */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '40px' }}>
-                        <button
-                            onClick={() => {
-                                const newRating = image.rating === 1 ? 0 : 1;
-                                rateShowcaseImage(image.id, newRating, model.id);
-                                // Optimistically update local image object if needed, or rely on parent re-render
-                            }}
-                            className={`btn-ghost ${image.rating === 1 ? 'active-vote' : ''}`}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: '8px',
-                                color: image.rating === 1 ? 'var(--color-accent-primary)' : 'var(--color-text-muted)',
-                                background: image.rating === 1 ? 'rgba(79, 70, 229, 0.1)' : 'transparent',
-                                padding: '8px 16px', borderRadius: '100px', border: '1px solid transparent',
-                                borderColor: image.rating === 1 ? 'var(--color-accent-primary)' : 'rgba(255,255,255,0.1)',
-                                transition: 'all 0.2s', cursor: 'pointer'
-                            }}
-                        >
-                            <ThumbsUp size={16} fill={image.rating === 1 ? "currentColor" : "none"} />
-                            <span style={{ fontSize: '0.8rem', fontWeight: '600' }}>Helpful</span>
-                        </button>
-
-                        <button
-                            onClick={() => {
-                                const newRating = image.rating === -1 ? 0 : -1;
-                                rateShowcaseImage(image.id, newRating, model.id);
-                            }}
-                            className={`btn-ghost ${image.rating === -1 ? 'active-vote' : ''}`}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: '8px',
-                                color: image.rating === -1 ? '#ef4444' : 'var(--color-text-muted)',
-                                background: image.rating === -1 ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
-                                padding: '8px 16px', borderRadius: '100px', border: '1px solid transparent',
-                                borderColor: image.rating === -1 ? '#ef4444' : 'rgba(255,255,255,0.1)',
-                                transition: 'all 0.2s', cursor: 'pointer'
-                            }}
-                        >
-                            <ThumbsDown size={16} fill={image.rating === -1 ? "currentColor" : "none"} />
-                        </button>
-                    </div>
-
-                    <div style={{ height: '1px', background: 'var(--color-border)', margin: '0 0 40px 0' }} />
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px 12px' }}>
-                        <div>
-                            <label className="meta-label">MODEL</label>
-                            <div className="meta-value">{model?.name || 'Unknown'}</div>
-                        </div>
-                        <div>
-                            <label className="meta-label">BASE</label>
-                            <div className="meta-value">SDXL 1.0</div>
-                        </div>
-                        <div>
-                            <label className="meta-label">CREATOR</label>
-                            <div className="meta-value">
-                                {typeof image.creator === 'object' && image.creator !== null
-                                    ? (image.creator.user || 'System')
-                                    : (image.creator || 'Unknown')}
-                            </div>
-                        </div>
-                        <div>
-                            <label className="meta-label">SOURCE</label>
-                            <div className="meta-value">Official Showcase</div>
-                        </div>
-                        <div>
-                            <label className="meta-label">STEPS</label>
-                            <div className="meta-value">{image.steps || 30}</div>
-                        </div>
-                        <div>
-                            <label className="meta-label">GUIDANCE</label>
-                            <div className="meta-value">{image.cfg || 7.0}</div>
-                        </div>
-                        <div>
-                            <label className="meta-label">DIMENSIONS</label>
-                            <div className="meta-value">{image.width && image.height ? `${image.width}x${image.height}` : '1024x1024'}</div>
-                        </div>
-                        <div>
-                            <label className="meta-label">SCHEDULER</label>
-                            <div className="meta-value">{image.scheduler || 'DPM++ 2M'}</div>
-                        </div>
-                    </div>
-
-                    <div style={{ marginTop: '60px' }}>
-                        <div className="p-4 rounded-lg border border-[var(--color-border)] bg-[rgba(255,255,255,0.03)]">
-                            <h4 className="text-sm font-bold text-white mb-2 flex items-center gap-2">
-                                <Sparkles size={14} className="text-[var(--color-accent-primary)]" />
-                                INSPIRED?
-                            </h4>
-                            <p className="text-sm text-[var(--color-text-muted)] mb-4">
-                                Activate this model engine to generate similar high-quality results.
-                            </p>
-                            <button
-                                onClick={() => {
-                                    onClose();
-                                    const params = new URLSearchParams();
-                                    if (image.prompt) params.set('prompt', image.prompt);
-                                    if (image.steps) params.set('steps', image.steps);
-                                    if (image.cfg) params.set('cfg', image.cfg);
-                                    if (image.aspectRatio) params.set('aspectRatio', image.aspectRatio);
-
-                                    navigate(`/generate?${params.toString()}`);
-                                }}
-                                className="btn btn-outline w-full justify-center text-xs"
-                            >
-                                START CREATING
-                            </button>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-            <style>{`
-                .meta-label {
-                    font-size: 0.7rem;
-                    font-weight: 700;
-                    letter-spacing: 0.05em;
-                    color: var(--color-text-dim);
-                    text-transform: uppercase;
-                    display: block;
-                    margin-bottom: 8px;
-                }
-                .meta-value {
-                    font-size: 0.95rem;
-                    font-weight: 500;
-                    color: white;
-                }
-            `}</style>
-        </div>
-    );
-};
 
 export default function ModelDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { availableModels, setSelectedModel, selectedModel } = useModel();
-    const [showcaseImages, setShowcaseImages] = useState([]);
+    const { availableModels, setSelectedModel, selectedModel, rateShowcaseImage } = useModel();
     const [activeShowcaseImage, setActiveShowcaseImage] = useState(null);
+    const imagesPerPage = 12;
+
+    // 1. Determine Initial Showcase from Cache Synchronously to avoid "Initializing" flash
+    const { showcaseCache, getShowcaseImages } = useModel();
+    const [showcaseImages, setShowcaseImages] = useState(() => {
+        return (id && showcaseCache[id]) ? showcaseCache[id] : [];
+    });
+    const [displayPage, setDisplayPage] = useState(2); // Start with 2 pages (24 images) for high-res coverage
 
     // Derive model from availableModels instead of using useState + useEffect
     const model = useMemo(() => {
@@ -249,126 +34,30 @@ export default function ModelDetail() {
     }, [id, availableModels]);
 
     // Fetch or Seed Showcase Images
-    const { getShowcaseImages } = useModel();
-
     useEffect(() => {
         if (!model) return;
 
         const loadShowcase = async () => {
             try {
-                // 1. Try to get from Cache / Firestore via Context
-                const cachedImages = await getShowcaseImages(model.id);
+                const images = await getShowcaseImages(model.id);
+                if (images && images.length > 0) {
+                    setShowcaseImages(images);
 
-                let hasValidData = false;
-                if (cachedImages && cachedImages.length > 0) {
-                    const dbImages = cachedImages.map(doc => {
-                        // Ensure all image URLs are optimized to use CDN
-                        const imageUrl = getOptimizedImageUrl(doc.imageUrl || doc.url || '');
-                        return {
-                            url: imageUrl,
-                            prompt: doc.prompt,
-                            name: doc.name,
-                            creator: doc.creator,
-                            steps: doc.steps,
-                            cfg: doc.cfg,
-                            width: doc.width,
-                            height: doc.height,
-                            scheduler: doc.scheduler,
-                            aspectRatio: doc.aspectRatio,
-                            rating: doc.rating,
-                            id: doc.id,
-                            thumbnailUrl: doc.thumbnailUrl ? getOptimizedImageUrl(doc.thumbnailUrl) : null,
-                            lqip: doc.lqip || null
-                        };
+                    // Preload for LCP
+                    images.slice(0, 6).forEach(img => {
+                        const preloadUrl = getOptimizedImageUrl(img.thumbnailUrl || img.url || img.imageUrl);
+                        preloadImage(preloadUrl, 'high');
                     });
-
-                    // Check if we have prompts (rich metadata)
-                    const hasPrompts = dbImages.some(img => img.prompt);
-
-                    if (hasPrompts) {
-                        // DB is good, use it
-                        const displayImages = dbImages.length < 6
-                            ? [...dbImages, ...dbImages, ...dbImages].slice(0, 15)
-                            : dbImages;
-                        setShowcaseImages(displayImages);
-                        hasValidData = true;
-
-                        // Programmatic Preloading for LCP
-                        displayImages.slice(0, 6).forEach(img => {
-                            const preloadUrl = getOptimizedImageUrl(img.thumbnailUrl || img.url || img.imageUrl);
-                            preloadImage(preloadUrl, 'high');
-                        });
-                    }
-                }
-
-                if (!hasValidData) {
-                    // DB empty OR stale (no prompts). Try manifest.
-                    // SEEDING: Check for local showcase manifest or migrate previewImages
-                    console.log('Seeding/Updating showcase images for', model.id);
-                    let seeds = [];
-
-                    try {
-                        const manifestRes = await fetch(`/showcase/${model.id}/manifest.json`);
-                        if (manifestRes.ok) {
-                            seeds = await manifestRes.json();
-                            console.log('Found local showcase manifest:', seeds);
-                        }
-                    } catch {
-                        console.log('No local manifest found, using previewImages');
-                    }
-
-                    // Normalize seeds to objects if they are strings and ensure they are curated
-                    // Also optimize all URLs to use CDN
-                    let normalizedSeeds = seeds.map(s => {
-                        const base = typeof s === 'string' ? { url: s } : s;
-                        return {
-                            ...base,
-                            url: getOptimizedImageUrl(base.url || base.imageUrl || s),
-                            isCurated: true
-                        };
-                    });
-
-                    if (normalizedSeeds.length === 0) {
-                        const previews = model.previewImages?.length > 0 ? model.previewImages : [model.image];
-                        normalizedSeeds = previews.map(s => ({
-                            url: getOptimizedImageUrl(s),
-                            isCurated: true
-                        }));
-                    }
-
-                    // Optimistically set UI
-                    const displaySeeds = normalizedSeeds.length < 6
-                        ? [...normalizedSeeds, ...normalizedSeeds, ...normalizedSeeds].slice(0, 15)
-                        : normalizedSeeds;
-                    setShowcaseImages(displaySeeds);
-
-                    // Only write to DB if we truly had nothing (cachedImages empty) to avoid duplicates if just updating
-                    if (!cachedImages || cachedImages.length === 0) {
-                        const validSeeds = normalizedSeeds.filter(item => item && item.url && typeof item.url === 'string' && item.url.length > 5);
-                        validSeeds.forEach(async (item) => {
-                            await addDoc(collection(db, 'model_showcase_images'), {
-                                modelId: model.id,
-                                imageUrl: getOptimizedImageUrl(item.url),
-                                prompt: item.prompt || null,
-                                name: item.name || null,
-                                creator: item.creator || 'Gemini Pro 3', // Default creator for new seeds
-                                steps: item.steps || null,
-                                cfg: item.cfg || null,
-                                width: item.width || null,
-                                height: item.height || null,
-                                scheduler: item.scheduler || null,
-                                aspectRatio: item.aspectRatio || null,
-                                createdAt: serverTimestamp(),
-                                isCurated: true
-                            });
-                        });
-                    }
+                } else {
+                    // Final fallback to model preview images
+                    const previews = model.previewImages || [model.image];
+                    setShowcaseImages(previews.map((s, idx) => ({
+                        id: `fallback_${idx}`,
+                        url: getOptimizedImageUrl(s)
+                    })));
                 }
             } catch (error) {
                 console.error("Error fetching showcase:", error);
-                // Fallback
-                const previews = model.previewImages || [model.image];
-                setShowcaseImages(previews.map(s => ({ url: getOptimizedImageUrl(s) })));
             }
         };
 
@@ -377,6 +66,82 @@ export default function ModelDetail() {
 
     const [sortBy, setSortBy] = useState('TOP_RATED'); // 'TOP_RATED' | 'LATEST'
 
+    const isActive = selectedModel?.id === model?.id;
+
+    // Use the fetched showcase images, defaulting to previewImages or model.image
+    const rawImages = useMemo(() => {
+        if (!model) return [];
+        if (showcaseImages.length > 0) return showcaseImages;
+
+        const previews = model.previewImages?.length > 0
+            ? model.previewImages
+            : (model.image ? [model.image] : []);
+
+        return previews.map(s => (typeof s === 'string' ? { url: s, isCurated: true } : { ...s, isCurated: true }));
+    }, [model, showcaseImages]);
+
+    // List of images to render (filtered, de-duplicated and sorted)
+    const imagesToRender = useMemo(() => {
+        const seenUrls = new Set();
+        return rawImages
+            .filter(img => {
+                if (!img || !img.url || typeof img.url !== 'string' || img.url.length <= 5) return false;
+                if (seenUrls.has(img.url)) return false;
+                seenUrls.add(img.url);
+                return true;
+            })
+            .sort((a, b) => {
+                if (sortBy === 'TOP_RATED') {
+                    // Stable sort with secondary tie-breaker
+                    const ratingDiff = (b.rating || 0) - (a.rating || 0);
+                    if (ratingDiff !== 0) return ratingDiff;
+                    // Tie-breaker: creation time or ID
+                    const timeA = a.createdAt?.seconds || 0;
+                    const timeB = b.createdAt?.seconds || 0;
+                    if (timeB !== timeA) return timeB - timeA;
+                    return String(b.id).localeCompare(String(a.id));
+                } else {
+                    const timeA = a.createdAt?.seconds || 0;
+                    const timeB = b.createdAt?.seconds || 0;
+                    if (timeB !== timeA) return timeB - timeA;
+                    return String(b.id).localeCompare(String(a.id));
+                }
+            });
+    }, [rawImages, sortBy]);
+
+    // Paginated list
+    const visibleImages = useMemo(() => {
+        return imagesToRender.slice(0, displayPage * imagesPerPage);
+    }, [imagesToRender, displayPage]);
+
+    // Infinite Scroll Logic with Throttled Scroll
+    useEffect(() => {
+        if (!model) return;
+
+        let timeoutId;
+        const handleScroll = () => {
+            if (timeoutId) return; // Simple throttle
+
+            timeoutId = setTimeout(() => {
+                const scrollPos = window.innerHeight + window.scrollY;
+                const threshold = document.body.offsetHeight - 800; // Trigger earlier for smoother flow
+
+                if (scrollPos >= threshold) {
+                    if (visibleImages.length < imagesToRender.length) {
+                        setDisplayPage(prev => prev + 1);
+                    }
+                }
+                timeoutId = null;
+            }, 100);
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            if (timeoutId) clearTimeout(timeoutId);
+        };
+    }, [visibleImages.length, imagesToRender.length, model]);
+
     if (!model) {
         return (
             <div style={{ height: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#333' }}>
@@ -384,35 +149,6 @@ export default function ModelDetail() {
             </div>
         );
     }
-
-    const isActive = selectedModel?.id === model.id;
-    // Use the fetched showcase images, defaulting to previewImages or model.image
-    const rawImages = showcaseImages.length > 0
-        ? showcaseImages
-        : (model.previewImages?.length > 0
-            ? model.previewImages.map(s => (typeof s === 'string' ? { url: s, isCurated: true } : { ...s, isCurated: true }))
-            : [{ url: model.image, isCurated: true }]
-        );
-
-    // Show all images from the model regardless of creator
-    // Only filter out invalid images (missing or invalid URLs)
-    const imagesToRender = rawImages
-        .filter(img => {
-            // Ensure valid image
-            if (!img || !img.url || typeof img.url !== 'string' || img.url.length <= 5) return false;
-
-            // Show all valid images regardless of creator
-            return true;
-        })
-        .sort((a, b) => {
-            if (sortBy === 'TOP_RATED') {
-                return (b.rating || 0) - (a.rating || 0);
-            } else {
-                const timeA = a.createdAt?.seconds || 0;
-                const timeB = b.createdAt?.seconds || 0;
-                return timeB - timeA;
-            }
-        });
 
     return (
         <main style={{ background: '#0a0a0a', minHeight: '100vh', color: '#e5e5e5', position: 'relative' }}>
@@ -571,91 +307,189 @@ export default function ModelDetail() {
                 </header>
 
 
-                {/* Sorting Tabs */}
-                <nav className="tabs-container" aria-label="Gallery filters" style={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    gap: '8px',
+                {/* STICKY CONTROL CENTER */}
+                <div style={{
+                    position: 'sticky',
+                    top: '0',
+                    zIndex: 100,
+                    background: 'rgba(10, 10, 10, 0.8)',
+                    backdropFilter: 'blur(20px)',
+                    borderBottom: '1px solid rgba(255,255,255,0.05)',
+                    padding: '24px 0',
                     marginBottom: '40px',
-                    animation: 'fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both'
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '20px',
+                    animation: 'fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) both'
                 }}>
+                    {/* View Feed Button */}
                     <button
-                        onClick={() => setSortBy('TOP_RATED')}
-                        className={`tab-btn ${sortBy === 'TOP_RATED' ? 'active' : ''}`}
+                        onClick={() => navigate(`/model/${id}/feed`)}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '12px',
+                            background: 'white',
+                            color: 'black',
+                            padding: '12px 32px',
+                            borderRadius: '100px',
+                            fontSize: '0.8rem',
+                            fontWeight: '800',
+                            letterSpacing: '0.1em',
+                            border: 'none',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                            boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                            textTransform: 'uppercase'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px) scale(1.02)';
+                            e.currentTarget.style.boxShadow = '0 15px 40px rgba(255,255,255,0.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0) scale(1)';
+                            e.currentTarget.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
+                        }}
                     >
-                        TOP RATED
+                        <Film size={16} /> ENTER IMMERSIVE FEED
                     </button>
-                    <button
-                        onClick={() => setSortBy('LATEST')}
-                        className={`tab-btn ${sortBy === 'LATEST' ? 'active' : ''}`}
-                    >
-                        LATEST
-                    </button>
-                </nav>
 
-                {/* FULL MASONRY FEED */}
-                <section className="pinterest-feed" aria-label="Showcase Gallery" style={{
-                    padding: '0 2vw 120px 2vw',
-                    animation: 'fadeIn 1.5s ease 0.4s both'
+                    {/* Sorting Filters */}
+                    <nav className="filter-nav" style={{
+                        display: 'flex',
+                        gap: '24px'
+                    }}>
+                        <button
+                            onClick={() => setSortBy('TOP_RATED')}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                color: sortBy === 'TOP_RATED' ? 'white' : 'var(--color-text-dim)',
+                                fontSize: '0.7rem',
+                                fontWeight: '600',
+                                letterSpacing: '0.2em',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s',
+                                position: 'relative'
+                            }}
+                        >
+                            TOP RATED
+                            {sortBy === 'TOP_RATED' && (
+                                <motion.div layoutId="sortUnderline" style={{ height: '1px', background: 'var(--color-accent-primary)', position: 'absolute', bottom: '-8px', left: 0, right: 0 }} />
+                            )}
+                        </button>
+                        <button
+                            onClick={() => setSortBy('LATEST')}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                color: sortBy === 'LATEST' ? 'white' : 'var(--color-text-dim)',
+                                fontSize: '0.7rem',
+                                fontWeight: '600',
+                                letterSpacing: '0.2em',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s',
+                                position: 'relative'
+                            }}
+                        >
+                            LATEST
+                            {sortBy === 'LATEST' && (
+                                <motion.div layoutId="sortUnderline" style={{ height: '1px', background: 'var(--color-accent-primary)', position: 'absolute', bottom: '-8px', left: 0, right: 0 }} />
+                            )}
+                        </button>
+                    </nav>
+                </div>
+
+                <section className="gallery-section" aria-label="Showcase Gallery" style={{
+                    padding: '0 2vw 40px 2vw',
+                    animation: 'fadeIn 1.5s ease 0.4s both',
+                    minHeight: '40vh'
                 }}>
-                    <div className="masonry-grid">
-                        {imagesToRender.map((imgItem, index) => {
-                            // Pseudo-random aspect ratio based on index
-                            // 0: Square (1/1), 1: Portrait (2/3), 2: Square, 3: Tall (9/16), 4: Landscape (4/3) 
-                            const ratios = ['1/1', '3/4', '1/1', '2/3', '4/3', '1/1', '3/5'];
-                            const ratio = ratios[index % ratios.length];
+                    {visibleImages.length > 0 ? (
+                        <div className="masonry-grid">
+                            {visibleImages.map((imgItem, index) => {
+                                const ratios = ['1/1', '3/4', '1/1', '2/3', '4/3', '1/1', '3/5'];
+                                const ratio = imgItem.aspectRatio || ratios[index % ratios.length];
 
-                            return (
-                                <article
-                                    key={index}
-                                    className="masonry-item group"
-                                    onClick={() => setActiveShowcaseImage(imgItem)}
-                                    style={{
-                                        animation: `fadeInUp 1s ease ${0.1 + ((index * 0.13) % 0.5)}s both`
-                                    }}
-                                >
-                                    <div className="image-card">
-                                        <div className="image-wrapper" style={{
-                                            aspectRatio: ratio,
-                                            background: imgItem.lqip ? `url(${imgItem.lqip}) center/cover no-repeat` : 'rgba(255,255,255,0.03)',
-                                            filter: imgItem.lqip ? 'blur(10px)' : 'none',
-                                            transition: 'filter 0.5s ease',
-                                            overflow: 'hidden'
-                                        }}>
-                                            <img
-                                                src={getOptimizedImageUrl(imgItem.thumbnailUrl || imgItem.url || imgItem.imageUrl || (typeof imgItem === 'string' ? imgItem : ''))}
-                                                srcset={getImageSrcSet(imgItem)}
-                                                sizes="(max-width: 500px) 50vw, (max-width: 1200px) 25vw, 20vw"
-                                                alt={`Showcase generation: ${imgItem.prompt ? imgItem.prompt.slice(0, 50) + "..." : "AI Artwork"}`}
-                                                {...getLCPAttributes(index, 6)}
-                                                style={{
-                                                    width: '100%',
-                                                    height: '100%',
-                                                    objectFit: 'cover',
-                                                    filter: 'none'
-                                                }}
-                                                onLoad={(e) => {
-                                                    e.target.parentElement.style.filter = 'none';
-                                                }}
-                                            />
-                                            {/* Standard Tile Overlay */}
-                                            <div style={{
-                                                position: 'absolute',
-                                                inset: 0,
-                                                background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%)',
-                                                opacity: 0,
-                                                transition: 'opacity 0.3s'
-                                            }} className="group-hover:opacity-100" />
+                                return (
+                                    <article
+                                        key={imgItem.id || index}
+                                        className="masonry-item group"
+                                        onClick={() => setActiveShowcaseImage(imgItem)}
+                                        style={{
+                                            animation: `fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) ${0.1 + ((index * 0.08) % 0.4)}s both`
+                                        }}
+                                    >
+                                        <div className="image-card">
+                                            <div className="image-wrapper" style={{
+                                                aspectRatio: ratio,
+                                                background: imgItem.lqip ? `url(${imgItem.lqip}) center/cover no-repeat` : 'rgba(255,255,255,0.02)',
+                                                filter: imgItem.lqip ? 'blur(10px)' : 'none',
+                                                transition: 'filter 0.5s ease',
+                                                overflow: 'hidden'
+                                            }}>
+                                                <LazyImage
+                                                    src={getOptimizedImageUrl(imgItem.thumbnailUrl || imgItem.url || imgItem.imageUrl || (typeof imgItem === 'string' ? imgItem : ''))}
+                                                    srcSet={getImageSrcSet(imgItem)}
+                                                    sizes="(max-width: 500px) 50vw, (max-width: 1200px) 25vw, 20vw"
+                                                    alt={`Showcase generation: ${imgItem.prompt ? imgItem.prompt.slice(0, 50) + "..." : "AI Artwork"}`}
+                                                    aspectRatio={ratio}
+                                                    priority={index < 8}
+                                                    delay={((index % 12) * 0.05)}
+                                                />
+                                                <div style={{
+                                                    position: 'absolute',
+                                                    inset: 0,
+                                                    background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%)',
+                                                    opacity: 0,
+                                                    transition: 'opacity 0.3s'
+                                                }} className="group-hover:opacity-100" />
+                                            </div>
+                                            <div className="image-meta">
+                                                <div className="meta-badge">SAMPLE_{String(index + 1).padStart(2, '0')}</div>
+                                            </div>
                                         </div>
-                                        <div className="image-meta">
-                                            <div className="meta-badge">SAMPLE_{String(index + 1).padStart(2, '0')}</div>
+                                    </article>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="masonry-grid" style={{ opacity: 0.5 }}>
+                            {Array.from({ length: 12 }).map((_, idx) => {
+                                const ratios = ['1/1', '3/4', '4/5', '2/3', '1/1', '3/5'];
+                                return (
+                                    <div key={idx} className="masonry-item" style={{ marginBottom: '4px' }}>
+                                        <div className="image-card" style={{
+                                            aspectRatio: ratios[idx % ratios.length],
+                                            background: 'rgba(255,255,255,0.03)',
+                                            border: 'none'
+                                        }}>
+                                            <div className="shimmer-loading" style={{ position: 'absolute', inset: 0 }} />
                                         </div>
                                     </div>
-                                </article>
-                            );
-                        })}
-                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </section>
+
+                {/* Loading Indicator for Infinite Scroll */}
+                {visibleImages.length < imagesToRender.length && (
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        padding: '40px 0 120px 0',
+                        color: 'var(--color-text-muted)',
+                        fontSize: '0.8rem',
+                        letterSpacing: '0.2em'
+                    }}>
+                        <div className="flex-center" style={{ gap: '12px' }}>
+                            <Loader2 size={16} className="animate-spin" /> POPULATING MORE...
+                        </div>
+                    </div>
+                )}
 
                 {/* Lightbox Modal */}
                 {activeShowcaseImage && (
@@ -671,6 +505,22 @@ export default function ModelDetail() {
             <style>{`
                 .text-reveal-mask { overflow: hidden; }
                 
+                .shimmer-loading {
+                    background: linear-gradient(
+                        90deg,
+                        transparent,
+                        rgba(255, 255, 255, 0.05),
+                        transparent
+                    );
+                    background-size: 200% 100%;
+                    animation: skeleton-shimmer 2s infinite linear;
+                }
+
+                @keyframes skeleton-shimmer {
+                    0% { background-position: -200% 0; }
+                    100% { background-position: 200% 0; }
+                }
+
                 @keyframes revealUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
                 @keyframes fadeInUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -788,6 +638,36 @@ export default function ModelDetail() {
                     color: black;
                     background: white;
                     border-color: white;
+                }
+
+                /* Global Mobile Styles */
+                @media (max-width: 600px) {
+                    .instagram-feed {
+                        gap: 10px !important;
+                        padding-top: 20px;
+                    }
+                    .feed-post {
+                        border-radius: 0 !important;
+                        border-left: none !important;
+                        border-right: none !important;
+                        background: transparent !important;
+                    }
+                    .segmented-control {
+                        width: 90vw !important;
+                    }
+                }
+                .feed-image-container:hover img {
+                    transform: scale(1.05);
+                }
+                .feed-image-container:hover .expand-hint-btn {
+                    opacity: 1 !important;
+                }
+                .hide-scroll::-webkit-scrollbar {
+                    display: none;
+                }
+                .hide-scroll {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
                 }
             `}</style>
         </main>

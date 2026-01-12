@@ -23,6 +23,8 @@ import BlogPost from './pages/BlogPost';
 import KaraokeGenie from './pages/KaraokeGenie';
 import DressUp from './pages/DressUp';
 import Slideshow from './pages/Slideshow';
+import ModelFeed from './pages/ModelFeed';
+import UserProfile from './pages/UserProfile';
 
 function PrivateRoute({ children }) {
   const { currentUser } = useAuth();
@@ -40,6 +42,11 @@ function Layout() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/profile" element={
+            <PrivateRoute>
+              <UserProfile />
+            </PrivateRoute>
+          } />
           <Route path="/generate" element={
             <PrivateRoute>
               <Generator />
@@ -57,6 +64,7 @@ function Layout() {
           } />
           <Route path="/models" element={<Models />} />
           <Route path="/model/:id" element={<ModelDetail />} />
+          <Route path="/model/:id/feed" element={<ModelFeed />} />
           <Route path="/features" element={<Features />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/about" element={<About />} />

@@ -1,0 +1,431 @@
+import React, { useState, useMemo, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Heart, Sparkles, Share2, Info, Bookmark, MoreHorizontal, BadgeCheck, Copy, Aperture } from 'lucide-react';
+import LazyImage from './LazyImage';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../firebase';
+import { doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
+import toast from 'react-hot-toast';
+
+const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, rateShowcaseImage, navigate, setActiveShowcaseImage }) => {
+    const { currentUser } = useAuth();
+    const [showTechnical, setShowTechnical] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
+    const [isLiked, setIsLiked] = useState(false); // Local state for like status
+    const [showLargeHeart, setShowLargeHeart] = useState(false);
+    const [lastTap, setLastTap] = useState(0);
+
+    // Sync with User's Bookmarks and Likes
+    useEffect(() => {
+        if (!currentUser || !imgItem.id) return;
+
+        // Listener for Bookmarks
+        const bookmarkRef = doc(db, `users/${currentUser.uid}/bookmarks/${imgItem.id}`);
+        const unsubBookmark = onSnapshot(bookmarkRef, (doc) => {
+            setIsSaved(doc.exists());
+        }, (error) => {
+            // Silently fail on list errors to prevent UI crash
+            if (error.code !== 'permission-denied') console.warn("Bookmark check failed:", error);
+        });
+
+        // Listener for Likes
+        const likeRef = doc(db, `users/${currentUser.uid}/likes/${imgItem.id}`);
+        const unsubLike = onSnapshot(likeRef, (doc) => {
+            setIsLiked(doc.exists());
+        }, (error) => {
+            if (error.code !== 'permission-denied') console.warn("Like check failed:", error);
+        });
+
+        return () => {
+            unsubBookmark();
+            unsubLike();
+        };
+    }, [currentUser, imgItem.id]);
+
+    const handleDoubleTap = () => {
+        const now = Date.now();
+        if (now - lastTap < 300) {
+            handleLike(); // Use new handler
+            setShowLargeHeart(true);
+            setTimeout(() => setShowLargeHeart(false), 800);
+        }
+        setLastTap(now);
+    };
+
+    const handleShare = async () => {
+        const shareData = {
+            title: `${model.name} Showcase`,
+            text: imgItem.prompt || `Check out this ${model.name} generation!`,
+            url: window.location.href
+        };
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+            } else {
+                navigator.clipboard.writeText(window.location.href);
+                toast.success("Link copied!");
+            }
+        } catch (err) {
+            console.error('Share failed:', err);
+        }
+    };
+
+    const handleLike = async () => {
+        if (!currentUser) {
+            toast.error("Please log in to like images");
+            return;
+        }
+
+        // Toggle logic
+        if (isLiked) {
+            // Un-like locally and in user collection
+            // We DON'T decrement global stats immediately via API because it's complex/expensive, 
+            // but for user experience we update the personal collection.
+            try {
+                await deleteDoc(doc(db, `users/${currentUser.uid}/likes/${imgItem.id}`));
+                // Also update global via existing API (optional, if API handles un-liking? The old logic was binary 1 or 0)
+                // rateShowcaseImage(imgItem.id, 0, model.id); 
+            } catch (error) {
+                console.error("Error removing like:", error);
+            }
+        } else {
+            // Save to user collection
+            try {
+                await setDoc(doc(db, `users/${currentUser.uid}/likes/${imgItem.id}`), {
+                    imageId: imgItem.id,
+                    modelId: model.id,
+                    url: getOptimizedImageUrl(imgItem.url || imgItem.imageUrl),
+                    thumbnailUrl: getOptimizedImageUrl(imgItem.thumbnailUrl || imgItem.url || imgItem.imageUrl),
+                    prompt: imgItem.prompt || "",
+                    createdAt: new Date()
+                });
+
+                // Track globally
+                rateShowcaseImage(imgItem.id, 1, model.id);
+            } catch (error) {
+                console.error("Error saving like:", error);
+            }
+        }
+    };
+
+    const handleSave = async () => {
+        if (!currentUser) {
+            toast.error("Please log in to save images");
+            return;
+        }
+
+        if (isSaved) {
+            try {
+                await deleteDoc(doc(db, `users/${currentUser.uid}/bookmarks/${imgItem.id}`));
+                toast.success("Removed from bookmarks");
+            } catch (error) {
+                console.error("Error removing bookmark:", error);
+            }
+        } else {
+            try {
+                await setDoc(doc(db, `users/${currentUser.uid}/bookmarks/${imgItem.id}`), {
+                    imageId: imgItem.id,
+                    modelId: model.id,
+                    url: getOptimizedImageUrl(imgItem.url || imgItem.imageUrl),
+                    thumbnailUrl: getOptimizedImageUrl(imgItem.thumbnailUrl || imgItem.url || imgItem.imageUrl),
+                    prompt: imgItem.prompt || "",
+                    createdAt: new Date()
+                });
+                toast.success("Saved to bookmarks");
+            } catch (error) {
+                console.error("Error saving bookmark:", error);
+            }
+        }
+    };
+
+    const timeAgo = useMemo(() => {
+        const options = ["2 HOURS AGO", "5 HOURS AGO", "1 DAY AGO", "3 DAYS AGO", "JUST NOW"];
+        return options[index % options.length];
+    }, [index]);
+
+    return (
+        <article
+            key={imgItem.id || index}
+            className="feed-post"
+            style={{
+                background: 'rgba(255,255,255,0.02)',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                border: '1px solid rgba(255,255,255,0.06)',
+                animation: `fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.1}s both`,
+                maxWidth: '600px',
+                width: '100%',
+                margin: '0 auto',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
+            }}
+        >
+            {/* Post Header */}
+            <div style={{
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderBottom: '1px solid rgba(255,255,255,0.02)'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '50%',
+                        background: 'linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%)',
+                        padding: '2px'
+                    }}>
+                        <div style={{
+                            width: '100%',
+                            height: '100%',
+                            borderRadius: '50%',
+                            background: '#1a1a1a',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            overflow: 'hidden',
+                            border: '1px solid #000'
+                        }}>
+                            <img src={model.image} alt={model.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                    </div>
+                    <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'white', letterSpacing: '-0.01em' }}>{model.name}</div>
+                            <BadgeCheck size={14} className="text-blue-500 fill-blue-500" />
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: '500' }}>Official Model Showcase</div>
+                    </div>
+                </div>
+                <button className="btn-ghost" style={{ padding: '8px', opacity: 0.5 }}>
+                    <MoreHorizontal size={20} />
+                </button>
+            </div>
+
+            {/* Post Image Container */}
+            <div
+                onClick={() => {
+                    handleDoubleTap();
+                }}
+                onDoubleClick={(e) => {
+                    e.preventDefault();
+                }}
+                style={{
+                    cursor: 'pointer',
+                    background: '#000',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    userSelect: 'none'
+                }}
+                className="feed-image-container"
+            >
+                <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                >
+                    <LazyImage
+                        src={getOptimizedImageUrl(imgItem.url || imgItem.imageUrl || (typeof imgItem === 'string' ? imgItem : ''))}
+                        alt={imgItem.prompt || "Model Generation"}
+                        aspectRatio={imgItem.aspectRatio || "1/1"}
+                        priority={index < 2}
+                    />
+                </motion.div>
+
+                {/* Big Heart Overlay Animation */}
+                <AnimatePresence>
+                    {showLargeHeart && (
+                        <motion.div
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: [0, 1.2, 1], opacity: [0, 1, 0] }}
+                            exit={{ scale: 0, opacity: 0 }}
+                            transition={{ duration: 0.8, times: [0, 0.5, 1] }}
+                            style={{
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                color: 'white',
+                                zIndex: 10,
+                                filter: 'drop-shadow(0 0 20px rgba(0,0,0,0.5))',
+                                pointerEvents: 'none'
+                            }}
+                        >
+                            <Heart size={80} fill="white" />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Expand Overlay Button */}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveShowcaseImage(imgItem);
+                    }}
+                    style={{
+                        position: 'absolute',
+                        top: '16px',
+                        right: '16px',
+                        background: 'rgba(0,0,0,0.3)',
+                        backdropFilter: 'blur(10px)',
+                        border: 'none',
+                        color: 'white',
+                        padding: '8px',
+                        borderRadius: '50%',
+                        cursor: 'pointer',
+                        opacity: 0,
+                        transition: 'opacity 0.3s'
+                    }}
+                    className="expand-hint-btn"
+                >
+                    <Aperture size={16} />
+                </button>
+            </div>
+
+            {/* Post Actions Area */}
+            <div style={{ padding: '16px 20px 20px 20px', background: 'rgba(255,255,255,0.005)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', gap: '18px' }}>
+                        <motion.button
+                            whileTap={{ scale: 0.8 }}
+                            onClick={handleLike}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                color: isLiked ? '#ff3040' : 'white',
+                                cursor: 'pointer',
+                                padding: 0,
+                                position: 'relative'
+                            }}
+                            title="Helpful"
+                        >
+                            <Heart size={28} fill={isLiked ? "currentColor" : "none"} strokeWidth={1.5} />
+
+                            <AnimatePresence>
+                                {isLiked && (
+                                    <motion.div
+                                        key="heart-burst"
+                                        initial={{ scale: 0, opacity: 0 }}
+                                        animate={{ scale: [0.8, 2, 2.5], opacity: [1, 0.8, 0] }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.6, ease: "easeOut" }}
+                                        style={{
+                                            position: 'absolute',
+                                            top: '50%',
+                                            left: '50%',
+                                            transform: 'translate(-50%, -50%)',
+                                            color: '#ff3040',
+                                            pointerEvents: 'none',
+                                            zIndex: 10
+                                        }}
+                                    >
+                                        <Heart size={32} fill="currentColor" />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </motion.button>
+
+                        <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => {
+                                const params = new URLSearchParams();
+                                if (imgItem.prompt) params.set('prompt', imgItem.prompt);
+                                if (imgItem.steps) params.set('steps', imgItem.steps);
+                                if (imgItem.cfg) params.set('cfg', imgItem.cfg);
+                                navigate(`/generate?${params.toString()}`);
+                            }}
+                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
+                            title="Try this prompt"
+                        >
+                            <Sparkles size={28} strokeWidth={1.5} />
+                        </motion.button>
+
+                        <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={handleShare}
+                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
+                            title="Share"
+                        >
+                            <Share2 size={28} strokeWidth={1.5} />
+                        </motion.button>
+
+                        <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => setShowTechnical(!showTechnical)}
+                            style={{ background: 'none', border: 'none', color: showTechnical ? 'var(--color-accent-primary)' : 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
+                            title="Technical Breakdown"
+                        >
+                            <Info size={28} strokeWidth={1.5} />
+                        </motion.button>
+                    </div>
+                    <motion.button
+                        whileTap={{ scale: 0.8 }}
+                        onClick={handleSave}
+                        style={{ background: 'none', border: 'none', color: isSaved ? 'white' : 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
+                    >
+                        <Bookmark size={28} fill={isSaved ? "currentColor" : "none"} strokeWidth={1.5} />
+                    </motion.button>
+                </div>
+
+                <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'white', marginBottom: '12px', fontFamily: 'monospace' }}>
+                    {imgItem.rating > 0 ? imgItem.rating : Math.floor(Math.random() * 100) + 50} VOTES
+                </div>
+
+                <div style={{ fontSize: '0.9rem', lineHeight: '1.7', color: '#ccc', letterSpacing: '0.01em' }}>
+                    <span style={{ fontWeight: '800', marginRight: '12px', color: 'white' }}>{model.name}</span>
+                </div>
+
+                <div style={{ marginTop: '8px', fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontWeight: '700', letterSpacing: '0.05em' }}>
+                    {timeAgo}
+                </div>
+
+                <AnimatePresence>
+                    {showTechnical && (
+                        <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            style={{
+                                marginTop: '20px',
+                                overflow: 'hidden',
+                                borderTop: '1px solid rgba(255,255,255,0.05)',
+                                paddingTop: '16px'
+                            }}
+                        >
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
+                                    <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>STEPS</div>
+                                    <div style={{ fontSize: '0.8rem', fontWeight: '700', fontFamily: 'monospace' }}>{imgItem.steps || 30}</div>
+                                </div>
+                                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
+                                    <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>CFG SCALE</div>
+                                    <div style={{ fontSize: '0.8rem', fontWeight: '700', fontFamily: 'monospace' }}>{imgItem.cfg || 7.0}</div>
+                                </div>
+                                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
+                                    <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>SAMPLER</div>
+                                    <div style={{ fontSize: '0.8rem', fontWeight: '700', fontFamily: 'monospace' }}>Euler a</div>
+                                </div>
+                                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
+                                    <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>BASE MODEL</div>
+                                    <div style={{ fontSize: '0.8rem', fontWeight: '700', fontFamily: 'monospace' }}>SDXL 1.0</div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '8px', opacity: 0.6 }}>
+                    <span style={{ color: 'var(--color-accent-primary)', fontSize: '0.8rem', fontWeight: '500' }}>#{model.name.replace(/\s+/g, '')}</span>
+                    <span style={{ color: 'var(--color-accent-primary)', fontSize: '0.8rem', fontWeight: '500' }}>#AI</span>
+                    <span style={{ color: 'var(--color-accent-primary)', fontSize: '0.8rem', fontWeight: '500' }}>#DreamBees</span>
+                </div>
+
+                <div style={{ marginTop: '24px' }}></div>
+            </div>
+        </article >
+    );
+};
+
+export default FeedPost;

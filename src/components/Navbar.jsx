@@ -38,6 +38,9 @@ export default function Navbar() {
     ];
 
     const limitWidth = ['/dressup', '/karaoke', '/generate', '/slideshow'].includes(location.pathname);
+    const isModelFeed = /^\/model\/[^/]+\/feed$/.test(location.pathname);
+
+    if (isModelFeed) return null;
 
     return (
         <div style={{
@@ -63,7 +66,7 @@ export default function Navbar() {
                 alignItems: 'center',
                 gap: '24px',
                 width: '100%',
-                maxWidth: '900px', // Constrained width for "island" look
+                maxWidth: '960px', // Slightly wider to accommodate new link
                 boxShadow: '0 8px 32px -8px rgba(0,0,0,0.3)',
                 transition: 'all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)',
                 transform: scrolled ? 'translateY(0)' : 'translateY(0)'
@@ -135,6 +138,31 @@ export default function Navbar() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     {currentUser ? (
                         <>
+                            <Link
+                                to="/profile"
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                    padding: '6px 14px 6px 6px',
+                                    background: location.pathname === '/profile' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)',
+                                    borderRadius: '99px',
+                                    border: '1px solid rgba(255,255,255,0.05)',
+                                    color: 'white',
+                                    textDecoration: 'none',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 600
+                                }}
+                                className="hidden-mobile"
+                            >
+                                {currentUser.photoURL ? (
+                                    <img src={currentUser.photoURL} alt="Profile" style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} />
+                                ) : (
+                                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>
+                                        {currentUser.email?.[0].toUpperCase()}
+                                    </div>
+                                )}
+                                Profile
+                            </Link>
+
                             <button
                                 onClick={handleLogout}
                                 className="hidden-mobile"
@@ -144,6 +172,7 @@ export default function Navbar() {
                                     background: 'rgba(255,255,255,0.1)',
                                     color: 'white'
                                 }}
+                                title="Sign Out"
                             >
                                 <LogOut size={16} />
                             </button>
@@ -185,6 +214,23 @@ export default function Navbar() {
                 }}>
                     {currentUser ? (
                         <>
+                            <Link
+                                to="/profile"
+                                onClick={() => setIsMenuOpen(false)}
+                                style={{
+                                    padding: '16px',
+                                    borderRadius: '12px',
+                                    background: location.pathname === '/profile' ? 'var(--color-white)' : 'rgba(255,255,255,0.03)',
+                                    color: location.pathname === '/profile' ? 'black' : 'white',
+                                    fontSize: '1rem',
+                                    fontWeight: 600,
+                                    display: 'flex', alignItems: 'center', gap: '12px'
+                                }}
+                            >
+                                <User size={20} />
+                                Profile
+                            </Link>
+
                             {navLinks.map(link => (
                                 <Link
                                     key={link.path}
