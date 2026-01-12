@@ -1,56 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import SEO from '../components/SEO';
-import { useAuth } from '../contexts/AuthContext';
-import { db } from '../firebase';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
-import { useModel } from '../contexts/ModelContext';
-import { Loader2, Heart, Bookmark, AlertCircle, Grid, Zap, Layers, Filter, Search } from 'lucide-react';
-import LazyImage from '../components/LazyImage';
-import ShowcaseModal from '../components/ShowcaseModal';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useUserInteractions } from '../contexts/UserInteractionsContext';
 
 export default function UserProfile() {
     const { currentUser } = useAuth();
-    const { availableModels, credits } = useModel(); // Get credits from context
+    const { availableModels } = useModel();
+    const { likes, bookmarks } = useUserInteractions(); // Instant access from global cache
+
     const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'liked', 'saved'
-    const [likes, setLikes] = useState([]);
-    const [bookmarks, setBookmarks] = useState([]);
-    const [loading, setLoading] = useState(true);
     const [selectedImage, setSelectedImage] = useState(null);
     const [selectedModel, setSelectedModel] = useState(null);
 
-    // Fetch Data
-    useEffect(() => {
-        if (!currentUser?.uid) return;
-
-        setLoading(true);
-
-        // Fetch Likes
-        const likesQuery = query(collection(db, `users/${currentUser.uid}/likes`), orderBy('createdAt', 'desc'));
-        const unsubLikes = onSnapshot(likesQuery, (snapshot) => {
-            setLikes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'like' })));
-        }, (error) => {
-            console.warn("Likes listener error (ignoring):", error.message);
-        });
-
-        // Fetch Bookmarks
-        const bookmarksQuery = query(collection(db, `users/${currentUser.uid}/bookmarks`), orderBy('createdAt', 'desc'));
-        const unsubBookmarks = onSnapshot(bookmarksQuery, (snapshot) => {
-            setBookmarks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), type: 'bookmark' })));
-        }, (error) => {
-            console.warn("Bookmarks listener error (ignoring):", error.message);
-        });
-
-        // Simple loading simulation (wait for initial snaps)
-        // In a real app, we'd track loaded state of both individually
-        const timer = setTimeout(() => setLoading(false), 800);
-
-        return () => {
-            unsubLikes();
-            unsubBookmarks();
-            clearTimeout(timer);
-        };
-    }, [currentUser]);
+    // Data is already loaded by Context, but we can simulate a brief fade-in if desired, 
+    // or just show immediately.
+    const loading = false; // Context handles loading in background, we can show content instantly.
 
     // Derived Data
     const getDisplayedItems = () => {

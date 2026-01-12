@@ -1,51 +1,20 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Sparkles, Share2, Info, Bookmark, MoreHorizontal, BadgeCheck, Copy, Aperture } from 'lucide-react';
-import LazyImage from './LazyImage';
-import { useAuth } from '../contexts/AuthContext';
-import { db } from '../firebase';
-import { doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
-import toast from 'react-hot-toast';
+import { useUserInteractions } from '../contexts/UserInteractionsContext';
 
-const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, rateShowcaseImage, navigate, setActiveShowcaseImage }) => {
+const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setActiveShowcaseImage }) => {
     const { currentUser } = useAuth();
+    const { isLiked, isBookmarked, toggleLike, toggleBookmark } = useUserInteractions();
+
     const [showTechnical, setShowTechnical] = useState(false);
-    const [isSaved, setIsSaved] = useState(false);
-    const [isLiked, setIsLiked] = useState(false); // Local state for like status
     const [showLargeHeart, setShowLargeHeart] = useState(false);
     const [lastTap, setLastTap] = useState(0);
 
-    // Sync with User's Bookmarks and Likes
-    useEffect(() => {
-        if (!currentUser || !imgItem.id) return;
-
-        // Listener for Bookmarks
-        const bookmarkRef = doc(db, `users/${currentUser.uid}/bookmarks/${imgItem.id}`);
-        const unsubBookmark = onSnapshot(bookmarkRef, (doc) => {
-            setIsSaved(doc.exists());
-        }, (error) => {
-            // Silently fail on list errors to prevent UI crash
-            if (error.code !== 'permission-denied') console.warn("Bookmark check failed:", error);
-        });
-
-        // Listener for Likes
-        const likeRef = doc(db, `users/${currentUser.uid}/likes/${imgItem.id}`);
-        const unsubLike = onSnapshot(likeRef, (doc) => {
-            setIsLiked(doc.exists());
-        }, (error) => {
-            if (error.code !== 'permission-denied') console.warn("Like check failed:", error);
-        });
-
-        return () => {
-            unsubBookmark();
-            unsubLike();
-        };
-    }, [currentUser, imgItem.id]);
+    const liked = isLiked(imgItem.id);
+    const bookmarked = isBookmarked(imgItem.id);
 
     const handleDoubleTap = () => {
         const now = Date.now();
         if (now - lastTap < 300) {
-            handleLike(); // Use new handler
+            handleLike();
             setShowLargeHeart(true);
             setTimeout(() => setShowLargeHeart(false), 800);
         }
@@ -70,72 +39,12 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, rateShowcaseIma
         }
     };
 
-    const handleLike = async () => {
-        if (!currentUser) {
-            toast.error("Please log in to like images");
-            return;
-        }
-
-        // Toggle logic
-        if (isLiked) {
-            // Un-like locally and in user collection
-            // We DON'T decrement global stats immediately via API because it's complex/expensive, 
-            // but for user experience we update the personal collection.
-            try {
-                await deleteDoc(doc(db, `users/${currentUser.uid}/likes/${imgItem.id}`));
-                // Also update global via existing API (optional, if API handles un-liking? The old logic was binary 1 or 0)
-                // rateShowcaseImage(imgItem.id, 0, model.id); 
-            } catch (error) {
-                console.error("Error removing like:", error);
-            }
-        } else {
-            // Save to user collection
-            try {
-                await setDoc(doc(db, `users/${currentUser.uid}/likes/${imgItem.id}`), {
-                    imageId: imgItem.id,
-                    modelId: model.id,
-                    url: getOptimizedImageUrl(imgItem.url || imgItem.imageUrl),
-                    thumbnailUrl: getOptimizedImageUrl(imgItem.thumbnailUrl || imgItem.url || imgItem.imageUrl),
-                    prompt: imgItem.prompt || "",
-                    createdAt: new Date()
-                });
-
-                // Track globally
-                rateShowcaseImage(imgItem.id, 1, model.id);
-            } catch (error) {
-                console.error("Error saving like:", error);
-            }
-        }
+    const handleLike = () => {
+        toggleLike(imgItem, model);
     };
 
-    const handleSave = async () => {
-        if (!currentUser) {
-            toast.error("Please log in to save images");
-            return;
-        }
-
-        if (isSaved) {
-            try {
-                await deleteDoc(doc(db, `users/${currentUser.uid}/bookmarks/${imgItem.id}`));
-                toast.success("Removed from bookmarks");
-            } catch (error) {
-                console.error("Error removing bookmark:", error);
-            }
-        } else {
-            try {
-                await setDoc(doc(db, `users/${currentUser.uid}/bookmarks/${imgItem.id}`), {
-                    imageId: imgItem.id,
-                    modelId: model.id,
-                    url: getOptimizedImageUrl(imgItem.url || imgItem.imageUrl),
-                    thumbnailUrl: getOptimizedImageUrl(imgItem.thumbnailUrl || imgItem.url || imgItem.imageUrl),
-                    prompt: imgItem.prompt || "",
-                    createdAt: new Date()
-                });
-                toast.success("Saved to bookmarks");
-            } catch (error) {
-                console.error("Error saving bookmark:", error);
-            }
-        }
+    const handleSave = () => {
+        toggleBookmark(imgItem, model);
     };
 
     const timeAgo = useMemo(() => {
@@ -291,17 +200,17 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, rateShowcaseIma
                             style={{
                                 background: 'none',
                                 border: 'none',
-                                color: isLiked ? '#ff3040' : 'white',
+                                color: liked ? '#ff3040' : 'white',
                                 cursor: 'pointer',
                                 padding: 0,
                                 position: 'relative'
                             }}
                             title="Helpful"
                         >
-                            <Heart size={28} fill={isLiked ? "currentColor" : "none"} strokeWidth={1.5} />
+                            <Heart size={28} fill={liked ? "currentColor" : "none"} strokeWidth={1.5} />
 
                             <AnimatePresence>
-                                {isLiked && (
+                                {liked && (
                                     <motion.div
                                         key="heart-burst"
                                         initial={{ scale: 0, opacity: 0 }}
@@ -363,14 +272,14 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, rateShowcaseIma
                     <motion.button
                         whileTap={{ scale: 0.8 }}
                         onClick={handleSave}
-                        style={{ background: 'none', border: 'none', color: isSaved ? 'white' : 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
+                        style={{ background: 'none', border: 'none', color: bookmarked ? 'white' : 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
                     >
-                        <Bookmark size={28} fill={isSaved ? "currentColor" : "none"} strokeWidth={1.5} />
+                        <Bookmark size={28} fill={bookmarked ? "currentColor" : "none"} strokeWidth={1.5} />
                     </motion.button>
                 </div>
 
                 <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'white', marginBottom: '12px', fontFamily: 'monospace' }}>
-                    {imgItem.rating > 0 ? imgItem.rating : Math.floor(Math.random() * 100) + 50} VOTES
+                    {imgItem.rating || 0} VOTES
                 </div>
 
                 <div style={{ fontSize: '0.9rem', lineHeight: '1.7', color: '#ccc', letterSpacing: '0.01em' }}>
