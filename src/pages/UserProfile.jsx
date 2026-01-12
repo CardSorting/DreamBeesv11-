@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import SEO from '../components/SEO';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useModel } from '../contexts/ModelContext';
+import { Loader2, Heart, Bookmark, AlertCircle, Grid, Zap, Layers, Filter, Search } from 'lucide-react';
+import LazyImage from '../components/LazyImage';
+import ShowcaseModal from '../components/ShowcaseModal';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function UserProfile() {
     const { currentUser } = useAuth();

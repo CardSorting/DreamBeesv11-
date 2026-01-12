@@ -1,4 +1,10 @@
+import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Heart, Share2, Sparkles, MoreHorizontal, Bookmark, Info, BadgeCheck, Aperture } from 'lucide-react';
+import toast from 'react-hot-toast';
+import LazyImage from './LazyImage';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setActiveShowcaseImage }) => {
     const { currentUser } = useAuth();
