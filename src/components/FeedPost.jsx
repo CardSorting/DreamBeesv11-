@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Share2, Sparkles, MoreHorizontal, Bookmark, Info, BadgeCheck, Aperture } from 'lucide-react';
+import { Heart, Share2, Sparkles, MoreHorizontal, Bookmark, Info, BadgeCheck, Aperture, Volume2, VolumeX } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LazyImage from './LazyImage';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
@@ -13,6 +13,9 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
     const [showTechnical, setShowTechnical] = useState(false);
     const [showLargeHeart, setShowLargeHeart] = useState(false);
     const [lastTap, setLastTap] = useState(0);
+    const [isMuted, setIsMuted] = useState(true);
+    const [manualUnmute, setManualUnmute] = useState(false);
+    const videoRef = useRef(null);
 
     const liked = isLiked(imgItem.id);
     const bookmarked = isBookmarked(imgItem.id);
@@ -51,6 +54,35 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
 
     const handleSave = () => {
         toggleBookmark(imgItem, model);
+    };
+
+    const toggleMute = (e) => {
+        e.stopPropagation();
+        const newState = !isMuted;
+        setIsMuted(newState);
+        // If unmuting via click, lock it (manualUnmute = true)
+        // If muting via click, unlock it (manualUnmute = false) so hover logic resumes? 
+        // Or if they mute, they probably want it muted. Let's assume click = lock state preference.
+        // Actually user said "mute if didnt click". So if they clicked to unmute, it stays unmuted.
+        // If they click to mute, does hover unmute it again? Probably yes, unless we treat "manual mute" as a lock too.
+        // For simplicity: Click Unmute -> Lock Open. Click Mute -> Reset to default (Hover sensitive).
+        if (!newState) { // Unmuted
+            setManualUnmute(true);
+        } else {
+            setManualUnmute(false);
+        }
+    };
+
+    const handleMouseEnter = () => {
+        if (imgItem.type === 'video' && !manualUnmute) {
+            setIsMuted(false);
+        }
+    };
+
+    const handleMouseLeave = () => {
+        if (imgItem.type === 'video' && !manualUnmute) {
+            setIsMuted(true);
+        }
     };
 
     const timeAgo = useMemo(() => {
@@ -125,6 +157,8 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
                 onDoubleClick={(e) => {
                     e.preventDefault();
                 }}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
                 style={{
                     cursor: 'pointer',
                     background: '#000',
@@ -137,13 +171,58 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
                 <motion.div
                     whileHover={{ scale: 1.02 }}
                     transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                    style={{ width: '100%', height: '100%' }}
                 >
-                    <LazyImage
-                        src={getOptimizedImageUrl(imgItem.url || imgItem.imageUrl || (typeof imgItem === 'string' ? imgItem : ''))}
-                        alt={imgItem.prompt || "Model Generation"}
-                        aspectRatio={imgItem.aspectRatio || "1/1"}
-                        priority={index < 2}
-                    />
+                    {imgItem.type === 'video' ? (
+                        <>
+                            <video
+                                ref={videoRef}
+                                src={imgItem.videoUrl}
+                                poster={imgItem.imageUrl}
+                                autoPlay
+                                muted={isMuted}
+                                loop
+                                playsInline
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    display: 'block'
+                                }}
+                            />
+                            {/* Sound Toggle Overlay */}
+                            <button
+                                onClick={toggleMute}
+                                style={{
+                                    position: 'absolute',
+                                    bottom: '16px',
+                                    right: '16px',
+                                    background: 'rgba(0,0,0,0.6)',
+                                    backdropFilter: 'blur(4px)',
+                                    border: 'none',
+                                    borderRadius: '50%',
+                                    width: '32px',
+                                    height: '32px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    zIndex: 20
+                                }}
+                            >
+                                {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                            </button>
+                        </>
+                    ) : (
+                        <LazyImage
+                            src={getOptimizedImageUrl(imgItem.url || imgItem.imageUrl || (typeof imgItem === 'string' ? imgItem : ''))}
+                            alt={imgItem.prompt || "Model Generation"}
+                            aspectRatio={imgItem.aspectRatio || "1/1"}
+                            priority={index < 2}
+                        />
+                    )}
                 </motion.div>
 
                 {/* Big Heart Overlay Animation */}

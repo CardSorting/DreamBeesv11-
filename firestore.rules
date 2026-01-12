@@ -57,6 +57,13 @@ service cloud.firestore {
       allow update: if request.auth != null && resource.data.userId == request.auth.uid;
     }
 
+    // Videos: Publicly readable for feed (simplified for now)
+    match /videos/{videoId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
     // Analysis Queue: Users can read/write their own analysis requests
     match /analysis_queue/{requestId} {
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;

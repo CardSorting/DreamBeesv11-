@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { db, functions } from '../firebase';
 import { collection, getDocs, query, orderBy, where, limit } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
@@ -152,6 +152,40 @@ export function ModelProvider({ children }) {
         }
     };
 
+    // Fetch user videos for mixing into feed
+    const getUserVideos = useCallback(async (userId) => {
+        try {
+            console.log(`[Video Fetch] Fetching videos for ${userId}`);
+            const q = query(
+                collection(db, 'videos'),
+                where('userId', '==', userId),
+                orderBy('createdAt', 'desc'),
+                limit(50)
+            );
+            const snapshot = await getDocs(q);
+            console.log(`[Video Fetch] Found ${snapshot.size} videos`);
+
+            return snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    type: 'video',
+                    // Feed requires 'url' property for filtering/dedup logic
+                    url: data.videoUrl,
+                    // Fallbacks for display
+                    imageUrl: getOptimizedImageUrl(data.imageSnapshotUrl || data.thumbnailUrl || data.videoUrl),
+                    videoUrl: data.videoUrl,
+                    // Mock ratings for now if missing, to help them float up in sorted feeds
+                    rating: data.rating || 0
+                };
+            });
+        } catch (error) {
+            console.error("Error fetching user videos:", error);
+            return [];
+        }
+    }, []);
+
     // --- High Velocity Rating Logic (Buffered) ---
     const ratingQueue = useRef(new Map()); // stores { jobId, rating, timestamp } by jobId
     const flushInterval = useRef(null);
@@ -237,6 +271,7 @@ export function ModelProvider({ children }) {
         showcaseCache,     // Exported state (optional, mainly for debugging)
         rateGeneration,    // EXPORTED
         rateShowcaseImage, // EXPORTED
+        getUserVideos,     // EXPORTED
     };
 
     return (

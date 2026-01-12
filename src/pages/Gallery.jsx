@@ -346,7 +346,7 @@ export default function Gallery() {
                                 }}>
                                     <img
                                         src={getOptimizedImageUrl(img.thumbnailUrl || img.imageUrl)}
-                                        srcset={getImageSrcSet(img)}
+                                        srcSet={getImageSrcSet(img)}
                                         sizes="(max-width: 768px) 100vw, 300px"
                                         alt={img.prompt || "User generated artwork"}
                                         {...getLCPAttributes(i, 4)}

@@ -287,17 +287,18 @@ const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
 export default function ModelFeed() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { availableModels, showcaseCache, getShowcaseImages, rateShowcaseImage } = useModel();
+    const { availableModels, showcaseCache, getShowcaseImages, rateShowcaseImage, getUserVideos } = useModel();
     const [showcaseImages, setShowcaseImages] = useState(() => {
         return (id && showcaseCache[id]) ? showcaseCache[id] : [];
     });
+    const [videos, setVideos] = useState([]); // Separate video state
     const [isLoading, setIsLoading] = useState(!((id && showcaseCache[id]) || (showcaseImages && showcaseImages.length > 0)));
     const [displayPage, setDisplayPage] = useState(2);
     const [activeShowcaseImage, setActiveShowcaseImage] = useState(null);
     const imagesPerPage = 12;
 
     const model = useMemo(() => {
-        if (!id) return { name: "Global", image: "/logo.png" }; // Virtual model for Global Feed
+        if (!id) return { name: "Global", image: "/dreambees_icon.png" }; // Virtual model for Global Feed
         if (availableModels.length > 0) {
             return availableModels.find(m => m.id === id) || null;
         }
@@ -326,17 +327,27 @@ export default function ModelFeed() {
                 }
 
                 if (images && images.length > 0) {
-                    // Randomize slightly or just sort? 
-                    // Requirement: "curated selection of all of the top feed posts" -> Sort by rating
-                    // But also want some variety. Let's just sort by rating for now as requested.
-                    const sortedImages = images.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                    // Sort by rating as requested
+                    let sortedFeed = images.sort((a, b) => (b.rating || 0) - (a.rating || 0));
 
-                    setShowcaseImages(sortedImages);
+                    // --- Curated Video Logic ---
+                    // Fetch separate videos for 'Videos' tab
+                    const CURATED_USER_ID = 'nfwp9q9aRXcSkDmKCloG8CZH1dX2';
+                    const curatedVideos = await getUserVideos(CURATED_USER_ID);
 
-                    // Preload top 4
-                    sortedImages.slice(0, 4).forEach(img => {
-                        const preloadUrl = getOptimizedImageUrl(img.thumbnailUrl || img.url || img.imageUrl);
-                        preloadImage(preloadUrl, 'high');
+                    if (curatedVideos && curatedVideos.length > 0) {
+                        setVideos(curatedVideos);
+                    }
+                    // --------------------------------
+
+                    setShowcaseImages(sortedFeed);
+
+                    // Preload top 4 (images only for now, browsers handle video preload usually)
+                    sortedFeed.slice(0, 4).forEach(img => {
+                        if (img.type !== 'video') {
+                            const preloadUrl = getOptimizedImageUrl(img.thumbnailUrl || img.url || img.imageUrl);
+                            preloadImage(preloadUrl, 'high');
+                        }
                     });
                 }
             } catch (error) {
@@ -348,7 +359,7 @@ export default function ModelFeed() {
 
         setIsLoading(true);
         loadShowcase();
-    }, [id, model, availableModels, getShowcaseImages]);
+    }, [id, model, availableModels, getShowcaseImages, getUserVideos]);
 
     const [activeFilter, setActiveFilter] = useState('All');
     const [sortMode, setSortMode] = useState('random'); // 'random' | 'top'
@@ -367,8 +378,11 @@ export default function ModelFeed() {
     }, [availableModels, showcaseImages]);
 
     const imagesToRender = useMemo(() => {
+        // SELECT SOURCE BASED ON FILTER
+        let sourceData = activeFilter === 'Videos' ? videos : showcaseImages;
+
         const seenUrls = new Set();
-        let filtered = (showcaseImages || [])
+        let filtered = (sourceData || [])
             .filter(img => {
                 if (!img || !img.url || typeof img.url !== 'string' || img.url.length <= 5) return false;
                 if (seenUrls.has(img.url)) return false;
@@ -387,7 +401,7 @@ export default function ModelFeed() {
             });
 
         // Filter Logic
-        if (!id && activeFilter !== 'All') {
+        if (!id && activeFilter !== 'All' && activeFilter !== 'Videos') {
             filtered = filtered.filter(img => {
                 const modelTags = img._model?.tags || [];
                 return modelTags.includes(activeFilter);
@@ -406,7 +420,7 @@ export default function ModelFeed() {
             // unless dependencies change. dependency is `sortMode` and `activeFilter`.
             return filtered.sort(() => 0.5 - Math.random());
         }
-    }, [showcaseImages, id, availableModels, activeFilter, sortMode]);
+    }, [showcaseImages, videos, id, availableModels, activeFilter, sortMode]);
 
     const visibleImages = useMemo(() => {
         return imagesToRender.slice(0, displayPage * imagesPerPage);
@@ -471,6 +485,14 @@ export default function ModelFeed() {
                                 onClick={() => setActiveFilter('All')}
                             >
                                 All
+                            </button>
+                            <button
+                                className={`filter-chip ${activeFilter === 'Videos' ? 'active' : ''}`}
+                                onClick={() => setActiveFilter('Videos')}
+                            >
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <BadgeCheck size={12} fill="white" stroke="black" /> Videos
+                                </span>
                             </button>
                             {allTags.map(tag => (
                                 <button

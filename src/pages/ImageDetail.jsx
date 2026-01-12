@@ -275,6 +275,20 @@ export default function ImageDetail() {
                                 ))}
                             </div>
                         </div>
+                    ) : image.type === 'video' || image.videoUrl ? (
+                        /* VIDEO MODE */
+                        <video
+                            src={image.videoUrl || image.url} // Check both
+                            controls
+                            autoPlay
+                            loop
+                            playsInline
+                            poster={getOptimizedImageUrl(image.imageUrl)}
+                            style={{
+                                maxWidth: '100%', maxHeight: '100%',
+                                boxShadow: '0 0 50px rgba(0,0,0,0.5)',
+                            }}
+                        />
                     ) : (
                         /* SINGLE IMAGE MODE */
                         <img

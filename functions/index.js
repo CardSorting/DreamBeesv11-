@@ -1248,15 +1248,29 @@ const handleGetImageDetail = async (request) => {
     }
 
     try {
-        const imageDoc = await db.collection('images').doc(imageId).get();
+        let imageDoc = await db.collection('images').doc(imageId).get();
+        let type = 'image';
 
         if (!imageDoc.exists) {
-            throw new Error("Image not found");
+            // Try videos collection
+            const videoDoc = await db.collection('videos').doc(imageId).get();
+            if (videoDoc.exists) {
+                imageDoc = videoDoc;
+                type = 'video';
+            } else {
+                throw new Error("Image not found");
+            }
         }
 
         const imageData = imageDoc.data();
 
-        // Verify ownership
+        // Verify ownership (or public access? Gallery items should probably be viewable if public/showcase?)
+        // The previous code enforced ownership: if (imageData.userId !== uid)
+        // But /gallery/:id seems to be a personal gallery detail view or public?
+        // The router puts it under PrivateRoute, so it's personal.
+        // Wait, getUserImages returns items for the current user.
+        // So yes, ownership check is correct.
+
         if (imageData.userId !== uid) {
             throw new Error("Unauthorized: You don't have access to this image");
         }
@@ -1264,6 +1278,10 @@ const handleGetImageDetail = async (request) => {
         return {
             id: imageDoc.id,
             ...imageData,
+            type,
+            // Normalize header image for frontend
+            imageUrl: type === 'video' ? (imageData.imageSnapshotUrl || imageData.thumbnailUrl || imageData.videoUrl) : imageData.imageUrl,
+            videoUrl: imageData.videoUrl, // Ensure this is passed
             createdAt: imageData.createdAt?.toDate?.()?.toISOString() || imageData.createdAt
         };
     } catch (error) {
