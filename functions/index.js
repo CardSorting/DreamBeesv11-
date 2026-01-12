@@ -140,6 +140,35 @@ export const processImageTask = onTaskDispatched(
         let thumbnailUrl = null;
         let lqip = null;
 
+        // --- Revenue-Aware Throttling (Sequential Queuing) ---
+        // Verify user slot availability BEFORE marking 'processing'.
+        // If busy, throw Error to trigger Cloud Task retry (Linear Backoff).
+        const [activeJobsSnapshot, userSnap] = await Promise.all([
+            db.collection('generation_queue')
+                .where('userId', '==', userId)
+                .where('status', '==', 'processing')
+                .get(),
+            db.collection('users').doc(userId).get()
+        ]);
+
+        const activeCount = activeJobsSnapshot.docs.filter(d => d.id !== requestId).length;
+        const userData = userSnap.data() || {};
+        const isSubscriber = userData.subscriptionStatus === 'active';
+        const useTurbo = req.data.useTurbo;
+
+        if (useTurbo) {
+            allowedConcurrency = 5; // H100: Max Parallelism (High Revenue)
+        } else if (isSubscriber) {
+            allowedConcurrency = 3; // Free A10G: Subscriber Benefit (High Retention)
+        } else {
+            allowedConcurrency = 3; // Paid A10G: Relaxed (Revenue Capture)
+        }
+
+        if (activeCount >= allowedConcurrency) {
+            console.warn(`[Throttling] User ${userId} busy. Active: ${activeCount}/${allowedConcurrency}. Re-queuing task ${requestId}.`);
+            throw new Error(`Throttling: Concurrency Limit (${allowedConcurrency}) Reached. Retrying...`);
+        }
+
         try {
             await docRef.update({ status: "processing" });
 
@@ -183,7 +212,14 @@ export const processImageTask = onTaskDispatched(
                 // Keep the old endpoint for internal reference/fallback if needed (not currently used)
                 const INTERNAL_SDXL_ENDPOINT = "https://mariecoderinc--sdxl-multi-model-model-web-inference.modal.run";
 
-                const url = `${SDXL_A10G_ENDPOINT}?${params.toString()}`;
+                // Turbo Mode Routing (H100)
+                let endpoint = SDXL_A10G_ENDPOINT;
+                if (req.data.useTurbo) {
+                    endpoint = INTERNAL_SDXL_ENDPOINT;
+                    console.log(`[${requestId}] Turbo Mode Active: Routing to H100 Endpoint`);
+                }
+
+                const url = `${endpoint}?${params.toString()}`;
 
                 // Defensive check for URL length to prevent 414 errors or silent truncation
                 if (url.length > 2048) {
@@ -856,8 +892,13 @@ export const stripeWebhook = onRequest(async (req, res) => {
             const mode = session.mode; // 'subscription' or 'payment'
 
             if (mode === 'subscription') {
-                // Subscription logic removed
-                console.warn(`Subscription mode used for user ${userId} but subscriptions are disabled.`);
+                console.log(`[Subscription] Activated for user ${userId}`);
+                await db.collection('users').doc(userId).update({
+                    subscriptionStatus: 'active',
+                    subscriptionId: session.subscription,
+                    // Give them a starter bonus of Zaps if new sub? For now, just active status.
+                    // monthlyZaps: 500 // Could be handled by a separate webhook for invoice.payment_succeeded
+                });
             } else if (mode === 'payment') {
                 // Handle One-Time Credit Packs & Reel Packs
                 // Map Amount (in cents) to Credits or Reels
@@ -875,6 +916,16 @@ export const stripeWebhook = onRequest(async (req, res) => {
                 else if (amount === 1500) reelsToAdd = 1500;   // Reels Creator
                 else if (amount === 3500) reelsToAdd = 3600;   // Reels Pro (with bonus)
                 else if (amount === 8500) reelsToAdd = 9000;   // Reels Studio (with bonus)
+
+                // Turbo Packs (H100)
+                // Turbo Packs (Zaps)
+                else if (amount === 999) {
+                    // $9.99 legacy catch (treat as 100 Zaps)
+                    creditsToAdd = 100;
+                }
+                // New Zap Packs
+                else if (amount === 500) creditsToAdd = 50;    // Starter Pack (50 Zaps)
+                else if (amount === 2000) creditsToAdd = 250;  // Creator Pack (250 Zaps)
 
                 if (creditsToAdd > 0) {
                     console.log(`Adding ${creditsToAdd} credits to user ${userId} for payment of $${amount / 100}`);
@@ -1000,7 +1051,7 @@ const handleCreateGenerationRequest = async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
 
-    const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler } = request.data;
+    const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler, useTurbo } = request.data;
 
     // --- Input Validation & Cleaning ---
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 5) {
@@ -1033,17 +1084,25 @@ const handleCreateGenerationRequest = async (request) => {
             const userDoc = await t.get(userRef);
             if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
 
-            // 1. Concurrency Check (Max 5 active jobs)
+            const userData = userDoc.data();
+            const isSubscriber = userData.subscriptionStatus === 'active';
+
+
+
+
             const activeJobsQuery = db.collection('generation_queue')
                 .where('userId', '==', uid)
                 .where('status', 'in', ['queued', 'processing'])
-                .limit(5); // Fail fast if > 5
+                .limit(11);
+
             const activeJobs = await t.get(activeJobsQuery);
-            if (activeJobs.size >= 5) {
-                throw new HttpsError('resource-exhausted', "Too many active generations. Please wait for some to complete.");
+            if (activeJobs.size >= 10) {
+                throw new HttpsError('resource-exhausted', "You have too many pending generations (Limit: 10). Please let some finish.");
             }
 
-            const userData = userDoc.data();
+
+            // MoveuserData definition up is not needed as we defined it above for the check
+            // const userData = userDoc.data(); // Already defined above
             const now = new Date();
             const lastReset = userData.lastDailyReset?.toDate?.() || new Date(0);
 
@@ -1060,12 +1119,38 @@ const handleCreateGenerationRequest = async (request) => {
             // Re-calculate current credits based on potentail daily reset
             let effectiveCredits = (userUpdate.credits !== undefined) ? userUpdate.credits : (userData.credits || 0);
 
-            // Cost Calculation: Qwen models are expensive ($2.5/hr vs $1.1/hr), so they cost 1.5 credits.
-            // Standard models (SDXL, etc.) cost 0.5 credits ($0.125) to achieve ~40% margin.
-            const cost = 6;
+            // const isSubscriber = userData.subscriptionStatus === 'active'; // Already defined above
 
-            if (effectiveCredits < cost) throw new HttpsError('resource-exhausted', `Insufficient credits. This model requires ${cost} credits.`);
+            // New "Zap" Pricing Model
+            // 1 Credit = 1 Zap (~$0.10 value for Turbo, ~$0.01 value for Standard)
+            // But we use the "Cent Model" where 1 Zap = $0.10 conceptually?
+            // Wait, previous plan: 1 Zap = 1 Turbo Gen.
+            // Non-Sub Standard = 0.5 Zaps.
+            // Sub Standard = 0 Zaps (Free).
+
+            let cost = 0;
+
+            if (useTurbo) {
+                // Turbo (H100) always costs 1 Zap
+                cost = 1.0;
+            } else {
+                // Standard (A10G)
+                if (isSubscriber) {
+                    cost = 0; // Free for subscribers
+                } else {
+                    cost = 0.5; // Half a Zap for non-subscribers
+                }
+            }
+
+
+
+            if (effectiveCredits < cost && cost > 0) {
+                throw new HttpsError('resource-exhausted', `Insufficient Zaps ⚡. You have ${effectiveCredits.toFixed(1)} but need ${cost}.`);
+            }
+
             userUpdate.credits = effectiveCredits - cost;
+
+            // Legacy clean up (optional: ignore old turbo_credits or merge them later)
 
             t.update(userRef, userUpdate);
 
@@ -1089,7 +1174,8 @@ const handleCreateGenerationRequest = async (request) => {
         const queue = getFunctions().taskQueue('processImageTask');
         await queue.enqueue({
             requestId: queueRef.id, userId: uid, prompt: cleanPrompt, negative_prompt,
-            modelId, steps: safeSteps, cfg: safeCfg, aspectRatio: safeAspectRatio, scheduler
+            modelId, steps: safeSteps, cfg: safeCfg, aspectRatio: safeAspectRatio, scheduler,
+            useTurbo: !!useTurbo
         });
 
         return { requestId: queueRef.id };

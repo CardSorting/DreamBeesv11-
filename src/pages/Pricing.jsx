@@ -5,28 +5,38 @@ import { Check, Film, Image } from 'lucide-react';
 import toast from 'react-hot-toast';
 import SEO from '../components/SEO';
 
-const CREDIT_PACKS = [
+const SUBSCRIPTION_PLANS = [
     {
-        name: 'Starter Pack',
-        credits: 20,
-        price: '4.99',
-        id: 'price_1SmMWqIA2zQnWbn58u3TzNWC',
-        features: ['Access to all models', 'Standard generation speed', 'Private gallery']
-    },
-    {
-        name: 'Pro Pack',
-        credits: 80,
+        name: 'Pro Membership',
         price: '19.99',
-        id: 'price_1SmMWqIA2zQnWbn5gj16f4Rx',
+        period: '/month',
+        id: 'price_1SotWSIA2zQnWbn5y538tBDA',
+        features: [
+            '∞ Unlimited Standard Generations',
+            '⚡ 500 Monthly Zaps (for Turbo)',
+            '🚀 Priority Queue Access',
+            '🎨 Private Gallery',
+            '💼 Commercial License'
+        ],
         isPopular: true,
-        features: ['Access to all models', 'Priority generation speed', 'Private gallery', 'Commercial license']
+        buttonText: 'Join Pro'
+    }
+];
+
+const ZAP_PACKS = [
+    {
+        name: 'Starter Zaps',
+        credits: 50, // 50 Zaps
+        price: '5.00',
+        id: 'price_1SotScIA2zQnWbn5fMli7VZY',
+        features: ['50 Turbo Images', '100 Standard Images', 'No Expiry']
     },
     {
-        name: 'Studio Pack',
-        credits: 200,
-        price: '49.99',
-        id: 'price_1SmMWqIA2zQnWbn5ogGzTmcc',
-        features: ['Access to all models', 'Max generation speed', 'Private gallery', 'Commercial license', 'Priority support']
+        name: 'Creator Zaps',
+        credits: 250, // 250 Zaps
+        price: '20.00',
+        id: 'price_1SotScIA2zQnWbn5KdlWpyGU',
+        features: ['250 Turbo Images', '500 Standard Images', 'No Expiry']
     }
 ];
 
@@ -65,10 +75,13 @@ const REEL_PACKS = [
 export default function Pricing() {
     const { currentUser } = useAuth();
     const [loading, setLoading] = useState(false);
-    const [currencyType, setCurrencyType] = useState('credits'); // 'credits' or 'reels'
+    const [currencyType, setCurrencyType] = useState('membership'); // 'membership', 'zaps', 'reels'
     const functions = getFunctions();
 
-    const packs = currencyType === 'credits' ? CREDIT_PACKS : REEL_PACKS;
+    let packs = [];
+    if (currencyType === 'membership') packs = SUBSCRIPTION_PLANS;
+    else if (currencyType === 'zaps') packs = ZAP_PACKS;
+    else packs = REEL_PACKS;
 
     const handlePurchase = async (priceId) => {
         if (!currentUser) {
@@ -83,7 +96,7 @@ export default function Pricing() {
                 priceId: priceId,
                 successUrl: window.location.origin + '/generator?success=true',
                 cancelUrl: window.location.origin + '/pricing?canceled=true',
-                mode: 'payment'
+                mode: 'payment' // Note: Subscriptions should use mode: 'subscription', but for now utilizing payment flow or updated webhook logic
             });
             window.location.href = result.data.url;
         } catch (error) {
@@ -97,48 +110,53 @@ export default function Pricing() {
         <div className="container" style={{ paddingTop: '160px', paddingBottom: '120px' }}>
             <SEO
                 title="Pricing"
-                description="Purchase Credits for images or Reels for videos. Flexible pay-as-you-go options."
+                description="Join Pro for unlimited creation or purchase Zaps for high-speed power."
             />
 
             <div style={{ maxWidth: '800px', margin: '0 auto 60px', textAlign: 'center' }}>
                 <h1 style={{ fontSize: 'clamp(3rem, 6vw, 5rem)', fontWeight: '800', letterSpacing: '-0.04em', lineHeight: '1', marginBottom: '32px', color: 'white' }}>
-                    Pay as you go.
+                    Create without limits.
                 </h1>
                 <p style={{ fontSize: '1.2rem', color: 'var(--color-text-muted)', lineHeight: '1.6', mb: '1rem' }}>
-                    Purchase <b>Credits</b> for images or <b>Reels</b> for videos.<br />
-                    Separate currencies for specialized creative needs.
+                    Join <b>Pro</b> for unlimited generation or buy <b>Zaps ⚡</b> for on-demand power.
                 </p>
-                {currencyType === 'credits' && (
-                    <p style={{ fontSize: '1rem', color: 'var(--color-text-dim)', marginTop: '12px' }}>
-                        All image generations cost <b>6 credits</b> per image.
-                    </p>
-                )}
             </div>
 
             {/* Currency Toggle */}
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '60px' }}>
                 <div style={{ background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '12px', display: 'flex', gap: '4px' }}>
                     <button
-                        onClick={() => setCurrencyType('credits')}
+                        onClick={() => setCurrencyType('membership')}
                         className={`btn`}
                         style={{
-                            background: currencyType === 'credits' ? 'var(--color-primary)' : 'transparent',
-                            color: currencyType === 'credits' ? 'white' : 'var(--color-text-muted)',
-                            display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 24px', borderRadius: '8px', fontWeight: '600'
+                            background: currencyType === 'membership' ? 'var(--color-primary)' : 'transparent',
+                            color: currencyType === 'membership' ? 'white' : 'var(--color-text-muted)',
+                            display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 24px', borderRadius: '8px', fontWeight: '600', border: 'none'
                         }}
                     >
-                        <Image size={18} /> Credits (Images)
+                        <Zap size={18} fill={currencyType === 'membership' ? 'currentColor' : 'none'} /> Pro
+                    </button>
+                    <button
+                        onClick={() => setCurrencyType('zaps')}
+                        className={`btn`}
+                        style={{
+                            background: currencyType === 'zaps' ? 'var(--color-accent-secondary, #f59e0b)' : 'transparent',
+                            color: currencyType === 'zaps' ? 'black' : 'var(--color-text-muted)',
+                            display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 24px', borderRadius: '8px', fontWeight: '600', border: 'none'
+                        }}
+                    >
+                        <Zap size={18} /> Zaps
                     </button>
                     <button
                         onClick={() => setCurrencyType('reels')}
                         className={`btn`}
                         style={{
-                            background: currencyType === 'reels' ? 'var(--color-accent-primary)' : 'transparent',
+                            background: currencyType === 'reels' ? 'var(--color-accent-purple, #8b5cf6)' : 'transparent',
                             color: currencyType === 'reels' ? 'white' : 'var(--color-text-muted)',
-                            display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 24px', borderRadius: '8px', fontWeight: '600'
+                            display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 24px', borderRadius: '8px', fontWeight: '600', border: 'none'
                         }}
                     >
-                        <Film size={18} /> Reels (Video)
+                        <Film size={18} /> Reels
                     </button>
                 </div>
             </div>
@@ -152,7 +170,8 @@ export default function Pricing() {
                         flexDirection: 'column',
                         border: pack.isPopular ? `1px solid ${currencyType === 'reels' ? 'var(--color-accent-primary)' : 'var(--color-primary)'}` : '1px solid rgba(255,255,255,0.1)',
                         position: 'relative',
-                        overflow: 'hidden'
+                        overflow: 'hidden',
+                        background: pack.isPopular && currencyType === 'membership' ? 'linear-gradient(145deg, rgba(var(--color-primary-rgb), 0.1) 0%, rgba(0,0,0,0) 100%)' : undefined
                     }}>
                         {pack.isPopular && (
                             <div style={{
@@ -160,19 +179,22 @@ export default function Pricing() {
                                 background: currencyType === 'reels' ? 'var(--color-accent-primary)' : 'var(--color-primary)',
                                 color: 'white', padding: '4px 12px', fontSize: '0.75rem', fontWeight: '700', borderBottomLeftRadius: '8px'
                             }}>
-                                POPULAR
+                                {currencyType === 'membership' ? 'BEST VALUE' : 'POPULAR'}
                             </div>
                         )}
 
                         <h3 style={{ fontSize: '1.25rem', color: 'white', marginBottom: '8px' }}>{pack.name}</h3>
                         <div style={{ fontSize: '2rem', fontWeight: '800', color: 'white', marginBottom: '16px' }}>
-                            ${pack.price}
+                            ${pack.price} {pack.period && <span style={{ fontSize: '1rem', color: 'var(--color-text-muted)', fontWeight: '400' }}>{pack.period}</span>}
                         </div>
-                        <div style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '24px', display: 'inline-block', textAlign: 'center' }}>
-                            <span style={{ color: currencyType === 'reels' ? 'var(--color-accent-primary)' : 'var(--color-primary)', fontWeight: '600' }}>
-                                {pack.credits ? `${pack.credits} Credits (~${Math.floor(pack.credits / 6)} images)` : `${pack.reels} Reels`}
-                            </span>
+
+                        <div style={{ fontSize: '1.1rem', color: 'var(--color-text-muted)', marginBottom: '24px' }}>
+                            {/* Descriptive text based on type */}
+                            {currencyType === 'zaps' && <span>⚡ {pack.credits} Zaps incl.</span>}
+                            {currencyType === 'reels' && <span>🎞️ {pack.reels} Reels incl.</span>}
+                            {currencyType === 'membership' && <span>Everything you need to create.</span>}
                         </div>
+
                         <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', padding: 0 }}>
                             {pack.features.map((feature, idx) => (
                                 <FeatureItem key={idx} text={feature} highlight={pack.isPopular} accentColor={currencyType === 'reels' ? 'var(--color-accent-primary)' : 'var(--color-primary)'} />
@@ -188,7 +210,7 @@ export default function Pricing() {
                             onClick={() => handlePurchase(pack.id)}
                             disabled={loading}
                         >
-                            {loading ? 'Processing...' : 'Buy Now'}
+                            {loading ? 'Processing...' : (pack.buttonText || 'Buy Now')}
                         </button>
                     </div>
                 ))}

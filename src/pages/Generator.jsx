@@ -44,6 +44,7 @@ export default function Generator() {
     const [seed, setSeed] = useState(parseInt(searchParams.get('seed')) || -1);
 
     const [credits, setCredits] = useState(5);
+    const [turboCredits, setTurboCredits] = useState(0);
     const [reels, setReels] = useState(null);
     const [subscriptionStatus, setSubscriptionStatus] = useState(null);
 
@@ -57,6 +58,9 @@ export default function Generator() {
     const [videoDuration, setVideoDuration] = useState(6);
     const [videoResolution, setVideoResolution] = useState('1080p');
     const [currentJobType, setCurrentJobType] = useState('image');
+
+    // Turbo Mode
+    const [useTurbo, setUseTurbo] = useState(false);
 
     // Microphone
     const [isListening, setIsListening] = useState(false);
@@ -611,6 +615,7 @@ export default function Generator() {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 setCredits(data.credits !== undefined ? data.credits : 5);
+                setTurboCredits(data.turbo_credits !== undefined ? data.turbo_credits : 0);
                 setReels(data.reels !== undefined ? data.reels : 0);
                 setSubscriptionStatus(data.subscriptionStatus);
             } else {
@@ -769,7 +774,12 @@ export default function Generator() {
                 return;
             }
         } else {
-            if (credits < 6 && subscriptionStatus !== 'active') {
+            if (useTurbo) {
+                if (turboCredits < 1) {
+                    toast.error("Insufficient Turbo Credits (Requires 1)");
+                    return;
+                }
+            } else if (credits < 6 && subscriptionStatus !== 'active') {
                 toast.error("Insufficient Credits (Requires 6)");
                 return;
             }
@@ -857,7 +867,8 @@ export default function Generator() {
                         aspectRatio: aspectRatio,
                         steps: steps,
                         cfg: cfg,
-                        seed: seed
+                        seed: seed,
+                        useTurbo
                     });
 
                     setCurrentJobId(result.data.requestId);
@@ -949,9 +960,9 @@ export default function Generator() {
                             </div>
                         </div>
 
-                        {(generationMode === 'image' && subscriptionStatus !== 'active') && (
-                            <div style={{ fontSize: '0.85rem', color: credits > 0 ? 'var(--color-text-muted)' : '#ef4444', fontWeight: '600', fontFamily: 'monospace' }}>
-                                {credits} CREDITS
+                        {(generationMode === 'image') && (
+                            <div style={{ fontSize: '0.9rem', color: credits > 0 ? 'var(--color-text-muted)' : '#ef4444', fontWeight: '700', fontFamily: 'Outfit', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Zap size={14} fill="currentColor" /> {Math.floor(credits)}
                             </div>
                         )}
                         {(generationMode === 'video') && (
@@ -1474,7 +1485,32 @@ export default function Generator() {
                                                         <Trash2 size={16} />
                                                     </button>
                                                 </div>
-                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                    {/* Turbo Mode Toggle */}
+                                                    <button
+                                                        onClick={() => setUseTurbo(!useTurbo)}
+                                                        className="btn-ghost"
+                                                        title={useTurbo ? "Disable Turbo Mode" : "Enable Turbo Mode (H100)"}
+                                                        style={{
+                                                            padding: '8px 16px',
+                                                            borderRadius: '10px',
+                                                            border: useTurbo ? '1px solid #f59e0b' : '1px solid var(--color-border)',
+                                                            background: useTurbo ? 'rgba(245, 158, 11, 0.1)' : 'transparent',
+                                                            color: useTurbo ? '#f59e0b' : 'var(--color-text-muted)',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '6px',
+                                                            fontSize: '0.85rem',
+                                                            fontWeight: '600',
+                                                            transition: 'all 0.2s'
+                                                        }}
+                                                    >
+                                                        <Zap size={16} fill={useTurbo ? "currentColor" : "none"} />
+                                                        <span>Turbo</span>
+                                                        <span style={{ fontSize: '0.75rem', opacity: 0.8, background: useTurbo ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                                                            {useTurbo ? '1 ⚡' : 'OFF'}
+                                                        </span>
+                                                    </button>
                                                     {/* Magic Mode Toggle */}
 
 
