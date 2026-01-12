@@ -422,4 +422,5 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
     );
 };
 
-export default FeedPost;
+// Memoize to prevent re-renders when parent filters change but this post is unaffected
+export default React.memo(FeedPost);

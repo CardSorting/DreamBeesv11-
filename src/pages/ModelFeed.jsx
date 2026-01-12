@@ -55,9 +55,14 @@ const Sidebar = ({ activeId }) => {
         </aside>
     );
 };
+const SidebarMemo = React.memo(Sidebar);
 
 const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
-    const { suggestions, featuredModel, popularTags } = useMemo(() => {
+    const [suggestedData, setSuggestedData] = useState({ suggestions: [], featuredModel: null, popularTags: [] });
+
+    useEffect(() => {
+        if (!availableModels || availableModels.length === 0) return;
+
         const filtered = availableModels.filter(m => m.id !== currentModel?.id);
         const shuffled = [...filtered].sort(() => 0.5 - Math.random());
 
@@ -67,12 +72,15 @@ const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
             if (m.tags) m.tags.forEach(t => tags.add(t));
         });
 
-        return {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSuggestedData({
             featuredModel: shuffled[0],
             suggestions: shuffled.slice(1, 4),
             popularTags: Array.from(tags).slice(0, 10)
-        };
-    }, [currentModel, availableModels]);
+        });
+    }, [availableModels, currentModel]);
+
+    const { suggestions, featuredModel, popularTags } = suggestedData;
 
     if (!availableModels || availableModels.length === 0) return null;
 
@@ -283,19 +291,28 @@ const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
         </aside>
     );
 };
+const SuggestedPanelMemo = React.memo(SuggestedPanel);
 
 export default function ModelFeed() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { availableModels, showcaseCache, getShowcaseImages, rateShowcaseImage, getUserVideos } = useModel();
-    const [showcaseImages, setShowcaseImages] = useState(() => {
-        return (id && showcaseCache[id]) ? showcaseCache[id] : [];
-    });
-    const [videos, setVideos] = useState([]); // Separate video state
-    const [isLoading, setIsLoading] = useState(!((id && showcaseCache[id]) || (showcaseImages && showcaseImages.length > 0)));
+    const { availableModels, getShowcaseImages, getGlobalShowcaseImages, rateShowcaseImage, getUserVideos } = useModel();
+
+    // "feedItems" is the master list of all content, shuffled or sorted
+    const [feedItems, setFeedItems] = useState([]);
+
+    // Separate video state (fetched once)
+    const [videos, setVideos] = useState([]);
+
+    // Loading state
+    const [isLoading, setIsLoading] = useState(true);
+
     const [displayPage, setDisplayPage] = useState(2);
     const [activeShowcaseImage, setActiveShowcaseImage] = useState(null);
     const imagesPerPage = 12;
+
+    const [activeFilter, setActiveFilter] = useState('All');
+    const [sortMode, setSortMode] = useState('random'); // 'random' | 'top'
 
     const model = useMemo(() => {
         if (!id) return { name: "Global", image: "/dreambees_icon.png" }; // Virtual model for Global Feed
@@ -305,8 +322,24 @@ export default function ModelFeed() {
         return null;
     }, [id, availableModels]);
 
+    // --- Helper: Stable Shuffle ---
+    const shuffleArray = (array) => {
+        const arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    };
+
+    // --- Data Loading Effect ---
     useEffect(() => {
         const loadShowcase = async () => {
+            // Reset state when ID changes significantly (switching models or to global)
+            setFeedItems([]);
+            setVideos([]);
+            setIsLoading(true);
+
             try {
                 let images = [];
                 if (id) {
@@ -315,22 +348,21 @@ export default function ModelFeed() {
                     images = await getShowcaseImages(model.id);
                 } else {
                     // Global Feed Mode
-                    if (availableModels.length === 0) return;
-
-                    // Fetch all showcases in parallel
-                    const allShowcases = await Promise.all(
-                        availableModels.map(m => getShowcaseImages(m.id))
-                    );
-
-                    // Flatten and deduplicate by ID if necessary (though IDs should be unique usually)
-                    images = allShowcases.flat();
+                    // Use new optimized fetcher from context
+                    images = await getGlobalShowcaseImages();
                 }
 
                 if (images && images.length > 0) {
-                    // Sort by rating as requested
-                    let sortedFeed = images.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                    // Initial Sort/Shuffle
+                    let processedImages = [...images];
 
-                    // --- Curated Video Logic ---
+                    // Default to shuffle for variety, or sort by rating if preferred as default?
+                    // Use a stable shuffle initially.
+                    processedImages = shuffleArray(processedImages);
+
+                    setFeedItems(processedImages);
+
+                    // --- Curated Video Logic (Only fetch nicely once) ---
                     // Fetch separate videos for 'Videos' tab
                     const CURATED_USER_ID = 'nfwp9q9aRXcSkDmKCloG8CZH1dX2';
                     const curatedVideos = await getUserVideos(CURATED_USER_ID);
@@ -340,10 +372,8 @@ export default function ModelFeed() {
                     }
                     // --------------------------------
 
-                    setShowcaseImages(sortedFeed);
-
-                    // Preload top 4 (images only for now, browsers handle video preload usually)
-                    sortedFeed.slice(0, 4).forEach(img => {
+                    // Preload top 4 images from the PROCESSED list
+                    processedImages.slice(0, 4).forEach(img => {
                         if (img.type !== 'video') {
                             const preloadUrl = getOptimizedImageUrl(img.thumbnailUrl || img.url || img.imageUrl);
                             preloadImage(preloadUrl, 'high');
@@ -357,17 +387,20 @@ export default function ModelFeed() {
             }
         };
 
-        setIsLoading(true);
-        loadShowcase();
-    }, [id, model, availableModels, getShowcaseImages, getUserVideos]);
+        if (availableModels.length > 0) {
+            loadShowcase();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id, availableModels.length, getShowcaseImages, getGlobalShowcaseImages, getUserVideos]); // Removed `model` dependency to prevent flicker if model object reference changes slightly. Use ID.
 
-    const [activeFilter, setActiveFilter] = useState('All');
-    const [sortMode, setSortMode] = useState('random'); // 'random' | 'top'
+
 
     const allTags = useMemo(() => {
         const tags = new Set();
         // Only collect tags from models that actually have images in the current feed
-        const activeModelIds = new Set(showcaseImages.map(img => img.modelId));
+        // Use feedItems (or just availableModels if we want ALL tags)
+        // Let's us feedItems to be accurate about what's actually displayable
+        const activeModelIds = new Set(feedItems.map(img => img.modelId));
 
         availableModels.forEach(m => {
             if (activeModelIds.has(m.id) && Array.isArray(m.tags)) {
@@ -375,11 +408,12 @@ export default function ModelFeed() {
             }
         });
         return Array.from(tags).sort();
-    }, [availableModels, showcaseImages]);
+    }, [availableModels, feedItems]); // Re-calc tags only if base data changes
 
+    // --- Derived Data for Render ---
     const imagesToRender = useMemo(() => {
-        // SELECT SOURCE BASED ON FILTER
-        let sourceData = activeFilter === 'Videos' ? videos : showcaseImages;
+        // SELECT SOURCE
+        let sourceData = activeFilter === 'Videos' ? videos : feedItems;
 
         const seenUrls = new Set();
         let filtered = (sourceData || [])
@@ -408,19 +442,23 @@ export default function ModelFeed() {
             });
         }
 
-        // Sort Logic
+        // Sort Logic (Applied on top of filtered results)
+        // If 'random', we rely on the pre-shuffled order of `feedItems`.
+        // If 'top', we sort specifically.
         if (sortMode === 'top') {
-            return filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        } else {
-            // Randomish / Shuffle
-            // Use a deterministic shuffle based on ID or just random if strict stability isn't required?
-            // "Curated selection" implies quality, but users want variety.
-            // Let's do a seeded shuffle or just simple random for now (re-shuffles on mount/filter change).
-            // To prevent jitter on re-render, we should ideally memoize the shuffled order, but `useMemo` handles that
-            // unless dependencies change. dependency is `sortMode` and `activeFilter`.
-            return filtered.sort(() => 0.5 - Math.random());
+            return [...filtered].sort((a, b) => (b.rating || 0) - (a.rating || 0));
         }
-    }, [showcaseImages, videos, id, availableModels, activeFilter, sortMode]);
+
+        // If random, we just return the filtered list (which preserves the initial shuffle order)
+        return filtered;
+    }, [feedItems, videos, id, availableModels, activeFilter, sortMode]);
+
+    // Manual Shuffle Handler
+    const handleShuffle = () => {
+        setSortMode('random');
+        setFeedItems(prev => shuffleArray(prev));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     const visibleImages = useMemo(() => {
         return imagesToRender.slice(0, displayPage * imagesPerPage);
@@ -462,7 +500,7 @@ export default function ModelFeed() {
                 description={`Instagram-style showcase feed for the ${model.name} AI model.`}
             />
 
-            <Sidebar />
+            <SidebarMemo activeId="/models" /> {/* Or specific active path logic */}
 
             <main className="feed-main-content">
                 {/* Mobile Header */}
@@ -507,7 +545,7 @@ export default function ModelFeed() {
                         <div className="sort-toggle">
                             <button
                                 className={`sort-btn ${sortMode === 'random' ? 'active' : ''}`}
-                                onClick={() => setSortMode('random')}
+                                onClick={handleShuffle}
                                 title="Shuffle"
                             >
                                 <Sparkles size={14} />
@@ -562,7 +600,7 @@ export default function ModelFeed() {
                 </div>
             </main>
 
-            <SuggestedPanel
+            <SuggestedPanelMemo
                 currentModel={model}
                 availableModels={availableModels}
                 setActiveFilter={setActiveFilter}

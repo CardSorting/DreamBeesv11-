@@ -82,6 +82,7 @@ export function ModelProvider({ children }) {
     }, [selectedModel]);
 
     const [showcaseCache, setShowcaseCache] = useState({});
+    const [globalShowcaseCache, setGlobalShowcaseCache] = useState(null);
 
     // Fetch and cache showcase images for a model
     const getShowcaseImages = async (modelId) => {
@@ -148,6 +149,37 @@ export function ModelProvider({ children }) {
             return images;
         } catch (err) {
             console.error("Error fetching showcase images:", err);
+            return [];
+        }
+    };
+
+    // Fetch aggregated global showcase (All Models)
+    const getGlobalShowcaseImages = async () => {
+        // 1. Return global cache if exists
+        if (globalShowcaseCache) return globalShowcaseCache;
+
+        // 2. We need availableModels to be populated first
+        // If not yet loaded, we might return empty or wait? 
+        // For now assume caller ensures availableModels is meaningful or we return empty.
+        if (availableModels.length === 0) return [];
+
+        try {
+            console.log("[Global Feed] Fetching all model showcases...");
+
+            // Execute all fetches in parallel
+            // getShowcaseImages (above) handles its own caching for individual models
+            const results = await Promise.all(
+                availableModels.map(m => getShowcaseImages(m.id))
+            );
+
+            // Flatten
+            const allImages = results.flat();
+
+            // 3. Set Cache
+            setGlobalShowcaseCache(allImages);
+            return allImages;
+        } catch (err) {
+            console.error("Error fetching global showcase:", err);
             return [];
         }
     };
@@ -268,7 +300,8 @@ export function ModelProvider({ children }) {
         loading,
         error,
         getShowcaseImages, // Exported function
-        showcaseCache,     // Exported state (optional, mainly for debugging)
+        getGlobalShowcaseImages, // EXPORTED - New optimization
+        showcaseCache,     // Exported state
         rateGeneration,    // EXPORTED
         rateShowcaseImage, // EXPORTED
         getUserVideos,     // EXPORTED
