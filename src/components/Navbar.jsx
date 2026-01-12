@@ -39,8 +39,9 @@ export default function Navbar() {
 
     const limitWidth = ['/dressup', '/karaoke', '/generate', '/slideshow'].includes(location.pathname);
     const isModelFeed = /^\/model\/[^/]+\/feed$/.test(location.pathname);
+    const isGlobalFeed = location.pathname === '/';
 
-    if (isModelFeed) return null;
+    if (isModelFeed || isGlobalFeed) return null;
 
     return (
         <div style={{

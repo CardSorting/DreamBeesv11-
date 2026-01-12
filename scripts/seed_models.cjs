@@ -1,6 +1,6 @@
 
 const admin = require('firebase-admin');
-const serviceAccount = require('../serviceAccountKey.json');
+const serviceAccount = require('../functions/dreambees-app-gen-v1-firebase-adminsdk-fbsvc-195fd20c32.json');
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
@@ -9,14 +9,14 @@ admin.initializeApp({
 const db = admin.firestore();
 
 const MODELS = [
-
     {
         id: 'nova-furry-xl',
         name: 'Nova Furry XL',
-        description: 'Optimized for furry art and anthropomorphic characters. Auto-tags quality prompts.',
+        description: 'Optimized for furry art and anthropomorphic characters.',
         type: 'SDXL',
         order: 3,
-        isActive: true
+        isActive: true,
+        tags: ['Furry', 'Art', 'Character']
     },
     {
         id: 'perfect-illustrious',
@@ -24,7 +24,8 @@ const MODELS = [
         description: 'Refined illustration model focusing on detailed textures and lighting.',
         type: 'SDXL',
         order: 4,
-        isActive: true
+        isActive: true,
+        tags: ['Art', 'Illustration', 'Detailed']
     },
     {
         id: 'gray-color',
@@ -32,7 +33,8 @@ const MODELS = [
         description: 'Unique style focusing on grayscale and monochromatic aesthetics.',
         type: 'SDXL',
         order: 5,
-        isActive: true
+        isActive: true,
+        tags: ['Art', 'Monochrome', 'Stylish']
     },
     {
         id: 'scyrax-pastel',
@@ -40,7 +42,8 @@ const MODELS = [
         description: 'Soft, pastel color palettes and dreamy atmospheres.',
         type: 'SDXL',
         order: 6,
-        isActive: true
+        isActive: true,
+        tags: ['Art', 'Pastel', 'Soft']
     },
     {
         id: 'ani-detox',
@@ -48,7 +51,8 @@ const MODELS = [
         description: 'Clean, crisp anime style with high detail.',
         type: 'SDXL',
         order: 7,
-        isActive: true
+        isActive: true,
+        tags: ['Anime', 'Clean', '2D']
     },
     {
         id: 'animij-v7',
@@ -56,7 +60,8 @@ const MODELS = [
         description: 'The latest version of the popular Animij model for anime art.',
         type: 'SDXL',
         order: 8,
-        isActive: true
+        isActive: true,
+        tags: ['Anime', 'Vibrant', '2D']
     },
     {
         id: 'swijtspot-no1',
@@ -64,7 +69,47 @@ const MODELS = [
         description: 'Artistic model with a distinct, painterly touch.',
         type: 'SDXL',
         order: 9,
-        isActive: true
+        isActive: true,
+        tags: ['Art', 'Painting', 'Abstract']
+    },
+    {
+        id: 'zit-model',
+        name: 'Z-Image-Turbo',
+        description: 'Ultra-fast generation model optimized for low latency.',
+        type: 'SDXL',
+        order: 10,
+        isActive: true,
+        tags: ['Realistic', 'Fast', 'Photo']
+    },
+    {
+        id: 'qwen-image-2512',
+        name: 'Qwen Image 2.5 12B',
+        description: 'Advanced Qwen model for high-fidelity image generation.',
+        type: 'SDXL',
+        order: 11,
+        isActive: true,
+        image: '/showcase/qwen-image-2512/cover.png',
+        tags: ['Realistic', 'Photo', 'High Fidelity']
+    },
+    {
+        id: 'wai-illustrious',
+        name: 'Wai Illustrious',
+        description: 'High-quality illustrations with enforced quality tags.',
+        type: 'SDXL',
+        order: 12,
+        isActive: true,
+        image: '/showcase/wai-illustrious/cover.png',
+        tags: ['Art', 'Illustration', 'Anime']
+    },
+    {
+        id: 'lightricks-ltx-2-pro',
+        name: 'LTX 2 Pro',
+        description: 'High-quality video generation model by Lightricks.',
+        type: 'Video',
+        category: 'reels',
+        order: 13,
+        isActive: true,
+        tags: ['Video', 'Realistic', 'Motion']
     }
 ];
 
@@ -81,10 +126,9 @@ async function seedModels() {
             await docRef.set(model);
             console.log(`✓ Created model: ${model.name} (${model.id})`);
         } else {
-            // Optional: Update existing to ensure metadata is fresh?
-            // For now, let's just log it exists.
-            // await docRef.update(model); // Uncomment to force update
-            console.log(`- Model exists: ${model.name} (${model.id})`);
+            // Update existing model with new config (Tags etc)
+            await docRef.set(model, { merge: true });
+            console.log(`↻ Updated model: ${model.name} (${model.id})`);
         }
     }
 

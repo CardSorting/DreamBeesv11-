@@ -135,6 +135,7 @@ export function ModelProvider({ children }) {
                     const optimizedUrl = getOptimizedImageUrl(data.imageUrl || data.url);
                     return {
                         id: doc.id,
+                        modelId: modelId, // Explicitly inject modelId to ensure linkage
                         ...data,
                         imageUrl: optimizedUrl,
                         url: optimizedUrl // Ensure both fields are set

@@ -41,7 +41,8 @@ function Layout() {
       <Navbar />
       <main className="app-main">
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<ModelFeed />} />
+          <Route path="/landing" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/profile" element={
             <PrivateRoute>

@@ -7,6 +7,20 @@ import { getOptimizedImageUrl, preloadImage } from '../utils';
 import FeedPost from '../components/FeedPost';
 import ShowcaseModal from '../components/ShowcaseModal';
 
+const FeedPostSkeleton = () => (
+    <div className="post-skeleton animate-pulse">
+        <div className="sk-header">
+            <div className="sk-avatar" />
+            <div className="sk-name" />
+        </div>
+        <div className="sk-image" />
+        <div className="sk-footer">
+            <div className="sk-line" />
+            <div className="sk-line" style={{ width: '40%' }} />
+        </div>
+    </div>
+);
+
 const Sidebar = ({ activeId }) => {
     const navLinks = [
         { path: '/', label: 'Home', icon: Home },
@@ -42,34 +56,223 @@ const Sidebar = ({ activeId }) => {
     );
 };
 
-const SuggestedPanel = ({ currentModel, availableModels }) => {
-    const suggestions = useMemo(() => {
-        return availableModels
-            .filter(m => m.id !== currentModel?.id)
-            .sort(() => 0.5 - Math.random())
-            .slice(0, 5);
+const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
+    const { suggestions, featuredModel, popularTags } = useMemo(() => {
+        const filtered = availableModels.filter(m => m.id !== currentModel?.id);
+        const shuffled = [...filtered].sort(() => 0.5 - Math.random());
+
+        // Extract tags
+        const tags = new Set();
+        availableModels.forEach(m => {
+            if (m.tags) m.tags.forEach(t => tags.add(t));
+        });
+
+        return {
+            featuredModel: shuffled[0],
+            suggestions: shuffled.slice(1, 4),
+            popularTags: Array.from(tags).slice(0, 10)
+        };
     }, [currentModel, availableModels]);
+
+    if (!availableModels || availableModels.length === 0) return null;
 
     return (
         <aside className="feed-sidebar-right">
-            <h3 className="section-title">SUGGESTED FOR YOU</h3>
-            <div className="suggestions-list">
-                {suggestions.map(m => (
-                    <Link key={m.id} to={`/model/${m.id}/feed`} className="suggestion-item">
-                        <div className="suggestion-avatar">
-                            <img src={m.image} alt={m.name} />
-                        </div>
-                        <div className="suggestion-info">
-                            <div className="suggestion-name">
-                                {m.name}
-                                <BadgeCheck size={12} className="text-blue-500 fill-blue-500" />
+            {/* Featured Spotlight */}
+            {featuredModel && (
+                <div className="sidebar-section">
+                    <h3 className="section-title">
+                        <Sparkles size={14} className="inline-icon" /> SPOTLIGHT
+                    </h3>
+                    <div className="spotlight-card">
+                        <div className="spotlight-header">
+                            <img src={featuredModel.image} alt={featuredModel.name} className="spotlight-bg" />
+                            <div className="spotlight-overlay" />
+                            <div className="spotlight-content">
+                                <span className="spotlight-badge">Featured</span>
+                                <h4 className="spotlight-name">{featuredModel.name}</h4>
+                                <p className="spotlight-desc line-clamp-2">{featuredModel.description}</p>
+                                <Link to={`/model/${featuredModel.id}/feed`} className="spotlight-btn">
+                                    View Model
+                                </Link>
                             </div>
-                            <div className="suggestion-meta">Recommended model</div>
                         </div>
-                        <button className="suggestion-action">Link</button>
-                    </Link>
-                ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Suggested List */}
+            <div className="sidebar-section">
+                <h3 className="section-title">SUGGESTED FOR YOU</h3>
+                <div className="suggestions-list">
+                    {suggestions.map(m => (
+                        <div key={m.id} className="suggestion-item">
+                            <Link to={`/model/${m.id}/feed`} className="suggestion-link-content">
+                                <div className="suggestion-avatar">
+                                    <img src={m.image} alt={m.name} />
+                                </div>
+                                <div className="suggestion-info">
+                                    <div className="suggestion-name">
+                                        {m.name}
+                                        <BadgeCheck size={12} className="text-blue-500 fill-blue-500" />
+                                    </div>
+                                    <div className="suggestion-meta">Recommended</div>
+                                </div>
+                            </Link>
+                            <button className="suggestion-follow-btn">Follow</button>
+                        </div>
+                    ))}
+                </div>
             </div>
+
+            {/* Popular Tags */}
+            <div className="sidebar-section">
+                <h3 className="section-title">POPULAR TAGS</h3>
+                <div className="sidebar-tags">
+                    {popularTags.map(tag => (
+                        <button
+                            key={tag}
+                            className="sidebar-tag"
+                            onClick={() => {
+                                if (typeof setActiveFilter === 'function') {
+                                    setActiveFilter(tag);
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }
+                            }}
+                        >
+                            #{tag}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <style>{`
+                .sidebar-section {
+                    margin-bottom: 24px;
+                }
+                
+                .inline-icon {
+                    display: inline-block;
+                    margin-right: 6px;
+                    margin-bottom: 2px;
+                    color: #fbbf24;
+                }
+
+                .spotlight-card {
+                    position: relative;
+                    border-radius: 12px;
+                    overflow: hidden;
+                    aspect-ratio: 16/10;
+                    border: 1px solid rgba(255,255,255,0.1);
+                    margin-bottom: 8px;
+                }
+                .spotlight-bg {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    transition: transform 0.5s ease;
+                }
+                .spotlight-card:hover .spotlight-bg {
+                    transform: scale(1.05);
+                }
+                .spotlight-overlay {
+                    position: absolute;
+                    inset: 0;
+                    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 60%, transparent 100%);
+                }
+                .spotlight-content {
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    padding: 16px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 6px;
+                }
+                .spotlight-badge {
+                    background: #f59e0b;
+                    color: #000;
+                    font-size: 0.65rem;
+                    font-weight: 800;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                }
+                .spotlight-name {
+                    font-size: 1.1rem;
+                    font-weight: 700;
+                    margin: 0;
+                    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+                }
+                .spotlight-desc {
+                    font-size: 0.8rem;
+                    color: rgba(255,255,255,0.8);
+                    margin: 0 0 8px 0;
+                    overflow: hidden;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    -webkit-box-orient: vertical;
+                }
+                .spotlight-btn {
+                    background: #fff;
+                    color: #000;
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    padding: 6px 14px;
+                    border-radius: 99px;
+                    text-decoration: none;
+                }
+
+                .suggestion-follow-btn {
+                    background: rgba(255,255,255,0.1);
+                    color: #fff;
+                    border: none;
+                    border-radius: 99px;
+                    padding: 6px 12px;
+                    font-size: 0.75rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .suggestion-follow-btn:hover {
+                    background: #fff;
+                    color: #000;
+                }
+
+                .sidebar-tags {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                }
+                .sidebar-tag {
+                    background: rgba(255,255,255,0.05);
+                    border: 1px solid rgba(255,255,255,0.1);
+                    color: rgba(255,255,255,0.6);
+                    padding: 5px 10px;
+                    border-radius: 6px;
+                    font-size: 0.75rem;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .sidebar-tag:hover {
+                    background: rgba(255,255,255,0.15);
+                    color: #fff;
+                    border-color: rgba(255,255,255,0.2);
+                }
+
+                .suggestion-link-content {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    text-decoration: none;
+                    color: inherit;
+                    flex: 1;
+                    min-width: 0;
+                }
+            `}</style>
 
             <footer className="panel-footer">
                 <p>© 2026 DreamBees AI</p>
@@ -88,11 +291,13 @@ export default function ModelFeed() {
     const [showcaseImages, setShowcaseImages] = useState(() => {
         return (id && showcaseCache[id]) ? showcaseCache[id] : [];
     });
+    const [isLoading, setIsLoading] = useState(!((id && showcaseCache[id]) || (showcaseImages && showcaseImages.length > 0)));
     const [displayPage, setDisplayPage] = useState(2);
     const [activeShowcaseImage, setActiveShowcaseImage] = useState(null);
     const imagesPerPage = 12;
 
     const model = useMemo(() => {
+        if (!id) return { name: "Global", image: "/logo.png" }; // Virtual model for Global Feed
         if (availableModels.length > 0) {
             return availableModels.find(m => m.id === id) || null;
         }
@@ -100,37 +305,108 @@ export default function ModelFeed() {
     }, [id, availableModels]);
 
     useEffect(() => {
-        if (!model) return;
-
         const loadShowcase = async () => {
             try {
-                const images = await getShowcaseImages(model.id);
+                let images = [];
+                if (id) {
+                    // Single Model Mode
+                    if (!model || model.name === "Global") return; // Wait for model resolution
+                    images = await getShowcaseImages(model.id);
+                } else {
+                    // Global Feed Mode
+                    if (availableModels.length === 0) return;
+
+                    // Fetch all showcases in parallel
+                    const allShowcases = await Promise.all(
+                        availableModels.map(m => getShowcaseImages(m.id))
+                    );
+
+                    // Flatten and deduplicate by ID if necessary (though IDs should be unique usually)
+                    images = allShowcases.flat();
+                }
+
                 if (images && images.length > 0) {
-                    setShowcaseImages(images);
-                    images.slice(0, 4).forEach(img => {
+                    // Randomize slightly or just sort? 
+                    // Requirement: "curated selection of all of the top feed posts" -> Sort by rating
+                    // But also want some variety. Let's just sort by rating for now as requested.
+                    const sortedImages = images.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+
+                    setShowcaseImages(sortedImages);
+
+                    // Preload top 4
+                    sortedImages.slice(0, 4).forEach(img => {
                         const preloadUrl = getOptimizedImageUrl(img.thumbnailUrl || img.url || img.imageUrl);
                         preloadImage(preloadUrl, 'high');
                     });
                 }
             } catch (error) {
                 console.error("Error fetching showcase:", error);
+            } finally {
+                setIsLoading(false);
             }
         };
 
+        setIsLoading(true);
         loadShowcase();
-    }, [model, getShowcaseImages]);
+    }, [id, model, availableModels, getShowcaseImages]);
+
+    const [activeFilter, setActiveFilter] = useState('All');
+    const [sortMode, setSortMode] = useState('random'); // 'random' | 'top'
+
+    const allTags = useMemo(() => {
+        const tags = new Set();
+        // Only collect tags from models that actually have images in the current feed
+        const activeModelIds = new Set(showcaseImages.map(img => img.modelId));
+
+        availableModels.forEach(m => {
+            if (activeModelIds.has(m.id) && Array.isArray(m.tags)) {
+                m.tags.forEach(t => tags.add(t));
+            }
+        });
+        return Array.from(tags).sort();
+    }, [availableModels, showcaseImages]);
 
     const imagesToRender = useMemo(() => {
         const seenUrls = new Set();
-        return (showcaseImages || [])
+        let filtered = (showcaseImages || [])
             .filter(img => {
                 if (!img || !img.url || typeof img.url !== 'string' || img.url.length <= 5) return false;
                 if (seenUrls.has(img.url)) return false;
                 seenUrls.add(img.url);
                 return true;
             })
-            .sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    }, [showcaseImages]);
+            .map(img => {
+                // Attach model if missing (essential for filtering by tag)
+                if (!id && img.modelId) {
+                    const sourceModel = availableModels.find(m => m.id === img.modelId);
+                    if (sourceModel) {
+                        return { ...img, _model: sourceModel };
+                    }
+                }
+                return img;
+            });
+
+        // Filter Logic
+        if (!id && activeFilter !== 'All') {
+            filtered = filtered.filter(img => {
+                const modelTags = img._model?.tags || [];
+                return modelTags.includes(activeFilter);
+            });
+        }
+
+        // Sort Logic
+        if (sortMode === 'top') {
+            return filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        } else {
+            // Randomish / Shuffle
+            // Use a deterministic shuffle based on ID or just random if strict stability isn't required?
+            // "Curated selection" implies quality, but users want variety.
+            // Let's do a seeded shuffle or just simple random for now (re-shuffles on mount/filter change).
+            // To prevent jitter on re-render, we should ideally memoize the shuffled order, but `useMemo` handles that
+            // unless dependencies change. dependency is `sortMode` and `activeFilter`.
+            return filtered.sort(() => 0.5 - Math.random());
+        }
+    }, [showcaseImages, id, availableModels, activeFilter, sortMode]);
 
     const visibleImages = useMemo(() => {
         return imagesToRender.slice(0, displayPage * imagesPerPage);
@@ -181,10 +457,49 @@ export default function ModelFeed() {
                         <ArrowLeft size={20} />
                     </button>
                     <div className="header-title">
-                        <span>{model.name} Feed</span>
+                        <span>{id ? `${model?.name} Feed` : 'Explore Feed'}</span>
                         <BadgeCheck size={16} className="text-blue-500 fill-blue-500" />
                     </div>
                 </header>
+
+                {/* Filter & Sort Bar (Global Only) */}
+                {!id && (
+                    <div className="feed-filter-bar">
+                        <div className="filter-scroll">
+                            <button
+                                className={`filter-chip ${activeFilter === 'All' ? 'active' : ''}`}
+                                onClick={() => setActiveFilter('All')}
+                            >
+                                All
+                            </button>
+                            {allTags.map(tag => (
+                                <button
+                                    key={tag}
+                                    className={`filter-chip ${activeFilter === tag ? 'active' : ''}`}
+                                    onClick={() => setActiveFilter(tag)}
+                                >
+                                    {tag}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="sort-toggle">
+                            <button
+                                className={`sort-btn ${sortMode === 'random' ? 'active' : ''}`}
+                                onClick={() => setSortMode('random')}
+                                title="Shuffle"
+                            >
+                                <Sparkles size={14} />
+                            </button>
+                            <button
+                                className={`sort-btn ${sortMode === 'top' ? 'active' : ''}`}
+                                onClick={() => setSortMode('top')}
+                                title="Top Rated"
+                            >
+                                <BadgeCheck size={14} />
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 <div className="feed-posts-container">
                     {visibleImages.map((imgItem, index) => (
@@ -192,7 +507,7 @@ export default function ModelFeed() {
                             key={imgItem.id || index}
                             imgItem={imgItem}
                             index={index}
-                            model={model}
+                            model={model.name === "Global" ? (imgItem._model || availableModels.find(m => m.id === imgItem.modelId) || model) : model}
                             getOptimizedImageUrl={getOptimizedImageUrl}
                             rateShowcaseImage={rateShowcaseImage}
                             navigate={navigate}
@@ -200,15 +515,36 @@ export default function ModelFeed() {
                         />
                     ))}
 
-                    {visibleImages.length < imagesToRender.length && (
-                        <div className="feed-loader">
-                            <Loader2 size={16} className="animate-spin" /> LOADING CONTENT
+                    {isLoading && (
+                        <div className="feed-loader-skeletons">
+                            {[...Array(3)].map((_, i) => <FeedPostSkeleton key={i} />)}
+                        </div>
+                    )}
+
+                    {!isLoading && visibleImages.length === 0 && (
+                        <div className="empty-feed-state">
+                            <Sparkles size={48} />
+                            <h3>No posts found</h3>
+                            <p>Try adjusting your filters or check back later.</p>
+                            <button onClick={() => setActiveFilter('All')} className="reset-filter-btn">
+                                Clear Filters
+                            </button>
+                        </div>
+                    )}
+
+                    {!isLoading && visibleImages.length > 0 && visibleImages.length < imagesToRender.length && (
+                        <div className="feed-loader-skeletons">
+                            {[...Array(1)].map((_, i) => <FeedPostSkeleton key={i} />)}
                         </div>
                     )}
                 </div>
             </main>
 
-            <SuggestedPanel currentModel={model} availableModels={availableModels} />
+            <SuggestedPanel
+                currentModel={model}
+                availableModels={availableModels}
+                setActiveFilter={setActiveFilter}
+            />
 
             {activeShowcaseImage && (
                 <ShowcaseModal
@@ -219,6 +555,42 @@ export default function ModelFeed() {
             )}
 
             <style>{`
+                .empty-feed-state {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 80px 20px;
+                    text-align: center;
+                    color: rgba(255,255,255,0.4);
+                    gap: 16px;
+                }
+                .empty-feed-state h3 {
+                    color: #fff;
+                    font-size: 1.2rem;
+                    font-weight: 700;
+                    margin: 0;
+                }
+                .empty-feed-state p {
+                    font-size: 0.9rem;
+                    margin: 0;
+                }
+                .reset-filter-btn {
+                    margin-top: 12px;
+                    background: #fff;
+                    color: #000;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 99px;
+                    font-size: 0.9rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: transform 0.2s;
+                }
+                .reset-filter-btn:hover {
+                    transform: scale(1.05);
+                }
+
                 .feed-layout-wrapper {
                     display: flex;
                     justify-content: center;
@@ -227,59 +599,133 @@ export default function ModelFeed() {
                     color: #fff;
                 }
 
+                .feed-filter-bar {
+                    position: sticky;
+                    top: 0;
+                    z-index: 90;
+                    background: rgba(0,0,0,0.85);
+                    backdrop-filter: blur(12px);
+                    border-bottom: 1px solid rgba(255,255,255,0.1);
+                    padding: 12px 16px;
+                    display: flex;
+                    gap: 12px;
+                    align-items: center;
+                }
+                
+                @media (max-width: 600px) {
+                    .feed-filter-bar { top: 60px; /* Below mobile header */ }
+                }
+
+                .filter-scroll {
+                    flex: 1;
+                    display: flex;
+                    gap: 8px;
+                    overflow-x: auto;
+                    scrollbar-width: none;
+                }
+                .filter-scroll::-webkit-scrollbar { display: none; }
+
+                .filter-chip {
+                    background: rgba(255,255,255,0.1);
+                    border: none;
+                    color: rgba(255,255,255,0.7);
+                    padding: 6px 14px;
+                    border-radius: 20px;
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                    white-space: nowrap;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .filter-chip:hover { background: rgba(255,255,255,0.2); color: #fff; }
+                .filter-chip.active { background: #fff; color: #000; }
+
+                .sort-toggle {
+                    display: flex;
+                    gap: 4px;
+                    background: rgba(255,255,255,0.1);
+                    padding: 4px;
+                    border-radius: 8px;
+                }
+                .sort-btn {
+                    background: none;
+                    border: none;
+                    color: rgba(255,255,255,0.5);
+                    padding: 6px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    display: flex;
+                }
+                .sort-btn.active { background: rgba(255,255,255,0.1); color: #fff; }
+
                 /* Sidebar Left */
                 .feed-sidebar-left {
                     width: 245px;
                     height: 100vh;
                     position: sticky;
                     top: 0;
-                    padding: 20px 12px 20px 24px;
-                    border-right: 1px solid rgba(255,255,255,0.1);
+                    padding: 32px 24px 20px 24px;
+                    border-right: 1px solid rgba(255,255,255,0.08);
                     display: flex;
                     flex-direction: column;
-                    gap: 32px;
+                    gap: 36px;
                 }
+
 
                 .sidebar-logo {
                     display: flex;
                     align-items: center;
                     gap: 12px;
-                    padding: 12px;
+                    padding: 0 12px;
                     text-decoration: none;
                     color: #fff;
+                    margin-bottom: 8px;
                 }
 
                 .logo-text {
-                    font-size: 1.5rem;
+                    font-family: 'Outfit', sans-serif; /* Assuming font is available */
+                    font-size: 1.6rem;
                     font-weight: 800;
-                    letter-spacing: -0.05em;
+                    letter-spacing: -0.04em;
+                    background: linear-gradient(135deg, #fff 0%, #ccc 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
                 }
 
                 .sidebar-nav {
                     display: flex;
                     flex-direction: column;
-                    gap: 4px;
+                    gap: 8px;
                 }
 
                 .sidebar-link {
                     display: flex;
                     align-items: center;
                     gap: 16px;
-                    padding: 12px;
-                    border-radius: 8px;
+                    padding: 14px 12px;
+                    border-radius: 12px;
                     text-decoration: none;
-                    color: #fff;
-                    transition: background 0.2s, transform 0.1s;
+                    color: rgba(255,255,255,0.6);
+                    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+                    font-weight: 500;
                 }
 
                 .sidebar-link:hover {
-                    background: rgba(255,255,255,0.05);
-                    transform: scale(1.02);
+                    background: rgba(255,255,255,0.08);
+                    color: #fff;
+                    transform: translateX(4px);
+                }
+                
+                .sidebar-link.active {
+                    color: #fff;
+                    font-weight: 700;
+                }
+                .sidebar-link.active svg {
+                    stroke-width: 3px;
                 }
 
                 .link-label {
-                    font-size: 1rem;
-                    font-weight: 500;
+                    font-size: 1.05rem;
                 }
 
                 /* Main Content */
@@ -310,43 +756,81 @@ export default function ModelFeed() {
                 }
 
                 .feed-posts-container {
-                    padding: 40px 20px;
+                    padding: 40px 0;
                     display: flex;
                     flex-direction: column;
-                    gap: 40px;
+                    gap: 24px; /* Slightly tighter gap */
+                    align-items: center;
                 }
 
-                .feed-loader {
+                /* SKELETON LOADER */
+                .feed-loader-skeletons {
+                    width: 100%;
+                    max-width: 470px; /* Match feed post width roughly */
                     display: flex;
-                    justify-content: center;
+                    flex-direction: column;
+                    gap: 24px;
+                    padding: 20px 0;
+                }
+                
+                .post-skeleton {
+                    background: #111;
+                    border: 1px solid rgba(255,255,255,0.05);
+                    border-radius: 8px;
+                    overflow: hidden;
+                }
+                .sk-header {
+                    height: 56px;
+                    display: flex;
                     align-items: center;
-                    gap: 12px;
-                    padding: 40px 0;
-                    color: rgba(255,255,255,0.3);
-                    font-size: 0.8rem;
-                    letter-spacing: 0.1em;
+                    padding: 0 12px;
+                    gap: 10px;
+                }
+                .sk-avatar { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.08); }
+                .sk-name { width: 100px; height: 14px; border-radius: 4px; background: rgba(255,255,255,0.08); }
+                .sk-image {
+                    width: 100%;
+                    aspect-ratio: 4/5;
+                    background: rgba(255,255,255,0.05);
+                }
+                .sk-footer { height: 60px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+                .sk-line { height: 12px; border-radius: 4px; background: rgba(255,255,255,0.08); width: 60%; }
+                
+                .animate-pulse {
+                    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+                }
+                @keyframes pulse {
+                    0%, 100% { opacity: 0.5; }
+                    50% { opacity: 1; }
                 }
 
                 /* Sidebar Right */
                 .feed-sidebar-right {
-                    width: 320px;
-                    padding: 40px 24px;
+                    width: 360px; /* Slightly wider */
+                    padding: 42px 40px; /* More padding */
                     display: flex;
                     flex-direction: column;
-                    gap: 20px;
+                    gap: 24px;
+                    position: sticky;
+                    top: 0;
+                    height: 100vh;
+                    overflow-y: auto;
+                    scrollbar-width: none;
                 }
+                .feed-sidebar-right::-webkit-scrollbar { display: none; }
 
                 .section-title {
                     font-size: 0.85rem;
                     font-weight: 700;
                     color: rgba(255,255,255,0.5);
                     margin-bottom: 8px;
+                    letter-spacing: 0.05em;
                 }
 
                 .suggestions-list {
                     display: flex;
                     flex-direction: column;
-                    gap: 16px;
+                    gap: 12px;
                 }
 
                 .suggestion-item {
@@ -355,6 +839,14 @@ export default function ModelFeed() {
                     gap: 12px;
                     text-decoration: none;
                     color: #fff;
+                    padding: 4px 0;
+                    margin-left: -8px; 
+                    padding: 8px;
+                    border-radius: 8px;
+                    transition: background 0.2s;
+                }
+                .suggestion-item:hover {
+                    background: rgba(255,255,255,0.05);
                 }
 
                 .suggestion-avatar {
@@ -363,6 +855,7 @@ export default function ModelFeed() {
                     border-radius: 50%;
                     overflow: hidden;
                     border: 1px solid rgba(255,255,255,0.1);
+                    flex-shrink: 0;
                 }
 
                 .suggestion-avatar img {
@@ -373,6 +866,7 @@ export default function ModelFeed() {
 
                 .suggestion-info {
                     flex: 1;
+                    min-width: 0; /* Text truncation handling */
                 }
 
                 .suggestion-name {
@@ -380,32 +874,51 @@ export default function ModelFeed() {
                     align-items: center;
                     gap: 4px;
                     font-size: 0.9rem;
-                    font-weight: 700;
+                    font-weight: 600;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
                 }
 
                 .suggestion-meta {
                     font-size: 0.75rem;
                     color: rgba(255,255,255,0.4);
+                    margin-top: 2px;
                 }
 
                 .suggestion-action {
                     font-size: 0.75rem;
-                    font-weight: 700;
+                    font-weight: 600;
                     color: #0095f6;
                     background: none;
                     border: none;
                     cursor: pointer;
+                    white-space: nowrap;
+                }
+                .suggestion-action:hover {
+                    color: #fff;
                 }
 
                 .panel-footer {
-                    margin-top: 40px;
+                    margin-top: 24px;
                     color: rgba(255,255,255,0.2);
-                    font-size: 0.7rem;
+                    font-size: 0.75rem;
+                    border-top: 1px solid rgba(255,255,255,0.1);
+                    padding-top: 24px;
                 }
 
                 .footer-links {
                     margin-top: 12px;
-                    line-height: 1.5;
+                    line-height: 1.6;
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 4px 12px;
+                }
+                .footer-links span {
+                    cursor: pointer;
+                }
+                .footer-links span:hover {
+                    text-decoration: underline;
                 }
 
                 /* Responsive */
@@ -420,7 +933,7 @@ export default function ModelFeed() {
                         align-items: center;
                     }
                     .logo-text, .link-label { display: none; }
-                    .sidebar-logo { padding: 8px; }
+                    .sidebar-logo { padding: 8px; justify-content: center; margin-bottom: 24px; }
                 }
 
                 @media (max-width: 600px) {
