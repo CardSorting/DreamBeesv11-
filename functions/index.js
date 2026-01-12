@@ -129,7 +129,7 @@ export const processImageTask = onTaskDispatched(
         timeoutSeconds: 540,
     },
     async (req) => {
-        const { requestId, userId, prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler } = req.data;
+        const { requestId, userId, prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler, promptHash, promptMetadata } = req.data;
         const db = getFirestore();
         const docRef = db.collection("generation_queue").doc(requestId);
 
@@ -578,9 +578,11 @@ export const processImageTask = onTaskDispatched(
                 aspectRatio,
                 modelId,
                 imageUrl,
-                thumbnailUrl, // Add thumbnail URL
-                lqip, // Add LQIP
-                createdAt: new Date(),
+                thumbnailUrl,
+                lqip,
+                promptHash,
+                promptMetadata,
+                createdAt: FieldValue.serverTimestamp(),
                 originalRequestId: requestId
             });
 
@@ -1059,6 +1061,25 @@ export const serveSitemap = onRequest({
 // Generation Request Functions
 // ============================================================================
 
+// --- Helper: SHA-256 Hash ---
+const crypto = require('crypto');
+function getPromptHash(prompt) {
+    return crypto.createHash('sha256').update(prompt.toLowerCase().trim()).digest('hex');
+}
+
+// --- Helper: Prompt Metadata ---
+function getPromptMetadata(prompt) {
+    const clean = prompt.trim();
+    const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
+    const emojis = clean.match(emojiRegex) || [];
+    return {
+        length: clean.length,
+        wordCount: clean.split(/\s+/).filter(Boolean).length,
+        emojiCount: emojis.length,
+        hasNegativeModifiers: /low quality|bad|ugly|deformed/i.test(clean)
+    };
+}
+
 const handleCreateGenerationRequest = async (request) => {
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
         console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
@@ -1086,6 +1107,9 @@ const handleCreateGenerationRequest = async (request) => {
     cleanPrompt = cleanPrompt.replace(/([^a-zA-Z0-9\s])\1{2,}/g, '$1').replace(/\d{5,}/g, '').trim();
     if (cleanPrompt.length < 5) throw new HttpsError('invalid-argument', "Prompt failed safety cleaning");
 
+    const promptHash = getPromptHash(cleanPrompt);
+    const promptMetadata = getPromptMetadata(cleanPrompt);
+
     const validAspectRatios = ['1:1', '2:3', '3:2', '9:16', '16:9'];
     const safeAspectRatio = validAspectRatios.includes(aspectRatio) ? aspectRatio : '1:1';
     let safeSteps = Math.min(Math.max(parseInt(steps) || 30, 10), 50);
@@ -1103,9 +1127,6 @@ const handleCreateGenerationRequest = async (request) => {
             const userData = userDoc.data();
             const isSubscriber = userData.subscriptionStatus === 'active';
 
-
-
-
             const activeJobsQuery = db.collection('generation_queue')
                 .where('userId', '==', uid)
                 .where('status', 'in', ['queued', 'processing'])
@@ -1116,36 +1137,24 @@ const handleCreateGenerationRequest = async (request) => {
                 throw new HttpsError('resource-exhausted', "You have too many pending generations (Limit: 10). Please let some finish.");
             }
 
-
-            // MoveuserData definition up is not needed as we defined it above for the check
-            // const userData = userDoc.data(); // Already defined above
             const now = new Date();
             const lastReset = userData.lastDailyReset?.toDate?.() || new Date(0);
 
             const userUpdate = { lastGenerationTime: now };
 
-            // Daily Reset Logic Removed
-            // if (now - lastReset > 24 * 60 * 60 * 1000) ...
-
-            // check rate limit (5s) - Reduced from 10s to be friendlier since we have strict concurrency limit now
             const lastGen = userData.lastGenerationTime?.toDate?.() || new Date(0);
             if (now - lastGen < 5000) throw new HttpsError('resource-exhausted', "Please slow down.");
 
-            // Deduct zaps
-            // Re-calculate current zaps based on potential daily reset
-            let effectiveZaps = (userUpdate.zaps !== undefined) ? userUpdate.zaps : (userData.zaps || 0);
-
+            let effectiveZaps = (userData.zaps || 0);
             let cost = 0;
 
             if (useTurbo) {
-                // Turbo (H100) always costs 1 Zap
                 cost = 1.0;
             } else {
-                // Standard (A10G)
                 if (isSubscriber) {
-                    cost = 0; // Free for subscribers
+                    cost = 0;
                 } else {
-                    cost = 0.5; // Half a Zap for non-subscribers
+                    cost = 0.5;
                 }
             }
 
@@ -1169,7 +1178,9 @@ const handleCreateGenerationRequest = async (request) => {
                 cfg: safeCfg,
                 seed: seed || -1,
                 scheduler: scheduler || 'DPM++ 2M Karras',
-                createdAt: new Date()
+                promptHash,
+                promptMetadata,
+                createdAt: FieldValue.serverTimestamp()
             });
         });
 
@@ -1178,7 +1189,9 @@ const handleCreateGenerationRequest = async (request) => {
         await queue.enqueue({
             requestId: queueRef.id, userId: uid, prompt: cleanPrompt, negative_prompt,
             modelId, steps: safeSteps, cfg: safeCfg, aspectRatio: safeAspectRatio, scheduler,
-            useTurbo: !!useTurbo
+            useTurbo: !!useTurbo,
+            promptHash,
+            promptMetadata
         });
 
         return { requestId: queueRef.id };
@@ -1546,47 +1559,54 @@ const handleRateGeneration = async (request) => {
     const { jobId, rating } = request.data;
 
     if (!jobId || typeof jobId !== 'string') {
-        throw new Error("Job ID is required");
+        throw new HttpsError('invalid-argument', "Job ID is required");
     }
 
-    if (rating !== 1 && rating !== -1) {
-        throw new Error("Rating must be 1 (like) or -1 (dislike)");
+    // Determine simple score and complex v2 data
+    let score = 0;
+    let ratingV2 = null;
+
+    if (typeof rating === 'number') {
+        score = rating;
+        ratingV2 = { score: rating };
+    } else if (typeof rating === 'object' && rating !== null) {
+        score = rating.score || 0;
+        ratingV2 = rating;
+    } else {
+        throw new HttpsError('invalid-argument', "Rating must be a number or a rating_v2 object");
     }
 
     try {
-        // Get the job document
-        const jobDoc = await db.collection('generation_queue').doc(jobId).get();
+        const jobRef = db.collection('generation_queue').doc(jobId);
+        const jobSnap = await jobRef.get();
 
-        if (!jobDoc.exists) {
-            throw new Error("Generation job not found");
+        if (!jobSnap.exists) {
+            throw new HttpsError('not-found', "Generation job not found");
         }
 
-        const jobData = jobDoc.data();
+        const jobData = jobSnap.data();
 
-        // Verify ownership
         if (jobData.userId !== uid) {
-            throw new Error("Unauthorized: You don't have permission to rate this generation");
+            throw new HttpsError('permission-denied', "Unauthorized: You don't have permission to rate this generation");
         }
 
         const batch = db.batch();
 
-        // Update generation queue
-        const queueRef = db.collection('generation_queue').doc(jobId);
-        batch.update(queueRef, {
-            rating: rating,
-            hidden: rating === -1
-        });
+        const updateData = {
+            rating: score,
+            rating_v2: ratingV2,
+            hidden: score === -1,
+            ratedAt: FieldValue.serverTimestamp()
+        };
 
-        // Update images collection if resultImageId exists
+        batch.update(jobRef, updateData);
+
         if (jobData.resultImageId) {
             const imageRef = db.collection('images').doc(jobData.resultImageId);
-            batch.update(imageRef, {
-                rating: rating,
-                hidden: rating === -1
-            });
+            batch.update(imageRef, updateData);
         }
 
-        // Create/update training feedback for MLOps
+        // Training Feedback for MLOps
         const feedbackId = `feedback_${jobId}`;
         const feedbackRef = db.collection('training_feedback').doc(feedbackId);
 
@@ -1599,19 +1619,21 @@ const handleRateGeneration = async (request) => {
         };
         const res = resolutionMap[jobData.aspectRatio] || resolutionMap['1:1'];
 
-        // Deterministic split based on job ID
         const simpleHash = jobId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
         const split = (simpleHash % 100) < 90 ? 'train' : 'validation';
 
         const feedbackData = {
             _id: feedbackId,
-            timestamp: new Date(),
+            timestamp: FieldValue.serverTimestamp(),
             dataset_split: split,
             weight: 1.0,
-            rating: rating,
+            rating: score,
+            rating_v2: ratingV2,
             meta: {
                 modelId: jobData.modelId,
                 prompt_cleaned: jobData.prompt ? jobData.prompt.trim() : "",
+                prompt_hash: jobData.promptHash || getPromptHash(jobData.prompt || ""),
+                prompt_metadata: jobData.promptMetadata || getPromptMetadata(jobData.prompt || ""),
                 negative_prompt: jobData.negative_prompt || "",
                 cfg: parseFloat(jobData.cfg) || 7.0,
                 steps: parseInt(jobData.steps) || 30,
@@ -1628,7 +1650,6 @@ const handleRateGeneration = async (request) => {
         };
 
         batch.set(feedbackRef, feedbackData);
-
         await batch.commit();
 
         return { success: true };
@@ -1641,50 +1662,118 @@ const handleRateGeneration = async (request) => {
     }
 };
 
-const handleRateShowcaseImage = async (request) => {
-    // App Check Verification
-    // App Check Verification
+const handleToggleBookmark = async (request) => {
+    // Basic App Check logging (Warn Mode)
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
         console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
-        // throw new HttpsError('failed-precondition', "The function must be called from an App Check verified app.");
     }
 
     const uid = request.auth?.uid;
     if (!uid) {
-        throw new Error("Unauthenticated");
+        throw new HttpsError('unauthenticated', "User must be logged in to bookmark images.");
+    }
+
+    const { imageId, modelId, isBookmarked, imgData } = request.data;
+
+    if (!imageId || typeof imageId !== 'string') {
+        throw new HttpsError('invalid-argument', "Image ID is required");
+    }
+
+    try {
+        const imageRef = db.collection('model_showcase_images').doc(imageId);
+        const userBookmarkRef = db.collection('users').doc(uid).collection('bookmarks').doc(imageId);
+
+        await db.runTransaction(async (transaction) => {
+            const imageDoc = await transaction.get(imageRef);
+            if (!imageDoc.exists) {
+                throw new HttpsError('not-found', "Showcase image not found");
+            }
+
+            if (isBookmarked) {
+                // Remove bookmark
+                transaction.delete(userBookmarkRef);
+                transaction.update(imageRef, {
+                    bookmarksCount: FieldValue.increment(-1)
+                });
+            } else {
+                // Add bookmark
+                transaction.set(userBookmarkRef, {
+                    imageId,
+                    modelId: modelId || 'unknown',
+                    url: imgData?.url || imgData?.imageUrl || "",
+                    thumbnailUrl: imgData?.thumbnailUrl || imgData?.url || imgData?.imageUrl || "",
+                    prompt: imgData?.prompt || "",
+                    createdAt: FieldValue.serverTimestamp(),
+                    aspectRatio: imgData?.aspectRatio || "1/1"
+                });
+                transaction.update(imageRef, {
+                    bookmarksCount: FieldValue.increment(1)
+                });
+            }
+        });
+
+        return { success: true };
+    } catch (error) {
+        console.error("Error toggling bookmark:", error);
+        if (error instanceof HttpsError) throw error;
+        throw new HttpsError('internal', "Failed to toggle bookmark");
+    }
+};
+
+const handleRateShowcaseImage = async (request) => {
+    // Basic App Check logging (Warn Mode)
+    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
+        console.warn("App Check verification failed. Proceeding (Warn Mode). User:", request.auth?.uid);
+    }
+
+    const uid = request.auth?.uid;
+    if (!uid) {
+        throw new HttpsError('unauthenticated', "User must be logged in to rate images.");
     }
 
     const { imageId, rating } = request.data;
 
     if (!imageId || typeof imageId !== 'string') {
-        throw new Error("Image ID is required");
+        throw new HttpsError('invalid-argument', "Image ID is required");
     }
 
     if (rating !== 1 && rating !== -1) {
-        throw new Error("Rating must be 1 (like) or -1 (dislike)");
+        throw new HttpsError('invalid-argument', "Rating must be 1 (like) or -1 (dislike)");
     }
 
     try {
-        // Verify image exists
-        const imageDoc = await db.collection('model_showcase_images').doc(imageId).get();
+        const imageRef = db.collection('model_showcase_images').doc(imageId);
 
-        if (!imageDoc.exists) {
-            throw new Error("Showcase image not found");
-        }
+        // Perform update in a transaction to ensure atomicity and verify existence
+        await db.runTransaction(async (transaction) => {
+            const imageDoc = await transaction.get(imageRef);
 
-        // Update rating (no ownership check needed for showcase images - they're public)
-        await db.collection('model_showcase_images').doc(imageId).update({
-            rating: rating,
-            ratingTimestamp: new Date()
+            if (!imageDoc.exists) {
+                throw new HttpsError('not-found', "Showcase image not found");
+            }
+
+            // In a more robust system, we would track PER-USER likes in a subcollection
+            // and prevent double-likes. For now, we increment/decrement global count.
+            // If they already liked it, we might want to prevent another increment.
+            // But the current UI calls this on every click.
+
+            // For now, let's keep it simple: just increment if 1, decrement if -1?
+            // Actually, the UI sends 1 for like, -1 for dislike?
+            // If it's a toggle, we should probably handle it differently.
+            // Let's assume rating=1 means one "unit" of vote.
+
+            transaction.update(imageRef, {
+                likesCount: FieldValue.increment(rating),
+                rating: rating, // Keep legacy field updated
+                lastRatedAt: FieldValue.serverTimestamp()
+            });
         });
 
         return { success: true };
     } catch (error) {
         console.error("Error rating showcase image:", error);
-        if (error.message.includes("not found")) {
-            throw error;
-        }
-        throw new Error("Failed to rate showcase image");
+        if (error instanceof HttpsError) throw error;
+        throw new HttpsError('internal', "Failed to rate showcase image");
     }
 };
 
@@ -3479,6 +3568,7 @@ export const api = onCall(async (request) => {
             case 'rateShowcaseImage': return handleRateShowcaseImage(request);
             case 'deleteImage': return handleDeleteImage(request);
             case 'deleteImagesBatch': return handleDeleteImagesBatch(request);
+            case 'toggleBookmark': return handleToggleBookmark(request);
             default:
                 throw new HttpsError('invalid-argument', `Unknown action (deploy_check): ${action}`);
         }

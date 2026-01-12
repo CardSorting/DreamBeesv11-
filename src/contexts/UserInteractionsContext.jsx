@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { db } from '../firebase';
 import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import { useAuth } from './AuthContext';
 import { useModel } from './ModelContext'; // For global rate stats if needed
 import toast from 'react-hot-toast';
@@ -116,35 +117,42 @@ export function UserInteractionsProvider({ children }) {
         const id = imgItem.id;
         const currentlySaved = bookmarkedIds.has(id);
 
+        // Optimistic update
         const newSet = new Set(bookmarkedIds);
         if (currentlySaved) newSet.delete(id);
         else newSet.add(id);
         setBookmarkedIds(newSet);
 
         try {
-            if (currentlySaved) {
-                await deleteDoc(doc(db, `users/${currentUser.uid}/bookmarks/${id}`));
-                toast.success("Removed from bookmarks");
-            } else {
-                await setDoc(doc(db, `users/${currentUser.uid}/bookmarks/${id}`), {
-                    imageId: id,
-                    modelId: model?.id || 'unknown',
+            const api = httpsCallable(functions, 'api');
+            await api({
+                action: 'toggleBookmark',
+                imageId: id,
+                modelId: model?.id || 'unknown',
+                isBookmarked: currentlySaved,
+                imgData: {
                     url: imgItem.url || imgItem.imageUrl,
                     thumbnailUrl: imgItem.thumbnailUrl || imgItem.url,
                     prompt: imgItem.prompt || "",
-                    createdAt: new Date(),
                     aspectRatio: imgItem.aspectRatio || "1/1"
-                });
+                }
+            });
+
+            if (currentlySaved) {
+                toast.success("Removed from bookmarks");
+            } else {
                 toast.success("Saved to bookmarks");
             }
         } catch (error) {
             console.error("Toggle bookmark failed:", error);
+            // Revert on error
             setBookmarkedIds(prev => {
                 const revertSet = new Set(prev);
                 if (currentlySaved) revertSet.add(id);
                 else revertSet.delete(id);
                 return revertSet;
             });
+            toast.error("Action failed. Try again.");
         }
     };
 

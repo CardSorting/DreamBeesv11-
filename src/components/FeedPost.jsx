@@ -363,8 +363,13 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
                     </motion.button>
                 </div>
 
-                <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'white', marginBottom: '12px', fontFamily: 'monospace' }}>
-                    {imgItem.rating || 0} VOTES
+                <div style={{ display: 'flex', gap: '20px', marginBottom: '12px' }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'white', fontFamily: 'monospace' }}>
+                        {imgItem.likesCount || 0} VOTES
+                    </div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}>
+                        {imgItem.bookmarksCount || 0} SAVES
+                    </div>
                 </div>
 
                 <div style={{ fontSize: '0.9rem', lineHeight: '1.7', color: '#ccc', letterSpacing: '0.01em' }}>

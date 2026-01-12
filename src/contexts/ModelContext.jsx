@@ -139,7 +139,10 @@ export function ModelProvider({ children }) {
                         modelId: modelId, // Explicitly inject modelId to ensure linkage
                         ...data,
                         imageUrl: optimizedUrl,
-                        url: optimizedUrl // Ensure both fields are set
+                        url: optimizedUrl, // Ensure both fields are set
+                        likesCount: data.likesCount || 0, // Ensure likesCount is available
+                        bookmarksCount: data.bookmarksCount || 0, // Ensure bookmarksCount is available
+                        rating: data.rating || 0 // Legacy support
                     };
                 });
             }
@@ -281,9 +284,19 @@ export function ModelProvider({ children }) {
                 const currentImages = prev[modelId] || [];
                 return {
                     ...prev,
-                    [modelId]: currentImages.map(img =>
-                        img.id === imageId ? { ...img, rating: rating } : img
-                    )
+                    [modelId]: currentImages.map(img => {
+                        if (img.id === imageId) {
+                            // Calculate new likesCount optimistically
+                            // If rating was 1, we increment. If -1, we decrement.
+                            const currentLikes = img.likesCount || 0;
+                            return {
+                                ...img,
+                                rating: rating,
+                                likesCount: currentLikes + rating
+                            };
+                        }
+                        return img;
+                    })
                 };
             });
             return true;
