@@ -177,7 +177,13 @@ export const processImageTask = onTaskDispatched(
                     width: resolution.width.toString(), height: resolution.height.toString(),
                     scheduler: scheduler || 'DPM++ 2M Karras'
                 });
-                const url = `https://mariecoderinc--sdxl-multi-model-model-web-inference.modal.run?${params.toString()}`;
+
+                // Use the new A10G endpoint for production traffic
+                const SDXL_A10G_ENDPOINT = "https://mariecoderinc--sdxl-multi-model-a10g-model-web-inference.modal.run";
+                // Keep the old endpoint for internal reference/fallback if needed (not currently used)
+                const INTERNAL_SDXL_ENDPOINT = "https://mariecoderinc--sdxl-multi-model-model-web-inference.modal.run";
+
+                const url = `${SDXL_A10G_ENDPOINT}?${params.toString()}`;
 
                 // Defensive check for URL length to prevent 414 errors or silent truncation
                 if (url.length > 2048) {
@@ -1969,7 +1975,7 @@ const handleCreateAnalysisRequest = async (request) => {
     }
 };
 
-export const onAnalysisQueueCreated = onDocumentCreated("analysis_queue/{requestId}", async (event) => {
+export const onAnalysisQueueCreatedV3 = onDocumentCreated("analysis_queue/{requestId}", async (event) => {
     const snapshot = event.data;
     if (!snapshot) return;
 
@@ -2187,7 +2193,7 @@ const handleCreateEnhanceRequest = async (request) => {
 };
 
 // Queue Trigger
-export const onEnhanceQueueCreated = onDocumentCreated("enhance_queue/{requestId}", async (event) => {
+export const onEnhanceQueueCreatedV3 = onDocumentCreated("enhance_queue/{requestId}", async (event) => {
     const snapshot = event.data;
     if (!snapshot) return;
 
@@ -2896,7 +2902,7 @@ LAYOUT STRUCTURE:
    - Use "Call-out" bubbles to explain details.
    - Nekomimi character pointing at the most important part.
 3. SIDEBAR: "Fun Facts" list with cute icons.
-4. FOOTER: "Designed by #MEOWACC" logo.
+4. FOOTER: "Designed by #DreamBeesAI" logo.
 
 Make it look like a high-end educational poster sold in a museum shop.`;
 

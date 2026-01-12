@@ -20,12 +20,12 @@ async function testModalInference() {
 
     const testCases = [
         {
-            name: "SDXL Multi-Model (cat-carrier)",
-            modelId: "cat-carrier",
+            name: "SDXL Multi-Model (Internal)",
+            modelId: "cat-carrier-internal",
             test: async () => {
                 const params = new URLSearchParams({
                     prompt: "A beautiful sunset over mountains, cinematic lighting, 4k quality",
-                    model: "cat-carrier",
+                    model: "wai-illustrious",
                     negative_prompt: "blurry, low quality",
                     steps: "30",
                     cfg: "7",
@@ -33,7 +33,27 @@ async function testModalInference() {
                     height: "768",
                     scheduler: "DPM++ 2M Karras"
                 });
-                const url = `https://cardsorting--sdxl-multi-model-model-web-inference.modal.run?${params.toString()}`;
+                const url = `https://mariecoderinc--sdxl-multi-model-model-web-inference.modal.run?${params.toString()}`;
+                console.log(`   Testing: ${url.substring(0, 100)}...`);
+                const response = await fetchWithTimeout(url, { timeout: 120000 });
+                return response;
+            }
+        },
+        {
+            name: "SDXL Multi-Model A10G",
+            modelId: "cat-carrier-a10g",
+            test: async () => {
+                const params = new URLSearchParams({
+                    prompt: "A beautiful sunset over mountains, cinematic lighting, 4k quality",
+                    model: "wai-illustrious",
+                    negative_prompt: "blurry, low quality",
+                    steps: "30",
+                    cfg: "7",
+                    width: "1024",
+                    height: "1024",
+                    scheduler: "DPM++ 2M Karras"
+                });
+                const url = `https://mariecoderinc--sdxl-multi-model-a10g-model-web-inference.modal.run?${params.toString()}`;
                 console.log(`   Testing: ${url.substring(0, 100)}...`);
                 const response = await fetchWithTimeout(url, { timeout: 120000 });
                 return response;
@@ -48,7 +68,7 @@ async function testModalInference() {
                     steps: 30,
                     aspect_ratio: "16:9"
                 };
-                const url = "https://cardsorting--zit-only-fastapi-app.modal.run/generate";
+                const url = "https://mariecoderinc--zit-h100-stable-fastapi-app.modal.run/generate";
                 console.log(`   Testing: ${url}`);
                 const response = await fetchWithTimeout(url, {
                     method: "POST",
@@ -209,4 +229,3 @@ testModalInference().catch(error => {
     console.error("\nFatal error:", error);
     process.exit(1);
 });
-
