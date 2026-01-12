@@ -68,7 +68,7 @@ async function testModalInference() {
                     negative_prompt: "blurry, low quality",
                     aspect_ratio: "16:9"
                 };
-                const url = "https://cardsorting--qwen-image-2512-qwenimage-api-generate.modal.run";
+                const url = "https://mariecoderinc--qwen-image-2512-qwenimage-api-generate.modal.run";
                 console.log(`   Testing: ${url}`);
                 const response = await fetchWithTimeout(url, {
                     method: "POST",
@@ -86,7 +86,7 @@ async function testModalInference() {
     for (const testCase of testCases) {
         console.log(`\n[${testCase.name}]`);
         console.log("─".repeat(60));
-        
+
         try {
             const startTime = Date.now();
             const response = await testCase.test();
@@ -112,7 +112,7 @@ async function testModalInference() {
                 const jsonData = await response.json();
                 console.log(`   Response type: JSON`);
                 console.log(`   Keys: ${Object.keys(jsonData).join(", ")}`);
-                
+
                 // Check for image data
                 const imageFields = ['image', 'data', 'output', 'result', 'url', 'imageUrl', 'image_url'];
                 for (const field of imageFields) {
@@ -129,7 +129,7 @@ async function testModalInference() {
                         break;
                     }
                 }
-                
+
                 if (!hasImage && Array.isArray(jsonData) && jsonData.length > 0) {
                     const firstItem = jsonData[0];
                     if (typeof firstItem === 'string' && firstItem.startsWith('http')) {
@@ -156,18 +156,18 @@ async function testModalInference() {
 
             if (hasImage) {
                 console.log(`   ✓ SUCCESS: Image generated successfully`);
-                results.push({ 
-                    name: testCase.name, 
-                    success: true, 
+                results.push({
+                    name: testCase.name,
+                    success: true,
                     elapsed: parseFloat(elapsed),
-                    imageSize 
+                    imageSize
                 });
             } else {
                 console.log(`   ⚠ WARNING: Response received but no image detected`);
-                results.push({ 
-                    name: testCase.name, 
-                    success: false, 
-                    error: "No image data found in response" 
+                results.push({
+                    name: testCase.name,
+                    success: false,
+                    error: "No image data found in response"
                 });
             }
 
@@ -181,20 +181,20 @@ async function testModalInference() {
     console.log("\n" + "=".repeat(60));
     console.log("TEST SUMMARY");
     console.log("=".repeat(60));
-    
+
     const passed = results.filter(r => r.success).length;
     const failed = results.filter(r => !r.success).length;
-    
+
     results.forEach(result => {
         const status = result.success ? "✓ PASS" : "✗ FAIL";
-        const details = result.success 
+        const details = result.success
             ? `(${result.elapsed}s, ${result.imageSize ? (result.imageSize / 1024).toFixed(2) + " KB" : "N/A"})`
             : `(${result.error?.substring(0, 50) || "Unknown error"})`;
         console.log(`  ${status} ${result.name} ${details}`);
     });
-    
+
     console.log(`\nTotal: ${passed} passed, ${failed} failed`);
-    
+
     if (failed === 0) {
         console.log("\n✓ All tests passed!");
         process.exit(0);

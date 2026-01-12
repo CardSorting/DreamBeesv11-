@@ -159,13 +159,13 @@ export const processImageTask = onTaskDispatched(
                     prompt, steps,
                     ...((['1:1', '16:9', '9:16', '4:3', '3:4', '21:9', '9:21'].includes(aspectRatio)) ? { aspect_ratio: aspectRatio } : { width: resolution.width, height: resolution.height })
                 };
-                response = await fetchWithTimeout("https://cardsorting--zit-only-fastapi-app.modal.run/generate", {
+                response = await fetchWithTimeout("https://mariecoderinc--zit-h100-stable-fastapi-app.modal.run/generate", {
                     method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(zBody),
                     timeout: 180000
                 });
             } else if (modelId === 'qwen-image-2512') {
-                response = await fetchWithTimeout("https://cardsorting--qwen-image-2512-qwenimage-api-generate.modal.run", {
+                response = await fetchWithTimeout("https://mariecoderinc--qwen-image-2512-qwenimage-api-generate.modal.run", {
                     method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ prompt, negative_prompt, aspect_ratio: aspectRatio }),
                     timeout: 180000

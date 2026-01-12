@@ -1,7 +1,7 @@
 [
   {
     "url": "/showcase/qwen-image-2512/cover.png",
-    "prompt": "A bioluminescent jungle at night where every plant emits a soft blue or purple glow, huge alien flowers, glowing insects, atmospheric fog, 8k, mysterious",
+    "prompt": "Professional cosplay photoshoot of an adult female cosplayer wearing a fantasy game–inspired outfit, thigh-high stockings, fitted costume with elegant details, confident relaxed pose, studio lighting, shallow depth of field, high-resolution DSLR photo",
     "modelId": "qwen-image-2512",
     "creator": {
       "user": "Gemini 3 Pro",
@@ -9,8 +9,8 @@
     }
   },
   {
-    "url": "/showcase/qwen-image-2512/1767755846866_1.png",
-    "prompt": "A steampunk space station built from brass and copper gears, steam pipes, victorian aesthetics in zero gravity, nebula background, intricate details",
+    "url": "/showcase/qwen-image-2512/1768173336351_1.png",
+    "prompt": "High-end cosplay photoshoot, adult woman in ornate fantasy costume, clean makeup, styled wig, confident smile, neutral studio backdrop, softbox lighting, editorial cosplay photography",
     "modelId": "qwen-image-2512",
     "creator": {
       "user": "Gemini 3 Pro",
@@ -18,8 +18,8 @@
     }
   },
   {
-    "url": "/showcase/qwen-image-2512/1767755928005_2.png",
-    "prompt": "A vast desert where the dunes are made of crushed crystal, giant jagged crystal formations rising from the sand, twin suns setting, prismatic light refractions",
+    "url": "/showcase/qwen-image-2512/1768173372314_2.png",
+    "prompt": "Cosplay pinup photoshoot, adult female cosplayer in fantasy heroine outfit, subtle armor accents, relaxed confident stance, cinematic lighting, realistic fabric textures",
     "modelId": "qwen-image-2512",
     "creator": {
       "user": "Gemini 3 Pro",
@@ -27,8 +27,8 @@
     }
   },
   {
-    "url": "/showcase/qwen-image-2512/1767756008916_3.png",
-    "prompt": "Close up portrait of a samurai with a face half made of sleek white metal, neon katana, rainy holographic city background, intense gaze, cinematic",
+    "url": "/showcase/qwen-image-2512/1768173408267_3.png",
+    "prompt": "Studio cosplay shoot, adult cosplayer wearing a popular anime game–style costume, symmetrical framing, clean background, magazine-cover composition",
     "modelId": "qwen-image-2512",
     "creator": {
       "user": "Gemini 3 Pro",
@@ -36,8 +36,8 @@
     }
   },
   {
-    "url": "/showcase/qwen-image-2512/1767756089959_4.png",
-    "prompt": "Islands floating in a sky filled with clouds and hot air balloons, waterfalls cascading into the void beneath, fantasy art style, vibrant colors",
+    "url": "/showcase/qwen-image-2512/1768173444146_4.png",
+    "prompt": "Cosplay photoshoot of an adult sorceress character, flowing robe costume, off-shoulder design, styled wig, dramatic studio lighting, confident expression, high realism",
     "modelId": "qwen-image-2512",
     "creator": {
       "user": "Gemini 3 Pro",
@@ -45,12 +45,579 @@
     }
   },
   {
-    "url": "/showcase/qwen-image-2512/1767756170876_5.png",
-    "prompt": "A seemingly microscopic view of a moss forest looking like huge trees, tiny glowing creatures, macro photography, depth of field",
+    "url": "/showcase/qwen-image-2512/1768173480120_5.png",
+    "prompt": "Fantasy mage cosplay photoshoot, adult female model holding a glowing prop orb, controlled lighting, dark backdrop, cinematic mood",
     "modelId": "qwen-image-2512",
     "creator": {
       "user": "Gemini 3 Pro",
       "model": "Qwen 2.5 12B"
     }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768173516094_6.png",
+    "prompt": "Elegant spellcaster cosplay shoot, adult cosplayer in fitted fantasy outfit, long sleeves, detailed accessories, soft rim lighting, DSLR realism",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768173551923_7.png",
+    "prompt": "Light-mage cosplay photoshoot, adult woman in pastel fantasy costume, soft natural lighting, clean studio environment",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768173587987_8.png",
+    "prompt": "Cyberpunk cosplay photoshoot, adult female cosplayer wearing futuristic jacket and bodysuit, neon accent lighting, night city backdrop, cinematic photography",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768173623898_9.png",
+    "prompt": "Sci-fi operative cosplay shoot, adult cosplayer in tactical futuristic outfit, confident stance, LED lighting effects, high-detail realism",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768173659771_10.png",
+    "prompt": "Android-inspired cosplay photoshoot, adult woman in sleek sci-fi costume, subtle glowing accents, minimal studio background, soft rim light",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768173695727_11.png",
+    "prompt": "Cyberpunk pinup cosplay shoot, adult cosplayer with asymmetrical futuristic outfit, bold makeup, neon lighting, editorial framing",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768173731593_12.png",
+    "prompt": "Modern magical-girl cosplay photoshoot, adult cosplayer in short skirt costume with tech accents, pastel lighting, confident idol pose",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768173767374_13.png",
+    "prompt": "Idol cosplay photoshoot, adult female performer in sparkly stage outfit, studio lights, energetic confident posture, concert-inspired lighting",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768173803347_14.png",
+    "prompt": "Cosplay photoshoot of an adult idol character, star-themed costume, styled wig, glossy makeup, magazine-style composition",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768173839245_15.png",
+    "prompt": "After-performance cosplay shoot, adult cosplayer relaxing backstage, warm lighting, candid confident pose",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768173875326_16.png",
+    "prompt": "Bunny-themed cosplay photoshoot, adult female cosplayer in sleek fitted bodysuit, confident playful pose, studio lighting, realistic textures",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768173911235_17.png",
+    "prompt": "Tactical bunny cosplay shoot, adult cosplayer wearing sci-fi armor accents and bunny ears, dramatic lighting, confident stance",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768173947605_18.png",
+    "prompt": "Cyber bunny cosplay photoshoot, adult woman in futuristic bunny costume, neon rim lighting, clean studio background",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768173983458_19.png",
+    "prompt": "Elegant bunny cosplay pinup shoot, adult cosplayer, soft glow lighting, tasteful pose, editorial cosplay photography",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768174019442_20.png",
+    "prompt": "Elegant maid cosplay photoshoot, adult female cosplayer in modern tailored maid uniform, soft lighting, confident smile",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768174055429_21.png",
+    "prompt": "Luxury café maid cosplay shoot, adult cosplayer in refined outfit, warm ambient lighting, lifestyle cosplay photography",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768174299326_37.png",
+    "prompt": "Retro arcade cosplay shoot, adult cosplayer in colorful outfit, neon props, playful confident pose",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768174335062_38.png",
+    "prompt": "90s idol cosplay photoshoot, adult woman in retro stage costume, saturated lighting, magazine-style framing",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768174370880_39.png",
+    "prompt": "Tech diva cosplay photoshoot, adult cosplayer with futuristic accessories, confident stance, clean editorial lighting",
+    "modelId": "qwen-image-2512",
+    "creator": {
+      "user": "Gemini 3 Pro",
+      "model": "Qwen 2.5 12B"
+    }
+  },
+  {
+    "url": "/showcase/qwen-image-2512/gravure_cover.png",
+    "prompt": "Golden-hour bedroom surrender — Early-20s woman reclined against pillows, thin cotton shirt unbuttoned almost to navel, fabric parted wide to expose the soft inner curves of her breasts and the delicate line down her sternum, knees drawn up high so the hem pools at upper thighs, golden light caressing every inch of flushed skin, heavy-lidded eyes locked on camera, lips parted in a slow, silent exhale, one hand resting just below her navel as if inviting the gaze lower, modern Japanese gravure style (2020s), young adult woman (early 20s), youthful idol appearance, smooth clear skin, fresh natural makeup, soft natural lighting, intimate candid framing, relaxed casual pose, gentle eye contact, tasteful gravure mood, non-explicit, indoor daylight, window light, subtle film softness, natural skin texture, soft highlights",
+    "base_prompt": "Golden-hour bedroom surrender — Early-20s woman reclined against pillows, thin cotton shirt unbuttoned almost to navel, fabric parted wide to expose the soft inner curves of her breasts and the delicate line down her sternum, knees drawn up high so the hem pools at upper thighs, golden light caressing every inch of flushed skin, heavy-lidded eyes locked on camera, lips parted in a slow, silent exhale, one hand resting just below her navel as if inviting the gaze lower",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "Grok",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/gravure_cover.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768175379499_1.png",
+    "prompt": "Tatami dawn intimacy — Kneeling with hips tilted forward, yukata completely untied and draped open across her shoulders like fallen silk, bare skin glowing in soft morning light, nipples subtly peaked from the cool air, one hand trailing fingers along her own inner thigh, gaze starting low then slowly rising, dark and liquid, throat working with a quiet swallow, modern Japanese gravure style (2020s), young adult woman (early 20s), youthful idol appearance, smooth clear skin, fresh natural makeup, soft natural lighting, intimate candid framing, relaxed casual pose, gentle eye contact, tasteful gravure mood, non-explicit, subtle film softness, natural skin texture, soft highlights, indoor daylight, window light",
+    "base_prompt": "Tatami dawn intimacy — Kneeling with hips tilted forward, yukata completely untied and draped open across her shoulders like fallen silk, bare skin glowing in soft morning light, nipples subtly peaked from the cool air, one hand trailing fingers along her own inner thigh, gaze starting low then slowly rising, dark and liquid, throat working with a quiet swallow",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "Grok",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768175379499_1.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768175415666_2.png",
+    "prompt": "Sheer-curtain revelation — Standing in profile against bright window, ultra-thin sleep shirt completely backlit and clinging like second skin, every curve outlined in exquisite detail — the gentle swell of breasts, dip of waist, flare of hips — fabric translucent enough to hint at the shadow between thighs, looking back over shoulder with half-smile and eyes that smolder, hair cascading down bare back, modern Japanese gravure style (2020s), young adult woman (early 20s), youthful idol appearance, smooth clear skin, fresh natural makeup, soft natural lighting, intimate candid framing, relaxed casual pose, gentle eye contact, tasteful gravure mood, non-explicit, shot on DSLR, 50mm lens, natural skin texture, soft highlights, indoor daylight, window light",
+    "base_prompt": "Sheer-curtain revelation — Standing in profile against bright window, ultra-thin sleep shirt completely backlit and clinging like second skin, every curve outlined in exquisite detail — the gentle swell of breasts, dip of waist, flare of hips — fabric translucent enough to hint at the shadow between thighs, looking back over shoulder with half-smile and eyes that smolder, hair cascading down bare back",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "Grok",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768175415666_2.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768175452047_3.png",
+    "prompt": "Velvet sofa dusk desire — Legs tucked under her, costume top slipped completely off shoulders and pooled at elbows, arms crossed beneath breasts to lift and frame them perfectly, warm rim light tracing the soft underside and creating delicate shadows, chest rising and falling visibly, tongue slowly wetting lower lip, gaze heavy and unwavering, modern Japanese gravure style (2020s), young adult woman (early 20s), youthful idol appearance, smooth clear skin, fresh natural makeup, soft natural lighting, intimate candid framing, relaxed casual pose, gentle eye contact, tasteful gravure mood, non-explicit, shot on DSLR, 50mm lens, shallow depth of field",
+    "base_prompt": "Velvet sofa dusk desire — Legs tucked under her, costume top slipped completely off shoulders and pooled at elbows, arms crossed beneath breasts to lift and frame them perfectly, warm rim light tracing the soft underside and creating delicate shadows, chest rising and falling visibly, tongue slowly wetting lower lip, gaze heavy and unwavering",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "Grok",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768175452047_3.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768175488461_4.png",
+    "prompt": "Morning bed-edge tease — Sitting on mattress edge, knees wide apart, oversized shirt hiked to the very top of thighs, bare skin meeting lace panties just visible at the hem, one hand lazily dragging the fabric higher inch by inch, soft morning light highlighting the gentle tremble in her thighs, eyes direct, pupils dilated, small private smile that says \"watch me\", modern Japanese gravure style (2020s), young adult woman (early 20s), youthful idol appearance, smooth clear skin, fresh natural makeup, soft natural lighting, intimate candid framing, relaxed casual pose, gentle eye contact, tasteful gravure mood, non-explicit, indoor daylight, window light, shot on DSLR, 50mm lens",
+    "base_prompt": "Morning bed-edge tease — Sitting on mattress edge, knees wide apart, oversized shirt hiked to the very top of thighs, bare skin meeting lace panties just visible at the hem, one hand lazily dragging the fabric higher inch by inch, soft morning light highlighting the gentle tremble in her thighs, eyes direct, pupils dilated, small private smile that says \"watch me\"",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "Grok",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768175488461_4.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768175524799_5.png",
+    "prompt": "Post-performance undress — Dressing room chair, elaborate idol costume unzipped to waist, satin falling open to reveal lace bralette soaked with light sweat, nipples visible through sheer fabric, chest heaving from recent performance, fingers tracing slow circles around the zipper pull, eyes half-closed in lingering adrenaline high, flushed cheeks and parted lips, modern Japanese gravure style (2020s), young adult woman (early 20s), youthful idol appearance, smooth clear skin, fresh natural makeup, soft natural lighting, intimate candid framing, relaxed casual pose, gentle eye contact, tasteful gravure mood, non-explicit, shot on DSLR, 50mm lens, shallow depth of field",
+    "base_prompt": "Post-performance undress — Dressing room chair, elaborate idol costume unzipped to waist, satin falling open to reveal lace bralette soaked with light sweat, nipples visible through sheer fabric, chest heaving from recent performance, fingers tracing slow circles around the zipper pull, eyes half-closed in lingering adrenaline high, flushed cheeks and parted lips",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "Grok",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768175524799_5.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768175561277_6.png",
+    "prompt": "Backstage ribbon intimacy — Corset half-laced, ribbons trailing across bare stomach and dipping low between breasts, one breast fully exposed except for the desperate edge of satin, breath shallow and quick, looking down at her own skin then up into camera with wide, dark eyes and bitten lip, throat glistening, modern Japanese gravure style (2020s), young adult woman (early 20s), youthful idol appearance, smooth clear skin, fresh natural makeup, soft natural lighting, intimate candid framing, relaxed casual pose, gentle eye contact, tasteful gravure mood, non-explicit, shot on DSLR, 50mm lens, shallow depth of field, natural skin texture, soft highlights",
+    "base_prompt": "Backstage ribbon intimacy — Corset half-laced, ribbons trailing across bare stomach and dipping low between breasts, one breast fully exposed except for the desperate edge of satin, breath shallow and quick, looking down at her own skin then up into camera with wide, dark eyes and bitten lip, throat glistening",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "Grok",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768175561277_6.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768175597558_7.png",
+    "prompt": "Magical girl on rug — Skirt fanned wide, top ties completely undone so neckline plunges to navel, one strap fallen, pale skin flushed pink in pastel light, knees bent outward in relaxed position revealing soft inner thighs, innocent face contrasting with the slow, confident stroke of her own collarbone → sternum → pausing just above the ribbon bow, gaze steady and inviting, modern Japanese gravure style (2020s), young adult woman (early 20s), youthful idol appearance, smooth clear skin, fresh natural makeup, soft natural lighting, intimate candid framing, relaxed casual pose, gentle eye contact, tasteful gravure mood, non-explicit, shot on DSLR, 50mm lens, shallow depth of field, subtle film softness",
+    "base_prompt": "Magical girl on rug — Skirt fanned wide, top ties completely undone so neckline plunges to navel, one strap fallen, pale skin flushed pink in pastel light, knees bent outward in relaxed position revealing soft inner thighs, innocent face contrasting with the slow, confident stroke of her own collarbone → sternum → pausing just above the ribbon bow, gaze steady and inviting",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "Grok",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768175597558_7.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768175633953_8.png",
+    "prompt": "Off-stage idol cross-legged — Frilly skirt ridden high to show lace thigh-high tops and bare skin above, jacket open wide, damp hair clinging to neck and collarbone, one finger absently circling the edge of her bra cup, small bead of sweat trailing down cleavage, eyes sparkling with post-show heat, lips curved in quiet promise, modern Japanese gravure style (2020s), young adult woman (early 20s), youthful idol appearance, smooth clear skin, fresh natural makeup, soft natural lighting, intimate candid framing, relaxed casual pose, gentle eye contact, tasteful gravure mood, non-explicit, shot on DSLR, 50mm lens, subtle film softness, natural skin texture, soft highlights",
+    "base_prompt": "Off-stage idol cross-legged — Frilly skirt ridden high to show lace thigh-high tops and bare skin above, jacket open wide, damp hair clinging to neck and collarbone, one finger absently circling the edge of her bra cup, small bead of sweat trailing down cleavage, eyes sparkling with post-show heat, lips curved in quiet promise",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "Grok",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768175633953_8.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768175670251_9.png",
+    "prompt": "Side-lying bunny — On plush carpet, upper leg bent forward dramatically, high-cut bodysuit stretched taut across hips and creating perfect tension lines, satin ears tilted, fluffy tail cushion arching her lower back, looking back over shoulder with molten eye contact, lips slightly parted, slow blink, modern Japanese gravure style (2020s), young adult woman (early 20s), youthful idol appearance, smooth clear skin, fresh natural makeup, soft natural lighting, intimate candid framing, relaxed casual pose, gentle eye contact, tasteful gravure mood, non-explicit, shallow depth of field, shot on DSLR, 50mm lens, indoor daylight, window light",
+    "base_prompt": "Side-lying bunny — On plush carpet, upper leg bent forward dramatically, high-cut bodysuit stretched taut across hips and creating perfect tension lines, satin ears tilted, fluffy tail cushion arching her lower back, looking back over shoulder with molten eye contact, lips slightly parted, slow blink",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "Grok",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768175670251_9.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768175706513_10.png",
+    "prompt": "Seated bunny tension — Legs spread elegantly wide on low stool, corset loosened three hooks so soft flesh spills gently over the top, one hand resting high on inner thigh (fingers splayed, not touching), satin bow at throat rising with deep breaths, gaze heavy-lidded and direct, small teasing smile, modern Japanese gravure style (2020s), young adult woman (early 20s), youthful idol appearance, smooth clear skin, fresh natural makeup, soft natural lighting, intimate candid framing, relaxed casual pose, gentle eye contact, tasteful gravure mood, non-explicit, shallow depth of field, natural skin texture, soft highlights",
+    "base_prompt": "Seated bunny tension — Legs spread elegantly wide on low stool, corset loosened three hooks so soft flesh spills gently over the top, one hand resting high on inner thigh (fingers splayed, not touching), satin bow at throat rising with deep breaths, gaze heavy-lidded and direct, small teasing smile",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "Grok",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768175706513_10.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768175742910_11.png",
+    "prompt": "Prone bunny arch — Lying stomach-down on oversized cushion, back deeply arched, costume back cut so low the dimples above hips and upper curve of rear are fully exposed, long legs extended and crossed at ankles, fluffy tail framing the view, chin on forearms, looking back with slow, knowing smirk, modern Japanese gravure style (2020s), young adult woman (early 20s), youthful idol appearance, smooth clear skin, fresh natural makeup, soft natural lighting, intimate candid framing, relaxed casual pose, gentle eye contact, tasteful gravure mood, non-explicit, natural skin texture, soft highlights, shallow depth of field",
+    "base_prompt": "Prone bunny arch — Lying stomach-down on oversized cushion, back deeply arched, costume back cut so low the dimples above hips and upper curve of rear are fully exposed, long legs extended and crossed at ankles, fluffy tail framing the view, chin on forearms, looking back with slow, knowing smirk",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "Grok",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768175742910_11.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768175779172_12.png",
+    "prompt": "Wall bunny contrapposto — Standing with one hip cocked sharply, hand lifting hair to expose long neck and sensitive spot behind ear, bodysuit clinging from body heat and outlining every curve, side lighting carving the elegant S-line from shoulder to ankle, eyes downcast but lips curved in silent invitation, modern Japanese gravure style (2020s), young adult woman (early 20s), youthful idol appearance, smooth clear skin, fresh natural makeup, soft natural lighting, intimate candid framing, relaxed casual pose, gentle eye contact, tasteful gravure mood, non-explicit, shallow depth of field, indoor daylight, window light, subtle film softness",
+    "base_prompt": "Wall bunny contrapposto — Standing with one hip cocked sharply, hand lifting hair to expose long neck and sensitive spot behind ear, bodysuit clinging from body heat and outlining every curve, side lighting carving the elegant S-line from shoulder to ankle, eyes downcast but lips curved in silent invitation",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "Grok",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768175779172_12.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768175815674_13.png",
+    "prompt": "Reclining bunny slow burn — Against mountain of pillows, one knee raised high and wide showing inner thigh all the way up to lace edge, costume straps slipped off shoulders, chest gently heaving, fingers trailing deliberately from collarbone → sternum → pausing at the bow between breasts, gaze locked and time-stopping, the air thick with unspoken promise, modern Japanese gravure style (2020s), young adult woman (early 20s), youthful idol appearance, smooth clear skin, fresh natural makeup, soft natural lighting, intimate candid framing, relaxed casual pose, gentle eye contact, tasteful gravure mood, non-explicit, natural skin texture, soft highlights, indoor daylight, window light, shallow depth of field",
+    "base_prompt": "Reclining bunny slow burn — Against mountain of pillows, one knee raised high and wide showing inner thigh all the way up to lace edge, costume straps slipped off shoulders, chest gently heaving, fingers trailing deliberately from collarbone → sternum → pausing at the bow between breasts, gaze locked and time-stopping, the air thick with unspoken promise",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "Grok",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768175815674_13.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768174486743_1.png",
+    "prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "base_prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "ChatGPT 5.2",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768174486743_1.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768174523121_2.png",
+    "prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "base_prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "ChatGPT 5.2",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768174523121_2.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768174559256_3.png",
+    "prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "base_prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "ChatGPT 5.2",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768174559256_3.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768174595452_4.png",
+    "prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "base_prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "ChatGPT 5.2",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768174595452_4.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768174632261_5.png",
+    "prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "base_prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "ChatGPT 5.2",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768174632261_5.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768174668411_6.png",
+    "prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "base_prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "ChatGPT 5.2",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768174668411_6.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768174732321_7.png",
+    "prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "base_prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "ChatGPT 5.2",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768174732321_7.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768174768386_8.png",
+    "prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "base_prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "ChatGPT 5.2",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768174768386_8.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768174806258_9.png",
+    "prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "base_prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "ChatGPT 5.2",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768174806258_9.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768174842426_10.png",
+    "prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "base_prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "ChatGPT 5.2",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768174842426_10.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768174878607_11.png",
+    "prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "base_prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "ChatGPT 5.2",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768174878607_11.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768174914797_12.png",
+    "prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "base_prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "ChatGPT 5.2",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768174914797_12.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768174950947_13.png",
+    "prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "base_prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "ChatGPT 5.2",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768174950947_13.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768174987097_14.png",
+    "prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "base_prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "ChatGPT 5.2",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768174987097_14.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768175023187_15.png",
+    "prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "base_prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "ChatGPT 5.2",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768175023187_15.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768175059245_16.png",
+    "prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "base_prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "ChatGPT 5.2",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768175059245_16.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768175095374_17.png",
+    "prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "base_prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "ChatGPT 5.2",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768175095374_17.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768175131603_18.png",
+    "prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "base_prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "ChatGPT 5.2",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768175131603_18.png"
+  },
+  {
+    "url": "/showcase/qwen-image-2512/1768175167791_19.png",
+    "prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "base_prompt": "Qwen Gravure Showcase Image (Recovered)",
+    "modelId": "qwen-image-2512",
+    "aspectRatio": "2:3",
+    "creator": {
+      "user": "ChatGPT 5.2",
+      "model": "Qwen 2.5 12B"
+    },
+    "imageUrl": "/showcase/qwen-image-2512/1768175167791_19.png"
   }
 ]
