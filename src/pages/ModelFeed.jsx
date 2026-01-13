@@ -50,9 +50,6 @@ const Sidebar = ({ activeId }) => {
             items: [
                 { path: '/apps', label: 'App Hub', icon: LayoutTemplate },
                 { path: '/generate', label: 'Studio', icon: Zap },
-                { path: '/karaoke', label: 'Music Video', icon: Music },
-                { path: '/dressup', label: 'Magic Dress Up', icon: Sparkles },
-                { path: '/slideshow', label: 'Story Slides', icon: Presentation },
             ]
         },
         {

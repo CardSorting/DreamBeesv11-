@@ -8,6 +8,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Landing from './pages/Landing';
 import ModelFeed from './pages/ModelFeed'; // Critical Path: Keep eager
+import BottomNav from './components/BottomNav';
 
 // Lazy Load Non-Critical Pages
 const Auth = React.lazy(() => import('./pages/Auth'));
@@ -124,15 +125,21 @@ function Layout() {
           <Footer />
         </div>
       )}
+      <BottomNav />
+      <BackToTop />
     </div>
   );
 }
 
 
 
+import ScrollToTop from './components/ScrollToTop';
+import BackToTop from './components/BackToTop';
+
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <AuthProvider>
         <ModelProvider>
           <UserInteractionsProvider>
