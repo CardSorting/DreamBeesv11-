@@ -4,7 +4,7 @@ import { Palette, Music, Sparkles, Presentation, Star, Clock, Search, ChevronRig
 import './AppsHub.css';
 
 // Components
-const AppCard = memo(({ title, description, icon: Icon, path, tags = [], color = "violet", rating = "4.9", isCompact = false }) => {
+const AppCard = memo(({ title, description, icon: Icon, path, tags = [], color = "violet", rating = "4.9", isCompact = false, previewImage }) => {
     // Map internal color names to playful hexes
     const colorMap = {
         violet: "#A78BFA",
@@ -22,9 +22,15 @@ const AppCard = memo(({ title, description, icon: Icon, path, tags = [], color =
     return (
         <Link
             to={path}
-            className={`app-card ${isCompact ? 'compact' : ''}`}
+            className={`app-card ${isCompact ? 'compact' : ''} ${previewImage ? 'has-preview' : ''}`}
             style={{ '--card-accent': accentColor }}
         >
+            {previewImage && !isCompact && (
+                <div className="app-card-preview">
+                    <img src={previewImage} alt={`${title} preview`} loading="lazy" />
+                </div>
+            )}
+
             <div className="app-card-content">
                 <div className="app-icon-container">
                     <div className="app-icon-wrapper">
@@ -70,131 +76,68 @@ const SectionHeader = ({ title }) => (
 );
 
 // Extended mock data to demonstrate scalability
-const recommendedApps = [
-    {
-        title: "Karaoke Party",
-        description: "Sing your heart out with visual effects that react to your voice.",
-        icon: Music,
-        path: "/karaoke",
-        color: "violet",
-        tags: ["Music & Audio"],
-        rating: "4.9"
-    },
-    {
-        title: "Magic Wardrobe",
-        description: "Try on digital outfits instantly. Your style, reimagined.",
-        icon: Sparkles,
-        path: "/dressup",
-        color: "pink",
-        tags: ["Lifestyle"],
-        rating: "4.8"
-    },
-    {
-        title: "Story Slides",
-        description: "Turn ideas into beautiful presentations in seconds.",
-        icon: Presentation,
-        path: "/slideshow",
-        color: "mint",
-        tags: ["Productivity"],
-        rating: "4.7"
-    },
-    {
-        title: "Dream Canvas",
-        description: "Generative art for everyone. Sketch, dream, and create.",
-        icon: Palette,
-        path: "/generate",
-        color: "sky",
-        tags: ["Art & Design"],
-        rating: "4.6"
-    },
-    {
-        title: "Pixel Sprite",
-        description: "Make retro game assets for your next adventure.",
-        icon: Gamepad2,
-        path: "/generate",
-        color: "indigo",
-        tags: ["Game Dev"],
-        rating: "4.9"
-    },
-    {
-        title: "Beat Maker",
-        description: "Compose lofi beats in seconds.",
-        icon: Music,
-        path: "/karaoke",
-        color: "amber",
-        tags: ["Music"],
-        rating: "4.5"
-    },
-    {
-        title: "Icon Gen",
-        description: "Create app icons with AI.",
-        icon: LayoutGrid,
-        path: "/generate",
-        color: "rose",
-        tags: ["Design"],
-        rating: "4.8"
-    },
-    {
-        title: "Code Assistant",
-        description: "Debug your code with a smile.",
-        icon: Zap,
-        path: "/",
-        color: "blue",
-        tags: ["Dev"],
-        rating: "4.9"
-    },
-    {
-        title: "Video Editor",
-        description: "Edit videos like a pro directly in browser.",
-        icon: LayoutGrid, // Using fallback icon
-        path: "/generate",
-        color: "violet",
-        tags: ["Video"],
-        rating: "4.7"
-    },
-    {
-        title: "Note Master",
-        description: "Keep your thoughts organized.",
-        icon: Presentation, // Fallback
-        path: "/",
-        color: "amber",
-        tags: ["Productivity"],
-        rating: "4.6"
-    },
-    {
-        title: "Sound Labs",
-        description: "Experiment with synthetic audio.",
-        icon: Music,
-        path: "/",
-        color: "sky",
-        tags: ["Music"],
-        rating: "4.8"
-    },
-    {
-        title: "Dev Tools",
-        description: "Essential utilities for developers.",
-        icon: Zap,
-        path: "/",
-        color: "indigo",
-        tags: ["Dev"],
-        rating: "4.9"
-    }
-];
+// Mapped Icons
+const ICON_MAP = {
+    Music: Music,
+    Sparkles: Sparkles,
+    Presentation: Presentation,
+    Palette: Palette,
+    Gamepad2: Gamepad2,
+    LayoutGrid: LayoutGrid,
+    Zap: Zap,
+    Star: Star,
+    Clock: Clock,
+    Search: Search,
+    ChevronRight: ChevronRight,
+    Heart: Heart,
+    Smile: Smile
+};
+
+// Data to seed if not present
+
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '../firebase'; // Ensure this path is correct based on project structure
 
 const AppsHub = () => {
     const [searchQuery, setSearchQuery] = useState('');
-    const [visibleCount, setVisibleCount] = useState(3); // Start with 3 items for better density
+    const [apps, setApps] = useState([]);
+    const [visibleCount, setVisibleCount] = useState(3);
     const loaderRef = useRef(null);
+
+    // Initial Fetch & Update Images
+    useEffect(() => {
+        const fetchApps = async () => {
+            try {
+                const q = query(collection(db, "apps"), orderBy("order"));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    const loadedApps = querySnapshot.docs.map(doc => {
+                        const data = doc.data();
+                        return {
+                            ...data,
+                            icon: ICON_MAP[data.icon] || LayoutGrid // Map string to component
+                        };
+                    });
+                    setApps(loadedApps);
+                }
+            } catch (error) {
+                console.error("Error fetching apps:", error);
+            }
+        };
+
+        fetchApps();
+    }, []);
 
     // Filter Logic
     const filteredApps = useMemo(() => {
         const query = searchQuery.toLowerCase();
-        return recommendedApps.filter(app => (
+        return apps.filter(app => (
             app.title.toLowerCase().includes(query) ||
             app.description.toLowerCase().includes(query) ||
             app.tags.some(tag => tag.toLowerCase().includes(query))
         ));
-    }, [searchQuery]);
+    }, [searchQuery, apps]);
 
     // Pagination Logic
     const displayedApps = useMemo(() => filteredApps.slice(0, visibleCount), [filteredApps, visibleCount]);
@@ -253,7 +196,7 @@ const AppsHub = () => {
                 <div className="hero-section">
                     <div className="hero-banner">
                         {/* More organic/warm gradient */}
-                        <div className="hero-image" style={{ background: '#4f46e5' }}></div>
+                        <div className="hero-image" style={{ backgroundImage: 'url(/feature_hero_bg.png)' }}></div>
                         <div className="hero-content">
                             <div className="hero-tag">FEATURED UPDATE</div>
                             <h1 className="hero-title">DreamBees Creative</h1>

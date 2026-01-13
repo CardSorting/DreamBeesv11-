@@ -77,5 +77,11 @@ service cloud.firestore {
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;
       allow update: if request.auth != null && request.resource.data.userId == request.auth.uid;
     }
+
+    // Apps: Publicly readable, writeable by admins only (or no public writes)
+    match /apps/{appId} {
+      allow read: if true;
+      allow write: if false; // Secured after seeding
+    }
   }
 }

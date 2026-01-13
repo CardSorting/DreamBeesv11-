@@ -13,8 +13,8 @@
     --play-accent-green: #01875F;
     /* Play Store Green (Primary Action) */
     --play-accent-green-hover: #029E6F;
-    --play-radius-lg: 24px;
-    --play-radius-md: 12px;
+    --play-radius-lg: 32px;
+    --play-radius-md: 28px;
     --play-radius-sm: 8px;
     --play-font: 'Roboto', 'Inter', -apple-system, sans-serif;
 
@@ -250,7 +250,9 @@
     left: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     opacity: 0.6;
     z-index: 0;
     transition: transform 0.3s ease;
@@ -581,7 +583,7 @@
 .app-icon-container {
     width: 72px;
     height: 72px;
-    border-radius: 18px;
+    border-radius: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -702,7 +704,7 @@
     }
 
     .play-grid-section {
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
         gap: 16px;
     }
 
@@ -726,6 +728,38 @@
 
     .top-charts-wrapper {
         grid-template-columns: 1fr;
+    }
+
+    /* Mobile adjustments for Hero Cards */
+    .app-card.has-preview .app-card-content {
+        margin-top: -20px;
+        /* Reduced overlap */
+        padding: 0 12px;
+    }
+
+    .app-card.has-preview .app-icon-container {
+        width: 48px;
+        height: 48px;
+        border-width: 2px;
+        border-radius: 12px;
+    }
+
+    .app-card.has-preview .app-info {
+        padding-top: 32px;
+        /* Adjusted spacing */
+    }
+
+    .app-card.has-preview .app-title {
+        font-size: 14px;
+    }
+
+    .app-card.has-preview .app-category {
+        font-size: 12px;
+    }
+
+    .app-card.has-preview .app-description {
+        display: none;
+        /* Hide description on mobile for compactness */
     }
 }
 
@@ -753,4 +787,79 @@
     to {
         transform: rotate(360deg);
     }
+}
+
+/* Update AppCard for Preview */
+.app-card.has-preview {
+    padding: 0;
+    overflow: hidden;
+    gap: 0;
+}
+
+.app-card-preview {
+    width: 100%;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+    position: relative;
+    background-color: var(--play-surface-hover);
+}
+
+/* Gradient overlay for text/icon readability if needed, or just style */
+.app-card-preview::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, transparent 100%);
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.app-card-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.app-card:hover .app-card-preview img {
+    transform: scale(1.05);
+}
+
+.app-card.has-preview .app-card-content {
+    padding: 0 16px;
+    margin-top: -24px;
+    /* Icon overlap */
+    position: relative;
+    z-index: 2;
+    /* Above image */
+    margin-bottom: 4px;
+}
+
+.app-card.has-preview .app-icon-container {
+    width: 56px;
+    /* Slightly smaller for better proportion */
+    height: 56px;
+    border: 3px solid var(--play-surface);
+    /* Border matching bg to separate from image */
+    border-radius: 24px;
+    background-color: var(--play-surface);
+    /* Ensure solid bg */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.app-card.has-preview .app-info {
+    padding-top: 28px;
+    /* Push text down below the overlap area */
+}
+
+.app-card.has-preview .app-description {
+    padding: 0 16px;
+    margin-bottom: 12px;
+}
+
+.app-card.has-preview .app-footer {
+    padding: 0 16px 16px;
 }
