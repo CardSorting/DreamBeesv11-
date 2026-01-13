@@ -37,7 +37,7 @@ export default function Navbar() {
         { path: '/pricing', label: 'Refill', icon: Hexagon },
     ];
 
-    const limitWidth = ['/dressup', '/karaoke', '/generate', '/slideshow'].includes(location.pathname);
+    const limitWidth = ['/dressup', '/karaoke', '/generate', '/slideshow', '/apps'].includes(location.pathname);
     const isModelFeed = /^\/model\/[^/]+\/feed$/.test(location.pathname);
     const isGlobalFeed = location.pathname === '/';
 

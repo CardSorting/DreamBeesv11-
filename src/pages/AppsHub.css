@@ -1,0 +1,730 @@
+/* AppsHub.css */
+
+:root {
+    --play-bg: #131314;
+    /* Deep dark background like Google dark apps */
+    --play-surface: #1E1F21;
+    --play-surface-hover: #2D2E32;
+    --play-primary: #8AB4F8;
+    /* Google Blue light */
+    --play-text-primary: #E8EAED;
+    --play-text-secondary: #9AA0A6;
+    --play-border: #3C4043;
+    --play-accent-green: #01875F;
+    /* Play Store Green (Primary Action) */
+    --play-accent-green-hover: #029E6F;
+    --play-radius-lg: 24px;
+    --play-radius-md: 12px;
+    --play-radius-sm: 8px;
+    --play-font: 'Roboto', 'Inter', -apple-system, sans-serif;
+
+    /* Removed heavy shadows for flat design */
+    /* --shadow-elevation: 0 1px 2px 0 rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15); */
+
+    /* Top Bar */
+    --header-height: 64px;
+    --nav-height: 48px;
+}
+
+.play-store-container {
+    background-color: var(--play-bg);
+    color: var(--play-text-primary);
+    font-family: var(--play-font);
+    min-height: 100vh;
+    padding-bottom: 80px;
+    /* Space for navbar */
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Background Gradients REMOVED for minimalist look */
+.background-glow,
+.background-glow-secondary {
+    display: none;
+}
+
+/* --- V2: Interactive Header & Search --- */
+.play-top-bar {
+    position: relative;
+    z-index: 10;
+    background-color: var(--play-bg);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    /* Removed transition and border logic for cleaner look */
+}
+
+/* Removed scrolled border logic */
+
+.search-bar-container {
+    flex: 1;
+    background-color: var(--play-surface);
+    border-radius: 24px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    transition: background-color 0.2s ease;
+    /* Removed box-shadow */
+}
+
+.search-bar-container:hover,
+.search-bar-container:focus-within {
+    background-color: var(--play-surface-hover);
+    /* Removed hover shadow */
+}
+
+.search-icon {
+    color: var(--play-text-secondary);
+    margin-right: 12px;
+}
+
+.search-input {
+    background: transparent;
+    border: none;
+    color: var(--play-text-primary);
+    font-size: 16px;
+    flex: 1;
+    outline: none;
+}
+
+.search-input::placeholder {
+    color: var(--play-text-secondary);
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #6366F1;
+    /* Flat Indigo */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* --- V2: Navigation Tabs --- */
+.play-nav-tabs {
+    display: flex;
+    gap: 24px;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--play-border);
+    /* Kept subtle border for separation */
+    margin-bottom: 24px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.play-nav-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.nav-tab {
+    padding: 14px 0;
+    color: var(--play-text-secondary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    position: relative;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+}
+
+.nav-tab:hover {
+    color: var(--play-text-primary);
+}
+
+.nav-tab.active {
+    color: var(--play-accent-green);
+}
+
+.nav-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background-color: var(--play-accent-green);
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+}
+
+/* --- V2: Hero Banner --- */
+.hero-section {
+    padding: 0 24px 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.hero-banner {
+    position: relative;
+    border-radius: var(--play-radius-lg);
+    overflow: hidden;
+    height: 380px;
+    background: #1a1a1a;
+    /* Flat Dark */
+    display: flex;
+    align-items: flex-end;
+    /* Removed shadow */
+}
+
+/* --- Editorial / Spotlight Cards (Flat) --- */
+.editorial-card {
+    display: block;
+    position: relative;
+    width: 280px;
+    height: 320px;
+    border-radius: var(--play-radius-lg);
+    overflow: hidden;
+    text-decoration: none;
+    color: white;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    background-color: #27272A;
+    /* Fallback flat color */
+}
+
+.editorial-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 1;
+    /* Solid flat color from inline style */
+    z-index: 0;
+}
+
+/* Removed overlay for true flat look, or make it very subtle if needed for text readability */
+.editorial-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.1);
+    /* Very subtle tint if needed, or remove */
+    z-index: 1;
+}
+
+.editorial-content {
+    position: relative;
+    z-index: 2;
+    padding: 24px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.editorial-tag {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    opacity: 0.9;
+}
+
+.editorial-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    line-height: 1.2;
+}
+
+.editorial-desc {
+    font-size: 14px;
+    opacity: 0.9;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.hero-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.6;
+    z-index: 0;
+    transition: transform 0.3s ease;
+}
+
+.hero-banner:hover .hero-image {
+    /* Removed scale effect for flatter feel, or keep if user wants generic interaction - removing for strict flat */
+    transform: none;
+}
+
+.hero-content {
+    position: relative;
+    z-index: 10;
+    padding: 32px;
+    width: 100%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+}
+
+.hero-tag {
+    color: var(--play-primary);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+
+.hero-title {
+    font-size: 36px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+}
+
+.hero-subtitle {
+    color: #ddd;
+    font-size: 16px;
+    margin-bottom: 24px;
+    max-width: 600px;
+}
+
+.hero-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-primary,
+.btn-secondary {
+    border-radius: 20px;
+    padding: 8px 24px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    /* Flat buttons */
+    transition: background-color 0.2s ease;
+    /* Removed transform */
+}
+
+.btn-primary:active,
+.btn-secondary:active {
+    transform: none;
+}
+
+.btn-primary {
+    background-color: var(--play-accent-green);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--play-accent-green-hover);
+}
+
+.btn-secondary {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+
+/* --- Sections & Layout --- */
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    max-width: 1200px;
+    margin: 32px auto 16px;
+}
+
+.section-title {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--play-text-primary);
+}
+
+.section-arrow {
+    color: var(--play-text-secondary);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+.section-arrow:hover {
+    background-color: var(--play-surface);
+    color: var(--play-text-primary);
+}
+
+/* --- Horizontal Rail Layout --- */
+.rail-scroll-container {
+    display: flex;
+    overflow-x: auto;
+    gap: 16px;
+    padding: 4px 24px 24px;
+    scrollbar-width: none;
+    max-width: 1200px;
+    margin: 0 auto;
+    scroll-snap-type: x mandatory;
+}
+
+.rail-scroll-container::-webkit-scrollbar {
+    display: none;
+}
+
+.rail-scroll-container .app-card {
+    min-width: 280px;
+    max-width: 280px;
+    scroll-snap-align: start;
+    background-color: transparent;
+}
+
+.rail-scroll-container .app-card:hover {
+    background-color: var(--play-surface-hover);
+}
+
+/* --- Top Charts Layout --- */
+.top-charts-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px 40px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 32px;
+}
+
+.chart-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.chart-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 0;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background-color 0.2s;
+}
+
+.chart-item:last-child {
+    border-bottom: none;
+}
+
+.chart-item:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+    padding-left: 8px;
+    padding-right: 8px;
+    border-radius: 8px;
+    margin: 0 -8px;
+}
+
+.chart-rank {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--play-text-secondary);
+    width: 24px;
+    text-align: center;
+}
+
+.chart-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    background-color: var(--play-surface);
+    flex-shrink: 0;
+}
+
+.chart-icon img,
+.chart-icon svg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.chart-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.chart-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--play-text-primary);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chart-subtitle {
+    font-size: 13px;
+    color: var(--play-text-secondary);
+}
+
+/* --- Chip Filters --- */
+.chip-row {
+    display: flex;
+    gap: 12px;
+    padding: 0 24px 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.chip-row::-webkit-scrollbar {
+    display: none;
+}
+
+.filter-chip {
+    padding: 8px 16px;
+    border-radius: 16px;
+    border: 1px solid var(--play-border);
+    background-color: transparent;
+    color: var(--play-text-secondary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+
+.filter-chip:hover {
+    background-color: var(--play-surface-hover);
+    color: var(--play-text-primary);
+}
+
+.filter-chip.active {
+    background-color: rgba(138, 180, 248, 0.15);
+    color: var(--play-primary);
+    border-color: transparent;
+}
+
+
+/* --- Grid & General Card Updates --- */
+.play-grid-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 24px;
+    padding: 0 24px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Compact Card (Vertical) for Grid */
+.play-grid-section .app-card {
+    border-radius: 0;
+    padding: 0;
+}
+
+.play-grid-section .app-card:hover {
+    background-color: transparent;
+    /* Removed transform */
+}
+
+.play-grid-section .app-icon-container {
+    width: 100%;
+    aspect-ratio: 1;
+    height: auto;
+    margin-bottom: 12px;
+    border-radius: 20px;
+    /* Removed box-shadow */
+    box-shadow: none;
+}
+
+.play-grid-section .app-card-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.play-grid-section .app-description,
+.play-grid-section .install-btn {
+    display: none;
+}
+
+.play-grid-section .app-rating {
+    margin-top: 4px;
+}
+
+/* General Card Reset/Base */
+.app-card {
+    background-color: transparent;
+    border-radius: var(--play-radius-md);
+    padding: 12px;
+    transition: background-color 0.2s;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-card-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 8px;
+}
+
+.app-icon-container {
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    /* Removed box-shadow */
+}
+
+/* Dynamic backgrounds based on app type, falling back to a default if not set inline */
+.app-icon-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--card-accent, #3C4043);
+    opacity: 0.2;
+    z-index: 0;
+}
+
+.app-icon-wrapper {
+    color: var(--card-accent, var(--play-primary));
+    z-index: 1;
+    position: relative;
+}
+
+.app-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    justify-content: center;
+    padding-top: 4px;
+}
+
+.app-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--play-text-primary);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 0.2px;
+}
+
+.app-category {
+    font-size: 14px;
+    color: var(--play-text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.app-rating {
+    font-size: 12px;
+    color: var(--play-text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.rating-star {
+    fill: currentColor;
+    width: 10px;
+    height: 10px;
+}
+
+.app-description {
+    font-size: 13px;
+    color: var(--play-text-secondary);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.app-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+}
+
+/* Install/Open Button */
+.install-btn {
+    background-color: transparent;
+    color: var(--play-accent-green);
+    border: none;
+    /* Removed border */
+    padding: 6px 16px;
+    border-radius: 18px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    min-width: 72px;
+    text-align: center;
+}
+
+.install-btn:hover {
+    background-color: rgba(1, 135, 95, 0.15);
+    /* No border color change since bo border */
+}
+
+.coming-soon {
+    opacity: 0.8;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .hero-banner {
+        height: 420px;
+    }
+
+    .play-grid-section {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 16px;
+    }
+
+    .play-grid-section .app-title {
+        font-size: 13px;
+    }
+
+    .play-grid-section .app-category {
+        font-size: 12px;
+    }
+
+    .play-nav-tabs,
+    .chip-row {
+        padding: 0 16px 12px;
+        margin-bottom: 8px;
+    }
+
+    .play-top-bar {
+        padding: 12px 16px;
+    }
+
+    .top-charts-wrapper {
+        grid-template-columns: 1fr;
+    }
+}
