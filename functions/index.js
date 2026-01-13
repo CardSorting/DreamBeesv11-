@@ -3540,6 +3540,45 @@ export const processSlideshowTask = onTaskDispatched(
     }
 );
 
+export const exchangeTurnstileToken = onCall(async (request) => {
+    const { token } = request.data;
+    const SECRET_KEY = process.env.TURNSTILE_SECRET_KEY;
+
+    if (!token) {
+        throw new HttpsError('invalid-argument', 'The Turnstile token is required.');
+    }
+
+    try {
+        const verifyResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `secret=${encodeURIComponent(SECRET_KEY)}&response=${encodeURIComponent(token)}`,
+        });
+
+        const outcome = await verifyResponse.json();
+
+        if (outcome.success) {
+            // Success! Generate a Firebase App Check token.
+            // Note: createToken expects an app ID. We use a generic one or the requesting app ID if available.
+            const appId = request.app?.appId || "1:519217549360:web:867310181e910b5df15df5"; // Fallback to the main web app ID
+            const appCheckToken = await admin.appCheck().createToken(appId, { ttlMillis: 60 * 60 * 1000 }); // 1 hour TTL
+            return {
+                token: appCheckToken.token,
+                expireTimeMillis: appCheckToken.expireTimeMillis
+            };
+        } else {
+            console.error('[Turnstile] Verification failed:', outcome['error-codes']);
+            throw new HttpsError('unauthenticated', 'Turnstile verification failed.');
+        }
+    } catch (error) {
+        console.error('[Turnstile] Error during exchange:', error);
+        if (error instanceof HttpsError) throw error;
+        throw new HttpsError('internal', 'Internal error during Turnstile exchange.');
+    }
+});
+
 export const api = onCall(async (request) => {
     // Basic App Check logging (Warn Mode) - centralized here
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {

@@ -296,16 +296,25 @@ const SuggestedPanelMemo = React.memo(SuggestedPanel);
 export default function ModelFeed() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { availableModels, getShowcaseImages, getGlobalShowcaseImages, rateShowcaseImage, getUserVideos } = useModel();
+    const { availableModels, getShowcaseImages, getGlobalShowcaseImages, rateShowcaseImage, getUserVideos, globalShowcaseCache, showcaseCache } = useModel();
 
     // "feedItems" is the master list of all content, shuffled or sorted
-    const [feedItems, setFeedItems] = useState([]);
+    // Initialize from cache if available to prevent flash of loading
+    const [feedItems, setFeedItems] = useState(() => {
+        if (!id && globalShowcaseCache) return globalShowcaseCache;
+        if (id && showcaseCache[id]) return showcaseCache[id];
+        return [];
+    });
 
     // Separate video state (fetched once)
     const [videos, setVideos] = useState([]);
 
-    // Loading state
-    const [isLoading, setIsLoading] = useState(true);
+    // Loading state - false if we have data already
+    const [isLoading, setIsLoading] = useState(() => {
+        if (!id && globalShowcaseCache) return false;
+        if (id && showcaseCache[id]) return false;
+        return true;
+    });
 
     const [displayPage, setDisplayPage] = useState(2);
     const [activeShowcaseImage, setActiveShowcaseImage] = useState(null);
@@ -335,10 +344,16 @@ export default function ModelFeed() {
     // --- Data Loading Effect ---
     useEffect(() => {
         const loadShowcase = async () => {
-            // Reset state when ID changes significantly (switching models or to global)
-            setFeedItems([]);
-            setVideos([]);
-            setIsLoading(true);
+            // Reset state ONLY if we don't have cache, to prevent white flash
+            const hasCache = (!id && globalShowcaseCache) || (id && showcaseCache[id]);
+            if (!hasCache) {
+                setFeedItems([]);
+                setIsLoading(true);
+            }
+            // Always fetch fresh data in background/parallel, even if we have cache, 
+            // but we don't clear the UI for it.
+            setVideos([]); // Videos might still need reset or caching
+
 
             try {
                 let images = [];
@@ -387,9 +402,8 @@ export default function ModelFeed() {
             }
         };
 
-        if (availableModels.length > 0) {
-            loadShowcase();
-        }
+        // Initialize immediately - don't wait for models to load for Global Feed
+        loadShowcase();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id, availableModels.length, getShowcaseImages, getGlobalShowcaseImages, getUserVideos]); // Removed `model` dependency to prevent flicker if model object reference changes slightly. Use ID.
 

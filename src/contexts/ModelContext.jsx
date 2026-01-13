@@ -156,27 +156,50 @@ export function ModelProvider({ children }) {
         }
     };
 
-    // Fetch aggregated global showcase (All Models)
+    // Fetch aggregated global showcase (All Models) - OPTIMIZED
     const getGlobalShowcaseImages = async () => {
         // 1. Return global cache if exists
         if (globalShowcaseCache) return globalShowcaseCache;
 
-        // 2. We need availableModels to be populated first
-        // If not yet loaded, we might return empty or wait? 
-        // For now assume caller ensures availableModels is meaningful or we return empty.
-        if (availableModels.length === 0) return [];
+        // 2. We do NOT wait for availableModels anymore to prevent waterfall.
+        // if (availableModels.length === 0) return []; // BLOCKED REMOVED
 
         try {
-            console.log("[Global Feed] Fetching all model showcases...");
+            console.log("[Global Feed] Fetching optimized global feed...");
 
-            // Execute all fetches in parallel
-            // getShowcaseImages (above) handles its own caching for individual models
-            const results = await Promise.all(
-                availableModels.map(m => getShowcaseImages(m.id))
+            // Single efficient query
+            const q = query(
+                collection(db, 'model_showcase_images'),
+                orderBy('createdAt', 'desc'),
+                limit(150)
             );
 
-            // Flatten
-            const allImages = results.flat();
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) {
+                console.log("[Global Feed] No images found.");
+                return [];
+            }
+
+            const allImages = snapshot.docs.map(doc => {
+                const data = doc.data();
+                // Optimize image URLs to use CDN
+                const optimizedUrl = getOptimizedImageUrl(data.imageUrl || data.url);
+
+                // Enrich with model data if available
+                const modelData = availableModels.find(m => m.id === data.modelId);
+
+                return {
+                    id: doc.id,
+                    ...data,
+                    _model: modelData || null, // Attach model object directly for UI convenience (lazy)
+                    imageUrl: optimizedUrl,
+                    url: optimizedUrl,
+                    likesCount: data.likesCount || 0,
+                    bookmarksCount: data.bookmarksCount || 0,
+                    rating: data.rating || 0
+                };
+            });
 
             // 3. Set Cache
             setGlobalShowcaseCache(allImages);
@@ -315,6 +338,7 @@ export function ModelProvider({ children }) {
         getShowcaseImages, // Exported function
         getGlobalShowcaseImages, // EXPORTED - New optimization
         showcaseCache,     // Exported state
+        globalShowcaseCache, // EXPORTED state for instant load
         rateGeneration,    // EXPORTED
         rateShowcaseImage, // EXPORTED
         getUserVideos,     // EXPORTED
