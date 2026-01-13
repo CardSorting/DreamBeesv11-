@@ -514,7 +514,7 @@
 /* --- Grid & General Card Updates --- */
 .play-grid-section {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 24px;
     padding: 0 24px 40px;
     max-width: 1200px;
@@ -726,5 +726,31 @@
 
     .top-charts-wrapper {
         grid-template-columns: 1fr;
+    }
+}
+
+/* --- Search & Load More --- */
+.no-results {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px;
+    color: var(--play-text-secondary);
+    font-size: 16px;
+}
+
+/* --- Loading Spinner --- */
+.loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    border-top-color: var(--play-primary);
+    animation: spin 0.8s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
     }
 }

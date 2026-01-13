@@ -3,7 +3,7 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getFunctions, httpsCallable } from "firebase/functions";
-import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
+import { initializeAppCheck, CustomProvider } from "firebase/app-check";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -24,7 +24,7 @@ if (typeof window !== "undefined") {
     console.debug('Firebase App Check: Debug token enabled for localhost.');
   }
 
-  const turnstileProvider = {
+  const turnstileProvider = new CustomProvider({
     getToken: async () => {
       return new Promise((resolve, reject) => {
         // Create a hidden container for Turnstile if it doesn't exist
@@ -66,7 +66,7 @@ if (typeof window !== "undefined") {
         }
       });
     }
-  };
+  });
 
   try {
     initializeAppCheck(app, {
