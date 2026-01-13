@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Share2, Sparkles, MoreHorizontal, Bookmark, Info, BadgeCheck, Aperture, Volume2, VolumeX } from 'lucide-react';
+import { Heart, Share2, Sparkles, MoreHorizontal, Bookmark, Info, BadgeCheck, Aperture, Volume2, VolumeX, MessageCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LazyImage from './LazyImage';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
@@ -332,6 +332,16 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
                             title="Try this prompt"
                         >
                             <Sparkles size={28} strokeWidth={1.5} />
+                        </motion.button>
+
+                        <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => navigate(`/chat/${imgItem.id}`, { state: { imageItem: imgItem } })}
+                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
+                            title="Chat with Character"
+                        >
+                            <MessageCircle size={28} strokeWidth={1.5} />
                         </motion.button>
 
                         <motion.button

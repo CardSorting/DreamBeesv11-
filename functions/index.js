@@ -158,7 +158,9 @@ export const processImageTask = onTaskDispatched(
         const isSubscriber = userData.subscriptionStatus === 'active';
         const useTurbo = req.data.useTurbo;
 
-        if (useTurbo) {
+        const isPremiumModel = ['zit-model', 'qwen-image-2512'].includes(modelId);
+
+        if (useTurbo || isPremiumModel) {
             allowedConcurrency = 5; // H100: Max Parallelism (High Revenue)
         } else if (isSubscriber) {
             allowedConcurrency = 3; // Free A10G: Subscriber Benefit (High Retention)
@@ -1150,7 +1152,9 @@ const handleCreateGenerationRequest = async (request) => {
             let effectiveZaps = (userData.zaps || 0);
             let cost = 0;
 
-            if (useTurbo) {
+            const isPremiumModel = ['zit-model', 'qwen-image-2512'].includes(modelId);
+
+            if (useTurbo || isPremiumModel) {
                 cost = 1.0;
             } else {
                 if (isSubscriber) {
@@ -3632,3 +3636,4 @@ export const api = onCall(async (request) => {
         throw new HttpsError('internal', error.message || "An unexpected error occurred");
     }
 });
+export * from './persona.js';

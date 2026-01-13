@@ -27,6 +27,7 @@ const KaraokeGenie = React.lazy(() => import('../pages/KaraokeGenie'));
 const DressUp = React.lazy(() => import('../pages/DressUp'));
 const Slideshow = React.lazy(() => import('../pages/Slideshow'));
 const AppsHub = React.lazy(() => import('../pages/AppsHub'));
+const PersonaChat = React.lazy(() => import('../pages/PersonaChat'));
 import { Privacy, Terms, Cookies } from '../pages/Legal';
 import { Careers, Brand, Api, Showcase } from '../pages/Misc';
 
@@ -119,6 +120,11 @@ const AnimatedRoutes = () => {
                         <Route path="/slideshow" element={
                             <PrivateRoute>
                                 <Slideshow />
+                            </PrivateRoute>
+                        } />
+                        <Route path="/chat/:id" element={
+                            <PrivateRoute>
+                                <PersonaChat />
                             </PrivateRoute>
                         } />
                     </Routes>

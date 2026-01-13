@@ -772,7 +772,8 @@ export default function Generator() {
                 return;
             }
         } else {
-            const cost = useTurbo ? 1 : (subscriptionStatus === 'active' ? 0 : 0.5);
+            const isPremiumModel = selectedModel?.id === 'zit-model' || selectedModel?.id === 'qwen-image-2512';
+            const cost = (useTurbo || isPremiumModel) ? 1 : (subscriptionStatus === 'active' ? 0 : 0.5);
             if (zaps < cost) {
                 toast.error(`Insufficient Zaps ⚡ (Need ${cost}, have ${zaps.toFixed(1)})`);
                 return;
