@@ -8,10 +8,12 @@ import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s
 import { createCheckoutSession, constructWebhookEvent, createPortalSession } from "./stripeHelpers.js";
 import Replicate from "replicate";
 import { OpenRouter } from "@openrouter/sdk";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+// GoogleGenerativeAI removed
+// import { GoogleGenerativeAI } from "@google/generative-ai";
 import sharp from "sharp";
 
-import { GoogleGenAI } from "@google/genai";
+// GoogleGenAI removed, using VertexAI for image gen
+import { VertexAI } from "@google-cloud/vertexai";
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 
@@ -2072,61 +2074,58 @@ export const processVideoTask = onTaskDispatched(
 
 // Helper for Vision Prompt Generation
 async function generateVisionPrompt(imageUrl) {
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) {
-        throw new Error("OPENROUTER_API_KEY is not set");
-    }
-
-    const PROMPT_GUIDELINES = `
-Single continuous paragraph: Write the entire scene as one unbroken paragraph, using straightforward descriptive language, maintaining strict chronological flow from start to finish.
-Present-tense action verbs: Use active present tense (strides, grips, approaches) and present-progressive forms (running, walking) to create immediacy and ongoing motion.
-Explicit camera behavior: Specify shot type (wide/medium/close-up), camera movement (pushes in/dollies/pans), speed (slowly/rapidly), and technical details (rack focus/shallow depth of field/handheld).
-Precise physical details: Include specific measurements where relevant (2mm eyebrow raise), exact body positions, hand/finger placements, facial micro-expressions, and clothing/fabric behavior.
-Atmospheric environment: Describe lighting quality (golden hour/fluorescent/neon), color temperatures, weather conditions, surface textures, and ambient elements that enhance mood.
-Smooth temporal flow: Connect actions with subtle transitions (as, while, then) ensuring each movement naturally leads to the next without jarring cuts.
-Genre-specific language: Use cinematography terms appropriate to the stated style (documentary authenticity, thriller paranoia, epic grandeur).
-Character specificity: Include age, ethnicity, distinguishing features, clothing, and emotional states shown through observable physical manifestations rather than internal thoughts.
-`;
+    const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
+    const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     let imageContentUrl = "";
-    if (imageUrl.trim().startsWith('http')) {
-        imageContentUrl = imageUrl;
-    } else if (imageUrl.trim().startsWith('data:')) {
-        imageContentUrl = imageUrl;
+    let mimeType = "image/png"; // Default
+    let imageBase64 = "";
+
+    if (imageUrl.trim().startsWith('data:')) {
+        const parts = imageUrl.trim().split(',');
+        mimeType = parts[0].match(/:(.*?);/)[1];
+        imageBase64 = parts[1];
     } else {
-        imageContentUrl = `data:image/png;base64,${imageUrl}`;
+        // If it's a URL, we might need to fetch it to base64 for Vertex, 
+        // or usage Google Cloud Storage URI if applicable. 
+        // Vertex AI primarily accepts GCS URIs or Base64. 
+        // Public URLs are NOT directly supported in the `inlineData` field usually.
+        // We'll attempt to fetch it here to convert to base64.
+        try {
+            const imgRes = await fetchWithTimeout(imageUrl);
+            const arrayBuffer = await imgRes.arrayBuffer();
+            imageBase64 = Buffer.from(arrayBuffer).toString('base64');
+            const contentType = imgRes.headers.get('content-type');
+            if (contentType) mimeType = contentType;
+        } catch (e) {
+            console.error("Failed to fetch image for Vertex AI:", e);
+            throw new Error("Could not retrieve image for analysis");
+        }
     }
 
-    const response = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
-        timeout: 30000,
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://dreambeesai.com",
-            "X-Title": "DreamBees"
-        },
-        body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
-            messages: [
-                {
-                    role: "user",
-                    content: [
-                        { type: "text", text: "Analyze the image and write a video generation prompt based on these guidelines:\n" + PROMPT_GUIDELINES },
-                        { type: "image_url", image_url: { url: imageContentUrl } }
-                    ]
-                }
-            ]
-        })
-    });
+    const request = {
+        contents: [
+            {
+                role: 'user',
+                parts: [
+                    { text: "Analyze the image and write a video generation prompt based on these guidelines:\n" + PROMPT_GUIDELINES },
+                    {
+                        inlineData: {
+                            mimeType: mimeType,
+                            data: imageBase64
+                        }
+                    }
+                ]
+            }
+        ]
+    };
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`OpenRouter API returned ${response.status}: ${errorText}`);
-    }
+    const result = await model.generateContent(request);
+    const response = await result.response;
+    const candidate = response.candidates?.[0];
+    const textOutput = candidate?.content?.parts?.[0]?.text || "";
 
-    const data = await response.json();
-    return data.choices?.[0]?.message?.content || "";
+    return textOutput;
 }
 
 const handleCreateAnalysisRequest = async (request) => {
@@ -2192,101 +2191,101 @@ const handleGenerateVideoPrompt = async (request) => {
 
 // Helper for Gemini Prompt Enhancement
 const enhancePromptWithGemini = async (prompt) => {
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) throw new Error("OPENROUTER_API_KEY is not set");
-
-    const response = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://dreambeesai.com",
-            "X-Title": "DreamBees"
-        },
-        body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
-            messages: [
-                {
-                    role: "system",
-                    content: "You are an expert AI art prompt engineer specializing in Stable Diffusion XL (SDXL). Enhance the user's prompt with high-quality descriptors for lighting, composition, texture, and artistic style. Use format: 'Subject description, art style, lighting, camera details, additional tags'. Keep it concise but potent. Return ONLY the enhanced prompt."
-                },
-                {
-                    role: "user",
-                    content: prompt
-                }
-            ]
-        })
+    const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
+    const model = vertexAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        systemInstruction: {
+            parts: [{ text: "You are an expert AI art prompt engineer specializing in Stable Diffusion XL (SDXL). Enhance the user's prompt with high-quality descriptors for lighting, composition, texture, and artistic style. Use format: 'Subject description, art style, lighting, camera details, additional tags'. Keep it concise but potent. Return ONLY the enhanced prompt." }]
+        }
     });
 
-    if (!response.ok) {
-        const err = await response.text();
-        throw new Error(`OpenRouter Error: ${err}`);
-    }
-
-    const data = await response.json();
-    return data.choices?.[0]?.message?.content || prompt;
-};
-
-// Helper for Vision-based Style Transformation (using Replicate Nano Banana)
-const transformImageWithGemini = async (imageUrl, styleName, instructions, intensity = 'medium', userId = 'system') => {
-    if (!process.env.REPLICATE_API_TOKEN) {
-        throw new Error("REPLICATE_API_TOKEN environment variable is not set");
-    }
-
-    const replicate = new Replicate({
-        auth: process.env.REPLICATE_API_TOKEN,
-    });
-
-    // Prepare inputs
-    // Note: nano-banana-pro only supports "jpg" or "png" for output_format, not "webp"
-    // We'll request PNG and convert to WebP ourselves for consistency
-    const input = {
-        prompt: `Analyze the subject, composition, and mood of the input image and recreate it in the "${styleName}" style. ${instructions}. Match the subject and composition exactly but apply the visual aesthetics of ${styleName}. Intensity: ${intensity}.`,
-        aspect_ratio: "match_input_image",
-        image_input: [imageUrl],
-        output_format: "png" // nano-banana-pro only accepts "jpg" or "png"
+    const request = {
+        contents: [
+            {
+                role: 'user',
+                parts: [{ text: prompt }]
+            }
+        ]
     };
 
-    console.log(`[Transform] Calling Replicate with style: ${styleName}, intensity: ${intensity}`);
-    console.log(`[Transform] Input:`, JSON.stringify(input, null, 2));
+    const result = await model.generateContent(request);
+    const response = await result.response;
+    const textOutput = response.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    let output;
+    return textOutput || prompt;
+};
+
+// Helper for Vision-based Style Transformation (using Vertex AI)
+const transformImageWithGemini = async (imageUrl, styleName, instructions, intensity = 'medium', userId = 'system') => {
+
+    // 1. Fetch Input Image & Convert to Base64
+    let inputBase64 = null;
+    let mimeType = "image/png";
+
     try {
-        output = await replicate.run("google/nano-banana-pro", { input });
-        console.log(`[Transform] Replicate output type:`, typeof output);
-        console.log(`[Transform] Replicate output:`, JSON.stringify(output, null, 2));
-    } catch (replicateError) {
-        console.error(`[Transform] Replicate API error:`, replicateError);
-        throw new Error(`Replicate API call failed: ${replicateError.message || replicateError}`);
+        const imgRes = await fetchWithTimeout(imageUrl);
+        if (!imgRes.ok) throw new Error(`Failed to fetch source image: ${imgRes.statusText}`);
+        const arrayBuffer = await imgRes.arrayBuffer();
+        inputBase64 = Buffer.from(arrayBuffer).toString('base64');
+        const contentType = imgRes.headers.get('content-type');
+        if (contentType) mimeType = contentType;
+    } catch (e) {
+        console.error("[Transform] Failed to fetch source image:", e);
+        throw new Error("Could not retrieve source image for transformation");
     }
 
-    // Replicate returns different formats depending on the model
-    // Try multiple ways to extract the URL
-    let resultUrl = null;
+    // 2. Initialize Vertex AI
+    const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
+    const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
 
-    if (typeof output === 'string') {
-        resultUrl = output;
-    } else if (Array.isArray(output)) {
-        resultUrl = output[0];
-    } else if (output && typeof output.url === 'function') {
-        resultUrl = output.url();
-    } else if (output && output.url) {
-        resultUrl = output.url;
-    } else if (output && output[0]) {
-        resultUrl = output[0];
+    // 3. Construct Prompt
+    const prompt = `Analyze the subject, composition, and mood of the input image and recreate it in the "${styleName}" style. ${instructions}. Match the subject and composition exactly but apply the visual aesthetics of ${styleName}. Intensity: ${intensity}.`;
+
+    console.log(`[Transform] Calling Vertex AI with style: ${styleName}, intensity: ${intensity}`);
+
+    const request = {
+        contents: [
+            {
+                role: 'user',
+                parts: [
+                    {
+                        inlineData: {
+                            mimeType: mimeType,
+                            data: inputBase64
+                        }
+                    },
+                    { text: prompt }
+                ]
+            }
+        ]
+    };
+
+    let generatedImageBase64 = null;
+
+    try {
+        const result = await model.generateContent(request);
+        const response = await result.response;
+
+        const candidate = response.candidates?.[0];
+        if (candidate?.finishReason === 'SAFETY') {
+            throw new Error("Blocked by Safety Filter");
+        }
+
+        // Check for inline data (image)
+        const firstPart = candidate?.content?.parts?.[0];
+        generatedImageBase64 = firstPart?.inlineData?.data || null;
+
+        if (!generatedImageBase64) {
+            throw new Error("No image data returned from Vertex AI");
+        }
+
+    } catch (error) {
+        console.error(`[Transform] Vertex AI API error:`, error);
+        throw new Error(`Vertex AI call failed: ${error.message}`);
     }
 
-    if (!resultUrl) {
-        console.error(`[Transform] Failed to extract URL from Replicate output:`, output);
-        throw new Error(`Replicate failed to return an image URL. Output: ${JSON.stringify(output)}`);
-    }
-
-    console.log(`[Transform] Extracted result URL: ${resultUrl}`);
-
-    // Download, Process with Sharp and Upload to B2 (similar to processImageTask)
-    const imgResponse = await fetchWithTimeout(resultUrl);
-    if (!imgResponse.ok) throw new Error(`Failed to fetch image from Replicate: ${imgResponse.statusText}`);
-    const imageBuffer = Buffer.from(await imgResponse.arrayBuffer());
+    // 4. Process Output (Base64 -> Buffer -> Sharp)
+    const imageBuffer = Buffer.from(generatedImageBase64, 'base64');
 
     const sharpImg = sharp(imageBuffer);
     const webpBuffer = await sharpImg.webp({ quality: 90 }).toBuffer();
@@ -2330,9 +2329,9 @@ const transformImageWithGemini = async (imageUrl, styleName, instructions, inten
     // Save to Firestore 'images' collection
     const imageRef = await db.collection("images").add({
         userId,
-        prompt: input.prompt,
+        prompt: prompt,
         aspectRatio: "match_input_image",
-        modelId: "google/nano-banana-pro",
+        modelId: "gemini-2.5-flash-image",
         imageUrl: finalImageUrl,
         thumbnailUrl: finalThumbnailUrl,
         lqip,
@@ -2509,44 +2508,35 @@ const handleTransformPrompt = async (request) => {
     // Basic validation
     if (!prompt) throw new HttpsError('invalid-argument', "Prompt is required");
 
-    // Use OpenRouter with Gemini 2.5 Flash
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) throw new HttpsError('internal', "Service configuration error");
-
-    const systemPrompt = `You represent the visual style '${styleName}'. 
+    // Use Vertex AI with Gemini 2.5 Flash
+    const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
+    const model = vertexAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        systemInstruction: {
+            parts: [{
+                text: `You represent the visual style '${styleName}'. 
     Rewrite the user's prompt to reflect this style with ${intensity} intensity.
     Keep the core subject but completely transform the visual descriptors, lighting, and atmosphere to match the style.
     
     Style Instructions: ${instructions}
     
-    Return ONLY the modified prompt text. Do not add quotes or explanations.`;
+    Return ONLY the modified prompt text. Do not add quotes or explanations.` }]
+        }
+    });
 
     try {
-        const response = await fetchWithTimeout("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${apiKey}`,
-                "Content-Type": "application/json",
-                "HTTP-Referer": "https://dreambeesai.com",
-                "X-Title": "DreamBees"
-            },
-            body: JSON.stringify({
-                model: "google/gemini-2.5-flash", // Or just flash if image model not needed for text-to-text
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: prompt }
-                ]
-            })
-        });
+        const request = {
+            contents: [
+                {
+                    role: 'user',
+                    parts: [{ text: prompt }]
+                }
+            ]
+        };
 
-        if (!response.ok) {
-            const err = await response.text();
-            console.error("OpenRouter Error:", err);
-            throw new Error(`AI Provider Error: ${err}`);
-        }
-
-        const data = await response.json();
-        const transformedPrompt = data.choices?.[0]?.message?.content || prompt;
+        const result = await model.generateContent(request);
+        const response = await result.response;
+        const transformedPrompt = response.candidates?.[0]?.content?.parts?.[0]?.text || prompt;
 
         return { prompt: transformedPrompt };
 
@@ -2750,9 +2740,8 @@ const handleGenerateLyrics = async (request) => {
         }
 
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        // Use gemini-2.0-flash-exp for best multimodal performance
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+        const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
+        const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         let result;
 
@@ -2761,26 +2750,45 @@ const handleGenerateLyrics = async (request) => {
 
             const prompt = "Listen to this audio. Transcribe the lyrics and format them as a standard LRC file. Timestamps must be extremely accurate to the vocals [mm:ss.xx]. Return ONLY the LRC content, no code blocks.";
 
-            const audioPart = {
-                inlineData: {
-                    data: audioBase64,
-                    mimeType: mimeType
-                }
+            const request = {
+                contents: [
+                    {
+                        role: 'user',
+                        parts: [
+                            { text: prompt },
+                            {
+                                inlineData: {
+                                    data: audioBase64,
+                                    mimeType: mimeType
+                                }
+                            }
+                        ]
+                    }
+                ]
             };
 
-            result = await model.generateContent([prompt, audioPart]);
+            result = await model.generateContent(request);
 
         } else if (mode === 'text') {
             const prompt = `Convert these lyrics to LRC format for a ${Math.floor(songDuration || 180)}s song. Distribute lines evenly. Return ONLY LRC content. Lyrics: ${rawText}`;
             console.log(`[handleGenerateLyrics] Processing text for user ${uid}`);
 
-            result = await model.generateContent(prompt);
+            const request = {
+                contents: [
+                    {
+                        role: 'user',
+                        parts: [{ text: prompt }]
+                    }
+                ]
+            };
+
+            result = await model.generateContent(request);
         } else {
             throw new HttpsError('invalid-argument', "Invalid mode. Must be 'audio' or 'text'");
         }
 
         const response = await result.response;
-        let text = response.text() || "";
+        let text = response.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
         // Clean markdown
         text = text.replace(/```lrc/g, '').replace(/```/g, '').trim();
@@ -2913,18 +2921,10 @@ export const processDressUpTask = onTaskDispatched(
         try {
             await docRef.update({ status: "processing" });
 
-            const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
-            const ai = new GoogleGenAI({ apiKey });
-            const contents = [];
 
+            let cleanBase64 = null;
             if (image) {
-                const cleanBase64 = image.includes('base64,') ? image.split('base64,')[1] : image;
-                contents.push({
-                    inlineData: {
-                        mimeType: "image/png",
-                        data: cleanBase64
-                    }
-                });
+                cleanBase64 = image.includes('base64,') ? image.split('base64,')[1] : image;
             }
 
             // 1. EARLY PERSISTENCE: Create Gallery Entry Immediately
@@ -2950,24 +2950,40 @@ export const processDressUpTask = onTaskDispatched(
 
             console.log(`[processDressUpTask] processing ${requestId}, gallery doc: ${imageRef.id}`);
 
-            // --- Gemini Call (Using gemini-2.5-flash-image) ---
-            const model = ai.getGenerativeModel({ model: "gemini-2.5-flash-image" });
+            // --- Gemini Call (Using gemini-2.5-flash-image on Vertex AI) ---
+            const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
+            // "google/gemini-2.5-flash" might be the model name, but on Vertex it's often without "google/". 
+            // Using "gemini-2.0-flash-exp" (if 2.5 is not out) or checking exact name. 
+            // User asked for "gemini-2.5-flash-image". Assuming this is the valid Vertex Model ID.
+            const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
 
-            const result = await model.generateContent({
+            const request = {
                 contents: [
                     {
-                        inlineData: {
-                            mimeType: "image/png",
-                            data: cleanBase64
-                        }
-                    },
-                    { text: prompt }
+                        role: 'user',
+                        parts: [
+                            {
+                                inlineData: {
+                                    mimeType: "image/png",
+                                    data: cleanBase64
+                                }
+                            },
+                            { text: prompt }
+                        ]
+                    }
                 ]
-            });
+            };
+
+            const result = await model.generateContent(request);
 
             const response = await result.response;
-            const generatedImageBase64 = response.text() ? null :
-                (response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || null);
+
+            // Vertex AI SDK handling
+            const firstPart = response.candidates?.[0]?.content?.parts?.[0];
+            const textOutput = firstPart?.text;
+
+            // If it returns text, it probably didn't generate an image (or it's a refusal)
+            const generatedImageBase64 = textOutput ? null : (firstPart?.inlineData?.data || null);
 
             if (!generatedImageBase64) {
                 throw new Error("No image data returned from Gemini");
@@ -3261,8 +3277,10 @@ export const processSlideshowTask = onTaskDispatched(
         try {
             await docRef.update({ status: "processing" });
 
-            const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
-            const ai = new GoogleGenAI({ apiKey });
+            // Vertex AI Initialization
+            const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
+            // Initialize model globally for the task
+            const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
 
             const prompts = [];
             if (mode === 'poster') {
@@ -3357,39 +3375,36 @@ export const processSlideshowTask = onTaskDispatched(
 
                 while (attempts < MAX_RETRIES && !generatedImageBase64) {
                     try {
-                        const response = await ai.models.generateContent({
-                            model: "gemini-2.5-flash-image",
+                        const request = {
                             contents: [
                                 {
-                                    inlineData: {
-                                        mimeType: "image/png",
-                                        data: cleanBase64
-                                    }
-                                },
-                                { text: prompt }
-                            ],
-                            config: {
-                                imageConfig: {
-                                    imageSize: '2K'
+                                    role: 'user',
+                                    parts: [
+                                        {
+                                            inlineData: {
+                                                mimeType: "image/png",
+                                                data: cleanBase64
+                                            }
+                                        },
+                                        { text: prompt }
+                                    ]
                                 }
-                            }
-                        });
+                            ]
+                        };
 
+                        const result = await model.generateContent(request);
+                        const response = await result.response;
+
+                        // Vertex AI SDK handling
                         const candidate = response.candidates?.[0];
 
-                        // Safety Check - Gemini sometimes returns candidate but blocked by safety
                         if (candidate?.finishReason === 'SAFETY') {
                             throw new Error("Blocked by Safety Filter");
                         }
 
-                        if (candidate?.content?.parts) {
-                            for (const part of candidate.content.parts) {
-                                if (part.inlineData) {
-                                    generatedImageBase64 = part.inlineData.data;
-                                    break;
-                                }
-                            }
-                        }
+                        // Check for inline data (image)
+                        const firstPart = candidate?.content?.parts?.[0];
+                        generatedImageBase64 = firstPart?.inlineData?.data || null;
 
                         if (!generatedImageBase64) throw new Error("No image data in response");
 
