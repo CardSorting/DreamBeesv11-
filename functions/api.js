@@ -32,9 +32,38 @@ export const api = onCall({ memory: "256MiB" }, async (request) => {
 
     const { action } = request.data;
     const uid = request.auth?.uid;
-    const clientIp = request.rawRequest.ip;
+    const clientIp = request.rawRequest?.ip || "unknown";
+
+    console.log(`[API_DEBUG] action=${action}, uid=${uid}, IP=${clientIp}`);
 
     try {
+        // --- 0. Pre-Flight Actions (Bypass Abuse Checks) ---
+        if (action === 'initializeUser') {
+            if (!uid) throw new HttpsError('unauthenticated', 'User must be logged in.');
+
+            const userRef = db.collection('users').doc(uid);
+            const userSnap = await userRef.get();
+
+            if (!userSnap.exists) {
+                console.log(`[API_DEBUG] Creating user doc for ${uid}`);
+                await userRef.set({
+                    uid,
+                    email: request.auth.token.email || "",
+                    displayName: request.auth.token.name || "",
+                    photoURL: request.auth.token.picture || "",
+                    createdAt: new Date(),
+                    zaps: 10,
+                    reels: 0,
+                    subscriptionStatus: 'inactive',
+                    role: 'user'
+                });
+                console.log(`[API_DEBUG] User doc created for ${uid}`);
+            } else {
+                console.log(`[API_DEBUG] User doc already exists for ${uid}`);
+            }
+            return { success: true };
+        }
+
         // --- 1. IP Level Protection ---
         await checkIpThrottle(clientIp);
 
@@ -133,9 +162,6 @@ export const api = onCall({ memory: "256MiB" }, async (request) => {
             case 'chatPersona': return Persona.handleChatPersona(request);
 
             case 'toggleBookmark': return Data.handleToggleBookmark(request);
-
-            // User Intialization
-            case 'initializeUser': return { success: true };
 
             default:
                 throw new HttpsError('invalid-argument', `Unknown action: ${action}`);

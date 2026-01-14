@@ -39,7 +39,7 @@ export const handleError = (error, context = {}) => {
     const msg = error.message?.toLowerCase() || "";
 
     // Resource Exhausted / Quota
-    if (msg.includes("insufficient") || msg.includes("quota") || msg.includes("rate limit")) {
+    if (msg.includes("quota") || msg.includes("rate limit") || msg.includes("exhausted")) {
         return new HttpsError('resource-exhausted', "Service temporarily unavailable due to load or limits.", error);
     }
 
@@ -49,8 +49,8 @@ export const handleError = (error, context = {}) => {
     }
 
     // Auth/Permissions (generic catch from libraries)
-    if (msg.includes("unauthorized") || msg.includes("forbidden") || msg.includes("permission")) {
-        return new HttpsError('permission-denied', "Action not authorized.", error);
+    if (msg.includes("unauthorized") || msg.includes("forbidden") || msg.includes("permission") || msg.includes("insufficient")) {
+        return new HttpsError('permission-denied', "Action not authorized or insufficient permissions.", error);
     }
 
     // Default to Internal (obfuscated for security, but logged above)
