@@ -124,6 +124,9 @@ export const api = onCall({ memory: "256MiB" }, async (request) => {
 
             case 'toggleBookmark': return Data.handleToggleBookmark(request);
 
+            // User Intialization
+            case 'initializeUser': return { success: true };
+
             default:
                 throw new HttpsError('invalid-argument', `Unknown action: ${action}`);
         }

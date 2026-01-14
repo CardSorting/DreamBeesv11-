@@ -9,6 +9,9 @@ import {
     signInWithPopup,
     getRedirectResult
 } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { httpsCallable } from "firebase/functions";
+import { functions, db } from "../firebase";
 import LoadingScreen from "../components/LoadingScreen";
 
 const AuthContext = createContext();
@@ -38,6 +41,46 @@ export function AuthProvider({ children }) {
         return signOut(auth);
     }
 
+
+    async function ensureUserInitialized(user) {
+        if (!user) return;
+
+        try {
+            // 1. Validated Check: Does user exist in Firestore?
+            const userRef = doc(db, 'users', user.uid);
+            const userSnap = await getDoc(userRef);
+
+            if (userSnap.exists()) {
+                console.log("User document verified exist.");
+                return;
+            }
+
+            console.log("User document missing, initializing...");
+
+            // 2. Retry Logic for Creation
+            const initializeUser = httpsCallable(functions, 'api');
+            let attempt = 0;
+            const maxAttempts = 3;
+
+            while (attempt < maxAttempts) {
+                try {
+                    attempt++;
+                    await initializeUser({ action: 'initializeUser' });
+                    console.log(`User initialization successful on attempt ${attempt}`);
+                    return;
+                } catch (err) {
+                    console.error(`User initialization failed (attempt ${attempt}/${maxAttempts}):`, err);
+                    if (attempt === maxAttempts) throw err;
+                    // Wait 1s before retry
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+            }
+        } catch (error) {
+            console.error("Critical: Failed to ensure user initialization:", error);
+            // Optionally set global error state here if strict blocking is needed
+        }
+    }
+
     useEffect(() => {
         // Handle redirect result first?
         // In many cases onAuthStateChanged picks it up, but getRedirectResult ensures 
@@ -58,6 +101,12 @@ export function AuthProvider({ children }) {
             // To be robust against the "black screen on redirect", we ensure we don't 
             // set loading=false until we are sure. But 'onAuthStateChanged' is generally 
             // the definitive signal for "initialization complete".
+
+            if (user) {
+                // Trigger robust JIT user creation
+                // We don't await this to keep UI unblocked, but it runs in background
+                ensureUserInitialized(user);
+            }
 
             setCurrentUser(user);
             setLoading(false);
