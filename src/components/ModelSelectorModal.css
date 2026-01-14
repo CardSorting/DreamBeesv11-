@@ -164,7 +164,7 @@
     flex: 1;
     overflow: hidden;
     /* No scroll, pagination handles it */
-    padding: 0 28px 40px;
+    padding: 0 28px 50px;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 20px;
