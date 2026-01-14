@@ -185,3 +185,76 @@ export async function checkUserQuota(uid, action) {
     }
 }
 
+
+/**
+ * Checks the user's abuse score.
+ * @param {string} uid - User ID
+ */
+export async function checkAbuseScore(uid) {
+    if (!uid) return;
+    const db = getFirestore();
+    const scoreRef = db.collection('abuse_scores').doc(uid);
+    const scoreDoc = await scoreRef.get();
+
+    if (scoreDoc.exists) {
+        const data = scoreDoc.data();
+        if (data.score < 0) { // arbitrary threshold
+            // If score is too low, maybe block specific high-risk actions or subject to stricter limits
+            // for now, just a placeholder check logic
+            if (data.score < -50) {
+                throw new HttpsError('permission-denied', "Account restricted due to low trust score.");
+            }
+        }
+    }
+}
+
+/**
+ * Token Bucket Rate Limiter
+ * @param {string} key - Bucket ID (e.g. "tb:user:123:gen")
+ * @param {number} cost - Tokens to consume
+ * @param {number} capacity - Max tokens in bucket
+ * @param {number} refillRate - Tokens added per second
+ */
+export async function checkTokenBucket(key, cost, capacity, refillRate) {
+    const db = getFirestore();
+    const docRef = db.collection('rate_limits').doc(`token_bucket_${key.replace(/[:.]/g, '_')}`);
+    const now = Date.now();
+
+    await db.runTransaction(async (t) => {
+        const doc = await t.get(docRef);
+        const data = doc.data() || {};
+
+        let tokens = data.tokens !== undefined ? data.tokens : capacity;
+        let lastRefill = data.lastRefill || now;
+
+        const delta = (now - lastRefill) / 1000;
+        const tokensToAdd = delta * refillRate;
+
+        tokens = Math.min(capacity, tokens + tokensToAdd);
+
+        if (tokens < cost) {
+            throw new HttpsError('resource-exhausted', "Rate limit exceeded. Please wait.");
+        }
+
+        t.set(docRef, {
+            tokens: tokens - cost,
+            lastRefill: now,
+            updatedAt: FieldValue.serverTimestamp()
+        }, { merge: true });
+    });
+}
+
+/**
+ * Records a violation (e.g. rate limit hit)
+ * @param {string} uid 
+ * @param {string} type 
+ */
+export async function recordViolation(uid, type) {
+    if (!uid) return;
+    const db = getFirestore();
+    await db.collection('abuse_logs').add({
+        userId: uid,
+        type: type,
+        timestamp: FieldValue.serverTimestamp()
+    });
+}

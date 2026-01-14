@@ -1,7 +1,7 @@
 import { onCall, onRequest, HttpsError } from "firebase-functions/v2/https";
 import { db, FieldValue, getFunctions } from "./firebaseInit.js";
 import { s3Client, fetchWithTimeout, getPromptHash, getPromptMetadata, findPrimaryUrl, detectImageFormat } from "./utils.js";
-import { transformImageWithGemini, generateVisionPrompt, enhancePromptWithGemini, SLIDESHOW_Style_INSTRUCTION, SLIDESHOW_MASTER_PROMPT, getSlidePrompts } from "./ai.js";
+import { transformImageWithGemini, generateVisionPrompt, enhancePromptWithGemini, SLIDESHOW_STYLE_INSTRUCTION, SLIDESHOW_MASTER_PROMPT, getSlidePrompts } from "./ai.js";
 import { VALID_MODELS, B2_BUCKET, B2_PUBLIC_URL } from "./constants.js";
 import { createCheckoutSession, constructWebhookEvent, createPortalSession } from "./stripeHelpers.js";
 import {

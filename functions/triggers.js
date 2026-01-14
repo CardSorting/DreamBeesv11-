@@ -61,3 +61,8 @@ export const onEnhanceQueueCreatedV3 = onDocumentCreated("enhance_queue/{request
         });
     }
 });
+
+export const triggers = {
+    onAnalysisQueueCreatedV3,
+    onEnhanceQueueCreatedV3
+};

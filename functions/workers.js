@@ -594,3 +594,10 @@ export const processSlideshowTask = onTaskDispatched(
         }
     }
 );
+
+export const workers = {
+    processImageTask,
+    processVideoTask,
+    processDressUpTask,
+    processSlideshowTask
+};
