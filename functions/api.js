@@ -41,27 +41,41 @@ export const api = onCall({ memory: "256MiB" }, async (request) => {
         if (action === 'initializeUser') {
             if (!uid) throw new HttpsError('unauthenticated', 'User must be logged in.');
 
-            const userRef = db.collection('users').doc(uid);
-            const userSnap = await userRef.get();
+            try {
+                console.log(`[INIT_DEBUG] Step 1: Creating reference to users/${uid}`);
+                const userRef = db.collection('users').doc(uid);
 
-            if (!userSnap.exists) {
-                console.log(`[API_DEBUG] Creating user doc for ${uid}`);
-                await userRef.set({
-                    uid,
-                    email: request.auth.token.email || "",
-                    displayName: request.auth.token.name || "",
-                    photoURL: request.auth.token.picture || "",
-                    createdAt: new Date(),
-                    zaps: 10,
-                    reels: 0,
-                    subscriptionStatus: 'inactive',
-                    role: 'user'
+                console.log(`[INIT_DEBUG] Step 2: Attempting to read document...`);
+                const userSnap = await userRef.get();
+                console.log(`[INIT_DEBUG] Step 3: Read successful. Exists: ${userSnap.exists}`);
+
+                if (!userSnap.exists) {
+                    console.log(`[INIT_DEBUG] Step 4: Creating user doc for ${uid}`);
+                    await userRef.set({
+                        uid,
+                        email: request.auth.token.email || "",
+                        displayName: request.auth.token.name || "",
+                        photoURL: request.auth.token.picture || "",
+                        createdAt: new Date(),
+                        zaps: 10,
+                        reels: 0,
+                        subscriptionStatus: 'inactive',
+                        role: 'user'
+                    });
+                    console.log(`[INIT_DEBUG] Step 5: User doc created successfully`);
+                } else {
+                    console.log(`[INIT_DEBUG] User doc already exists for ${uid}`);
+                }
+                return { success: true };
+            } catch (initError) {
+                console.error(`[INIT_DEBUG] FAILED at Firestore operation:`, {
+                    errorMessage: initError.message,
+                    errorCode: initError.code,
+                    errorName: initError.name,
+                    projectId: process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || 'unknown'
                 });
-                console.log(`[API_DEBUG] User doc created for ${uid}`);
-            } else {
-                console.log(`[API_DEBUG] User doc already exists for ${uid}`);
+                throw initError;
             }
-            return { success: true };
         }
 
         // --- 1. IP Level Protection ---
@@ -167,6 +181,13 @@ export const api = onCall({ memory: "256MiB" }, async (request) => {
                 throw new HttpsError('invalid-argument', `Unknown action: ${action}`);
         }
     } catch (error) {
+        console.error("[CRITICAL_BACKEND_ERROR]", {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            metadata: error.metadata ? error.metadata.getMap() : null,
+            stack: error.stack
+        });
         if (error.code === 'resource-exhausted' && uid) {
             recordViolation(uid, 'rate_limit_exceeded').catch(e => logger.error("Failed to record violation", e));
         }

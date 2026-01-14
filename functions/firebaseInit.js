@@ -1,10 +1,15 @@
-import { initializeApp } from "firebase-admin/app";
+import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getFunctions } from "firebase-admin/functions";
 
-// Initialize Firebase Admin
-// In Cloud Functions v2, initializeApp() without arguments automatically uses the project's default credentials.
-initializeApp();
+// Initialize Firebase Admin with Application Default Credentials
+// This automatically picks up the service account in Cloud Functions v2
+const app = initializeApp({
+    credential: applicationDefault(),
+    projectId: process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || "dreambees-alchemist"
+});
+
+console.log("[FirebaseInit] Initialized with project:", app.options.projectId);
 
 const db = getFirestore();
 export { db, FieldValue, getFunctions };
