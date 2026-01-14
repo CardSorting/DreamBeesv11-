@@ -15,6 +15,14 @@ import sharp from "sharp";
 // GoogleGenAI removed, using VertexAI for image gen
 import { VertexAI } from "@google-cloud/vertexai";
 import { createRequire } from "module";
+import {
+    checkRateLimit,
+    checkIpThrottle,
+    checkUserAbuseStatus,
+    checkUserQuota,
+    getActionLimits
+} from "./abuseProtection.js";
+
 const require = createRequire(import.meta.url);
 
 
@@ -3588,44 +3596,7 @@ export const processSlideshowTask = onTaskDispatched(
     }
 );
 
-export const exchangeTurnstileToken = onCall(async (request) => {
-    const { token } = request.data;
-    const SECRET_KEY = process.env.TURNSTILE_SECRET_KEY;
 
-    if (!token) {
-        throw new HttpsError('invalid-argument', 'The Turnstile token is required.');
-    }
-
-    try {
-        const verifyResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `secret=${encodeURIComponent(SECRET_KEY)}&response=${encodeURIComponent(token)}`,
-        });
-
-        const outcome = await verifyResponse.json();
-
-        if (outcome.success) {
-            // Success! Generate a Firebase App Check token.
-            // Note: createToken expects an app ID. We use a generic one or the requesting app ID if available.
-            const appId = request.app?.appId || "1:519217549360:web:867310181e910b5df15df5"; // Fallback to the main web app ID
-            const appCheckToken = await admin.appCheck().createToken(appId, { ttlMillis: 60 * 60 * 1000 }); // 1 hour TTL
-            return {
-                token: appCheckToken.token,
-                expireTimeMillis: appCheckToken.expireTimeMillis
-            };
-        } else {
-            console.error('[Turnstile] Verification failed:', outcome['error-codes']);
-            throw new HttpsError('unauthenticated', 'Turnstile verification failed.');
-        }
-    } catch (error) {
-        console.error('[Turnstile] Error during exchange:', error);
-        if (error instanceof HttpsError) throw error;
-        throw new HttpsError('internal', 'Internal error during Turnstile exchange.');
-    }
-});
 
 export const api = onCall(async (request) => {
     // Basic App Check logging (Warn Mode) - centralized here
@@ -3634,7 +3605,33 @@ export const api = onCall(async (request) => {
     }
 
     const { action } = request.data;
+    const uid = request.auth?.uid;
+    const clientIp = request.rawRequest.ip;
+
     try {
+        // --- 1. IP Level Protection ---
+        await checkIpThrottle(clientIp);
+
+        // --- 2. User Level Protection ---
+        if (uid) {
+            // Check for bans/shadowbans
+            await checkUserAbuseStatus(uid);
+
+            // Check Per-Action Rate Limit
+            // Get user subscription status first (optimized: only if needed for limits)
+            // For now, let's assume standard limits to avoid extra DB read, 
+            // or pass isPremium=false for safety (stricter limits by default)
+            // Ideally we check claims or read user doc. 
+            // Let's assume non-premium for rate limiting purposes to be safe/fast,
+            // or read the user doc if we want to be nice to paying users.
+            // PROD OPTIMIZATION: Put subscription status in Custom Claims.
+            const limits = getActionLimits(action, false);
+            await checkRateLimit(`user:${uid}:${action}`, limits.limit, limits.window);
+
+            // Check Daily Quota (Long-term limits)
+            await checkUserQuota(uid, action);
+        }
+
         switch (action) {
             case 'createGenerationRequest': return handleCreateGenerationRequest(request);
             case 'createVideoGenerationRequest': return handleCreateVideoGenerationRequest(request);
