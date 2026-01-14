@@ -4,12 +4,55 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { ArrowLeft, Send, Sparkles, Loader2, Info, MessageCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, Loader2, Info, MessageCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getOptimizedImageUrl } from '../utils';
 import SEO from '../components/SEO';
 import toast from 'react-hot-toast';
 import './PersonaChat.css';
+
+const Typewriter = ({ text, onUpdate }) => {
+    const [display, setDisplay] = useState('');
+    const [isTyping, setIsTyping] = useState(true);
+    const timeoutRef = useRef(null);
+
+    useEffect(() => {
+        let currentIndex = 0;
+        setDisplay('');
+        setIsTyping(true);
+
+        const type = () => {
+            if (currentIndex < text.length) {
+                const char = text.charAt(currentIndex);
+                setDisplay(prev => prev + char);
+                currentIndex++;
+                onUpdate?.();
+
+                // Natural typing rhythm
+                let delay = Math.random() * 20 + 15; // Base 15-35ms
+
+                // Pause for punctuation
+                if (['.', '!', '?', '\n'].includes(char)) delay += 400;
+                else if ([',', ';', ':'].includes(char)) delay += 150;
+
+                timeoutRef.current = setTimeout(type, delay);
+            } else {
+                setIsTyping(false);
+            }
+        };
+
+        timeoutRef.current = setTimeout(type, 50);
+
+        return () => clearTimeout(timeoutRef.current);
+    }, [text, onUpdate]);
+
+    return (
+        <span>
+            {display}
+            {isTyping && <span className="typing-cursor"></span>}
+        </span>
+    );
+};
 
 export default function PersonaChat() {
     const { id } = useParams(); // imageId
@@ -118,10 +161,14 @@ export default function PersonaChat() {
         return () => { mounted = false; };
     }, [id, imageItem, functions, persona]);
 
-    useEffect(() => {
+    const scrollToBottom = () => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
+    };
+
+    useEffect(() => {
+        scrollToBottom();
     }, [messages, isLoading, isSending]);
 
     const handleSend = async () => {
@@ -164,6 +211,20 @@ export default function PersonaChat() {
         } finally {
             setIsSending(false);
         }
+    };
+
+    const handleReset = () => {
+        if (persona?.greeting) {
+            setMessages([{
+                id: 'greeting-' + Date.now(),
+                role: 'model',
+                text: persona.greeting,
+                timestamp: Date.now()
+            }]);
+        } else {
+            setMessages([]);
+        }
+        toast.success("Memory wiped.");
     };
 
     const handleKeyDown = (e) => {
@@ -230,17 +291,26 @@ export default function PersonaChat() {
                                 </div>
                             </div>
                         )}
-                        <button
-                            className="info-btn"
-                            title="Character Backstory"
-                            onClick={() => persona?.backstory && toast(persona.backstory, {
-                                icon: '📖',
-                                style: { background: '#222', color: '#fff' },
-                                duration: 5000
-                            })}
-                        >
-                            <Info size={20} />
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button
+                                className="info-btn"
+                                title="Reset Session"
+                                onClick={handleReset}
+                            >
+                                <RefreshCw size={18} />
+                            </button>
+                            <button
+                                className="info-btn"
+                                title="Character Backstory"
+                                onClick={() => persona?.backstory && toast(persona.backstory, {
+                                    icon: '📖',
+                                    style: { background: '#222', color: '#fff' },
+                                    duration: 5000
+                                })}
+                            >
+                                <Info size={20} />
+                            </button>
+                        </div>
                     </header>
 
                     <div className="messages-area" ref={scrollRef}>
@@ -259,7 +329,11 @@ export default function PersonaChat() {
                                     </div>
                                 )}
                                 <div className={`message-bubble ${msg.role === 'user' ? 'user-bubble' : 'model-bubble'}`}>
-                                    {msg.text}
+                                    {msg.role === 'model' && idx === messages.length - 1 ? (
+                                        <Typewriter text={msg.text} onUpdate={scrollToBottom} />
+                                    ) : (
+                                        msg.text
+                                    )}
                                 </div>
                             </div>
                         ))}

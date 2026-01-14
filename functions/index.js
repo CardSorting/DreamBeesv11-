@@ -188,11 +188,40 @@ export const processImageTask = onTaskDispatched(
 
             let response;
             if (modelId === 'zit-model') {
+                const ZIT_A10G_ENDPOINT = "https://mariecoderinc--zit-a10g-fastapi-app.modal.run/generate";
+                const ZIT_H100_ENDPOINT = "https://mariecoderinc--zit-h100-stable-fastapi-app.modal.run/generate";
+
+                // Default to A10G, use H100 if turbo is requested
+                const endpoint = useTurbo ? ZIT_H100_ENDPOINT : ZIT_A10G_ENDPOINT;
+
                 const zBody = {
-                    prompt, steps,
-                    ...((['1:1', '16:9', '9:16', '4:3', '3:4', '21:9', '9:21'].includes(aspectRatio)) ? { aspect_ratio: aspectRatio } : { width: resolution.width, height: resolution.height })
+                    prompt,
+                    steps,
+                    // A10G endpoint prefers explicit width/height but supports aspect_ratio if the model handles it.
+                    // To be safe and consistent with new docs, we'll send width/height from the resolution map 
+                    // which is already calculated above based on aspectRatio.
+                    width: resolution.width,
+                    height: resolution.height
                 };
-                response = await fetchWithTimeout("https://mariecoderinc--zit-h100-stable-fastapi-app.modal.run/generate", {
+
+                // Add aspect_ratio only if using H100 which we know supports it, or if we want to risk it on A10G.
+                // The resolution map above is reliable. Let's just use width/height for A10G to match the curl example in docs.
+                // However, the original code sent aspect_ratio for specific ratios. 
+                // Let's stick to the previous logic for H100 compatibility if turbo, but strictly width/height for A10G if not turbo?
+                // Actually, simplest is to use width/height for both if possible, or keep existing logic for H100 and new for A10G.
+                // Let's defer to the safe approach: 
+                // If Turbo (H100), keep loosely existing behavior (sending aspect_ratio if valid).
+                // If A10G, send width/height.
+
+                if (useTurbo && ['1:1', '16:9', '9:16', '4:3', '3:4', '21:9', '9:21'].includes(aspectRatio)) {
+                    delete zBody.width;
+                    delete zBody.height;
+                    zBody.aspect_ratio = aspectRatio;
+                }
+
+                console.log(`[${requestId}] Routing zit-model request to ${useTurbo ? 'H100 (Turbo)' : 'A10G (Standard)'} endpoint: ${endpoint}`);
+
+                response = await fetchWithTimeout(endpoint, {
                     method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(zBody),
                     timeout: 180000
