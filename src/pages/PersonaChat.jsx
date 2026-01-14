@@ -26,25 +26,30 @@ const Typewriter = ({ text, onUpdate }) => {
                 const char = text.charAt(currentIndex);
                 setDisplay(prev => prev + char);
                 currentIndex++;
-                onUpdate?.();
+
+                // Throttled scroll update (every 3rd character or punctuation)
+                if (currentIndex % 3 === 0 || ['.', '!', '?', '\n'].includes(char)) {
+                    onUpdate?.();
+                }
 
                 // Natural typing rhythm
-                let delay = Math.random() * 20 + 15; // Base 15-35ms
+                let delay = Math.random() * 15 + 10; // Faster base 10-25ms
 
                 // Pause for punctuation
-                if (['.', '!', '?', '\n'].includes(char)) delay += 400;
-                else if ([',', ';', ':'].includes(char)) delay += 150;
+                if (['.', '!', '?', '\n'].includes(char)) delay += 300;
+                else if ([',', ';', ':'].includes(char)) delay += 100;
 
                 timeoutRef.current = setTimeout(type, delay);
             } else {
                 setIsTyping(false);
+                onUpdate?.(); // Final scroll update
             }
         };
 
         timeoutRef.current = setTimeout(type, 50);
 
         return () => clearTimeout(timeoutRef.current);
-    }, [text, onUpdate]);
+    }, [text]); // Removed onUpdate from dependency to prevent re-renders reset
 
     return (
         <span>
@@ -66,7 +71,7 @@ export default function PersonaChat() {
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSending, setIsSending] = useState(false);
-    const [creationStep, setCreationStep] = useState('Analyzing visual data...');
+    const [creationStep, setCreationStep] = useState('Initializing...');
     const [error, setError] = useState(null);
 
     const scrollRef = useRef(null);
@@ -161,14 +166,23 @@ export default function PersonaChat() {
         return () => { mounted = false; };
     }, [id, imageItem, functions, persona]);
 
-    const scrollToBottom = () => {
+    const scrollToBottom = (behavior = 'smooth') => {
         if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+            // Only auto-scroll if user is near bottom or it's a forced update
+            const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+
+            if (isNearBottom) {
+                scrollRef.current.scrollTo({ top: scrollHeight, behavior });
+            }
         }
     };
 
     useEffect(() => {
-        scrollToBottom();
+        // Force scroll on new messages
+        if (scrollRef.current) {
+            scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+        }
     }, [messages, isLoading, isSending]);
 
     const handleSend = async () => {
@@ -267,7 +281,7 @@ export default function PersonaChat() {
                     )}
                     <div className="visual-overlay"></div>
 
-                    <button onClick={() => navigate(-1)} className="back-btn-floating">
+                    <button onClick={() => navigate(-1)} className="back-btn-floating" aria-label="Go back">
                         <ArrowLeft size={24} color="white" />
                     </button>
                 </div>
@@ -276,8 +290,8 @@ export default function PersonaChat() {
                     <header className="chat-header">
                         {isLoading ? (
                             <div className="loading-header">
-                                <Loader2 className="animate-spin" size={18} style={{ color: 'var(--color-accent-primary)' }} />
-                                <span className="loading-text">{creationStep}</span>
+                                <div className="skeleton-avatar-header"></div>
+                                <div className="skeleton-text-header"></div>
                             </div>
                         ) : (
                             <div className="persona-info">
@@ -302,6 +316,7 @@ export default function PersonaChat() {
                                 className="info-btn"
                                 title="Reset Session"
                                 onClick={handleReset}
+                                aria-label="Reset session"
                             >
                                 <RefreshCw size={18} />
                             </button>
@@ -313,6 +328,7 @@ export default function PersonaChat() {
                                     style: { background: '#222', color: '#fff' },
                                     duration: 5000
                                 })}
+                                aria-label="View character backstory"
                             >
                                 <Info size={20} />
                             </button>
@@ -320,6 +336,19 @@ export default function PersonaChat() {
                     </header>
 
                     <div className="messages-area" ref={scrollRef}>
+                        {isLoading && messages.length === 0 && (
+                            <div className="skeleton-loader-container">
+                                <div className="message-row model-row">
+                                    <div className="skeleton-avatar"></div>
+                                    <div className="skeleton-bubble short"></div>
+                                </div>
+                                <div className="message-row model-row">
+                                    <div className="skeleton-avatar"></div>
+                                    <div className="skeleton-bubble medium"></div>
+                                </div>
+                            </div>
+                        )}
+
                         {messages.length === 0 && !isLoading && (
                             <div className="empty-chat-hint">
                                 <MessageCircle size={32} style={{ opacity: 0.3, marginBottom: 12 }} />
@@ -361,19 +390,36 @@ export default function PersonaChat() {
                     <div className="input-area">
                         <div className="input-wrapper">
                             <textarea
+                                ref={(el) => {
+                                    if (el) {
+                                        el.style.height = 'auto';
+                                        el.style.height = el.scrollHeight + 'px';
+                                    }
+                                }}
                                 value={inputValue}
-                                onChange={(e) => setInputValue(e.target.value)}
+                                onChange={(e) => {
+                                    setInputValue(e.target.value);
+                                    e.target.style.height = 'auto';
+                                    e.target.style.height = e.target.scrollHeight + 'px';
+                                }}
                                 onKeyDown={handleKeyDown}
                                 placeholder={isLoading ? "Waking up character..." : `Message ${persona?.name || 'character'}...`}
                                 disabled={isLoading || isSending}
                                 rows={1}
+                                style={{ maxHeight: '150px', overflowY: 'auto' }}
+                                aria-label={`Message ${persona?.name || 'character'}`}
                             />
                             <button
                                 onClick={handleSend}
                                 disabled={!inputValue.trim() || isLoading || isSending}
-                                className="send-btn"
+                                className={`send-btn ${isSending ? 'sending' : ''}`}
+                                aria-label="Send message"
                             >
-                                <Send size={18} strokeWidth={2.5} />
+                                {isSending ? (
+                                    <span className="sending-dot"></span>
+                                ) : (
+                                    <Send size={20} strokeWidth={2.5} />
+                                )}
                             </button>
                         </div>
                     </div>
