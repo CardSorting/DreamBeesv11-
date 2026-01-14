@@ -63,6 +63,12 @@ export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt
             }
         }, (error) => {
             console.error("Error fetching history:", error);
+            // Ignore index building errors which are temporary
+            if (error.code === 'failed-precondition') {
+                console.warn("History index is building...");
+            } else {
+                toast.error("Could not sync history", { id: 'history-error' });
+            }
             setLoading(false);
         });
 

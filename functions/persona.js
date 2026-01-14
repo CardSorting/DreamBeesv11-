@@ -58,6 +58,7 @@ Do not mention AI, images, or analysis.
 /**
  * Cloud Function: Create Persona for Image
  * Triggers when user clicks "Interact"
+ * Uses gemini-1.5-flash-001 for persona generation
  */
 export const createImagePersona = onCall({
     memory: "1GiB",

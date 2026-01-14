@@ -26,45 +26,82 @@ if (typeof window !== "undefined") {
 
   const turnstileProvider = new CustomProvider({
     getToken: async () => {
-      return new Promise((resolve, reject) => {
-        // Create a hidden container for Turnstile if it doesn't exist
-        let container = document.getElementById('turnstile-container');
-        if (!container) {
-          container = document.createElement('div');
-          container.id = 'turnstile-container';
-          container.style.display = 'none';
-          document.body.appendChild(container);
-        }
+      // Create a hidden container for Turnstile if it doesn't exist
+      // Use visibility: hidden instead of display: none to avoid rendering issues
+      let container = document.getElementById('turnstile-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'turnstile-container';
+        container.style.visibility = 'hidden';
+        container.style.position = 'absolute';
+        container.style.top = '-9999px';
+        container.style.left = '-9999px';
+        document.body.appendChild(container);
+      }
 
-        try {
-          window.turnstile.render('#turnstile-container', {
-            sitekey: import.meta.env.VITE_TURNSTILE_SITE_KEY,
-            callback: async (token) => {
-              try {
-                const exchangeFn = httpsCallable(getFunctions(app), 'exchangeTurnstileToken');
-                const result = await exchangeFn({ token });
-                resolve({
-                  token: result.data.token,
-                  expireTimeMillis: result.data.expireTimeMillis
-                });
-              } catch (err) {
-                console.error('App Check exchange failed:', err);
-                reject(err);
-              } finally {
-                // Cleanup
-                window.turnstile.remove();
-              }
-            },
-            'error-callback': (err) => {
-              console.error('Turnstile error:', err);
-              reject(new Error('Turnstile widget failed to render.'));
+      const ensureTurnstileLoaded = () => {
+        return new Promise((resolve, reject) => {
+          if (window.turnstile) return resolve();
+
+          // Check if script is already present
+          let script = document.querySelector('script[src^="https://challenges.cloudflare.com/turnstile/v0/api.js"]');
+          if (!script) {
+            script = document.createElement('script');
+            script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+            script.async = true;
+            script.defer = true;
+            document.head.appendChild(script);
+          }
+
+          const start = Date.now();
+          const interval = setInterval(() => {
+            if (window.turnstile) {
+              clearInterval(interval);
+              resolve();
+            } else if (Date.now() - start > 15000) { // 15s timeout
+              clearInterval(interval);
+              reject(new Error("Turnstile script load timed out"));
             }
-          });
-        } catch (err) {
-          console.error('Turnstile render failed:', err);
-          reject(err);
-        }
-      });
+          }, 100);
+        });
+      };
+
+      try {
+        await ensureTurnstileLoaded();
+
+        return new Promise((resolve, reject) => {
+          try {
+            const widgetId = window.turnstile.render('#turnstile-container', {
+              sitekey: import.meta.env.VITE_TURNSTILE_SITE_KEY,
+              callback: async (token) => {
+                try {
+                  const exchangeFn = httpsCallable(getFunctions(app), 'exchangeTurnstileToken');
+                  const result = await exchangeFn({ token });
+                  resolve({
+                    token: result.data.token,
+                    expireTimeMillis: result.data.expireTimeMillis
+                  });
+                } catch (err) {
+                  console.error('App Check exchange failed:', err);
+                  reject(err);
+                } finally {
+                  try { window.turnstile.remove(widgetId); } catch (e) { }
+                }
+              },
+              'error-callback': (err) => {
+                console.error('Turnstile widget error:', err);
+                // Retry capability could be added here, but rejecting propagates to App Check retry
+                reject(new Error('Turnstile widget failed to render.'));
+              }
+            });
+          } catch (renderErr) {
+            reject(renderErr);
+          }
+        });
+      } catch (err) {
+        console.error('Turnstile preparation failed:', err);
+        throw err;
+      }
     }
   });
 

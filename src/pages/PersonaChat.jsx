@@ -240,7 +240,13 @@ export default function PersonaChat() {
                 <AlertCircle size={48} color="#ef4444" style={{ marginBottom: 16 }} />
                 <h2>Connection Failed</h2>
                 <p>{error}</p>
-                <button onClick={() => navigate(-1)} className="back-btn-simple">Go Back</button>
+                <p>{error}</p>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                    <button onClick={() => window.location.reload()} className="back-btn-simple" style={{ background: 'white', color: 'black' }}>
+                        <RefreshCw size={16} /> Retry
+                    </button>
+                    <button onClick={() => navigate(-1)} className="back-btn-simple">Go Back</button>
+                </div>
             </div>
         );
     }
