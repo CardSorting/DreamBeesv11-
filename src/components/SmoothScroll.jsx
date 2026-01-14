@@ -11,9 +11,11 @@ const SmoothScroll = () => {
             gestureDirection: 'vertical',
             smooth: true,
             mouseMultiplier: 1,
-            smoothTouch: false,
             touchMultiplier: 2,
         });
+
+        // Expose lenis instance globally for scroll locking
+        window.lenis = lenis;
 
         function raf(time) {
             lenis.raf(time);
@@ -24,6 +26,7 @@ const SmoothScroll = () => {
 
         return () => {
             lenis.destroy();
+            window.lenis = null;
         };
     }, []);
 
