@@ -287,104 +287,106 @@ export default function PersonaChat() {
                 </div>
 
                 <div className="chat-panel">
-                    <header className="chat-header">
-                        {isLoading ? (
-                            <div className="loading-header">
-                                <div className="skeleton-avatar-header"></div>
-                                <div className="skeleton-text-header"></div>
-                            </div>
-                        ) : (
-                            <div className="persona-info">
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <div className="header-avatar-mobile">
-                                        <img src={getOptimizedImageUrl(imageItem?.imageUrl)} alt="" />
-                                    </div>
-                                    <div>
-                                        <h1 className="persona-name">{persona?.name}</h1>
-                                        <div className="persona-badges">
-                                            <span className="badge">AI Persona</span>
-                                            {persona?.personality?.split(',')[0] && (
-                                                <span className="badge-outline">{persona.personality.split(',')[0].trim()}</span>
-                                            )}
+                    <div className="chat-content-scroll" ref={scrollRef}>
+                        <header className="chat-header">
+                            {isLoading ? (
+                                <div className="loading-header">
+                                    <div className="skeleton-avatar-header"></div>
+                                    <div className="skeleton-text-header"></div>
+                                </div>
+                            ) : (
+                                <div className="persona-info">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <div className="header-avatar-mobile">
+                                            <img src={getOptimizedImageUrl(imageItem?.imageUrl)} alt="" />
+                                        </div>
+                                        <div>
+                                            <h1 className="persona-name">{persona?.name}</h1>
+                                            <div className="persona-badges">
+                                                <span className="badge">AI Persona</span>
+                                                {persona?.personality?.split(',')[0] && (
+                                                    <span className="badge-outline">{persona.personality.split(',')[0].trim()}</span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
+                            )}
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                    className="info-btn"
+                                    title="Reset Session"
+                                    onClick={handleReset}
+                                    aria-label="Reset session"
+                                >
+                                    <RefreshCw size={18} />
+                                </button>
+                                <button
+                                    className="info-btn"
+                                    title="Character Backstory"
+                                    onClick={() => persona?.backstory && toast(persona.backstory, {
+                                        icon: '📖',
+                                        style: { background: '#222', color: '#fff' },
+                                        duration: 5000
+                                    })}
+                                    aria-label="View character backstory"
+                                >
+                                    <Info size={20} />
+                                </button>
                             </div>
-                        )}
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <button
-                                className="info-btn"
-                                title="Reset Session"
-                                onClick={handleReset}
-                                aria-label="Reset session"
-                            >
-                                <RefreshCw size={18} />
-                            </button>
-                            <button
-                                className="info-btn"
-                                title="Character Backstory"
-                                onClick={() => persona?.backstory && toast(persona.backstory, {
-                                    icon: '📖',
-                                    style: { background: '#222', color: '#fff' },
-                                    duration: 5000
-                                })}
-                                aria-label="View character backstory"
-                            >
-                                <Info size={20} />
-                            </button>
-                        </div>
-                    </header>
+                        </header>
 
-                    <div className="messages-area" ref={scrollRef}>
-                        {isLoading && messages.length === 0 && (
-                            <div className="skeleton-loader-container">
-                                <div className="message-row model-row">
-                                    <div className="skeleton-avatar"></div>
-                                    <div className="skeleton-bubble short"></div>
+                        <div className="messages-area">
+                            {isLoading && messages.length === 0 && (
+                                <div className="skeleton-loader-container">
+                                    <div className="message-row model-row">
+                                        <div className="skeleton-avatar"></div>
+                                        <div className="skeleton-bubble short"></div>
+                                    </div>
+                                    <div className="message-row model-row">
+                                        <div className="skeleton-avatar"></div>
+                                        <div className="skeleton-bubble medium"></div>
+                                    </div>
                                 </div>
-                                <div className="message-row model-row">
-                                    <div className="skeleton-avatar"></div>
-                                    <div className="skeleton-bubble medium"></div>
+                            )}
+
+                            {messages.length === 0 && !isLoading && (
+                                <div className="empty-chat-hint">
+                                    <MessageCircle size={32} style={{ opacity: 0.3, marginBottom: 12 }} />
+                                    <p>Say hello to start the conversation.</p>
                                 </div>
-                            </div>
-                        )}
+                            )}
 
-                        {messages.length === 0 && !isLoading && (
-                            <div className="empty-chat-hint">
-                                <MessageCircle size={32} style={{ opacity: 0.3, marginBottom: 12 }} />
-                                <p>Say hello to start the conversation.</p>
-                            </div>
-                        )}
+                            {messages.map((msg, idx) => (
+                                <div key={msg.id || idx} className={`message-row ${msg.role === 'user' ? 'user-row' : 'model-row'}`}>
+                                    {msg.role === 'model' && (
+                                        <div className="message-avatar">
+                                            <img src={imageItem?.imageUrl} alt="Avatar" />
+                                        </div>
+                                    )}
+                                    <div className={`message-bubble ${msg.role === 'user' ? 'user-bubble' : 'model-bubble'}`}>
+                                        {msg.role === 'model' && idx === messages.length - 1 ? (
+                                            <Typewriter text={msg.text} onUpdate={scrollToBottom} />
+                                        ) : (
+                                            msg.text
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
 
-                        {messages.map((msg, idx) => (
-                            <div key={msg.id || idx} className={`message-row ${msg.role === 'user' ? 'user-row' : 'model-row'}`}>
-                                {msg.role === 'model' && (
+                            {isSending && (
+                                <div className="message-row model-row">
                                     <div className="message-avatar">
                                         <img src={imageItem?.imageUrl} alt="Avatar" />
                                     </div>
-                                )}
-                                <div className={`message-bubble ${msg.role === 'user' ? 'user-bubble' : 'model-bubble'}`}>
-                                    {msg.role === 'model' && idx === messages.length - 1 ? (
-                                        <Typewriter text={msg.text} onUpdate={scrollToBottom} />
-                                    ) : (
-                                        msg.text
-                                    )}
+                                    <div className="typing-bubble">
+                                        <span className="dot"></span>
+                                        <span className="dot"></span>
+                                        <span className="dot"></span>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-
-                        {isSending && (
-                            <div className="message-row model-row">
-                                <div className="message-avatar">
-                                    <img src={imageItem?.imageUrl} alt="Avatar" />
-                                </div>
-                                <div className="typing-bubble">
-                                    <span className="dot"></span>
-                                    <span className="dot"></span>
-                                    <span className="dot"></span>
-                                </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
 
                     <div className="input-area">
