@@ -1,18 +1,14 @@
 
 import "./firebaseInit.js"; // Ensure Firebase Admin is initialized
 
-import { api, stripeWebhook, serveSitemap } from "./api.js";
-import { workers } from "./workers/index.js";
-import { triggers } from "./triggers.js";
-import { createImagePersona, chatWithPersona } from "./persona.js";
+import { api } from "./api.js";
+import { web } from "./web.js";
+import { universalWorker } from "./workers/universal.js";
 
-// Export the grouped functions
+// Export the 3 main services
 export {
     api,
-    stripeWebhook,
-    serveSitemap,
-    workers,
-    triggers,
-    createImagePersona,
-    chatWithPersona
+    web,
+    universalWorker,
 };
+

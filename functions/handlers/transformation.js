@@ -1,5 +1,5 @@
 import { HttpsError } from "firebase-functions/v2/https";
-import { db, FieldValue } from "../firebaseInit.js";
+import { db, FieldValue, getFunctions } from "../firebaseInit.js";
 import { handleError, logger, retryOperation } from "../lib/utils.js";
 import { enhancePromptWithGemini, transformImageWithGemini } from "../lib/ai.js";
 import { VertexAI } from "@google-cloud/vertexai";
@@ -12,6 +12,16 @@ export const handleCreateAnalysisRequest = async (request) => {
 
     try {
         const docRef = await db.collection('analysis_queue').add({ userId: uid, image: image || null, imageUrl: imageUrl || null, status: 'queued', createdAt: new Date() });
+
+        // Enqueue task to 'universalWorker'
+        await getFunctions().taskQueue('workers-universalWorker').enqueue({
+            taskType: 'analysis',
+            requestId: docRef.id,
+            userId: uid,
+            image: image || null,
+            imageUrl: imageUrl || null
+        });
+
         return { requestId: docRef.id };
     } catch (error) {
         throw handleError(error, { uid });
@@ -24,6 +34,15 @@ export const handleCreateEnhanceRequest = async (request) => {
     if (!request.data.prompt) throw new HttpsError('invalid-argument', "Prompt required");
     try {
         const docRef = await db.collection('enhance_queue').add({ userId: uid, originalPrompt: request.data.prompt, status: 'queued', createdAt: new Date() });
+
+        // Enqueue task to 'universalWorker'
+        await getFunctions().taskQueue('workers-universalWorker').enqueue({
+            taskType: 'enhance',
+            requestId: docRef.id,
+            userId: uid,
+            originalPrompt: request.data.prompt
+        });
+
         return { requestId: docRef.id };
     } catch (error) { throw handleError(error, { uid }); }
 };

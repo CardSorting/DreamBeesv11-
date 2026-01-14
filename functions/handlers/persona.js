@@ -1,33 +1,32 @@
-
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { HttpsError } from "firebase-functions/v2/https";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { VertexAI } from "@google-cloud/vertexai";
-import { fetchWithRetry, logger } from "./lib/utils.js";
+import { fetchWithRetry, logger } from "../lib/utils.js";
 
 // Initialize Vertex AI
 const vertexAI = new VertexAI({ project: process.env.GCLOUD_PROJECT, location: "us-central1" });
 
 // Helper to interact with the Generative Model
 async function generatePersonaFromImage(imageBuffer, mimeType) {
-    const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" }); // Using Flash as requested (2.5 not avail? User said 2.5, usually 1.5 or 2.0. Sticking to 1.5-flash or 2.0-flash-exp if available. I'll use gemini-1.5-flash-001 or specifically what they asked if it maps. They said "gemini-2.5-flash". I'll try to find a close match or use the latest flash.) 
+    const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     // Convert buffer to base64
     const imageBase64 = imageBuffer.toString('base64');
 
     const prompt = `
     This image is a character, not a picture.
-You are meeting them for the first time in a casual setting.
-They are aware of you. You are aware of them.
-Do not describe what is visible.
-Do not explain who they are.
-Based on the image, invent who this person is when no one is watching.
-Return raw JSON only with:
-- name
-- personality (written as vibes, not traits)
-- backstory (2–3 sentences, informal)
-- greeting (in character, mid-conversation, natural)
-Avoid formal introductions or self-descriptions.
-Do not mention AI, images, or analysis.
+    You are meeting them for the first time in a casual setting.
+    They are aware of you. You are aware of them.
+    Do not describe what is visible.
+    Do not explain who they are.
+    Based on the image, invent who this person is when no one is watching.
+    Return raw JSON only with:
+    - name
+    - personality (written as vibes, not traits)
+    - backstory (2–3 sentences, informal)
+    - greeting (in character, mid-conversation, natural)
+    Avoid formal introductions or self-descriptions.
+    Do not mention AI, images, or analysis.
     `;
 
     const request = {
@@ -50,15 +49,7 @@ Do not mention AI, images, or analysis.
     return JSON.parse(cleanText);
 }
 
-/**
- * Cloud Function: Create Persona for Image
- * Triggers when user clicks "Interact"
- * Uses gemini-1.5-flash-001 for persona generation
- */
-export const createImagePersona = onCall({
-    memory: "512MiB",
-    timeoutSeconds: 60
-}, async (request) => {
+export const handleCreatePersona = async (request) => {
     // 0. Input Validation
     if (!request.data || !request.data.imageId || !request.data.imageUrl) {
         throw new HttpsError('invalid-argument', 'Missing required parameters: imageId, imageUrl');
@@ -121,15 +112,9 @@ export const createImagePersona = onCall({
     }
 
     return { success: true, persona: personaData, isNew: true };
-});
+};
 
-/**
- * Cloud Function: Chat with Persona
- * Handles the conversation turn (User -> Character)
- */
-export const chatWithPersona = onCall({
-    memory: "256MiB"
-}, async (request) => {
+export const handleChatPersona = async (request) => {
     const { imageId, message, chatHistory } = request.data;
     // chatHistory: Array of { role: 'user' | 'model', text: string }
 
@@ -194,7 +179,7 @@ export const chatWithPersona = onCall({
     // Format history for Vertex SDK
     // Vertex SDK expects: contents: [{ role: 'user', parts: [{ text: ... }] }, ...]
     // Truncate history to avoid context limit issues (keep last 20 messages)
-    const limitedHistory = chatHistory.slice(-20);
+    const limitedHistory = chatHistory ? chatHistory.slice(-20) : [];
 
     const contents = limitedHistory.map(msg => ({
         role: msg.role === 'model' ? 'model' : 'user',
@@ -221,4 +206,4 @@ export const chatWithPersona = onCall({
         logger.error("Gemini Chat Error", e);
         throw new HttpsError('internal', "Failed to get character response.");
     }
-});
+};

@@ -1,7 +1,7 @@
 
 const admin = require('firebase-admin');
 // serviceAccountKey.json is in the root, so from functions/ it is ../serviceAccountKey.json
-const serviceAccount = require('./dreambees-app-gen-v1-firebase-adminsdk-fbsvc-195fd20c32.json');
+const serviceAccount = require('../dreambees-app-gen-v1-firebase-adminsdk-fbsvc-195fd20c32.json');
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)

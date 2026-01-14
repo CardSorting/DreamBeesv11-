@@ -4,7 +4,7 @@ import { getFunctions } from "firebase-admin/functions";
 import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
-const serviceAccount = require("./dreambees-app-gen-v1-firebase-adminsdk-fbsvc-195fd20c32.json");
+const serviceAccount = require("../dreambees-app-gen-v1-firebase-adminsdk-fbsvc-195fd20c32.json");
 
 // Initialize Firebase Admin
 initializeApp({

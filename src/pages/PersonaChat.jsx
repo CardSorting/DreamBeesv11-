@@ -130,10 +130,8 @@ export default function PersonaChat() {
                 // Reset loading ensures we show the "Analyzing" step if we just got the image.
                 if (mounted && !persona) setIsLoading(true);
 
-                setCreationStep('Reading latent personality...');
-
-                const createPersona = httpsCallable(functions, 'createImagePersona');
-                const result = await createPersona({ imageId: id, imageUrl: imageItem.imageUrl });
+                const apiFn = httpsCallable(functions, 'api');
+                const result = await apiFn({ action: 'createPersona', imageId: id, imageUrl: imageItem.imageUrl });
 
                 const data = result.data;
                 if (data.success && mounted) {
@@ -201,10 +199,11 @@ export default function PersonaChat() {
         setIsSending(true);
 
         try {
-            const chatFn = httpsCallable(functions, 'chatWithPersona');
+            const apiFn = httpsCallable(functions, 'api');
             const history = messages.slice(-10).map(m => ({ role: m.role, text: m.text }));
 
-            const result = await chatFn({
+            const result = await apiFn({
+                action: 'chatPersona',
                 imageId: id,
                 message: userText,
                 chatHistory: history

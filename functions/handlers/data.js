@@ -1,5 +1,5 @@
 import { HttpsError } from "firebase-functions/v2/https";
-import { db, FieldValue } from "../firebaseInit.js";
+import { db, FieldValue, getFunctions } from "../firebaseInit.js";
 import { handleError } from "../lib/utils.js";
 
 export const handleGetGenerationHistory = async (request) => {
@@ -84,8 +84,21 @@ export const handleDeleteImage = async (request) => {
     if (!request.auth?.uid) throw new Error("Unauthenticated");
     try {
         const doc = await db.collection('images').doc(request.data.imageId).get();
-        if (doc.exists && doc.data().userId === request.auth.uid) await doc.ref.delete();
-        else throw new Error("Unauthorized or not found");
+        if (doc.exists && doc.data().userId === request.auth.uid) {
+            const data = doc.data();
+            // Discard promise - fire and forget cleanup task
+            getFunctions().taskQueue('workers-universalWorker').enqueue({
+                taskType: 'cleanup-resource',
+                cleanupType: 'image',
+                imageId: doc.id,
+                imageUrl: data.imageUrl,
+                thumbnailUrl: data.thumbnailUrl
+            }).catch(err => console.error("Failed to enqueue cleanup", err));
+
+            await doc.ref.delete();
+        } else {
+            throw new Error("Unauthorized or not found");
+        }
         return { success: true };
     } catch (e) { throw handleError(e, { uid: request.auth?.uid }); }
 };
@@ -99,10 +112,30 @@ export const handleDeleteImagesBatch = async (request) => {
         const docs = await Promise.all(imageIds.map(id => db.collection('images').doc(id).get()));
         const vidDocs = await Promise.all(imageIds.map(id => db.collection('videos').doc(id).get()));
 
+        const queue = getFunctions().taskQueue('workers-universalWorker');
+
         let sent = 0;
-        [...docs, ...vidDocs].forEach(d => {
-            if (d.exists && d.data().userId === request.auth.uid) { batch.delete(d.ref); sent++; }
-        });
+        const allDocs = [...docs, ...vidDocs];
+
+        for (const d of allDocs) {
+            if (d.exists && d.data().userId === request.auth.uid) {
+                batch.delete(d.ref);
+                sent++;
+
+                // Fire and forget cleanup
+                const data = d.data();
+                const isVideo = !!data.videoUrl;
+
+                queue.enqueue({
+                    taskType: 'cleanup-resource',
+                    cleanupType: isVideo ? 'video' : 'image',
+                    [isVideo ? 'videoId' : 'imageId']: d.id,
+                    imageUrl: data.imageUrl,
+                    thumbnailUrl: data.thumbnailUrl,
+                    videoUrl: data.videoUrl
+                }).catch(err => console.error("Failed to enqueue batch cleanup", err));
+            }
+        }
         await batch.commit();
         return { success: true, deleted: sent };
     } catch (error) { throw handleError(error, { uid: request.auth.uid }); }
