@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { Check, Film, Image } from 'lucide-react';
+import { Check, Film, Image, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import SEO from '../components/SEO';
 

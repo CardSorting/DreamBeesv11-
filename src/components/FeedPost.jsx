@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Share2, Sparkles, MoreHorizontal, Bookmark, Info, BadgeCheck, Aperture, Volume2, VolumeX, MessageCircle } from 'lucide-react';
+import { Heart, Sparkles, MoreHorizontal, Bookmark, BadgeCheck, Aperture, Volume2, VolumeX, MessageCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LazyImage from './LazyImage';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
@@ -10,7 +10,7 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
     const { currentUser } = useAuth();
     const { isLiked, isBookmarked, toggleLike, toggleBookmark } = useUserInteractions();
 
-    const [showTechnical, setShowTechnical] = useState(false);
+
     const [showLargeHeart, setShowLargeHeart] = useState(false);
     const [lastTap, setLastTap] = useState(0);
     const [isMuted, setIsMuted] = useState(true);
@@ -30,23 +30,7 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
         setLastTap(now);
     };
 
-    const handleShare = async () => {
-        const shareData = {
-            title: `${model.name} Showcase`,
-            text: imgItem.prompt || `Check out this ${model.name} generation!`,
-            url: window.location.href
-        };
-        try {
-            if (navigator.share) {
-                await navigator.share(shareData);
-            } else {
-                navigator.clipboard.writeText(window.location.href);
-                toast.success("Link copied!");
-            }
-        } catch (err) {
-            console.error('Share failed:', err);
-        }
-    };
+
 
     const handleLike = () => {
         toggleLike(imgItem, model);
@@ -344,25 +328,7 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
                             <MessageCircle size={28} strokeWidth={1.5} />
                         </motion.button>
 
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={handleShare}
-                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
-                            title="Share"
-                        >
-                            <Share2 size={28} strokeWidth={1.5} />
-                        </motion.button>
 
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => setShowTechnical(!showTechnical)}
-                            style={{ background: 'none', border: 'none', color: showTechnical ? 'var(--color-accent-primary)' : 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
-                            title="Technical Breakdown"
-                        >
-                            <Info size={28} strokeWidth={1.5} />
-                        </motion.button>
                     </div>
                     <motion.button
                         whileTap={{ scale: 0.8 }}
@@ -390,40 +356,7 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
                     {timeAgo}
                 </div>
 
-                <AnimatePresence>
-                    {showTechnical && (
-                        <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            style={{
-                                marginTop: '20px',
-                                overflow: 'hidden',
-                                borderTop: '1px solid rgba(255,255,255,0.05)',
-                                paddingTop: '16px'
-                            }}
-                        >
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-                                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
-                                    <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>STEPS</div>
-                                    <div style={{ fontSize: '0.8rem', fontWeight: '700', fontFamily: 'monospace' }}>{imgItem.steps || 30}</div>
-                                </div>
-                                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
-                                    <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>CFG SCALE</div>
-                                    <div style={{ fontSize: '0.8rem', fontWeight: '700', fontFamily: 'monospace' }}>{imgItem.cfg || 7.0}</div>
-                                </div>
-                                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
-                                    <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>SAMPLER</div>
-                                    <div style={{ fontSize: '0.8rem', fontWeight: '700', fontFamily: 'monospace' }}>Euler a</div>
-                                </div>
-                                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px' }}>
-                                    <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', marginBottom: '4px' }}>BASE MODEL</div>
-                                    <div style={{ fontSize: '0.8rem', fontWeight: '700', fontFamily: 'monospace' }}>SDXL 1.0</div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+
 
                 <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '8px', opacity: 0.6 }}>
                     <span style={{ color: 'var(--color-accent-primary)', fontSize: '0.8rem', fontWeight: '500' }}>#{model.name.replace(/\s+/g, '')}</span>

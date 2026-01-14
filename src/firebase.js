@@ -86,9 +86,8 @@ try {
     localCache: persistentLocalCache({
       tabManager: persistentMultipleTabManager()
     }),
-    experimentalForceLongPolling: true,
   });
-  console.log("Firestore initialized with persistence and long-polling.");
+  console.log("Firestore initialized with persistence (Auto-detect transport).");
 } catch (error) {
   console.error("Firestore persistence failed (likely private mode). Falling back to memory cache.", error);
   // Fallback to default (memory) if persistence fails

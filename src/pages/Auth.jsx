@@ -138,6 +138,7 @@ export default function Auth() {
                     {/* Google Button */}
                     <button
                         type="button"
+                        disabled={loading}
                         onClick={async () => {
                             try {
                                 setLoading(true);
@@ -159,7 +160,8 @@ export default function Auth() {
                             border: 'none',
                             fontSize: '0.95rem',
                             marginBottom: '24px',
-                            cursor: 'pointer'
+                            cursor: loading ? 'not-allowed' : 'pointer',
+                            opacity: loading ? 0.7 : 1
                         }}
                     >
                         <svg width="20" height="20" viewBox="0 0 24 24">
