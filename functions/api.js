@@ -23,6 +23,8 @@ import * as Persona from "./handlers/persona.js";
 // ============================================================================
 
 export const api = onCall({ memory: "256MiB" }, async (request) => {
+    logger.info(`[API] Incoming request: action=${request.data?.action}, uid=${request.auth?.uid}`);
+
     // Basic App Check logging (Warn Mode)
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
         logger.warn("App Check verification failed. Proceeding (Warn Mode).", { uid: request.auth?.uid });
@@ -66,18 +68,26 @@ export const api = onCall({ memory: "256MiB" }, async (request) => {
             // For now, I will implement a safe idempotent init here.
             const userSnap = await userRef.get();
             if (!userSnap.exists) {
-                logger.info(`JIT Creating user ${uid}`);
-                await userRef.set({
-                    uid,
-                    email: request.auth.token.email || "",
-                    displayName: request.auth.token.name || "",
-                    photoURL: request.auth.token.picture || "",
-                    createdAt: new Date(),
-                    zaps: 10,
-                    reels: 0,
-                    subscriptionStatus: 'inactive',
-                    role: 'user'
-                });
+                logger.info(`[JIT] User ${uid} not found. Creating new user document...`);
+                try {
+                    await userRef.set({
+                        uid,
+                        email: request.auth.token.email || "",
+                        displayName: request.auth.token.name || "",
+                        photoURL: request.auth.token.picture || "",
+                        createdAt: new Date(),
+                        zaps: 10,
+                        reels: 0,
+                        subscriptionStatus: 'inactive',
+                        role: 'user'
+                    });
+                    logger.info(`[JIT] User ${uid} created successfully.`);
+                } catch (creationError) {
+                    logger.error(`[JIT] Failed to create user ${uid}:`, creationError);
+                    throw creationError;
+                }
+            } else {
+                // logger.debug(`[JIT] User ${uid} already exists.`);
             }
 
             await checkUserAbuseStatus(uid); // This might re-read, but it's safe.

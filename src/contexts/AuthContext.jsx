@@ -103,9 +103,13 @@ export function AuthProvider({ children }) {
             // the definitive signal for "initialization complete".
 
             if (user) {
-                // Trigger robust JIT user creation
-                // We don't await this to keep UI unblocked, but it runs in background
-                ensureUserInitialized(user);
+                console.log(`[Auth] User detected: ${user.uid}. Ensuring initialization...`);
+                try {
+                    await ensureUserInitialized(user);
+                    console.log("[Auth] User initialization flow complete.");
+                } catch (err) {
+                    console.error("[Auth] User initialization flow failed:", err);
+                }
             }
 
             setCurrentUser(user);

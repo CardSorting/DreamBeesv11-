@@ -36,4 +36,4 @@ try {
 
 export const db = dbInstance;
 export const storage = getStorage(app);
-export const functions = getFunctions(app);
+export const functions = getFunctions(app, 'us-central1');
