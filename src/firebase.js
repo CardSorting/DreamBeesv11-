@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { initializeAppCheck, CustomProvider } from "firebase/app-check";
@@ -79,6 +79,22 @@ if (typeof window !== "undefined") {
 }
 
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+let dbInstance;
+
+try {
+  dbInstance = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager()
+    }),
+    experimentalForceLongPolling: true,
+  });
+  console.log("Firestore initialized with persistence and long-polling.");
+} catch (error) {
+  console.error("Firestore persistence failed (likely private mode). Falling back to memory cache.", error);
+  // Fallback to default (memory) if persistence fails
+  dbInstance = getFirestore(app);
+}
+
+export const db = dbInstance;
 export const storage = getStorage(app);
 export const functions = getFunctions(app);

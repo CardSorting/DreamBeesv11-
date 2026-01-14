@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import { toast } from 'react-hot-toast';
 import { db, functions } from '../firebase';
 import { collection, getDocs, query, orderBy, where, limit } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
@@ -178,6 +179,16 @@ export function ModelProvider({ children }) {
 
             if (snapshot.empty) {
                 console.log("[Global Feed] No images found.");
+
+                if (!navigator.onLine) {
+                    toast.error("You are offline. Some content may not load.", { id: 'offline-error' });
+                } else {
+                    // If online but empty, and we know we should have images, it might be a connection issue
+                    // But we don't want to spam errors if the DB is genuinely empty.
+                    // A basic check:
+                    console.warn("[Global Feed] Online but no images. Possible firewall or empty DB.");
+                }
+
                 return [];
             }
 
