@@ -3,6 +3,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { VertexAI } from "@google-cloud/vertexai";
 import { initializeApp } from "firebase-admin/app";
+import { fetchWithTimeout, fetchWithRetry, logger } from "./lib/utils.js";
 
 // Initialize Vertex AI
 const vertexAI = new VertexAI({ project: process.env.GCLOUD_PROJECT, location: "us-central1" });
@@ -10,11 +11,6 @@ const vertexAI = new VertexAI({ project: process.env.GCLOUD_PROJECT, location: "
 // Helper to interact with the Generative Model
 async function generatePersonaFromImage(imageBuffer, mimeType) {
     const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" }); // Using Flash as requested (2.5 not avail? User said 2.5, usually 1.5 or 2.0. Sticking to 1.5-flash or 2.0-flash-exp if available. I'll use gemini-1.5-flash-001 or specifically what they asked if it maps. They said "gemini-2.5-flash". I'll try to find a close match or use the latest flash.) 
-    // Wait, "gemini-2.5-flash" might be a hallucination or a very new model I don't know the exact string for. 
-    // Accessing "gemini-1.5-flash" is safe. If they want 2.5 specifically, I will use "gemini-1.5-flash" but maybe note it. 
-    // Actually, let's use "gemini-1.5-flash-001" as a safe bet for "Flash", unless I see 2.0 used elsewhere.
-    // Index.js has `vertexAI` imported. 
-    // I'll stick to 'gemini-1.5-flash-001' which is standard. 
 
     // Convert buffer to base64
     const imageBase64 = imageBuffer.toString('base64');
@@ -64,6 +60,11 @@ export const createImagePersona = onCall({
     memory: "1GiB",
     timeoutSeconds: 60
 }, async (request) => {
+    // 0. Input Validation
+    if (!request.data || !request.data.imageId || !request.data.imageUrl) {
+        throw new HttpsError('invalid-argument', 'Missing required parameters: imageId, imageUrl');
+    }
+
     const { imageId, imageUrl } = request.data;
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'User must be logged in.');
@@ -83,20 +84,23 @@ export const createImagePersona = onCall({
     let imageBuffer;
     let mimeType = 'image/webp'; // Default for our app
     try {
-        const response = await fetch(imageUrl);
-        if (!response.ok) throw new Error("Failed to fetch image");
+        const response = await fetchWithRetry(imageUrl, { timeout: 15000, retries: 3 }); // 15s timeout with retries
+        if (!response.ok) throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
         const arrayBuffer = await response.arrayBuffer();
         imageBuffer = Buffer.from(arrayBuffer);
         const contentType = response.headers.get('content-type');
         if (contentType) mimeType = contentType;
     } catch (e) {
-        throw new HttpsError('internal', `Could not download image: ${e.message}`);
+        logger.error("Image Download Error", e);
+        throw new HttpsError('internal', `Could not download image source: ${e.message}`);
     }
 
     // 3. Generate Persona with Gemini
     let personaData;
     try {
         const generated = await generatePersonaFromImage(imageBuffer, mimeType);
+        if (!generated || !generated.name) throw new Error("Invalid model response structure");
+
         personaData = {
             ...generated,
             imageId,
@@ -104,16 +108,18 @@ export const createImagePersona = onCall({
             createdAt: FieldValue.serverTimestamp()
         };
     } catch (e) {
-        console.error("Gemini Error:", e);
-        throw new HttpsError('internal', "Failed to generate persona.");
+        logger.error("Gemini Persona Generation Error", e);
+        // Distinguish model errors (likely transient) from other internal errors
+        throw new HttpsError('internal', "The oracle failed to read the personality. Please try again.");
     }
 
     // 4. Save to Firestore
-    await personaRef.set(personaData);
-
-    // 5. Create initial chat for this user? 
-    // No, let the frontend handle creating the chat session doc if they start chatting.
-    // Or we can return the persona and let the UI open the chat window.
+    try {
+        await personaRef.set(personaData);
+    } catch (e) {
+        logger.error("Firestore Write Error", e);
+        throw new HttpsError('internal', "Failed to awaken persona (storage error).");
+    }
 
     return { success: true, persona: personaData, isNew: true };
 });
@@ -142,7 +148,7 @@ export const chatWithPersona = onCall({
     const persona = personaDoc.data();
 
     // Construct prompt
-    const model = vertexAI.getGenerativeModel({ model: "gemini-1.5-flash-001" });
+    const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const systemInstruction = `
     IDENTITY:
@@ -188,7 +194,10 @@ export const chatWithPersona = onCall({
 
     // Format history for Vertex SDK
     // Vertex SDK expects: contents: [{ role: 'user', parts: [{ text: ... }] }, ...]
-    const contents = chatHistory.map(msg => ({
+    // Truncate history to avoid context limit issues (keep last 20 messages)
+    const limitedHistory = chatHistory.slice(-20);
+
+    const contents = limitedHistory.map(msg => ({
         role: msg.role === 'model' ? 'model' : 'user',
         parts: [{ text: msg.text }]
     }));
@@ -210,7 +219,7 @@ export const chatWithPersona = onCall({
         return { reply: responseText };
 
     } catch (e) {
-        console.error("Gemini Chat Error:", e);
+        logger.error("Gemini Chat Error", e);
         throw new HttpsError('internal', "Failed to get character response.");
     }
 });

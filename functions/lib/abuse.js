@@ -1,5 +1,6 @@
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { HttpsError } from "firebase-functions/v2/https";
+import { logger } from "./utils.js";
 
 /**
  * Checks if a user or IP has exceeded a rate limit.
@@ -48,7 +49,7 @@ export async function checkRateLimit(key, limit, windowSeconds) {
     } catch (e) {
         // Re-throw our HttpsError, log others
         if (e.code === 'resource-exhausted') throw e;
-        console.error(`Rate limit system error for ${key}:`, e);
+        logger.error(`Rate limit system error for ${key}`, e);
         // Fail open if system errors (don't block user due to DB error)? 
         // Or fail closed? For security, maybe fail closed, but for UX, fail open is better.
         // Let's rethrow for now to be safe.

@@ -1,5 +1,6 @@
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
-import { generateVisionPrompt, enhancePromptWithGemini } from "./ai.js";
+import { generateVisionPrompt, enhancePromptWithGemini } from "./lib/ai.js";
+import { logger } from "./lib/utils.js";
 
 // ============================================================================
 // Triggers
@@ -18,6 +19,10 @@ export const onAnalysisQueueCreatedV3 = onDocumentCreated(
         const requestId = event.params.requestId;
 
         try {
+            if (data.status !== 'queued') {
+                logger.info(`Analysis Trigger ${requestId} skipped (status: ${data.status})`);
+                return;
+            }
             await snapshot.ref.update({ status: 'analyzing' });
 
             const prompt = await generateVisionPrompt(data.imageUrl || data.image);
@@ -28,7 +33,7 @@ export const onAnalysisQueueCreatedV3 = onDocumentCreated(
                 completedAt: new Date()
             });
         } catch (error) {
-            console.error(`Analysis failed for ${requestId}:`, error);
+            logger.error(`Analysis failed for ${requestId}`, error);
             await snapshot.ref.update({
                 status: 'failed',
                 error: error.message
@@ -44,6 +49,10 @@ export const onEnhanceQueueCreatedV3 = onDocumentCreated("enhance_queue/{request
     const requestId = event.params.requestId;
 
     try {
+        if (data.status !== 'queued') {
+            logger.info(`Enhance Trigger ${requestId} skipped (status: ${data.status})`);
+            return;
+        }
         await snapshot.ref.update({ status: 'processing' });
 
         const enhancedPrompt = await enhancePromptWithGemini(data.originalPrompt);
@@ -54,7 +63,7 @@ export const onEnhanceQueueCreatedV3 = onDocumentCreated("enhance_queue/{request
             completedAt: new Date()
         });
     } catch (error) {
-        console.error(`Enhance failed for ${requestId}:`, error);
+        logger.error(`Enhance failed for ${requestId}`, error);
         await snapshot.ref.update({
             status: 'failed',
             error: error.message

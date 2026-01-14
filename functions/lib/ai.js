@@ -1,10 +1,7 @@
-import { VertexAI } from "@google-cloud/vertexai";
 import { HttpsError } from "firebase-functions/v2/https";
-import { db, FieldValue } from "./firebaseInit.js";
-import { s3Client, fetchWithTimeout } from "./utils.js";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { db, FieldValue } from "../firebaseInit.js";
+import { getS3Client, fetchWithTimeout } from "./utils.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "./constants.js";
-import sharp from "sharp";
 
 // Move Constants
 export const SLIDESHOW_STYLE_INSTRUCTION = `
@@ -89,6 +86,7 @@ export const getSlidePrompts = (language) => [
 
 // Helper for Vision Prompt Generation
 export async function generateVisionPrompt(imageUrl) {
+    const { VertexAI } = await import("@google-cloud/vertexai");
     const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
     const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
@@ -148,6 +146,7 @@ export async function generateVisionPrompt(imageUrl) {
 
 // Helper for Gemini Prompt Enhancement
 export const enhancePromptWithGemini = async (prompt) => {
+    const { VertexAI } = await import("@google-cloud/vertexai");
     const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
     const model = vertexAI.getGenerativeModel({
         model: "gemini-2.5-flash",
@@ -192,6 +191,7 @@ export const transformImageWithGemini = async (imageUrl, styleName, instructions
     }
 
     // 2. Initialize Vertex AI
+    const { VertexAI } = await import("@google-cloud/vertexai");
     const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
     const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
 
@@ -242,8 +242,8 @@ export const transformImageWithGemini = async (imageUrl, styleName, instructions
     }
 
     // 4. Process Output (Base64 -> Buffer -> Sharp)
+    const { default: sharp } = await import("sharp");
     const imageBuffer = Buffer.from(generatedImageBase64, 'base64');
-
     const sharpImg = sharp(imageBuffer);
     const webpBuffer = await sharpImg.webp({ quality: 90 }).toBuffer();
 
@@ -265,14 +265,17 @@ export const transformImageWithGemini = async (imageUrl, styleName, instructions
     const originalFilename = `${baseFolder}.webp`;
     const thumbFilename = `${baseFolder}_thumb.webp`;
 
+    const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+    const s3 = await getS3Client();
+
     await Promise.all([
-        s3Client.send(new PutObjectCommand({
+        s3.send(new PutObjectCommand({
             Bucket: B2_BUCKET,
             Key: originalFilename,
             Body: webpBuffer,
             ContentType: "image/webp"
         })),
-        s3Client.send(new PutObjectCommand({
+        s3.send(new PutObjectCommand({
             Bucket: B2_BUCKET,
             Key: thumbFilename,
             Body: thumbBuffer,

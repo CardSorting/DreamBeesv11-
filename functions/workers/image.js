@@ -1,0 +1,215 @@
+import { onTaskDispatched } from "firebase-functions/v2/tasks";
+import { db, FieldValue } from "../../firebaseInit.js";
+import { getS3Client, fetchWithTimeout, fetchWithRetry, verifyB2FilesExist, readFirstBytes, detectImageFormat, logger, retryOperation } from "../../lib/utils.js";
+import { B2_BUCKET, B2_PUBLIC_URL } from "../../lib/constants.js";
+
+// Local helper
+const looksLikeJSON = (buffer) => {
+    if (!buffer || buffer.length === 0) return false;
+    const firstChar = String.fromCharCode(buffer[0]);
+    return firstChar === '{' || firstChar === '[' || firstChar === '"';
+};
+
+export const processImageTask = onTaskDispatched(
+    {
+        retryConfig: { maxAttempts: 3, minBackoffSeconds: 60 },
+        rateLimits: { maxConcurrentDispatches: 5 },
+        memory: "1GiB",
+        timeoutSeconds: 540,
+    },
+    async (req) => {
+        const { requestId, userId, prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler, promptHash, promptMetadata } = req.data;
+        const docRef = db.collection("generation_queue").doc(requestId);
+
+        const existingDoc = await docRef.get();
+        if (existingDoc.exists && ['processing', 'completed'].includes(existingDoc.data().status)) {
+            logger.info(`Idempotency check: Task ${requestId} already processed. Skipping.`, { requestId, status: existingDoc.data().status });
+            return;
+        }
+
+        let originalFilename = null;
+        let thumbFilename = null;
+        let imageUrl = null;
+        let thumbnailUrl = null;
+        let lqip = null;
+
+        const [activeJobsSnapshot, userSnap] = await Promise.all([
+            db.collection('generation_queue').where('userId', '==', userId).where('status', '==', 'processing').get(),
+            db.collection('users').doc(userId).get()
+        ]);
+
+        const activeCount = activeJobsSnapshot.docs.filter(d => d.id !== requestId).length;
+        const userData = userSnap.data() || {};
+        const isSubscriber = userData.subscriptionStatus === 'active';
+        const useTurbo = req.data.useTurbo;
+        const isPremiumModel = ['zit-model', 'qwen-image-2512'].includes(modelId);
+
+        let allowedConcurrency = 3;
+        if (useTurbo || isPremiumModel) allowedConcurrency = 5;
+        else if (isSubscriber) allowedConcurrency = 3;
+        else allowedConcurrency = 3;
+
+        if (activeCount >= allowedConcurrency) {
+            logger.warn(`[Throttling] User ${userId} busy. Active: ${activeCount}/${allowedConcurrency}. Re-queuing task ${requestId}.`, { userId, activeCount, allowedConcurrency });
+            throw new Error(`Throttling: Concurrency Limit (${allowedConcurrency}) Reached. Retrying...`);
+        }
+
+        try {
+            await docRef.update({ status: "processing" });
+
+            const resolutionMap = {
+                '1:1': { width: 1024, height: 1024 },
+                '2:3': { width: 832, height: 1216 },
+                '3:2': { width: 1216, height: 832 },
+                '9:16': { width: 768, height: 1344 },
+                '16:9': { width: 1344, height: 768 }
+            };
+            const resolution = resolutionMap[aspectRatio] || resolutionMap['1:1'];
+
+            let response;
+            if (modelId === 'zit-model') {
+                const ZIT_A10G_ENDPOINT = "https://mariecoderinc--zit-a10g-fastapi-app.modal.run/generate";
+                const ZIT_H100_ENDPOINT = "https://mariecoderinc--zit-h100-stable-fastapi-app.modal.run/generate";
+                const endpoint = useTurbo ? ZIT_H100_ENDPOINT : ZIT_A10G_ENDPOINT;
+                const zBody = { prompt, steps, width: resolution.width, height: resolution.height };
+
+                if (useTurbo && ['1:1', '16:9', '9:16', '4:3', '3:4', '21:9', '9:21'].includes(aspectRatio)) {
+                    delete zBody.width; delete zBody.height; zBody.aspect_ratio = aspectRatio;
+                }
+                logger.info(`[${requestId}] Routing zit-model to ${useTurbo ? 'H100' : 'A10G'}: ${endpoint}`);
+                response = await fetchWithRetry(endpoint, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(zBody), timeout: 180000, retries: 3
+                });
+            } else if (modelId === 'qwen-image-2512') {
+                response = await fetchWithRetry("https://mariecoderinc--qwen-image-2512-qwenimage-api-generate.modal.run", {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ prompt, negative_prompt, aspect_ratio: aspectRatio }), timeout: 180000, retries: 3
+                });
+            } else {
+                const params = new URLSearchParams({
+                    prompt, model: modelId || "wai-illustrious", negative_prompt,
+                    steps: steps.toString(), cfg: cfg.toString(),
+                    width: resolution.width.toString(), height: resolution.height.toString(),
+                    scheduler: scheduler || 'DPM++ 2M Karras'
+                });
+                const SDXL_A10G_ENDPOINT = "https://mariecoderinc--sdxl-multi-model-a10g-model-web-inference.modal.run";
+                const INTERNAL_SDXL_ENDPOINT = "https://mariecoderinc--sdxl-multi-model-model-web-inference.modal.run";
+                let endpoint = SDXL_A10G_ENDPOINT;
+                if (req.data.useTurbo) endpoint = INTERNAL_SDXL_ENDPOINT;
+
+                const url = `${endpoint}?${params.toString()}`;
+                if (url.length > 2048) throw new Error("Prompt is too long (URL length limit).");
+                response = await fetchWithRetry(url, { timeout: 180000, retries: 3 });
+            }
+
+            if (!response.ok) throw new Error(`Model Provider Error (${response.status}): ${await response.text()}`);
+
+            const contentType = response.headers.get("content-type") || "";
+            const clonedResponse = response.clone();
+            const firstBytesClone = response.clone();
+
+            let imageBuffer;
+            let responseProcessed = false;
+
+            try {
+                const firstBytes = await readFirstBytes(firstBytesClone, 12);
+                if (!firstBytes || firstBytes.length === 0) throw new Error("Response body is empty");
+                const detectedFormat = detectImageFormat(firstBytes);
+                const isLikelyImage = detectedFormat !== null;
+                const isLikelyJSON = looksLikeJSON(firstBytes);
+
+                if (isLikelyImage) {
+                    const arrayBuffer = await clonedResponse.arrayBuffer();
+                    imageBuffer = Buffer.from(arrayBuffer);
+                    responseProcessed = true;
+                } else if (contentType.includes("application/json") || (isLikelyJSON && !contentType.includes("image/"))) {
+                    try {
+                        const jsonData = await clonedResponse.json();
+                        let base64Image = jsonData.image || jsonData.data || jsonData.output || jsonData.result;
+                        if (typeof base64Image === 'string') {
+                            if (base64Image.startsWith('data:')) {
+                                const matches = base64Image.match(/^data:image\/[^;]+;base64,(.+)$/);
+                                if (matches) imageBuffer = Buffer.from(matches[1], 'base64');
+                            } else if (base64Image.length > 100) {
+                                try { imageBuffer = Buffer.from(base64Image, 'base64'); } catch (e) { }
+                            }
+                            if (imageBuffer) responseProcessed = true;
+                        }
+                        if (!responseProcessed && (jsonData.url || jsonData.imageUrl)) {
+                            const ir = await fetchWithTimeout(jsonData.url || jsonData.imageUrl);
+                            imageBuffer = Buffer.from(await ir.arrayBuffer());
+                            responseProcessed = true;
+                        }
+                    } catch (e) {
+                        const fb = response.clone();
+                        const ab = await fb.arrayBuffer();
+                        if (detectImageFormat(Buffer.from(ab))) {
+                            imageBuffer = Buffer.from(ab);
+                            responseProcessed = true;
+                        }
+                    }
+                } else {
+                    const ab = await clonedResponse.arrayBuffer();
+                    imageBuffer = Buffer.from(ab);
+                    responseProcessed = true;
+                }
+                if (!imageBuffer || imageBuffer.length < 100) throw new Error("Invalid image buffer extracted");
+            } catch (error) {
+                logger.error(`[${requestId}] Processing error: ${error.message}`, error);
+                throw error;
+            }
+
+
+
+            const { default: sharp } = await import("sharp");
+            const sharpImg = sharp(imageBuffer);
+            const webpBuffer = await sharpImg.webp({ quality: 90 }).toBuffer();
+            const thumbBuffer = await sharpImg.resize(512, 512, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
+            const lqipBuffer = await sharpImg.resize(20, 20, { fit: 'inside' }).webp({ quality: 20 }).toBuffer();
+            lqip = `data:image/webp;base64,${lqipBuffer.toString('base64')}`;
+
+            const baseFolder = `generated/${userId}/${Date.now()}`;
+            originalFilename = `${baseFolder}.webp`;
+            thumbFilename = `${baseFolder}_thumb.webp`;
+
+            const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+            const s3 = await getS3Client();
+
+            await Promise.all([
+                s3.send(new PutObjectCommand({ Bucket: B2_BUCKET, Key: originalFilename, Body: webpBuffer, ContentType: "image/webp" })),
+                s3.send(new PutObjectCommand({ Bucket: B2_BUCKET, Key: thumbFilename, Body: thumbBuffer, ContentType: "image/webp" }))
+            ]);
+
+            imageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalFilename}`;
+            thumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbFilename}`;
+
+            const imageRef = await db.collection("images").add({
+                userId, prompt, negative_prompt, steps, cfg, aspectRatio, modelId,
+                imageUrl, thumbnailUrl, lqip, promptHash, promptMetadata,
+                createdAt: FieldValue.serverTimestamp(), originalRequestId: requestId
+            });
+
+            await docRef.update({ status: "completed", imageUrl, thumbnailUrl, lqip, completedAt: new Date(), resultImageId: imageRef.id });
+
+        } catch (error) {
+            logger.error(`[${requestId}] Task Failed`, error);
+            let recoverySucceeded = false;
+            if (imageUrl && thumbnailUrl) {
+                try {
+                    const queueDoc = await docRef.get();
+                    if (queueDoc.exists && !queueDoc.data().imageUrl) {
+                        await docRef.update({ status: "completed", imageUrl, thumbnailUrl, lqip, completedAt: new Date() });
+                        recoverySucceeded = true;
+                    }
+                } catch (recErr) { logger.error("Recovery failed", recErr); }
+            }
+
+            if (!recoverySucceeded) {
+                await retryOperation(() => db.collection('users').doc(userId).update({ zaps: FieldValue.increment(1) }), { context: 'Refund Image Task' })
+                    .catch(e => logger.error("Refund Error", e, { userId }));
+                await docRef.update({ status: "failed", error: error.message });
+            }
+        }
+    }
+);

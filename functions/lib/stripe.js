@@ -2,6 +2,7 @@
 import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const Stripe = require('stripe');
+import { logger } from "./utils.js";
 
 const stripeClient = (() => {
     let instance;
@@ -66,7 +67,7 @@ export function constructWebhookEvent(rawBody, signature, webhookSecret) {
     try {
         return stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
     } catch (err) {
-        console.error(`Webhook signature verification failed: ${err.message}`);
+        logger.error(`Webhook signature verification failed: ${err.message}`);
         throw err;
     }
 }

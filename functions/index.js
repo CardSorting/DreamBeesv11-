@@ -2,8 +2,9 @@
 import "./firebaseInit.js"; // Ensure Firebase Admin is initialized
 
 import { api, stripeWebhook, serveSitemap } from "./api.js";
-import { workers } from "./workers.js";
+import { workers } from "./workers/index.js";
 import { triggers } from "./triggers.js";
+import { createImagePersona, chatWithPersona } from "./persona.js";
 
 // Export the grouped functions
 export {
@@ -11,5 +12,7 @@ export {
     stripeWebhook,
     serveSitemap,
     workers,
-    triggers
+    triggers,
+    createImagePersona,
+    chatWithPersona
 };
