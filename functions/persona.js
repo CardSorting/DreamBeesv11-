@@ -56,7 +56,7 @@ Do not mention AI, images, or analysis.
  * Uses gemini-1.5-flash-001 for persona generation
  */
 export const createImagePersona = onCall({
-    memory: "1GiB",
+    memory: "512MiB",
     timeoutSeconds: 60
 }, async (request) => {
     // 0. Input Validation
@@ -128,7 +128,7 @@ export const createImagePersona = onCall({
  * Handles the conversation turn (User -> Character)
  */
 export const chatWithPersona = onCall({
-    memory: "512MiB"
+    memory: "256MiB"
 }, async (request) => {
     const { imageId, message, chatHistory } = request.data;
     // chatHistory: Array of { role: 'user' | 'model', text: string }

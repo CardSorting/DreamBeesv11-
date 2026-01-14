@@ -21,7 +21,7 @@ import * as Billing from "./handlers/billing.js";
 // Main API Dispatcher
 // ============================================================================
 
-export const api = onCall(async (request) => {
+export const api = onCall({ memory: "256MiB" }, async (request) => {
     // Basic App Check logging (Warn Mode)
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
         logger.warn("App Check verification failed. Proceeding (Warn Mode).", { uid: request.auth?.uid });
@@ -93,7 +93,7 @@ export const api = onCall(async (request) => {
 // Webhooks & HTTP Triggers (Kept here for now)
 // ============================================================================
 
-export const stripeWebhook = onRequest(async (req, res) => {
+export const stripeWebhook = onRequest({ memory: "256MiB" }, async (req, res) => {
     const signature = req.headers['stripe-signature'];
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 

@@ -8,7 +8,7 @@ export const processSlideshowTask = onTaskDispatched(
     {
         retryConfig: { maxAttempts: 3, minBackoffSeconds: 60 },
         rateLimits: { maxConcurrentDispatches: 3 },
-        memory: "2GiB",
+        memory: "1GiB",
         timeoutSeconds: 540,
     },
     async (req) => {

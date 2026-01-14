@@ -14,7 +14,7 @@ export const processImageTask = onTaskDispatched(
     {
         retryConfig: { maxAttempts: 3, minBackoffSeconds: 60 },
         rateLimits: { maxConcurrentDispatches: 5 },
-        memory: "1GiB",
+        memory: "512MiB",
         timeoutSeconds: 540,
     },
     async (req) => {

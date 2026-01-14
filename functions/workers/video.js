@@ -7,7 +7,7 @@ import { generateVisionPrompt } from "../lib/ai.js";
 export const processVideoTask = onTaskDispatched(
     {
         timeoutSeconds: 540,
-        memory: "1GiB",
+        memory: "512MiB",
         retryConfig: { maxAttempts: 2, minBackoffSeconds: 30 }
     },
     async (request) => {

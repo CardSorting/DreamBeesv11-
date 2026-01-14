@@ -7,7 +7,7 @@ export const processDressUpTask = onTaskDispatched(
     {
         retryConfig: { maxAttempts: 3, minBackoffSeconds: 60 },
         rateLimits: { maxConcurrentDispatches: 3 },
-        memory: "1GiB",
+        memory: "512MiB",
         timeoutSeconds: 300,
     },
     async (req) => {
