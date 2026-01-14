@@ -1,8 +1,8 @@
 import { onTaskDispatched } from "firebase-functions/v2/tasks";
-import { db, FieldValue } from "../../firebaseInit.js";
-import { getS3Client, logger, retryOperation } from "../../lib/utils.js";
-import { B2_BUCKET, B2_PUBLIC_URL } from "../../lib/constants.js";
-import { SLIDESHOW_MASTER_PROMPT, getSlidePrompts } from "../../lib/ai.js";
+import { db, FieldValue } from "../firebaseInit.js";
+import { getS3Client, logger, retryOperation } from "../lib/utils.js";
+import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
+import { SLIDESHOW_MASTER_PROMPT, getSlidePrompts } from "../lib/ai.js";
 
 export const processSlideshowTask = onTaskDispatched(
     {

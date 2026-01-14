@@ -15,7 +15,7 @@ export const handleGetGenerationHistory = async (request) => {
         const snap = await q.get();
         const jobs = snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate?.()?.toISOString() || d.data().createdAt })).filter(j => j.hidden !== true);
         return { jobs, lastVisibleId: snap.docs[snap.docs.length - 1]?.id, hasMore: snap.size === l };
-    } catch (e) { throw handleError(e, { uid }); }
+    } catch (_) { throw handleError(_, { uid }); }
 };
 
 export const handleGetImageDetail = async (request) => {
@@ -35,7 +35,7 @@ export const handleGetImageDetail = async (request) => {
 export const handleGetUserImages = async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', "Auth required");
-    const { limit: l = 24, startAfterId, searchQuery } = request.data;
+    const { limit: l = 24, startAfterId } = request.data;
     try {
         let iQ = db.collection('images').where('userId', '==', uid).orderBy('createdAt', 'desc').limit(l);
         let vQ = db.collection('videos').where('userId', '==', uid).orderBy('createdAt', 'desc').limit(l);
@@ -120,5 +120,5 @@ export const handleToggleBookmark = async (request) => {
             await imgRef.update({ bookmarksCount: FieldValue.increment(1) });
         }
         return { success: true };
-    } catch (e) { throw new HttpsError('internal', "Failed"); }
+    } catch { throw new HttpsError('internal', "Failed"); }
 };

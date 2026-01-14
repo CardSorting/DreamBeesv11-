@@ -1,7 +1,7 @@
 import { onTaskDispatched } from "firebase-functions/v2/tasks";
-import { db, FieldValue } from "../../firebaseInit.js";
-import { getS3Client, fetchWithTimeout, fetchWithRetry, verifyB2FilesExist, readFirstBytes, detectImageFormat, logger, retryOperation } from "../../lib/utils.js";
-import { B2_BUCKET, B2_PUBLIC_URL } from "../../lib/constants.js";
+import { db, FieldValue } from "../firebaseInit.js";
+import { getS3Client, fetchWithTimeout, fetchWithRetry, readFirstBytes, detectImageFormat, logger, retryOperation } from "../lib/utils.js";
+import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
 
 // Local helper
 const looksLikeJSON = (buffer) => {
@@ -132,7 +132,7 @@ export const processImageTask = onTaskDispatched(
                                 const matches = base64Image.match(/^data:image\/[^;]+;base64,(.+)$/);
                                 if (matches) imageBuffer = Buffer.from(matches[1], 'base64');
                             } else if (base64Image.length > 100) {
-                                try { imageBuffer = Buffer.from(base64Image, 'base64'); } catch (e) { }
+                                try { imageBuffer = Buffer.from(base64Image, 'base64'); } catch { }
                             }
                             if (imageBuffer) responseProcessed = true;
                         }
@@ -141,7 +141,7 @@ export const processImageTask = onTaskDispatched(
                             imageBuffer = Buffer.from(await ir.arrayBuffer());
                             responseProcessed = true;
                         }
-                    } catch (e) {
+                    } catch {
                         const fb = response.clone();
                         const ab = await fb.arrayBuffer();
                         if (detectImageFormat(Buffer.from(ab))) {

@@ -2,8 +2,7 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { VertexAI } from "@google-cloud/vertexai";
-import { initializeApp } from "firebase-admin/app";
-import { fetchWithTimeout, fetchWithRetry, logger } from "./lib/utils.js";
+import { fetchWithRetry, logger } from "./lib/utils.js";
 
 // Initialize Vertex AI
 const vertexAI = new VertexAI({ project: process.env.GCLOUD_PROJECT, location: "us-central1" });

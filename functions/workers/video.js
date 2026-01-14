@@ -1,8 +1,8 @@
 import { onTaskDispatched } from "firebase-functions/v2/tasks";
-import { db, FieldValue } from "../../firebaseInit.js";
-import { getS3Client, fetchWithRetry, logger, retryOperation, findPrimaryUrl } from "../../lib/utils.js";
-import { B2_BUCKET, B2_PUBLIC_URL } from "../../lib/constants.js";
-import { generateVisionPrompt } from "../../lib/ai.js";
+import { db, FieldValue } from "../firebaseInit.js";
+import { getS3Client, fetchWithRetry, logger, retryOperation, findPrimaryUrl } from "../lib/utils.js";
+import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
+import { generateVisionPrompt } from "../lib/ai.js";
 
 export const processVideoTask = onTaskDispatched(
     {
@@ -33,7 +33,7 @@ export const processVideoTask = onTaskDispatched(
                             finalPrompt = generatedPrompt;
                             await docRef.update({ prompt: finalPrompt });
                         } else throw new Error("Failed to generate prompt from image");
-                    } catch (err) { throw new Error("Failed to auto-generate prompt from image."); }
+                    } catch { throw new Error("Failed to auto-generate prompt from image."); }
                 } else throw new Error("Generation prompt is empty.");
             }
 

@@ -1,7 +1,7 @@
 import { HttpsError } from "firebase-functions/v2/https";
 import { db, FieldValue, getFunctions } from "../firebaseInit.js";
 import { handleError, logger, getPromptHash, getPromptMetadata } from "../lib/utils.js";
-import { generateVisionPrompt, getSlidePrompts, SLIDESHOW_MASTER_PROMPT } from "../lib/ai.js";
+import { generateVisionPrompt, SLIDESHOW_MASTER_PROMPT } from "../lib/ai.js";
 import { VALID_MODELS } from "../lib/constants.js";
 
 export const handleCreateGenerationRequest = async (request) => {

@@ -100,11 +100,7 @@ export async function retryOperation(operation, options = {}) {
             attempt++;
             if (attempt > retries) throw error;
 
-            const isTransient =
-                error.code === 'unavailable' ||
-                error.code === 'deadline-exceeded' ||
-                error.code === 'etimedout' ||
-                error.code === 'esockettimedout' ||
+            error.code === 'esockettimedout' ||
                 (error.message && (
                     error.message.includes('timeout') ||
                     error.message.includes('network') ||
@@ -151,13 +147,13 @@ export async function verifyB2FilesExist(originalFilename, thumbFilename) {
             try {
                 await s3.send(new HeadObjectCommand({ Bucket: B2_BUCKET, Key: originalFilename }));
                 result.imageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalFilename}`;
-            } catch (headError) { /* ignore */ }
+            } catch { /* ignore */ }
         }
         if (thumbFilename) {
             try {
                 await s3.send(new HeadObjectCommand({ Bucket: B2_BUCKET, Key: thumbFilename }));
                 result.thumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbFilename}`;
-            } catch (headError) { /* ignore */ }
+            } catch { /* ignore */ }
         }
     } catch (error) { logger.error("B2 Verification Failed", error); }
     return result;

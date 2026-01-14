@@ -3,7 +3,6 @@ import { db, FieldValue } from "./firebaseInit.js";
 import { handleError, logger } from "./lib/utils.js";
 import { constructWebhookEvent } from "./lib/stripe.js";
 import {
-    checkRateLimit,
     checkIpThrottle,
     checkUserAbuseStatus,
     checkUserQuota,

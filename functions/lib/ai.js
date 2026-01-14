@@ -98,7 +98,7 @@ export async function generateVisionPrompt(imageUrl) {
     // I should check if I saw PROMPT_GUIDELINES definition. It wasn't in the viewed lines. 
     // I will search for it.
 
-    let imageContentUrl = "";
+
     let mimeType = "image/png"; // Default
     let imageBase64 = "";
 
