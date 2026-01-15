@@ -1,19 +1,25 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Share2, Sparkles, Heart, RefreshCw, MoreHorizontal } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ArrowLeft, Share2, Sparkles, Heart, RefreshCw, MoreHorizontal, Shuffle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { useModel } from '../contexts/ModelContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { getOptimizedImageUrl } from '../utils';
-import { getDiversifiedRecommendations } from '../utils/relevance';
+import {
+    getDiversifiedRecommendations,
+    getRecommendationsWithHistory,
+    getExplorationRecommendations,
+    getBalancedRecommendations
+} from '../utils/relevance';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import SEO from '../components/SEO';
 import './ShowcaseDetail.css';
 
-const SHOWCASE_PAGE_SIZE = 10;
-const CACHE_TARGET = 100;
+const SHOWCASE_PAGE_SIZE = 12;
+const CACHE_TARGET = 150;
+const HISTORY_CAP = 100; // Max history items to track
 
 const ShowcaseDetail = () => {
     const { id } = useParams();
@@ -27,11 +33,25 @@ const ShowcaseDetail = () => {
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [shuffleToast, setShuffleToast] = useState(null);
+
+    // Track seen images to avoid repetition
+    const seenIdsRef = useRef(new Set());
 
     // Refs for Scroll & Observation
     const containerRef = useRef(null);
     const observerRef = useRef(null);
     const isInitialMount = useRef(true);
+    const currentImageRef = useRef(null);
+
+    // Keep track of the current source image for recommendations
+    const sourceImage = useMemo(() => images[currentIndex], [images, currentIndex]);
+
+    // Helper to show toast notifications
+    const showToast = useCallback((message, icon = 'shuffle') => {
+        setShuffleToast({ message, icon });
+        setTimeout(() => setShuffleToast(null), 2500);
+    }, []);
 
     // 1. Initialize Feed (Load initial image + recommendations)
     useEffect(() => {
@@ -60,11 +80,21 @@ const ShowcaseDetail = () => {
             }
 
             if (startImage) {
-                // Get varied recommendations
+                // Track the start image as seen
+                seenIdsRef.current.add(startImage.id);
+
+                // Get highly diversified recommendations using the enhanced algorithm
                 const recs = getDiversifiedRecommendations(startImage, globalShowcaseCache, SHOWCASE_PAGE_SIZE);
+
+                // Track all initial recs as seen
+                recs.forEach(r => seenIdsRef.current.add(r.id));
+
                 // Filter out duplicates just in case
                 const uniqueRecs = recs.filter(r => r.id !== startImage.id);
                 setImages([startImage, ...uniqueRecs]);
+
+                // Store reference to current image for recommendations
+                currentImageRef.current = startImage;
             }
 
             setLoading(false);
@@ -91,12 +121,17 @@ const ShowcaseDetail = () => {
                     // Update URL silently (replace) without full reload
                     const img = images[index];
                     if (img && img.id !== id) {
-                        // We use replace to avoid cluttering history stack too much with every scroll
                         navigate(`/discovery/${img.id}`, { replace: true });
+
+                        // Mark as seen
+                        seenIdsRef.current.add(img.id);
+
+                        // Update current reference for future recs
+                        currentImageRef.current = img;
                     }
 
-                    // Load more trigger
-                    if (index >= images.length - 3 && hasMoreGlobal) {
+                    // Load more trigger - only when near end
+                    if (index >= images.length - 4 && hasMoreGlobal) {
                         loadMoreImages();
                     }
                 }
@@ -113,40 +148,129 @@ const ShowcaseDetail = () => {
     }, [images, id, navigate, hasMoreGlobal]);
 
 
-    // 3. Load More Strategy
+    // 3. Load More Strategy - Now with history awareness
     const loadMoreImages = useCallback(() => {
-        // 1. Identify what we already have
-        const currentIds = new Set(images.map(i => i.id));
+        if (!currentImageRef.current) return;
 
-        // 2. Filter global cache for fresh items, ensuring no ID duplicates in the process
-        const uniqueFreshCandidates = new Map();
+        // Get seen IDs array (capped to avoid memory issues)
+        const seenArray = Array.from(seenIdsRef.current).slice(-HISTORY_CAP);
 
-        globalShowcaseCache.forEach(img => {
-            if (!currentIds.has(img.id)) {
-                uniqueFreshCandidates.set(img.id, img);
-            }
-        });
+        // Use history-aware recommendations for truly fresh content
+        const freshRecs = getRecommendationsWithHistory(
+            currentImageRef.current,
+            globalShowcaseCache,
+            seenArray,
+            SHOWCASE_PAGE_SIZE
+        );
 
-        // 3. Convert to array
-        const fresh = Array.from(uniqueFreshCandidates.values());
-
-        if (fresh.length < 5 && hasMoreGlobal) {
-            console.log("Fetching more from backend...");
+        if (freshRecs.length === 0 && hasMoreGlobal) {
+            console.log("[Feed] Cache exhausted, fetching more...");
             getGlobalShowcaseImages(true, 'feed_scroll_replenish');
+            return;
         }
 
-        if (fresh.length > 0) {
-            // 4. Shuffle specifically to avoid deterministic "rest of DB" repetition
-            // This makes every deep scroll feel unique even with the same cache
-            const shuffled = fresh.sort(() => 0.5 - Math.random());
+        if (freshRecs.length > 0) {
+            // Track new items as seen
+            freshRecs.forEach(r => seenIdsRef.current.add(r.id));
 
-            // 5. Add a chunk
-            const nextBatch = shuffled.slice(0, 10);
-            setImages(prev => [...prev, ...nextBatch]);
+            // Filter to ensure no duplicates in current feed
+            const currentIds = new Set(images.map(i => i.id));
+            const trulyNew = freshRecs.filter(r => !currentIds.has(r.id));
+
+            if (trulyNew.length > 0) {
+                setImages(prev => [...prev, ...trulyNew]);
+            } else if (hasMoreGlobal) {
+                // All recs are duplicates, need more from backend
+                getGlobalShowcaseImages(true, 'feed_unique_fetch');
+            }
         }
     }, [images, globalShowcaseCache, hasMoreGlobal, getGlobalShowcaseImages]);
 
-    // 4. Aggressive Preloading
+
+    // 4. Shuffle Action - Complete feed refresh with exploration mode
+    const handleShuffle = useCallback(() => {
+        if (!currentImageRef.current || globalShowcaseCache.length === 0) return;
+
+        // Get current seen history
+        const seenArray = Array.from(seenIdsRef.current);
+
+        // First, try to get fresh exploration recommendations
+        const explorationPicks = getExplorationRecommendations(
+            globalShowcaseCache,
+            SHOWCASE_PAGE_SIZE,
+            seenArray
+        );
+
+        if (explorationPicks.length < 3) {
+            // Not enough fresh content
+            showToast("🔄 Loading fresh content...", "refresh");
+            if (hasMoreGlobal) {
+                getGlobalShowcaseImages(true, 'shuffle_fetch');
+            }
+            return;
+        }
+
+        // Track new items
+        explorationPicks.forEach(r => seenIdsRef.current.add(r.id));
+
+        // Keep current image, replace everything after with exploration
+        const currentImg = images[currentIndex];
+        setImages([currentImg, ...explorationPicks]);
+        setCurrentIndex(0);
+
+        // Scroll to top
+        if (containerRef.current) {
+            containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        showToast(`🎲 ${explorationPicks.length} fresh picks!`, "shuffle");
+    }, [currentIndex, images, globalShowcaseCache, hasMoreGlobal, getGlobalShowcaseImages, showToast]);
+
+
+    // 5. Balanced Mode - More similar but still diverse
+    const handleMoreLikeThis = useCallback(() => {
+        if (!currentImageRef.current || globalShowcaseCache.length === 0) return;
+
+        const seenArray = Array.from(seenIdsRef.current);
+        const unseen = globalShowcaseCache.filter(c => !seenIdsRef.current.has(c.id));
+
+        // Use balanced recommendations with stricter similarity
+        const similarPicks = getBalancedRecommendations(
+            currentImageRef.current,
+            unseen,
+            {
+                limit: SHOWCASE_PAGE_SIZE,
+                maxSameModel: 3,  // Allow more from same model
+                maxSamePrimaryStyle: 5,  // Allow more similar styles
+                maxSameMood: 4,
+            }
+        );
+
+        if (similarPicks.length < 3) {
+            showToast("🔍 Finding more similar...", "search");
+            if (hasMoreGlobal) {
+                getGlobalShowcaseImages(true, 'similar_fetch');
+            }
+            return;
+        }
+
+        // Track new items
+        similarPicks.forEach(r => seenIdsRef.current.add(r.id));
+
+        // Keep current, add similar after
+        const currentImg = images[currentIndex];
+        setImages([currentImg, ...similarPicks]);
+        setCurrentIndex(0);
+
+        if (containerRef.current) {
+            containerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        showToast(`✨ ${similarPicks.length} similar picks!`, "sparkles");
+    }, [currentIndex, images, globalShowcaseCache, hasMoreGlobal, getGlobalShowcaseImages, showToast]);
+
+
+    // 6. Aggressive Preloading
     useEffect(() => {
         if (!images.length) return;
 
@@ -163,6 +287,15 @@ const ShowcaseDetail = () => {
             i.src = getOptimizedImageUrl(img.url);
         });
     }, [currentIndex, images]);
+
+
+    // 7. Trim history to prevent memory bloat
+    useEffect(() => {
+        if (seenIdsRef.current.size > HISTORY_CAP * 2) {
+            const arr = Array.from(seenIdsRef.current);
+            seenIdsRef.current = new Set(arr.slice(-HISTORY_CAP));
+        }
+    }, [images]);
 
 
     // Loading State
@@ -205,9 +338,33 @@ const ShowcaseDetail = () => {
                     <ArrowLeft size={20} />
                 </button>
 
-                {/* Right side nav items can go here if needed */}
-                <div style={{ width: 40 }}></div>
+                {/* Shuffle Button */}
+                <button
+                    onClick={handleShuffle}
+                    className="nav-shuffle-btn"
+                    title="Shuffle feed for fresh content"
+                >
+                    <Shuffle size={18} />
+                </button>
             </header>
+
+            {/* Toast Notification */}
+            <AnimatePresence>
+                {shuffleToast && (
+                    <motion.div
+                        className="shuffle-toast"
+                        initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -20, scale: 0.9 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        {shuffleToast.icon === 'shuffle' && <Shuffle size={18} />}
+                        {shuffleToast.icon === 'refresh' && <RefreshCw size={18} className="animate-spin" />}
+                        {shuffleToast.icon === 'sparkles' && <Sparkles size={18} />}
+                        <span>{shuffleToast.message}</span>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Scroll Container */}
             <div
@@ -225,6 +382,7 @@ const ShowcaseDetail = () => {
                             const model = availableModels?.find(m => m.id === img.modelId);
                             toggleLike(img, model);
                         }}
+                        onMoreLikeThis={handleMoreLikeThis}
                         modelName={availableModels?.find(m => m.id === img.modelId)?.name}
                         navigate={navigate}
                     />
@@ -250,7 +408,7 @@ const ShowcaseDetail = () => {
 
 
 // Sub-component for individual feed pages
-const FeedItem = React.memo(({ image, index, isActive, isLiked, onToggleLike, modelName, navigate }) => {
+const FeedItem = React.memo(({ image, index, isActive, isLiked, onToggleLike, onMoreLikeThis, modelName, navigate }) => {
 
     // Double tap logic
     const lastTap = useRef(0);
@@ -267,6 +425,34 @@ const FeedItem = React.memo(({ image, index, isActive, isLiked, onToggleLike, mo
         lastTap.current = now;
     };
 
+    // Extract display tags from the V2 metadata schema
+    const displayTags = useMemo(() => {
+        const tags = [];
+
+        // Style primary
+        if (image.style?.primary) {
+            tags.push({ label: image.style.primary, type: 'style' });
+        }
+
+        // Vibe mood
+        if (image.vibe?.mood) {
+            tags.push({ label: image.vibe.mood, type: 'mood' });
+        }
+
+        // Subject category
+        if (image.subject?.category) {
+            tags.push({ label: image.subject.category, type: 'subject' });
+        }
+
+        // Style sub-genre
+        if (image.style?.subGenre) {
+            tags.push({ label: image.style.subGenre, type: 'genre' });
+        }
+
+        // Limit to 4 tags max
+        return tags.slice(0, 4);
+    }, [image]);
+
     return (
         <div className="feed-item" data-index={index}>
             {/* Main Visual */}
@@ -275,15 +461,21 @@ const FeedItem = React.memo(({ image, index, isActive, isLiked, onToggleLike, mo
                     src={getOptimizedImageUrl(image.url)}
                     alt={image.prompt}
                     className="feed-image"
-                    loading={Math.abs(index - isActive) < 5 ? "eager" : "lazy"} // Aggressively eager load
+                    loading={Math.abs(index - isActive) < 5 ? "eager" : "lazy"}
                     decoding="async"
                 />
 
                 {/* Double Tap Heart Animation */}
                 {showHeartAnim && (
-                    <div className="double-tap-heart animate">
+                    <motion.div
+                        className="double-tap-heart"
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1.2, opacity: 1 }}
+                        exit={{ scale: 1.5, opacity: 0 }}
+                        transition={{ duration: 0.4, ease: "easeOut" }}
+                    >
                         <Heart size={80} fill="white" />
-                    </div>
+                    </motion.div>
                 )}
 
                 {/* Overlays */}
@@ -300,14 +492,14 @@ const FeedItem = React.memo(({ image, index, isActive, isLiked, onToggleLike, mo
                     }}>
                         <Heart size={26} className={isLiked ? 'fill-current' : ''} />
                     </button>
-                    <span className="action-label">{image.likes || 0}</span>
+                    <span className="action-label">{image.likesCount || image.likes || 0}</span>
                 </div>
 
                 <div className="action-btn-wrapper">
                     <button className="action-btn" onClick={(e) => {
                         e.stopPropagation();
                         navigator.clipboard.writeText(window.location.href);
-                        alert("Link copied!");
+                        // Could use a proper toast here
                     }}>
                         <Share2 size={24} />
                     </button>
@@ -317,10 +509,11 @@ const FeedItem = React.memo(({ image, index, isActive, isLiked, onToggleLike, mo
                 <div className="action-btn-wrapper">
                     <button className="action-btn" onClick={(e) => {
                         e.stopPropagation();
-                        // Info logic or remix could go here
-                    }}>
-                        <MoreHorizontal size={24} />
+                        onMoreLikeThis?.();
+                    }} title="More like this">
+                        <Sparkles size={24} />
                     </button>
+                    <span className="action-label">Similar</span>
                 </div>
             </div>
 
@@ -334,12 +527,32 @@ const FeedItem = React.memo(({ image, index, isActive, isLiked, onToggleLike, mo
                     )}
 
                     <p className="prompt-text">
-                        {image.prompt}
+                        {image.prompt || image.subject?.details || 'AI Generated Art'}
                     </p>
 
+                    {/* Enhanced Tags Display */}
                     <div className="tags-row">
-                        {image.style && <span className="feed-tag">#{image.style.replace(/\s+/g, '')}</span>}
-                        {image.subject && <span className="feed-tag">#{image.subject.replace(/\s+/g, '')}</span>}
+                        {displayTags.map((tag, i) => (
+                            <span
+                                key={`${tag.label}-${i}`}
+                                className={`feed-tag feed-tag-${tag.type}`}
+                            >
+                                #{tag.label.replace(/\s+/g, '')}
+                            </span>
+                        ))}
+
+                        {/* Color palette indicator */}
+                        {image.colors?.dominant && (
+                            <div className="palette-dots">
+                                {image.colors.dominant.slice(0, 3).map((color, i) => (
+                                    <span
+                                        key={i}
+                                        className="palette-dot"
+                                        style={{ backgroundColor: color }}
+                                    />
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
