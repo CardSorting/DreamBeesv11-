@@ -272,10 +272,10 @@ const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
                                 </div>
                                 <div className="suggestion-info">
                                     <div className="suggestion-name">
-                                        DreamBee
+                                        DreamBees
                                         <BadgeCheck size={12} className="text-blue-500 fill-blue-500" />
                                     </div>
-                                    <div className="suggestion-meta">Interactive Persona</div>
+                                    <div className="suggestion-meta">Official Showcase</div>
                                 </div>
                             </Link>
                             <button className="suggestion-follow-btn">Follow</button>

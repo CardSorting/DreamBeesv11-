@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, Sparkles, MoreHorizontal, Bookmark, BadgeCheck, Aperture, Volume2, VolumeX, MessageCircle } from 'lucide-react';
+import { Heart, MoreHorizontal, Bookmark, BadgeCheck, Aperture, Volume2, VolumeX } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LazyImage from './LazyImage';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
@@ -122,10 +122,10 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
                     </div>
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'white', letterSpacing: '-0.01em' }}>DreamBee</div>
+                            <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'white', letterSpacing: '-0.01em' }}>DreamBees</div>
                             <BadgeCheck size={14} className="text-blue-500 fill-blue-500" />
                         </div>
-                        <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: '500' }}>Interactive Persona</div>
+                        <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: '500' }}>Official Showcase</div>
                     </div>
                 </div>
                 <button className="btn-ghost" style={{ padding: '8px', opacity: 0.5 }}>
@@ -302,31 +302,9 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
                             </AnimatePresence>
                         </motion.button>
 
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => {
-                                const params = new URLSearchParams();
-                                if (imgItem.prompt) params.set('prompt', imgItem.prompt);
-                                if (imgItem.steps) params.set('steps', imgItem.steps);
-                                if (imgItem.cfg) params.set('cfg', imgItem.cfg);
-                                navigate(`/generate?${params.toString()}`);
-                            }}
-                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
-                            title="Try this prompt"
-                        >
-                            <Sparkles size={28} strokeWidth={1.5} />
-                        </motion.button>
 
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => navigate(`/chat/${imgItem.id}`, { state: { imageItem: imgItem } })}
-                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
-                            title="Chat with Character"
-                        >
-                            <MessageCircle size={28} strokeWidth={1.5} />
-                        </motion.button>
+
+
 
 
                     </div>
