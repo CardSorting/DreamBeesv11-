@@ -1,11 +1,12 @@
-import React, { useEffect, useState, useMemo, useLayoutEffect } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Share2, Sparkles, Heart } from 'lucide-react';
+import { ArrowLeft, Share2, Sparkles, Heart, X, Check } from 'lucide-react';
+import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 
 import { useModel } from '../contexts/ModelContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { getOptimizedImageUrl } from '../utils';
-import { calculateRelevance } from '../utils/relevance';
+import { getDiversifiedRecommendations } from '../utils/relevance';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import SEO from '../components/SEO';
@@ -17,258 +18,229 @@ const ShowcaseDetail = () => {
     const { globalShowcaseCache, availableModels } = useModel();
     const { isLiked, toggleLike } = useUserInteractions();
 
-    // 0. Synchronous Cache Lookup
-    const cachedImage = useMemo(() => {
-        return globalShowcaseCache.find(img => img.id === id);
-    }, [id, globalShowcaseCache]);
+    const [images, setImages] = useState([]); // Card stack
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [loading, setLoading] = useState(true);
 
-    const [image, setImage] = useState(cachedImage || null);
-    const [loading, setLoading] = useState(!cachedImage);
-    const [relatedImages, setRelatedImages] = useState([]);
+    // Current active image
+    const currentImage = images[currentIndex] || null;
 
-    // 0. Instant Scroll to Top on Route Change
-    useLayoutEffect(() => {
-        if (window.lenis) {
-            window.lenis.scrollTo(0, { immediate: true });
-        } else {
-            window.scrollTo(0, 0);
-            document.documentElement.scrollTo(0, 0);
-        }
-    }, [id]);
-
-    // Backup scroll/Lenis sync
+    // Resolve Initial Stack
     useEffect(() => {
-        if (window.lenis) {
-            window.lenis.scrollTo(0, { immediate: true });
-        } else {
-            window.scrollTo(0, 0);
-        }
-    }, [id]);
-
-
-    // 1. Resolve Image (Cache -> Firestore)
-    // Sync cached image update
-    useEffect(() => {
-        if (cachedImage) {
-            setImage(cachedImage);
-            setLoading(false);
-        }
-    }, [cachedImage]);
-
-    // 1. Resolve Image (Firestore Fallback)
-    useEffect(() => {
-        if (cachedImage || (image && image.id === id)) return;
-
-        const resolveImage = async () => {
+        const resolveInitialStack = async () => {
             setLoading(true);
-            try {
-                console.log(`[ShowcaseDetail] Fetching ${id} from Firestore...`);
-                // Short delay to allow cache to potentially populate if it's racing? 
+            let initialImage = globalShowcaseCache.find(img => img.id === id);
 
-                const docRef = doc(db, 'model_showcase_images', id);
-                const snapshot = await getDoc(docRef);
-                if (snapshot.exists()) {
-                    const data = snapshot.data();
-                    setImage({ id: snapshot.id, ...data });
-                } else {
-                    console.error("Image not found");
+            if (!initialImage) {
+                try {
+                    const docRef = doc(db, 'model_showcase_images', id);
+                    const snapshot = await getDoc(docRef);
+                    if (snapshot.exists()) {
+                        initialImage = { id: snapshot.id, ...snapshot.data() };
+                    }
+                } catch (err) {
+                    console.error("Error fetching initial image:", err);
                 }
-            } catch (err) {
-                console.error("Error fetching detail:", err);
-            } finally {
-                setLoading(false);
             }
+
+            if (initialImage) {
+                const recs = getDiversifiedRecommendations(initialImage, globalShowcaseCache, 15);
+                setImages([initialImage, ...recs]);
+            }
+            setLoading(false);
         };
 
-        resolveImage();
-    }, [id, cachedImage]);
+        resolveInitialStack();
+    }, [id, globalShowcaseCache]);
 
-    // 2. Calculate Related Content
-    useEffect(() => {
-        if (image && globalShowcaseCache.length > 0) {
-            const relevant = calculateRelevance(image, globalShowcaseCache, 12);
-            setRelatedImages(relevant);
+    // Handle Swipe
+    const handleSwipe = useCallback((direction) => {
+        if (!currentImage) return;
+
+        // Visual feedback or interaction logic (e.g., auto-like on right swipe)
+        if (direction === 'right') {
+            const model = availableModels?.find(m => m.id === currentImage.modelId);
+            if (!isLiked(currentImage.id)) {
+                toggleLike(currentImage, model);
+            }
         }
-    }, [image, globalShowcaseCache]);
 
-    // 3. Derived Data
+        // Move to next card
+        const nextIndex = currentIndex + 1;
+        setCurrentIndex(nextIndex);
+
+        // Update URL to current card for deep linking
+        if (images[nextIndex]) {
+            navigate(`/discovery/${images[nextIndex].id}`, { replace: true });
+        }
+
+        // Replenish stack if running low
+        if (images.length - nextIndex < 5) {
+            const lastImg = images[images.length - 1];
+            const newRecs = getDiversifiedRecommendations(lastImg, globalShowcaseCache, 10);
+            // Filter out existing to prevent duplicates
+            const filteredRecs = newRecs.filter(r => !images.some(existing => existing.id === r.id));
+            setImages(prev => [...prev, ...filteredRecs]);
+        }
+    }, [currentIndex, images, currentImage, availableModels, isLiked, toggleLike, navigate, globalShowcaseCache]);
+
     const model = useMemo(() => {
-        if (!image || !availableModels) return null;
-        return availableModels.find(m => m.id === image.modelId);
-    }, [image, availableModels]);
+        if (!currentImage || !availableModels) return null;
+        return availableModels.find(m => m.id === currentImage.modelId);
+    }, [currentImage, availableModels]);
 
-    const liked = image ? isLiked(image.id) : false;
+    const liked = currentImage ? isLiked(currentImage.id) : false;
 
-    if (loading) {
+    if (loading && images.length === 0) {
         return (
-            <div className="showcase-detail-container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ opacity: 0.5 }}>Loading masterpiece...</div>
+            <div className="showcase-detail-container swipe-mode" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="discovery-loader">
+                    <Sparkles className="animate-pulse text-purple-500" size={48} />
+                    <p>Fetching masterpieces...</p>
+                </div>
             </div>
         );
     }
 
-    if (!image) return null;
+    if (!currentImage) {
+        return (
+            <div className="showcase-detail-container swipe-mode flex flex-col items-center justify-center p-8 text-center">
+                <Sparkles size={48} className="text-purple-400 mb-4" />
+                <h2 className="text-2xl font-bold mb-2">End of the Hive</h2>
+                <p className="text-gray-400 mb-6">You've explored everything in this stream.</p>
+                <button onClick={() => navigate('/discovery')} className="btn-primary-action" style={{ maxWidth: '200px' }}>
+                    Reset Discovery
+                </button>
+            </div>
+        );
+    }
 
     return (
-        <div className="showcase-detail-container">
+        <div className="showcase-detail-container swipe-mode">
             <SEO
-                title={`${image.prompt ? image.prompt.slice(0, 30) + '...' : 'Showcase'} | DreamBees`}
-                description={image.prompt || "AI Generated Art on DreamBees"}
-                image={image.url}
+                title={`${currentImage.prompt ? currentImage.prompt.slice(0, 30) + '...' : 'Showcase'} | DreamBees`}
+                description={currentImage.prompt || "AI Generated Art on DreamBees"}
+                image={currentImage.url}
             />
 
+            {/* Background Blur */}
+            <div className="bg-blur-container">
+                <img src={currentImage.url} alt="" className="active-bg-blur" />
+            </div>
+
             {/* Navigation Bar */}
-            <div className="detail-nav">
-                <button
-                    onClick={() => navigate('/discovery')}
-                    className="nav-back-btn"
-                >
-                    <ArrowLeft size={18} />
-                    <span className="hidden sm:inline">Back to Discovery</span>
+            <div className="detail-nav transparent">
+                <button onClick={() => navigate('/discovery')} className="nav-back-btn">
+                    <ArrowLeft size={20} />
                 </button>
 
                 <div className="nav-actions">
-                    <button className="btn-icon" title="Share" onClick={() => {
+                    <button className="btn-icon" onClick={() => {
                         navigator.clipboard.writeText(window.location.href);
-                        alert("Link copied to clipboard!");
+                        alert("Link copied!");
                     }}>
                         <Share2 size={20} />
-                    </button>
-                    {/* Like Button */}
-                    <button
-                        onClick={() => toggleLike(image, model)}
-                        className="btn-like flex items-center"
-                    >
-                        <Heart
-                            size={16}
-                            fill={liked ? "#ff3040" : "none"}
-                            color={liked ? "#ff3040" : "white"}
-                        />
-                        <span>{liked ? "Liked" : "Like"}</span>
                     </button>
                 </div>
             </div>
 
-            <main className="detail-content-wrapper">
-
-                {/* 1. HERO SECTION (Split View) */}
-                <div className="hero-split">
-
-                    {/* Left: Image */}
-                    <div className="hero-image-column">
-                        <div className="hero-image-container">
-                            <img
-                                src={getOptimizedImageUrl(image.url)}
-                                alt={image.prompt}
-                                className="hero-image"
-                            />
-
-                        </div>
-                    </div>
-
-                    {/* Right: Details */}
-                    <div className="hero-info-panel">
-                        <div>
-                            <label className="info-label">PROMPT</label>
-                            <p className="prompt-text">
-                                "{image.prompt || "An AI generated masterpiece."}"
-                            </p>
-                        </div>
-
-                        <div className="divider" />
-
-                        <div className="metadata-grid">
-                            <div>
-                                <label className="info-label">MODEL</label>
-                                <div className="metadata-value">{model?.name || 'DreamBees AI'}</div>
-                            </div>
-                            <div>
-                                <label className="info-label">DIMENSIONS</label>
-                                <div className="metadata-value">{image.width} x {image.height}</div>
-                            </div>
-
-                            {image.style?.primary && (
-                                <div>
-                                    <label className="info-label">STYLE</label>
-                                    <div className="pill-style">{image.style.primary}</div>
-                                </div>
-                            )}
-
-                            {image.colors?.paletteName && (
-                                <div>
-                                    <label className="info-label">PALETTE</label>
-                                    <div className="metadata-value flex items-center gap-2">
-                                        <span className="text-sm">{image.colors.paletteName}</span>
-                                        <div className="palette-swatches">
-                                            {image.colors.dominant?.map((c, i) => (
-                                                <div key={i} className="swatch" style={{ background: c }} />
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Call to Action */}
-                        <div className="create-card">
-                            <h4 className="create-title">
-                                <Sparkles size={16} />
-                                Create with this Style
-                            </h4>
-                            <p className="create-desc">
-                                Use {model?.name || 'this model'} to generate your own variations.
-                            </p>
-                            <button
-                                onClick={() => {
-                                    const params = new URLSearchParams();
-                                    if (image.prompt) params.set('prompt', image.prompt);
-                                    if (image.modelId) params.set('model', image.modelId);
-                                    navigate(`/generate?${params.toString()}`);
-                                }}
-                                className="btn-primary-action"
-                            >
-                                Remix in Studio
-                            </button>
-                        </div>
-                    </div>
+            <main className="swipe-main">
+                <div className="card-stack-container">
+                    <AnimatePresence mode="popLayout">
+                        {images.slice(currentIndex, currentIndex + 3).reverse().map((img, idx) => {
+                            const isTop = idx === images.slice(currentIndex, currentIndex + 3).length - 1;
+                            return (
+                                <SwipeCard
+                                    key={img.id}
+                                    image={img}
+                                    isTop={isTop}
+                                    onSwipe={handleSwipe}
+                                    modelName={availableModels?.find(m => m.id === img.modelId)?.name}
+                                />
+                            );
+                        })}
+                    </AnimatePresence>
                 </div>
 
-                {/* 2. RELATED CONTENT GRID */}
-                {relatedImages.length > 0 && (
-                    <section className="related-section">
-                        <div className="related-header">
-                            <Sparkles className="text-purple-400" size={20} />
-                            <h2 className="related-title">Related Discoveries</h2>
+                {/* Info & Actions Overlay (Floating at bottom) */}
+                <div className="swipe-info-overlay">
+                    <div className="info-content">
+                        <div className="info-header">
+                            <span className="info-model">{model?.name || 'DreamBees AI'}</span>
+                            {currentImage.style?.primary && <span className="info-tag">{currentImage.style.primary}</span>}
                         </div>
+                        <p className="info-prompt">"{currentImage.prompt}"</p>
+                    </div>
 
-                        <div className="related-grid">
-                            {relatedImages.map((item, i) => (
-                                <div
-                                    key={item.id}
-                                    onClick={() => {
-                                        navigate(`/discovery/${item.id}`);
-                                    }}
-                                    className="related-item group"
-                                >
-                                    <img
-                                        src={getOptimizedImageUrl(item.thumbnailUrl || item.url)}
-                                        loading="lazy"
-                                        alt={item.prompt}
-                                        className="related-thumb"
-                                    />
-                                    <div className="related-overlay">
-                                        <p className="related-prompt">
-                                            {item.prompt}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
-                )}
-
+                    <div className="swipe-actions">
+                        <button className="swipe-btn dislike" onClick={() => handleSwipe('left')}>
+                            <X size={32} />
+                        </button>
+                        <button className="swipe-btn like" onClick={() => handleSwipe('right')}>
+                            <Check size={32} />
+                        </button>
+                        <button
+                            className="swipe-btn remix"
+                            onClick={() => {
+                                const params = new URLSearchParams();
+                                if (currentImage.prompt) params.set('prompt', currentImage.prompt);
+                                if (currentImage.modelId) params.set('model', currentImage.modelId);
+                                navigate(`/generate?${params.toString()}`);
+                            }}
+                        >
+                            <Sparkles size={24} />
+                        </button>
+                    </div>
+                </div>
             </main>
         </div>
+    );
+};
+
+const SwipeCard = ({ image, isTop, onSwipe, modelName }) => {
+    const x = useMotionValue(0);
+    const rotate = useTransform(x, [-200, 200], [-25, 25]);
+    const opacity = useTransform(x, [-200, -150, 0, 150, 200], [0, 1, 1, 1, 0]);
+
+    // Icon overlays
+    const likeOpacity = useTransform(x, [50, 150], [0, 1]);
+    const dislikeOpacity = useTransform(x, [-150, -50], [1, 0]);
+
+    const handleDragEnd = (_, info) => {
+        if (info.offset.x > 100) {
+            onSwipe('right');
+        } else if (info.offset.x < -100) {
+            onSwipe('left');
+        }
+    };
+
+    return (
+        <motion.div
+            className="swipe-card"
+            style={{
+                x,
+                rotate,
+                opacity: isTop ? opacity : 1,
+                zIndex: isTop ? 10 : 0,
+                pointerEvents: isTop ? 'auto' : 'none'
+            }}
+            drag={isTop ? "x" : false}
+            dragConstraints={{ left: 0, right: 0 }}
+            onDragEnd={handleDragEnd}
+            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+            animate={{ scale: isTop ? 1 : 0.95, opacity: 1, y: 0 }}
+            exit={{ x: x.get() < 0 ? -500 : 500, opacity: 0, transition: { duration: 0.3 } }}
+        >
+            <img src={getOptimizedImageUrl(image.url)} alt="" className="card-image" />
+
+            {/* Gesture Feedback Overlays */}
+            <motion.div className="card-status like" style={{ opacity: likeOpacity }}>
+                <Heart fill="#ff3040" color="#ff3040" size={60} />
+            </motion.div>
+            <motion.div className="card-status dislike" style={{ opacity: dislikeOpacity }}>
+                <X color="#fff" size={60} />
+            </motion.div>
+        </motion.div>
     );
 };
 

@@ -63,3 +63,26 @@ export function calculateRelevance(source, candidates, limit = 12) {
     // Return top N items
     return scored.slice(0, limit).map(s => s.item);
 }
+/**
+ * Gets a diversified list of recommendations.
+ * Mixes high-relevance items with some random "discovery" items to prevent style loops.
+ */
+export function getDiversifiedRecommendations(source, candidates, limit = 10) {
+    if (!source || !candidates || candidates.length === 0) return [];
+
+    // 1. Get all scored items
+    const relevant = calculateRelevance(source, candidates, candidates.length);
+
+    // 2. Take top 70% from relevance, 30% random
+    const topCount = Math.floor(limit * 0.7);
+    const randomCount = limit - topCount;
+
+    const selections = relevant.slice(0, topCount);
+    const remaining = relevant.slice(topCount);
+
+    // 3. Shuffle remaining and pick random
+    const shuffled = [...remaining].sort(() => 0.5 - Math.random());
+    const randomPicks = shuffled.slice(0, randomCount);
+
+    return [...selections, ...randomPicks].sort(() => 0.5 - Math.random());
+}
