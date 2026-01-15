@@ -1,93 +1,132 @@
-import React, { useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
 import SEO from '../components/SEO';
-import { useNavigate } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
-import { Sparkles, Loader2 } from 'lucide-react';
-import { getOptimizedImageUrl, getImageSrcSet } from '../utils'; // Added getImageSrcSet
+import { Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
+import { getOptimizedImageUrl, getImageSrcSet } from '../utils';
 import Sidebar from '../components/Sidebar';
 
 import ShowcaseModal from '../components/ShowcaseModal';
 import './Discovery.css';
 
 export default function Discovery() {
-    const navigate = useNavigate();
-    const { getGlobalShowcaseImages, globalShowcaseCache, isGlobalFeedLoading, availableModels } = useModel();
+    const {
+        getGlobalShowcaseImages,
+        globalShowcaseCache,
+        isGlobalFeedLoading,
+        availableModels,
+        hasGlobalFeedEnded
+    } = useModel();
     const [activeShowcaseImage, setActiveShowcaseImage] = useState(null);
 
-    // Track initialization to prevent duplicate calls
+    // Track initialization and scroll states with refs for stability
     const hasInitializedRef = useRef(false);
+    const observerRef = useRef(null);
+    const sentinelRef = useRef(null);
+    const isLoadingRef = useRef(false);
+    const lastFetchTimeRef = useRef(0);
+    const hasReachedEndRef = useRef(false);
+
+    // Configuration
+    const DEBOUNCE_MS = 800; // Minimum time between fetch attempts
+    const PREFETCH_THRESHOLD = '600px'; // How far before sentinel to start loading
+
+    // Sync loading state to ref for stable callback access
+    useEffect(() => {
+        isLoadingRef.current = isGlobalFeedLoading;
+    }, [isGlobalFeedLoading]);
 
     // 0. Scroll to top immediately on mount
     useLayoutEffect(() => {
-        window.scrollTo({
-            top: 0,
-            left: 0,
-            behavior: 'auto' // Instant scroll, no animation
-        });
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     }, []);
 
-    // 1. Initial Load (One-time trigger per mount)
+    // 1. Initial Load - Stable, one-time trigger
     useEffect(() => {
-        // Only trigger once per component mount, not on every render
         if (hasInitializedRef.current) return;
         hasInitializedRef.current = true;
 
-        console.log("[Discovery] Initial load triggered");
+        console.log('[Discovery] 🚀 Initial load triggered');
         getGlobalShowcaseImages(false, 'discovery_init');
 
-        // Reset on unmount so next mount will fetch fresh if needed
         return () => {
             hasInitializedRef.current = false;
+            hasReachedEndRef.current = false;
         };
     }, [getGlobalShowcaseImages]);
 
-    // 2. Infinite Scroll Observer - with cooldown and strict guards
-    const isLoadingRef = useRef(isGlobalFeedLoading);
-    const lastLoadTimeRef = useRef(0);
-    const lastCacheLengthRef = useRef(0);
-    const COOLDOWN_MS = 1000; // Minimum time between fetches
+    // 2. Robust Infinite Scroll Handler - Debounced & Guarded
+    const handleLoadMore = useCallback(async () => {
+        const now = Date.now();
+        const timeSinceLastFetch = now - lastFetchTimeRef.current;
 
-    useEffect(() => {
-        isLoadingRef.current = isGlobalFeedLoading;
-        // Update cache length ref only when NOT loading to establish a baseline for next trigger
-        if (!isGlobalFeedLoading) {
-            lastCacheLengthRef.current = globalShowcaseCache.length;
+        // Guard conditions - all must pass to fetch
+        if (isLoadingRef.current) {
+            console.log('[Discovery] ⏳ Already loading, skipping...');
+            return;
         }
-    }, [isGlobalFeedLoading, globalShowcaseCache.length]);
+        if (hasReachedEndRef.current) {
+            console.log('[Discovery] ✅ Already at end of feed');
+            return;
+        }
+        if (timeSinceLastFetch < DEBOUNCE_MS) {
+            console.log(`[Discovery] ⏱ Debounce active (${timeSinceLastFetch}ms < ${DEBOUNCE_MS}ms)`);
+            return;
+        }
+        if (globalShowcaseCache.length === 0) {
+            console.log('[Discovery] 📭 No initial content yet, skipping load more');
+            return;
+        }
 
-    useEffect(() => {
-        const sentinel = document.getElementById('feed-sentinel');
-        if (!sentinel) return;
+        // All guards passed - fetch more
+        console.log(`[Discovery] 📥 Loading more... (current: ${globalShowcaseCache.length} items)`);
+        lastFetchTimeRef.current = now;
 
-        const observer = new IntersectionObserver((entries) => {
-            const entry = entries[0];
-            const now = Date.now();
-            const timeSinceLastLoad = now - lastLoadTimeRef.current;
+        const result = await getGlobalShowcaseImages(true, 'discovery_scroll');
 
-            // Strict Guards:
-            // 1. Must be intersecting
-            // 2. Must NOT be currently loading
-            // 3. Must have cooldown elapsed
-            // 4. Must have existing content (don't trigger on empty)
-            // 5. Must have new content loaded previously (or be initial load)
-            if (entry.isIntersecting &&
-                !isLoadingRef.current &&
-                timeSinceLastLoad > COOLDOWN_MS &&
-                globalShowcaseCache.length > 0 &&
-                globalShowcaseCache.length > lastCacheLengthRef.current) {
-
-                console.log("[Discovery] Triggering scroll load...");
-                lastLoadTimeRef.current = now;
-                getGlobalShowcaseImages(true, 'discovery_scroll');
-            }
-        }, { rootMargin: '400px' });
-
-        observer.observe(sentinel);
-        return () => observer.disconnect();
+        // Check if we've reached the end (no new items loaded)
+        if (result && result.length === globalShowcaseCache.length) {
+            console.log('[Discovery] 🏁 End of feed reached');
+            hasReachedEndRef.current = true;
+        }
     }, [getGlobalShowcaseImages, globalShowcaseCache.length]);
 
-    const visibleImages = globalShowcaseCache;
-    const loading = isGlobalFeedLoading && visibleImages.length === 0; // Initial loading state
+    // 3. Intersection Observer Setup - Stable, no recreation on cache changes
+    useEffect(() => {
+        // Cleanup previous observer
+        if (observerRef.current) {
+            observerRef.current.disconnect();
+        }
+
+        // Create new observer with stable callback
+        observerRef.current = new IntersectionObserver(
+            (entries) => {
+                const [entry] = entries;
+                if (entry.isIntersecting) {
+                    handleLoadMore();
+                }
+            },
+            {
+                rootMargin: PREFETCH_THRESHOLD, // Pre-fetch before sentinel is visible
+                threshold: 0.1
+            }
+        );
+
+        // Observe sentinel when available
+        if (sentinelRef.current) {
+            observerRef.current.observe(sentinelRef.current);
+        }
+
+        return () => {
+            if (observerRef.current) {
+                observerRef.current.disconnect();
+            }
+        };
+    }, [handleLoadMore]); // Only recreate when handler changes
+
+    // Derived state for UI
+    const isInitialLoading = isGlobalFeedLoading && globalShowcaseCache.length === 0;
+    const isLoadingMore = isGlobalFeedLoading && globalShowcaseCache.length > 0;
+    const hasReachedEnd = hasReachedEndRef.current || hasGlobalFeedEnded;
 
     return (
         <div className="feed-layout-wrapper">
@@ -123,7 +162,7 @@ export default function Discovery() {
                     {/* MASONRY GRID */}
                     <section className="gallery-section" aria-label="Discovery Gallery" style={{ minHeight: '60vh' }}>
                         <div className="masonry-grid">
-                            {visibleImages.map((imgItem, index) => {
+                            {globalShowcaseCache.map((imgItem, index) => {
                                 const ratios = ['1/1', '3/4', '1/1', '2/3', '4/3', '1/1', '3/5'];
                                 const ratio = imgItem.aspectRatio || ratios[index % ratios.length];
 
@@ -176,9 +215,59 @@ export default function Discovery() {
                             })}
                         </div>
 
-                        {/* Infinite Scroll Sentinel / Loader */}
-                        <div id="feed-sentinel" style={{ margin: '40px 0', textAlign: 'center', opacity: 0.5 }}>
-                            {loading && <Loader2 size={32} className="animate-spin text-white mx-auto" />}
+                        {/* Initial Loading State */}
+                        {isInitialLoading && (
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                minHeight: '40vh',
+                                gap: '16px'
+                            }}>
+                                <Loader2 size={40} className="animate-spin" style={{ color: 'var(--color-accent, #a855f7)' }} />
+                                <p style={{ opacity: 0.6, fontSize: '0.9rem' }}>Loading discoveries...</p>
+                            </div>
+                        )}
+
+                        {/* Infinite Scroll Sentinel - ref-based for stable observation */}
+                        <div
+                            ref={sentinelRef}
+                            id="feed-sentinel"
+                            style={{
+                                margin: '40px 0',
+                                textAlign: 'center',
+                                minHeight: '60px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px'
+                            }}
+                        >
+                            {/* Loading More Indicator */}
+                            {isLoadingMore && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', opacity: 0.7 }}>
+                                    <Loader2 size={24} className="animate-spin" style={{ color: 'var(--color-accent, #a855f7)' }} />
+                                    <span style={{ fontSize: '0.85rem' }}>Loading more...</span>
+                                </div>
+                            )}
+
+                            {/* End of Feed Indicator */}
+                            {hasReachedEnd && !isLoadingMore && globalShowcaseCache.length > 0 && (
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '10px',
+                                    opacity: 0.5,
+                                    padding: '16px 24px',
+                                    borderRadius: '12px',
+                                    background: 'rgba(255,255,255,0.03)'
+                                }}>
+                                    <CheckCircle2 size={18} style={{ color: 'var(--color-success, #22c55e)' }} />
+                                    <span style={{ fontSize: '0.85rem' }}>You've seen it all! Check back later for more.</span>
+                                </div>
+                            )}
                         </div>
                     </section>
 

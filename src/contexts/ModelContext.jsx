@@ -162,6 +162,7 @@ export function ModelProvider({ children }) {
     const [globalShowcaseCache, setGlobalShowcaseCache] = useState([]); // Array of all loaded images
     const [lastGlobalDoc, setLastGlobalDoc] = useState(null); // Tracker for pagination
     const [isGlobalFeedLoading, setIsGlobalFeedLoading] = useState(false); // Reactive loading state
+    const [hasGlobalFeedEnded, setHasGlobalFeedEnded] = useState(false); // Reactive end-of-feed state
 
     // Refs for stable callback access (prevents dependency array changes)
     const globalShowcaseCacheRef = useRef([]);
@@ -183,6 +184,7 @@ export function ModelProvider({ children }) {
         setLastGlobalDoc(null);
         globalFeedLoadingRef.current = false;
         hasEndedRef.current = false;
+        setHasGlobalFeedEnded(false);
     }, []);
 
     // Fetch aggregated global showcase (All Models) - PAGINATED & ROBUST
@@ -238,6 +240,7 @@ export function ModelProvider({ children }) {
             if (snapshot.empty) {
                 console.log(`[Global Feed] [from:${source}] No more images found - end of feed reached.`);
                 hasEndedRef.current = true; // Mark as ended
+                setHasGlobalFeedEnded(true); // Reactive state update
                 globalFeedLoadingRef.current = false;
                 setIsGlobalFeedLoading(false);
                 return currentCache;
@@ -443,7 +446,8 @@ export function ModelProvider({ children }) {
         showcaseCache,     // Exported state
         globalShowcaseCache, // EXPORTED state for instant load
         isGlobalFeedLoading, // EXPORTED reactive loading state
-        hasMoreGlobal: !!lastGlobalDoc, // Helper boolean
+        hasGlobalFeedEnded, // EXPORTED - true when no more content to load
+        hasMoreGlobal: !hasGlobalFeedEnded && globalShowcaseCache.length > 0, // Helper boolean
         rateGeneration,    // EXPORTED
         rateShowcaseImage, // EXPORTED
         getUserVideos,     // EXPORTED
