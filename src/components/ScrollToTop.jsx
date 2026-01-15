@@ -5,6 +5,14 @@ export default function ScrollToTop() {
     const { pathname } = useLocation();
 
     useEffect(() => {
+        // Disable browser's default scroll restoration to avoid conflicts with Lenis
+        if ('scrollRestoration' in window.history) {
+            window.history.scrollRestoration = 'manual';
+        }
+    }, []);
+
+
+    useEffect(() => {
         if (window.lenis) {
             window.lenis.scrollTo(0, { immediate: true });
         } else {
