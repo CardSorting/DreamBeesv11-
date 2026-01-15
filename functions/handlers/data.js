@@ -155,3 +155,44 @@ export const handleToggleBookmark = async (request) => {
         return { success: true };
     } catch { throw new HttpsError('internal', "Failed"); }
 };
+
+export const handleToggleLike = async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', "Auth required");
+    const { imageId, isLiked, imgData, modelId } = request.data;
+
+    try {
+        const userLikeRef = db.collection('users').doc(uid).collection('likes').doc(imageId);
+        const imageRef = db.collection('model_showcase_images').doc(imageId);
+
+        // Transaction to ensure count consistency? Or just simple batch/parallel writes?
+        // Since we are unliking/liking, we should probably do it sequentially or batched.
+        // For simple social features, firestore increment is atomic enough usually.
+
+        if (isLiked) {
+            // UNLIKE
+            await userLikeRef.delete();
+            // Decrement global count
+            await imageRef.update({
+                likesCount: FieldValue.increment(-1)
+            });
+        } else {
+            // LIKE
+            await userLikeRef.set({
+                imageId,
+                modelId: modelId || 'unknown',
+                ...imgData,
+                createdAt: FieldValue.serverTimestamp()
+            });
+            // Increment global count
+            await imageRef.update({
+                likesCount: FieldValue.increment(1),
+                lastRatedAt: FieldValue.serverTimestamp()
+            });
+        }
+        return { success: true };
+    } catch (error) {
+        console.error("Toggle like failed:", error);
+        throw handleError(error, { uid });
+    }
+};

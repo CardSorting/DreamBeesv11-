@@ -176,6 +176,7 @@ export const api = onCall({ memory: "256MiB" }, async (request) => {
             case 'chatPersona': return Persona.handleChatPersona(request);
 
             case 'toggleBookmark': return Data.handleToggleBookmark(request);
+            case 'toggleLike': return Data.handleToggleLike(request);
 
             default:
                 throw new HttpsError('invalid-argument', `Unknown action: ${action}`);

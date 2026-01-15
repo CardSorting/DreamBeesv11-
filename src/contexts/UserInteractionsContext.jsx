@@ -80,21 +80,27 @@ export function UserInteractionsProvider({ children }) {
         setLikedIds(newSet); // Update local state immediately
 
         try {
-            if (currentlyLiked) {
-                await deleteDoc(doc(db, `users/${currentUser.uid}/likes/${id}`));
-                // rateShowcaseImage(id, 0, model.id); // Optional decrement
-            } else {
-                await setDoc(doc(db, `users/${currentUser.uid}/likes/${id}`), {
-                    imageId: id,
-                    modelId: model?.id || 'unknown',
+            const api = httpsCallable(functions, 'api');
+            await api({
+                action: 'toggleLike',
+                imageId: id,
+                modelId: model?.id || 'unknown',
+                isLiked: currentlyLiked,
+                imgData: {
                     url: imgItem.url || imgItem.imageUrl,
                     thumbnailUrl: imgItem.thumbnailUrl || imgItem.url,
                     prompt: imgItem.prompt || "",
-                    createdAt: new Date(),
                     aspectRatio: imgItem.aspectRatio || "1/1"
-                });
-                if (model?.id) rateShowcaseImage(id, 1, model.id);
+                }
+            });
+
+            if (currentlyLiked) {
+                // Was liked, so we unliked it
+                // toast.success("Removed from likes"); // Optional: reduce noise
+            } else {
+                toast.success("Added to likes");
             }
+
         } catch (error) {
             console.error("Toggle like failed:", error);
             // Revert on error
