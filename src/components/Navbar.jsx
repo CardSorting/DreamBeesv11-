@@ -89,7 +89,7 @@ export default function Navbar() {
 
                 {/* Desktop Nav */}
                 <div className="hidden-mobile" style={{ display: 'flex', gap: '4px' }}>
-                    {currentUser && isAdmin && navLinks.map(link => (
+                    {currentUser && isAdmin && (isGlobalFeed || location.pathname === '/profile') && navLinks.map(link => (
                         <Link
                             key={link.path}
                             to={link.path}
@@ -204,7 +204,7 @@ export default function Navbar() {
                                 Profile
                             </Link>
 
-                            {isAdmin && navLinks.map(link => (
+                            {isAdmin && (isGlobalFeed || location.pathname === '/profile') && navLinks.map(link => (
                                 <Link
                                     key={link.path}
                                     to={link.path}
