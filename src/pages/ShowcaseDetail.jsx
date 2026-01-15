@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useLayoutEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Share2, Sparkles, Heart } from 'lucide-react';
+
 import { useModel } from '../contexts/ModelContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { getOptimizedImageUrl } from '../utils';
@@ -16,26 +17,40 @@ const ShowcaseDetail = () => {
     const { globalShowcaseCache, availableModels } = useModel();
     const { isLiked, toggleLike } = useUserInteractions();
 
-    const [image, setImage] = useState(null);
-    const [loading, setLoading] = useState(true);
+    // 0. Synchronous Cache Lookup
+    const cachedImage = useMemo(() => {
+        return globalShowcaseCache.find(img => img.id === id);
+    }, [id, globalShowcaseCache]);
+
+    const [image, setImage] = useState(cachedImage || null);
+    const [loading, setLoading] = useState(!cachedImage);
     const [relatedImages, setRelatedImages] = useState([]);
 
+    // 0. Instant Scroll to Top on Route Change
+    useLayoutEffect(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }, [id]);
+
+
     // 1. Resolve Image (Cache -> Firestore)
+    // Sync cached image update
     useEffect(() => {
+        if (cachedImage) {
+            setImage(cachedImage);
+            setLoading(false);
+        }
+    }, [cachedImage]);
+
+    // 1. Resolve Image (Firestore Fallback)
+    useEffect(() => {
+        if (cachedImage || (image && image.id === id)) return;
+
         const resolveImage = async () => {
             setLoading(true);
-
-            // Try cache first
-            const cached = globalShowcaseCache.find(img => img.id === id);
-            if (cached) {
-                setImage(cached);
-                setLoading(false);
-                return;
-            }
-
-            // Fallback to Firestore
             try {
                 console.log(`[ShowcaseDetail] Fetching ${id} from Firestore...`);
+                // Short delay to allow cache to potentially populate if it's racing? 
+
                 const docRef = doc(db, 'model_showcase_images', id);
                 const snapshot = await getDoc(docRef);
                 if (snapshot.exists()) {
@@ -43,7 +58,6 @@ const ShowcaseDetail = () => {
                     setImage({ id: snapshot.id, ...data });
                 } else {
                     console.error("Image not found");
-                    // navigate('/discovery'); // Optional: redirect on 404
                 }
             } catch (err) {
                 console.error("Error fetching detail:", err);
@@ -52,8 +66,8 @@ const ShowcaseDetail = () => {
             }
         };
 
-        if (id) resolveImage();
-    }, [id, globalShowcaseCache]);
+        resolveImage();
+    }, [id, cachedImage]);
 
     // 2. Calculate Related Content
     useEffect(() => {
