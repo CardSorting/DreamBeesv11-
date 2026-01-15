@@ -10,6 +10,7 @@
     "indexes": "firestore.indexes.json"
   },
   "hosting": {
+    "site": "dreambees-alchemist",
     "public": "dist",
     "ignore": [
       "firebase.json",
