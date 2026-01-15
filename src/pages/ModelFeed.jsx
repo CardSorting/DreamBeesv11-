@@ -220,7 +220,7 @@ const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
             {featuredModel && (
                 <div className="sidebar-section">
                     <h3 className="section-title">
-                        <Sparkles size={14} className="inline-icon" /> SPOTLIGHT
+                        <Sparkles size={14} className="inline-icon" /> FEATURED DREAMBEE
                     </h3>
                     <div className="spotlight-card">
                         <div className="spotlight-header">
@@ -228,10 +228,10 @@ const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
                             <div className="spotlight-overlay" />
                             <div className="spotlight-content">
                                 <span className="spotlight-badge">Featured</span>
-                                <h4 className="spotlight-name">{featuredModel.name}</h4>
-                                <p className="spotlight-desc line-clamp-2">{featuredModel.description}</p>
+                                <h4 className="spotlight-name">DreamBee</h4>
+                                <p className="spotlight-desc line-clamp-2">Interactive AI Persona. Tap to start a conversation.</p>
                                 <Link to={`/model/${featuredModel.id}/feed`} className="spotlight-btn">
-                                    View Model
+                                    View Persona
                                 </Link>
                             </div>
                         </div>
@@ -241,7 +241,7 @@ const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
 
             {/* Suggested List */}
             <div className="sidebar-section">
-                <h3 className="section-title">SUGGESTED FOR YOU</h3>
+                <h3 className="section-title">SUGGESTED PERSONAS</h3>
                 <div className="suggestions-list">
                     {suggestions.map(m => (
                         <div key={m.id} className="suggestion-item">
@@ -251,10 +251,10 @@ const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
                                 </div>
                                 <div className="suggestion-info">
                                     <div className="suggestion-name">
-                                        {m.name}
+                                        DreamBee
                                         <BadgeCheck size={12} className="text-blue-500 fill-blue-500" />
                                     </div>
-                                    <div className="suggestion-meta">Recommended</div>
+                                    <div className="suggestion-meta">Interactive Persona</div>
                                 </div>
                             </Link>
                             <button className="suggestion-follow-btn">Follow</button>
@@ -653,57 +653,13 @@ export default function ModelFeed() {
                         <ArrowLeft size={20} />
                     </button>
                     <div className="header-title">
-                        <span>{id ? `${model?.name} Feed` : 'Explore Feed'}</span>
+                        <span>{id ? `${model?.name} Feed` : 'THE HIVE'}</span>
                         <BadgeCheck size={16} className="text-blue-500 fill-blue-500" />
                     </div>
                 </header>
 
                 {/* Filter & Sort Bar (Global Only) */}
-                {!id && (
-                    <div className="feed-filter-bar">
-                        <div className="filter-scroll">
-                            <button
-                                className={`filter-chip ${activeFilter === 'All' ? 'active' : ''}`}
-                                onClick={() => setActiveFilter('All')}
-                            >
-                                All
-                            </button>
-                            <button
-                                className={`filter-chip ${activeFilter === 'Videos' ? 'active' : ''}`}
-                                onClick={() => setActiveFilter('Videos')}
-                            >
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <BadgeCheck size={12} fill="white" stroke="black" /> Videos
-                                </span>
-                            </button>
-                            {allTags.map(tag => (
-                                <button
-                                    key={tag}
-                                    className={`filter-chip ${activeFilter === tag ? 'active' : ''}`}
-                                    onClick={() => setActiveFilter(tag)}
-                                >
-                                    {tag}
-                                </button>
-                            ))}
-                        </div>
-                        <div className="sort-toggle">
-                            <button
-                                className={`sort-btn ${sortMode === 'random' ? 'active' : ''}`}
-                                onClick={handleShuffle}
-                                title="Shuffle"
-                            >
-                                <Sparkles size={14} />
-                            </button>
-                            <button
-                                className={`sort-btn ${sortMode === 'top' ? 'active' : ''}`}
-                                onClick={() => setSortMode('top')}
-                                title="Top Rated"
-                            >
-                                <BadgeCheck size={14} />
-                            </button>
-                        </div>
-                    </div>
-                )}
+
 
                 <div className="feed-posts-container">
                     {visibleImages.map((imgItem, index) => (

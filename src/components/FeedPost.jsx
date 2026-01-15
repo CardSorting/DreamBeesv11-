@@ -122,10 +122,10 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
                     </div>
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'white', letterSpacing: '-0.01em' }}>{model.name}</div>
+                            <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'white', letterSpacing: '-0.01em' }}>DreamBee</div>
                             <BadgeCheck size={14} className="text-blue-500 fill-blue-500" />
                         </div>
-                        <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: '500' }}>Official Model Showcase</div>
+                        <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: '500' }}>Interactive Persona</div>
                     </div>
                 </div>
                 <button className="btn-ghost" style={{ padding: '8px', opacity: 0.5 }}>
@@ -348,9 +348,7 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
                     </div>
                 </div>
 
-                <div style={{ fontSize: '0.9rem', lineHeight: '1.7', color: '#ccc', letterSpacing: '0.01em' }}>
-                    <span style={{ fontWeight: '800', marginRight: '12px', color: 'white' }}>{model.name}</span>
-                </div>
+
 
                 <div style={{ marginTop: '8px', fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontWeight: '700', letterSpacing: '0.05em' }}>
                     {timeAgo}
@@ -359,7 +357,7 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
 
 
                 <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '8px', opacity: 0.6 }}>
-                    <span style={{ color: 'var(--color-accent-primary)', fontSize: '0.8rem', fontWeight: '500' }}>#{model.name.replace(/\s+/g, '')}</span>
+
                     <span style={{ color: 'var(--color-accent-primary)', fontSize: '0.8rem', fontWeight: '500' }}>#AI</span>
                     <span style={{ color: 'var(--color-accent-primary)', fontSize: '0.8rem', fontWeight: '500' }}>#DreamBees</span>
                 </div>
