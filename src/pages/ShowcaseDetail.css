@@ -1,538 +1,371 @@
-/* Showcase Detail Page Styles - Tinder UI Redesign */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 
-.showcase-detail-container.swipe-mode {
-    height: 100vh;
-    width: 100vw;
-    overflow: hidden;
-    background: #000;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-}
+/* ShowcaseDetail.css */
 
-/* Background Blur Effect */
-.bg-blur-container {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    overflow: hidden;
-    pointer-events: none;
-}
-
-.active-bg-blur {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    filter: blur(80px) brightness(0.4);
-    transform: scale(1.2);
-    opacity: 0.8;
-    transition: opacity 1s ease;
-}
-
-/* Navigation Bar Overrides */
-.detail-nav.transparent {
-    background: transparent;
-    border-bottom: none;
-    backdrop-filter: none;
-    padding: 20px 24px;
-    height: auto;
-}
-
-.detail-nav.transparent .btn-icon {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-}
-
-/* --- SWIPE MAIN LAYOUT --- */
-/* --- SWIPE MAIN LAYOUT --- */
-.swipe-main {
-    flex: 1;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    z-index: 1;
-    padding-bottom: 60px;
-    /* Push optical center up */
-}
-
-/* Card Stack */
-.card-stack-container {
-    position: relative;
-    height: 78vh;
-    width: auto;
-    aspect-ratio: 9/16;
-    max-width: 90vw;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    perspective: 1200px;
-    margin-top: -20px;
-    /* Slight visual lift */
-}
-
-.swipe-card {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border-radius: 32px;
-    overflow: hidden;
-    background: #111;
-    cursor: grab;
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(0, 0, 0, 0.5);
-    transform-origin: bottom center;
-}
-
-/* Stamps */
-.stamp {
-    position: absolute;
-    top: 50px;
-    padding: 10px 20px;
-    border: 8px solid;
-    border-radius: 12px;
-    font-size: 3rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    z-index: 50;
-    pointer-events: none;
-}
-
-.stamp-like {
-    left: 40px;
-    color: #4ade80;
-    border-color: #4ade80;
-    transform: rotate(-15deg);
-}
-
-.stamp-nope {
-    right: 40px;
-    color: #f87171;
-    border-color: #f87171;
-    transform: rotate(15deg);
-}
-
-.swipe-card:active {
-    cursor: grabbing;
-}
-
-.card-visual-wrapper {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-}
-
-.card-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    user-select: none;
-    -webkit-user-drag: none;
-    transition: transform 0.5s ease;
-}
-
-.swipe-card:hover .card-image {
-    transform: scale(1.02);
-}
-
-.card-vignette {
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.4) 100%);
-    pointer-events: none;
-    z-index: 1;
-}
-
-.card-inner-glow {
-    position: absolute;
-    inset: 0;
-    box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.05);
-    pointer-events: none;
-    z-index: 2;
-}
-
-/* Gesture Overlays */
-.card-status {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 20;
-}
-
-.card-status.like {
-    filter: drop-shadow(0 0 20px rgba(255, 48, 64, 0.5));
-}
-
-.card-status.dislike {
-    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
-}
-
-/* --- INFO & ACTIONS OVERLAY --- */
-.swipe-info-overlay {
-    position: absolute;
-    bottom: 20px;
+/* Container for the vertical feed */
+.showcase-detail-container.vertical-feed-mode {
+    position: fixed;
+    top: 0;
     left: 0;
-    right: 0;
+    width: 100%;
+    height: 100vh;
+    background-color: #000;
+    z-index: 50;
+    overflow: hidden;
+    /* Prevent body scroll, we handle it internally */
+    font-family: 'Outfit', sans-serif;
+    color: white;
+}
+
+/* The scrollable area */
+.vertical-feed-scroll-container {
+    width: 100%;
+    height: 100%;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+
+    /* Hide scrollbar for cleaner look */
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE/Edge */
+}
+
+.vertical-feed-scroll-container::-webkit-scrollbar {
+    display: none;
+    /* Chrome/Safari */
+}
+
+/* Individual Feed Item (Page) */
+.feed-item {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    /* Full viewport height */
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    overflow: hidden;
+    background-color: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Image styling within the item */
+.feed-item-image-wrapper {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+    /* Placeholder gradient */
+    overflow: hidden;
+}
+
+/* Optional: Slight loading pulse if image takes time */
+.feed-item-image-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to right, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);
+    animation: placeholderShimmer 1.5s infinite linear;
+    z-index: 1;
+    pointer-events: none;
+}
+
+@keyframes placeholderShimmer {
+    from {
+        transform: translateX(-100%);
+    }
+
+    to {
+        transform: translateX(100%);
+    }
+}
+
+.feed-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    /* Contain ensures full image visibility */
+    max-width: 100%;
+    /* Ensure it doesn't overflow horizontally */
+    background: #000;
+    /* Black bars for aspect ratio mismatch */
+}
+
+/* For mobile primarily vertical images, cover might be better, but contain is safer for art */
+@media (max-width: 768px) {
+    .feed-image {
+        object-fit: cover;
+    }
+}
+
+
+/* Vignette/Glow overlay for text readability */
+.feed-overlay-gradient {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 60%;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.4) 50%, rgba(0, 0, 0, 0) 100%);
+    pointer-events: none;
+    z-index: 10;
+}
+
+.feed-top-gradient {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 25%;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 100%);
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* Right Side Actions (Heart, Share, etc.) */
+.feed-actions-sidebar {
+    position: absolute;
+    right: 16px;
+    bottom: 140px;
+    /* Adjust based on footer height */
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 20px;
-    padding: 0 24px;
-    max-width: 500px;
-    margin: 0 auto;
+    z-index: 30;
 }
 
-.info-content {
-    width: 100%;
-    text-align: left;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%);
-    backdrop-filter: blur(4px);
-    padding: 30px 20px 20px;
-    border-radius: 24px;
-}
-
-.info-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
-}
-
-.info-model {
-    font-weight: 800;
-    font-size: 1.4rem;
-    color: #fff;
-    letter-spacing: -0.02em;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-}
-
-.info-tag {
-    background: rgba(168, 85, 247, 0.4);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(168, 85, 247, 0.5);
-    color: #fff;
-    padding: 4px 12px;
-    border-radius: 100px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-}
-
-.info-prompt {
-    font-size: 1rem;
-    line-height: 1.5;
-    color: rgba(255, 255, 255, 0.9);
-    font-style: normal;
-    font-weight: 400;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-/* Swipe Buttons */
-.swipe-actions {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-    padding-bottom: 10px;
-}
-
-.swipe-btn {
-    width: 72px;
-    height: 72px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    border: none;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: #fff;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-}
-
-.swipe-btn:hover {
-    transform: scale(1.15) translateY(-4px);
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
-}
-
-.swipe-btn:active {
-    transform: scale(0.9);
-}
-
-.swipe-btn.dislike {
-    color: #f87171;
-}
-
-.swipe-btn.dislike:hover {
-    background: rgba(248, 113, 113, 0.15);
-    border-color: rgba(248, 113, 113, 0.3);
-    color: #f87171;
-}
-
-.swipe-btn.like {
-    color: #4ade80;
-}
-
-.swipe-btn.like:hover {
-    background: rgba(74, 222, 128, 0.15);
-    border-color: rgba(74, 222, 128, 0.3);
-    color: #4ade80;
-}
-
-.swipe-btn.info.active {
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.4);
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
-}
-
-.swipe-btn.info:hover {
-    color: #fff;
-}
-
-.swipe-btn.remix {
-    width: 48px;
-    height: 48px;
-    background: rgba(168, 85, 247, 0.2);
-    color: #c084fc;
-    border-color: rgba(168, 85, 247, 0.3);
-}
-
-.swipe-btn.remix:hover {
-    background: rgba(168, 85, 247, 0.4);
-    color: #fff;
-}
-
-/* Discovery Loader */
-.discovery-loader {
+.action-btn-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
-    color: rgba(255, 255, 255, 0.5);
+    gap: 6px;
 }
 
-/* Responsive Fixes */
-@media (max-width: 480px) {
-    .card-stack-container {
-        width: 95vw;
-        height: 75vh;
-        /* Slightly shorter on mobile to account for browser bars */
-        aspect-ratio: unset;
-        /* Let width/height drive it */
-    }
-
-    .swipe-btn {
-        width: 56px;
-        height: 56px;
-    }
-
-    .swipe-btn.remix {
-        width: 44px;
-        height: 44px;
-    }
+.action-btn {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    cursor: pointer;
+    padding: 0;
 }
 
-/* ============================================
-   SHUFFLE FEATURE STYLES
-   ============================================ */
+.action-btn:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+    transform: scale(1.05);
+}
 
-/* Shuffle Toast Notification */
-.shuffle-toast {
+.action-btn:active {
+    transform: scale(0.95);
+}
+
+.action-btn.active {
+    background-color: rgba(239, 68, 68, 0.2);
+    /* Red tint */
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #ef4444;
+    /* Red for Like */
+}
+
+.action-btn.active svg {
+    fill: currentColor;
+}
+
+.action-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* Bottom Info Area */
+.feed-info-area {
+    position: absolute;
+    bottom: 30px;
+    left: 16px;
+    right: 80px;
+    /* Space for sidebar */
+    z-index: 30;
+    color: white;
+    text-align: left;
+    pointer-events: none;
+    /* Let clicks pass through to image for double tap */
+}
+
+.feed-info-content {
+    pointer-events: auto;
+    /* Re-enable clicks for links/tags */
+}
+
+.model-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    padding: 6px 14px;
+    border-radius: 100px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background-color 0.2s;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.model-pill:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+.prompt-text {
+    font-size: 16px;
+    line-height: 1.5;
+    margin-bottom: 10px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    opacity: 0.95;
+}
+
+.tags-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.feed-tag {
+    font-weight: 700;
+}
+
+/* Double Tap Heart Animation */
+.double-tap-heart {
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(168, 85, 247, 0.9));
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 14px 28px;
-    border-radius: 100px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: #fff;
-    font-weight: 600;
-    font-size: 1rem;
-    letter-spacing: 0.02em;
-    box-shadow: 0 20px 50px rgba(99, 102, 241, 0.4),
-        0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-    z-index: 100;
+    transform: translate(-50%, -50%) scale(0);
     pointer-events: none;
-    animation: toastGlow 2s ease-in-out infinite;
+    z-index: 40;
+    color: white;
+    filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.5));
+    opacity: 0;
 }
 
-@keyframes toastGlow {
+.double-tap-heart.animate {
+    animation: doubleTapHeart 0.8s ease-out forwards;
+}
 
-    0%,
-    100% {
-        box-shadow: 0 20px 50px rgba(99, 102, 241, 0.4),
-            0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+@keyframes doubleTapHeart {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+    }
+
+    15% {
+        transform: translate(-50%, -50%) scale(1.2) rotate(-10deg);
+        opacity: 1;
+    }
+
+    30% {
+        transform: translate(-50%, -50%) scale(1.0) rotate(10deg);
+        opacity: 1;
     }
 
     50% {
-        box-shadow: 0 20px 60px rgba(168, 85, 247, 0.5),
-            0 0 0 1px rgba(255, 255, 255, 0.2) inset;
-    }
-}
-
-.shuffle-toast svg {
-    animation: toastIconSpin 0.6s ease-out;
-}
-
-@keyframes toastIconSpin {
-    from {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* Shuffle Button Enhancements */
-.swipe-btn.shuffle {
-    width: 56px;
-    height: 56px;
-    position: relative;
-    overflow: hidden;
-}
-
-.swipe-btn.shuffle::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, transparent 40%, rgba(99, 102, 241, 0.3) 100%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.swipe-btn.shuffle:hover::before {
-    opacity: 1;
-}
-
-.swipe-btn.shuffle:hover {
-    background: rgba(99, 102, 241, 0.2);
-    border-color: rgba(99, 102, 241, 0.4);
-    color: #a5b4fc;
-}
-
-.swipe-btn.shuffle.disabled {
-    cursor: not-allowed;
-    pointer-events: auto;
-}
-
-.swipe-btn.shuffle.disabled:hover {
-    transform: none;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-}
-
-/* Card Stack Shuffling Animation */
-.card-stack-container.shuffling {
-    animation: stackShuffle 0.5s ease-out;
-}
-
-@keyframes stackShuffle {
-    0% {
-        transform: scale(1) rotate(0deg);
-    }
-
-    20% {
-        transform: scale(0.97) rotate(-2deg);
-    }
-
-    40% {
-        transform: scale(1.02) rotate(1deg);
-    }
-
-    60% {
-        transform: scale(0.98) rotate(-1deg);
+        transform: translate(-50%, -50%) scale(1.1) rotate(-5deg);
+        opacity: 1;
     }
 
     80% {
-        transform: scale(1.01) rotate(0.5deg);
+        transform: translate(-50%, -50%) scale(1.1);
+        opacity: 1;
     }
 
     100% {
-        transform: scale(1) rotate(0deg);
+        transform: translate(-50%, -50%) scale(2);
+        opacity: 0;
     }
 }
 
-/* Shuffling cards spread effect */
-.card-stack-container.shuffling .swipe-card:nth-child(2) {
-    animation: cardSpread1 0.5s ease-out;
-}
-
-.card-stack-container.shuffling .swipe-card:nth-child(3) {
-    animation: cardSpread2 0.5s ease-out;
-}
-
-.card-stack-container.shuffling .swipe-card:nth-child(4) {
-    animation: cardSpread3 0.5s ease-out;
-}
-
-@keyframes cardSpread1 {
-    30% {
-        transform: translateX(-30px) rotate(-8deg);
-    }
-}
-
-@keyframes cardSpread2 {
-    30% {
-        transform: translateX(30px) rotate(8deg);
-    }
-}
-
-@keyframes cardSpread3 {
-    30% {
-        transform: translateY(-20px) scale(1.05);
-    }
-}
-
-/* Shuffle button hint */
-.swipe-btn.shuffle::after {
-    content: 'Hold for random';
+/* Navigation / Header overlay */
+.feed-nav-header {
     position: absolute;
-    bottom: -24px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.65rem;
-    color: rgba(255, 255, 255, 0.4);
-    white-space: nowrap;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 20px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 40;
     pointer-events: none;
+    /* Let clicks pass */
 }
 
-.swipe-btn.shuffle:hover::after {
-    opacity: 1;
+.nav-back-blur,
+.nav-action-blur {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(8px);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    pointer-events: auto;
+    /* Re-enable clicks */
+    transition: transform 0.2s;
 }
 
-@media (max-width: 480px) {
-    .swipe-btn.shuffle {
-        width: 48px;
-        height: 48px;
-    }
+.nav-back-blur:hover,
+.nav-action-blur:hover {
+    transform: scale(1.05);
+    background: rgba(0, 0, 0, 0.4);
+}
 
-    .swipe-btn.shuffle::after {
-        display: none;
-    }
+/* Loading / End States */
+.feed-end-message {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    scroll-snap-align: start;
+    background-color: #000;
+}
 
-    .shuffle-toast {
-        padding: 12px 20px;
-        font-size: 0.9rem;
-    }
+.loading-spinner-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100px;
+    padding: 20px;
 }

@@ -18,18 +18,20 @@ function Layout() {
   const { pathname } = useLocation();
   const isLanding = pathname === '/';
 
+  const isShowcaseDetail = pathname.startsWith('/discovery/') && pathname !== '/discovery';
+
   return (
     <div className="app-layout">
       {!pathname.startsWith('/discovery') && <Navbar />}
       <main className="app-main">
         <AnimatedRoutes />
       </main>
-      {!isLanding && (
+      {!isLanding && !isShowcaseDetail && (
         <div className="app-footer">
           <Footer />
         </div>
       )}
-      <BottomNav />
+      {!isShowcaseDetail && <BottomNav />}
       <BackToTop />
     </div>
   );
