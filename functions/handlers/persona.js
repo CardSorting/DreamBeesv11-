@@ -200,6 +200,22 @@ export const handleChatPersona = async (request) => {
 
         const responseText = result.response.candidates[0].content.parts[0].text;
 
+        // --- Logging ---
+        try {
+            await db.collection('persona_chat_logs').add({
+                userId: request.auth.uid,
+                imageId: imageId,
+                userMessage: message,
+                modelReply: responseText,
+                userAgent: request.rawRequest?.headers['user-agent'] || 'unknown',
+                timestamp: FieldValue.serverTimestamp()
+            });
+        } catch (logError) {
+            // Non-blocking logging error
+            logger.error("Failed to log persona chat interaction", logError);
+        }
+        // --- End Logging ---
+
         return { reply: responseText };
 
     } catch (e) {
