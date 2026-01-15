@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Share2, Sparkles, Heart, X, Check, Info } from 'lucide-react';
+import { ArrowLeft, Share2, Sparkles, Heart, X, Check, Shuffle, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 
 import { useModel } from '../contexts/ModelContext';
@@ -21,7 +21,13 @@ const ShowcaseDetail = () => {
     const [images, setImages] = useState([]); // Card stack
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(true);
-    const [showInfo, setShowInfo] = useState(false);
+    const [shuffleKey, setShuffleKey] = useState(0); // For triggering shuffle animation
+    const [shuffleToast, setShuffleToast] = useState(null); // Toast notification
+    const [isShuffling, setIsShuffling] = useState(false); // Animation state
+    const longPressTimer = useRef(null);
+    const isLongPress = useRef(false);
+    const seenCardIds = useRef(new Set()); // Track ALL cards ever shown to ensure fresh shuffles
+
 
     // Current active image
     const currentImage = images[currentIndex] || null;
@@ -46,7 +52,12 @@ const ShowcaseDetail = () => {
 
             if (initialImage) {
                 const recs = getDiversifiedRecommendations(initialImage, globalShowcaseCache, 15);
-                setImages([initialImage, ...recs]);
+                const allCards = [initialImage, ...recs];
+
+                // Track all initially loaded cards as "seen"
+                allCards.forEach(card => seenCardIds.current.add(card.id));
+
+                setImages(allCards);
             }
             setLoading(false);
         };
@@ -57,8 +68,6 @@ const ShowcaseDetail = () => {
     // Handle Swipe
     const handleSwipe = useCallback((direction) => {
         if (!currentImage) return;
-
-        setShowInfo(false); // Reset info on swipe
 
         // Visual feedback or interaction logic (e.g., auto-like on right swipe)
         if (direction === 'right') {
@@ -80,21 +89,146 @@ const ShowcaseDetail = () => {
         // Replenish stack if running low
         if (images.length - nextIndex < 5) {
             const lastImg = images[images.length - 1];
-            const newRecs = getDiversifiedRecommendations(lastImg, globalShowcaseCache, 10);
-            // Filter out existing to prevent duplicates
-            const filteredRecs = newRecs.filter(r => !images.some(existing => existing.id === r.id));
-            setImages(prev => [...prev, ...filteredRecs]);
+            // Get fresh pool excluding ALL seen cards
+            const freshPool = globalShowcaseCache.filter(img => !seenCardIds.current.has(img.id));
+            const newRecs = getDiversifiedRecommendations(lastImg, freshPool, 10);
+
+            // Track new cards as seen
+            newRecs.forEach(card => seenCardIds.current.add(card.id));
+
+            setImages(prev => [...prev, ...newRecs]);
         }
     }, [currentIndex, images, currentImage, availableModels, isLiked, toggleLike, navigate, globalShowcaseCache]);
 
-    const model = useMemo(() => {
-        if (!currentImage || !availableModels) return null;
-        const m = availableModels.find(m => m.id === currentImage.modelId);
-        if (m?.name?.includes('Turbo') || m?.name?.includes('Z-Image')) {
-            return { ...m, name: 'DreamBees AI' };
+    // Helper: Show toast notification
+    const showToast = useCallback((message, icon = 'shuffle') => {
+        setShuffleToast({ message, icon });
+        setTimeout(() => setShuffleToast(null), 2000);
+    }, []);
+
+    // Helper: Trigger shuffle animation
+    const triggerShuffleAnimation = useCallback(() => {
+        setIsShuffling(true);
+        setShuffleKey(k => k + 1);
+        setTimeout(() => setIsShuffling(false), 500);
+    }, []);
+
+    // Helper: Get truly random cards from pool (ignoring relevance)
+    const getRandomCards = useCallback((pool, count) => {
+        const shuffled = [...pool].sort(() => Math.random() - 0.5);
+        return shuffled.slice(0, count);
+    }, []);
+
+    // Regular shuffle - REPLACE upcoming cards with NEW semi-relevant cards
+    const handleShuffle = useCallback(() => {
+        if (!currentImage || globalShowcaseCache.length === 0) {
+            showToast('No cards available!', 'info');
+            return;
         }
-        return m;
-    }, [currentImage, availableModels]);
+
+        // Get fresh pool excluding ALL ever-seen cards
+        const freshPool = globalShowcaseCache.filter(img => !seenCardIds.current.has(img.id));
+
+        if (freshPool.length < 3) {
+            // If running low on fresh cards, just reorder what we have
+            setImages(prev => {
+                const history = prev.slice(0, currentIndex + 1);
+                const upcoming = prev.slice(currentIndex + 1);
+                for (let i = upcoming.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [upcoming[i], upcoming[j]] = [upcoming[j], upcoming[i]];
+                }
+                return [...history, ...upcoming];
+            });
+            triggerShuffleAnimation();
+            showToast('Reordered remaining cards', 'shuffle');
+            return;
+        }
+
+        // Get NEW semi-relevant cards (70% relevant, 30% random)
+        const relevantCount = Math.min(Math.floor(15 * 0.7), freshPool.length);
+        const randomCount = Math.min(15 - relevantCount, freshPool.length - relevantCount);
+
+        const relevantCards = getDiversifiedRecommendations(currentImage, freshPool, relevantCount);
+        const remainingPool = freshPool.filter(img => !relevantCards.some(r => r.id === img.id));
+        const randomCards = getRandomCards(remainingPool, randomCount);
+
+        const newCards = [...relevantCards, ...randomCards].sort(() => Math.random() - 0.5);
+
+        // Track these new cards as seen
+        newCards.forEach(card => seenCardIds.current.add(card.id));
+
+        setImages(prev => {
+            const history = prev.slice(0, currentIndex + 1);
+            return [...history, ...newCards];
+        });
+
+        triggerShuffleAnimation();
+        showToast(`${newCards.length} fresh cards loaded!`, 'shuffle');
+    }, [currentImage, currentIndex, globalShowcaseCache, showToast, triggerShuffleAnimation, getRandomCards]);
+
+    // Super shuffle - Get COMPLETELY RANDOM cards (total wildcard mode)
+    const handleSuperShuffle = useCallback(() => {
+        if (!currentImage || globalShowcaseCache.length === 0) {
+            showToast('No cards available!', 'info');
+            return;
+        }
+
+        setIsShuffling(true);
+
+        // Get ONLY unseen cards
+        const freshPool = globalShowcaseCache.filter(img => !seenCardIds.current.has(img.id));
+
+        if (freshPool.length < 3) {
+            showToast('You\'ve seen most cards! Try Discovery.', 'info');
+            setTimeout(() => setIsShuffling(false), 500);
+            return;
+        }
+
+        // PURE random selection - ignore all relevance scoring
+        const randomCards = getRandomCards(freshPool, 20);
+
+        // Track these as seen
+        randomCards.forEach(card => seenCardIds.current.add(card.id));
+
+        setImages(prev => {
+            const history = prev.slice(0, currentIndex + 1);
+            return [...history, ...randomCards];
+        });
+
+        triggerShuffleAnimation();
+        showToast(`🔀 Wild mix! ${randomCards.length} random cards`, 'refresh');
+
+        setTimeout(() => setIsShuffling(false), 500);
+    }, [currentImage, currentIndex, globalShowcaseCache, showToast, triggerShuffleAnimation, getRandomCards]);
+
+    // Long press handlers for super shuffle
+    const handleShuffleMouseDown = useCallback(() => {
+        isLongPress.current = false;
+        longPressTimer.current = setTimeout(() => {
+            isLongPress.current = true;
+            handleSuperShuffle();
+        }, 600); // 600ms for long press
+    }, [handleSuperShuffle]);
+
+    const handleShuffleMouseUp = useCallback(() => {
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+        }
+        if (!isLongPress.current) {
+            handleShuffle();
+        }
+    }, [handleShuffle]);
+
+    const handleShuffleMouseLeave = useCallback(() => {
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+        }
+    }, []);
+
+    // Determine if shuffle is possible (are there fresh cards in the cache?)
+    const freshPoolSize = globalShowcaseCache.filter(img => !seenCardIds.current.has(img.id)).length;
+    const canShuffle = freshPoolSize >= 3 || (images.length - currentIndex - 1 > 1);
 
     const liked = currentImage ? isLiked(currentImage.id) : false;
 
@@ -152,7 +286,7 @@ const ShowcaseDetail = () => {
             </div>
 
             <main className="swipe-main">
-                <div className="card-stack-container">
+                <div className={`card-stack-container ${isShuffling ? 'shuffling' : ''}`} key={`stack-${shuffleKey}`}>
                     <AnimatePresence mode="popLayout">
                         {images.slice(currentIndex, currentIndex + 4).reverse().map((img, idx, array) => {
                             const isTop = idx === array.length - 1;
@@ -171,24 +305,27 @@ const ShowcaseDetail = () => {
                     </AnimatePresence>
                 </div>
 
+                {/* Shuffle Toast Notification */}
+                <AnimatePresence>
+                    {shuffleToast && (
+                        <motion.div
+                            className="shuffle-toast"
+                            initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -20, scale: 0.9 }}
+                            transition={{ duration: 0.3, ease: "easeOut" }}
+                        >
+                            {shuffleToast.icon === 'shuffle' && <Shuffle size={18} />}
+                            {shuffleToast.icon === 'refresh' && <RefreshCw size={18} />}
+                            {shuffleToast.icon === 'info' && <Sparkles size={18} />}
+                            <span>{shuffleToast.message}</span>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
                 {/* Info & Actions Overlay (Floating at bottom) */}
                 <div className="swipe-info-overlay">
-                    <AnimatePresence>
-                        {showInfo && (
-                            <motion.div
-                                className="info-content"
-                                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            >
-                                <div className="info-header">
-                                    <span className="info-model">{model?.name || 'DreamBees AI'}</span>
-                                    {currentImage.style?.primary && <span className="info-tag">{currentImage.style.primary}</span>}
-                                </div>
-                                <p className="info-prompt">"{currentImage.prompt}"</p>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+
 
                     <div className="swipe-actions">
                         <button className="swipe-btn dislike" onClick={() => handleSwipe('left')}>
@@ -196,26 +333,34 @@ const ShowcaseDetail = () => {
                         </button>
 
                         <button
-                            className={`swipe-btn info ${showInfo ? 'active' : ''}`}
-                            onClick={() => setShowInfo(!showInfo)}
+                            className={`swipe-btn shuffle ${!canShuffle ? 'disabled' : ''}`}
+                            onMouseDown={handleShuffleMouseDown}
+                            onMouseUp={handleShuffleMouseUp}
+                            onMouseLeave={handleShuffleMouseLeave}
+                            onTouchStart={handleShuffleMouseDown}
+                            onTouchEnd={handleShuffleMouseUp}
+                            style={{
+                                backgroundColor: isShuffling ? '#6366f1' : '#2a2a2a',
+                                color: '#fff',
+                                opacity: canShuffle ? 1 : 0.5,
+                                transition: 'all 0.3s ease'
+                            }}
+                            title="Tap for new cards • Hold for random mix"
                         >
-                            <Info size={32} />
+                            <motion.div
+                                key={shuffleKey}
+                                animate={{
+                                    rotate: shuffleKey > 0 ? 360 : 0,
+                                    scale: isShuffling ? [1, 1.2, 1] : 1
+                                }}
+                                transition={{ duration: 0.4, ease: "easeOut" }}
+                            >
+                                <Shuffle size={24} />
+                            </motion.div>
                         </button>
 
                         <button className="swipe-btn like" onClick={() => handleSwipe('right')}>
                             <Check size={32} />
-                        </button>
-
-                        <button
-                            className="swipe-btn remix"
-                            onClick={() => {
-                                const params = new URLSearchParams();
-                                if (currentImage.prompt) params.set('prompt', currentImage.prompt);
-                                if (currentImage.modelId) params.set('model', currentImage.modelId);
-                                navigate(`/generate?${params.toString()}`);
-                            }}
-                        >
-                            <Sparkles size={24} />
                         </button>
                     </div>
                 </div>
