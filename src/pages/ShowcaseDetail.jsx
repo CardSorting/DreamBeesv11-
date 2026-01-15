@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Share2, Sparkles, Heart, X, Check } from 'lucide-react';
+import { ArrowLeft, Share2, Sparkles, Heart, X, Check, Info } from 'lucide-react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 
 import { useModel } from '../contexts/ModelContext';
@@ -21,6 +21,7 @@ const ShowcaseDetail = () => {
     const [images, setImages] = useState([]); // Card stack
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [showInfo, setShowInfo] = useState(false);
 
     // Current active image
     const currentImage = images[currentIndex] || null;
@@ -57,6 +58,8 @@ const ShowcaseDetail = () => {
     const handleSwipe = useCallback((direction) => {
         if (!currentImage) return;
 
+        setShowInfo(false); // Reset info on swipe
+
         // Visual feedback or interaction logic (e.g., auto-like on right swipe)
         if (direction === 'right') {
             const model = availableModels?.find(m => m.id === currentImage.modelId);
@@ -86,7 +89,11 @@ const ShowcaseDetail = () => {
 
     const model = useMemo(() => {
         if (!currentImage || !availableModels) return null;
-        return availableModels.find(m => m.id === currentImage.modelId);
+        const m = availableModels.find(m => m.id === currentImage.modelId);
+        if (m?.name?.includes('Turbo') || m?.name?.includes('Z-Image')) {
+            return { ...m, name: 'DreamBees AI' };
+        }
+        return m;
     }, [currentImage, availableModels]);
 
     const liked = currentImage ? isLiked(currentImage.id) : false;
@@ -147,13 +154,15 @@ const ShowcaseDetail = () => {
             <main className="swipe-main">
                 <div className="card-stack-container">
                     <AnimatePresence mode="popLayout">
-                        {images.slice(currentIndex, currentIndex + 3).reverse().map((img, idx) => {
-                            const isTop = idx === images.slice(currentIndex, currentIndex + 3).length - 1;
+                        {images.slice(currentIndex, currentIndex + 4).reverse().map((img, idx, array) => {
+                            const isTop = idx === array.length - 1;
+                            const stackPosition = array.length - 1 - idx;
                             return (
                                 <SwipeCard
                                     key={img.id}
                                     image={img}
                                     isTop={isTop}
+                                    stackPosition={stackPosition}
                                     onSwipe={handleSwipe}
                                     modelName={availableModels?.find(m => m.id === img.modelId)?.name}
                                 />
@@ -164,21 +173,39 @@ const ShowcaseDetail = () => {
 
                 {/* Info & Actions Overlay (Floating at bottom) */}
                 <div className="swipe-info-overlay">
-                    <div className="info-content">
-                        <div className="info-header">
-                            <span className="info-model">{model?.name || 'DreamBees AI'}</span>
-                            {currentImage.style?.primary && <span className="info-tag">{currentImage.style.primary}</span>}
-                        </div>
-                        <p className="info-prompt">"{currentImage.prompt}"</p>
-                    </div>
+                    <AnimatePresence>
+                        {showInfo && (
+                            <motion.div
+                                className="info-content"
+                                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            >
+                                <div className="info-header">
+                                    <span className="info-model">{model?.name || 'DreamBees AI'}</span>
+                                    {currentImage.style?.primary && <span className="info-tag">{currentImage.style.primary}</span>}
+                                </div>
+                                <p className="info-prompt">"{currentImage.prompt}"</p>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     <div className="swipe-actions">
                         <button className="swipe-btn dislike" onClick={() => handleSwipe('left')}>
                             <X size={32} />
                         </button>
+
+                        <button
+                            className={`swipe-btn info ${showInfo ? 'active' : ''}`}
+                            onClick={() => setShowInfo(!showInfo)}
+                        >
+                            <Info size={32} />
+                        </button>
+
                         <button className="swipe-btn like" onClick={() => handleSwipe('right')}>
                             <Check size={32} />
                         </button>
+
                         <button
                             className="swipe-btn remix"
                             onClick={() => {
@@ -197,22 +224,29 @@ const ShowcaseDetail = () => {
     );
 };
 
-const SwipeCard = ({ image, isTop, onSwipe, modelName }) => {
+const SwipeCard = ({ image, isTop, stackPosition, onSwipe, modelName }) => {
     const x = useMotionValue(0);
-    const rotate = useTransform(x, [-200, 200], [-25, 25]);
-    const opacity = useTransform(x, [-200, -150, 0, 150, 200], [0, 1, 1, 1, 0]);
+    const rotate = useTransform(x, [-300, 300], [-30, 30]);
 
-    // Icon overlays
+    // Stamp Animations
     const likeOpacity = useTransform(x, [50, 150], [0, 1]);
-    const dislikeOpacity = useTransform(x, [-150, -50], [1, 0]);
+    const likeScale = useTransform(x, [50, 150], [0.5, 1.2]);
+    const likeRotate = useTransform(x, [50, 150], [15, -15]);
+
+    const nopeOpacity = useTransform(x, [-150, -50], [1, 0]);
+    const nopeScale = useTransform(x, [-150, -50], [1.2, 0.5]);
+    const nopeRotate = useTransform(x, [-150, -50], [15, -15]);
 
     const handleDragEnd = (_, info) => {
-        if (info.offset.x > 100) {
+        const threshold = 120;
+        if (info.offset.x > threshold) {
             onSwipe('right');
-        } else if (info.offset.x < -100) {
+        } else if (info.offset.x < -threshold) {
             onSwipe('left');
         }
     };
+
+    const springConfig = { stiffness: 300, damping: 30, restDelta: 0.001 };
 
     return (
         <motion.div
@@ -220,25 +254,50 @@ const SwipeCard = ({ image, isTop, onSwipe, modelName }) => {
             style={{
                 x,
                 rotate,
-                opacity: isTop ? opacity : 1,
-                zIndex: isTop ? 10 : 0,
+                zIndex: 10 - stackPosition,
                 pointerEvents: isTop ? 'auto' : 'none'
             }}
             drag={isTop ? "x" : false}
             dragConstraints={{ left: 0, right: 0 }}
             onDragEnd={handleDragEnd}
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: isTop ? 1 : 0.95, opacity: 1, y: 0 }}
-            exit={{ x: x.get() < 0 ? -500 : 500, opacity: 0, transition: { duration: 0.3 } }}
+            animate={{
+                scale: 1 - (stackPosition * 0.05),
+                y: stackPosition * 10,
+                opacity: 1,
+            }}
+            transition={springConfig}
+            exit={{
+                x: x.get() < 0 ? -600 : 600,
+                rotate: x.get() < 0 ? -45 : 45,
+                opacity: 0,
+                transition: { duration: 0.4, ease: "easeIn" }
+            }}
         >
-            <img src={getOptimizedImageUrl(image.url)} alt="" className="card-image" />
+            <div className="card-visual-wrapper">
+                <img
+                    src={getOptimizedImageUrl(image.url)}
+                    alt=""
+                    className="card-image"
+                    draggable="false"
+                />
+                <div className="card-vignette" />
+                <div className="card-inner-glow" />
+            </div>
 
-            {/* Gesture Feedback Overlays */}
-            <motion.div className="card-status like" style={{ opacity: likeOpacity }}>
-                <Heart fill="#ff3040" color="#ff3040" size={60} />
+            {/* Expressive Stamp Overlays */}
+            <motion.div
+                className="stamp stamp-like"
+                style={{ opacity: likeOpacity, scale: likeScale, rotate: likeRotate }}
+            >
+                LIKE
             </motion.div>
-            <motion.div className="card-status dislike" style={{ opacity: dislikeOpacity }}>
-                <X color="#fff" size={60} />
+
+            <motion.div
+                className="stamp stamp-nope"
+                style={{ opacity: nopeOpacity, scale: nopeScale, rotate: nopeRotate }}
+            >
+                NOPE
             </motion.div>
         </motion.div>
     );

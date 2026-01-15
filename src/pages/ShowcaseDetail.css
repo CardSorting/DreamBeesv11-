@@ -44,6 +44,7 @@
 }
 
 /* --- SWIPE MAIN LAYOUT --- */
+/* --- SWIPE MAIN LAYOUT --- */
 .swipe-main {
     flex: 1;
     position: relative;
@@ -52,34 +53,75 @@
     align-items: center;
     justify-content: center;
     z-index: 1;
-    padding-bottom: 20px;
+    padding-bottom: 60px;
+    /* Push optical center up */
 }
 
 /* Card Stack */
 .card-stack-container {
     position: relative;
-    width: 90vw;
-    max-width: 420px;
+    height: 78vh;
+    width: auto;
     aspect-ratio: 9/16;
+    max-width: 90vw;
     display: flex;
     align-items: center;
     justify-content: center;
+    perspective: 1200px;
+    margin-top: -20px;
+    /* Slight visual lift */
 }
 
 .swipe-card {
     position: absolute;
     width: 100%;
     height: 100%;
-    border-radius: 24px;
+    border-radius: 32px;
     overflow: hidden;
     background: #111;
     cursor: grab;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.5);
+    transform-origin: bottom center;
+}
+
+/* Stamps */
+.stamp {
+    position: absolute;
+    top: 50px;
+    padding: 10px 20px;
+    border: 8px solid;
+    border-radius: 12px;
+    font-size: 3rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    z-index: 50;
+    pointer-events: none;
+}
+
+.stamp-like {
+    left: 40px;
+    color: #4ade80;
+    border-color: #4ade80;
+    transform: rotate(-15deg);
+}
+
+.stamp-nope {
+    right: 40px;
+    color: #f87171;
+    border-color: #f87171;
+    transform: rotate(15deg);
 }
 
 .swipe-card:active {
     cursor: grabbing;
+}
+
+.card-visual-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
 }
 
 .card-image {
@@ -88,6 +130,27 @@
     object-fit: cover;
     user-select: none;
     -webkit-user-drag: none;
+    transition: transform 0.5s ease;
+}
+
+.swipe-card:hover .card-image {
+    transform: scale(1.02);
+}
+
+.card-vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.4) 100%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.card-inner-glow {
+    position: absolute;
+    inset: 0;
+    box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.05);
+    pointer-events: none;
+    z-index: 2;
 }
 
 /* Gesture Overlays */
@@ -129,44 +192,48 @@
 .info-content {
     width: 100%;
     text-align: left;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-    padding: 20px;
-    border-radius: 20px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%);
+    backdrop-filter: blur(4px);
+    padding: 30px 20px 20px;
+    border-radius: 24px;
 }
 
 .info-header {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
 }
 
 .info-model {
-    font-weight: 700;
-    font-size: 1.2rem;
+    font-weight: 800;
+    font-size: 1.4rem;
     color: #fff;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    letter-spacing: -0.02em;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
 .info-tag {
-    background: rgba(168, 85, 247, 0.3);
+    background: rgba(168, 85, 247, 0.4);
+    backdrop-filter: blur(8px);
     border: 1px solid rgba(168, 85, 247, 0.5);
-    color: #d8b4fe;
-    padding: 2px 10px;
+    color: #fff;
+    padding: 4px 12px;
     border-radius: 100px;
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
 }
 
 .info-prompt {
-    font-size: 0.95rem;
-    line-height: 1.4;
-    color: rgba(255, 255, 255, 0.8);
-    font-style: italic;
-    font-weight: 300;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.9);
+    font-style: normal;
+    font-weight: 400;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -176,41 +243,64 @@
     display: flex;
     align-items: center;
     gap: 24px;
+    padding-bottom: 10px;
 }
 
 .swipe-btn {
-    width: 64px;
-    height: 64px;
+    width: 72px;
+    height: 72px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
     border: none;
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     color: #fff;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
 .swipe-btn:hover {
-    transform: scale(1.1);
+    transform: scale(1.15) translateY(-4px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
 }
 
 .swipe-btn:active {
     transform: scale(0.9);
 }
 
+.swipe-btn.dislike {
+    color: #f87171;
+}
+
 .swipe-btn.dislike:hover {
-    background: rgba(255, 255, 255, 0.2);
-    color: #ff4d4d;
+    background: rgba(248, 113, 113, 0.15);
+    border-color: rgba(248, 113, 113, 0.3);
+    color: #f87171;
+}
+
+.swipe-btn.like {
+    color: #4ade80;
 }
 
 .swipe-btn.like:hover {
-    background: rgba(255, 48, 64, 0.2);
-    color: #ff3040;
-    border-color: rgba(255, 48, 64, 0.3);
+    background: rgba(74, 222, 128, 0.15);
+    border-color: rgba(74, 222, 128, 0.3);
+    color: #4ade80;
+}
+
+.swipe-btn.info.active {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+}
+
+.swipe-btn.info:hover {
+    color: #fff;
 }
 
 .swipe-btn.remix {
@@ -239,7 +329,10 @@
 @media (max-width: 480px) {
     .card-stack-container {
         width: 95vw;
-        aspect-ratio: 9/16;
+        height: 75vh;
+        /* Slightly shorter on mobile to account for browser bars */
+        aspect-ratio: unset;
+        /* Let width/height drive it */
     }
 
     .swipe-btn {
