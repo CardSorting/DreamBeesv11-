@@ -5,11 +5,12 @@ import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { Sparkles, Loader2, CheckCircle2, Heart } from 'lucide-react';
 import { getOptimizedImageUrl, getImageSrcSet } from '../utils';
 import Sidebar from '../components/Sidebar';
+import { useNavigate } from 'react-router-dom';
 
-import ShowcaseModal from '../components/ShowcaseModal';
 import './Discovery.css';
 
 export default function Discovery() {
+    const navigate = useNavigate();
     const {
         getGlobalShowcaseImages,
         globalShowcaseCache,
@@ -18,7 +19,8 @@ export default function Discovery() {
         hasGlobalFeedEnded
     } = useModel();
     const { isLiked, toggleLike } = useUserInteractions();
-    const [activeShowcaseImage, setActiveShowcaseImage] = useState(null);
+
+    // Removed activeShowcaseImage state as we navigate now
 
     // Track initialization and scroll states with refs for stability
     const hasInitializedRef = useRef(false);
@@ -181,9 +183,10 @@ export default function Discovery() {
                                     <article
                                         key={imgItem.id || index}
                                         className="masonry-item group"
-                                        onClick={() => setActiveShowcaseImage(imgItem)}
+                                        onClick={() => navigate(`/discovery/${imgItem.id}`)}
                                         style={{
-                                            animation: `fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(0.1 + ((index * 0.05) % 0.4), 1.0)}s both`
+                                            animation: `fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(0.1 + ((index * 0.05) % 0.4), 1.0)}s both`,
+                                            cursor: 'pointer'
                                         }}
                                     >
                                         <div className="image-card">
@@ -304,14 +307,6 @@ export default function Discovery() {
 
                 </div>
             </main>
-
-            {activeShowcaseImage && (
-                <ShowcaseModal
-                    image={activeShowcaseImage}
-                    model={availableModels.find(m => m.id === activeShowcaseImage.modelId) || null}
-                    onClose={() => setActiveShowcaseImage(null)}
-                />
-            )}
         </div>
     );
 }
