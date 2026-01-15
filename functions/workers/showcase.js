@@ -40,6 +40,7 @@ async function analyzeImage(imageBuffer, mimeType = "image/png") {
                 type: SchemaType.OBJECT,
                 properties: {
                     category: { type: SchemaType.STRING, description: "e.g. 'Character', 'Landscape'" },
+                    gender: { type: SchemaType.STRING, description: "e.g. 'male', 'female', 'other' (if applicable)" },
                     details: { type: SchemaType.STRING, description: "e.g. 'Anime girl with short purple hair wearing a pink visor'" }
                 }
             },
@@ -137,7 +138,8 @@ async function analyzeImage(imageBuffer, mimeType = "image/png") {
     
     CRITICAL DISTINCTIONS:
     1. **Atomic Tags** ('tags'): MUST be strictly factual and observable (e.g., "purple hair", "glasses"). NO vibes or abstract concepts here.
-    2. **Vibe Layer** ('vibe'): Put emotional and atmospheric adjectives here (e.g., "dreamy", "energetic"). These MUST NOT mix with atomic tags.
+    2. **Subject Gender** ('subject.gender'): MANDATORY for characters. Use 'male', 'female', or 'other'.
+    3. **Vibe Layer** ('vibe'): Put emotional and atmospheric adjectives here (e.g., "dreamy", "energetic"). These MUST NOT mix with atomic tags.
     3. **ML Training** ('mlTraining'): 'denseCaption' should be extremely literal. 'triggerWords' should use Danbooru-style technical tags.
     
     Ensure 'styleTokens' provide unique internal anchors for similarity matching (e.g. 'neon-pop').
@@ -218,7 +220,7 @@ export const processShowcaseTask = async (req) => {
     if (existingDocSnapshot) {
         const data = existingDocSnapshot.data();
         // Check for V2 specific field 'vibe' to know if it's already updated
-        if (data.vibe && data.tags && data.tags.length > 0) {
+        if (data.vibe && data.tags && data.tags.length > 0 && data.subject && data.subject.gender) {
             logger.info(`[ShowcaseWorker] Skipping ${manifestId} - Already fully labeled (V2).`);
             return;
         } else {

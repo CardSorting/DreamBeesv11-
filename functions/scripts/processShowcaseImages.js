@@ -139,8 +139,8 @@ async function processShowcase() {
 
                         if (existingDocSnapshot) {
                             const data = existingDocSnapshot.data();
-                            // STRICT V2 CHECK: Must have 'vibe' field
-                            if (data.vibe && data.tags && data.tags.length > 0) {
+                            // STRICT V2 CHECK: Must have 'vibe' and 'gender' fields
+                            if (data.vibe && data.tags && data.tags.length > 0 && data.subject && data.subject.gender) {
                                 stats.skipped++;
                                 process.stdout.write("s");
                                 return;

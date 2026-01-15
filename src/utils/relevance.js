@@ -18,6 +18,7 @@
 // ============================================================================
 const WEIGHTS = {
     // Primary Signals (High Impact)
+    SUBJECT_GENDER: 15,
     SUBJECT_CATEGORY: 8,
     SUBJECT_DETAILS_OVERLAP: 6,
     STYLE_PRIMARY: 6,
@@ -241,6 +242,17 @@ function scoreCandidate(source, candidate) {
 
     // 1. SUBJECT MATCHING
     if (source.subject && candidate.subject) {
+        // Gender matching (Critical for character consistency)
+        if (source.subject.gender && candidate.subject.gender) {
+            if (source.subject.gender.toLowerCase() === candidate.subject.gender.toLowerCase()) {
+                score += WEIGHTS.SUBJECT_GENDER;
+                signals.push('subjectGender');
+            } else {
+                // Soft penalty for mixing genders (unless user wants diversity here, which is rare for character feeds)
+                score -= WEIGHTS.SUBJECT_GENDER * 0.5;
+            }
+        }
+
         if (source.subject.category && candidate.subject.category) {
             if (source.subject.category.toLowerCase() === candidate.subject.category.toLowerCase()) {
                 score += WEIGHTS.SUBJECT_CATEGORY;

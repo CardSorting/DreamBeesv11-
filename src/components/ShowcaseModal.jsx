@@ -1,13 +1,26 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, X, ThumbsUp, ThumbsDown, Sparkles } from 'lucide-react';
+import { ArrowLeft, X, ThumbsUp, ThumbsDown, Sparkles, Flag } from 'lucide-react';
+import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useModel } from '../contexts/ModelContext';
 import { getOptimizedImageUrl } from '../utils';
 
 const ShowcaseModal = ({ image, onClose, model }) => {
     const { rateShowcaseImage } = useModel();
+    const { hidePost, isHidden } = useUserInteractions();
     const navigate = useNavigate();
-    if (!image) return null;
+
+    // Auto close if hidden while open
+    if (!image || isHidden(image.id)) {
+        if (image && isHidden(image.id)) {
+            // slightly delayed close if we just hid it? Or immediate?
+            // If it's hidden, we shouldn't show it.
+            // If the user *just* hid it, we probably want to show a toast and close.
+            // But if we return null, it just disappears.
+            onClose();
+        }
+        return null;
+    }
 
     return (
         <div style={{
@@ -31,6 +44,17 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                 </button>
 
                 <div className="flex-center" style={{ gap: '12px' }}>
+                    <button
+                        onClick={() => {
+                            hidePost(image);
+                            onClose();
+                        }}
+                        className="btn-ghost"
+                        title="Hide Post"
+                        style={{ color: 'var(--color-text-muted)' }}
+                    >
+                        <Flag size={20} />
+                    </button>
                     <button onClick={onClose} className="btn-ghost" title="Close" style={{ marginLeft: '12px' }}>
                         <X size={24} />
                     </button>

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, MoreHorizontal, Bookmark, BadgeCheck, Aperture, Volume2, VolumeX } from 'lucide-react';
+import { Heart, MoreHorizontal, Bookmark, BadgeCheck, Aperture, Volume2, VolumeX, Flag } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
@@ -8,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setActiveShowcaseImage, variant = 'feed' }) => {
     const { currentUser } = useAuth();
-    const { isLiked, isBookmarked, toggleLike, toggleBookmark } = useUserInteractions();
+    const { isLiked, isBookmarked, toggleLike, toggleBookmark, hidePost, isHidden } = useUserInteractions();
 
 
     const [showLargeHeart, setShowLargeHeart] = useState(false);
@@ -91,6 +91,9 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
         console.warn('[FeedPost] Skipping render due to invalid URL:', imgItem.id, primaryUrl?.substring(0, 30));
         return null;
     }
+
+    // Hide if marked
+    if (isHidden(imgItem.id)) return null;
 
     return (
         <article
@@ -338,8 +341,21 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
                         whileTap={{ scale: 0.8 }}
                         onClick={handleSave}
                         style={{ background: 'none', border: 'none', color: bookmarked ? 'white' : 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
+                        title="Save"
                     >
                         <Bookmark size={28} fill={bookmarked ? "currentColor" : "none"} strokeWidth={1.5} />
+                    </motion.button>
+
+                    <motion.button
+                        whileTap={{ scale: 0.8 }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            hidePost(imgItem);
+                        }}
+                        style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
+                        title="Hide Post"
+                    >
+                        <Flag size={28} strokeWidth={1.5} />
                     </motion.button>
                 </div>
 

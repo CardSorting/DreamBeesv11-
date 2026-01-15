@@ -2,8 +2,11 @@ import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from
 import SEO from '../components/SEO';
 import { useModel } from '../contexts/ModelContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
-import { Sparkles, Loader2, CheckCircle2, Heart } from 'lucide-react';
+import { Sparkles, Loader2, CheckCircle2, Heart, Flag } from 'lucide-react';
 import { getOptimizedImageUrl, getImageSrcSet } from '../utils';
+import { getBalancedRecommendations } from '../utils/relevance';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,7 +21,12 @@ export default function Discovery() {
         availableModels,
         hasGlobalFeedEnded
     } = useModel();
-    const { isLiked, toggleLike } = useUserInteractions();
+    const { isLiked, toggleLike, isHidden, hidePost } = useUserInteractions();
+
+    // Focus View State
+    const [focusImage, setFocusImage] = useState(null);
+    const [relatedImages, setRelatedImages] = useState([]);
+    const [isFocusLoading, setIsFocusLoading] = useState(false);
 
     // Removed activeShowcaseImage state as we navigate now
 
@@ -31,6 +39,7 @@ export default function Discovery() {
     const hasReachedEndRef = useRef(false);
 
     // Configuration
+    const MOBILE_BREAKPOINT = 768;
     const DEBOUNCE_MS = 800; // Minimum time between fetch attempts
     const PREFETCH_THRESHOLD = '600px'; // How far before sentinel to start loading
 
@@ -144,6 +153,59 @@ export default function Discovery() {
         toggleLike(imgItem, model);
     };
 
+    // Handle Image Click (Conditional Navigation)
+    const handleImageClick = useCallback((imgItem) => {
+        const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
+
+        if (isMobile) {
+            navigate(`/discovery/${imgItem.id}`);
+        } else {
+            setFocusImage(imgItem);
+        }
+    }, [navigate]);
+
+    // Fetch Related Images when Focused
+    useEffect(() => {
+        if (!focusImage) {
+            setRelatedImages([]);
+            return;
+        }
+
+        setIsFocusLoading(true);
+        // Small delay to allow animation to start smoothly
+        const timer = setTimeout(() => {
+            let recommendations = getBalancedRecommendations(
+                focusImage,
+                globalShowcaseCache,
+                {
+                    limit: 6,
+                    maxSameModel: 4,
+                    maxSamePrimaryStyle: 5,
+                    maxSameSubjectCategory: 5,
+                    explorationRatio: 0.2 // Reduced exploration slightly to prioritize relevance
+                }
+            );
+
+            // Fallback: Fill up to 6 images if strict diversity filtered too many
+            if (recommendations.length < 6 && globalShowcaseCache.length > 0) {
+                const existingIds = new Set(recommendations.map(r => r.id));
+                existingIds.add(focusImage.id);
+
+                const fillers = globalShowcaseCache
+                    .filter(img => !existingIds.has(img.id))
+                    .sort(() => 0.5 - Math.random())
+                    .slice(0, 6 - recommendations.length);
+
+                recommendations = [...recommendations, ...fillers];
+            }
+
+            setRelatedImages(recommendations);
+            setIsFocusLoading(false);
+        }, 100);
+
+        return () => clearTimeout(timer);
+    }, [focusImage, globalShowcaseCache]);
+
     return (
         <div className="feed-layout-wrapper">
             <SEO title="Discovery Engine - DreamBees" description="Explore AI Art by Vibe, Collection, and Color." />
@@ -178,7 +240,7 @@ export default function Discovery() {
                     {/* MASONRY GRID */}
                     <section className="gallery-section" aria-label="Discovery Gallery" style={{ minHeight: '60vh' }}>
                         <div className="masonry-grid">
-                            {globalShowcaseCache.map((imgItem, index) => {
+                            {globalShowcaseCache.filter(img => !isHidden(img.id)).map((imgItem, index) => {
                                 const ratios = ['1/1', '3/4', '1/1', '2/3', '4/3', '1/1', '3/5'];
                                 const ratio = imgItem.aspectRatio || ratios[index % ratios.length];
                                 const liked = isLiked(imgItem.id);
@@ -187,7 +249,7 @@ export default function Discovery() {
                                     <article
                                         key={imgItem.id || index}
                                         className="masonry-item group"
-                                        onClick={() => navigate(`/discovery/${imgItem.id}`)}
+                                        onClick={() => handleImageClick(imgItem)}
                                         style={{
                                             animation: `fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(0.1 + ((index * 0.05) % 0.4), 1.0)}s both`,
                                             cursor: 'pointer'
@@ -222,7 +284,7 @@ export default function Discovery() {
                                                     transition: 'opacity 0.3s'
                                                 }} className="group-hover:opacity-100" />
                                             </div>
-                                            <div className="image-meta">
+                                            <div className="image-meta" style={{ display: 'flex', gap: '8px' }}>
                                                 <button
                                                     onClick={(e) => handleToggleLike(e, imgItem)}
                                                     className="meta-badge"
@@ -245,6 +307,34 @@ export default function Discovery() {
                                                     <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>
                                                         {liked ? "Liked" : "Like"}
                                                     </span>
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        hidePost(imgItem);
+                                                    }}
+                                                    className="meta-badge"
+                                                    style={{
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '6px',
+                                                        transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                                                        background: 'rgba(0,0,0,0.4)',
+                                                        backdropFilter: 'blur(8px)',
+                                                        padding: '6px 10px',
+                                                        borderRadius: '20px',
+                                                        color: 'white'
+                                                    }}
+                                                    onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'}
+                                                    onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                                                    title="Hide this post"
+                                                >
+                                                    <Flag
+                                                        size={14}
+                                                        color="white"
+                                                    />
                                                 </button>
                                             </div>
                                         </div>
@@ -309,8 +399,224 @@ export default function Discovery() {
                         </div>
                     </section>
 
+                    {/* DESKTOP FOCUS OVERLAY */}
+                    <AnimatePresence>
+                        {focusImage && (
+                            <motion.div
+                                className="focus-overlay-backdrop"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setFocusImage(null)}
+                                style={{
+                                    position: 'fixed',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: 0,
+                                    zIndex: 50,
+                                    background: 'rgba(0,0,0,0.85)',
+                                    backdropFilter: 'blur(12px)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: '40px',
+                                    overflow: 'hidden'
+                                }}
+                            >
+                                {/* Close Button */}
+                                <button
+                                    className="focus-close-btn"
+                                    onClick={(e) => { e.stopPropagation(); setFocusImage(null); }}
+                                    style={{
+                                        position: 'absolute',
+                                        top: '30px',
+                                        right: '30px',
+                                        background: 'rgba(255,255,255,0.1)',
+                                        border: 'none',
+                                        borderRadius: '50%',
+                                        width: '48px',
+                                        height: '48px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        cursor: 'pointer',
+                                        color: 'white',
+                                        zIndex: 60,
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                                >
+                                    <X size={24} />
+                                </button>
+
+                                {/* Main Focus Image */}
+                                <motion.div
+                                    layoutId={`image-${focusImage.id}`}
+                                    className="focus-main-card"
+                                    onClick={(e) => e.stopPropagation()}
+                                    initial={{ scale: 0.9, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0.9, opacity: 0 }}
+                                    transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                                    style={{
+                                        position: 'relative',
+                                        zIndex: 55,
+                                        maxWidth: '70vw',
+                                        maxHeight: '85vh',
+                                        borderRadius: '16px',
+                                        overflow: 'hidden',
+                                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                                        background: '#1a1a1a'
+                                    }}
+                                >
+                                    <img
+                                        src={getOptimizedImageUrl(focusImage.url)}
+                                        alt={focusImage.prompt}
+                                        style={{
+                                            width: '100%',
+                                            height: 'auto',
+                                            maxHeight: '85vh',
+                                            display: 'block',
+                                            objectFit: 'contain'
+                                        }}
+                                    />
+
+                                    {/* Action Bar Overlay on Hover */}
+                                    <div className="focus-actions" style={{
+                                        position: 'absolute',
+                                        bottom: 0,
+                                        left: 0,
+                                        right: 0,
+                                        padding: '24px',
+                                        background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'flex-end',
+                                        opacity: 1 // Always visible for now, or use group-hover
+                                    }}>
+                                        <div style={{ maxWidth: '70%' }}>
+                                            <h3 style={{ margin: '0 0 4px 0', fontSize: '1.1rem', fontWeight: 600 }}>
+                                                {focusImage.subject?.category || 'Creation'}
+                                            </h3>
+                                            <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                {focusImage.prompt}
+                                            </p>
+                                        </div>
+
+                                        <div style={{ display: 'flex', gap: '12px' }}>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const model = availableModels.find(m => m.id === focusImage.modelId);
+                                                    toggleLike(focusImage, model);
+                                                }}
+                                                style={{
+                                                    padding: '8px 16px',
+                                                    borderRadius: '20px',
+                                                    background: 'white',
+                                                    color: 'black',
+                                                    border: 'none',
+                                                    fontWeight: 600,
+                                                    fontSize: '0.9rem',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '6px'
+                                                }}
+                                            >
+                                                <Heart
+                                                    size={18}
+                                                    fill={isLiked(focusImage.id) ? "#ff3040" : "none"}
+                                                    color={isLiked(focusImage.id) ? "#ff3040" : "black"}
+                                                />
+                                                <span>{isLiked(focusImage.id) ? "Liked" : "Like"}</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+
+                                {/* Floating Related Images */}
+                                {relatedImages.map((img, index) => {
+                                    // Calculate random-ish positions around the center
+                                    // We'll use fixed percent offsets to distribute them "organically"
+                                    const positions = [
+                                        // Left side items (3)
+                                        { top: '15%', left: '5%', rotate: '-6deg' },
+                                        { top: '45%', left: '3%', rotate: '4deg' },
+                                        { bottom: '15%', left: '6%', rotate: '-3deg' },
+
+                                        // Right side items (3)
+                                        { top: '18%', right: '5%', rotate: '5deg' },
+                                        { top: '48%', right: '3%', rotate: '-4deg' },
+                                        { bottom: '12%', right: '6%', rotate: '3deg' }
+                                    ];
+                                    const pos = positions[index % positions.length];
+
+                                    return (
+                                        <motion.div
+                                            key={`${focusImage.id}-related-${img.id}`}
+                                            className="related-float-card"
+                                            initial={{ opacity: 0, scale: 0.5, x: 0, y: 0 }}
+                                            animate={{
+                                                opacity: 1,
+                                                scale: 1,
+                                                y: [0, -10, 0], // Subtle float animation
+                                                transition: {
+                                                    opacity: { delay: 0.2 + (index * 0.1) },
+                                                    scale: { delay: 0.2 + (index * 0.1) },
+                                                    y: {
+                                                        repeat: Infinity,
+                                                        duration: 3 + index,
+                                                        ease: "easeInOut",
+                                                        delay: index * 0.5
+                                                    }
+                                                }
+                                            }}
+                                            exit={{ opacity: 0, scale: 0.5 }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setFocusImage(img);
+                                            }}
+                                            style={{
+                                                position: 'absolute',
+                                                zIndex: 52, // Behind main image (55) but above backdrop (50)
+                                                width: '160px',
+                                                aspectRatio: img.aspectRatio || '1/1',
+                                                borderRadius: '12px',
+                                                overflow: 'hidden',
+                                                boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                                                cursor: 'pointer',
+                                                border: '2px solid rgba(255,255,255,0.1)',
+                                                ...pos
+                                            }}
+                                            whileHover={{
+                                                scale: 1.1,
+                                                zIndex: 60,
+                                                borderColor: 'var(--color-primary, #a855f7)',
+                                                transition: { duration: 0.2 }
+                                            }}
+                                        >
+                                            <img
+                                                src={getOptimizedImageUrl(img.thumbnailUrl || img.url)}
+                                                alt="Related"
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    objectFit: 'cover'
+                                                }}
+                                            />
+                                        </motion.div>
+                                    );
+                                })}
+
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                 </div>
-            </main>
-        </div>
+            </main >
+        </div >
     );
 }

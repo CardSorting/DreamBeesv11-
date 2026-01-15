@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Share2, Sparkles, Heart, RefreshCw, MoreHorizontal, Shuffle } from 'lucide-react';
+import { ArrowLeft, Share2, Sparkles, Heart, RefreshCw, MoreHorizontal, Shuffle, Flag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { useModel } from '../contexts/ModelContext';
@@ -27,13 +27,16 @@ const ShowcaseDetail = () => {
 
     // Core Data
     const { globalShowcaseCache, availableModels, getGlobalShowcaseImages, hasMoreGlobal } = useModel();
-    const { isLiked, toggleLike } = useUserInteractions();
+    const { isLiked, toggleLike, hidePost, isHidden } = useUserInteractions();
 
     // State
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [shuffleToast, setShuffleToast] = useState(null);
+
+    // Filter hidden images from global cache initially but keep local management
+    const visibleGlobalCache = useMemo(() => globalShowcaseCache.filter(img => !isHidden(img.id)), [globalShowcaseCache, isHidden]);
 
     // Track seen images to avoid repetition
     const seenIdsRef = useRef(new Set());
@@ -60,11 +63,11 @@ const ShowcaseDetail = () => {
             setLoading(true);
 
             // Ensure we have some global cache
-            if (globalShowcaseCache.length < CACHE_TARGET && hasMoreGlobal) {
+            if (visibleGlobalCache.length < CACHE_TARGET && hasMoreGlobal) {
                 getGlobalShowcaseImages(true, 'showcasedetail_init');
             }
 
-            let startImage = globalShowcaseCache.find(img => img.id === id);
+            let startImage = visibleGlobalCache.find(img => img.id === id);
 
             // If not in cache, fetch directly
             if (!startImage) {
@@ -84,7 +87,7 @@ const ShowcaseDetail = () => {
                 seenIdsRef.current.add(startImage.id);
 
                 // Get highly diversified recommendations using the enhanced algorithm
-                const recs = getDiversifiedRecommendations(startImage, globalShowcaseCache, SHOWCASE_PAGE_SIZE);
+                const recs = getDiversifiedRecommendations(startImage, visibleGlobalCache, SHOWCASE_PAGE_SIZE);
 
                 // Track all initial recs as seen
                 recs.forEach(r => seenIdsRef.current.add(r.id));
@@ -158,7 +161,7 @@ const ShowcaseDetail = () => {
         // Use history-aware recommendations for truly fresh content
         const freshRecs = getRecommendationsWithHistory(
             currentImageRef.current,
-            globalShowcaseCache,
+            visibleGlobalCache,
             seenArray,
             SHOWCASE_PAGE_SIZE
         );
@@ -196,7 +199,7 @@ const ShowcaseDetail = () => {
 
         // First, try to get fresh exploration recommendations
         const explorationPicks = getExplorationRecommendations(
-            globalShowcaseCache,
+            visibleGlobalCache,
             SHOWCASE_PAGE_SIZE,
             seenArray
         );
@@ -232,7 +235,7 @@ const ShowcaseDetail = () => {
         if (!currentImageRef.current || globalShowcaseCache.length === 0) return;
 
         const seenArray = Array.from(seenIdsRef.current);
-        const unseen = globalShowcaseCache.filter(c => !seenIdsRef.current.has(c.id));
+        const unseen = visibleGlobalCache.filter(c => !seenIdsRef.current.has(c.id));
 
         // Use balanced recommendations with stricter similarity
         const similarPicks = getBalancedRecommendations(
@@ -382,6 +385,11 @@ const ShowcaseDetail = () => {
                             const model = availableModels?.find(m => m.id === img.modelId);
                             toggleLike(img, model);
                         }}
+                        onHide={() => {
+                            hidePost(img);
+                            // Remove from local list to animate out/snap to next
+                            setImages(prev => prev.filter(i => i.id !== img.id));
+                        }}
                         onMoreLikeThis={handleMoreLikeThis}
                         modelName={availableModels?.find(m => m.id === img.modelId)?.name}
                         navigate={navigate}
@@ -408,7 +416,7 @@ const ShowcaseDetail = () => {
 
 
 // Sub-component for individual feed pages
-const FeedItem = React.memo(({ image, index, isActive, isLiked, onToggleLike, onMoreLikeThis, modelName, navigate }) => {
+const FeedItem = React.memo(({ image, index, isActive, isLiked, onToggleLike, onHide, onMoreLikeThis, modelName, navigate }) => {
 
     // Double tap logic
     const lastTap = useRef(0);
@@ -514,6 +522,16 @@ const FeedItem = React.memo(({ image, index, isActive, isLiked, onToggleLike, on
                         <Sparkles size={24} />
                     </button>
                     <span className="action-label">Similar</span>
+                </div>
+
+                <div className="action-btn-wrapper">
+                    <button className="action-btn" onClick={(e) => {
+                        e.stopPropagation();
+                        onHide?.();
+                    }} title="Hide this post">
+                        <Flag size={24} />
+                    </button>
+                    <span className="action-label">Hide</span>
                 </div>
             </div>
 
