@@ -37,6 +37,8 @@ export default function Navbar() {
         { path: '/pricing', label: 'Refill', icon: Hexagon },
     ];
 
+    const isAdmin = currentUser?.uid === 'prT9j3royVTstWLDDcKMoUOU7aQ2';
+
     const limitWidth = ['/dressup', '/karaoke', '/generate', '/slideshow', '/apps'].includes(location.pathname) || location.pathname.startsWith('/chat');
     const isModelFeed = /^\/model\/[^/]+\/feed$/.test(location.pathname);
     const isGlobalFeed = location.pathname === '/';
@@ -87,7 +89,7 @@ export default function Navbar() {
 
                 {/* Desktop Nav */}
                 <div className="hidden-mobile" style={{ display: 'flex', gap: '4px' }}>
-                    {currentUser && navLinks.map(link => (
+                    {currentUser && isAdmin && navLinks.map(link => (
                         <Link
                             key={link.path}
                             to={link.path}
@@ -103,36 +105,6 @@ export default function Navbar() {
                             {link.label}
                         </Link>
                     ))}
-                    {!currentUser && (
-                        <>
-                            <Link
-                                to="/models"
-                                style={{
-                                    padding: '8px 16px',
-                                    borderRadius: '99px',
-                                    fontSize: '0.9rem',
-                                    color: location.pathname === '/models' ? 'var(--color-white)' : 'var(--color-text-muted)',
-                                    background: location.pathname === '/models' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                                    fontWeight: 500
-                                }}
-                            >
-                                Engine
-                            </Link>
-                            <Link
-                                to="/pricing"
-                                style={{
-                                    padding: '8px 16px',
-                                    borderRadius: '99px',
-                                    fontSize: '0.9rem',
-                                    color: location.pathname === '/pricing' ? 'var(--color-white)' : 'var(--color-text-muted)',
-                                    background: location.pathname === '/pricing' ? 'rgba(255,255,255,0.1)' : 'transparent',
-                                    fontWeight: 500
-                                }}
-                            >
-                                Pricing
-                            </Link>
-                        </>
-                    )}
                 </div>
 
                 {/* Right Side Actions */}
@@ -232,7 +204,7 @@ export default function Navbar() {
                                 Profile
                             </Link>
 
-                            {navLinks.map(link => (
+                            {isAdmin && navLinks.map(link => (
                                 <Link
                                     key={link.path}
                                     to={link.path}

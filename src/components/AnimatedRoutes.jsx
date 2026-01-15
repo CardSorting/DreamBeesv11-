@@ -59,6 +59,9 @@ const pageTransition = {
 const AnimatedRoutes = () => {
     const location = useLocation();
 
+    const { currentUser } = useAuth();
+    const isAdmin = currentUser?.uid === 'prT9j3royVTstWLDDcKMoUOU7aQ2';
+
     return (
         <AnimatePresence mode="wait">
             <motion.div
@@ -79,28 +82,37 @@ const AnimatedRoutes = () => {
                                 <UserProfile />
                             </PrivateRoute>
                         } />
+
+                        {/* Admin Only Routes */}
                         <Route path="/generate" element={
-                            <PrivateRoute>
-                                <Generator />
-                            </PrivateRoute>
+                            isAdmin ? <PrivateRoute><Generator /></PrivateRoute> : <Navigate to="/" replace />
                         } />
                         <Route path="/gallery" element={
-                            <PrivateRoute>
-                                <Gallery />
-                            </PrivateRoute>
+                            isAdmin ? <PrivateRoute><Gallery /></PrivateRoute> : <Navigate to="/" replace />
                         } />
                         <Route path="/gallery/:id" element={
-                            <PrivateRoute>
-                                <ImageDetail />
-                            </PrivateRoute>
+                            isAdmin ? <PrivateRoute><ImageDetail /></PrivateRoute> : <Navigate to="/" replace />
                         } />
-                        <Route path="/models" element={<Models />} />
-                        <Route path="/model/:id" element={<ModelDetail />} />
+                        <Route path="/models" element={
+                            isAdmin ? <Models /> : <Navigate to="/" replace />
+                        } />
+                        <Route path="/model/:id" element={
+                            isAdmin ? <ModelDetail /> : <Navigate to="/" replace />
+                        } />
                         <Route path="/model/:id/feed" element={<ModelFeed />} />
-                        <Route path="/features" element={<Features />} />
-                        <Route path="/pricing" element={<Pricing />} />
-                        <Route path="/about" element={<About />} />
-                        <Route path="/contact" element={<Contact />} />
+
+                        <Route path="/features" element={
+                            isAdmin ? <Features /> : <Navigate to="/" replace />
+                        } />
+                        <Route path="/pricing" element={
+                            isAdmin ? <Pricing /> : <Navigate to="/" replace />
+                        } />
+                        <Route path="/about" element={
+                            isAdmin ? <About /> : <Navigate to="/" replace />
+                        } />
+                        <Route path="/contact" element={
+                            isAdmin ? <Contact /> : <Navigate to="/" replace />
+                        } />
                         <Route path="/privacy" element={<Privacy />} />
                         <Route path="/terms" element={<Terms />} />
                         <Route path="/cookies" element={<Cookies />} />
@@ -110,22 +122,21 @@ const AnimatedRoutes = () => {
                         <Route path="/brand" element={<Brand />} />
                         <Route path="/api" element={<Api />} />
                         <Route path="/showcase" element={<Showcase />} />
-                        <Route path="/apps" element={<AppsHub />} />
-                        <Route path="/karaoke" element={<KaraokeGenie />} />
+
+                        <Route path="/apps" element={
+                            isAdmin ? <AppsHub /> : <Navigate to="/" replace />
+                        } />
+                        <Route path="/karaoke" element={
+                            isAdmin ? <KaraokeGenie /> : <Navigate to="/" replace />
+                        } />
                         <Route path="/dressup" element={
-                            <PrivateRoute>
-                                <DressUp />
-                            </PrivateRoute>
+                            isAdmin ? <PrivateRoute><DressUp /></PrivateRoute> : <Navigate to="/" replace />
                         } />
                         <Route path="/slideshow" element={
-                            <PrivateRoute>
-                                <Slideshow />
-                            </PrivateRoute>
+                            isAdmin ? <PrivateRoute><Slideshow /></PrivateRoute> : <Navigate to="/" replace />
                         } />
                         <Route path="/chat/:id" element={
-                            <PrivateRoute>
-                                <PersonaChat />
-                            </PrivateRoute>
+                            isAdmin ? <PrivateRoute><PersonaChat /></PrivateRoute> : <Navigate to="/" replace />
                         } />
                     </Routes>
                 </Suspense>
