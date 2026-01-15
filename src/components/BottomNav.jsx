@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink } from 'react-router-dom';
 import { Home, LayoutTemplate, Zap, User, Hexagon, Video } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -6,27 +6,39 @@ import { useAuth } from '../contexts/AuthContext';
 const BottomNav = () => {
     const { currentUser } = useAuth();
     const isAdmin = currentUser?.uid === 'prT9j3royVTstWLDDcKMoUOU7aQ2';
-    const [isVisible, setIsVisible] = React.useState(true);
-    const [lastScrollY, setLastScrollY] = React.useState(0);
+    const [isVisible, setIsVisible] = useState(true);
+    const idleTimerRef = useRef(null);
 
-    React.useEffect(() => {
-        const handleScroll = () => {
-            const currentScrollY = window.scrollY;
+    useEffect(() => {
+        const handleInteraction = () => {
+            // Hide on interaction (scroll)
+            setIsVisible(false);
 
-            // Show if scrolling up or at very top
-            if (currentScrollY < lastScrollY || currentScrollY < 50) {
-                setIsVisible(true);
-            } else if (currentScrollY > lastScrollY && currentScrollY > 50) {
-                // Hide if scrolling down and not at top
-                setIsVisible(false);
+            // Clear existing timer
+            if (idleTimerRef.current) {
+                clearTimeout(idleTimerRef.current);
             }
 
-            setLastScrollY(currentScrollY);
+            // Set timer to show nav after 1200ms of inactivity
+            idleTimerRef.current = setTimeout(() => {
+                setIsVisible(true);
+            }, 1200);
         };
 
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [lastScrollY]);
+        window.addEventListener('scroll', handleInteraction, { passive: true });
+        window.addEventListener('touchstart', handleInteraction, { passive: true });
+
+        // Initial show
+        setIsVisible(true);
+
+        return () => {
+            window.removeEventListener('scroll', handleInteraction);
+            window.removeEventListener('touchstart', handleInteraction);
+            if (idleTimerRef.current) {
+                clearTimeout(idleTimerRef.current);
+            }
+        };
+    }, []);
 
     return (
         <nav className={`bottom-nav visible-mobile ${isVisible ? 'nav-visible' : 'nav-hidden'}`}>
