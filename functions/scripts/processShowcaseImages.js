@@ -250,15 +250,48 @@ async function processShowcase() {
                 }
 
                 // CHECK FIRESTORE IDEMPOTENCY
-                // Check if an image with this URL already exists in SHOWCASE collection
-                const existingDocs = await db.collection("model_showcase_images")
-                    .where("imageUrl", "==", publicUrl)
-                    .limit(1)
-                    .get();
+                // Check if an image with this URL or Manifest ID already exists in SHOWCASE collection
+                let existingDocSnapshot = null;
+                const manifestName = manifestEntry?.name || nameWithoutExt;
 
-                if (!existingDocs.empty) {
-                    console.log(`  [Skipping] ${file} - Already exists in Showcase.`);
-                    continue;
+                // 1. Check by Manifest ID (Preferred stable ID)
+                if (manifestName) {
+                    const idQuery = await db.collection("model_showcase_images")
+                        .where("manifestId", "==", manifestName)
+                        .limit(1)
+                        .get();
+                    if (!idQuery.empty) existingDocSnapshot = idQuery.docs[0];
+                }
+
+                // 2. Fallback: Check by URL if not found by ID
+                if (!existingDocSnapshot) {
+                    const urlQuery = await db.collection("model_showcase_images")
+                        .where("imageUrl", "==", publicUrl)
+                        .limit(1)
+                        .get();
+                    if (!urlQuery.empty) existingDocSnapshot = urlQuery.docs[0];
+                }
+
+                if (existingDocSnapshot) {
+                    const data = existingDocSnapshot.data();
+                    // STRICT IDEMPOTENCY: If it has tags/discovery data, we assume it's done.
+                    // We only re-process if it's "broken" or "empty"
+                    if (data.tags && data.tags.length > 0 && data.description) {
+                        console.log(`  [Skipping] ${file} - Already fully labeled (ID: ${existingDocSnapshot.id}).`);
+                        continue;
+                    } else {
+                        console.log(`  [Reprocessing] ${file} - Found entry but incomplete metadata.`);
+                        // Optional: You could choose to 'update' the existing doc ID here by passing it along
+                        // For now, simpler to let it create a new one or logic to update (which implies we need doc ref)
+                        // To keep it simple and safe, if we find an incomplete one, we might want to DELETE it and re-create,
+                        // or ideally UPDATE it. Let's UPDATE it to preserve ID stability.
+                        // But the current script adds new docs. Let's just log for now and maybe skip to be safe?
+                        // User asked to "dont label already labeled", so re-labelling incomplete ones is arguably okay.
+                        // Let's CONTINUE for now as "Processing" but ideally we'd update. 
+                        // To make this script robust, let's delete the incomplete one and let the new one be created, 
+                        // or better: just let it fall through but we need to handle the 'add' vs 'update' at the end.
+                        // As a quick fix for the USER REQUEST ("dont label already labeled"), falling through here is fine.
+                    }
                 }
 
                 console.log(`  [Analyzing] ${file}...`);
@@ -279,6 +312,7 @@ async function processShowcase() {
                 const docData = {
                     type: "image", // Standardize type
                     showcaseCategory: categoryName,
+                    manifestId: manifestName, // STABLE ID
                     imageUrl: publicUrl,
                     thumbnailUrl: publicUrl, // Using same for now
                     prompt: manifestEntry?.prompt || "", // Original generation prompt
@@ -315,8 +349,15 @@ async function processShowcase() {
                 };
 
                 // Write to Firestore - MODEL SHOWCASE COLLECTION
-                await db.collection("model_showcase_images").add(docData);
-                console.log(`  [Saved] ${file} (${Date.now() - startTime}ms)`);
+                if (existingDocSnapshot) {
+                    // UPDATE existing partial document
+                    await existingDocSnapshot.ref.update(docData);
+                    console.log(`  [Updated] ${file} (ID: ${existingDocSnapshot.id}) - Fixed incomplete metadata.`);
+                } else {
+                    // CREATE new document
+                    await db.collection("model_showcase_images").add(docData);
+                    console.log(`  [Saved] ${file} (${Date.now() - startTime}ms)`);
+                }
 
                 // Rate Limit / Safety Pause (Gemini is fast but let's be nice to the API in a loop)
                 await new Promise(r => setTimeout(r, 500));
