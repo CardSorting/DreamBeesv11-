@@ -119,9 +119,13 @@ async function processShowcase() {
                         if (manifestName) {
                             const idQuery = await db.collection("model_showcase_images")
                                 .where("manifestId", "==", manifestName)
-                                .limit(1)
                                 .get();
-                            if (!idQuery.empty) existingDocSnapshot = idQuery.docs[0];
+
+                            // Filter in memory for the correct category
+                            if (!idQuery.empty) {
+                                const match = idQuery.docs.find(d => d.data().showcaseCategory === categoryName);
+                                if (match) existingDocSnapshot = match;
+                            }
                         }
 
                         // 2. Fallback: Check by URL if not found by ID

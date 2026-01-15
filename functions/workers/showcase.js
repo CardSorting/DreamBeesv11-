@@ -199,9 +199,13 @@ export const processShowcaseTask = async (req) => {
     if (manifestId) {
         const idQuery = await db.collection("model_showcase_images")
             .where("manifestId", "==", manifestId)
-            .limit(1)
             .get();
-        if (!idQuery.empty) existingDocSnapshot = idQuery.docs[0];
+
+        // Strict Scoping: Only match if category ALSO matches
+        if (!idQuery.empty) {
+            const match = idQuery.docs.find(d => d.data().showcaseCategory === categoryName);
+            if (match) existingDocSnapshot = match;
+        }
     } else {
         // Fallback checks
         const urlQuery = await db.collection("model_showcase_images")
