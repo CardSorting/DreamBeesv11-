@@ -22,7 +22,35 @@ const LazyImage = ({
     const [isLoaded, setIsLoaded] = useState(false);
     const [hasError, setHasError] = useState(false);
     const [isInView, setIsInView] = useState(priority);
-    const imgRef = useRef(null);
+    const [retryCount, setRetryCount] = useState(0);
+    const [forceRenderKey, setForceRenderKey] = useState(0);
+    const containerRef = useRef(null);
+    const imageRef = useRef(null);
+
+    // Immediate check for empty src
+    useEffect(() => {
+        if (!src) {
+            setHasError(true);
+            setIsLoaded(true);
+        }
+    }, [src]);
+
+    // Network Recovery Listener
+    useEffect(() => {
+        const handleOnline = () => {
+            if (hasError) {
+                // Reset and try again when back online
+                console.log("Network back online, retrying image:", src);
+                setHasError(false);
+                setIsLoaded(false);
+                setRetryCount(0);
+                setForceRenderKey(prev => prev + 1);
+            }
+        };
+
+        window.addEventListener('online', handleOnline);
+        return () => window.removeEventListener('online', handleOnline);
+    }, [hasError, src]);
 
     useEffect(() => {
         if (priority || isInView) return;
@@ -37,12 +65,37 @@ const LazyImage = ({
             { rootMargin: '200px' } // Load slightly before it enters the viewport
         );
 
-        if (imgRef.current) {
-            observer.observe(imgRef.current);
+        if (containerRef.current) {
+            observer.observe(containerRef.current);
         }
 
         return () => observer.disconnect();
     }, [priority, isInView]);
+
+    // Handle cached images and timeouts
+    useEffect(() => {
+        if (!isInView || isLoaded || hasError) return;
+
+        // Check if already loaded (pull from cache)
+        if (imageRef.current && imageRef.current.complete) {
+            if (imageRef.current.naturalWidth > 0) {
+                handleLoad();
+            } else {
+                handleError(); // Loaded but empty/broken
+            }
+            return;
+        }
+
+        // Timeout failsafe
+        const timeoutId = setTimeout(() => {
+            if (!isLoaded && !hasError) {
+                // Force error state if stuck loading
+                handleError();
+            }
+        }, 7000);
+
+        return () => clearTimeout(timeoutId);
+    }, [isInView, isLoaded, hasError, forceRenderKey]); // Add forceRenderKey dependency
 
     const handleLoad = () => {
         setIsLoaded(true);
@@ -50,13 +103,25 @@ const LazyImage = ({
     };
 
     const handleError = () => {
-        setIsLoaded(true);
-        setHasError(true);
+        if (retryCount < 3) {
+            // Retry logic
+            const delay = (retryCount + 1) * 1000; // 1s, 2s, 3s
+            setTimeout(() => {
+                if (!isLoaded) { // Check again in case it loaded meanwhile
+                    setRetryCount(prev => prev + 1);
+                    setForceRenderKey(prev => prev + 1); // Force re-mount of img
+                }
+            }, delay);
+        } else {
+            // Give up
+            setIsLoaded(true);
+            setHasError(true);
+        }
     };
 
     return (
         <div
-            ref={imgRef}
+            ref={containerRef}
             className={`lazy-image-container ${className}`}
             style={{
                 position: 'relative',
@@ -90,6 +155,8 @@ const LazyImage = ({
             {/* Actual Image */}
             {isInView && (
                 <motion.img
+                    key={forceRenderKey}
+                    ref={imageRef}
                     src={hasError ? fallbackSrc : src}
                     srcSet={hasError ? undefined : srcSet}
                     sizes={sizes}

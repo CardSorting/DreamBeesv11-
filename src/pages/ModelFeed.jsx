@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import SEO from '../components/SEO';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
-import { ArrowLeft, Loader2, BadgeCheck, Zap, Settings, LayoutGrid, Music, Sparkles, Presentation, Hexagon, Home, ChevronDown, ChevronRight, LayoutTemplate } from 'lucide-react';
+import { ArrowLeft, Loader2, BadgeCheck, Zap, Settings, LayoutGrid, Music, Sparkles, Presentation, Hexagon, Home, ChevronDown, ChevronRight, LayoutTemplate, User, Film } from 'lucide-react';
 import { getOptimizedImageUrl, preloadImage } from '../utils';
 import FeedPost from '../components/FeedPost';
 import ShowcaseModal from '../components/ShowcaseModal';
@@ -41,8 +42,12 @@ const CollapsibleGroup = ({ title, children, defaultOpen = true }) => {
 };
 
 const Sidebar = ({ activeId }) => {
+    const { currentUser } = useAuth();
+    const isAdmin = currentUser?.uid === 'prT9j3royVTstWLDDcKMoUOU7aQ2';
+
     // Primary Top Level
     const homeLink = { path: '/', label: 'Home', icon: Home };
+    const profileLink = { path: '/profile', label: 'Profile', icon: User };
 
     const navGroups = [
         {
@@ -55,6 +60,7 @@ const Sidebar = ({ activeId }) => {
         {
             title: "DISCOVER",
             items: [
+                { path: '/videos', label: 'Videos', icon: Film },
                 { path: '/gallery', label: 'Gallery', icon: LayoutGrid },
                 { path: '/models', label: 'Models', icon: Settings },
             ]
@@ -66,6 +72,14 @@ const Sidebar = ({ activeId }) => {
             ]
         }
     ];
+
+    const visibleGroups = navGroups.map(group => {
+        const visibleItems = group.items.filter(item => {
+            if (isAdmin) return true;
+            return item.path === '/videos';
+        });
+        return { ...group, items: visibleItems };
+    }).filter(group => group.items.length > 0);
 
     return (
         <aside className="feed-sidebar-left">
@@ -84,10 +98,17 @@ const Sidebar = ({ activeId }) => {
                         <homeLink.icon size={20} />
                         <span className="link-label">{homeLink.label}</span>
                     </Link>
+                    <Link
+                        to={profileLink.path}
+                        className={`sidebar-link primary-link ${activeId === profileLink.path ? 'active' : ''}`}
+                    >
+                        <profileLink.icon size={20} />
+                        <span className="link-label">{profileLink.label}</span>
+                    </Link>
                 </div>
 
                 {/* Groups */}
-                {navGroups.map((group, idx) => (
+                {visibleGroups.map((group, idx) => (
                     <CollapsibleGroup key={idx} title={group.title}>
                         {group.items.map(link => (
                             <Link
@@ -450,7 +471,20 @@ export default function ModelFeed() {
     const [activeShowcaseImage, setActiveShowcaseImage] = useState(null);
     const imagesPerPage = 12;
 
-    const [activeFilter, setActiveFilter] = useState('All');
+    const location = useLocation();
+
+    const [activeFilter, setActiveFilter] = useState(() => {
+        return location.pathname === '/videos' ? 'Videos' : 'All';
+    });
+
+    useEffect(() => {
+        if (location.pathname === '/videos') {
+            setActiveFilter('Videos');
+        } else if (location.pathname === '/' && activeFilter === 'Videos') {
+            setActiveFilter('All');
+        }
+    }, [location.pathname]);
+
     const [sortMode, setSortMode] = useState('random'); // 'random' | 'top'
 
     const model = useMemo(() => {
@@ -509,7 +543,7 @@ export default function ModelFeed() {
 
                     // --- Curated Video Logic (Only fetch nicely once) ---
                     // Fetch separate videos for 'Videos' tab
-                    const CURATED_USER_ID = 'nfwp9q9aRXcSkDmKCloG8CZH1dX2';
+                    const CURATED_USER_ID = 'prT9j3royVTstWLDDcKMoUOU7aQ2';
                     const curatedVideos = await getUserVideos(CURATED_USER_ID);
 
                     if (curatedVideos && curatedVideos.length > 0) {
