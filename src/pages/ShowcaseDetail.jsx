@@ -15,8 +15,13 @@ import './ShowcaseDetail.css';
 const ShowcaseDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { globalShowcaseCache, availableModels } = useModel();
+    const { globalShowcaseCache, availableModels, getGlobalShowcaseImages, hasMoreGlobal } = useModel();
     const { isLiked, toggleLike } = useUserInteractions();
+
+    // === CACHE BOUNDING STRATEGY ===
+    const MAX_STACK_SIZE = 50;      // Maximum cards in our local stack
+    const MAX_HISTORY = 20;         // Keep only last 20 swiped cards before trimming
+    const CACHE_TARGET = 150;       // Target global cache size before we stop loading more
 
     const [images, setImages] = useState([]); // Card stack
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -26,16 +31,33 @@ const ShowcaseDetail = () => {
     const [isShuffling, setIsShuffling] = useState(false); // Animation state
     const longPressTimer = useRef(null);
     const isLongPress = useRef(false);
-    const seenCardIds = useRef(new Set()); // Track ALL cards ever shown to ensure fresh shuffles
 
 
     // Current active image
     const currentImage = images[currentIndex] || null;
 
-    // Resolve Initial Stack
+    // === STACK TRIMMING: Remove old history to prevent infinite growth ===
+    useEffect(() => {
+        // If we have too many cards behind us (history), trim them
+        if (currentIndex > MAX_HISTORY) {
+            const trimCount = currentIndex - MAX_HISTORY;
+            console.log(`[ShowcaseDetail] Trimming ${trimCount} old cards from history`);
+            setImages(prev => prev.slice(trimCount));
+            setCurrentIndex(MAX_HISTORY);
+        }
+    }, [currentIndex]);
+
+    // Resolve Initial Stack + Load more images if cache is small (but bounded)
     useEffect(() => {
         const resolveInitialStack = async () => {
             setLoading(true);
+
+            // Only load more if cache is below target and more is available
+            if (globalShowcaseCache.length < CACHE_TARGET && hasMoreGlobal) {
+                console.log(`[ShowcaseDetail] Cache at ${globalShowcaseCache.length}, loading more...`);
+                getGlobalShowcaseImages(true, 'showcasedetail_init');
+            }
+
             let initialImage = globalShowcaseCache.find(img => img.id === id);
 
             if (!initialImage) {
@@ -51,19 +73,22 @@ const ShowcaseDetail = () => {
             }
 
             if (initialImage) {
-                const recs = getDiversifiedRecommendations(initialImage, globalShowcaseCache, 15);
-                const allCards = [initialImage, ...recs];
-
-                // Track all initially loaded cards as "seen"
-                allCards.forEach(card => seenCardIds.current.add(card.id));
-
-                setImages(allCards);
+                // Only get enough recs to fill our target stack size
+                const recsNeeded = Math.min(MAX_STACK_SIZE - 1, 20);
+                const recs = getDiversifiedRecommendations(initialImage, globalShowcaseCache, recsNeeded);
+                setImages([initialImage, ...recs]);
             }
             setLoading(false);
         };
 
         resolveInitialStack();
-    }, [id, globalShowcaseCache]);
+    }, [id, globalShowcaseCache, hasMoreGlobal, getGlobalShowcaseImages]);
+
+    // Helper: Show toast notification (defined early as it's used by multiple handlers)
+    const showToast = useCallback((message, icon = 'shuffle') => {
+        setShuffleToast({ message, icon });
+        setTimeout(() => setShuffleToast(null), 2000);
+    }, []);
 
     // Handle Swipe
     const handleSwipe = useCallback((direction) => {
@@ -86,25 +111,48 @@ const ShowcaseDetail = () => {
             navigate(`/discovery/${images[nextIndex].id}`, { replace: true });
         }
 
-        // Replenish stack if running low
-        if (images.length - nextIndex < 5) {
-            const lastImg = images[images.length - 1];
-            // Get fresh pool excluding ALL seen cards
-            const freshPool = globalShowcaseCache.filter(img => !seenCardIds.current.has(img.id));
-            const newRecs = getDiversifiedRecommendations(lastImg, freshPool, 10);
+        // Replenish stack if running low (but respect bounds)
+        const upcomingCount = images.length - nextIndex;
+        const currentStackSize = images.length;
 
-            // Track new cards as seen
-            newRecs.forEach(card => seenCardIds.current.add(card.id));
+        if (upcomingCount < 5 && currentStackSize < MAX_STACK_SIZE) {
+            // Get IDs of cards currently in stack
+            const currentStackIds = new Set(images.map(img => img.id));
 
-            setImages(prev => [...prev, ...newRecs]);
+            // Get IDs of recently swiped cards (last 10) - avoid immediate repeats
+            const recentlySwipedIds = new Set(
+                images.slice(Math.max(0, nextIndex - 10), nextIndex).map(img => img.id)
+            );
+
+            // First try: get cards not in stack at all
+            let freshPool = globalShowcaseCache.filter(img => !currentStackIds.has(img.id));
+
+            // Only fetch more from Firestore if cache is below target
+            if (freshPool.length < 10 && hasMoreGlobal && globalShowcaseCache.length < CACHE_TARGET) {
+                console.log(`[ShowcaseDetail] Loading more (cache: ${globalShowcaseCache.length}/${CACHE_TARGET})`);
+                getGlobalShowcaseImages(true, 'showcasedetail_swipe');
+            }
+
+            // If still not enough fresh cards, allow recycling but exclude recently swiped
+            if (freshPool.length < 5) {
+                freshPool = globalShowcaseCache.filter(img =>
+                    !recentlySwipedIds.has(img.id) &&
+                    !images.slice(nextIndex).some(upcoming => upcoming.id === img.id)
+                );
+            }
+
+            if (freshPool.length > 0) {
+                const lastImg = images[images.length - 1];
+                // Only add enough to stay under MAX_STACK_SIZE
+                const canAdd = MAX_STACK_SIZE - currentStackSize;
+                const newRecs = getDiversifiedRecommendations(lastImg, freshPool, Math.min(10, canAdd));
+
+                if (newRecs.length > 0) {
+                    setImages(prev => [...prev, ...newRecs]);
+                }
+            }
         }
-    }, [currentIndex, images, currentImage, availableModels, isLiked, toggleLike, navigate, globalShowcaseCache]);
-
-    // Helper: Show toast notification
-    const showToast = useCallback((message, icon = 'shuffle') => {
-        setShuffleToast({ message, icon });
-        setTimeout(() => setShuffleToast(null), 2000);
-    }, []);
+    }, [currentIndex, images, currentImage, availableModels, isLiked, toggleLike, navigate, globalShowcaseCache, hasMoreGlobal, getGlobalShowcaseImages]);
 
     // Helper: Trigger shuffle animation
     const triggerShuffleAnimation = useCallback(() => {
@@ -119,56 +167,63 @@ const ShowcaseDetail = () => {
         return shuffled.slice(0, count);
     }, []);
 
-    // Regular shuffle - REPLACE upcoming cards with NEW semi-relevant cards
+    // Regular shuffle - REPLACE upcoming cards with NEW cards from cache
     const handleShuffle = useCallback(() => {
+        console.log('[Shuffle] Starting shuffle...');
+        console.log('[Shuffle] globalShowcaseCache size:', globalShowcaseCache.length);
+        console.log('[Shuffle] Current images in stack:', images.length);
+        console.log('[Shuffle] Current index:', currentIndex);
+
         if (!currentImage || globalShowcaseCache.length === 0) {
             showToast('No cards available!', 'info');
             return;
         }
 
-        // Get fresh pool excluding ALL ever-seen cards
-        const freshPool = globalShowcaseCache.filter(img => !seenCardIds.current.has(img.id));
+        // Get the IDs of cards we've already swiped through (history only)
+        const historyIds = new Set(images.slice(0, currentIndex + 1).map(img => img.id));
+        console.log('[Shuffle] History IDs (cards already viewed):', historyIds.size);
+
+        // Get fresh pool - exclude ONLY the history (cards we've already swiped past)
+        // This allows getting cards that were in upcoming but haven't been viewed yet
+        const freshPool = globalShowcaseCache.filter(img => !historyIds.has(img.id));
+        console.log('[Shuffle] Fresh pool available:', freshPool.length);
 
         if (freshPool.length < 3) {
-            // If running low on fresh cards, just reorder what we have
-            setImages(prev => {
-                const history = prev.slice(0, currentIndex + 1);
-                const upcoming = prev.slice(currentIndex + 1);
-                for (let i = upcoming.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [upcoming[i], upcoming[j]] = [upcoming[j], upcoming[i]];
-                }
-                return [...history, ...upcoming];
-            });
-            triggerShuffleAnimation();
-            showToast('Reordered remaining cards', 'shuffle');
+            showToast('Not enough fresh cards!', 'info');
             return;
         }
 
-        // Get NEW semi-relevant cards (70% relevant, 30% random)
-        const relevantCount = Math.min(Math.floor(15 * 0.7), freshPool.length);
-        const randomCount = Math.min(15 - relevantCount, freshPool.length - relevantCount);
+        // Get completely NEW cards using diversified + random mix
+        const targetCount = Math.min(20, freshPool.length);
+        const relevantCount = Math.floor(targetCount * 0.6);
+        const randomCount = targetCount - relevantCount;
+
+        console.log('[Shuffle] Getting', relevantCount, 'relevant +', randomCount, 'random cards');
 
         const relevantCards = getDiversifiedRecommendations(currentImage, freshPool, relevantCount);
         const remainingPool = freshPool.filter(img => !relevantCards.some(r => r.id === img.id));
         const randomCards = getRandomCards(remainingPool, randomCount);
 
         const newCards = [...relevantCards, ...randomCards].sort(() => Math.random() - 0.5);
+        console.log('[Shuffle] New cards to add:', newCards.length);
+        console.log('[Shuffle] First 3 new card IDs:', newCards.slice(0, 3).map(c => c.id));
 
-        // Track these new cards as seen
-        newCards.forEach(card => seenCardIds.current.add(card.id));
-
+        // Update the images - replace everything after current with new cards
         setImages(prev => {
             const history = prev.slice(0, currentIndex + 1);
+            console.log('[Shuffle] Keeping history:', history.length, 'cards');
+            console.log('[Shuffle] New stack will be:', history.length + newCards.length, 'cards');
             return [...history, ...newCards];
         });
 
         triggerShuffleAnimation();
-        showToast(`${newCards.length} fresh cards loaded!`, 'shuffle');
-    }, [currentImage, currentIndex, globalShowcaseCache, showToast, triggerShuffleAnimation, getRandomCards]);
+        showToast(`🔄 ${newCards.length} new cards!`, 'shuffle');
+    }, [currentImage, currentIndex, images, globalShowcaseCache, showToast, triggerShuffleAnimation, getRandomCards]);
 
     // Super shuffle - Get COMPLETELY RANDOM cards (total wildcard mode)
     const handleSuperShuffle = useCallback(() => {
+        console.log('[SuperShuffle] Starting wild shuffle...');
+
         if (!currentImage || globalShowcaseCache.length === 0) {
             showToast('No cards available!', 'info');
             return;
@@ -176,31 +231,34 @@ const ShowcaseDetail = () => {
 
         setIsShuffling(true);
 
-        // Get ONLY unseen cards
-        const freshPool = globalShowcaseCache.filter(img => !seenCardIds.current.has(img.id));
+        // Get the IDs of cards we've already swiped through (history only)
+        const historyIds = new Set(images.slice(0, currentIndex + 1).map(img => img.id));
+
+        // Get fresh pool - everything except what we've already swiped past
+        const freshPool = globalShowcaseCache.filter(img => !historyIds.has(img.id));
+        console.log('[SuperShuffle] Fresh pool size:', freshPool.length);
 
         if (freshPool.length < 3) {
-            showToast('You\'ve seen most cards! Try Discovery.', 'info');
+            showToast('Not enough fresh cards!', 'info');
             setTimeout(() => setIsShuffling(false), 500);
             return;
         }
 
         // PURE random selection - ignore all relevance scoring
-        const randomCards = getRandomCards(freshPool, 20);
-
-        // Track these as seen
-        randomCards.forEach(card => seenCardIds.current.add(card.id));
+        const randomCards = getRandomCards(freshPool, Math.min(25, freshPool.length));
+        console.log('[SuperShuffle] Random cards selected:', randomCards.length);
 
         setImages(prev => {
             const history = prev.slice(0, currentIndex + 1);
+            console.log('[SuperShuffle] New stack:', history.length, '+', randomCards.length, '=', history.length + randomCards.length);
             return [...history, ...randomCards];
         });
 
         triggerShuffleAnimation();
-        showToast(`🔀 Wild mix! ${randomCards.length} random cards`, 'refresh');
+        showToast(`🔀 ${randomCards.length} random cards!`, 'refresh');
 
         setTimeout(() => setIsShuffling(false), 500);
-    }, [currentImage, currentIndex, globalShowcaseCache, showToast, triggerShuffleAnimation, getRandomCards]);
+    }, [currentImage, currentIndex, images, globalShowcaseCache, showToast, triggerShuffleAnimation, getRandomCards]);
 
     // Long press handlers for super shuffle
     const handleShuffleMouseDown = useCallback(() => {
@@ -227,8 +285,9 @@ const ShowcaseDetail = () => {
     }, []);
 
     // Determine if shuffle is possible (are there fresh cards in the cache?)
-    const freshPoolSize = globalShowcaseCache.filter(img => !seenCardIds.current.has(img.id)).length;
-    const canShuffle = freshPoolSize >= 3 || (images.length - currentIndex - 1 > 1);
+    const historyIds = new Set(images.slice(0, currentIndex + 1).map(img => img.id));
+    const freshPoolSize = globalShowcaseCache.filter(img => !historyIds.has(img.id)).length;
+    const canShuffle = freshPoolSize >= 3;
 
     const liked = currentImage ? isLiked(currentImage.id) : false;
 
