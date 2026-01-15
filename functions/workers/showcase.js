@@ -239,8 +239,29 @@ export const processShowcaseTask = async (req) => {
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        // 2. Analyze
-        const aiData = await analyzeImage(buffer, "image/png"); // Assuming PNG for now
+        // 2. Analyze with automatic retry for 429 warnings
+        let aiData = null;
+        let attempts = 0;
+        const maxAttempts = 3;
+
+        while (attempts < maxAttempts) {
+            try {
+                aiData = await analyzeImage(buffer, "image/png");
+                if (aiData) break;
+            } catch (err) {
+                // Check for quota/rate limit error strings
+                if (err.message.includes("429") || err.message.includes("Resource exhausted") || err.message.includes("503")) {
+                    attempts++;
+                    if (attempts >= maxAttempts) throw err;
+
+                    const waitTime = 2000 * Math.pow(2, attempts); // 4s, 8s...
+                    logger.warn(`[ShowcaseWorker] Hit rate limit (429). Retrying in ${waitTime / 1000}s...`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                } else {
+                    throw err;
+                }
+            }
+        }
 
         if (!aiData) {
             throw new Error("AI Analysis returned null.");
