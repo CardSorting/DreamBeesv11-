@@ -5,6 +5,7 @@ import { processDressUpTask } from "./dressUp.js";
 import { processSlideshowTask } from "./slideshow.js";
 import { processAnalysisTask, processEnhanceTask } from "./transformation.js";
 import { processCleanupTasks } from "./cleanup.js";
+import { processShowcaseTask } from "./showcase.js";
 import { logger } from "../lib/utils.js";
 
 export const universalWorker = onTaskDispatched(
@@ -40,6 +41,8 @@ export const universalWorker = onTaskDispatched(
                 return processEnhanceTask(req);
             case 'cleanup-resource':
                 return processCleanupTasks(req);
+            case 'showcase':
+                return processShowcaseTask(req);
             default:
                 logger.error(`Unknown task type: ${taskType}`);
                 throw new Error(`Unknown task type: ${taskType}`);
