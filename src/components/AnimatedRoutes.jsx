@@ -141,9 +141,8 @@ const AnimatedRoutes = () => {
                         <Route path="/dressup" element={
                             <AdminRoute><DressUp /></AdminRoute>
                         } />
-                        <Route path="/slideshow" element={
-                            <AdminRoute><Slideshow /></AdminRoute>
-                        } />
+                        <Route path="/slideshow" element={<Slideshow />} />
+                        <Route path="/video" element={<Slideshow />} />
                         <Route path="/chat/:id" element={
                             <PrivateRoute><PersonaChat /></PrivateRoute>
                         } />
