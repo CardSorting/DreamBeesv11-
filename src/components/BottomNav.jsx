@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, LayoutTemplate, Zap, User, Hexagon } from 'lucide-react';
+import { Home, LayoutTemplate, Zap, User, Hexagon, Video } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const BottomNav = () => {
@@ -55,6 +55,13 @@ const BottomNav = () => {
                 <NavLink to="/models" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
                     <Hexagon size={24} />
                     <span className="text-secondary">Models</span>
+                </NavLink>
+            )}
+
+            {isAdmin && (
+                <NavLink to="/video" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+                    <Video size={24} />
+                    <span className="text-secondary">Video</span>
                 </NavLink>
             )}
 
