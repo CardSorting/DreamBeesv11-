@@ -33,7 +33,7 @@ export default function Discovery() {
         hasInitializedRef.current = true;
 
         console.log("[Discovery] Initial load triggered");
-        getGlobalShowcaseImages(false);
+        getGlobalShowcaseImages(false, 'discovery_init');
 
         // Reset on unmount so next mount will fetch fresh if needed
         return () => {
@@ -41,10 +41,16 @@ export default function Discovery() {
         };
     }, [getGlobalShowcaseImages]);
 
-    // 2. Infinite Scroll Observer - uses ref to track loading state
+    // 2. Infinite Scroll Observer - uses ref to track loading state and local throttle
     const isLoadingRef = useRef(isGlobalFeedLoading);
+    const isTriggeringRef = useRef(false); // Local throttle to prevent double-firing
+
     useEffect(() => {
         isLoadingRef.current = isGlobalFeedLoading;
+        // If loading finishes, release the local trigger lock
+        if (!isGlobalFeedLoading) {
+            isTriggeringRef.current = false;
+        }
     }, [isGlobalFeedLoading]);
 
     useEffect(() => {
@@ -52,16 +58,27 @@ export default function Discovery() {
         if (!sentinel) return;
 
         const observer = new IntersectionObserver((entries) => {
-            // Only trigger if intersecting and NOT loading (using ref for current value)
-            if (entries[0].isIntersecting && !isLoadingRef.current) {
+            const entry = entries[0];
+
+            // Only trigger if:
+            // 1. Intersecting
+            // 2. Not currently loading (from global state)
+            // 3. Not locally triggering (debounce)
+            // 4. We actually have images (don't trigger on empty state, let initial load handle that)
+            if (entry.isIntersecting &&
+                !isLoadingRef.current &&
+                !isTriggeringRef.current &&
+                globalShowcaseCache.length > 0) {
+
                 console.log("[Discovery] Loading more from intersection");
-                getGlobalShowcaseImages(true); // Load more
+                isTriggeringRef.current = true; // Lock immediately
+                getGlobalShowcaseImages(true, 'discovery_scroll');
             }
         }, { rootMargin: '400px' });
 
         observer.observe(sentinel);
         return () => observer.disconnect();
-    }, [getGlobalShowcaseImages]); // Only depend on getGlobalShowcaseImages (which is now stable)
+    }, [getGlobalShowcaseImages, globalShowcaseCache.length]);
 
     const visibleImages = globalShowcaseCache;
     const loading = isGlobalFeedLoading && visibleImages.length === 0; // Initial loading state

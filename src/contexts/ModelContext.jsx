@@ -187,26 +187,26 @@ export function ModelProvider({ children }) {
 
     // Fetch aggregated global showcase (All Models) - PAGINATED & ROBUST
     // Using refs inside callback to keep the function reference STABLE
-    const getGlobalShowcaseImages = useCallback(async (loadMore = false) => {
+    const getGlobalShowcaseImages = useCallback(async (loadMore = false, source = 'unknown') => {
         // Read from refs for stable access
         const currentCache = globalShowcaseCacheRef.current;
         const currentLastDoc = lastGlobalDocRef.current;
 
         // Prevent duplicate fetches - check ref immediately
         if (globalFeedLoadingRef.current) {
-            console.log("[Global Feed] Already loading, skipping duplicate call.");
+            console.log(`[Global Feed] [from:${source}] Already loading, skipping duplicate call.`);
             return currentCache;
         }
 
         // If not loading more and we have cache, return immediately
         if (!loadMore && currentCache.length > 0) {
-            console.log("[Global Feed] Returning cached data:", currentCache.length);
+            console.log(`[Global Feed] [from:${source}] Returning cached data: ${currentCache.length}`);
             return currentCache;
         }
 
         // If loading more but we've already reached the end, skip
         if (loadMore && hasEndedRef.current) {
-            console.log("[Global Feed] Already at end of feed, skipping.");
+            console.log(`[Global Feed] [from:${source}] Already at end of feed, skipping.`);
             return currentCache;
         }
 
@@ -214,7 +214,7 @@ export function ModelProvider({ children }) {
             // Set loading guards IMMEDIATELY
             globalFeedLoadingRef.current = true;
             setIsGlobalFeedLoading(true);
-            console.log(`[Global Feed] Fetching... (Load More: ${loadMore})`);
+            console.log(`[Global Feed] [from:${source}] Fetching... (Load More: ${loadMore})`);
 
             const pageSize = 24;
             let q = query(
@@ -236,7 +236,7 @@ export function ModelProvider({ children }) {
             const snapshot = await getDocs(q);
 
             if (snapshot.empty) {
-                console.log("[Global Feed] No more images found - end of feed reached.");
+                console.log(`[Global Feed] [from:${source}] No more images found - end of feed reached.`);
                 hasEndedRef.current = true; // Mark as ended
                 globalFeedLoadingRef.current = false;
                 setIsGlobalFeedLoading(false);
@@ -281,18 +281,26 @@ export function ModelProvider({ children }) {
             globalFeedLoadingRef.current = false;
             setIsGlobalFeedLoading(false);
 
-            console.log(`[Global Feed] Loaded ${uniqueNewImages.length} new images. Total: ${finalImages.length}`);
+            console.log(`[Global Feed] [from:${source}] Loaded ${uniqueNewImages.length} new images. Total: ${finalImages.length}`);
             return finalImages;
         } catch (err) {
-            console.error("Error fetching global showcase:", err);
+            console.error(`[Global Feed] [from:${source}] Error fetching global showcase:`, err);
             globalFeedLoadingRef.current = false;
             setIsGlobalFeedLoading(false);
             return currentCache;
         }
     }, []); // EMPTY dependency array - function is now stable!
 
+    // Video cache
+    const [videoCache, setVideoCache] = useState({});
+
     // Fetch user videos for mixing into feed
     const getUserVideos = useCallback(async (userId) => {
+        if (videoCache[userId]) {
+            console.log(`[Video Fetch] Returning cached videos for ${userId}`);
+            return videoCache[userId];
+        }
+
         try {
             console.log(`[Video Fetch] Fetching videos for ${userId}`);
             const q = query(
@@ -304,7 +312,7 @@ export function ModelProvider({ children }) {
             const snapshot = await getDocs(q);
             console.log(`[Video Fetch] Found ${snapshot.size} videos`);
 
-            return snapshot.docs.map(doc => {
+            const videos = snapshot.docs.map(doc => {
                 const data = doc.data();
                 return {
                     id: doc.id,
@@ -319,11 +327,14 @@ export function ModelProvider({ children }) {
                     rating: data.rating || 0
                 };
             });
+
+            setVideoCache(prev => ({ ...prev, [userId]: videos }));
+            return videos;
         } catch (error) {
             console.error("Error fetching user videos:", error);
             return [];
         }
-    }, []);
+    }, [videoCache]);
 
     // --- High Velocity Rating Logic (Buffered) ---
     const ratingQueue = useRef(new Map()); // stores { jobId, rating, timestamp } by jobId

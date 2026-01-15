@@ -379,7 +379,7 @@ export default function ModelFeed() {
                 } else {
                     // Global Feed Mode - context handles deduplication
                     console.log("[ModelFeed] Loading global showcase");
-                    images = await getGlobalShowcaseImages();
+                    images = await getGlobalShowcaseImages(false, 'modelfeed_init');
                 }
 
                 if (images && images.length > 0) {
