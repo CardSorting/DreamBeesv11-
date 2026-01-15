@@ -56,7 +56,7 @@ async function processShowcase() {
         const dirs = await fs.readdir(ABS_SHOWCASE_DIR, { withFileTypes: true });
 
         // Simple Concurrency Helper
-        const CONCURRENCY_LIMIT = 5;
+        const CONCURRENCY_LIMIT = 1;
         let activePromises = [];
 
         const runTask = async (taskFn) => {
@@ -167,7 +167,7 @@ async function processShowcase() {
                     } catch (err) {
                         stats.errors++;
                         process.stdout.write("X");
-                        // console.error(`\nError processing ${file}:`, err.message);
+                        console.error(`\nError processing ${file}:`, err.message);
                     }
                 });
             }
