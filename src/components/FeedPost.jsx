@@ -6,7 +6,7 @@ import LazyImage from './LazyImage';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
 
-const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setActiveShowcaseImage }) => {
+const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setActiveShowcaseImage, variant = 'feed' }) => {
     const { currentUser } = useAuth();
     const { isLiked, isBookmarked, toggleLike, toggleBookmark } = useUserInteractions();
 
@@ -74,20 +74,24 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
         return options[index % options.length];
     }, [index]);
 
+    const isMasonry = variant === 'masonry';
+
     return (
         <article
             key={imgItem.id || index}
-            className="feed-post"
+            className={`feed-post ${isMasonry ? 'masonry-item' : ''}`}
             style={{
                 background: 'rgba(255,255,255,0.02)',
                 borderRadius: '8px',
                 overflow: 'hidden',
                 border: '1px solid rgba(255,255,255,0.06)',
-                animation: `fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.1}s both`,
-                maxWidth: '600px',
+                animation: `fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) ${Math.min(index * 0.1, 1.0)}s both`,
+                // Layout Conditional
+                maxWidth: isMasonry ? '100%' : '600px',
                 width: '100%',
-                margin: '0 auto',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.2)'
+                margin: isMasonry ? '0 0 16px 0' : '0 auto',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+                breakInside: 'avoid' // Crucial for CSS columns
             }}
         >
             {/* Post Header */}

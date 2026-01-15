@@ -41,172 +41,7 @@ const CollapsibleGroup = ({ title, children, defaultOpen = true }) => {
     );
 };
 
-const Sidebar = ({ activeId }) => {
-    const { currentUser } = useAuth();
-    const isAdmin = currentUser?.uid === 'prT9j3royVTstWLDDcKMoUOU7aQ2';
-
-    // Primary Top Level
-    const homeLink = { path: '/', label: 'Home', icon: Home };
-    const profileLink = { path: '/profile', label: 'Profile', icon: User };
-
-    const navGroups = [
-        {
-            title: "CREATE",
-            items: [
-                { path: '/apps', label: 'App Hub', icon: LayoutTemplate },
-                { path: '/generate', label: 'Studio', icon: Zap },
-            ]
-        },
-        {
-            title: "DISCOVER",
-            items: [
-                { path: '/videos', label: 'Videos', icon: Film },
-                { path: '/gallery', label: 'Gallery', icon: LayoutGrid },
-                { path: '/models', label: 'Models', icon: Settings },
-            ]
-        },
-        {
-            title: "SYSTEM",
-            items: [
-                { path: '/pricing', label: 'Get Credits', icon: Hexagon },
-            ]
-        }
-    ];
-
-    const visibleGroups = navGroups.map(group => {
-        const visibleItems = group.items.filter(item => {
-            if (isAdmin) return true;
-            return item.path === '/videos';
-        });
-        return { ...group, items: visibleItems };
-    }).filter(group => group.items.length > 0);
-
-    return (
-        <aside className="feed-sidebar-left">
-            <Link to="/" className="sidebar-logo">
-                <Hexagon size={24} fill="white" />
-                <span className="logo-text">DreamBees</span>
-            </Link>
-
-            <nav className="sidebar-nav">
-                {/* Primary Anchor */}
-                <div className="nav-group primary-group">
-                    <Link
-                        to={homeLink.path}
-                        className={`sidebar-link primary-link ${activeId === homeLink.path ? 'active' : ''}`}
-                    >
-                        <homeLink.icon size={20} />
-                        <span className="link-label">{homeLink.label}</span>
-                    </Link>
-                    <Link
-                        to={profileLink.path}
-                        className={`sidebar-link primary-link ${activeId === profileLink.path ? 'active' : ''}`}
-                    >
-                        <profileLink.icon size={20} />
-                        <span className="link-label">{profileLink.label}</span>
-                    </Link>
-                </div>
-
-                {/* Groups */}
-                {visibleGroups.map((group, idx) => (
-                    <CollapsibleGroup key={idx} title={group.title}>
-                        {group.items.map(link => (
-                            <Link
-                                key={link.path}
-                                to={link.path}
-                                className={`sidebar-link ${activeId === link.path ? 'active' : ''}`}
-                            >
-                                <link.icon size={20} />
-                                <span className="link-label">{link.label}</span>
-                            </Link>
-                        ))}
-                    </CollapsibleGroup>
-                ))}
-            </nav>
-            <style>{`
-                .feed-sidebar-left {
-                    /* Ensure scrollability */
-                    overflow-y: auto;
-                    max-height: 100vh;
-                    scrollbar-width: thin;
-                    scrollbar-color: rgba(255,255,255,0.1) transparent;
-                }
-                .feed-sidebar-left::-webkit-scrollbar {
-                    width: 4px;
-                }
-                .feed-sidebar-left::-webkit-scrollbar-thumb {
-                    background: rgba(255,255,255,0.1);
-                    border-radius: 4px;
-                }
-
-                .sidebar-group-header {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    width: 100%;
-                    padding: 16px 16px 8px 16px;
-                    background: transparent;
-                    border: none;
-                    cursor: pointer;
-                    color: rgba(255,255,255,0.4);
-                    transition: color 0.2s;
-                }
-                .sidebar-group-header:hover {
-                    color: rgba(255,255,255,0.7);
-                }
-                .group-title-text {
-                    font-size: 0.7rem;
-                    font-weight: 700;
-                    letter-spacing: 0.05em;
-                }
-                .group-chevron {
-                    opacity: 0.5;
-                }
-
-                .group-content {
-                    overflow: hidden;
-                    max-height: 0;
-                    transition: max-height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-                    opacity: 0;
-                }
-                .group-content.open {
-                    max-height: 500px; /* Arbitrary large height */
-                    opacity: 1;
-                    transition: max-height 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s ease;
-                }
-
-                .sidebar-link {
-                    padding: 10px 16px;
-                    border-left: 3px solid transparent;
-                    transition: all 0.2s ease;
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                }
-                .sidebar-link:hover {
-                    background: rgba(255,255,255,0.03);
-                }
-                .sidebar-link.active {
-                    background: rgba(139, 92, 246, 0.15); /* Brand tint */
-                    border-left-color: #8b5cf6;
-                    color: #fff;
-                }
-                .sidebar-link.active .lucide {
-                    color: #8b5cf6;
-                }
-                
-                /* Primary Link (Home) Special Styling */
-                .primary-group {
-                    margin-bottom: 8px;
-                }
-                .primary-link {
-                    font-weight: 600;
-                }
-            `}</style>
-        </aside>
-    );
-};
-const SidebarMemo = React.memo(Sidebar);
+import Sidebar from '../components/Sidebar';
 
 const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
     const [suggestedData, setSuggestedData] = useState({ suggestions: [], featuredModel: null, popularTags: [] });
@@ -615,8 +450,18 @@ export default function ModelFeed() {
         // Filter Logic
         if (!id && activeFilter !== 'All' && activeFilter !== 'Videos') {
             filtered = filtered.filter(img => {
+                // Check Model Tags
                 const modelTags = img._model?.tags || [];
-                return modelTags.includes(activeFilter);
+                if (modelTags.includes(activeFilter)) return true;
+
+                // Check Discovery Vibe Tags (NEW)
+                const vibeTags = img.discovery?.vibeTags || [];
+                if (vibeTags.includes(activeFilter)) return true;
+
+                // Check explicit Tags
+                if (img.tags && img.tags.includes(activeFilter)) return true;
+
+                return false;
             });
         }
 
@@ -678,7 +523,7 @@ export default function ModelFeed() {
                 description={`Instagram-style showcase feed for the ${model.name} AI model.`}
             />
 
-            <SidebarMemo activeId="/models" /> {/* Or specific active path logic */}
+            <Sidebar activeId={id ? `/models` : location.pathname} /> {/* Dynamic active ID */}
 
             <main className="feed-main-content">
                 {/* Mobile Header */}

@@ -250,14 +250,14 @@ async function processShowcase() {
                 }
 
                 // CHECK FIRESTORE IDEMPOTENCY
-                // Check if an image with this URL already exists
-                const existingDocs = await db.collection("images")
+                // Check if an image with this URL already exists in SHOWCASE collection
+                const existingDocs = await db.collection("model_showcase_images")
                     .where("imageUrl", "==", publicUrl)
                     .limit(1)
                     .get();
 
                 if (!existingDocs.empty) {
-                    console.log(`  [Skipping] ${file} - Already exists in Firestore.`);
+                    console.log(`  [Skipping] ${file} - Already exists in Showcase.`);
                     continue;
                 }
 
@@ -277,13 +277,15 @@ async function processShowcase() {
 
                 // Prepare Firestore Document
                 const docData = {
-                    type: "showcase",
+                    type: "image", // Standardize type
                     showcaseCategory: categoryName,
                     imageUrl: publicUrl,
                     thumbnailUrl: publicUrl, // Using same for now
                     prompt: manifestEntry?.prompt || "", // Original generation prompt
                     creator: manifestEntry?.creator || "System",
                     createdAt: new Date(),
+                    likesCount: 0,
+                    bookmarksCount: 0,
 
                     // AI Enriched Metadata
                     title: aiData.description.substring(0, 50) + "...", // Auto-title
@@ -308,11 +310,12 @@ async function processShowcase() {
                     curation: aiData.curation,
 
                     // Technicals
-                    modelId: "gemini-2.5-flash-ml-discovery"
+                    modelId: "gemini-2.5-flash-ml-discovery",
+                    aspectRatio: "1:1" // Default, ideally parse from image
                 };
 
-                // Write to Firestore
-                await db.collection("images").add(docData);
+                // Write to Firestore - MODEL SHOWCASE COLLECTION
+                await db.collection("model_showcase_images").add(docData);
                 console.log(`  [Saved] ${file} (${Date.now() - startTime}ms)`);
 
                 // Rate Limit / Safety Pause (Gemini is fast but let's be nice to the API in a loop)

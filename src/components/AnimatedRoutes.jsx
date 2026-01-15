@@ -28,6 +28,7 @@ const DressUp = React.lazy(() => import('../pages/DressUp'));
 const Slideshow = React.lazy(() => import('../pages/Slideshow'));
 const AppsHub = React.lazy(() => import('../pages/AppsHub'));
 const PersonaChat = React.lazy(() => import('../pages/PersonaChat'));
+const Discovery = React.lazy(() => import('../pages/Discovery'));
 import { Privacy, Terms, Cookies } from '../pages/Legal';
 import { Careers, Brand, Api, Showcase } from '../pages/Misc';
 
@@ -89,6 +90,8 @@ const AnimatedRoutes = () => {
                                 <UserProfile />
                             </PrivateRoute>
                         } />
+
+                        <Route path="/discovery" element={<Discovery />} />
 
                         {/* Admin Only Routes */}
                         <Route path="/generate" element={

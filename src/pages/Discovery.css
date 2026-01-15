@@ -1,0 +1,315 @@
+/* Discovery Page Styles */
+.feed-layout-wrapper {
+    display: flex;
+    justify-content: center;
+    /* keep sidebars and main content centered if screen allows */
+    background: #000;
+    min-height: 100vh;
+    color: #fff;
+}
+
+.feed-main-content {
+    flex: 1;
+    width: 100%;
+    /* Allow it to grow to fill space next to sidebar */
+    display: flex;
+    flex-direction: column;
+}
+
+.discovery-container {
+    padding: 20px;
+    max-width: 1200px;
+    /* Increased for Masonry */
+    margin: 0 auto;
+    width: 100%;
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 8px;
+    background: linear-gradient(to right, #fff, #a5b4fc);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.page-subtitle {
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 40px;
+    font-size: 1.1rem;
+}
+
+.disc-section {
+    margin-bottom: 48px;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: #fff;
+    letter-spacing: -0.01em;
+}
+
+/* VIBES */
+.vibe-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.vibe-pill {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 10px 20px;
+    border-radius: 99px;
+    color: #fff;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.vibe-pill:hover {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: rgba(139, 92, 246, 0.4);
+    transform: translateY(-2px);
+}
+
+.vibe-pill .count {
+    font-size: 0.75rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 99px;
+}
+
+/* COLLECTIONS */
+.collection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.collection-card {
+    height: 140px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.collection-card:hover {
+    transform: scale(1.02);
+}
+
+.col-bg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.collection-card:hover .col-bg {
+    opacity: 0.8;
+}
+
+.col-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 16px;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+}
+
+.col-overlay h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.col-overlay span {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* PALETTES */
+.palette-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.palette-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.palette-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.palette-swatch {
+    display: flex;
+    height: 24px;
+    border-radius: 6px;
+    overflow: hidden;
+    width: 100%;
+}
+
+.palette-swatch div {
+    flex: 1;
+    height: 100%;
+}
+
+.palette-name {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.8);
+    text-align: left;
+}
+
+.empty-text {
+    color: rgba(255, 255, 255, 0.4);
+    font-style: italic;
+    font-size: 0.9rem;
+}
+
+/* RESULTS FILTER HEADER */
+.results-header {
+    margin-bottom: 30px;
+}
+
+.back-btn-text {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+}
+
+.back-btn-text:hover {
+    color: #fff;
+}
+
+.active-filter-display {
+    background: rgba(139, 92, 246, 0.1);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.filter-type {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #a78bfa;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.active-filter-display h2 {
+    margin: 0;
+    flex: 1;
+    font-size: 1.5rem;
+}
+
+.clear-filter {
+    background: rgba(0, 0, 0, 0.3);
+    border: none;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.clear-filter:hover {
+    background: rgba(0, 0, 0, 0.6);
+}
+
+/* MASONRY LAYOUT */
+.feed-posts-container.masonry-grid {
+    column-count: 1;
+    column-gap: 16px;
+}
+
+@media (min-width: 600px) {
+    .feed-posts-container.masonry-grid {
+        column-count: 2;
+    }
+}
+
+@media (min-width: 900px) {
+    .feed-posts-container.masonry-grid {
+        column-count: 3;
+    }
+}
+
+@media (min-width: 1200px) {
+    .feed-posts-container.masonry-grid {
+        column-count: 4;
+    }
+}
+
+/* Ensure items don't break across columns */
+.masonry-item {
+    break-inside: avoid;
+    margin-bottom: 16px;
+    display: inline-block;
+    /* Helps with some browser rendering of columns */
+    width: 100%;
+}
+
+@media (max-width: 600px) {
+    .feed-layout-wrapper {
+        flex-direction: column;
+    }
+
+    .feed-sidebar-left {
+        display: none;
+    }
+
+    .mobile-feed-header {
+        display: flex;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(20px);
+        padding: 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        align-items: center;
+        gap: 16px;
+    }
+}

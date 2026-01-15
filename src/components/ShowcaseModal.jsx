@@ -122,17 +122,61 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                             <div className="meta-value">{model?.name || 'Unknown'}</div>
                         </div>
                         <div>
-                            <label className="meta-label">BASE</label>
-                            <div className="meta-value">SDXL 1.0</div>
+                            <label className="meta-label">AESTHETIC</label>
+                            <div className="meta-value">
+                                {image.aesthetics?.quality || 'Standard'}
+                                <span style={{ opacity: 0.5, fontSize: '0.8em', marginLeft: '6px' }}>
+                                    {image.aesthetics?.score ? `${image.aesthetics.score}/10` : ''}
+                                </span>
+                            </div>
                         </div>
-                        <div>
-                            <label className="meta-label">STATUS</label>
-                            <div className="meta-value">OFFICIAL</div>
-                        </div>
-                        <div>
-                            <label className="meta-label">SOURCE</label>
-                            <div className="meta-value">Official Showcase</div>
-                        </div>
+
+                        {/* New Metadata Display */}
+                        {image.colors?.paletteName && (
+                            <div className="col-span-2" style={{ gridColumn: 'span 2' }}>
+                                <label className="meta-label">PALETTE</label>
+                                <div className="meta-value flex items-center gap-2">
+                                    {image.colors.paletteName}
+                                    <div style={{ display: 'flex', gap: '4px', marginLeft: '8px' }}>
+                                        {image.colors.dominant?.map((c, i) => (
+                                            <div key={i} style={{ width: '12px', height: '12px', borderRadius: '50%', background: c, border: '1px solid rgba(255,255,255,0.2)' }} />
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {image.discovery?.vibeTags && (
+                            <div className="col-span-2" style={{ gridColumn: 'span 2' }}>
+                                <label className="meta-label">VIBE TAGS</label>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                    {image.discovery.vibeTags.map((tag, i) => (
+                                        <span key={i} style={{
+                                            background: 'rgba(255,255,255,0.1)',
+                                            padding: '4px 8px',
+                                            borderRadius: '4px',
+                                            fontSize: '0.75rem'
+                                        }}>
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {image.style?.primary && (
+                            <div>
+                                <label className="meta-label">STYLE</label>
+                                <div className="meta-value">{image.style.primary}</div>
+                            </div>
+                        )}
+                        {image.style?.subGenre && (
+                            <div>
+                                <label className="meta-label">GENRE</label>
+                                <div className="meta-value">{image.style.subGenre}</div>
+                            </div>
+                        )}
+
                         <div>
                             <label className="meta-label">STEPS</label>
                             <div className="meta-value">{image.steps || 30}</div>
