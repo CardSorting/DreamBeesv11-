@@ -50,26 +50,44 @@ const { SchemaType } = await import("@google-cloud/vertexai");
  * Returns a typed JSON object with detailed aesthetic and content metadata.
  */
 /**
- * Analyzes an image buffer using Gemini with SEARCH-FIRST structured output.
- * Returns a typed JSON object optimized for filtering, searching, and user intent.
+ * Analyzes an image buffer using Gemini with DUAL-PURPOSE output (Discovery + ML Training).
+ * Optimized for user inspiration galleries AND aesthetic dataset creation.
  */
 async function analyzeImage(imageBuffer, mimeType = "image/png") {
     // 1. Define strict output schema
     const responseSchema = {
         type: SchemaType.OBJECT,
         properties: {
+            // --- FRONTEND DISCOVERY ---
             searchQueries: {
                 type: SchemaType.ARRAY,
                 items: { type: SchemaType.STRING },
-                description: "3-5 natural language queries a user would type to find this specific image (e.g. 'purple hair anime girl wallpaper', 'sad rain lo-fi')."
+                description: "3-5 natural language user search queries (e.g. 'purple hair anime girl wallpaper')."
             },
-            suitability: {
-                type: SchemaType.ARRAY,
-                items: { type: SchemaType.STRING },
-                description: "Best use cases: 'Mobile Wallpaper', 'Desktop Wallpaper', 'Avatar/PFP', 'Poster', 'Design Element'."
+            discovery: {
+                type: SchemaType.OBJECT,
+                properties: {
+                    vibeTags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "Abstract mood/vibe tags (e.g. 'Dreamy', 'Nostalgic', 'High Energy')." },
+                    suggestedCollections: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "Virtual collection names (e.g. 'Sci-Fi Portraits', 'Pastel Aesthetics')." }
+                }
             },
-            description: { type: SchemaType.STRING, description: "Evocative caption describing the scene and vibe." },
+            suitability: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING }, description: "Best use cases: 'Mobile Wallpaper', 'Desktop Wallpaper', 'Avatar/PFP', 'Poster', 'Design Element'." },
 
+            // --- ML / TRAINING DATA ---
+            mlTraining: {
+                type: SchemaType.OBJECT,
+                properties: {
+                    denseCaption: { type: SchemaType.STRING, description: "Highly detailed, literal description for text encoders. Mention spatial relation, lighting, textures." },
+                    triggerWords: {
+                        type: SchemaType.ARRAY,
+                        items: { type: SchemaType.STRING },
+                        description: "Technical visual tokens for fine-tuning (e.g. 'bokeh', 'octane render', 'chiaroscuro', 'studio lighting')."
+                    }
+                }
+            },
+
+            // --- STANDARD METADATA ---
+            description: { type: SchemaType.STRING, description: "Evocative caption describing the scene and vibe." },
             style: {
                 type: SchemaType.OBJECT,
                 properties: {
@@ -78,9 +96,7 @@ async function analyzeImage(imageBuffer, mimeType = "image/png") {
                     technique: { type: SchemaType.STRING, description: "Artistic technique (e.g. Digital Painting, Vector Art, Watercolor)." }
                 }
             },
-
             mood: { type: SchemaType.STRING, description: "Emotional atmosphere (e.g. Melancholic, Energetic, Peaceful)." },
-
             subject: {
                 type: SchemaType.OBJECT,
                 properties: {
@@ -88,7 +104,6 @@ async function analyzeImage(imageBuffer, mimeType = "image/png") {
                     details: { type: SchemaType.STRING, description: "Specific details (e.g. 'Fox Girl', 'Abandoned Church')." }
                 }
             },
-
             aesthetics: {
                 type: SchemaType.OBJECT,
                 properties: {
@@ -97,7 +112,6 @@ async function analyzeImage(imageBuffer, mimeType = "image/png") {
                     composition: { type: SchemaType.STRING, description: "e.g. 'Rule of Thirds', 'Symmetrical', 'Dynamic Angle'." }
                 }
             },
-
             colors: {
                 type: SchemaType.OBJECT,
                 properties: {
@@ -109,7 +123,6 @@ async function analyzeImage(imageBuffer, mimeType = "image/png") {
                     }
                 }
             },
-
             curation: {
                 type: SchemaType.OBJECT,
                 properties: {
@@ -118,7 +131,7 @@ async function analyzeImage(imageBuffer, mimeType = "image/png") {
                 }
             }
         },
-        required: ["searchQueries", "suitability", "description", "style", "mood", "subject", "aesthetics", "colors", "curation"]
+        required: ["searchQueries", "discovery", "mlTraining", "suitability", "description", "style", "mood", "subject", "aesthetics", "colors", "curation"]
     };
 
     // 2. Configure model with schema
@@ -131,12 +144,14 @@ async function analyzeImage(imageBuffer, mimeType = "image/png") {
     });
 
     const prompt = `
-    Analyze this image for a premium curation platform.
-    Think like a user searching for inspiration.
-    - Generate 'searchQueries' that capture specific vibes, colors, and subjects combined.
-    - Categorize 'suitability' based on aspect ratio and composition (e.g. Centered portraits are good for Avatars).
-    - Give the color palette a creative 'paletteName'.
-    - Be precise with 'subGenre'.
+    Analyze this image for two purposes:
+    1. **Frontend Discovery**: Help users find inspiration (vibes, collections).
+    2. **ML Training Data**: Generate high-quality metadata for training AI models (LoRA/Fine-tuning).
+    
+    Requirements:
+    - **mlTraining.denseCaption**: Be extremely literal and dense. Describe every major element, lighting source, and texture.
+    - **mlTraining.triggerWords**: Use "Danbooru-style" or technical art tags (e.g. "path tracing", "subsurface scattering").
+    - **discovery.vibeTags**: meaningful abstract concepts.
     `;
 
     const request = {
@@ -274,22 +289,26 @@ async function processShowcase() {
                     title: aiData.description.substring(0, 50) + "...", // Auto-title
                     description: aiData.description,
 
-                    // Unified tagging strategy (searchQueries + tags + category)
-                    tags: [...new Set([...(aiData.curation.tags || []), ...aiData.searchQueries, categoryName, "showcase"])],
+                    // Unified tagging strategy
+                    tags: [...new Set([...(aiData.curation.tags || []), ...aiData.searchQueries, ...aiData.discovery.vibeTags, categoryName, "showcase"])],
                     searchQueries: aiData.searchQueries,
 
-                    style: aiData.style, // Now an object
-                    mood: aiData.mood,
+                    // Discovery Features
+                    discovery: aiData.discovery,
 
-                    // Enhanced Curation Data
+                    // ML / Training Data
+                    mlTraining: aiData.mlTraining,
+
+                    style: aiData.style,
+                    mood: aiData.mood,
                     subject: aiData.subject,
                     aesthetics: aiData.aesthetics,
                     colors: aiData.colors,
                     suitability: aiData.suitability,
-                    curation: aiData.curation, // rating, reason
+                    curation: aiData.curation,
 
-                    // Technicals (optional)
-                    modelId: "gemini-2.5-flash-curation-v3"
+                    // Technicals
+                    modelId: "gemini-2.5-flash-ml-discovery"
                 };
 
                 // Write to Firestore
