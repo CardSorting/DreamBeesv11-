@@ -445,6 +445,14 @@ export default function ModelFeed() {
     }, [availableModels, feedItems]); // Re-calc tags only if base data changes
 
     // --- Derived Data for Render ---
+    // Helper: Validate if a URL is potentially loadable
+    const isValidImageUrl = (url) => {
+        if (!url || typeof url !== 'string') return false;
+        if (url.length < 10) return false; // Too short to be a real URL
+        if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/') || url.startsWith('data:')) return true;
+        return false;
+    };
+
     const imagesToRender = useMemo(() => {
         // SELECT SOURCE
         let sourceData = activeFilter === 'Videos' ? videos : feedItems;
@@ -452,9 +460,15 @@ export default function ModelFeed() {
         const seenUrls = new Set();
         let filtered = (sourceData || [])
             .filter(img => {
-                if (!img || !img.url || typeof img.url !== 'string' || img.url.length <= 5) return false;
-                if (seenUrls.has(img.url)) return false;
-                seenUrls.add(img.url);
+                if (!img) return false;
+
+                // Check for a valid URL in either url or imageUrl field
+                const primaryUrl = img.url || img.imageUrl;
+                if (!isValidImageUrl(primaryUrl)) return false;
+
+                // Dedupe by URL
+                if (seenUrls.has(primaryUrl)) return false;
+                seenUrls.add(primaryUrl);
                 return true;
             })
             .map(img => {

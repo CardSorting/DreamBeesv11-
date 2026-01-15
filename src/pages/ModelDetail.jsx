@@ -3,7 +3,7 @@ import SEO from '../components/SEO';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
 import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight, X, Copy, RefreshCw, ThumbsUp, ThumbsDown, Loader2, LayoutGrid, Square, Film, Heart, Share2, Bookmark, MoreHorizontal, BadgeCheck, Activity, Info } from 'lucide-react';
-import LazyImage from '../components/LazyImage';
+
 import ShowcaseModal from '../components/ShowcaseModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getOptimizedImageUrl, getLCPAttributes, getImageSrcSet, preloadImage } from '../utils';
@@ -430,14 +430,18 @@ export default function ModelDetail() {
                                                 transition: 'filter 0.5s ease',
                                                 overflow: 'hidden'
                                             }}>
-                                                <LazyImage
+                                                <img
                                                     src={getOptimizedImageUrl(imgItem.thumbnailUrl || imgItem.url || imgItem.imageUrl || (typeof imgItem === 'string' ? imgItem : ''))}
                                                     srcSet={getImageSrcSet(imgItem)}
                                                     sizes="(max-width: 500px) 50vw, (max-width: 1200px) 25vw, 20vw"
                                                     alt={`Showcase generation: ${imgItem.prompt ? imgItem.prompt.slice(0, 50) + "..." : "AI Artwork"}`}
-                                                    aspectRatio={ratio}
-                                                    priority={index < 8}
-                                                    delay={((index % 12) * 0.05)}
+                                                    loading={index < 8 ? "eager" : "lazy"}
+                                                    style={{
+                                                        width: '100%',
+                                                        height: '100%',
+                                                        objectFit: 'cover',
+                                                        display: 'block'
+                                                    }}
                                                 />
                                                 <div style={{
                                                     position: 'absolute',

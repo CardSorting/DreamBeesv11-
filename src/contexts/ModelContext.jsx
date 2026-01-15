@@ -252,7 +252,17 @@ export function ModelProvider({ children }) {
                 const data = doc.data();
                 const optimizedUrl = getOptimizedImageUrl(data.imageUrl || data.url);
 
-                if (!optimizedUrl) return null;
+                // Stricter URL validation - must be valid and at least 10 chars
+                if (!optimizedUrl || typeof optimizedUrl !== 'string' || optimizedUrl.length < 10) {
+                    console.warn('[Global Feed] Skipping image with invalid URL:', doc.id);
+                    return null;
+                }
+
+                // Must start with valid protocol
+                if (!optimizedUrl.startsWith('http://') && !optimizedUrl.startsWith('https://') && !optimizedUrl.startsWith('/')) {
+                    console.warn('[Global Feed] Skipping image with invalid URL protocol:', doc.id);
+                    return null;
+                }
 
                 return {
                     id: doc.id,

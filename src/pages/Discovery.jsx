@@ -5,7 +5,7 @@ import { useModel } from '../contexts/ModelContext';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { getOptimizedImageUrl, getImageSrcSet } from '../utils'; // Added getImageSrcSet
 import Sidebar from '../components/Sidebar';
-import LazyImage from '../components/LazyImage'; // Replaces FeedPost
+
 import ShowcaseModal from '../components/ShowcaseModal';
 import './Discovery.css';
 
@@ -41,17 +41,19 @@ export default function Discovery() {
         };
     }, [getGlobalShowcaseImages]);
 
-    // 2. Infinite Scroll Observer - uses ref to track loading state and local throttle
+    // 2. Infinite Scroll Observer - with cooldown and strict guards
     const isLoadingRef = useRef(isGlobalFeedLoading);
-    const isTriggeringRef = useRef(false); // Local throttle to prevent double-firing
+    const lastLoadTimeRef = useRef(0);
+    const lastCacheLengthRef = useRef(0);
+    const COOLDOWN_MS = 1000; // Minimum time between fetches
 
     useEffect(() => {
         isLoadingRef.current = isGlobalFeedLoading;
-        // If loading finishes, release the local trigger lock
+        // Update cache length ref only when NOT loading to establish a baseline for next trigger
         if (!isGlobalFeedLoading) {
-            isTriggeringRef.current = false;
+            lastCacheLengthRef.current = globalShowcaseCache.length;
         }
-    }, [isGlobalFeedLoading]);
+    }, [isGlobalFeedLoading, globalShowcaseCache.length]);
 
     useEffect(() => {
         const sentinel = document.getElementById('feed-sentinel');
@@ -59,19 +61,23 @@ export default function Discovery() {
 
         const observer = new IntersectionObserver((entries) => {
             const entry = entries[0];
+            const now = Date.now();
+            const timeSinceLastLoad = now - lastLoadTimeRef.current;
 
-            // Only trigger if:
-            // 1. Intersecting
-            // 2. Not currently loading (from global state)
-            // 3. Not locally triggering (debounce)
-            // 4. We actually have images (don't trigger on empty state, let initial load handle that)
+            // Strict Guards:
+            // 1. Must be intersecting
+            // 2. Must NOT be currently loading
+            // 3. Must have cooldown elapsed
+            // 4. Must have existing content (don't trigger on empty)
+            // 5. Must have new content loaded previously (or be initial load)
             if (entry.isIntersecting &&
                 !isLoadingRef.current &&
-                !isTriggeringRef.current &&
-                globalShowcaseCache.length > 0) {
+                timeSinceLastLoad > COOLDOWN_MS &&
+                globalShowcaseCache.length > 0 &&
+                globalShowcaseCache.length > lastCacheLengthRef.current) {
 
-                console.log("[Discovery] Loading more from intersection");
-                isTriggeringRef.current = true; // Lock immediately
+                console.log("[Discovery] Triggering scroll load...");
+                lastLoadTimeRef.current = now;
                 getGlobalShowcaseImages(true, 'discovery_scroll');
             }
         }, { rootMargin: '400px' });
@@ -138,14 +144,18 @@ export default function Discovery() {
                                                 transition: 'filter 0.5s ease',
                                                 overflow: 'hidden'
                                             }}>
-                                                <LazyImage
+                                                <img
                                                     src={getOptimizedImageUrl(imgItem.thumbnailUrl || imgItem.url || imgItem.imageUrl || (typeof imgItem === 'string' ? imgItem : ''))}
                                                     srcSet={getImageSrcSet(imgItem)}
                                                     sizes="(max-width: 500px) 50vw, (max-width: 1200px) 25vw, 20vw"
                                                     alt={`Showcase generation: ${imgItem.prompt ? imgItem.prompt.slice(0, 50) + "..." : "AI Artwork"}`}
-                                                    aspectRatio={ratio}
-                                                    priority={index < 8}
-                                                    delay={((index % 12) * 0.05)}
+                                                    loading={index < 8 ? "eager" : "lazy"}
+                                                    style={{
+                                                        width: '100%',
+                                                        height: '100%',
+                                                        objectFit: 'cover',
+                                                        display: 'block'
+                                                    }}
                                                 />
                                                 <div style={{
                                                     position: 'absolute',

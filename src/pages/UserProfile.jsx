@@ -4,7 +4,7 @@ import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
 import { Loader2, Heart, Bookmark, AlertCircle, Grid, Zap, Layers, Filter, Search } from 'lucide-react';
-import LazyImage from '../components/LazyImage';
+
 import ShowcaseModal from '../components/ShowcaseModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -179,10 +179,16 @@ export default function UserProfile() {
                                     onClick={() => handleImageClick(item)}
                                 >
                                     <div className="aspect-square relative overflow-hidden rounded-xl bg-zinc-900">
-                                        <LazyImage
+                                        <img
                                             src={item.thumbnailUrl || item.url}
                                             alt={item.prompt}
-                                            aspectRatio="1/1"
+                                            loading="lazy"
+                                            style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                objectFit: 'cover',
+                                                transition: 'transform 0.5s'
+                                            }}
                                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                                         />
 

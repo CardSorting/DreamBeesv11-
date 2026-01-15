@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, MoreHorizontal, Bookmark, BadgeCheck, Aperture, Volume2, VolumeX } from 'lucide-react';
 import toast from 'react-hot-toast';
-import LazyImage from './LazyImage';
+
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -75,6 +75,22 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
     }, [index]);
 
     const isMasonry = variant === 'masonry';
+
+    // Helper: Validate image URL
+    const isValidUrl = (url) => {
+        if (!url || typeof url !== 'string') return false;
+        if (url.length < 10) return false;
+        return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/') || url.startsWith('data:');
+    };
+
+    // Get the primary URL for this item
+    const primaryUrl = imgItem.url || imgItem.imageUrl || (typeof imgItem === 'string' ? imgItem : '');
+
+    // Guard: Don't render if URL is invalid (extra safety layer)
+    if (!isValidUrl(primaryUrl) && imgItem.type !== 'video') {
+        console.warn('[FeedPost] Skipping render due to invalid URL:', imgItem.id, primaryUrl?.substring(0, 30));
+        return null;
+    }
 
     return (
         <article
@@ -204,11 +220,17 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
                             </button>
                         </>
                     ) : (
-                        <LazyImage
+                        <img
                             src={getOptimizedImageUrl(imgItem.url || imgItem.imageUrl || (typeof imgItem === 'string' ? imgItem : ''))}
                             alt={imgItem.prompt || "Model Generation"}
-                            aspectRatio={imgItem.aspectRatio || "1/1"}
-                            priority={index < 2}
+                            loading={index < 2 ? "eager" : "lazy"}
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                display: 'block',
+                                aspectRatio: imgItem.aspectRatio || '1/1'
+                            }}
                         />
                     )}
                 </motion.div>
