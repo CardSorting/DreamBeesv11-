@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useMemo, useRef } from 'react';
 import SEO from '../components/SEO';
 import { useNavigate } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
@@ -14,27 +14,54 @@ export default function Discovery() {
     const { getGlobalShowcaseImages, globalShowcaseCache, isGlobalFeedLoading, availableModels } = useModel();
     const [activeShowcaseImage, setActiveShowcaseImage] = useState(null);
 
-    // 1. Initial Load (One-time trigger)
+    // Track initialization to prevent duplicate calls
+    const hasInitializedRef = useRef(false);
+
+    // 0. Scroll to top immediately on mount
+    useLayoutEffect(() => {
+        window.scrollTo({
+            top: 0,
+            left: 0,
+            behavior: 'auto' // Instant scroll, no animation
+        });
+    }, []);
+
+    // 1. Initial Load (One-time trigger per mount)
     useEffect(() => {
-        // Trigger fetch if empty. Context handles deduplication.
+        // Only trigger once per component mount, not on every render
+        if (hasInitializedRef.current) return;
+        hasInitializedRef.current = true;
+
+        console.log("[Discovery] Initial load triggered");
         getGlobalShowcaseImages(false);
+
+        // Reset on unmount so next mount will fetch fresh if needed
+        return () => {
+            hasInitializedRef.current = false;
+        };
     }, [getGlobalShowcaseImages]);
 
-    // 2. Infinite Scroll Observer
+    // 2. Infinite Scroll Observer - uses ref to track loading state
+    const isLoadingRef = useRef(isGlobalFeedLoading);
+    useEffect(() => {
+        isLoadingRef.current = isGlobalFeedLoading;
+    }, [isGlobalFeedLoading]);
+
     useEffect(() => {
         const sentinel = document.getElementById('feed-sentinel');
         if (!sentinel) return;
 
         const observer = new IntersectionObserver((entries) => {
-            // Only trigger if intersecting and NOT loading
-            if (entries[0].isIntersecting && !isGlobalFeedLoading) {
+            // Only trigger if intersecting and NOT loading (using ref for current value)
+            if (entries[0].isIntersecting && !isLoadingRef.current) {
+                console.log("[Discovery] Loading more from intersection");
                 getGlobalShowcaseImages(true); // Load more
             }
         }, { rootMargin: '400px' });
 
         observer.observe(sentinel);
         return () => observer.disconnect();
-    }, [isGlobalFeedLoading, getGlobalShowcaseImages]);
+    }, [getGlobalShowcaseImages]); // Only depend on getGlobalShowcaseImages (which is now stable)
 
     const visibleImages = globalShowcaseCache;
     const loading = isGlobalFeedLoading && visibleImages.length === 0; // Initial loading state

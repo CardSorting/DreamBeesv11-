@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import SEO from '../components/SEO';
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -340,29 +340,45 @@ export default function ModelFeed() {
         return arr;
     };
 
+    // Track initialization to prevent duplicate fetches on navigation
+    const hasInitializedRef = useRef(false);
+    const lastIdRef = useRef(id);
+
     // --- Data Loading Effect ---
     useEffect(() => {
+        // Reset initialization when id changes (navigating to different model)
+        if (lastIdRef.current !== id) {
+            hasInitializedRef.current = false;
+            lastIdRef.current = id;
+        }
+
+        // Skip if already initialized for this id
+        if (hasInitializedRef.current) {
+            console.log("[ModelFeed] Already initialized, skipping duplicate fetch");
+            return;
+        }
+
         const loadShowcase = async () => {
+            // Mark as initialized immediately to prevent race conditions
+            hasInitializedRef.current = true;
+
             // Reset state ONLY if we don't have cache, to prevent white flash
-            const hasCache = (!id && globalShowcaseCache) || (id && showcaseCache[id]);
+            const hasCache = (!id && globalShowcaseCache?.length > 0) || (id && showcaseCache[id]);
             if (!hasCache) {
                 setFeedItems([]);
                 setIsLoading(true);
             }
-            // Always fetch fresh data in background/parallel, even if we have cache, 
-            // but we don't clear the UI for it.
-            setVideos([]); // Videos might still need reset or caching
-
 
             try {
                 let images = [];
                 if (id) {
                     // Single Model Mode
                     if (!model || model.name === "Global") return; // Wait for model resolution
+                    console.log(`[ModelFeed] Loading showcase for model: ${model.id}`);
                     images = await getShowcaseImages(model.id);
                 } else {
-                    // Global Feed Mode
-                    // Use new optimized fetcher from context
+                    // Global Feed Mode - context handles deduplication
+                    console.log("[ModelFeed] Loading global showcase");
                     images = await getGlobalShowcaseImages();
                 }
 
@@ -370,21 +386,18 @@ export default function ModelFeed() {
                     // Initial Sort/Shuffle
                     let processedImages = [...images];
 
-                    // Default to shuffle for variety, or sort by rating if preferred as default?
-                    // Use a stable shuffle initially.
+                    // Default to shuffle for variety
                     processedImages = shuffleArray(processedImages);
 
                     setFeedItems(processedImages);
 
-                    // --- Curated Video Logic (Only fetch nicely once) ---
-                    // Fetch separate videos for 'Videos' tab
+                    // --- Curated Video Logic (Only fetch once) ---
                     const CURATED_USER_ID = 'prT9j3royVTstWLDDcKMoUOU7aQ2';
                     const curatedVideos = await getUserVideos(CURATED_USER_ID);
 
                     if (curatedVideos && curatedVideos.length > 0) {
                         setVideos(curatedVideos);
                     }
-                    // --------------------------------
 
                     // Preload top 4 images from the PROCESSED list
                     processedImages.slice(0, 4).forEach(img => {
@@ -403,8 +416,16 @@ export default function ModelFeed() {
 
         // Initialize immediately - don't wait for models to load for Global Feed
         loadShowcase();
+
+        // Cleanup: reset on unmount
+        return () => {
+            // Only reset if this is the same id (not during navigation)
+            if (lastIdRef.current === id) {
+                hasInitializedRef.current = false;
+            }
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id, availableModels.length, getShowcaseImages, getGlobalShowcaseImages, getUserVideos]); // Removed `model` dependency to prevent flicker if model object reference changes slightly. Use ID.
+    }, [id, model?.id, getShowcaseImages, getGlobalShowcaseImages, getUserVideos]); // Use model?.id instead of availableModels.length
 
 
 

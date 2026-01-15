@@ -163,23 +163,57 @@ export function ModelProvider({ children }) {
     const [lastGlobalDoc, setLastGlobalDoc] = useState(null); // Tracker for pagination
     const [isGlobalFeedLoading, setIsGlobalFeedLoading] = useState(false); // Reactive loading state
 
+    // Refs for stable callback access (prevents dependency array changes)
+    const globalShowcaseCacheRef = useRef([]);
+    const lastGlobalDocRef = useRef(null);
+    const hasEndedRef = useRef(false); // Track if we've reached the end of the feed
+
+    // Sync refs with state
+    useEffect(() => {
+        globalShowcaseCacheRef.current = globalShowcaseCache;
+    }, [globalShowcaseCache]);
+
+    useEffect(() => {
+        lastGlobalDocRef.current = lastGlobalDoc;
+    }, [lastGlobalDoc]);
+
     // Reset global feed (e.g. on pull to refresh)
     const resetGlobalFeed = useCallback(() => {
         setGlobalShowcaseCache([]);
         setLastGlobalDoc(null);
         globalFeedLoadingRef.current = false;
+        hasEndedRef.current = false;
     }, []);
 
     // Fetch aggregated global showcase (All Models) - PAGINATED & ROBUST
+    // Using refs inside callback to keep the function reference STABLE
     const getGlobalShowcaseImages = useCallback(async (loadMore = false) => {
-        // Prevent duplicate fetches
-        if (globalFeedLoadingRef.current) return globalShowcaseCache;
+        // Read from refs for stable access
+        const currentCache = globalShowcaseCacheRef.current;
+        const currentLastDoc = lastGlobalDocRef.current;
 
-        // If not loading more and we have cache, return valid cache (unless empty, then try fetching)
-        if (!loadMore && globalShowcaseCache.length > 0) return globalShowcaseCache;
+        // Prevent duplicate fetches - check ref immediately
+        if (globalFeedLoadingRef.current) {
+            console.log("[Global Feed] Already loading, skipping duplicate call.");
+            return currentCache;
+        }
+
+        // If not loading more and we have cache, return immediately
+        if (!loadMore && currentCache.length > 0) {
+            console.log("[Global Feed] Returning cached data:", currentCache.length);
+            return currentCache;
+        }
+
+        // If loading more but we've already reached the end, skip
+        if (loadMore && hasEndedRef.current) {
+            console.log("[Global Feed] Already at end of feed, skipping.");
+            return currentCache;
+        }
 
         try {
+            // Set loading guards IMMEDIATELY
             globalFeedLoadingRef.current = true;
+            setIsGlobalFeedLoading(true);
             console.log(`[Global Feed] Fetching... (Load More: ${loadMore})`);
 
             const pageSize = 24;
@@ -190,12 +224,11 @@ export function ModelProvider({ children }) {
             );
 
             // Pagination: start after the last doc we have
-            if (loadMore && lastGlobalDoc) {
-                const startAfterDoc = lastGlobalDoc;
+            if (loadMore && currentLastDoc) {
                 q = query(
                     collection(db, 'model_showcase_images'),
                     orderBy('createdAt', 'desc'),
-                    startAfter(startAfterDoc),
+                    startAfter(currentLastDoc),
                     limit(pageSize)
                 );
             }
@@ -203,23 +236,23 @@ export function ModelProvider({ children }) {
             const snapshot = await getDocs(q);
 
             if (snapshot.empty) {
-                console.log("[Global Feed] No more images found.");
+                console.log("[Global Feed] No more images found - end of feed reached.");
+                hasEndedRef.current = true; // Mark as ended
                 globalFeedLoadingRef.current = false;
-                setIsGlobalFeedLoading(false); // Stop loading
-                return loadMore ? globalShowcaseCache : [];
+                setIsGlobalFeedLoading(false);
+                return currentCache;
             }
 
             // Update pagination cursor
-            setLastGlobalDoc(snapshot.docs[snapshot.docs.length - 1]);
+            const newLastDoc = snapshot.docs[snapshot.docs.length - 1];
+            setLastGlobalDoc(newLastDoc);
+            lastGlobalDocRef.current = newLastDoc; // Also update ref immediately
 
             const newImages = snapshot.docs.map(doc => {
                 const data = doc.data();
                 const optimizedUrl = getOptimizedImageUrl(data.imageUrl || data.url);
 
                 if (!optimizedUrl) return null;
-
-                // Note: We do not enrich with _model here to avoid dependency cycles.
-                // The UI layer (Discovery.jsx) handles model lookup via Context.
 
                 return {
                     id: doc.id,
@@ -232,28 +265,31 @@ export function ModelProvider({ children }) {
                 };
             }).filter(item => item !== null);
 
-            // Deduplicate against existing cache just in case
-            const existingIds = new Set(globalShowcaseCache.map(i => i.id));
+            // Deduplicate against existing cache
+            const existingIds = new Set(currentCache.map(i => i.id));
             const uniqueNewImages = newImages.filter(i => !existingIds.has(i.id));
 
             let finalImages;
             if (loadMore) {
-                finalImages = [...globalShowcaseCache, ...uniqueNewImages];
+                finalImages = [...currentCache, ...uniqueNewImages];
             } else {
                 finalImages = uniqueNewImages;
             }
 
             setGlobalShowcaseCache(finalImages);
+            globalShowcaseCacheRef.current = finalImages; // Also update ref immediately
             globalFeedLoadingRef.current = false;
-            setIsGlobalFeedLoading(false); // Stop loading
+            setIsGlobalFeedLoading(false);
+
+            console.log(`[Global Feed] Loaded ${uniqueNewImages.length} new images. Total: ${finalImages.length}`);
             return finalImages;
         } catch (err) {
             console.error("Error fetching global showcase:", err);
             globalFeedLoadingRef.current = false;
-            setIsGlobalFeedLoading(false); // Stop loading
-            return loadMore ? globalShowcaseCache : [];
+            setIsGlobalFeedLoading(false);
+            return currentCache;
         }
-    }, [globalShowcaseCache, lastGlobalDoc]); // Removed availableModels dependency
+    }, []); // EMPTY dependency array - function is now stable!
 
     // Fetch user videos for mixing into feed
     const getUserVideos = useCallback(async (userId) => {
