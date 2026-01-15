@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { Palette, Music, Sparkles, Presentation, Star, Clock, Search, ChevronRight, Gamepad2, LayoutGrid, Heart, Smile, Zap } from 'lucide-react';
 import './AppsHub.css';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '../firebase'; // Ensure this path is correct based on project structure
 
 // Components
 const AppCard = memo(({ title, description, icon: Icon, path, tags = [], color = "violet", rating = "4.9", isCompact = false, previewImage }) => {
@@ -94,9 +96,6 @@ const ICON_MAP = {
 };
 
 // Data to seed if not present
-
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '../firebase'; // Ensure this path is correct based on project structure
 
 const AppsHub = () => {
     const [searchQuery, setSearchQuery] = useState('');
