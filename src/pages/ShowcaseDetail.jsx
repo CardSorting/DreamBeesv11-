@@ -28,7 +28,21 @@ const ShowcaseDetail = () => {
 
     // 0. Instant Scroll to Top on Route Change
     useLayoutEffect(() => {
-        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        if (window.lenis) {
+            window.lenis.scrollTo(0, { immediate: true });
+        } else {
+            window.scrollTo(0, 0);
+            document.documentElement.scrollTo(0, 0);
+        }
+    }, [id]);
+
+    // Backup scroll/Lenis sync
+    useEffect(() => {
+        if (window.lenis) {
+            window.lenis.scrollTo(0, { immediate: true });
+        } else {
+            window.scrollTo(0, 0);
+        }
     }, [id]);
 
 
@@ -232,7 +246,6 @@ const ShowcaseDetail = () => {
                                 <div
                                     key={item.id}
                                     onClick={() => {
-                                        window.scrollTo({ top: 0, behavior: 'instant' });
                                         navigate(`/discovery/${item.id}`);
                                     }}
                                     className="related-item group"
