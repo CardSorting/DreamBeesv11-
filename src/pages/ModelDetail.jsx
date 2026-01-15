@@ -309,13 +309,7 @@ export default function ModelDetail() {
 
                 {/* STICKY CONTROL CENTER */}
                 <div style={{
-                    position: 'sticky',
-                    top: '0',
-                    zIndex: 100,
-                    background: 'rgba(10, 10, 10, 0.8)',
-                    backdropFilter: 'blur(20px)',
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    padding: '24px 0',
+                    position: 'relative',
                     marginBottom: '40px',
                     display: 'flex',
                     flexDirection: 'column',

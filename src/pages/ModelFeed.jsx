@@ -120,25 +120,7 @@ const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
             </div>
 
             {/* Popular Tags */}
-            <div className="sidebar-section">
-                <h3 className="section-title">POPULAR TAGS</h3>
-                <div className="sidebar-tags">
-                    {popularTags.map(tag => (
-                        <button
-                            key={tag}
-                            className="sidebar-tag"
-                            onClick={() => {
-                                if (typeof setActiveFilter === 'function') {
-                                    setActiveFilter(tag);
-                                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                                }
-                            }}
-                        >
-                            #{tag}
-                        </button>
-                    ))}
-                </div>
-            </div>
+
 
             <style>{`
                 .sidebar-section {

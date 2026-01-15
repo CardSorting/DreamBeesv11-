@@ -4,7 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ModelProvider } from './contexts/ModelContext';
 import { UserInteractionsProvider } from './contexts/UserInteractionsContext';
 import { Toaster } from 'react-hot-toast';
-import Navbar from './components/Navbar';
+import MinimalHeader from './components/MinimalHeader';
 import Footer from './components/Footer';
 import BottomNav from './components/BottomNav';
 import ScrollToTop from './components/ScrollToTop';
@@ -22,7 +22,7 @@ function Layout() {
 
   return (
     <div className="app-layout">
-      {!pathname.startsWith('/discovery') && pathname !== '/generate' && <Navbar />}
+      {!pathname.startsWith('/discovery') && !pathname.startsWith('/model/') && pathname !== '/' && <MinimalHeader />}
       <main className="app-main">
         <AnimatedRoutes />
       </main>
