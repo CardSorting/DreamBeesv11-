@@ -135,9 +135,10 @@ async function processShowcase() {
 
                         if (existingDocSnapshot) {
                             const data = existingDocSnapshot.data();
-                            if (data.tags && data.tags.length > 0 && data.description) {
+                            // STRICT V2 CHECK: Must have 'vibe' field
+                            if (data.vibe && data.tags && data.tags.length > 0) {
                                 stats.skipped++;
-                                process.stdout.write("s"); // s = Skipped
+                                process.stdout.write("s");
                                 return;
                             }
                         }
