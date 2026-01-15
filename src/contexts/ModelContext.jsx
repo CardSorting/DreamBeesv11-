@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { db, functions } from '../firebase';
-import { collection, getDocs, query, orderBy, where, limit } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, where, limit, startAfter } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { getOptimizedImageUrl } from '../utils';
 
@@ -83,7 +83,7 @@ export function ModelProvider({ children }) {
     }, [selectedModel]);
 
     const [showcaseCache, setShowcaseCache] = useState({});
-    const [globalShowcaseCache, setGlobalShowcaseCache] = useState(null);
+    // const [globalShowcaseCache, setGlobalShowcaseCache] = useState(null); // MOVED TO GLOBAL HELPER SECTION
 
     // Fetch and cache showcase images for a model
     const getShowcaseImages = async (modelId) => {
@@ -157,69 +157,103 @@ export function ModelProvider({ children }) {
         }
     };
 
-    // Fetch aggregated global showcase (All Models) - OPTIMIZED
-    const getGlobalShowcaseImages = async () => {
-        // 1. Return global cache if exists
-        if (globalShowcaseCache) return globalShowcaseCache;
+    // --- GLOBAL FEED HELPERS ---
+    const globalFeedLoadingRef = useRef(false);
+    const [globalShowcaseCache, setGlobalShowcaseCache] = useState([]); // Array of all loaded images
+    const [lastGlobalDoc, setLastGlobalDoc] = useState(null); // Tracker for pagination
+    const [isGlobalFeedLoading, setIsGlobalFeedLoading] = useState(false); // Reactive loading state
 
-        // 2. We do NOT wait for availableModels anymore to prevent waterfall.
-        // if (availableModels.length === 0) return []; // BLOCKED REMOVED
+    // Reset global feed (e.g. on pull to refresh)
+    const resetGlobalFeed = useCallback(() => {
+        setGlobalShowcaseCache([]);
+        setLastGlobalDoc(null);
+        globalFeedLoadingRef.current = false;
+    }, []);
+
+    // Fetch aggregated global showcase (All Models) - PAGINATED & ROBUST
+    const getGlobalShowcaseImages = useCallback(async (loadMore = false) => {
+        // Prevent duplicate fetches
+        if (globalFeedLoadingRef.current) return globalShowcaseCache;
+
+        // If not loading more and we have cache, return valid cache (unless empty, then try fetching)
+        if (!loadMore && globalShowcaseCache.length > 0) return globalShowcaseCache;
 
         try {
-            console.log("[Global Feed] Fetching optimized global feed...");
+            globalFeedLoadingRef.current = true;
+            console.log(`[Global Feed] Fetching... (Load More: ${loadMore})`);
 
-            // Single efficient query
-            const q = query(
+            const pageSize = 24;
+            let q = query(
                 collection(db, 'model_showcase_images'),
                 orderBy('createdAt', 'desc'),
-                limit(150)
+                limit(pageSize)
             );
+
+            // Pagination: start after the last doc we have
+            if (loadMore && lastGlobalDoc) {
+                const startAfterDoc = lastGlobalDoc;
+                q = query(
+                    collection(db, 'model_showcase_images'),
+                    orderBy('createdAt', 'desc'),
+                    startAfter(startAfterDoc),
+                    limit(pageSize)
+                );
+            }
 
             const snapshot = await getDocs(q);
 
             if (snapshot.empty) {
-                console.log("[Global Feed] No images found.");
-
-                if (!navigator.onLine) {
-                    toast.error("You are offline. Some content may not load.", { id: 'offline-error' });
-                } else {
-                    // If online but empty, and we know we should have images, it might be a connection issue
-                    // But we don't want to spam errors if the DB is genuinely empty.
-                    // A basic check:
-                    console.warn("[Global Feed] Online but no images. Possible firewall or empty DB.");
-                }
-
-                return [];
+                console.log("[Global Feed] No more images found.");
+                globalFeedLoadingRef.current = false;
+                setIsGlobalFeedLoading(false); // Stop loading
+                return loadMore ? globalShowcaseCache : [];
             }
 
-            const allImages = snapshot.docs.map(doc => {
+            // Update pagination cursor
+            setLastGlobalDoc(snapshot.docs[snapshot.docs.length - 1]);
+
+            const newImages = snapshot.docs.map(doc => {
                 const data = doc.data();
-                // Optimize image URLs to use CDN
                 const optimizedUrl = getOptimizedImageUrl(data.imageUrl || data.url);
 
-                // Enrich with model data if available
-                const modelData = availableModels.find(m => m.id === data.modelId);
+                if (!optimizedUrl) return null;
+
+                // Note: We do not enrich with _model here to avoid dependency cycles.
+                // The UI layer (Discovery.jsx) handles model lookup via Context.
 
                 return {
                     id: doc.id,
                     ...data,
-                    _model: modelData || null, // Attach model object directly for UI convenience (lazy)
                     imageUrl: optimizedUrl,
                     url: optimizedUrl,
                     likesCount: data.likesCount || 0,
                     bookmarksCount: data.bookmarksCount || 0,
                     rating: data.rating || 0
                 };
-            });
+            }).filter(item => item !== null);
 
-            // 3. Set Cache
-            setGlobalShowcaseCache(allImages);
-            return allImages;
+            // Deduplicate against existing cache just in case
+            const existingIds = new Set(globalShowcaseCache.map(i => i.id));
+            const uniqueNewImages = newImages.filter(i => !existingIds.has(i.id));
+
+            let finalImages;
+            if (loadMore) {
+                finalImages = [...globalShowcaseCache, ...uniqueNewImages];
+            } else {
+                finalImages = uniqueNewImages;
+            }
+
+            setGlobalShowcaseCache(finalImages);
+            globalFeedLoadingRef.current = false;
+            setIsGlobalFeedLoading(false); // Stop loading
+            return finalImages;
         } catch (err) {
             console.error("Error fetching global showcase:", err);
-            return [];
+            globalFeedLoadingRef.current = false;
+            setIsGlobalFeedLoading(false); // Stop loading
+            return loadMore ? globalShowcaseCache : [];
         }
-    };
+    }, [globalShowcaseCache, lastGlobalDoc]); // Removed availableModels dependency
 
     // Fetch user videos for mixing into feed
     const getUserVideos = useCallback(async (userId) => {
@@ -348,8 +382,11 @@ export function ModelProvider({ children }) {
         error,
         getShowcaseImages, // Exported function
         getGlobalShowcaseImages, // EXPORTED - New optimization
+        resetGlobalFeed, // EXPORTED
         showcaseCache,     // Exported state
         globalShowcaseCache, // EXPORTED state for instant load
+        isGlobalFeedLoading, // EXPORTED reactive loading state
+        hasMoreGlobal: !!lastGlobalDoc, // Helper boolean
         rateGeneration,    // EXPORTED
         rateShowcaseImage, // EXPORTED
         getUserVideos,     // EXPORTED
