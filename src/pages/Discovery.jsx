@@ -7,8 +7,8 @@ import { getOptimizedImageUrl, getImageSrcSet } from '../utils';
 import { getBalancedRecommendations } from '../utils/relevance';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import Sidebar from '../components/Sidebar';
 import { useNavigate } from 'react-router-dom';
+import MinimalHeader from '../components/MinimalHeader';
 
 import './Discovery.css';
 
@@ -19,9 +19,47 @@ export default function Discovery() {
         globalShowcaseCache,
         isGlobalFeedLoading,
         availableModels,
-        hasGlobalFeedEnded
+        hasGlobalFeedEnded,
+        getShowcaseImages,
+        showcaseCache
     } = useModel();
     const { isLiked, toggleLike, isHidden, hidePost } = useUserInteractions();
+
+    // -- MODEL STATE --
+    const [activeModelId, setActiveModelId] = useState('all');
+
+    // Scroll to top on model change
+    const handleModelSelect = (modelId) => {
+        if (activeModelId === modelId) return;
+        setActiveModelId(modelId);
+
+        // Reset specific filters when changing broad context if desired, or keep them
+        // setFilterState({ style: null, mood: null, subject: null }); 
+
+        // Immediate scroll to top
+        if (window.lenis) window.lenis.scrollTo(0, { immediate: true });
+        else window.scrollTo(0, 0);
+
+
+    };
+
+
+
+    // Load specific model data if selected
+    useEffect(() => {
+        if (activeModelId !== 'all') {
+            getShowcaseImages(activeModelId);
+        }
+    }, [activeModelId, getShowcaseImages]);
+
+    // COMPUTE FILTERED IMAGES
+    const displayImages = React.useMemo(() => {
+        const source = activeModelId === 'all'
+            ? globalShowcaseCache
+            : (showcaseCache[activeModelId] || []);
+
+        return source.filter(img => !isHidden(img.id));
+    }, [activeModelId, globalShowcaseCache, showcaseCache, isHidden]);
 
     // Focus View State
     const [focusImage, setFocusImage] = useState(null);
@@ -79,6 +117,10 @@ export default function Discovery() {
         // Guard conditions - all must pass to fetch
         if (isLoadingRef.current) {
             console.log('[Discovery] ⏳ Already loading, skipping...');
+            return;
+        }
+        // Only infinite scroll on 'all' feed for now
+        if (activeModelId !== 'all') {
             return;
         }
         if (hasReachedEndRef.current) {
@@ -141,8 +183,8 @@ export default function Discovery() {
     }, [handleLoadMore]); // Only recreate when handler changes
 
     // Derived state for UI
-    const isInitialLoading = isGlobalFeedLoading && globalShowcaseCache.length === 0;
-    const isLoadingMore = isGlobalFeedLoading && globalShowcaseCache.length > 0;
+    const isInitialLoading = (isGlobalFeedLoading && globalShowcaseCache.length === 0 && activeModelId === 'all') || (activeModelId !== 'all' && !showcaseCache[activeModelId]);
+    const isLoadingMore = isGlobalFeedLoading && globalShowcaseCache.length > 0 && activeModelId === 'all';
     const hasReachedEnd = hasReachedEndRef.current || hasGlobalFeedEnded;
 
     // Helper for Like Toggle to prevent bubble up
@@ -210,15 +252,8 @@ export default function Discovery() {
         <div className="feed-layout-wrapper">
             <SEO title="Discovery Engine - DreamBees" description="Explore AI Art by Vibe, Collection, and Color." />
 
-            <Sidebar activeId="/discovery" />
-
             <main className="feed-main-content">
-                <header className="mobile-feed-header">
-                    <div className="header-title">
-                        <span>DISCOVERY</span>
-                        <Sparkles size={16} className="text-purple-500 fill-purple-500" />
-                    </div>
-                </header>
+                <MinimalHeader />
 
                 <div className="discovery-container">
 
@@ -231,16 +266,39 @@ export default function Discovery() {
                         alignItems: 'center',
                         gap: '12px'
                     }}>
-                        <h1 className="page-title" style={{ fontSize: '3rem', margin: 0 }}>DISCOVERY</h1>
+                        <h1 className="page-title" style={{ fontSize: '3rem', margin: 0 }}>
+                            {activeModelId === 'all' ? 'DISCOVERY' : availableModels.find(m => m.id === activeModelId)?.name || 'MODEL SHOWCASE'}
+                        </h1>
                         <p className="page-subtitle" style={{ maxWidth: '400px', margin: '0 auto 20px auto', fontSize: '0.9rem' }}>
-                            Explore the hive mind's latest creations.
+                            {activeModelId === 'all'
+                                ? "Explore the hive mind's latest creations."
+                                : `Curated showcase generated with ${availableModels.find(m => m.id === activeModelId)?.name}.`}
                         </p>
+                    </div>
+
+                    {/* MODEL SELECTION PILLS - NEW */}
+                    <div className="models-header-bar">
+                        <button
+                            className={`model-pill ${activeModelId === 'all' ? 'active' : ''}`}
+                            onClick={() => handleModelSelect('all')}
+                        >
+                            All Models
+                        </button>
+                        {availableModels.map(model => (
+                            <button
+                                key={model.id}
+                                className={`model-pill ${activeModelId === model.id ? 'active' : ''}`}
+                                onClick={() => handleModelSelect(model.id)}
+                            >
+                                {model.name}
+                            </button>
+                        ))}
                     </div>
 
                     {/* MASONRY GRID */}
                     <section className="gallery-section" aria-label="Discovery Gallery" style={{ minHeight: '60vh' }}>
                         <div className="masonry-grid">
-                            {globalShowcaseCache.filter(img => !isHidden(img.id)).map((imgItem, index) => {
+                            {displayImages.map((imgItem, index) => {
                                 const ratios = ['1/1', '3/4', '1/1', '2/3', '4/3', '1/1', '3/5'];
                                 const ratio = imgItem.aspectRatio || ratios[index % ratios.length];
                                 const liked = isLiked(imgItem.id);

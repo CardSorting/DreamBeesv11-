@@ -22,7 +22,7 @@ const BottomNav = () => {
             )}
 
             {/* Center Action Button - Studio */}
-            {isAdmin && (
+            {currentUser && (
                 <NavLink to="/generate" className="bottom-nav-fab">
                     <div className="fab-inner">
                         <Zap size={28} fill="currentColor" />

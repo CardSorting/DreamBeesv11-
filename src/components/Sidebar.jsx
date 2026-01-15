@@ -64,6 +64,13 @@ const Sidebar = ({ activeId }) => {
             // Public items for everyone
             if (item.path === '/discovery') return true;
             if (item.path === '/videos') return true;
+
+            // Logged in users
+            if (currentUser) {
+                if (item.path === '/generate') return true;
+                if (item.path === '/pricing') return true;
+            }
+
             return false;
         });
         return { ...group, items: visibleItems };

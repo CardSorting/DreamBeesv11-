@@ -42,6 +42,57 @@
     letter-spacing: 0.05em;
 }
 
+
+
+/* Scrollable Model Header */
+.models-header-bar {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 0 0 16px 0;
+    margin: 0 auto 20px auto;
+    max-width: 1000px;
+    width: 100%;
+    scrollbar-width: thin;
+    /* Firefox */
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.models-header-bar::-webkit-scrollbar {
+    height: 4px;
+}
+
+.models-header-bar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.model-pill {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.model-pill:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.model-pill.active {
+    background: #fff;
+    color: #000;
+    border-color: #fff;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
+}
+
 /* --- MASONRY GRID --- */
 .masonry-grid {
     column-count: 6;

@@ -99,7 +99,7 @@ const AnimatedRoutes = () => {
 
                         {/* Admin Only Routes */}
                         <Route path="/generate" element={
-                            <AdminRoute><Generator /></AdminRoute>
+                            <PrivateRoute><Generator /></PrivateRoute>
                         } />
                         <Route path="/gallery" element={
                             <AdminRoute><Gallery /></AdminRoute>
@@ -121,7 +121,7 @@ const AnimatedRoutes = () => {
                             <AdminRoute><Features /></AdminRoute>
                         } />
                         <Route path="/pricing" element={
-                            <AdminRoute><Pricing /></AdminRoute>
+                            <PrivateRoute><Pricing /></PrivateRoute>
                         } />
                         <Route path="/about" element={
                             <AdminRoute><About /></AdminRoute>

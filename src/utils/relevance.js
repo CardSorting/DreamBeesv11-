@@ -75,7 +75,7 @@ const DIVERSITY_LIMITS = {
 };
 
 // Semantic clusters for intelligent grouping
-const SEMANTIC_CLUSTERS = {
+export const SEMANTIC_CLUSTERS = {
     moods: {
         positive: ['happy', 'joyful', 'cheerful', 'upbeat', 'bright', 'optimistic', 'playful', 'fun', 'vibrant'],
         serene: ['calm', 'peaceful', 'tranquil', 'relaxing', 'soothing', 'zen', 'meditative', 'gentle', 'soft'],
@@ -159,7 +159,7 @@ function inSameCluster(clusterMap, val1, val2) {
     return false;
 }
 
-function getClusterName(clusterMap, value) {
+export function getClusterName(clusterMap, value) {
     if (!value) return null;
     const v = value.toLowerCase();
 
