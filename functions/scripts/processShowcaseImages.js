@@ -41,7 +41,8 @@ async function processShowcase() {
     if (targetCategory) console.log(`Filter: ${targetCategory}`);
 
     // Get Task Queue reference
-    const queue = getFunctions().taskQueue("universalWorker");
+    const LOCATION = "us-central1";
+    const queue = getFunctions().taskQueue(`locations/${LOCATION}/functions/universalWorker`);
 
     const stats = {
         found: 0,
