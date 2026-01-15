@@ -1,7 +1,8 @@
 import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
 import SEO from '../components/SEO';
 import { useModel } from '../contexts/ModelContext';
-import { Sparkles, Loader2, CheckCircle2 } from 'lucide-react';
+import { useUserInteractions } from '../contexts/UserInteractionsContext';
+import { Sparkles, Loader2, CheckCircle2, Heart } from 'lucide-react';
 import { getOptimizedImageUrl, getImageSrcSet } from '../utils';
 import Sidebar from '../components/Sidebar';
 
@@ -16,6 +17,7 @@ export default function Discovery() {
         availableModels,
         hasGlobalFeedEnded
     } = useModel();
+    const { isLiked, toggleLike } = useUserInteractions();
     const [activeShowcaseImage, setActiveShowcaseImage] = useState(null);
 
     // Track initialization and scroll states with refs for stability
@@ -128,6 +130,14 @@ export default function Discovery() {
     const isLoadingMore = isGlobalFeedLoading && globalShowcaseCache.length > 0;
     const hasReachedEnd = hasReachedEndRef.current || hasGlobalFeedEnded;
 
+    // Helper for Like Toggle to prevent bubble up
+    const handleToggleLike = (e, imgItem) => {
+        e.stopPropagation();
+        // find model for this item
+        const model = availableModels.find(m => m.id === imgItem.modelId);
+        toggleLike(imgItem, model);
+    };
+
     return (
         <div className="feed-layout-wrapper">
             <SEO title="Discovery Engine - DreamBees" description="Explore AI Art by Vibe, Collection, and Color." />
@@ -165,6 +175,7 @@ export default function Discovery() {
                             {globalShowcaseCache.map((imgItem, index) => {
                                 const ratios = ['1/1', '3/4', '1/1', '2/3', '4/3', '1/1', '3/5'];
                                 const ratio = imgItem.aspectRatio || ratios[index % ratios.length];
+                                const liked = isLiked(imgItem.id);
 
                                 return (
                                     <article
@@ -205,9 +216,29 @@ export default function Discovery() {
                                                 }} className="group-hover:opacity-100" />
                                             </div>
                                             <div className="image-meta">
-                                                <div className="meta-badge">
-                                                    {availableModels.find(m => m.id === imgItem.modelId)?.name || 'DreamBee'}
-                                                </div>
+                                                <button
+                                                    onClick={(e) => handleToggleLike(e, imgItem)}
+                                                    className="meta-badge"
+                                                    style={{
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '6px',
+                                                        transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                                                    }}
+                                                    onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'}
+                                                    onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                                                >
+                                                    <Heart
+                                                        size={16}
+                                                        fill={liked ? "#ff3040" : "none"}
+                                                        color={liked ? "#ff3040" : "white"}
+                                                    />
+                                                    <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>
+                                                        {liked ? "Liked" : "Like"}
+                                                    </span>
+                                                </button>
                                             </div>
                                         </div>
                                     </article>
