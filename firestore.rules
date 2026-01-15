@@ -13,6 +13,10 @@ service cloud.firestore {
       match /bookmarks/{bookmarkId} {
           allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+
+      match /hidden/{hiddenId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
 
     // Images: Users can read their own images.

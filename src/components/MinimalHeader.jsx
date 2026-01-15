@@ -1,10 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Hexagon, Home, Compass, Zap, Film, User } from 'lucide-react';
+import { Hexagon, Home, Compass, Zap, Film, User, Plus } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const MinimalHeader = () => {
     const location = useLocation();
     const activePath = location.pathname;
+    const { currentUser } = useAuth();
+    const [zaps, setZaps] = useState(0);
+
+    useEffect(() => {
+        if (!currentUser) return;
+        const unsub = onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setZaps(data.zaps !== undefined ? data.zaps : (data.credits !== undefined ? data.credits : 0));
+            }
+        });
+        return () => unsub();
+    }, [currentUser]);
 
     const navItems = [
         { path: '/', label: 'Home', icon: Home },
@@ -37,6 +53,18 @@ const MinimalHeader = () => {
                         );
                     })}
                 </nav>
+
+                <div className="header-actions">
+                    {currentUser && (
+                        <Link to="/pricing" className="credit-badge">
+                            <Zap size={14} fill="currentColor" className="zap-icon" />
+                            <span className="credit-amount">{typeof zaps === 'number' ? zaps.toFixed(0) : '0'}</span>
+                            <div className="add-btn">
+                                <Plus size={12} />
+                            </div>
+                        </Link>
+                    )}
+                </div>
             </div>
 
             <style>{`
@@ -114,6 +142,54 @@ const MinimalHeader = () => {
                     color: #a5b4fc;
                 }
 
+                .header-actions {
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
+                }
+
+                .credit-badge {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 6px 6px 6px 12px;
+                    background: rgba(139, 92, 246, 0.1);
+                    border: 1px solid rgba(139, 92, 246, 0.2);
+                    border-radius: 20px;
+                    color: #fff;
+                    text-decoration: none;
+                    transition: all 0.2s ease;
+                    height: 32px;
+                }
+
+                .credit-badge:hover {
+                    background: rgba(139, 92, 246, 0.2);
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+                }
+
+                .zap-icon {
+                    color: #a78bfa;
+                }
+
+                .credit-amount {
+                    font-size: 0.9rem;
+                    font-weight: 700;
+                    font-variant-numeric: tabular-nums;
+                    margin-right: 4px;
+                }
+
+                .add-btn {
+                    width: 20px;
+                    height: 20px;
+                    background: #8b5cf6;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                }
+
                 /* Mobile Optimization */
                 @media (max-width: 768px) {
                     .nav-label {
@@ -127,6 +203,16 @@ const MinimalHeader = () => {
                     
                     .header-content {
                         padding: 0 16px;
+                    }
+
+                    .credit-amount {
+                        display: none;
+                    }
+                    .credit-badge {
+                        padding: 6px;
+                    }
+                    .add-btn {
+                        display: none;
                     }
                 }
             `}</style>

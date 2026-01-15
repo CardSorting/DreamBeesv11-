@@ -22,7 +22,7 @@ function Layout() {
 
   return (
     <div className="app-layout">
-      {!pathname.startsWith('/discovery') && <Navbar />}
+      {!pathname.startsWith('/discovery') && pathname !== '/generate' && <Navbar />}
       <main className="app-main">
         <AnimatedRoutes />
       </main>
