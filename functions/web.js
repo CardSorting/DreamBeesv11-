@@ -84,18 +84,65 @@ const handleStripeWebhook = async (req, res) => {
 const handleSitemap = async (req, res) => {
     try {
         const baseUrl = 'https://dreambeesai.com';
-        const staticPages = ['', '/generate', '/models', '/gallery', '/pricing', '/blog', '/about', '/features', '/contact', '/auth'];
-        let urls = staticPages.map(path => ({ loc: `${baseUrl}${path}`, changefreq: 'daily', priority: path === '' ? '1.0' : '0.8' }));
+        const now = new Date().toISOString();
 
+        // Static pages with priorities
+        const staticPages = [
+            { path: '', priority: '1.0', changefreq: 'daily' },
+            { path: '/generate', priority: '0.9', changefreq: 'daily' },
+            { path: '/discovery', priority: '0.9', changefreq: 'daily' },
+            { path: '/models', priority: '0.8', changefreq: 'weekly' },
+            { path: '/pricing', priority: '0.8', changefreq: 'weekly' },
+            { path: '/apps', priority: '0.7', changefreq: 'weekly' },
+            { path: '/blog', priority: '0.7', changefreq: 'weekly' },
+            { path: '/about', priority: '0.5', changefreq: 'monthly' },
+            { path: '/features', priority: '0.6', changefreq: 'monthly' },
+            { path: '/contact', priority: '0.5', changefreq: 'monthly' },
+        ];
+
+        let urls = staticPages.map(page => ({
+            loc: `${baseUrl}${page.path}`,
+            changefreq: page.changefreq,
+            priority: page.priority,
+            lastmod: now
+        }));
+
+        // Dynamic model pages from Firestore
         const modelsSnapshot = await db.collection('models').get();
-        modelsSnapshot.forEach(doc => { urls.push({ loc: `${baseUrl}/model/${doc.id}`, changefreq: 'weekly', priority: '0.7', lastmod: new Date().toISOString() }); });
+        modelsSnapshot.forEach(doc => {
+            urls.push({
+                loc: `${baseUrl}/model/${doc.id}`,
+                changefreq: 'weekly',
+                priority: '0.7',
+                lastmod: doc.data().updatedAt?.toDate?.()?.toISOString() || now
+            });
+        });
 
+        // Blog posts
         const blogPosts = [{ id: 'prompt-director-drift-evaluation', date: '2026-01-03' }];
-        blogPosts.forEach(post => { urls.push({ loc: `${baseUrl}/blog/${post.id}`, changefreq: 'monthly', priority: '0.7', lastmod: new Date(post.date).toISOString() }); });
+        blogPosts.forEach(post => {
+            urls.push({
+                loc: `${baseUrl}/blog/${post.id}`,
+                changefreq: 'monthly',
+                priority: '0.7',
+                lastmod: new Date(post.date).toISOString()
+            });
+        });
 
-        let xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
-        urls.forEach(url => { xml += `<url><loc>${url.loc}</loc><lastmod>${url.lastmod || new Date().toISOString()}</lastmod><changefreq>${url.changefreq}</changefreq><priority>${url.priority}</priority></url>`; });
-        xml += `</urlset>`;
+        // Generate XML
+        let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
+        urls.forEach(url => {
+            xml += `
+  <url>
+    <loc>${url.loc}</loc>
+    <lastmod>${url.lastmod}</lastmod>
+    <changefreq>${url.changefreq}</changefreq>
+    <priority>${url.priority}</priority>
+  </url>`;
+        });
+        xml += `
+</urlset>`;
 
         res.set('Content-Type', 'application/xml');
         res.set('Cache-Control', 'public, max-age=86400, s-maxage=86400');
@@ -105,6 +152,9 @@ const handleSitemap = async (req, res) => {
         res.status(500).send("Error generating sitemap");
     }
 };
+
+// Dedicated sitemap function for Firebase Hosting rewrite
+export const serveSitemap = onRequest({ memory: "256MiB", cors: true }, handleSitemap);
 
 export const web = onRequest({ memory: "256MiB", cors: true }, async (req, res) => {
     const path = req.path;
@@ -120,3 +170,4 @@ export const web = onRequest({ memory: "256MiB", cors: true }, async (req, res) 
 
     res.status(404).send("Not Found");
 });
+

@@ -19,7 +19,26 @@ export default function Blog() {
         <div className="container" style={{ paddingTop: '140px', paddingBottom: '120px' }}>
             <SEO
                 title="Research & Insights"
-                description="Read the latest news, research, and insights from the DreamBeesAI team. Deep dives into generative AI and synthetic media."
+                description="Read the latest news, research, and insights from the DreamBeesAI team. Deep dives into generative AI, prompt engineering, and synthetic media."
+                keywords="AI art blog, generative AI research, prompt engineering tips, AI image generation tutorials, synthetic media"
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "Blog",
+                            "name": "DreamBeesAI Research & Insights",
+                            "description": "Deep dives into generative AI, behavioral drift, and the future of synthetic media.",
+                            "url": "https://dreambeesai.com/blog"
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
+                                { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://dreambeesai.com/blog" }
+                            ]
+                        }
+                    ]
+                }}
             />
             {/* Header */}
             <header style={{ marginBottom: '60px', textAlign: 'center', maxWidth: '800px', margin: '0 auto 80px' }}>

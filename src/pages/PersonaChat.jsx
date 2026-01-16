@@ -297,7 +297,7 @@ export default function PersonaChat() {
                                 <div className="persona-info">
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                         <div className="header-avatar-mobile">
-                                            <img src={getOptimizedImageUrl(imageItem?.imageUrl)} alt="" />
+                                            <img src={getOptimizedImageUrl(imageItem?.imageUrl)} alt={persona?.name || "Character avatar"} />
                                         </div>
                                         <div>
                                             <h1 className="persona-name">{persona?.name}</h1>

@@ -7,6 +7,24 @@ export default function Contact() {
             <SEO
                 title="Contact Support"
                 description="Get in touch with the DreamBeesAI support team. We're here to help with any questions or issues."
+                keywords="contact DreamBeesAI, AI art support, customer service, help"
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "ContactPage",
+                            "name": "Contact DreamBeesAI Support",
+                            "description": "Get in touch with the DreamBeesAI support team for help and questions."
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
+                                { "@type": "ListItem", "position": 2, "name": "Contact", "item": "https://dreambeesai.com/contact" }
+                            ]
+                        }
+                    ]
+                }}
             />
             <h1 style={{
                 fontSize: '3rem',

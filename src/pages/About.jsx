@@ -7,6 +7,29 @@ export default function About() {
             <SEO
                 title="About Us"
                 description="Learn about the mission and team behind DreamBeesAI. We are dedicated to democratizing creativity through artificial intelligence."
+                keywords="about DreamBeesAI, AI art company, generative AI team, AI image generator creator"
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "AboutPage",
+                            "name": "About DreamBeesAI",
+                            "description": "DreamBeesAI is dedicated to democratizing creativity through artificial intelligence.",
+                            "mainEntity": {
+                                "@type": "Organization",
+                                "name": "DreamBeesAI",
+                                "url": "https://dreambeesai.com"
+                            }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
+                                { "@type": "ListItem", "position": 2, "name": "About", "item": "https://dreambeesai.com/about" }
+                            ]
+                        }
+                    ]
+                }}
             />
             <h1 style={{
                 fontSize: '3.5rem',

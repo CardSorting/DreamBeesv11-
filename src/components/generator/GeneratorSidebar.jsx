@@ -226,7 +226,7 @@ export default function GeneratorSidebar({
                                                         className="carousel-item"
                                                         style={{ aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', border: isSelected ? '2px solid var(--color-accent-primary)' : '1px solid var(--color-border)', cursor: 'pointer', padding: 0, position: 'relative', transition: 'all 0.2s', background: '#000' }}
                                                     >
-                                                        <img src={getOptimizedImageUrl(img.imageUrl)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: (isSelected || isAnalyzing) ? 1 : 0.7 }} />
+                                                        <img src={getOptimizedImageUrl(img.imageUrl)} alt={img.prompt?.slice(0, 60) || "Reference image for animation"} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: (isSelected || isAnalyzing) ? 1 : 0.7 }} />
                                                     </button>
                                                 );
                                             })}

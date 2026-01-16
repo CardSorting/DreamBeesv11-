@@ -37,7 +37,7 @@ export default function VideoGallery({
                                 background: '#000', transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)'
                             }}
                         >
-                            <img src={getOptimizedImageUrl(img.imageUrl)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: analyzingImageId === img.id ? 0.5 : 1 }} />
+                            <img src={getOptimizedImageUrl(img.imageUrl)} alt={img.prompt?.slice(0, 80) || "Generated image for animation"} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: analyzingImageId === img.id ? 0.5 : 1 }} />
                             <div className="hover-overlay" style={{
                                 position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s', backdropFilter: 'blur(2px)'
