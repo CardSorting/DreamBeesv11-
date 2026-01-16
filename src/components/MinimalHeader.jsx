@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Hexagon, Home, Compass, Zap, Film, User, Plus } from 'lucide-react';
+import { Hexagon, Home, Compass, Zap, Film, User, Plus, Image } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -26,6 +26,7 @@ const MinimalHeader = () => {
         { path: '/', label: 'Home', icon: Home },
         { path: '/discovery', label: 'Discovery', icon: Compass },
         { path: '/generate', label: 'Studio', icon: Zap },
+        { path: '/gallery', label: 'Gallery', icon: Image },
         { path: '/videos', label: 'Videos', icon: Film },
         { path: '/profile', label: 'Profile', icon: User },
     ];

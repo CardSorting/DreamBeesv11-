@@ -3,7 +3,7 @@ import SEO from '../components/SEO';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
-import { Loader2, Heart, Bookmark, AlertCircle, Grid, Zap, Layers, Filter, Search } from 'lucide-react';
+import { Loader2, Heart, Bookmark, AlertCircle, Zap, Layers, Search } from 'lucide-react';
 
 import ShowcaseModal from '../components/ShowcaseModal';
 import { motion, AnimatePresence } from 'framer-motion';

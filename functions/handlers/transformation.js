@@ -36,7 +36,7 @@ export const handleCreateEnhanceRequest = async (request) => {
         const docRef = await db.collection('enhance_queue').add({ userId: uid, originalPrompt: request.data.prompt, status: 'queued', createdAt: new Date() });
 
         // Enqueue task to 'universalWorker'
-        await getFunctions().taskQueue('workers-universalWorker').enqueue({
+        await getFunctions().taskQueue('universalWorker').enqueue({
             taskType: 'enhance',
             requestId: docRef.id,
             userId: uid,

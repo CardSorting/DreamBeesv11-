@@ -79,22 +79,26 @@ export default function Generator() {
         let currentReferenceImage = referenceImage;
         const currentPrompt = prompt;
 
-        // Fallback 1: If referenceImage is null but we have an activeJob with an image, use it
-        // This can happen if the user clicked "Apply Style & Generate" after viewing a generated image
-        if (!currentReferenceImage && activeJob && (activeJob.imageUrl || activeJob.thumbnailUrl)) {
-            console.log("[handleMagicEnhance] ReferenceImage is null, using activeJob image as fallback");
-            currentReferenceImage = activeJob.imageUrl || activeJob.thumbnailUrl;
-            // Update state so it persists
-            setReferenceImage(currentReferenceImage);
-        }
+        // Fallback: Use active/generated image as reference ONLY if we have a style selected
+        // This prevents "Enhance Prompt" (no style) from accidentally grabbing the displayed image
+        if (activeStyleId) {
+            // Fallback 1: If referenceImage is null but we have an activeJob with an image, use it
+            // This can happen if the user clicked "Apply Style & Generate" after viewing a generated image
+            if (!currentReferenceImage && activeJob && (activeJob.imageUrl || activeJob.thumbnailUrl)) {
+                console.log("[handleMagicEnhance] ReferenceImage is null, using activeJob image as fallback");
+                currentReferenceImage = activeJob.imageUrl || activeJob.thumbnailUrl;
+                // Update state so it persists
+                setReferenceImage(currentReferenceImage);
+            }
 
-        // Fallback 2: If referenceImage is null but we have a generatedImage displayed, use it
-        // This handles the case where user wants to restyle the currently displayed image
-        if (!currentReferenceImage && generatedImage) {
-            console.log("[handleMagicEnhance] ReferenceImage is null, using generatedImage as fallback");
-            currentReferenceImage = generatedImage;
-            // Update state so it persists
-            setReferenceImage(currentReferenceImage);
+            // Fallback 2: If referenceImage is null but we have a generatedImage displayed, use it
+            // This handles the case where user wants to restyle the currently displayed image
+            if (!currentReferenceImage && generatedImage) {
+                console.log("[handleMagicEnhance] ReferenceImage is null, using generatedImage as fallback");
+                currentReferenceImage = generatedImage;
+                // Update state so it persists
+                setReferenceImage(currentReferenceImage);
+            }
         }
 
         // Allow enhancement if there is a prompt OR a reference image
@@ -134,8 +138,8 @@ export default function Generator() {
                 rawReferenceImage: currentReferenceImage
             });
 
-            // Priority 1: Image Transformation (when referenceImage exists)
-            if (hasValidReferenceImage) {
+            // Priority 1: Image Transformation (when referenceImage exists AND style is selected)
+            if (hasValidReferenceImage && activeStyleId) {
                 console.log("[handleMagicEnhance] Using image transformation path");
                 if (!activeStyleId) {
                     toast.error("Please select a style to transform the image", { id: 'style-magic' });

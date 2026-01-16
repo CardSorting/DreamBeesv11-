@@ -87,7 +87,7 @@ export const handleDeleteImage = async (request) => {
         if (doc.exists && doc.data().userId === request.auth.uid) {
             const data = doc.data();
             // Discard promise - fire and forget cleanup task
-            getFunctions().taskQueue('workers-universalWorker').enqueue({
+            getFunctions().taskQueue('universalWorker').enqueue({
                 taskType: 'cleanup-resource',
                 cleanupType: 'image',
                 imageId: doc.id,
@@ -112,7 +112,7 @@ export const handleDeleteImagesBatch = async (request) => {
         const docs = await Promise.all(imageIds.map(id => db.collection('images').doc(id).get()));
         const vidDocs = await Promise.all(imageIds.map(id => db.collection('videos').doc(id).get()));
 
-        const queue = getFunctions().taskQueue('workers-universalWorker');
+        const queue = getFunctions().taskQueue('universalWorker');
 
         let sent = 0;
         const allDocs = [...docs, ...vidDocs];
