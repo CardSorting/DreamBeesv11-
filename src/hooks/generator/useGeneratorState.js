@@ -37,10 +37,6 @@ export function useGeneratorState() {
     const [subscriptionStatus, setSubscriptionStatus] = useState(null);
     const [useTurbo, setUseTurbo] = useState(false);
 
-    // Style State
-    const [activeStyleId, setActiveStyleId] = useState(null);
-    const [styleIntensity, setStyleIntensity] = useState('medium');
-
     // Video State
     const [generationMode, setGenerationMode] = useState('image'); // 'image' | 'video'
     const [videoDuration, setVideoDuration] = useState(6);
@@ -123,10 +119,6 @@ export function useGeneratorState() {
         reels,
         subscriptionStatus,
         useTurbo, setUseTurbo,
-
-        // Styles
-        activeStyleId, setActiveStyleId,
-        styleIntensity, setStyleIntensity,
 
         // Video
         generationMode, setGenerationMode,

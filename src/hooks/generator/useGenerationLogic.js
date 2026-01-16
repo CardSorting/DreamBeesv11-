@@ -1,30 +1,19 @@
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../firebase';
 import toast from 'react-hot-toast';
-import { getStylePrompt, GLOBAL_NEGATIVES } from '../../data/styles';
 
 export function useGenerationLogic({
     prompt,
     selectedModel,
     generationMode,
-    activeStyleId, styleIntensity,
     negPrompt,
     aspectRatio, steps, cfg, seed, useTurbo,
     zaps, reels, subscriptionStatus,
-    setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId,
-    referenceImage, handleMagicEnhance // Dependency for redirect
+    setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId
 }) {
 
     const handleGenerate = async (promptOverride = null) => {
         const effectivePrompt = (typeof promptOverride === 'string' ? promptOverride : prompt);
-
-        // SAFEGUARD: Redirect to Magic Enhance if reference image + style present
-        const isReferenceImageValid = (img) => img && typeof img === 'string' && img.trim().length > 0;
-        if (isReferenceImageValid(referenceImage) && activeStyleId && generationMode === 'image') {
-            console.log("[handleGenerate] Redirecting to Magic Enhance");
-            await handleMagicEnhance();
-            return;
-        }
 
         if (!effectivePrompt || !selectedModel) return;
 
@@ -67,20 +56,6 @@ export function useGenerationLogic({
 
             const clearProgressTimers = () => progressTimers.forEach(timer => clearTimeout(timer));
             toast.loading("Starting generation...", { id: 'gen-image' });
-
-            // Apply Styles
-            if (activeStyleId) {
-                const styleData = getStylePrompt(activeStyleId, styleIntensity);
-                if (styleData.tags.length > 0) {
-                    finalPrompt = `${finalPrompt}, ${styleData.tags.join(', ')}`;
-                }
-                const combinedNegatives = [
-                    negPrompt,
-                    ...GLOBAL_NEGATIVES,
-                    ...styleData.negatives
-                ].filter(Boolean).join(', ');
-                finalNegativePrompt = combinedNegatives;
-            }
 
             const result = await api({
                 action: 'createGenerationRequest',

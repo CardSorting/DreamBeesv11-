@@ -9,7 +9,6 @@ export default function GeneratorCanvas({
     elapsedTime,
     currentJobId,
     generatedImage,
-    isEnhancing,
     generationMode,
     activeJob,
     onRate,
@@ -52,28 +51,10 @@ export default function GeneratorCanvas({
                                 alt={`Generated artwork for prompt: ${prompt}`}
                                 style={{
                                     width: '100%', height: '100%', boxShadow: '0 0 50px rgba(0,0,0,0.5)', objectFit: 'contain',
-                                    opacity: isEnhancing ? 0.4 : 1, filter: isEnhancing ? 'blur(2px)' : 'none',
-                                    transition: 'opacity 0.4s ease, filter 0.4s ease', transform: isEnhancing ? 'scale(0.98)' : 'scale(1)',
-                                    transformOrigin: 'center'
+                                    transition: 'opacity 0.4s ease', transformOrigin: 'center'
                                 }}
                                 onLoad={(e) => { e.target.style.opacity = '1'; }}
                             />
-                            {isEnhancing && (
-                                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', zIndex: 10, animation: 'fadeIn 0.3s ease-in' }}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
-                                        <Loader2 size={56} className="animate-spin" style={{ color: 'var(--color-accent-primary)' }} />
-                                        <div style={{ textAlign: 'center' }}>
-                                            <div style={{ fontSize: '1.2rem', fontWeight: '700', color: 'white', marginBottom: '8px', letterSpacing: '0.5px' }}>Transforming Image</div>
-                                            <div style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', opacity: 0.9 }}>AI is applying the style transformation...</div>
-                                        </div>
-                                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                                            {[0, 1, 2].map((i) => (
-                                                <div key={i} style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-accent-primary)', animation: `pulse 1.4s ease-in-out ${i * 0.2}s infinite`, opacity: 0.7 }} />
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
                         </>
                     )}
                     <div style={{ position: 'absolute', bottom: '20px', right: '20px', display: 'flex', gap: '12px' }}>

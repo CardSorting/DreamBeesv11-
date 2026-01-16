@@ -1,7 +1,6 @@
 import React from 'react';
 import { Sliders, HelpCircle, ChevronDown, ImageIcon, Square, Monitor, Smartphone, RectangleHorizontal, RectangleVertical, Sparkles, AlertCircle, Upload, Trash2, Dices, X } from 'lucide-react';
 import { getOptimizedImageUrl } from '../../utils';
-import { STYLE_REGISTRY } from '../../data/styles';
 
 export default function GeneratorSidebar({
     activeTab, setActiveTab,
@@ -10,8 +9,6 @@ export default function GeneratorSidebar({
     setIsModelModalOpen,
     aspectRatio, setAspectRatio,
     showcaseImages, setPrompt, setGeneratedImage,
-    activeStyleId, setActiveStyleId,
-    styleIntensity, setStyleIntensity,
     // Video Params
     videoDuration, setVideoDuration,
     videoResolution, setVideoResolution,
@@ -150,61 +147,6 @@ export default function GeneratorSidebar({
                                     {showcaseImages.length === 0 && (
                                         <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>
                                             Select a model to see examples via showcase
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {generationMode === 'image' && (
-                                <div className="fade-in" style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                        <label className="setting-label" style={{ marginBottom: 0 }}>STYLE REGISTRY</label>
-                                        {activeStyleId && (
-                                            <button onClick={() => setActiveStyleId(null)} style={{ fontSize: '0.7rem', color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <X size={12} /> Clear
-                                            </button>
-                                        )}
-                                    </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '16px' }}>
-                                        {STYLE_REGISTRY.map(style => {
-                                            const isSelected = activeStyleId === style.id;
-                                            return (
-                                                <button
-                                                    key={style.id} onClick={() => setActiveStyleId(isSelected ? null : style.id)}
-                                                    className="hover-scale"
-                                                    style={{
-                                                        position: 'relative', aspectRatio: '3/4', borderRadius: '16px', overflow: 'hidden',
-                                                        border: isSelected ? '2px solid var(--color-accent-primary)' : '1px solid var(--color-border)',
-                                                        padding: 0, cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
-                                                        boxShadow: isSelected ? '0 10px 30px -10px rgba(var(--color-accent-rgb), 0.5)' : 'none'
-                                                    }}
-                                                >
-                                                    <div style={{ position: 'absolute', inset: 0 }}>
-                                                        <img src={style.image} alt={style.label} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }} />
-                                                        <div style={{ position: 'absolute', inset: 0, background: isSelected ? 'linear-gradient(to top, rgba(var(--color-accent-rgb), 0.9) 0%, rgba(var(--color-accent-rgb), 0.2) 50%, rgba(0,0,0,0) 100%)' : 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0) 100%)' }} />
-                                                    </div>
-                                                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', zIndex: 10 }}>
-                                                        <span style={{ color: 'white', fontWeight: '700', fontSize: '0.95rem', textShadow: '0 2px 4px rgba(0,0,0,0.5)', textAlign: 'left' }}>{style.label}</span>
-                                                        {isSelected && <div style={{ marginTop: '4px', fontSize: '0.7rem', color: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', gap: '4px' }}><Sparkles size={10} /> Active</div>}
-                                                    </div>
-                                                    {isSelected && <div style={{ position: 'absolute', inset: 0, border: '2px solid rgba(255,255,255,0.3)', borderRadius: '14px', pointerEvents: 'none' }} />}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
-                                    {activeStyleId && (
-                                        <div className="fade-in">
-                                            <label className="setting-label">INTENSITY</label>
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '10px' }}>
-                                                {['soft', 'medium', 'hard'].map(level => (
-                                                    <button
-                                                        key={level} onClick={() => setStyleIntensity(level)}
-                                                        style={{ padding: '6px', borderRadius: '6px', background: styleIntensity === level ? 'var(--color-accent-primary)' : 'transparent', color: styleIntensity === level ? 'white' : 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: '600', border: 'none', cursor: 'pointer', textTransform: 'capitalize', transition: 'all 0.2s' }}
-                                                    >
-                                                        {level}
-                                                    </button>
-                                                ))}
-                                            </div>
                                         </div>
                                     )}
                                 </div>

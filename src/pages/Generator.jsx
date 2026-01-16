@@ -22,7 +22,6 @@ import VideoGallery from '../components/generator/VideoGallery';
 
 // Custom Hooks
 import { useGeneratorState } from '../hooks/generator/useGeneratorState';
-import { useMagicEnhance } from '../hooks/generator/useMagicEnhance';
 import { useVideoGeneration } from '../hooks/generator/useVideoGeneration';
 import { useAutoPrompt } from '../hooks/generator/useAutoPrompt';
 import { useGenerationLogic } from '../hooks/generator/useGenerationLogic';
@@ -61,10 +60,6 @@ export default function Generator() {
         zaps, reels, subscriptionStatus,
         useTurbo, setUseTurbo,
 
-        // Style
-        activeStyleId, setActiveStyleId,
-        styleIntensity, setStyleIntensity,
-
         // Video
         generationMode, setGenerationMode,
         videoDuration, setVideoDuration,
@@ -76,23 +71,11 @@ export default function Generator() {
     } = state;
 
     // 3. Logic Hooks
-    const { isEnhancing, handleMagicEnhance } = useMagicEnhance({
-        prompt, setPrompt,
-        referenceImage, setReferenceImage,
-        activeStyleId,
-        generatedImage, setGeneratedImage,
-        activeJob, setActiveJob,
-        styleIntensity,
-        handleGenerate: (p) => handleGenerate(p) // Forward ref to function defined below
-    });
-
     const { handleGenerate } = useGenerationLogic({
         prompt, selectedModel, generationMode,
-        activeStyleId, styleIntensity,
         negPrompt, aspectRatio, steps, cfg, seed, useTurbo,
         zaps, reels, subscriptionStatus,
-        setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId,
-        referenceImage, handleMagicEnhance
+        setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId
     });
 
     const [analyzingImageId, setAnalyzingImageId] = useState(null);
@@ -227,7 +210,7 @@ export default function Generator() {
                             elapsedTime={elapsedTime}
                             currentJobId={currentJobId}
                             generatedImage={generatedImage}
-                            isEnhancing={isEnhancing}
+                            // isEnhancing removed
                             generationMode={generationMode}
                             activeJob={activeJob}
                             onRate={(rating) => currentJobId && rateGeneration(currentJobId, rating)}
@@ -246,8 +229,7 @@ export default function Generator() {
                             <GeneratorControls
                                 prompt={prompt} setPrompt={setPrompt}
                                 generationMode={generationMode}
-                                isEnhancing={isEnhancing} handleMagicEnhance={handleMagicEnhance}
-                                activeStyleId={activeStyleId} setActiveStyleId={setActiveStyleId}
+                                // isEnhancing, handleMagicEnhance, activeStyleId removed
                                 referenceImage={referenceImage} setReferenceImage={setReferenceImage} clearReferenceImage={() => setReferenceImage(null)}
                                 isListening={isListening} setIsListening={setIsListening} toggleListening={toggleListening}
                                 setIsImagePickerOpen={setIsImagePickerOpen}
@@ -268,8 +250,7 @@ export default function Generator() {
                     setIsModelModalOpen={setIsModelModalOpen}
                     aspectRatio={aspectRatio} setAspectRatio={setAspectRatio}
                     showcaseImages={showcaseImages} setPrompt={setPrompt} setGeneratedImage={setGeneratedImage}
-                    activeStyleId={activeStyleId} setActiveStyleId={setActiveStyleId}
-                    styleIntensity={styleIntensity} setStyleIntensity={setStyleIntensity}
+                    // activeStyleId, styleIntensity removed
                     // Video
                     videoDuration={videoDuration} setVideoDuration={setVideoDuration}
                     videoResolution={videoResolution} setVideoResolution={setVideoResolution}
