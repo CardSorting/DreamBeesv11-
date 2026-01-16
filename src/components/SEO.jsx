@@ -35,6 +35,8 @@ const SEO = ({ title, description, keywords, image, type = 'website', structured
 
             {/* Twitter */}
             <meta name="twitter:card" content="summary_large_image" />
+            <meta name="twitter:site" content="@dreambeesai" />
+            <meta name="twitter:creator" content="@dreambeesai" />
             <meta name="twitter:url" content={currentUrl} />
             <meta name="twitter:title" content={metaTitle} />
             <meta name="twitter:description" content={metaDescription} />

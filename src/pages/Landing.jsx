@@ -29,36 +29,68 @@ export default function Landing() {
                                 "bestRating": "5",
                                 "worstRating": "1"
                             },
-                            "description": "Generate high-quality AI art directly on the web. No Discord servers, no complex prompts. Fast, private, and simple text-to-image creation. Start for free.",
-                            "mainEntity": [{
-                                "@type": "Question",
-                                "name": "Can I use the images for commercial work?",
-                                "acceptedAnswer": {
-                                    "@type": "Answer",
-                                    "text": "Yes. You own 100% of the rights to any image you generate on DreamBees. You can use them for commercial projects, merchandise, or any other purpose without restriction."
+                            "description": "Generate high-quality AI art directly on the web. No Discord servers, no complex prompts. Fast, private, and simple text-to-image creation. Start for free."
+                        },
+                        {
+                            "@type": "FAQPage",
+                            "mainEntity": [
+                                {
+                                    "@type": "Question",
+                                    "name": "Can I use the images for commercial work?",
+                                    "acceptedAnswer": {
+                                        "@type": "Answer",
+                                        "text": "Yes. You own 100% of the rights to any image you generate on DreamBees. You can use them for commercial projects, merchandise, or any other purpose without restriction."
+                                    }
+                                },
+                                {
+                                    "@type": "Question",
+                                    "name": "Is DreamBees free to use?",
+                                    "acceptedAnswer": {
+                                        "@type": "Answer",
+                                        "text": "New users receive 30 free credits to get started with no credit card required. After that, we offer affordable flexible credit packs."
+                                    }
+                                },
+                                {
+                                    "@type": "Question",
+                                    "name": "Is this better than Midjourney?",
+                                    "acceptedAnswer": {
+                                        "@type": "Answer",
+                                        "text": "DreamBees offers a similar high-quality output but works directly in your web browser with a simple interface. No Discord server is required, and your images are private by default."
+                                    }
+                                },
+                                {
+                                    "@type": "Question",
+                                    "name": "Can I generate Anime and Realistic styles?",
+                                    "acceptedAnswer": {
+                                        "@type": "Answer",
+                                        "text": "Yes! We support specialized models for Anime, Photorealism, 3D Art, and Digital Painting. You can switch styles instantly."
+                                    }
+                                },
+                                {
+                                    "@type": "Question",
+                                    "name": "How does the credit system work?",
+                                    "acceptedAnswer": {
+                                        "@type": "Answer",
+                                        "text": "1 Credit = 1 Image Generation. New users receive 30 free credits. You can purchase additional credit packs or subscribe for monthly refills."
+                                    }
+                                },
+                                {
+                                    "@type": "Question",
+                                    "name": "Is my data private?",
+                                    "acceptedAnswer": {
+                                        "@type": "Answer",
+                                        "text": "Yes. Your prompts and generated images are private to your account unless you explicitly choose to share them. We do not use your private generations to train our models without consent."
+                                    }
+                                },
+                                {
+                                    "@type": "Question",
+                                    "name": "Do I need a powerful GPU?",
+                                    "acceptedAnswer": {
+                                        "@type": "Answer",
+                                        "text": "No hardware required. DreamBees runs entirely in the cloud on enterprise-grade NVIDIA H100 GPUs. You can generate on any device."
+                                    }
                                 }
-                            }, {
-                                "@type": "Question",
-                                "name": "Is DreamBees free to use?",
-                                "acceptedAnswer": {
-                                    "@type": "Answer",
-                                    "text": "New users receive 30 free credits to get started with no credit card required. After that, we offer affordable flexible credit packs."
-                                }
-                            }, {
-                                "@type": "Question",
-                                "name": "Is this better than Midjourney?",
-                                "acceptedAnswer": {
-                                    "@type": "Answer",
-                                    "text": "DreamBees offers a similar high-quality output but works directly in your web browser with a simple interface. No Discord server is required, and your images are private by default."
-                                }
-                            }, {
-                                "@type": "Question",
-                                "name": "Can I generate Anime and Realistic styles?",
-                                "acceptedAnswer": {
-                                    "@type": "Answer",
-                                    "text": "Yes! We support specialized models for Anime, Photorealism, 3D Art, and Digital Painting. You can switch styles instantly."
-                                }
-                            }]
+                            ]
                         },
                         {
                             "@type": "BreadcrumbList",

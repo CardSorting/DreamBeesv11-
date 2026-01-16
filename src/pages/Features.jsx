@@ -41,6 +41,33 @@ export default function Features() {
             <SEO
                 title="Features"
                 description="Explore the powerful features of DreamBeesAI, including lightning-fast generation, high-resolution support, and advanced AI models."
+                keywords="AI art features, image generation capabilities, SDXL models, fast AI generation, high resolution AI art"
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "ItemList",
+                            "name": "DreamBeesAI Features",
+                            "description": "Key features of the DreamBeesAI image generation platform",
+                            "numberOfItems": 6,
+                            "itemListElement": [
+                                { "@type": "ListItem", "position": 1, "name": "Lightning Fast Generation" },
+                                { "@type": "ListItem", "position": 2, "name": "High Resolution Support" },
+                                { "@type": "ListItem", "position": 3, "name": "Advanced AI Models" },
+                                { "@type": "ListItem", "position": 4, "name": "Secure & Private" },
+                                { "@type": "ListItem", "position": 5, "name": "Batch Generation" },
+                                { "@type": "ListItem", "position": 6, "name": "Easy Sharing" }
+                            ]
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
+                                { "@type": "ListItem", "position": 2, "name": "Features", "item": "https://dreambeesai.com/features" }
+                            ]
+                        }
+                    ]
+                }}
             />
             <div style={{ textAlign: 'center', marginBottom: '80px' }}>
                 <h1 style={{
