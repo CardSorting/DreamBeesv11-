@@ -26,7 +26,7 @@ function Layout() {
       <main className="app-main">
         <AnimatedRoutes />
       </main>
-      {!isLanding && !isShowcaseDetail && (
+      {!isLanding && !isShowcaseDetail && pathname !== '/generate' && (
         <div className="app-footer">
           <Footer />
         </div>

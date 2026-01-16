@@ -8,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
 
 // Components
-import MinimalHeader from '../components/MinimalHeader';
+
 import ModelSelectorModal from '../components/ModelSelectorModal';
 import ImagePickerModal from '../components/ImagePickerModal';
 import GenerationHistory from '../components/GenerationHistory';
@@ -183,12 +183,12 @@ export default function Generator() {
         <div style={{ minHeight: '100vh', background: '#000', color: 'white', fontFamily: '"Outfit", sans-serif' }}>
             <SEO title="DreamBees Studio" description="Create stunning AI art." />
             <Toaster position="bottom-center" toastOptions={{ style: { background: '#333', color: '#fff', borderRadius: '12px' } }} />
-            <MinimalHeader />
 
-            <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 300px', height: 'calc(100vh - 72px)', maxWidth: '1800px', margin: '0 auto' }}>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 280px', height: 'calc(100vh - 64px)', maxWidth: '1800px', margin: '0 auto' }}>
 
                 {/* 1. LEFT SIDEBAR (History & Modes) */}
-                <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 8px', gap: '24px', borderRight: '1px solid rgba(255,255,255,0.05)', zIndex: 10 }}>
+                <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 4px', gap: '16px', borderRight: '1px solid rgba(255,255,255,0.05)', zIndex: 10 }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', alignItems: 'center' }}>
                         <button
                             onClick={() => setGenerationMode('image')}
@@ -219,8 +219,8 @@ export default function Generator() {
                 </div>
 
                 {/* 2. CENTER STAGE (Canvas & Controls) */}
-                <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '24px 40px', gap: '24px' }}>
-                    <div className="glass-panel" style={{ flex: 1, minHeight: '600px', display: 'flex', flexDirection: 'column', padding: '4px', overflow: 'hidden' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '12px 16px', gap: '12px' }}>
+                    <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '4px', overflow: 'hidden' }}>
                         <GeneratorCanvas
                             generating={generating}
                             progress={progress}

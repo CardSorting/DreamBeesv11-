@@ -29,8 +29,8 @@ export default function GeneratorSidebar({
     analyzingImageId
 }) {
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', height: '100%' }}>
-            <div className="glass-panel" style={{ padding: '24px', flex: 1 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: '100%' }}>
+            <div className="glass-panel" style={{ padding: '16px', flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: 'white', fontWeight: '600', fontSize: '0.9rem' }}>
                     <Sliders size={16} /> PARAMETERS
                 </div>
@@ -54,7 +54,7 @@ export default function GeneratorSidebar({
                     </div>
                 )}
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     {/* Model Selector */}
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
@@ -214,7 +214,7 @@ export default function GeneratorSidebar({
 
                     {/* Advanced Tab (or Video Main) */}
                     {activeTab === 'advanced' && (
-                        <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                        <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             {generationMode === 'video' && (
                                 <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '24px', borderBottom: '1px solid var(--color-border)' }}>
                                     <div className="alert-box" style={{ padding: '12px', background: 'rgba(var(--color-accent-rgb), 0.1)', borderRadius: '8px', border: '1px solid var(--color-accent-primary)', color: 'white', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px' }}>

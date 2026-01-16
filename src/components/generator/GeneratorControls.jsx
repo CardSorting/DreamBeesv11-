@@ -64,7 +64,7 @@ export default function GeneratorControls({
             </div>
 
             <div className="glass-panel" style={{
-                margin: '20px', padding: '6px', borderRadius: '16px',
+                margin: '12px', padding: '6px', borderRadius: '16px',
                 background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
                 boxShadow: '0 4px 20px rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)'
             }}>
@@ -100,7 +100,7 @@ export default function GeneratorControls({
                                 className="custom-scrollbar"
                                 style={{
                                     width: '100%', background: 'transparent', border: 'none', color: 'white',
-                                    fontSize: '1.1rem', fontWeight: '400', resize: 'none', minHeight: '160px',
+                                    fontSize: '1.1rem', fontWeight: '400', resize: 'none', minHeight: '80px',
                                     outline: 'none', lineHeight: '1.6', fontFamily: '"Outfit", sans-serif', letterSpacing: '0.01em'
                                 }}
                                 onKeyDown={(e) => {
