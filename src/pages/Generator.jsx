@@ -75,7 +75,7 @@ export default function Generator() {
         prompt, selectedModel, generationMode,
         negPrompt, aspectRatio, steps, cfg, seed, useTurbo,
         zaps, reels, subscriptionStatus,
-        setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId
+        setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId, setActiveJob
     });
 
     const [analyzingImageId, setAnalyzingImageId] = useState(null);
@@ -276,7 +276,7 @@ export default function Generator() {
                         onClose={() => setIsModelModalOpen(false)}
                         models={availableModels}
                         selectedModel={selectedModel}
-                        onSelect={setSelectedModel}
+                        onSelectModel={setSelectedModel}
                     />
                 )}
                 {isImagePickerOpen && (

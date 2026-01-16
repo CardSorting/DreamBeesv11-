@@ -318,7 +318,7 @@
     }
 }
 
-/* Card Info Overlay */
+/* Card Info Overlay - Always visible */
 .model-card-info {
     position: absolute;
     bottom: 0;
@@ -330,16 +330,6 @@
     flex-direction: column;
     gap: 6px;
     z-index: 5;
-    opacity: 0;
-    transform: translateY(10px);
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-
-/* Always show info if selected */
-.model-card.selected .model-card-info,
-.model-card:hover .model-card-info {
-    opacity: 1;
-    transform: translateY(0);
 }
 
 .model-card-tag {

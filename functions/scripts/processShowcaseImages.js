@@ -42,7 +42,7 @@ async function processShowcase() {
 
     // Get Task Queue reference
     const LOCATION = "us-central1";
-    const queue = getFunctions().taskQueue(`locations/${LOCATION}/functions/universalWorker`);
+    const queue = getFunctions().taskQueue(`locations/${LOCATION}/functions/backgroundWorker`);
 
     const stats = {
         found: 0,

@@ -127,7 +127,13 @@ export default function GeneratorControls({
                         </button>
 
                         <button
-                            onClick={() => handleGenerate()}
+                            onClick={() => {
+                                console.log('[GeneratorControls] Generate button CLICKED!');
+                                console.log('[GeneratorControls] generating:', generating);
+                                console.log('[GeneratorControls] prompt:', prompt);
+                                console.log('[GeneratorControls] typeof handleGenerate:', typeof handleGenerate);
+                                handleGenerate();
+                            }}
                             disabled={generating || (!prompt && !referenceImage)}
                             className="btn-primary"
                             style={{

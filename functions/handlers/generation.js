@@ -54,7 +54,9 @@ export const handleCreateGenerationRequest = async (request) => {
             });
         });
 
-        const queue = getFunctions().taskQueue('universalWorker');
+        const LOCATION = "us-central1";
+        const queue = getFunctions().taskQueue(`locations/${LOCATION}/functions/universalWorker`);
+
         await queue.enqueue({
             taskType: 'image',
             requestId: queueRef.id, userId: uid, prompt: cleanPrompt, negative_prompt, modelId, steps: safeSteps,
@@ -100,7 +102,7 @@ export const handleCreateVideoGenerationRequest = async (request) => {
             return newDocRef.id;
         });
 
-        await getFunctions().taskQueue('universalWorker').enqueue({ taskType: 'video', requestId });
+        await getFunctions().taskQueue('locations/us-central1/functions/urgentWorker').enqueue({ taskType: 'video', requestId });
         return { requestId, cost: totalCost };
     } catch (error) {
         throw handleError(error, { uid });
@@ -121,7 +123,7 @@ export const handleCreateDressUpRequest = async (request) => {
             t.update(userRef, { zaps: FieldValue.increment(-COST) });
             t.set(queueRef, { userId: uid, prompt, status: 'queued', type: 'dress-up', cost: COST, createdAt: new Date() });
         });
-        await getFunctions().taskQueue('universalWorker').enqueue({ taskType: 'dress-up', requestId: queueRef.id, userId: uid, image, prompt, cost: COST });
+        await getFunctions().taskQueue('locations/us-central1/functions/urgentWorker').enqueue({ taskType: 'dress-up', requestId: queueRef.id, userId: uid, image, prompt, cost: COST });
         return { requestId: queueRef.id };
     } catch (e) { throw handleError(e, { uid }); }
 };
@@ -141,7 +143,7 @@ export const handleCreateSlideshowGeneration = async (request) => {
             t.update(userRef, { zaps: FieldValue.increment(-COST) });
             t.set(queueRef, { userId: uid, status: 'queued', type: 'slideshow', mode: safeMode, language: language || 'English', cost: COST, createdAt: new Date() });
         });
-        await getFunctions().taskQueue('universalWorker').enqueue({ taskType: 'slideshow', requestId: queueRef.id, userId: uid, image, mode: safeMode, language, cost: COST });
+        await getFunctions().taskQueue('locations/us-central1/functions/urgentWorker').enqueue({ taskType: 'slideshow', requestId: queueRef.id, userId: uid, image, mode: safeMode, language, cost: COST });
         return { requestId: queueRef.id };
     } catch (e) { throw handleError(e, { uid }); }
 };
