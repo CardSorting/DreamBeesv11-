@@ -60,7 +60,7 @@ export default function GeneratorControls({
                         className="custom-scrollbar"
                         style={{
                             width: '100%', background: 'transparent', border: 'none', color: 'white',
-                            fontSize: '1.1rem', fontWeight: '400', resize: 'none', minHeight: '80px',
+                            fontSize: '1.1rem', fontWeight: '400', resize: 'none', minHeight: '200px',
                             outline: 'none', lineHeight: '1.6', fontFamily: '"Outfit", sans-serif', letterSpacing: '0.01em'
                         }}
                         onKeyDown={(e) => {

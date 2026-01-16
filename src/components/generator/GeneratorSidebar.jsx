@@ -4,7 +4,7 @@ import { getOptimizedImageUrl } from '../../utils';
 
 export default function GeneratorSidebar({
     activeTab, setActiveTab,
-    generationMode,
+    generationMode, setGenerationMode,
     selectedModel,
     setIsModelModalOpen,
     aspectRatio, setAspectRatio,
@@ -31,6 +31,8 @@ export default function GeneratorSidebar({
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: 'white', fontWeight: '600', fontSize: '0.9rem' }}>
                     <Sliders size={16} /> PARAMETERS
                 </div>
+
+                {/* Mode Selector - Moved to main column */}
 
                 {generationMode !== 'video' && (
                     <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '4px', marginBottom: '24px' }}>
@@ -135,7 +137,7 @@ export default function GeneratorSidebar({
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                                         {showcaseImages.slice(0, 9).map((img) => (
                                             <button
-                                                key={img.id} onClick={() => { setPrompt(img.prompt); setGeneratedImage(img.imageUrl); }}
+                                                key={img.id} onClick={() => setPrompt(img.prompt)}
                                                 className="hover-card"
                                                 style={{ aspectRatio: '1', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--color-border)', cursor: 'pointer', padding: 0, position: 'relative' }}
                                                 title={img.prompt}

@@ -14,7 +14,8 @@ export const handleCreateAnalysisRequest = async (request) => {
         const docRef = await db.collection('analysis_queue').add({ userId: uid, image: image || null, imageUrl: imageUrl || null, status: 'queued', createdAt: new Date() });
 
         // Enqueue task to 'universalWorker'
-        await getFunctions().taskQueue('workers-universalWorker').enqueue({
+        // Enqueue task to 'backgroundWorker'
+        await getFunctions().taskQueue('locations/us-central1/functions/backgroundWorker').enqueue({
             taskType: 'analysis',
             requestId: docRef.id,
             userId: uid,
@@ -36,7 +37,8 @@ export const handleCreateEnhanceRequest = async (request) => {
         const docRef = await db.collection('enhance_queue').add({ userId: uid, originalPrompt: request.data.prompt, status: 'queued', createdAt: new Date() });
 
         // Enqueue task to 'universalWorker'
-        await getFunctions().taskQueue('universalWorker').enqueue({
+        // Enqueue task to 'urgentWorker'
+        await getFunctions().taskQueue('locations/us-central1/functions/urgentWorker').enqueue({
             taskType: 'enhance',
             requestId: docRef.id,
             userId: uid,

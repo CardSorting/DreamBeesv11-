@@ -15,7 +15,8 @@ import GenerationHistory from '../components/GenerationHistory';
 import SEO from '../components/SEO';
 
 // Refactored Sub-Components
-import GeneratorCanvas from '../components/generator/GeneratorCanvas';
+// import GeneratorCanvas from '../components/generator/GeneratorCanvas'; // Removed as per request
+import ResultModal from '../components/generator/ResultModal';
 import GeneratorControls from '../components/generator/GeneratorControls';
 import GeneratorSidebar from '../components/generator/GeneratorSidebar';
 import VideoGallery from '../components/generator/VideoGallery';
@@ -77,6 +78,15 @@ export default function Generator() {
         zaps, reels, subscriptionStatus,
         setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId, setActiveJob
     });
+
+    const [isResultModalOpen, setIsResultModalOpen] = useState(false);
+
+    // Open Modal when generation completes (generatedImage changes and not generating)
+    useEffect(() => {
+        if (generatedImage && !generating) {
+            setIsResultModalOpen(true);
+        }
+    }, [generatedImage, generating]);
 
     const [analyzingImageId, setAnalyzingImageId] = useState(null);
     const { recentImages, triggerVideoAnimation, handleVideoAutoAnimate } = useVideoGeneration({
@@ -160,6 +170,7 @@ export default function Generator() {
         } else {
             setGenerationMode('image');
         }
+        setIsResultModalOpen(true);
     };
 
     return (
@@ -168,55 +179,46 @@ export default function Generator() {
             <Toaster position="bottom-center" toastOptions={{ style: { background: '#333', color: '#fff', borderRadius: '12px' } }} />
 
 
-            <div style={{ display: 'grid', gridTemplateColumns: '72px 1fr 280px', height: 'calc(100vh - 64px)', maxWidth: '1800px', margin: '0 auto' }}>
-
-                {/* 1. LEFT SIDEBAR (History & Modes) */}
-                <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 4px', gap: '16px', borderRight: '1px solid rgba(255,255,255,0.05)', zIndex: 10 }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', alignItems: 'center' }}>
-                        <button
-                            onClick={() => setGenerationMode('image')}
-                            className={generationMode === 'image' ? "btn-nav-active" : "btn-nav"}
-                            title="Image Generation"
-                            style={{ width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', background: generationMode === 'image' ? 'var(--color-accent-primary)' : 'transparent', color: generationMode === 'image' ? 'white' : 'var(--color-text-muted)' }}
-                        >
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-                        </button>
-                        <button
-                            onClick={() => setGenerationMode('video')}
-                            className={generationMode === 'video' ? "btn-nav-active" : "btn-nav"}
-                            title="Video Animation"
-                            style={{ width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', background: generationMode === 'video' ? 'var(--color-accent-primary)' : 'transparent', color: generationMode === 'video' ? 'white' : 'var(--color-text-muted)' }}
-                        >
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" /></svg>
-                        </button>
-                    </div>
-
-                    <div style={{ width: '100%', height: '1px', background: 'rgba(255,255,255,0.1)' }} />
-
-                    <GenerationHistory
-                        currentUser={currentUser}
-                        onSelect={handleHistorySelect}
-                        currentJobId={currentJobId}
-                        compact={true}
-                    />
-                </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', height: 'calc(100vh - 64px)', maxWidth: '1800px', margin: '0 auto' }}>
 
                 {/* 2. CENTER STAGE (Canvas & Controls) */}
                 <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '12px 16px', gap: '12px' }}>
-                    <div className="glass-panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '4px', overflow: 'hidden' }}>
-                        <GeneratorCanvas
-                            generating={generating}
-                            progress={progress}
-                            elapsedTime={elapsedTime}
-                            currentJobId={currentJobId}
-                            generatedImage={generatedImage}
-                            // isEnhancing removed
-                            generationMode={generationMode}
-                            activeJob={activeJob}
-                            onRate={(rating) => currentJobId && rateGeneration(currentJobId, rating)}
-                            onFullscreen={() => setIsFullscreen(true)}
-                            prompt={prompt}
-                        />
+                    <div className="glass-panel custom-scrollbar" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px', overflowY: 'auto' }}>
+                        {/* GeneratorCanvas removed. Showing placeholder or just controls container */}
+
+
+
+                        {/* Mode Selector */}
+                        <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '4px', marginBottom: '16px' }}>
+                            <button
+                                onClick={() => setGenerationMode('image')}
+                                style={{
+                                    flex: 1, padding: '10px', borderRadius: '8px',
+                                    background: generationMode === 'image' ? 'var(--color-accent-primary)' : 'transparent',
+                                    color: generationMode === 'image' ? 'white' : 'var(--color-text-muted)',
+                                    fontSize: '0.9rem', fontWeight: '600', border: 'none', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                                Image Generation
+                            </button>
+                            <button
+                                onClick={() => setGenerationMode('video')}
+                                style={{
+                                    flex: 1, padding: '10px', borderRadius: '8px',
+                                    background: generationMode === 'video' ? 'var(--color-accent-primary)' : 'transparent',
+                                    color: generationMode === 'video' ? 'white' : 'var(--color-text-muted)',
+                                    fontSize: '0.9rem', fontWeight: '600', border: 'none', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" /></svg>
+                                Video Animation
+                            </button>
+                        </div>
 
                         {generationMode === 'video' ? (
                             <VideoGallery
@@ -239,13 +241,22 @@ export default function Generator() {
                                 seed={seed} aspectRatio={aspectRatio} steps={steps} cfg={cfg} negPrompt={negPrompt}
                             />
                         )}
+
+                        <div style={{ marginTop: '12px' }}>
+                            <GenerationHistory
+                                currentUser={currentUser}
+                                onSelect={handleHistorySelect}
+                                currentJobId={currentJobId}
+                                compact={true}
+                            />
+                        </div>
                     </div>
                 </div>
 
                 {/* 3. RIGHT SIDEBAR (Parameters) */}
                 <GeneratorSidebar
                     activeTab={activeTab} setActiveTab={setActiveTab}
-                    generationMode={generationMode}
+                    generationMode={generationMode} setGenerationMode={setGenerationMode}
                     selectedModel={selectedModel}
                     setIsModelModalOpen={setIsModelModalOpen}
                     aspectRatio={aspectRatio} setAspectRatio={setAspectRatio}
@@ -287,6 +298,18 @@ export default function Generator() {
                         currentUser={currentUser}
                     />
                 )}
+                {isResultModalOpen && (
+                    <ResultModal
+                        isOpen={isResultModalOpen}
+                        onClose={() => setIsResultModalOpen(false)}
+                        generatedImage={generatedImage}
+                        generationMode={generationMode}
+                        prompt={prompt}
+                        onRate={(rating) => currentJobId && rateGeneration(currentJobId, rating)}
+                        downloadUrl={generatedImage}
+                    />
+                )}
+                {/* Fullscreen handled by result modal mostly, keeping this if needed for other contexts or removing if redundant. Keeping for now as fallback */}
                 {isFullscreen && generatedImage && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <button onClick={() => setIsFullscreen(false)} style={{ position: 'absolute', top: 20, right: 20, color: 'white', background: 'transparent', border: 'none', cursor: 'pointer' }}>
