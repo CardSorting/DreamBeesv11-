@@ -56,7 +56,7 @@ export default function GeneratorControls({
                     }}
                 >
                     {isEnhancing ? (
-                        <> <Loader2 size={16} className="animate-spin" /> <span>Processing...</span> </>
+                        <> <Loader2 size={16} className="animate-spin" /> <span>{state?.enhanceStatus || "Processing..."}</span> </>
                     ) : (
                         <> <Wand2 size={16} /> {activeStyleId ? "Apply Style & Generate" : "Enhance Prompt"} </>
                     )}

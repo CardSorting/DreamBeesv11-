@@ -16,6 +16,7 @@ export function useMagicEnhance({
     handleGenerate // Callback to trigger standard generation if needed
 }) {
     const [isEnhancing, setIsEnhancing] = useState(false);
+    const [enhanceStatus, setEnhanceStatus] = useState(''); // 'transforming', 'enhancing', 'uploading', etc.
 
     const handleMagicEnhance = async () => {
         if (isEnhancing) return;
@@ -65,23 +66,28 @@ export function useMagicEnhance({
                     setGeneratedImage(currentReferenceImage); // Show original temporarily
                 }
 
+                setEnhanceStatus('Transforming image...');
                 toast.loading(`✨ Starting ${styleObj.label} transformation...`, { id: 'style-magic' });
 
                 try {
                     let processedImage = currentReferenceImage;
                     if (processedImage && processedImage.startsWith('data:')) {
+                        setEnhanceStatus('Compressing...');
                         processedImage = await compressImage(processedImage, 1024, 0.7);
                     }
 
                     const progressUpdates = [
-                        { delay: 300, message: `📤 Uploading image to AI...` },
-                        { delay: 800, message: `🎨 AI is transforming with ${styleObj.label} style...` },
-                        { delay: 2000, message: `⚙️ Processing transformation...` },
-                        { delay: 4000, message: `✨ Finalizing your transformed image...` }
+                        { delay: 300, message: `📤 Uploading image to AI...`, status: 'Uploading...' },
+                        { delay: 800, message: `🎨 AI is transforming with ${styleObj.label} style...`, status: 'Stylizing...' },
+                        { delay: 2000, message: `⚙️ Processing transformation...`, status: 'Processing...' },
+                        { delay: 4000, message: `✨ Finalizing your transformed image...`, status: 'Finalizing...' }
                     ];
 
-                    const progressTimers = progressUpdates.map(({ delay, message }) =>
-                        setTimeout(() => toast.loading(message, { id: 'style-magic' }), delay)
+                    const progressTimers = progressUpdates.map(({ delay, message, status }) =>
+                        setTimeout(() => {
+                            toast.loading(message, { id: 'style-magic' });
+                            setEnhanceStatus(status);
+                        }, delay)
                     );
 
                     const clearProgressTimers = () => progressTimers.forEach(timer => clearTimeout(timer));
@@ -122,6 +128,7 @@ export function useMagicEnhance({
                             toast.success(`✨ ${styleObj.label} transformation complete!`, { id: 'style-magic', duration: 3000, icon: '🎨' });
                         }, 200);
                         setIsEnhancing(false);
+                        setEnhanceStatus('');
                         return;
                     } else {
                         clearProgressTimers();
@@ -135,6 +142,7 @@ export function useMagicEnhance({
                     }
                     toast.error(`Transformation failed: ${errorMessage}`, { id: 'style-magic', duration: 4000 });
                     setIsEnhancing(false);
+                    setEnhanceStatus('');
                     return;
                 }
             }
@@ -159,6 +167,7 @@ export function useMagicEnhance({
                             if (!newPrompt) {
                                 toast.error("Empty prompt returned", { id: 'style-magic' });
                                 setIsEnhancing(false);
+                                setEnhanceStatus('');
                                 return;
                             }
 
@@ -170,6 +179,7 @@ export function useMagicEnhance({
                             }, 100);
 
                             setIsEnhancing(false);
+                            setEnhanceStatus('');
 
                             // Auto-Trigger Generation
                             setTimeout(() => {
@@ -181,6 +191,7 @@ export function useMagicEnhance({
                             console.error("Transform prompt error", error);
                             toast.error("Failed to transform prompt", { id: 'style-magic' });
                             setIsEnhancing(false);
+                            setEnhanceStatus('');
                             return;
                         }
                     }
@@ -191,18 +202,29 @@ export function useMagicEnhance({
                     const result = await api({ action: 'createEnhanceRequest', prompt: currentPrompt });
                     const requestId = result.data.requestId;
 
+                    // Set safety timeout (60s)
+                    const timeoutId = setTimeout(() => {
+                        toast.error("Enhance request timed out", { id: 'style-magic' });
+                        setIsEnhancing(false);
+                        setEnhanceStatus('');
+                    }, 60000);
+
                     const unsubscribe = onSnapshot(doc(db, 'enhance_queue', requestId), (snapshot) => {
                         if (!snapshot.exists()) return;
                         const data = snapshot.data();
 
                         if (data.status === 'completed') {
+                            clearTimeout(timeoutId);
                             setPrompt(data.prompt);
                             toast.success("Magic enhanced!", { id: 'style-magic' });
                             setIsEnhancing(false);
+                            setEnhanceStatus('');
                             unsubscribe();
                         } else if (data.status === 'failed') {
+                            clearTimeout(timeoutId);
                             toast.error("Failed: " + (data.error || "Unknown"), { id: 'style-magic' });
                             setIsEnhancing(false);
+                            setEnhanceStatus('');
                             unsubscribe();
                         }
                     });
@@ -221,8 +243,10 @@ export function useMagicEnhance({
             console.error("Unexpected error", error);
             toast.error("Request failed", { id: 'style-magic' });
             setIsEnhancing(false);
+            setEnhanceStatus('');
         }
     };
 
-    return { isEnhancing, handleMagicEnhance };
+    return { isEnhancing, enhanceStatus, handleMagicEnhance };
+
 }
