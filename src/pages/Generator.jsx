@@ -1,2253 +1,337 @@
-import React, { useState, useEffect, useRef } from 'react';
-import SEO from '../components/SEO';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Toaster, toast } from 'react-hot-toast';
+
+// Contexts
+import { useAuth } from '../contexts/AuthContext';
+import { useModel } from '../contexts/ModelContext';
+
+// Components
+import MinimalHeader from '../components/MinimalHeader';
 import ModelSelectorModal from '../components/ModelSelectorModal';
 import ImagePickerModal from '../components/ImagePickerModal';
 import GenerationHistory from '../components/GenerationHistory';
-import { useModel } from '../contexts/ModelContext';
-import { db, functions } from '../firebase';
-import { doc, onSnapshot, collection, query, where, orderBy, limit } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
-import { useAuth } from '../contexts/AuthContext';
+import SEO from '../components/SEO';
 
-import { Loader2, Sparkles, Image as ImageIcon, Sliders, Settings2, Trash2, ChevronDown, ChevronUp, Mic, MicOff, Zap, AlertCircle, Share2, Maximize2, X, Wand2, Monitor, Smartphone, LayoutTemplate, Square, RectangleHorizontal, RectangleVertical, HelpCircle, ThumbsUp, ThumbsDown, Film, Video, Paperclip, Upload, Type, Dices } from 'lucide-react';
+// Refactored Sub-Components
+import GeneratorCanvas from '../components/generator/GeneratorCanvas';
+import GeneratorControls from '../components/generator/GeneratorControls';
+import GeneratorSidebar from '../components/generator/GeneratorSidebar';
+import VideoGallery from '../components/generator/VideoGallery';
 
-import { Link, useSearchParams } from 'react-router-dom';
-import toast from 'react-hot-toast';
-import { getOptimizedImageUrl, compressImage } from '../utils';
-import { STYLE_REGISTRY, getStylePrompt, GLOBAL_NEGATIVES } from '../data/styles';
-
+// Custom Hooks
+import { useGeneratorState } from '../hooks/generator/useGeneratorState';
+import { useMagicEnhance } from '../hooks/generator/useMagicEnhance';
+import { useVideoGeneration } from '../hooks/generator/useVideoGeneration';
+import { useAutoPrompt } from '../hooks/generator/useAutoPrompt';
+import { useGenerationLogic } from '../hooks/generator/useGenerationLogic';
 
 export default function Generator() {
-    const [searchParams] = useSearchParams();
+    // 1. Global Contexts
     const { currentUser } = useAuth();
-    const { selectedModel, setSelectedModel, availableModels, loading, getShowcaseImages, rateGeneration } = useModel();
+    const { selectedModel, setSelectedModel, availableModels, loading: modelLoading, getShowcaseImages, rateGeneration } = useModel();
 
-    // Modal State
-    const [isModelModalOpen, setIsModelModalOpen] = useState(false);
-    const [isFullscreen, setIsFullscreen] = useState(false);
-    const [activeTab, setActiveTab] = useState('simple');
-    const [showcaseImages, setShowcaseImages] = useState([]);
+    // 2. State Management Hook
+    const state = useGeneratorState();
+    const {
+        // UI
+        isModelModalOpen, setIsModelModalOpen,
+        isFullscreen, setIsFullscreen,
+        activeTab, setActiveTab,
+        showcaseImages, setShowcaseImages,
+        isImagePickerOpen, setIsImagePickerOpen,
 
-    const [prompt, setPrompt] = useState(searchParams.get('prompt') || '');
-    const [generating, setGenerating] = useState(false);
-    const [generatedImage, setGeneratedImage] = useState(null);
-    const [currentJobId, setCurrentJobId] = useState(null);
-    const [activeJob, setActiveJob] = useState(null); // Full job object for rating
-    const [elapsedTime, setElapsedTime] = useState(0);
-    const [progress, setProgress] = useState(0);
+        // Generator Data
+        prompt, setPrompt,
+        generating, setGenerating,
+        generatedImage, setGeneratedImage,
+        currentJobId, setCurrentJobId,
+        activeJob, setActiveJob,
+        elapsedTime, progress,
 
-    // Advanced Settings
-    const [aspectRatio, setAspectRatio] = useState(searchParams.get('aspectRatio') || '1:1');
-    const [steps, setSteps] = useState(parseInt(searchParams.get('steps')) || 30);
-    const [cfg, setCfg] = useState(parseFloat(searchParams.get('cfg')) || 7.0);
-    const [negPrompt, setNegPrompt] = useState(searchParams.get('negPrompt') || "");
-    const [seed, setSeed] = useState(parseInt(searchParams.get('seed')) || -1);
+        // Parameters
+        aspectRatio, setAspectRatio,
+        steps, setSteps,
+        cfg, setCfg,
+        negPrompt, setNegPrompt,
+        seed, setSeed,
 
-    const [zaps, setZaps] = useState(5);
-    const [reels, setReels] = useState(null);
-    const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+        // User
+        zaps, reels, subscriptionStatus,
+        useTurbo, setUseTurbo,
 
-    // Style Registry State
-    const [activeStyleId, setActiveStyleId] = useState(null);
-    const [styleIntensity, setStyleIntensity] = useState('medium');
+        // Style
+        activeStyleId, setActiveStyleId,
+        styleIntensity, setStyleIntensity,
 
-    // Video State
-    const [generationMode, setGenerationMode] = useState('image'); // 'image' | 'video'
+        // Video
+        generationMode, setGenerationMode,
+        videoDuration, setVideoDuration,
+        videoResolution, setVideoResolution,
+        currentJobType, setCurrentJobType,
 
-    const [videoDuration, setVideoDuration] = useState(6);
-    const [videoResolution, setVideoResolution] = useState('1080p');
-    const [currentJobType, setCurrentJobType] = useState('image');
+        // Reference
+        referenceImage, setReferenceImage
+    } = state;
 
-    // Turbo Mode
-    const [useTurbo, setUseTurbo] = useState(false);
+    // 3. Logic Hooks
+    const { isEnhancing, handleMagicEnhance } = useMagicEnhance({
+        prompt, setPrompt,
+        referenceImage, setReferenceImage,
+        activeStyleId,
+        generatedImage, setGeneratedImage,
+        activeJob, setActiveJob,
+        styleIntensity,
+        handleGenerate: (p) => handleGenerate(p) // Forward ref to function defined below
+    });
 
-    // Microphone
-    const [isListening, setIsListening] = useState(false);
-    const speechRecognitionRef = useRef(null);
+    const { handleGenerate } = useGenerationLogic({
+        prompt, selectedModel, generationMode,
+        activeStyleId, styleIntensity,
+        negPrompt, aspectRatio, steps, cfg, seed, useTurbo,
+        zaps, reels, subscriptionStatus,
+        setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId,
+        referenceImage, handleMagicEnhance
+    });
 
-    // Video Gallery State
-    const [recentImages, setRecentImages] = useState([]);
     const [analyzingImageId, setAnalyzingImageId] = useState(null);
-    const [isEnhancing, setIsEnhancing] = useState(false);
+    const { recentImages, triggerVideoAnimation, handleVideoAutoAnimate } = useVideoGeneration({
+        currentUser, generating, setGenerating, setGeneratedImage, setReferenceImage, setPrompt, setCurrentJobType, setCurrentJobId,
+        setAnalyzingImageId, videoDuration, videoResolution, aspectRatio, reels
+    });
 
-    const handleMagicEnhance = async () => {
-        if (isEnhancing) return;
+    const { isAutoPrompting, handleAutoPrompt } = useAutoPrompt(
+        prompt, setPrompt, referenceImage, setReferenceImage, generationMode
+    );
 
-        // IMPORTANT: Check referenceImage from current state at call time
-        // React state updates are async, so we need to check the actual current value
-        // Also check activeJob as fallback if referenceImage is null (might be cleared)
-        let currentReferenceImage = referenceImage;
-        const currentPrompt = prompt;
-
-        // Fallback: Use active/generated image as reference ONLY if we have a style selected
-        // This prevents "Enhance Prompt" (no style) from accidentally grabbing the displayed image
-        if (activeStyleId) {
-            // Fallback 1: If referenceImage is null but we have an activeJob with an image, use it
-            // This can happen if the user clicked "Apply Style & Generate" after viewing a generated image
-            if (!currentReferenceImage && activeJob && (activeJob.imageUrl || activeJob.thumbnailUrl)) {
-                console.log("[handleMagicEnhance] ReferenceImage is null, using activeJob image as fallback");
-                currentReferenceImage = activeJob.imageUrl || activeJob.thumbnailUrl;
-                // Update state so it persists
-                setReferenceImage(currentReferenceImage);
-            }
-
-            // Fallback 2: If referenceImage is null but we have a generatedImage displayed, use it
-            // This handles the case where user wants to restyle the currently displayed image
-            if (!currentReferenceImage && generatedImage) {
-                console.log("[handleMagicEnhance] ReferenceImage is null, using generatedImage as fallback");
-                currentReferenceImage = generatedImage;
-                // Update state so it persists
-                setReferenceImage(currentReferenceImage);
-            }
-        }
-
-        // Allow enhancement if there is a prompt OR a reference image
-        if (!currentPrompt && !currentReferenceImage) {
-            console.log("[handleMagicEnhance] Early return: no prompt and no referenceImage");
-            return;
-        }
-        setIsEnhancing(true);
-
-        console.log("[handleMagicEnhance] Called with:", {
-            prompt: currentPrompt ? `${currentPrompt.substring(0, 30)}...` : null,
-            referenceImage: currentReferenceImage ? `${currentReferenceImage.substring(0, 50)}...` : null,
-            activeStyleId,
-            referenceImageType: typeof currentReferenceImage,
-            referenceImageLength: currentReferenceImage ? currentReferenceImage.length : 0,
-            hasActiveJob: !!activeJob,
-            activeJobImageUrl: activeJob?.imageUrl ? `${activeJob.imageUrl.substring(0, 50)}...` : null
-        });
-
-        // Helper to validate referenceImage
-        const isReferenceImageValid = (img) => {
-            return img && typeof img === 'string' && img.trim().length > 0;
-        };
-
-        try {
-            const api = httpsCallable(functions, 'api', { timeout: 540000 }); // 9 minute timeout
-            // Use the captured values to avoid stale closure issues
-            const hasValidReferenceImage = isReferenceImageValid(currentReferenceImage);
-            const hasValidPrompt = currentPrompt && typeof currentPrompt === 'string' && currentPrompt.trim().length > 0;
-
-            console.log("[handleMagicEnhance] State check:", {
-                hasValidReferenceImage,
-                hasValidPrompt,
-                referenceImage: currentReferenceImage ? `${currentReferenceImage.substring(0, 50)}...` : null,
-                activeStyleId,
-                prompt: currentPrompt ? `${currentPrompt.substring(0, 30)}...` : null,
-                rawReferenceImage: currentReferenceImage
-            });
-
-            // Priority 1: Image Transformation (when referenceImage exists AND style is selected)
-            if (hasValidReferenceImage && activeStyleId) {
-                console.log("[handleMagicEnhance] Using image transformation path");
-                if (!activeStyleId) {
-                    toast.error("Please select a style to transform the image", { id: 'style-magic' });
-                    setIsEnhancing(false);
-                    return;
-                }
-
-                const styleObj = STYLE_REGISTRY.find(s => s.id === activeStyleId);
-                if (!styleObj || !styleObj.instruction) {
-                    toast.error("Selected style is missing instructions for image transformation", { id: 'style-magic' });
-                    setIsEnhancing(false);
-                    return;
-                }
-
-                // Immediate visual feedback - show original image with overlay
-                // This gives instant feedback that something is happening
-                if (currentReferenceImage && !generatedImage) {
-                    setGeneratedImage(currentReferenceImage); // Show original immediately
-                }
-
-                toast.loading(`✨ Starting ${styleObj.label} transformation...`, { id: 'style-magic' });
-
-                try {
-                    // Vision Transformation (Image -> Image)
-
-                    // Compress if base64 before upload
-                    let processedImage = currentReferenceImage;
-                    if (processedImage && processedImage.startsWith('data:')) {
-                        console.log(`[Magic] Compressing reference image...`);
-                        processedImage = await compressImage(processedImage, 1024, 0.7);
-                    }
-
-                    console.log("[handleMagicEnhance] Calling transformImage with:", {
-                        imageUrl: processedImage ? (processedImage.startsWith('data:') ? 'base64...' : processedImage) : null,
-                        styleName: styleObj.label,
-                        intensity: styleIntensity
-                    });
-
-                    // Progressive progress updates for better perceived responsiveness
-                    const progressUpdates = [
-                        { delay: 300, message: `📤 Uploading image to AI...` },
-                        { delay: 800, message: `🎨 AI is transforming with ${styleObj.label} style...` },
-                        { delay: 2000, message: `⚙️ Processing transformation...` },
-                        { delay: 4000, message: `✨ Finalizing your transformed image...` }
-                    ];
-
-                    const progressTimers = progressUpdates.map(({ delay, message }) =>
-                        setTimeout(() => {
-                            toast.loading(message, { id: 'style-magic' });
-                        }, delay)
-                    );
-
-                    // Clear progress timers when done
-                    const clearProgressTimers = () => {
-                        progressTimers.forEach(timer => clearTimeout(timer));
-                    };
-
-                    const transformResult = await api({
-                        action: 'transformImage',
-                        imageUrl: processedImage,
-                        styleName: styleObj.label,
-                        intensity: styleIntensity,
-                        instructions: styleObj.instruction
-                    });
-
-                    clearProgressTimers(); // Clear any pending progress updates
-                    console.log("[handleMagicEnhance] transformImage result:", transformResult);
-
-                    if (transformResult?.data?.imageUrl) {
-                        // Use thumbnail if available for faster initial display
-                        const imageToShow = transformResult.data.thumbnailUrl || transformResult.data.imageUrl;
-
-                        // Preload the full image in background
-                        const img = new Image();
-                        img.src = transformResult.data.imageUrl;
-
-                        // Update progress message
-                        toast.loading(`🎉 Loading your transformed image...`, { id: 'style-magic' });
-
-                        // Set thumbnail immediately for instant feedback
-                        setGeneratedImage(imageToShow);
-
-                        // When full image loads, switch to it seamlessly
-                        img.onload = () => {
-                            setGeneratedImage(transformResult.data.imageUrl);
-                        };
-
-                        // Optionally set the active job for rating if the backend returns it
-                        if (transformResult.data.imageId) {
-                            setActiveJob({
-                                id: transformResult.data.imageId,
-                                imageUrl: transformResult.data.imageUrl,
-                                thumbnailUrl: transformResult.data.thumbnailUrl,
-                                prompt: `Vision Transformation: ${styleObj.label}`
-                            });
-                        }
-
-                        setReferenceImage(null); // Clear reference after success
-
-                        // Success message with smooth transition
-                        setTimeout(() => {
-                            toast.success(`✨ ${styleObj.label} transformation complete!`, {
-                                id: 'style-magic',
-                                duration: 3000,
-                                icon: '🎨'
-                            });
-                        }, 200);
-
-                        setIsEnhancing(false);
-                        return;
-                    } else {
-                        clearProgressTimers();
-                        throw new Error("Transformation failed to return an image");
-                    }
-                } catch (error) {
-                    console.error("[handleMagicEnhance] transformImage error:", error);
-                    let errorMessage = error.message || error.code || "Failed to transform image";
-
-                    if (errorMessage.includes('INVALID_ARGUMENT') || errorMessage.includes('too large')) {
-                        errorMessage = "Image too large. Compression failed.";
-                    }
-
-                    toast.error(`Transformation failed: ${errorMessage}`, { id: 'style-magic', duration: 4000 });
-                    setIsEnhancing(false);
-                    return; // Don't fall through to other paths
-                }
-            }
-
-            // Priority 2: Prompt Transformation (when prompt exists and no referenceImage)
-            if (hasValidPrompt) {
-                console.log("[handleMagicEnhance] Using prompt transformation path (no referenceImage)");
-                if (activeStyleId) {
-                    const styleObj = STYLE_REGISTRY.find(s => s.id === activeStyleId);
-                    if (styleObj && styleObj.instruction) {
-                        // Immediate feedback with progressive updates
-                        toast.loading(`✨ Transforming prompt with ${styleObj.label}...`, { id: 'style-magic' });
-
-                        try {
-                            // Prompt Transformation (Text -> Text)
-                            const transformResult = await api({
-                                action: 'transformPrompt',
-                                prompt: currentPrompt,
-                                styleName: styleObj.label,
-                                intensity: styleIntensity,
-                                instructions: styleObj.instruction
-                            });
-
-                            console.log("[handleMagicEnhance] transformPrompt result:", transformResult);
-                            const newPrompt = transformResult?.data?.prompt;
-
-                            if (!newPrompt) {
-                                toast.error("Style transformation returned empty prompt", { id: 'style-magic' });
-                                setIsEnhancing(false);
-                                return;
-                            }
-
-                            // Progressive prompt update for smooth visual effect
-                            toast.loading(`✨ Applying ${styleObj.label} style to prompt...`, { id: 'style-magic' });
-
-                            // Smooth transition - update prompt immediately
-                            setPrompt(newPrompt);
-
-                            // Success feedback
-                            setTimeout(() => {
-                                toast.success(`✨ Prompt transformed with ${styleObj.label}!`, {
-                                    id: 'style-magic',
-                                    duration: 2000,
-                                    icon: '✨'
-                                });
-                            }, 100);
-
-                            setIsEnhancing(false);
-
-                            // Auto-trigger generation with smooth delay
-                            setTimeout(() => {
-                                handleGenerate(newPrompt);
-                            }, 400); // Slightly longer delay for better perceived responsiveness
-                            return; // Exit early
-                        } catch (error) {
-                            console.error("[handleMagicEnhance] transformPrompt error:", error);
-                            const errorMessage = error.message || error.code || "Failed to transform prompt";
-                            toast.error(`Prompt transformation failed: ${errorMessage}`, { id: 'style-magic', duration: 4000 });
-                            setIsEnhancing(false);
-                            return;
-                        }
-                    }
-                }
-
-                // Case 3: No Style - Standard Enhancement (prompt exists but no style)
-                console.log("[handleMagicEnhance] Using standard enhancement path (no style)");
-                try {
-                    const result = await api({ action: 'createEnhanceRequest', prompt: currentPrompt });
-                    const requestId = result.data.requestId;
-
-                    const unsubscribe = onSnapshot(doc(db, 'enhance_queue', requestId), (snapshot) => {
-                        if (!snapshot.exists()) return;
-                        const data = snapshot.data();
-
-                        if (data.status === 'completed') {
-                            setPrompt(data.prompt);
-                            toast.success("Magic enhanced!", { id: 'style-magic' });
-                            setIsEnhancing(false);
-                            unsubscribe();
-                        } else if (data.status === 'failed') {
-                            console.error("Enhance failed:", data.error);
-                            toast.error("Failed: " + (data.error || "Unknown error"), { id: 'style-magic' });
-                            setIsEnhancing(false);
-                            unsubscribe();
-                        }
-                    });
-                } catch (error) {
-                    console.error("[handleMagicEnhance] createEnhanceRequest error:", error);
-                    toast.error("Failed to enhance prompt", { id: 'style-magic' });
-                    setIsEnhancing(false);
-                }
-                return;
-            }
-
-            // Fallback: If we get here, something unexpected happened
-            toast.error("Unable to process: please provide an image or prompt", { id: 'style-magic' });
-            setIsEnhancing(false);
-
-        } catch (error) {
-            console.error("[handleMagicEnhance] Unexpected error:", error);
-            toast.error("Failed to process request: " + (error.message || "Unknown error"), { id: 'style-magic' });
-            setIsEnhancing(false);
-        }
-    };
-
-
-
+    // 4. Effects
     useEffect(() => {
-        if (generationMode === 'video') {
-            setActiveTab('advanced');
-        }
-    }, [generationMode]);
-
-    useEffect(() => {
-        if (currentUser && generationMode === 'video') {
-            const q = query(
-                collection(db, 'generation_queue'),
-                where('userId', '==', currentUser.uid),
-                where('status', '==', 'completed'),
-                orderBy('createdAt', 'desc'),
-                limit(20)
-            );
-            const unsubscribe = onSnapshot(q, (snapshot) => {
-                setRecentImages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-            });
-            return () => unsubscribe();
-        }
-    }, [currentUser, generationMode]);
-
-    const triggerVideoAnimation = async (imageUrl, imageId = null, imgAspectRatio = null) => {
-        // Immediate UI feedback & Race Condition Prevention (Client-side)
-        if (generating) return;
-
-        if (imageId) setAnalyzingImageId(imageId);
-        setGenerating(true);
-        setGeneratedImage(null);
-        setCurrentJobType('video');
-        setReferenceImage(imageUrl);
-        setPrompt("Analyzing image..."); // Temporary placeholder
-
-        // Progressive progress updates for Video Animation
-        const progressUpdates = [
-            { delay: 500, message: `🎬 Preparing video studio...` },
-            { delay: 1500, message: `📤 Uploading image for analysis...` },
-            { delay: 3500, message: `🤖 Analyzing scene composition...` },
-            { delay: 6000, message: `🎥 Configuring camera motion...` },
-            { delay: 9000, message: `✨ Queuing generation job...` }
-        ];
-
-        const progressTimers = progressUpdates.map(({ delay, message }) =>
-            setTimeout(() => {
-                toast.loading(message, { id: 'video-animate' });
-            }, delay)
-        );
-
-        const clearProgressTimers = () => {
-            progressTimers.forEach(timer => clearTimeout(timer));
-        };
-
-        // Initial toast
-        toast.loading("Starting video animation...", { id: 'video-animate' });
-
-        const MAX_RETRIES = 3;
-        let retries = 0;
-        let success = false;
-
-        try {
-            const api = httpsCallable(functions, 'api', { timeout: 540000 }); // 9 minute timeout
-
-            // Compress image if base64 to avoid Firestore limits
-            let processedImage = imageUrl;
-            if (imageUrl && imageUrl.startsWith('data:')) {
-                console.log(`[Video] Compressing input image...`);
-                processedImage = await compressImage(imageUrl, 1024, 0.7);
-            }
-
-            while (retries < MAX_RETRIES && !success) {
-                try {
-                    const videoResult = await api({
-                        action: 'createVideoGenerationRequest',
-                        autoPrompt: true,
-                        image: processedImage,
-                        duration: videoDuration,
-                        resolution: videoResolution,
-                        aspectRatio: imgAspectRatio || aspectRatio
-                    });
-
-                    setCurrentJobId(videoResult.data.requestId);
-                    success = true; // Exit loop on success
-
-                    clearProgressTimers();
-                    toast.success("Video job finished setup!", { id: 'video-animate' });
-
-                } catch (innerError) {
-                    console.error(`Video generation attempt ${retries + 1} failed:`, innerError);
-
-                    // Check if we should retry (internal error or generic failure)
-                    const isRetryable = innerError.message?.includes('internal') || innerError.code === 'internal';
-
-                    if (isRetryable && retries < MAX_RETRIES - 1) {
-                        retries++;
-                        await new Promise(resolve => setTimeout(resolve, 2000 * Math.pow(2, retries))); // Exponential backoff (2s, 4s...)
-                        console.log(`Retrying video generation (Attempt ${retries + 1})...`);
-                        toast.loading(`Retrying... (Attempt ${retries + 1})`, { id: 'video-animate' });
-                    } else {
-                        throw innerError; // Rethrow to outer catch if not retryable or max retries reached
-                    }
-                }
-            }
-
-        } catch (error) {
-            clearProgressTimers();
-            console.error("Video generation error final", error);
-
-            let errorMessage = "Failed to animate image. Please try again.";
-
-            if (error.message?.includes('concurrency') || error.message?.includes('progress')) {
-                errorMessage = "You already have a video generation in progress.";
-            } else if (error.code === 'resource-exhausted') {
-                errorMessage = "Insufficient Reels balance.";
-            } else if (error.message?.includes('internal')) {
-                errorMessage = "Server error. Please try again later.";
-            } else if (error.message?.includes('INVALID_ARGUMENT')) {
-                errorMessage = "Image too large or invalid format.";
-            }
-
-            toast.error(errorMessage, { id: 'video-animate' });
-            setGenerating(false);
-            setPrompt("");
-            setReferenceImage(null);
-        } finally {
-            setAnalyzingImageId(null);
-        }
-    };
-
-    const handleVideoAutoAnimate = (image) => triggerVideoAnimation(image.imageUrl, image.id, image.aspectRatio);
-
-    // Auto-Prompt / Image Reference
-    const [referenceImage, setReferenceImage] = useState(null); // URL or Base64
-    const [isAutoPrompting, setIsAutoPrompting] = useState(false);
-    const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
-
-    // Renamed local function to avoid conflict/confusion, we'll use ImagePickerModal exclusively
-    const handlePickerSelect = (result) => {
-        // result: { type: 'gallery'|'upload', data: url|base64 }
-        if (generationMode === 'video') {
-            triggerVideoAnimation(result.data);
-        } else {
-            setReferenceImage(result.data);
-        }
-    };
-
-    const handleAutoPrompt = async () => {
-        if (!referenceImage) return toast.error("Please attach an image first");
-
-        setIsAutoPrompting(true);
-
-        // Progressive progress updates
-        const progressUpdates = [
-            { delay: 500, message: `📤 Uploading image to analysis engine...` },
-            { delay: 1500, message: `🧠 AI feels inspired...` },
-            { delay: 3500, message: `📝 Drafting detailed prompt...` },
-            { delay: 6000, message: `✨ Polishing description...` }
-        ];
-
-        const progressTimers = progressUpdates.map(({ delay, message }) =>
-            setTimeout(() => {
-                toast.loading(message, { id: 'auto-prompt' });
-            }, delay)
-        );
-
-        const clearProgressTimers = () => {
-            progressTimers.forEach(timer => clearTimeout(timer));
-        };
-
-        try {
-            toast.loading("Starting analysis...", { id: 'auto-prompt' });
-
-            const api = httpsCallable(functions, 'api', { timeout: 540000 }); // 9 minute timeout
-            const payload = { action: 'createAnalysisRequest' };
-            if (referenceImage.startsWith('data:')) {
-                // Compress image to avoid Firestore 1MB limit
-                // Use 1024px max dimension and 0.7 quality to stay safe
-                const compressedImage = await compressImage(referenceImage, 1024, 0.7);
-                console.log(`Compressed image: ${referenceImage.length} -> ${compressedImage.length} bytes`);
-                payload.image = compressedImage;
-            } else {
-                payload.imageUrl = referenceImage;
-            }
-            const { data } = await api(payload);
-            const requestId = data.requestId;
-
-            // Subscribe to results
-            const unsub = onSnapshot(doc(db, "analysis_queue", requestId), (snapshot) => {
-                if (snapshot.exists()) {
-                    const status = snapshot.data().status;
-                    if (status === 'completed') {
-                        clearProgressTimers();
-                        setPrompt(snapshot.data().prompt);
-                        toast.success("Prompt generated!", { id: 'auto-prompt' });
-
-                        // Clear image after successful prompt generation to avoid confusion
-                        if (generationMode === 'image') {
-                            setReferenceImage(null);
-                        }
-                        setIsAutoPrompting(false);
-                        unsub();
-                    } else if (status === 'failed') {
-                        clearProgressTimers();
-                        toast.error("Analysis failed: " + snapshot.data().error, { id: 'auto-prompt' });
-                        setIsAutoPrompting(false);
-                        unsub();
-                    }
-                }
-            });
-
-            // Auto-cleanup subscriber if it takes too long
-            setTimeout(() => {
-                unsub();
-                if (isAutoPrompting) {
-                    clearProgressTimers();
-                    setIsAutoPrompting(false);
-                    toast.error("Analysis timeout. Please try again.", { id: 'auto-prompt' });
-                }
-            }, 180000); // 3 minute timeout (increased from 60s)
-
-            // Reassuring toast for long waits
-            setTimeout(() => {
-                if (isAutoPrompting) {
-                    toast.loading("Still working on it... complex scenes take time!", { id: 'auto-prompt' });
-                }
-            }, 45000);
-
-        } catch (error) {
-            clearProgressTimers();
-            console.error("Auto prompt request error", error);
-            console.error("Auto prompt error details:", error.message, error.code, error.details);
-            toast.error(`Failed to start analysis: ${error.message}`, { id: 'auto-prompt' });
-            setIsAutoPrompting(false);
-        }
-    };
-
-    const clearReferenceImage = () => {
-        setReferenceImage(null);
-    };
-
-    // --- Effects & Logic ---
-
-    useEffect(() => {
-        if (!currentUser) return;
-        const unsub = onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                setZaps(data.zaps !== undefined ? data.zaps : (data.credits !== undefined ? data.credits : 5));
-                setReels(data.reels !== undefined ? data.reels : 0);
-                setSubscriptionStatus(data.subscriptionStatus);
-            } else {
-                setZaps(5);
-                setSubscriptionStatus('inactive');
-            }
-        });
-        return () => unsub();
-    }, [currentUser]);
-
-    // Fetch Showcase Images
-    useEffect(() => {
-        if (selectedModel) {
-            getShowcaseImages(selectedModel.id).then(imgs => setShowcaseImages(imgs));
-        }
-        // getShowcaseImages is stable from ModelContext, safe to exclude from deps
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedModel]);
-
-
-    // Fullscreen Escape Key
-    useEffect(() => {
-        const handleKeyDown = (e) => {
-            if (e.key === 'Escape' && isFullscreen) {
-                setIsFullscreen(false);
+        const loadShowcase = async () => {
+            if (activeTab === 'simple' && showcaseImages.length === 0) {
+                const images = await getShowcaseImages(selectedModel?.id);
+                setShowcaseImages(images);
             }
         };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isFullscreen]);
+        loadShowcase();
+    }, [activeTab, selectedModel, getShowcaseImages, showcaseImages.length, setShowcaseImages]);
+
+    // Speech Recognition
+    const [isListening, setIsListening] = useState(false);
+    const recognitionRef = React.useRef(null);
 
     useEffect(() => {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition) {
-            const recognition = new SpeechRecognition();
+        if ('webkitSpeechRecognition' in window) {
+            const recognition = new window.webkitSpeechRecognition();
             recognition.continuous = true;
             recognition.interimResults = true;
-            recognition.lang = 'en-US';
-
             recognition.onresult = (event) => {
-                let finalTranscript = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) {
-                        finalTranscript += event.results[i][0].transcript;
-                    }
-                }
-                if (finalTranscript) {
-                    setPrompt(prev => prev + (prev.length > 0 && !prev.endsWith(' ') ? ' ' : '') + finalTranscript);
-                }
+                const transcript = Array.from(event.results).map(result => result[0].transcript).join('');
+                setPrompt(prev => {
+                    // Only append if it's a new sentence to avoid duplication in some browsers
+                    return transcript;
+                });
             };
-
-            recognition.onerror = () => setIsListening(false);
-            recognition.onend = () => setIsListening(false);
-            speechRecognitionRef.current = recognition;
+            recognition.onerror = (event) => {
+                console.error("Speech recognition error", event.error);
+                setIsListening(false);
+            };
+            recognitionRef.current = recognition;
         }
-    }, []);
+    }, [setPrompt]);
 
     const toggleListening = () => {
-        if (!speechRecognitionRef.current) return toast.error("Browser not supported");
+        if (!recognitionRef.current) {
+            toast.error("Speech recognition not supported in this browser");
+            return;
+        }
         if (isListening) {
-            speechRecognitionRef.current.stop();
+            recognitionRef.current.stop();
             setIsListening(false);
         } else {
-            speechRecognitionRef.current.start();
+            recognitionRef.current.start();
             setIsListening(true);
-            toast.success("Listening...", { icon: '🎙️' });
+            toast.success("Listening... Speak your prompt!", { icon: '🎙️' });
         }
     };
 
-    // Timer & Status Simulation
-    useEffect(() => {
-        if (!generating) {
-            // Reset when not generating
-            setElapsedTime(0);
-            setProgress(0);
-            return;
+    // HISTORY RESTORE
+    const handleHistorySelect = (item) => {
+        setPrompt(item.prompt || '');
+        setGeneratedImage(item.imageUrl || item.thumbnailUrl);
+        setReferenceImage(null);
+        setActiveJob(item);
+        if (item.modelId) {
+            const model = availableModels.find(m => m.id === item.modelId);
+            if (model) setSelectedModel(model);
         }
+        if (item.aspect_ratio) setAspectRatio(item.aspect_ratio);
+        if (item.seed) setSeed(item.seed);
+        if (item.steps) setSteps(item.steps);
+        if (item.cfg) setCfg(item.cfg);
+        if (item.negative_prompt) setNegPrompt(item.negative_prompt);
+        setCurrentJobId(item.id);
 
-        const interval = setInterval(() => {
-            setElapsedTime(prev => prev + 1);
-            // Asymptotic progress 
-            setProgress(prev => prev + (99 - prev) * 0.02);
-        }, 100); // Faster updates for smoother feel
-
-        return () => clearInterval(interval);
-    }, [generating]);
-
-    // Auto-Switch Model on Mode Change
-    useEffect(() => {
-        if (!selectedModel || availableModels.length === 0) return;
-
-        if (generationMode === 'video' && selectedModel.type !== 'Video') {
-            const videoModel = availableModels.find(m => m.type === 'Video');
-            if (videoModel) setSelectedModel(videoModel);
-        } else if (generationMode === 'image' && selectedModel.type === 'Video') {
-            const imageModel = availableModels.find(m => m.type !== 'Video' && m.id === 'zit-model') || availableModels.find(m => m.type !== 'Video');
-            if (imageModel) setSelectedModel(imageModel);
-        }
-    }, [generationMode, availableModels, selectedModel, setSelectedModel]);
-
-    // Firestore Job Listener
-    useEffect(() => {
-        if (!currentJobId) return;
-
-        const collectionName = currentJobType === 'video' ? 'video_queue' : 'generation_queue';
-        const unsub = onSnapshot(doc(db, collectionName, currentJobId), (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                setActiveJob({ id: docSnap.id, ...data }); // Keep active job synced
-
-                if (data.status === 'completed') {
-                    setProgress(100);
-                    setTimeout(() => {
-                        // Robustly check for video URL first (it's distinct in backend)
-                        setGeneratedImage(data.videoUrl || data.imageUrl);
-                        setGenerating(false);
-                        setCurrentJobId(null);
-                    }, 500);
-                } else if (data.status === 'failed') {
-                    toast.error(`Failed: ${data.error}`);
-                    setGenerating(false);
-                    setCurrentJobId(null);
-                }
-            }
-        });
-        return () => unsub();
-    }, [currentJobId, currentJobType]);
-
-    const handleGenerate = async (promptOverride = null) => {
-        // Use override if provided, otherwise state. Ensure it's a string.
-        const effectivePrompt = (typeof promptOverride === 'string' ? promptOverride : prompt);
-
-        // SAFEGUARD: If referenceImage exists with activeStyleId, use image transformation instead
-        const isReferenceImageValid = (img) => {
-            return img && typeof img === 'string' && img.trim().length > 0;
-        };
-
-        if (isReferenceImageValid(referenceImage) && activeStyleId && generationMode === 'image') {
-            console.log("[handleGenerate] Detected referenceImage + style, redirecting to handleMagicEnhance for image transformation");
-            await handleMagicEnhance();
-            return;
-        }
-
-        if (!effectivePrompt || !selectedModel) return;
-
-        // Mode Specific Checks
-        if (generationMode === 'video') {
-            // Calculate estimated cost (simple client-side check)
-            let rate = 12;
-            if (videoResolution === '2k') rate = 26;
-            if (videoResolution === '4k') rate = 50;
-            const estCost = rate * videoDuration;
-
-            if (reels < estCost) {
-                toast.error(`Insufficient Reels. Need ~${estCost}, have ${reels}.`);
-                return;
-            }
+        if (item.metadata?.type === 'video' || item.type === 'video') {
+            setGenerationMode('video');
         } else {
-            const isPremiumModel = selectedModel?.id === 'zit-model' || selectedModel?.id === 'qwen-image-2512';
-            const cost = (useTurbo || isPremiumModel) ? 1 : (subscriptionStatus === 'active' ? 0 : 0.5);
-            if (zaps < cost) {
-                toast.error(`Insufficient Zaps ⚡ (Need ${cost}, have ${zaps.toFixed(1)})`);
-                return;
-            }
-        }
-
-        setGenerating(true);
-        setGeneratedImage(null);
-        setCurrentJobType(generationMode);
-
-        try {
-            if (generationMode === 'video') {
-                const api = httpsCallable(functions, 'api', { timeout: 540000 }); // 9 minute timeout
-
-                // Compress image if base64 before upload
-                let processedImage = referenceImage;
-                if (processedImage && processedImage.startsWith('data:')) {
-                    console.log(`[Video] Compressing reference image...`);
-                    processedImage = await compressImage(processedImage, 1024, 0.7);
-                }
-
-                const result = await api({
-                    action: 'createVideoGenerationRequest',
-                    prompt: effectivePrompt,
-                    image: processedImage, // Use compressed image
-                    duration: videoDuration,
-                    resolution: videoResolution,
-                    aspectRatio: aspectRatio // Optional
-                });
-                setCurrentJobId(result.data.requestId);
-            } else {
-                const api = httpsCallable(functions, 'api', { timeout: 540000 }); // 9 minute timeout
-
-                let finalPrompt = effectivePrompt;
-                let finalNegativePrompt = negPrompt;
-
-                // Progressive progress updates for Standard Generation
-                const progressUpdates = [
-                    { delay: 500, message: `🚀 Queueing request...` },
-                    { delay: 1500, message: `🎨 Allocating GPU resources...` },
-                    { delay: 3500, message: `🖌️ Painting your vision...` },
-                    { delay: 6000, message: `✨ Refining details...` }
-                ];
-
-                const progressTimers = progressUpdates.map(({ delay, message }) =>
-                    setTimeout(() => {
-                        toast.loading(message, { id: 'gen-image' });
-                    }, delay)
-                );
-
-                const clearProgressTimers = () => {
-                    progressTimers.forEach(timer => clearTimeout(timer));
-                };
-
-                // Initial toast
-                toast.loading("Starting generation...", { id: 'gen-image' });
-
-                // Magic Mode Auto-Transform logic removed in favor of explicit "Enhance" button workflow.
-
-
-                // Apply Style Registry (Tags Only - Safe Mode / Reinforcement)
-                if (activeStyleId) {
-                    const styleData = getStylePrompt(activeStyleId, styleIntensity);
-
-                    // Append style tags (If Magic Mode ran, these act as reinforcement. If not, they are the primary style)
-                    if (styleData.tags.length > 0) {
-                        finalPrompt = `${finalPrompt}, ${styleData.tags.join(', ')}`;
-                    }
-
-                    // Append Negatives
-                    const combinedNegatives = [
-                        negPrompt,
-                        ...GLOBAL_NEGATIVES,
-                        ...styleData.negatives
-                    ].filter(Boolean).join(', ');
-
-                    finalNegativePrompt = combinedNegatives;
-                }
-
-                try {
-                    const result = await api({
-                        action: 'createGenerationRequest',
-                        prompt: finalPrompt,
-                        negative_prompt: finalNegativePrompt,
-                        modelId: selectedModel.id,
-                        aspectRatio: aspectRatio,
-                        steps: steps,
-                        cfg: cfg,
-                        seed: seed,
-                        useTurbo
-                    });
-
-                    setCurrentJobId(result.data.requestId);
-                    clearProgressTimers();
-                    toast.success("Generation started!", { id: 'gen-image' });
-
-                } catch (innerError) {
-                    clearProgressTimers();
-                    throw innerError;
-                }
-            }
-        } catch (error) {
-            console.error("Queue error", error);
-            setGenerating(false);
-            const errorMessage = error.message || error.code || "Failed to create generation request";
-
-            // Helpful user messaging for payload errors
-            if (errorMessage.includes('INVALID_ARGUMENT') || errorMessage.includes('too large')) {
-                toast.error("Image too large. Compression failed.", { id: generationMode === 'image' ? 'gen-image' : undefined });
-            } else {
-                toast.error(errorMessage, { id: generationMode === 'image' ? 'gen-image' : undefined });
-            }
+            setGenerationMode('image');
         }
     };
-
-
-
-    const handleHistorySelect = (job) => {
-        setGeneratedImage(job.imageUrl);
-        setActiveJob(job); // Set for rating
-        setPrompt(job.prompt);
-        if (job.negative_prompt) setNegPrompt(job.negative_prompt);
-
-        // Restore parameters
-        if (job.aspectRatio) setAspectRatio(job.aspectRatio);
-        if (job.steps) setSteps(job.steps);
-        if (job.cfg) setCfg(job.cfg);
-        if (job.seed) setSeed(job.seed);
-
-        // Restore Model
-        if (job.modelId && availableModels.length > 0) {
-            const restoredModel = availableModels.find(m => m.id === job.modelId);
-            if (restoredModel) {
-                setSelectedModel(restoredModel);
-            }
-        }
-
-        toast.success("Settings restored", { icon: '↺', duration: 2000 });
-    };
-
-    if (loading) {
-        return (
-            <div style={{ paddingTop: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', color: 'white' }}>
-                <Loader2 className="animate-spin" size={32} />
-            </div>
-        );
-    }
 
     return (
-        <div style={{ paddingTop: '24px', paddingBottom: '40px', display: 'flex', flexDirection: 'column' }}>
-            <SEO
-                title="Studio"
-                description="Professional AI Image Generation Studio. Create art with SDXL and Flux models using our high-performance inference engine."
-                keywords="AI studio, image generator, stable diffusion online, art creation tool"
-            />
-            <div className="container" style={{ flex: 1, display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 340px', gap: '32px' }}>
+        <div style={{ minHeight: '100vh', background: '#000', color: 'white', fontFamily: '"Outfit", sans-serif' }}>
+            <SEO title="DreamBees Studio" description="Create stunning AI art." />
+            <Toaster position="bottom-center" toastOptions={{ style: { background: '#333', color: '#fff', borderRadius: '12px' } }} />
+            <MinimalHeader />
 
-                {/* Left: Canvas / Input */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', minHeight: 0 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 300px', height: 'calc(100vh - 72px)', maxWidth: '1800px', margin: '0 auto' }}>
 
-                    {/* Header Info (Mobile only mostly, or subtle) */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <h1 style={{ fontSize: '1.5rem', fontWeight: '700', letterSpacing: '-0.02em', color: 'white' }}>Studio</h1>
-                            {/* Mode Toggle */}
-                            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '2px' }}>
-                                <button
-                                    onClick={() => setGenerationMode('image')}
-                                    style={{ padding: '4px 8px', borderRadius: '6px', background: generationMode === 'image' ? 'var(--color-accent-primary)' : 'transparent', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', gap: '4px', alignItems: 'center', fontSize: '0.8rem' }}
-                                >
-                                    <ImageIcon size={14} /> Image
-                                </button>
-                                <button
-                                    onClick={() => setGenerationMode('video')}
-                                    style={{ padding: '4px 8px', borderRadius: '6px', background: generationMode === 'video' ? 'var(--color-accent-primary)' : 'transparent', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', gap: '4px', alignItems: 'center', fontSize: '0.8rem' }}
-                                >
-                                    <Film size={14} /> Video
-                                </button>
-                            </div>
-                        </div>
-
-                        {(generationMode === 'image') && (
-                            <div style={{ fontSize: '0.9rem', color: zaps > 0 ? 'var(--color-text-muted)' : '#ef4444', fontWeight: '700', fontFamily: 'Outfit', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Zap size={14} fill="currentColor" /> {zaps.toFixed(1)}
-                            </div>
-                        )}
-                        {(generationMode === 'video') && (
-                            <div style={{ fontSize: '0.85rem', color: reels > 0 ? 'var(--color-text-muted)' : '#ef4444', fontWeight: '600', fontFamily: 'monospace' }}>
-                                {reels} REELS
-                            </div>
-                        )}
+                {/* 1. LEFT SIDEBAR (History & Modes) */}
+                <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 8px', gap: '24px', borderRight: '1px solid rgba(255,255,255,0.05)', zIndex: 10 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', alignItems: 'center' }}>
+                        <button
+                            onClick={() => setGenerationMode('image')}
+                            className={generationMode === 'image' ? "btn-nav-active" : "btn-nav"}
+                            title="Image Generation"
+                            style={{ width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', background: generationMode === 'image' ? 'var(--color-accent-primary)' : 'transparent', color: generationMode === 'image' ? 'white' : 'var(--color-text-muted)' }}
+                        >
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                        </button>
+                        <button
+                            onClick={() => setGenerationMode('video')}
+                            className={generationMode === 'video' ? "btn-nav-active" : "btn-nav"}
+                            title="Video Animation"
+                            style={{ width: '48px', height: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', background: generationMode === 'video' ? 'var(--color-accent-primary)' : 'transparent', color: generationMode === 'video' ? 'white' : 'var(--color-text-muted)' }}
+                        >
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" /></svg>
+                        </button>
                     </div>
 
-                    {/* Main Workspace */}
-                    <div className="glass-panel" style={{ flex: 1, minHeight: '700px', display: 'flex', flexDirection: 'column', padding: '4px', overflow: 'hidden' }}>
+                    <div style={{ width: '100%', height: '1px', background: 'rgba(255,255,255,0.1)' }} />
 
-                        {/* Result View or Placeholder */}
-                        <div style={{ flex: 1, background: '#050505', borderRadius: 'var(--radius-md) var(--radius-md) 0 0', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {/* Animation styles for loading indicators */}
-                            <style>{`
-                                @keyframes fadeIn {
-                                    from { opacity: 0; }
-                                    to { opacity: 1; }
-                                }
-                                @keyframes pulse {
-                                    0%, 100% { opacity: 0.4; transform: scale(1); }
-                                    50% { opacity: 1; transform: scale(1.2); }
-                                }
-                            `}</style>
-                            {generating ? (
-                                <div style={{ textAlign: 'center', width: '100%' }}>
-                                    <div style={{ fontSize: '3rem', fontWeight: '800', color: 'rgba(255,255,255,0.1)', letterSpacing: '-0.05em' }} className="animate-pulse-slow">
-                                        RENDERING
-                                    </div>
-                                    <div style={{ height: '1px', width: '200px', background: 'rgba(255,255,255,0.1)', margin: '20px auto', position: 'relative', overflow: 'hidden' }}>
-                                        <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${progress}%`, background: 'var(--color-accent-primary)' }} />
-                                    </div>
-                                    <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                                        {(elapsedTime / 10).toFixed(1)}s / JOB-{currentJobId ? currentJobId.slice(0, 4).toUpperCase() : 'INIT'}
-                                    </div>
-                                </div>
-                            ) : generatedImage ? (
-                                <div className="fade-in" style={{ position: 'absolute', inset: 0, padding: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    {/\.(mp4|webm|mov|mkv)($|\?)/i.test(generatedImage) ? (
-                                        <video
-                                            src={generatedImage}
-                                            controls
-                                            autoPlay
-                                            loop
-                                            style={{ width: '100%', height: '100%', boxShadow: '0 0 50px rgba(0,0,0,0.5)', objectFit: 'contain' }}
-                                        />
-                                    ) : (
-                                        <>
-                                            <img
-                                                src={getOptimizedImageUrl(generatedImage)}
-                                                alt={`Generated artwork for prompt: ${prompt}`}
-                                                style={{
-                                                    width: '100%',
-                                                    height: '100%',
-                                                    boxShadow: '0 0 50px rgba(0,0,0,0.5)',
-                                                    objectFit: 'contain',
-                                                    opacity: isEnhancing ? 0.4 : 1,
-                                                    filter: isEnhancing ? 'blur(2px)' : 'none',
-                                                    transition: 'opacity 0.4s ease, filter 0.4s ease',
-                                                    transform: isEnhancing ? 'scale(0.98)' : 'scale(1)',
-                                                    transformOrigin: 'center'
-                                                }}
-                                                onLoad={(e) => {
-                                                    // Smooth fade-in when image loads
-                                                    e.target.style.opacity = '1';
-                                                }}
-                                            />
-                                            {isEnhancing && (
-                                                <div style={{
-                                                    position: 'absolute',
-                                                    inset: 0,
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    background: 'rgba(0,0,0,0.75)',
-                                                    backdropFilter: 'blur(8px)',
-                                                    zIndex: 10,
-                                                    animation: 'fadeIn 0.3s ease-in'
-                                                }}>
-                                                    <div style={{
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        alignItems: 'center',
-                                                        gap: '20px'
-                                                    }}>
-                                                        <Loader2 size={56} className="animate-spin" style={{ color: 'var(--color-accent-primary)' }} />
-                                                        <div style={{ textAlign: 'center' }}>
-                                                            <div style={{
-                                                                fontSize: '1.2rem',
-                                                                fontWeight: '700',
-                                                                color: 'white',
-                                                                marginBottom: '8px',
-                                                                letterSpacing: '0.5px'
-                                                            }}>
-                                                                Transforming Image
-                                                            </div>
-                                                            <div style={{
-                                                                fontSize: '0.9rem',
-                                                                color: 'var(--color-text-muted)',
-                                                                opacity: 0.9
-                                                            }}>
-                                                                AI is applying the style transformation...
-                                                            </div>
-                                                        </div>
-                                                        {/* Animated progress dots */}
-                                                        <div style={{
-                                                            display: 'flex',
-                                                            gap: '8px',
-                                                            marginTop: '8px'
-                                                        }}>
-                                                            {[0, 1, 2].map((i) => (
-                                                                <div
-                                                                    key={i}
-                                                                    style={{
-                                                                        width: '8px',
-                                                                        height: '8px',
-                                                                        borderRadius: '50%',
-                                                                        background: 'var(--color-accent-primary)',
-                                                                        animation: `pulse 1.4s ease-in-out ${i * 0.2}s infinite`,
-                                                                        opacity: 0.7
-                                                                    }}
-                                                                />
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-                                    <div style={{ position: 'absolute', bottom: '20px', right: '20px', display: 'flex', gap: '12px' }}>
-                                        {/* Ranking Actions */}
-                                        <div style={{ display: 'flex', gap: '8px', marginRight: '16px', background: 'rgba(0,0,0,0.6)', borderRadius: '8px', padding: '4px', border: '1px solid rgba(255,255,255,0.2)' }}>
-                                            <button
-                                                onClick={() => {
-                                                    if (activeJob) {
-                                                        rateGeneration(activeJob, 1);
-                                                        toast.success("Rated: Positive");
-                                                    }
-                                                }}
-                                                className="btn-icon-hover"
-                                                style={{ padding: '6px', borderRadius: '6px', color: 'white', cursor: 'pointer', background: 'transparent', border: 'none' }}
-                                                title="I like this"
-                                            >
-                                                <ThumbsUp size={18} />
-                                            </button>
-                                            <div style={{ width: '1px', background: 'rgba(255,255,255,0.2)', margin: '4px 0' }} />
-                                            <button
-                                                onClick={() => {
-                                                    if (activeJob) {
-                                                        rateGeneration(activeJob, -1);
-                                                        setGeneratedImage(null); // Optimistic remove
-                                                        setActiveJob(null);
-                                                        toast.success("Rated: Negative (Hidden)");
-                                                    }
-                                                }}
-                                                className="btn-icon-hover"
-                                                style={{ padding: '6px', borderRadius: '6px', color: '#ef4444', cursor: 'pointer', background: 'transparent', border: 'none' }}
-                                                title="I dislike this (Hide)"
-                                            >
-                                                <ThumbsDown size={18} />
-                                            </button>
-                                        </div>
+                    <GenerationHistory
+                        currentUser={currentUser}
+                        onSelect={handleHistorySelect}
+                        currentJobId={currentJobId}
+                        compact={true}
+                    />
+                </div>
 
-                                        <button
-                                            onClick={() => setIsFullscreen(true)}
-                                            className="btn-icon"
-                                            style={{
-                                                width: '36px', height: '36px', borderRadius: '8px',
-                                                background: 'rgba(0,0,0,0.6)', color: 'white',
-                                                border: '1px solid rgba(255,255,255,0.2)',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                cursor: 'pointer'
-                                            }}
-                                            title="Fullscreen"
-                                        >
-                                            <Maximize2 size={18} />
-                                        </button>
-                                        <Link to="/gallery" className="btn btn-outline" style={{ padding: '0 16px', height: '36px', fontSize: '0.8rem' }}>
-                                            Gallery
-                                        </Link>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', opacity: 0.3 }}>
-                                    {generationMode === 'video' ? <Film size={64} style={{ marginBottom: '16px' }} /> : <ImageIcon size={64} style={{ marginBottom: '16px' }} />}
-                                    <div style={{ fontSize: '1.2rem', fontWeight: '500' }}>Ready to Dream</div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Prompt Input Bar OR Video Gallery */}
-                        {/* Prompt Input / Video Carousel Switch */}
-                        {generationMode === 'video' ? (
-                            /* Video Mode: Recent Images Carousel (Replaces Prompt Form) */
-                            <div style={{
-                                padding: '24px',
-                                borderTop: '1px solid rgba(255,255,255,0.08)',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '16px'
-                            }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ fontSize: '0.9rem', fontWeight: '600', color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <Sparkles size={14} className="text-purple-400" />
-                                        Bring to Life (Recent)
-                                    </div>
-                                    <Link to="/gallery" style={{ fontSize: '0.8rem', color: 'var(--color-accent-primary)', textDecoration: 'none' }}>
-                                        View All
-                                    </Link>
-                                </div>
-
-                                {recentImages.length > 0 ? (
-                                    <div className="custom-scrollbar" style={{
-                                        display: 'flex',
-                                        gap: '12px',
-                                        overflowX: 'auto',
-                                        paddingBottom: '12px',
-                                        scrollBehavior: 'smooth'
-                                    }}>
-                                        {recentImages.map(img => (
-                                            <button
-                                                key={img.id}
-                                                onClick={() => handleVideoAutoAnimate(img)}
-                                                disabled={!!analyzingImageId}
-                                                className="carousel-item"
-                                                style={{
-                                                    flexShrink: 0,
-                                                    width: '140px',
-                                                    aspectRatio: '1',
-                                                    borderRadius: '16px',
-                                                    overflow: 'hidden',
-                                                    border: '1px solid rgba(255,255,255,0.1)',
-                                                    position: 'relative',
-                                                    cursor: 'pointer',
-                                                    padding: 0,
-                                                    background: '#000',
-                                                    transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)'
-                                                }}
-                                            >
-                                                <img
-                                                    src={getOptimizedImageUrl(img.imageUrl)}
-                                                    alt=""
-                                                    style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: analyzingImageId === img.id ? 0.5 : 1 }}
-                                                />
-                                                <div className="hover-overlay" style={{
-                                                    position: 'absolute', inset: 0,
-                                                    background: 'rgba(0,0,0,0.4)',
-                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                    opacity: 0, transition: 'opacity 0.2s',
-                                                    backdropFilter: 'blur(2px)'
-                                                }}>
-                                                    <div style={{
-                                                        background: 'white', color: 'black',
-                                                        borderRadius: '50%', padding: '10px',
-                                                        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                                    }}>
-                                                        <Video size={18} fill="currentColor" />
-                                                    </div>
-                                                </div>
-                                                {analyzingImageId === img.id && (
-                                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}>
-                                                        <Loader2 size={24} className="animate-spin" color="white" />
-                                                    </div>
-                                                )}
-                                            </button>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div style={{
-                                        padding: '40px',
-                                        textAlign: 'center',
-                                        color: 'var(--color-text-muted)',
-                                        border: '1px dashed rgba(255,255,255,0.1)',
-                                        borderRadius: '16px',
-                                        background: 'rgba(255,255,255,0.02)'
-                                    }}>
-                                        <ImageIcon size={32} style={{ marginBottom: '12px', opacity: 0.5 }} />
-                                        <div style={{ fontSize: '0.9rem' }}>No recent images found.</div>
-                                        <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>Generate or upload an image to animate it.</div>
-                                    </div>
-                                )}
-                                <style>{`
-                                    .carousel-item:hover .hover-overlay { opacity: 1; }
-                                    .carousel-item:hover { transform: translateY(-4px) scale(1.02); border-color: var(--color-accent-primary) !important; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 10; }
-                                `}</style>
-                            </div>
-                        ) : (
-                            /* Image Mode: Standard Prompt Form */
-                            <div style={{ padding: '0', background: 'transparent', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                                {/* Enhance Button Bar */}
-                                <div style={{
-                                    padding: '12px 20px',
-                                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                                    background: 'rgba(0,0,0,0.2)'
-                                }}>
-                                    <button
-                                        onClick={handleMagicEnhance}
-                                        disabled={isEnhancing || (!prompt && !referenceImage)}
-                                        className="btn-secondary"
-                                        style={{
-                                            width: '100%',
-                                            padding: '10px',
-                                            borderRadius: '12px',
-                                            color: activeStyleId ? '#ffffff' : 'var(--color-accent-primary)',
-                                            background: activeStyleId ? 'var(--color-accent-primary)' : 'rgba(var(--color-accent-rgb), 0.1)',
-                                            border: activeStyleId ? 'none' : '1px solid var(--color-accent-primary)',
-                                            transition: 'all 0.2s',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                                            fontSize: '0.9rem', fontWeight: '600',
-                                            cursor: isEnhancing || (!prompt && !referenceImage) ? 'not-allowed' : 'pointer',
-                                            opacity: isEnhancing || (!prompt && !referenceImage) ? 0.7 : 1,
-                                            position: 'relative',
-                                            overflow: 'hidden'
-                                        }}
-                                    >
-                                        {isEnhancing ? (
-                                            <>
-                                                <Loader2 size={16} className="animate-spin" />
-                                                <span>Processing...</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Wand2 size={16} />
-                                                {activeStyleId ? "Apply Style & Generate" : "Enhance Prompt"}
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                                <div className="glass-panel" style={{
-                                    margin: '20px',
-                                    padding: '6px', // Inner padding for the border effect
-                                    borderRadius: '16px',
-                                    background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
-                                    boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
-                                    border: '1px solid rgba(255,255,255,0.05)'
-                                }}>
-                                    {activeStyleId ? (
-                                        <div style={{
-                                            padding: '30px',
-                                            textAlign: 'center',
-                                            color: 'var(--color-text-muted)'
-                                        }}>
-                                            <Sparkles size={32} style={{ marginBottom: '10px', color: 'var(--color-accent-primary)' }} />
-                                            <h3 style={{ margin: '0 0 8px 0', color: 'white' }}>
-                                                {STYLE_REGISTRY.find(s => s.id === activeStyleId)?.label} Style Active
-                                            </h3>
-                                            <p style={{ margin: '0 0 16px 0', fontSize: '0.9rem', opacity: 0.7 }}>
-                                                Prompt will be automatically rewritten in this style.
-                                            </p>
-                                            <button
-                                                onClick={() => setActiveStyleId(null)}
-                                                className="btn-ghost"
-                                                style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', textDecoration: 'underline' }}
-                                            >
-                                                Change Style or Edit Prompt
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <div style={{
-                                                background: 'rgba(0,0,0,0.4)',
-                                                borderRadius: '12px',
-                                                padding: '16px',
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                gap: '12px'
-                                            }}>
-                                                {referenceImage && (
-                                                    <div style={{ position: 'relative', width: 'fit-content', marginBottom: '8px' }}>
-                                                        <img
-                                                            src={referenceImage.startsWith('data:') ? referenceImage : getOptimizedImageUrl(referenceImage)}
-                                                            alt="Reference"
-                                                            style={{ height: '80px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)' }}
-                                                        />
-                                                        <button
-                                                            onClick={clearReferenceImage}
-                                                            style={{
-                                                                position: 'absolute',
-                                                                top: '-6px',
-                                                                right: '-6px',
-                                                                background: '#ef4444',
-                                                                color: 'white',
-                                                                borderRadius: '50%',
-                                                                width: '18px',
-                                                                height: '18px',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                justifyContent: 'center',
-                                                                border: 'none',
-                                                                cursor: 'pointer'
-                                                            }}
-                                                        >
-                                                            <X size={12} />
-                                                        </button>
-                                                    </div>
-                                                )}
-
-                                                <textarea
-                                                    value={prompt}
-                                                    onChange={(e) => setPrompt(e.target.value)}
-                                                    placeholder={
-                                                        referenceImage
-                                                            ? "Click the Sparkles icon below to analyze this image..."
-                                                            : "Describe your vision..."
-                                                    }
-                                                    className="custom-scrollbar"
-                                                    style={{
-                                                        width: '100%',
-                                                        background: 'transparent',
-                                                        border: 'none',
-                                                        color: 'white',
-                                                        fontSize: '1.1rem',
-                                                        fontWeight: '400',
-                                                        resize: 'none',
-                                                        minHeight: '160px',
-                                                        outline: 'none',
-                                                        lineHeight: '1.6',
-                                                        fontFamily: '"Outfit", sans-serif',
-                                                        letterSpacing: '0.01em'
-                                                    }}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter' && !e.shiftKey && !generating) {
-                                                            e.preventDefault();
-                                                            handleGenerate();
-                                                        }
-                                                    }}
-                                                />
-                                            </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
-                                                <div style={{ display: 'flex', gap: '4px' }}>
-                                                    <button
-                                                        onClick={toggleListening}
-                                                        className={`btn-ghost ${isListening ? 'listening-pulse' : ''}`}
-                                                        style={{
-                                                            padding: '8px 12px',
-                                                            borderRadius: '8px',
-                                                            color: isListening ? '#ef4444' : 'var(--color-text-muted)',
-                                                            background: isListening ? 'rgba(239, 68, 68, 0.1)' : 'transparent',
-                                                            transition: 'all 0.2s',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '6px',
-                                                            fontSize: '0.8rem'
-                                                        }}
-                                                    >
-                                                        {isListening ? <MicOff size={16} /> : <Mic size={16} />}
-                                                        {isListening && <span>Listening...</span>}
-                                                    </button>
-
-                                                    <button
-                                                        onClick={() => setIsImagePickerOpen(true)}
-                                                        className="btn-ghost"
-                                                        title={generationMode === 'video' ? "Attach Image to Animate" : "Upload Reference Image for Prompt Analysis"}
-                                                        style={{
-                                                            padding: '8px',
-                                                            borderRadius: '8px',
-                                                            color: referenceImage ? 'var(--color-accent-primary)' : 'var(--color-text-muted)',
-                                                            transition: 'all 0.2s'
-                                                        }}
-                                                    >
-                                                        <Paperclip size={16} />
-                                                    </button>
-                                                    {referenceImage && (
-                                                        <button
-                                                            onClick={handleAutoPrompt}
-                                                            className={`btn-ghost ${isAutoPrompting ? 'animate-pulse' : ''}`}
-                                                            title="Analyze image with Gemini to auto-generate a detailed prompt"
-                                                            disabled={isAutoPrompting}
-                                                            style={{
-                                                                padding: '8px',
-                                                                borderRadius: '8px',
-                                                                color: 'var(--color-accent-primary)',
-                                                                transition: 'all 0.2s',
-                                                                background: 'rgba(var(--color-accent-rgb), 0.1)'
-                                                            }}
-                                                        >
-                                                            {isAutoPrompting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
-                                                        </button>
-                                                    )}
-
-
-                                                    <button
-                                                        onClick={() => {
-                                                            const url = new URL(window.location);
-                                                            url.searchParams.set('prompt', prompt);
-                                                            if (seed !== -1) url.searchParams.set('seed', seed);
-                                                            if (aspectRatio !== '1:1') url.searchParams.set('aspectRatio', aspectRatio);
-                                                            if (steps !== 30) url.searchParams.set('steps', steps);
-                                                            if (cfg !== 7.0) url.searchParams.set('cfg', cfg);
-                                                            if (negPrompt) url.searchParams.set('negPrompt', negPrompt);
-
-                                                            navigator.clipboard.writeText(url.toString());
-                                                            toast.success('Link copied to clipboard');
-                                                        }}
-                                                        className="btn-ghost"
-                                                        title="Share Configuration"
-                                                        style={{
-                                                            padding: '8px',
-                                                            borderRadius: '8px',
-                                                            color: 'var(--color-text-muted)',
-                                                            transition: 'all 0.2s'
-                                                        }}
-                                                    >
-                                                        <Share2 size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setPrompt('')}
-                                                        className="btn-ghost"
-                                                        title="Clear Prompt"
-                                                        style={{
-                                                            padding: '8px',
-                                                            borderRadius: '8px',
-                                                            color: 'var(--color-text-muted)',
-                                                            transition: 'all 0.2s'
-                                                        }}
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </div>
-                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                                    {/* Turbo Mode Toggle */}
-                                                    <button
-                                                        onClick={() => setUseTurbo(!useTurbo)}
-                                                        className="btn-ghost"
-                                                        title={useTurbo ? "Disable Turbo Mode" : "Enable Turbo Mode (H100)"}
-                                                        style={{
-                                                            padding: '8px 16px',
-                                                            borderRadius: '10px',
-                                                            border: useTurbo ? '1px solid #f59e0b' : '1px solid var(--color-border)',
-                                                            background: useTurbo ? 'rgba(245, 158, 11, 0.1)' : 'transparent',
-                                                            color: useTurbo ? '#f59e0b' : 'var(--color-text-muted)',
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '6px',
-                                                            fontSize: '0.85rem',
-                                                            fontWeight: '600',
-                                                            transition: 'all 0.2s'
-                                                        }}
-                                                    >
-                                                        <Zap size={16} fill={useTurbo ? "currentColor" : "none"} />
-                                                        <span>Turbo</span>
-                                                        <span style={{ fontSize: '0.75rem', opacity: 0.8, background: useTurbo ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>
-                                                            {useTurbo ? '1 ⚡' : 'OFF'}
-                                                        </span>
-                                                    </button>
-                                                    {/* Magic Mode Toggle */}
-
-
-                                                    {!activeStyleId && (
-                                                        <button
-                                                            onClick={() => handleGenerate()}
-                                                            disabled={generating || (!prompt && !referenceImage)}
-                                                            className="btn-primary"
-                                                            style={{
-                                                                padding: '10px 24px',
-                                                                fontSize: '1rem',
-                                                                fontWeight: '600',
-                                                                background: generating ? 'var(--color-surface-hover)' : 'var(--color-accent-primary)',
-                                                                border: 'none',
-                                                                borderRadius: '10px',
-                                                                color: 'white',
-                                                                cursor: generating || (!prompt && !referenceImage) ? 'not-allowed' : 'pointer',
-                                                                opacity: generating || (!prompt && !referenceImage) ? 0.7 : 1,
-                                                                boxShadow: '0 0 20px rgba(var(--color-accent-rgb), 0.3)',
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: '8px',
-                                                                transition: 'all 0.3s'
-                                                            }}
-                                                        >
-                                                            {generating ? <Loader2 className="animate-spin" size={18} /> : (
-                                                                <>
-                                                                    <Sparkles size={18} style={{ fill: 'currentColor' }} />
-                                                                    {activeStyleId ? 'Restyle' : 'Generate'}
-                                                                </>
-                                                            )}
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Generation History (Internal) - Hidden in Video Mode */}
-                    {generationMode !== 'video' && (
-                        <GenerationHistory
-                            onSelect={handleHistorySelect}
-                            selectedJobId={null}
-                            onUsePrompt={(job) => {
-                                console.log("Using prompt from job:", job);
-                                setPrompt(job.prompt);
-                                if (job.modelId && availableModels.length > 0) {
-                                    const restoredModel = availableModels.find(m => m.id === job.modelId);
-                                    if (restoredModel) {
-                                        setSelectedModel(restoredModel);
-                                    }
-                                }
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                            onRestyle={async (job) => {
-                                console.log("[onRestyle] Init Restyle:", job);
-
-                                // Load Image as Reference FIRST (before clearing prompt)
-                                // This ensures referenceImage is set before any other state changes
-                                const imageUrl = job.imageUrl || job.thumbnailUrl;
-                                console.log("[onRestyle] Setting referenceImage to:", imageUrl);
-
-                                if (imageUrl) {
-                                    // Set reference image first
-                                    setReferenceImage(imageUrl);
-
-                                    // Then reset other states
-                                    setPrompt("");
-                                    setGenerationMode('image');
-
-                                    console.log("[onRestyle] Reference image set, ready for style selection");
-                                    toast.success("Image loaded! Select a style & click 'Apply Style & Generate'.", { icon: '🪄' });
-                                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                                } else {
-                                    console.error("[onRestyle] No image URL found in job:", job);
-                                    toast.error("Could not load image for restyling - no image URL found");
-                                }
-                            }}
+                {/* 2. CENTER STAGE (Canvas & Controls) */}
+                <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '24px 40px', gap: '24px' }}>
+                    <div className="glass-panel" style={{ flex: 1, minHeight: '600px', display: 'flex', flexDirection: 'column', padding: '4px', overflow: 'hidden' }}>
+                        <GeneratorCanvas
+                            generating={generating}
+                            progress={progress}
+                            elapsedTime={elapsedTime}
+                            currentJobId={currentJobId}
+                            generatedImage={generatedImage}
+                            isEnhancing={isEnhancing}
+                            generationMode={generationMode}
+                            activeJob={activeJob}
+                            onRate={(rating) => currentJobId && rateGeneration(currentJobId, rating)}
+                            onFullscreen={() => setIsFullscreen(true)}
+                            prompt={prompt}
                         />
-                    )}
-                </div>
 
-
-
-                {/* Right: Property View (Sidebar) */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', height: '100%' }}>
-
-                    <div className="glass-panel" style={{ padding: '24px', flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: 'white', fontWeight: '600', fontSize: '0.9rem' }}>
-                            <Sliders size={16} /> PARAMETERS
-                        </div>
-
-                        {/* Tabs - Hidden in Video Mode */}
-                        {generationMode !== 'video' && (
-                            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '4px', marginBottom: '24px' }}>
-                                {['simple', 'advanced'].map(tab => (
-                                    <button
-                                        key={tab}
-                                        onClick={() => setActiveTab(tab)}
-                                        style={{
-                                            flex: 1,
-                                            padding: '8px',
-                                            borderRadius: '8px',
-                                            background: activeTab === tab ? 'var(--color-accent-primary)' : 'transparent',
-                                            color: activeTab === tab ? 'white' : 'var(--color-text-muted)',
-                                            fontSize: '0.85rem',
-                                            fontWeight: '600',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            textTransform: 'capitalize',
-                                            transition: 'all 0.2s'
-                                        }}
-                                    >
-                                        {tab}
-                                    </button>
-                                ))}
-                            </div>
+                        {generationMode === 'video' ? (
+                            <VideoGallery
+                                recentImages={recentImages}
+                                analyzingImageId={analyzingImageId}
+                                handleVideoAutoAnimate={handleVideoAutoAnimate}
+                                onViewAll={() => { }}
+                            />
+                        ) : (
+                            <GeneratorControls
+                                prompt={prompt} setPrompt={setPrompt}
+                                generationMode={generationMode}
+                                isEnhancing={isEnhancing} handleMagicEnhance={handleMagicEnhance}
+                                activeStyleId={activeStyleId} setActiveStyleId={setActiveStyleId}
+                                referenceImage={referenceImage} setReferenceImage={setReferenceImage} clearReferenceImage={() => setReferenceImage(null)}
+                                isListening={isListening} setIsListening={setIsListening} toggleListening={toggleListening}
+                                setIsImagePickerOpen={setIsImagePickerOpen}
+                                isAutoPrompting={isAutoPrompting} handleAutoPrompt={handleAutoPrompt}
+                                useTurbo={useTurbo} setUseTurbo={setUseTurbo}
+                                generating={generating} handleGenerate={() => handleGenerate()}
+                                seed={seed} aspectRatio={aspectRatio} steps={steps} cfg={cfg} negPrompt={negPrompt}
+                            />
                         )}
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                            {/* Model Selector Trigger */}
-                            <div>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <label className="setting-label" style={{ marginBottom: 0 }}>MODEL ENGINE</label>
-                                        <div className="tooltip-container" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                            <HelpCircle size={12} color="var(--color-text-muted)" style={{ cursor: 'help' }} />
-                                            <div className="tooltip-content">
-                                                The Model Engine determines the artistic style and capability of your generation.
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', fontFamily: 'monospace' }}>
-                                        {selectedModel.id.toUpperCase()}
-                                    </span>
-                                </div>
-                                <button
-                                    onClick={() => setIsModelModalOpen(true)}
-                                    style={{
-                                        width: '100%',
-                                        padding: '12px',
-                                        borderRadius: '16px',
-                                        background: 'linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)',
-                                        border: '1px solid var(--color-border)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '16px',
-                                        cursor: 'pointer',
-                                        textAlign: 'left',
-                                        transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                                        position: 'relative',
-                                        overflow: 'hidden',
-                                        boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
-                                    }}
-                                    className="hover-glow-border"
-                                >
-                                    <div style={{
-                                        width: '64px',
-                                        height: '64px',
-                                        borderRadius: '12px',
-                                        background: '#000',
-                                        overflow: 'hidden',
-                                        flexShrink: 0,
-                                        position: 'relative',
-                                        border: '1px solid rgba(255,255,255,0.1)'
-                                    }}>
-                                        {selectedModel.image ? (
-                                            <img src={getOptimizedImageUrl(selectedModel.image)} alt={selectedModel.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                        ) : (
-                                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444' }}>
-                                                <ImageIcon size={24} />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'white', letterSpacing: '-0.02em', marginBottom: '2px' }}>{selectedModel.name}</div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                            {selectedModel.description || "High quality image generation model."}
-                                        </div>
-                                    </div>
-                                    <div style={{ opacity: 0.5, paddingRight: '4px' }}>
-                                        <ChevronDown size={18} />
-                                    </div>
-                                </button>
-                            </div>
-
-                            {/* Aspect Ratio Grid */}
-                            {/* Visualization / Simple Mode Content */}
-                            {activeTab === 'simple' && (
-                                <div className="fade-in">
-
-                                    {/* Aspect Ratio - Moved to Simple */}
-                                    <div style={{ marginBottom: '24px' }}>
-                                        <label className="setting-label">ASPECT RATIO</label>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
-                                            {[
-                                                { label: '1:1', value: '1:1', icon: <Square size={16} /> },
-                                                { label: '16:9', value: '16:9', icon: <Monitor size={16} /> },
-                                                { label: '9:16', value: '9:16', icon: <Smartphone size={16} /> },
-                                                { label: '3:2', value: '3:2', icon: <RectangleHorizontal size={16} /> },
-                                                { label: '2:3', value: '2:3', icon: <RectangleVertical size={16} /> }
-                                            ].map(r => (
-                                                <button
-                                                    key={r.value}
-                                                    onClick={() => setAspectRatio(r.value)}
-                                                    title={r.label}
-                                                    style={{
-                                                        padding: '10px 4px',
-                                                        borderRadius: '10px',
-                                                        border: aspectRatio === r.value ? '1px solid var(--color-accent-primary)' : '1px solid var(--color-border)',
-                                                        background: aspectRatio === r.value ? 'rgba(var(--color-accent-rgb), 0.1)' : 'rgba(255,255,255,0.02)',
-                                                        color: aspectRatio === r.value ? 'var(--color-accent-primary)' : 'var(--color-text-muted)',
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        alignItems: 'center',
-                                                        gap: '6px',
-                                                        cursor: 'pointer',
-                                                        transition: 'all 0.2s'
-                                                    }}
-                                                    className="hover:bg-white/5"
-                                                >
-                                                    <div style={{ opacity: aspectRatio === r.value ? 1 : 0.7 }}>{r.icon}</div>
-                                                    <span style={{ fontSize: '0.6rem', fontWeight: '600' }}>{r.label}</span>
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-
-
-                                    {/* Image Mode: Styles */}
-                                    {generationMode === 'image' && (
-                                        <div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
-                                                <label className="setting-label" style={{ marginBottom: 0 }}>PROMPT TEMPLATES</label>
-                                                <div className="tooltip-container" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                                    <HelpCircle size={12} color="var(--color-text-muted)" style={{ cursor: 'help' }} />
-                                                    <div className="tooltip-content">
-                                                        Selecting a template will overwrite your current prompt.
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                                                {showcaseImages.slice(0, 9).map((img) => (
-                                                    <button
-                                                        key={img.id}
-                                                        onClick={() => {
-                                                            setPrompt(img.prompt);
-                                                            setGeneratedImage(img.imageUrl);
-                                                        }}
-                                                        className="hover-card"
-                                                        style={{
-                                                            aspectRatio: '1',
-                                                            borderRadius: '12px',
-                                                            overflow: 'hidden',
-                                                            border: '1px solid var(--color-border)',
-                                                            cursor: 'pointer',
-                                                            padding: 0,
-                                                            position: 'relative'
-                                                        }}
-                                                        title={img.prompt}
-                                                    >
-                                                        <img
-                                                            src={getOptimizedImageUrl(img.imageUrl)}
-                                                            alt="Style"
-                                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                                        />
-                                                    </button>
-                                                ))}
-                                            </div>
-                                            {showcaseImages.length === 0 && (
-                                                <div style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>
-                                                    Select a model to see examples via showcase
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {/* Style Registry UI */}
-                                    {generationMode === 'image' && (
-                                        <div className="fade-in" style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                                                <label className="setting-label" style={{ marginBottom: 0 }}>STYLE REGISTRY</label>
-                                                {activeStyleId && (
-                                                    <button
-                                                        onClick={() => setActiveStyleId(null)}
-                                                        style={{ fontSize: '0.7rem', color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                                                    >
-                                                        <X size={12} /> Clear
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            {/* Style Grid */}
-                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '16px' }}>
-                                                {STYLE_REGISTRY.map(style => {
-                                                    const isSelected = activeStyleId === style.id;
-                                                    return (
-                                                        <button
-                                                            key={style.id}
-                                                            onClick={() => setActiveStyleId(isSelected ? null : style.id)}
-                                                            className="hover-scale"
-                                                            style={{
-                                                                position: 'relative',
-                                                                aspectRatio: '3/4',
-                                                                borderRadius: '16px',
-                                                                overflow: 'hidden',
-                                                                border: isSelected ? '2px solid var(--color-accent-primary)' : '1px solid var(--color-border)',
-                                                                padding: 0,
-                                                                cursor: 'pointer',
-                                                                transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
-                                                                boxShadow: isSelected ? '0 10px 30px -10px rgba(var(--color-accent-rgb), 0.5)' : 'none'
-                                                            }}
-                                                        >
-                                                            {/* Background Image */}
-                                                            <div style={{ position: 'absolute', inset: 0 }}>
-                                                                <img
-                                                                    src={style.image}
-                                                                    alt={style.label}
-                                                                    style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }}
-                                                                />
-                                                                {/* Gradient Overlay */}
-                                                                <div style={{
-                                                                    position: 'absolute', inset: 0,
-                                                                    background: isSelected
-                                                                        ? 'linear-gradient(to top, rgba(var(--color-accent-rgb), 0.9) 0%, rgba(var(--color-accent-rgb), 0.2) 50%, rgba(0,0,0,0) 100%)'
-                                                                        : 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.4) 40%, rgba(0,0,0,0) 100%)'
-                                                                }} />
-                                                            </div>
-
-                                                            {/* Content */}
-                                                            <div style={{
-                                                                position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px',
-                                                                display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-                                                                zIndex: 10
-                                                            }}>
-                                                                <span style={{
-                                                                    color: 'white', fontWeight: '700', fontSize: '0.95rem',
-                                                                    textShadow: '0 2px 4px rgba(0,0,0,0.5)',
-                                                                    textAlign: 'left'
-                                                                }}>
-                                                                    {style.label}
-                                                                </span>
-                                                                {isSelected && (
-                                                                    <div style={{
-                                                                        marginTop: '4px', fontSize: '0.7rem', color: 'rgba(255,255,255,0.9)',
-                                                                        display: 'flex', alignItems: 'center', gap: '4px'
-                                                                    }}>
-                                                                        <Sparkles size={10} /> Active
-                                                                    </div>
-                                                                )}
-                                                            </div>
-
-                                                            {/* Selection Ring Glow (Pseudo-element simulation) */}
-                                                            {isSelected && (
-                                                                <div style={{
-                                                                    position: 'absolute', inset: 0,
-                                                                    border: '2px solid rgba(255,255,255,0.3)',
-                                                                    borderRadius: '14px',
-                                                                    pointerEvents: 'none'
-                                                                }} />
-                                                            )}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-
-                                            {/* Intensity Selector (Only if Style Selected) */}
-                                            {activeStyleId && (
-                                                <div className="fade-in">
-                                                    <label className="setting-label">INTENSITY</label>
-                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '10px' }}>
-                                                        {['soft', 'medium', 'hard'].map(level => (
-                                                            <button
-                                                                key={level}
-                                                                onClick={() => setStyleIntensity(level)}
-                                                                style={{
-                                                                    padding: '6px',
-                                                                    borderRadius: '6px',
-                                                                    background: styleIntensity === level ? 'var(--color-accent-primary)' : 'transparent',
-                                                                    color: styleIntensity === level ? 'white' : 'var(--color-text-muted)',
-                                                                    fontSize: '0.75rem',
-                                                                    fontWeight: '600',
-                                                                    border: 'none',
-                                                                    cursor: 'pointer',
-                                                                    textTransform: 'capitalize',
-                                                                    transition: 'all 0.2s'
-                                                                }}
-                                                            >
-                                                                {level}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {activeTab === 'advanced' && (
-                                <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-
-                                    {/* Video Settings (Moved to Advanced) */}
-                                    {generationMode === 'video' && (
-                                        <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px', paddingBottom: '24px', borderBottom: '1px solid var(--color-border)' }}>
-                                            <div className="alert-box" style={{ padding: '12px', background: 'rgba(var(--color-accent-rgb), 0.1)', borderRadius: '8px', border: '1px solid var(--color-accent-primary)', color: 'white', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                <AlertCircle size={16} />
-                                                <span>Video generation consumes usage-based <b>Reels</b> currency.</span>
-                                            </div>
-
-                                            <div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                                    <label className="setting-label">DURATION (SECONDS)</label>
-                                                    <span style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'white' }}>{videoDuration}s</span>
-                                                </div>
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                                                    {[6, 8, 10].map((dur) => (
-                                                        <button
-                                                            key={dur}
-                                                            onClick={() => setVideoDuration(dur)}
-                                                            style={{
-                                                                padding: '10px',
-                                                                borderRadius: '8px',
-                                                                border: videoDuration === dur ? '1px solid var(--color-accent-primary)' : '1px solid var(--color-border)',
-                                                                background: videoDuration === dur ? 'rgba(var(--color-accent-rgb), 0.1)' : 'rgba(255,255,255,0.02)',
-                                                                color: videoDuration === dur ? 'var(--color-accent-primary)' : 'var(--color-text-muted)',
-                                                                cursor: 'pointer',
-                                                                fontSize: '0.9rem',
-                                                                fontWeight: '600',
-                                                                transition: 'all 0.2s'
-                                                            }}
-                                                        >
-                                                            {dur}s
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                                    <label className="setting-label">RESOLUTION</label>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                        <div className="tooltip-container" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                                            <HelpCircle size={12} color="var(--color-text-muted)" style={{ cursor: 'help' }} />
-                                                            <div className="tooltip-content">
-                                                                Higher resolutions consume more reels and take longer to generate.
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '8px' }}>
-                                                    {['1080p', '2k', '4k'].map(res => (
-                                                        <button
-                                                            key={res}
-                                                            onClick={() => setVideoResolution(res)}
-                                                            style={{
-                                                                padding: '10px',
-                                                                borderRadius: '8px',
-                                                                border: videoResolution === res ? '1px solid var(--color-accent-primary)' : '1px solid var(--color-border)',
-                                                                background: videoResolution === res ? 'rgba(var(--color-accent-rgb), 0.1)' : 'rgba(255,255,255,0.02)',
-                                                                color: videoResolution === res ? 'var(--color-accent-primary)' : 'var(--color-text-muted)',
-                                                                cursor: 'pointer',
-                                                                fontSize: '0.85rem',
-                                                                fontWeight: '600'
-                                                            }}
-                                                        >
-                                                            {res}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            {/* Bring to Life (Moved to Advanced for Video) */}
-                                            <div style={{ marginTop: '12px' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                                    <label className="setting-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: 0 }}>
-                                                        <Sparkles size={12} /> BRING TO LIFE
-                                                    </label>
-                                                    {referenceImage && (
-                                                        <button
-                                                            onClick={clearReferenceImage}
-                                                            style={{ fontSize: '0.7rem', color: '#ef4444', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                                                        >
-                                                            <Trash2 size={12} /> Clear
-                                                        </button>
-                                                    )}
-                                                </div>
-
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                                                    <button
-                                                        onClick={() => setIsImagePickerOpen(true)}
-                                                        className="carousel-item"
-                                                        style={{
-                                                            aspectRatio: '1',
-                                                            borderRadius: '12px',
-                                                            border: '1px dashed var(--color-border)',
-                                                            background: 'rgba(255,255,255,0.02)',
-                                                            color: 'var(--color-text-muted)',
-                                                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                                            gap: '4px', cursor: 'pointer',
-                                                            transition: 'all 0.2s',
-                                                            position: 'relative',
-                                                            padding: 0
-                                                        }}
-                                                    >
-                                                        <Upload size={18} />
-                                                        <span style={{ fontSize: '0.65rem' }}>Upload</span>
-                                                    </button>
-                                                    {recentImages.slice(0, 8).map((img) => {
-                                                        const isSelected = referenceImage === img.imageUrl;
-                                                        const isAnalyzing = analyzingImageId === img.id;
-                                                        return (
-                                                            <button
-                                                                key={img.id}
-                                                                onClick={() => handleVideoAutoAnimate(img)}
-                                                                disabled={!!analyzingImageId}
-                                                                className="carousel-item"
-                                                                style={{
-                                                                    aspectRatio: '1',
-                                                                    borderRadius: '12px',
-                                                                    overflow: 'hidden',
-                                                                    border: isSelected ? '2px solid var(--color-accent-primary)' : '1px solid var(--color-border)',
-                                                                    cursor: 'pointer',
-                                                                    padding: 0,
-                                                                    position: 'relative',
-                                                                    transition: 'all 0.2s',
-                                                                    background: '#000'
-                                                                }}
-                                                            >
-                                                                <img src={getOptimizedImageUrl(img.imageUrl)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: (isSelected || isAnalyzing) ? 1 : 0.7 }} />
-                                                                {isAnalyzing && (
-                                                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}>
-                                                                        <Loader2 size={16} className="animate-spin" color="white" />
-                                                                    </div>
-                                                                )}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {generationMode !== 'video' && (
-                                        <>
-                                            <div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                                    <label className="setting-label">SEED</label>
-                                                    <button
-                                                        onClick={() => setSeed(seed === -1 ? Math.floor(Math.random() * 1000000000) : -1)}
-                                                        style={{ fontSize: '0.7rem', color: 'var(--color-accent-primary)', background: 'transparent', border: 'none', cursor: 'pointer' }}
-                                                    >
-                                                        {seed === -1 ? 'RANDOM' : 'CUSTOM'}
-                                                    </button>
-                                                </div>
-                                                <div style={{ display: 'flex', gap: '8px' }}>
-                                                    <input
-                                                        type="number"
-                                                        value={seed === -1 ? '' : seed}
-                                                        onChange={(e) => setSeed(parseInt(e.target.value) || -1)}
-                                                        placeholder="Random (-1)"
-                                                        style={{
-                                                            width: '100%',
-                                                            background: 'rgba(0,0,0,0.3)',
-                                                            border: '1px solid var(--color-border)',
-                                                            borderRadius: '8px',
-                                                            padding: '8px 12px',
-                                                            color: 'white',
-                                                            fontSize: '0.9rem'
-                                                        }}
-                                                    />
-                                                    <button
-                                                        onClick={() => setSeed(Math.floor(Math.random() * 1000000000))}
-                                                        className="btn-ghost"
-                                                        title="Roll Seed"
-                                                        style={{ padding: '8px', borderRadius: '8px', color: 'white', border: '1px solid var(--color-border)' }}
-                                                    >
-                                                        <Dices size={18} />
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* Sliders */}
-                                            <div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                                    <label className="setting-label">STEPS</label>
-                                                    <span style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'white' }}>{steps}</span>
-                                                </div>
-                                                <input type="range" min="10" max="50" value={steps} onChange={(e) => setSteps(Number(e.target.value))} />
-                                            </div>
-
-                                            <div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                                    <label className="setting-label">GUIDANCE SCALE</label>
-                                                    <span style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'white' }}>{cfg}</span>
-                                                </div>
-                                                <input type="range" min="1" max="20" step="0.5" value={cfg} onChange={(e) => setCfg(Number(e.target.value))} />
-                                            </div>
-
-                                            {/* Negative Prompt */}
-                                            <div>
-                                                <label className="setting-label">NEGATIVE PROMPT</label>
-                                                <textarea
-                                                    value={negPrompt}
-                                                    onChange={(e) => setNegPrompt(e.target.value)}
-                                                    placeholder="blur, watermark, low quality..."
-                                                    style={{
-                                                        width: '100%',
-                                                        background: 'rgba(0,0,0,0.3)',
-                                                        border: '1px solid var(--color-border)',
-                                                        borderRadius: '8px',
-                                                        padding: '12px',
-                                                        color: 'var(--color-text-main)',
-                                                        fontSize: '0.85rem',
-                                                        resize: 'vertical',
-                                                        minHeight: '80px',
-                                                        fontFamily: 'inherit'
-                                                    }}
-                                                />
-                                            </div>
-                                        </>
-                                    )}
-                                </div>
-                            )}
-                        </div>
                     </div>
                 </div>
 
+                {/* 3. RIGHT SIDEBAR (Parameters) */}
+                <GeneratorSidebar
+                    activeTab={activeTab} setActiveTab={setActiveTab}
+                    generationMode={generationMode}
+                    selectedModel={selectedModel}
+                    setIsModelModalOpen={setIsModelModalOpen}
+                    aspectRatio={aspectRatio} setAspectRatio={setAspectRatio}
+                    showcaseImages={showcaseImages} setPrompt={setPrompt} setGeneratedImage={setGeneratedImage}
+                    activeStyleId={activeStyleId} setActiveStyleId={setActiveStyleId}
+                    styleIntensity={styleIntensity} setStyleIntensity={setStyleIntensity}
+                    // Video
+                    videoDuration={videoDuration} setVideoDuration={setVideoDuration}
+                    videoResolution={videoResolution} setVideoResolution={setVideoResolution}
+                    // Advanced
+                    seed={seed} setSeed={setSeed}
+                    steps={steps} setSteps={setSteps}
+                    cfg={cfg} setCfg={setCfg}
+                    negPrompt={negPrompt} setNegPrompt={setNegPrompt}
+                    // Helpers
+                    recentImages={recentImages}
+                    referenceImage={referenceImage} clearReferenceImage={() => setReferenceImage(null)}
+                    setIsImagePickerOpen={setIsImagePickerOpen}
+                    handleVideoAutoAnimate={handleVideoAutoAnimate}
+                    analyzingImageId={analyzingImageId}
+                />
             </div>
 
             {/* Modals */}
-            <ModelSelectorModal
-                isOpen={isModelModalOpen}
-                onClose={() => setIsModelModalOpen(false)}
-                models={availableModels.filter(m => {
-                    if (generationMode === 'video') return m.type === 'Video';
-                    return m.type !== 'Video';
-                })}
-                selectedModel={selectedModel}
-                onSelectModel={setSelectedModel}
-            />
-
-            <ImagePickerModal
-                isOpen={isImagePickerOpen}
-                onClose={() => setIsImagePickerOpen(false)}
-                onSelect={handlePickerSelect}
-            />
-
-            {/* Fullscreen Modal */}
-            {
-                isFullscreen && generatedImage && (
-                    <div style={{
-                        position: 'fixed', inset: 0, zIndex: 9999,
-                        background: 'rgba(0,0,0,0.95)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        animation: 'fadeIn 0.2s ease-out'
-                    }} onClick={() => setIsFullscreen(false)}>
-                        <button
-                            onClick={() => setIsFullscreen(false)}
-                            style={{
-                                position: 'absolute', top: '24px', right: '24px',
-                                background: 'transparent', border: 'none', color: 'white', cursor: 'pointer'
-                            }}
-                        >
-                            <X size={32} />
+            <AnimatePresence>
+                {isModelModalOpen && (
+                    <ModelSelectorModal
+                        isOpen={isModelModalOpen}
+                        onClose={() => setIsModelModalOpen(false)}
+                        models={availableModels}
+                        selectedModel={selectedModel}
+                        onSelect={setSelectedModel}
+                    />
+                )}
+                {isImagePickerOpen && (
+                    <ImagePickerModal
+                        isOpen={isImagePickerOpen}
+                        onClose={() => setIsImagePickerOpen(false)}
+                        onSelect={(url) => { setReferenceImage(url); setIsImagePickerOpen(false); }}
+                        currentUser={currentUser}
+                    />
+                )}
+                {isFullscreen && generatedImage && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'black', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <button onClick={() => setIsFullscreen(false)} style={{ position: 'absolute', top: 20, right: 20, color: 'white', background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
                         </button>
-                        <img
-                            src={generatedImage}
-                            alt="Full Preview"
-                            style={{ maxWidth: '95vw', maxHeight: '95vh', objectFit: 'contain', boxShadow: '0 0 100px rgba(0,0,0,0.8)' }}
-                            onClick={(e) => e.stopPropagation()}
-                        />
-                    </div>
-                )
-            }
+                        {/\.(mp4|webm)/i.test(generatedImage) ? (
+                            <video src={generatedImage} controls autoPlay loop style={{ maxWidth: '100%', maxHeight: '100%' }} />
+                        ) : (
+                            <img src={generatedImage} alt="Fullscreen" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
+            {/* Global CSS for this page's specific needs not covered by Tailwind/global styles */}
             <style>{`
-                .setting-label {
-                    display: block;
-                    font-size: 0.7rem;
-                    font-weight: 700;
-                    letter-spacing: 0.05em;
-                    color: var(--color-text-muted);
-                    margin-bottom: 8px;
-                    text-transform: uppercase;
-                }
-                @media (max-width: 900px) {
-                    .container {
-                        grid-template-columns: 1fr !important;
-                    }
-                }
-                .hover-scale { transition: transform 0.4s ease; }
-                .hover-card:hover .hover-scale { transform: scale(1.05); }
-                .hover-card:hover { border-color: rgba(255,255,255,0.2) !important; background: rgba(255,255,255,0.06) !important; }
-                @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
-
-                .hover-glow-border:hover {
-                    border-color: rgba(255,255,255,0.3) !important;
-                    box-shadow: 0 0 20px rgba(255,255,255,0.05) !important;
-                    background: linear-gradient(145deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%) !important;
-                }
-
-                .tooltip-container:hover .tooltip-content {
-                    opacity: 1;
-                    visibility: visible;
-                    transform: translateX(-50%) translateY(0);
-                }
-                .tooltip-content {
-                    position: absolute;
-                    bottom: 100%;
-                    left: 50%;
-                    transform: translateX(-50%) translateY(5px);
-                    background: rgba(0,0,0,0.9);
-                    border: 1px solid rgba(255,255,255,0.1);
-                    color: white;
-                    padding: 8px 12px;
-                    border-radius: 8px;
-                    font-size: 0.75rem;
-                    width: max-content;
-                    max-width: 200px;
-                    text-align: center;
-                    opacity: 0;
-                    visibility: hidden;
-                    transition: all 0.2s;
-                    pointer-events: none;
-                    z-index: 10;
-                    margin-bottom: 8px;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-                    text-transform: none;
-                    font-weight: 400;
-                    line-height: 1.4;
-                }
+                .glass-panel { background: rgba(30,30,30,0.6); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+                .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+                .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+                .btn-nav { cursor: pointer; }
+                .btn-nav:hover { background: rgba(255,255,255,0.1) !important; color: white !important; }
+                @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
             `}</style>
-        </div >
+        </div>
     );
 }
-
