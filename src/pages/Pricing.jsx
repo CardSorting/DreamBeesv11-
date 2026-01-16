@@ -110,7 +110,54 @@ export default function Pricing() {
         <div className="container" style={{ paddingTop: '160px', paddingBottom: '120px' }}>
             <SEO
                 title="Pricing"
-                description="Join Pro for unlimited creation or purchase Zaps for high-speed power."
+                description="Get started with AI image generation. Flexible credit packs from $5 or unlimited Pro membership for $19.99/month. No subscription required."
+                keywords="AI art pricing, image generation credits, AI image generator cost, text to image subscription, cheap AI art"
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "Product",
+                            "name": "DreamBeesAI Pro Membership",
+                            "description": "Unlimited AI image generation with 500 monthly Turbo credits, priority queue, and commercial license.",
+                            "offers": {
+                                "@type": "Offer",
+                                "price": "19.99",
+                                "priceCurrency": "USD",
+                                "availability": "https://schema.org/InStock",
+                                "priceValidUntil": "2027-12-31"
+                            }
+                        },
+                        {
+                            "@type": "Product",
+                            "name": "DreamBeesAI Starter Zaps",
+                            "description": "50 Turbo image generation credits with no expiry.",
+                            "offers": {
+                                "@type": "Offer",
+                                "price": "5.00",
+                                "priceCurrency": "USD",
+                                "availability": "https://schema.org/InStock"
+                            }
+                        },
+                        {
+                            "@type": "Product",
+                            "name": "DreamBeesAI Creator Zaps",
+                            "description": "250 Turbo image generation credits with no expiry.",
+                            "offers": {
+                                "@type": "Offer",
+                                "price": "20.00",
+                                "priceCurrency": "USD",
+                                "availability": "https://schema.org/InStock"
+                            }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
+                                { "@type": "ListItem", "position": 2, "name": "Pricing", "item": "https://dreambeesai.com/pricing" }
+                            ]
+                        }
+                    ]
+                }}
             />
 
             <div style={{ maxWidth: '800px', margin: '0 auto 60px', textAlign: 'center' }}>

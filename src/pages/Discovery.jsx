@@ -250,7 +250,28 @@ export default function Discovery() {
 
     return (
         <div className="feed-layout-wrapper">
-            <SEO title="Discovery Engine - DreamBees" description="Explore AI Art by Vibe, Collection, and Color." />
+            <SEO
+                title="Discover AI Art - Community Showcase"
+                description="Explore a curated feed of AI-generated artwork. Get inspired by unique styles, prompts, and creative techniques from the DreamBees community."
+                keywords="AI art gallery, AI generated images, explore AI artwork, community showcase, AI art inspiration, creative prompts"
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "ImageGallery",
+                            "name": "DreamBeesAI Discovery Feed",
+                            "description": "A curated showcase of AI-generated artwork from the DreamBees community."
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
+                                { "@type": "ListItem", "position": 2, "name": "Discover", "item": "https://dreambeesai.com/discovery" }
+                            ]
+                        }
+                    ]
+                }}
+            />
 
             <main className="feed-main-content">
                 <MinimalHeader />

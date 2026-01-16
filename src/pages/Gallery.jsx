@@ -220,9 +220,16 @@ export default function Gallery() {
     return (
         <div className="container" style={{ paddingTop: '140px', paddingBottom: '120px' }}>
             <SEO
-                title="Gallery"
-                description="Discover AI-generated masterpieces created by the DreamBees community. Get inspired by prompts and styles."
-                keywords="AI art gallery, stable diffusion examples, generative art showcase"
+                title="My Gallery - Personal AI Art Collection"
+                description="Your private collection of AI-generated masterpieces. Manage, download, and organize your synthesized dreams."
+                keywords="AI art gallery, personal collection, generated images, AI artwork showcase"
+                noindex={true}
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@type": "CollectionPage",
+                    "name": "Personal AI Art Gallery",
+                    "description": "Private collection of user-generated AI artwork."
+                }}
             />
 
             {/* Header */}

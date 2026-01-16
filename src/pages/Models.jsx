@@ -70,8 +70,25 @@ export default function Models() {
         }}>
             <SEO
                 title="AI Models"
-                description="Explore our curated collection of high-performance Stable Diffusion models including SDXL and Flux Pro."
-                keywords="stable diffusion models, SDXL, Flux Pro, AI art models"
+                description="Explore our curated collection of high-performance Stable Diffusion models including SDXL, SDXL Turbo, and Flux Pro for any art style."
+                keywords="stable diffusion models, SDXL online, Flux Pro AI, AI art models, SDXL Turbo, AI checkpoints, image generation models"
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "CollectionPage",
+                            "name": "AI Model Archives",
+                            "description": "Browse our curated collection of fine-tuned Stable Diffusion models specialized for specific artistic styles."
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
+                                { "@type": "ListItem", "position": 2, "name": "Models", "item": "https://dreambeesai.com/models" }
+                            ]
+                        }
+                    ]
+                }}
             />
             <div className="container">
 

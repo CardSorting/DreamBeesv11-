@@ -175,7 +175,41 @@ export default function Generator() {
 
     return (
         <div style={{ minHeight: '100vh', background: '#000', color: 'white', fontFamily: '"Outfit", sans-serif' }}>
-            <SEO title="DreamBees Studio" description="Create stunning AI art." />
+            <SEO
+                title="AI Art Studio - Create Images & Videos"
+                description="Generate stunning AI images and videos in seconds. Simple prompts, powerful results. Turbo mode for instant generation. Private by default."
+                keywords="AI image generator, create AI art, text to image, AI art studio, prompt to picture, image synthesis, AI video generation"
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "WebApplication",
+                            "name": "DreamBees Studio",
+                            "applicationCategory": "DesignApplication",
+                            "operatingSystem": "Web",
+                            "offers": {
+                                "@type": "Offer",
+                                "price": "0",
+                                "priceCurrency": "USD"
+                            },
+                            "featureList": [
+                                "Text to Image Generation",
+                                "AI Video Animation",
+                                "Turbo Mode",
+                                "Private Gallery",
+                                "Multiple AI Models"
+                            ]
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
+                                { "@type": "ListItem", "position": 2, "name": "Studio", "item": "https://dreambeesai.com/generate" }
+                            ]
+                        }
+                    ]
+                }}
+            />
             <Toaster position="bottom-center" toastOptions={{ style: { background: '#333', color: '#fff', borderRadius: '12px' } }} />
 
 
