@@ -118,6 +118,20 @@ export default function Blog() {
                                 </span>
                             </div>
 
+                            {post.image && (
+                                <div style={{ marginBottom: '20px', borderRadius: '8px', overflow: 'hidden' }}>
+                                    <img
+                                        src={post.image}
+                                        alt={post.title}
+                                        style={{
+                                            width: '100%',
+                                            height: '200px',
+                                            objectFit: 'cover'
+                                        }}
+                                    />
+                                </div>
+                            )}
+
                             <h3 style={{
                                 fontSize: '1.75rem',
                                 fontWeight: '700',

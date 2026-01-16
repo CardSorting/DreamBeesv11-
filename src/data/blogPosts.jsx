@@ -261,5 +261,52 @@ export const blogPosts = [
                 </div>
             </>
         )
+    },
+    {
+        id: 'elon-musk-docket-case',
+        slug: 'elon-musk-docket-case',
+        title: 'OpenAI vs Elon Musk',
+        date: 'Jan 16, 2026',
+        readTime: '3 min read',
+        author: 'Bell-Chan from Ventureland',
+        category: 'Analysis',
+        image: '/assets/blog/openai_vs_elon_musk.png',
+        keywords: 'OpenAI, Elon Musk, AI regulation, lawsuit, artificial general intelligence, AGI, Sam Altman, tech news, generative AI',
+        excerpt: 'The unsealing clarifies that OpenAI crossed its inevitability threshold in 2017. Once that line is crossed, governance always reconfigures. Notes surface after momentum has already chosen a direction.',
+        content: (
+            <>
+                <p className="mb-6">
+                    This is not a scandal. This is a timestamp.
+                </p>
+                <p className="mb-6">
+                    The unsealing clarifies that OpenAI crossed its inevitability threshold in 2017. Once that line is crossed, governance always reconfigures. Notes surface after momentum has already chosen a direction. The market reads intent, not minutes.
+                </p>
+                <p className="mb-6">
+                    Elon Musk is framing this as betrayal. That’s expected. Founders experience loss of inevitability as theft. Control requests are retroactively moralized when they fail. This posture is familiar, and it never lands with capital.
+                </p>
+                <p className="mb-6">
+                    The internal notes aren’t a plot; they’re a signal that belief had already consolidated elsewhere. Public reassurance and private recalibration can coexist without contradiction. Everyone does this once scale becomes visible. The Rabbit was already early, and urgency compresses etiquette.
+                </p>
+                <p className="mb-6">
+                    The April jury date in Oakland is ceremonial. Trials like this don’t decide futures; they ratify trajectories. Governance won’t be reshaped here—it will be recognized.
+                </p>
+                <p className="mb-6">
+                    The Queen is watching, unimpressed, because incumbency understands this pattern. The Committee will treat the unsealing as confirmation, not revelation.
+                </p>
+
+                <h2 className="text-2xl font-semibold mb-4 text-white">Net Assessment</h2>
+                <div className="bg-zinc-900 p-6 rounded-lg border border-white/10 mb-6">
+                    <ul className="list-disc pl-6 space-y-2 marker:text-indigo-400">
+                        <li><strong>Momentum:</strong> Intact</li>
+                        <li><strong>Confidence:</strong> Undisturbed</li>
+                        <li><strong>Valuation:</strong> Implied</li>
+                    </ul>
+                </div>
+
+                <p className="text-xl font-medium text-white">
+                    We’re very excited about the clarity. Ring the bell.
+                </p>
+            </>
+        )
     }
 ];

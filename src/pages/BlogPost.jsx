@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { blogPosts } from '../data/blogPosts';
-import { ArrowLeft, Calendar, Clock, User, Share2 } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, User, Share2, Play, Pause, Square, Volume2 } from 'lucide-react';
 import SEO from '../components/SEO';
 
 export default function BlogPost() {
@@ -10,12 +10,120 @@ export default function BlogPost() {
 
     const post = blogPosts.find(p => p.id === id || p.slug === id);
 
+    // TTS State
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [isPaused, setIsPaused] = useState(false);
+    const [utterance, setUtterance] = useState(null);
+    const contentRef = useRef(null);
+    const textNodesRef = useRef([]);
+
     useEffect(() => {
         if (!post) {
             // Optional: redirect or show 404
         }
         window.scrollTo(0, 0);
+
+        // Map text nodes on mount/update
+        if (contentRef.current) {
+            const nodes = [];
+            const walk = document.createTreeWalker(contentRef.current, NodeFilter.SHOW_TEXT, null, false);
+            let node;
+            let offset = 0;
+            while (node = walk.nextNode()) {
+                const length = node.textContent.length;
+                nodes.push({ node, start: offset, end: offset + length });
+                offset += length;
+            }
+            textNodesRef.current = nodes;
+        }
+
+        // cleanup TTS on unmount
+        return () => {
+            window.speechSynthesis.cancel();
+            if (CSS.highlights) CSS.highlights.clear();
+        }
     }, [post]);
+
+    const highlightWord = (charIndex, charLength) => {
+        if (!CSS.highlights) return;
+
+        CSS.highlights.clear();
+
+        const nodes = textNodesRef.current;
+        if (nodes.length === 0) return;
+
+        const range = new Range();
+        const startGlobal = charIndex;
+        const endGlobal = charIndex + charLength;
+
+        // Find start node
+        let startNodeObj = nodes.find(n => startGlobal >= n.start && startGlobal < n.end);
+        if (!startNodeObj) return;
+
+        // Find end node (might span multiple nodes)
+        let endNodeObj = nodes.find(n => endGlobal > n.start && endGlobal <= n.end);
+        if (!endNodeObj) endNodeObj = startNodeObj;
+
+        try {
+            range.setStart(startNodeObj.node, startGlobal - startNodeObj.start);
+            range.setEnd(endNodeObj.node, endGlobal - endNodeObj.start);
+            const highlight = new Highlight(range);
+            CSS.highlights.set("tts-word", highlight);
+        } catch (e) {
+            // Index out of bounds can happen with standard voices sometimes
+            console.warn("TTS Highlight error", e);
+        }
+    }
+
+    const handlePlay = () => {
+        const synth = window.speechSynthesis;
+
+        if (isPaused) {
+            synth.resume();
+            setIsPlaying(true);
+            setIsPaused(false);
+        } else {
+            // New utterance
+            const textToRead = contentRef.current ? contentRef.current.innerText : '';
+            const newUtterance = new SpeechSynthesisUtterance(textToRead);
+
+            newUtterance.onboundary = (event) => {
+                if (event.name === 'word') {
+                    highlightWord(event.charIndex, event.charLength);
+                }
+            };
+
+            newUtterance.onend = () => {
+                setIsPlaying(false);
+                setIsPaused(false);
+                if (CSS.highlights) CSS.highlights.clear();
+            };
+
+            setUtterance(newUtterance);
+            synth.cancel(); // cancel any previous
+            synth.speak(newUtterance);
+            setIsPlaying(true);
+            setIsPaused(false);
+        }
+    };
+
+    const handlePause = () => {
+        const synth = window.speechSynthesis;
+        if (synth.speaking && !synth.paused) {
+            synth.pause();
+            setIsPaused(true);
+            setIsPlaying(false);
+        }
+    };
+
+    const handleStop = () => {
+        const synth = window.speechSynthesis;
+        synth.cancel();
+        setIsPlaying(false);
+        setIsPaused(false);
+        if (CSS.highlights) CSS.highlights.clear();
+    };
+
 
     if (!post) {
         return (
@@ -33,6 +141,8 @@ export default function BlogPost() {
             <SEO
                 title={post.title}
                 description={post.excerpt}
+                keywords={post.keywords}
+                image={post.image}
                 type="article"
                 structuredData={{
                     "@context": "https://schema.org",
@@ -44,7 +154,7 @@ export default function BlogPost() {
                         "name": post.author
                     },
                     "datePublished": post.date,
-                    "image": "https://dreambees.ai/og-image.jpg" // Fallback or specific image if available
+                    "image": post.image ? `https://dreambeesai.com${post.image}` : "https://dreambeesai.com/og-image.jpg"
                 }}
             />
             {/* Hero / Header */}
@@ -98,15 +208,88 @@ export default function BlogPost() {
                         </div>
                     </div>
 
-                    <button className="btn btn-outline" style={{ borderRadius: '50%', width: '40px', height: '40px', padding: 0 }}>
-                        <Share2 size={18} />
-                    </button>
+                    {/* TTS & Share Actions */}
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        {/* TTS Controls */}
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            background: 'var(--color-zinc-900)',
+                            borderRadius: '99px',
+                            padding: '4px',
+                            border: '1px solid var(--color-border)'
+                        }}>
+                            {!isPlaying ? (
+                                <button
+                                    onClick={handlePlay}
+                                    className="btn-ghost"
+                                    aria-label="Listen to article"
+                                    title="Listen to article"
+                                    style={{ width: '36px', height: '36px', padding: 0, borderRadius: '50%', color: 'var(--color-text-main)' }}
+                                >
+                                    <Play size={16} fill="currentColor" />
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handlePause}
+                                    className="btn-ghost"
+                                    aria-label="Pause audio"
+                                    title="Pause audio"
+                                    style={{ width: '36px', height: '36px', padding: 0, borderRadius: '50%', color: 'var(--color-accent-primary)' }}
+                                >
+                                    <Pause size={16} fill="currentColor" />
+                                </button>
+                            )}
+
+                            {(isPlaying || isPaused) && (
+                                <button
+                                    onClick={handleStop}
+                                    className="btn-ghost"
+                                    aria-label="Stop audio"
+                                    title="Stop audio"
+                                    style={{ width: '36px', height: '36px', padding: 0, borderRadius: '50%', color: 'var(--color-text-muted)' }}
+                                >
+                                    <Square size={14} fill="currentColor" />
+                                </button>
+                            )}
+
+                            <div style={{ padding: '0 12px 0 4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Volume2 size={14} color="var(--color-text-muted)" />
+                                <span style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    {isPlaying ? 'Playing' : (isPaused ? 'Paused' : 'Listen')}
+                                </span>
+                            </div>
+                        </div>
+
+                        <button className="btn btn-outline" aria-label="Share article" style={{ borderRadius: '50%', width: '40px', height: '40px', padding: 0 }}>
+                            <Share2 size={18} />
+                        </button>
+                    </div>
                 </div>
             </div>
 
+            {/* Feature Image */}
+            {post.image && (
+                <div className="container" style={{ maxWidth: '900px', marginBottom: '60px' }}>
+                    <img
+                        src={post.image}
+                        alt={post.title}
+                        style={{
+                            width: '100%',
+                            height: 'auto',
+                            maxHeight: '500px',
+                            objectFit: 'cover',
+                            borderRadius: '12px',
+                            border: '1px solid var(--color-border)'
+                        }}
+                    />
+                </div>
+            )}
+
             {/* Content */}
             <div className="container" style={{ maxWidth: '800px' }}>
-                <div style={{
+
+                <div ref={contentRef} style={{
                     fontSize: '1.15rem',
                     lineHeight: '1.8',
                     color: 'var(--color-zinc-400)'
@@ -126,6 +309,14 @@ export default function BlogPost() {
                     </Link>
                 </div>
             </div>
+            <style>{`
+                ::highlight(tts-word) {
+                    background-color: transparent;
+                    color: var(--color-accent-primary);
+                    text-shadow: 0 0 8px var(--color-accent-primary);
+                    text-decoration: underline;
+                }
+            `}</style>
         </article>
     );
 }
