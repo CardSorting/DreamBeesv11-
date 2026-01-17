@@ -1,7 +1,7 @@
 export const VALID_MODELS = [
     'nova-furry-xl', 'perfect-illustrious',
     'gray-color', 'scyrax-pastel', 'ani-detox', 'animij-v7', 'swijtspot-no1',
-    'zit-model', 'qwen-image-2512', 'wai-illustrious'
+    'zit-model', 'qwen-image-2512', 'wai-illustrious', 'flux-klein-4b'
 ];
 
 export const B2_ENDPOINT = process.env.B2_ENDPOINT;

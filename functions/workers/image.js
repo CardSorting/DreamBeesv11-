@@ -79,6 +79,17 @@ export const processImageTask = async (req) => {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ prompt, negative_prompt, aspect_ratio: aspectRatio }), timeout: 180000, retries: 3
             });
+        } else if (modelId === 'flux-klein-4b') {
+            response = await fetchWithRetry("https://mariecoderinc--flux-klein-4b-web-generate.modal.run", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    prompt,
+                    height: resolution.height,
+                    width: resolution.width,
+                    num_steps: steps,
+                    seed: req.data.seed || 42
+                }), timeout: 180000, retries: 3
+            });
         } else {
             const params = new URLSearchParams({
                 prompt, model: modelId || "wai-illustrious", negative_prompt,
@@ -120,6 +131,10 @@ export const processImageTask = async (req) => {
                 try {
                     const jsonData = await clonedResponse.json();
                     let base64Image = jsonData.image || jsonData.data || jsonData.output || jsonData.result;
+                    if (jsonData.image_bytes) {
+                        imageBuffer = Buffer.from(jsonData.image_bytes, 'hex');
+                        responseProcessed = true;
+                    }
                     if (typeof base64Image === 'string') {
                         if (base64Image.startsWith('data:')) {
                             const matches = base64Image.match(/^data:image\/[^;]+;base64,(.+)$/);

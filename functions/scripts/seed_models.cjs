@@ -101,6 +101,14 @@ const MODELS = [
         category: 'reels', // Frontend identifier for currency/logic
         order: 13,
         isActive: true
+    },
+    {
+        id: 'flux-klein-4b',
+        name: 'Flux 4B (Klein)',
+        description: 'Fast and efficient FLUX model variant (4B parameters).',
+        type: 'Flux',
+        order: 14,
+        isActive: true
     }
 ];
 

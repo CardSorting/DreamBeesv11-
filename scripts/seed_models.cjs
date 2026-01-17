@@ -108,6 +108,15 @@ const MODELS = [
         order: 13,
         isActive: true,
         tags: ['Video', 'Realistic', 'Motion']
+    },
+    {
+        id: 'flux-klein-4b',
+        name: 'Flux 4B (Klein)',
+        description: 'Fast and efficient FLUX model variant (4B parameters).',
+        type: 'Flux',
+        order: 14,
+        isActive: true,
+        tags: ['Fast', 'Efficient', 'Flux']
     }
 ];
 
