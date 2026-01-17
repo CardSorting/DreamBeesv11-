@@ -61,7 +61,7 @@ export function useGeneratorState() {
             }
         });
         return () => unsub();
-    }, [currentUser]);
+    }, [currentUser?.uid]);
 
     // Timer Logic
     useEffect(() => {

@@ -193,6 +193,7 @@ export default function Slideshow() {
     const downloadImage = async (url, index) => {
         try {
             const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const blob = await response.blob();
             const blobUrl = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -203,7 +204,8 @@ export default function Slideshow() {
             document.body.removeChild(link);
             window.URL.revokeObjectURL(blobUrl);
         } catch (e) {
-            toast.error("Download failed");
+            console.error("Download error:", e);
+            toast.error("Download failed due to network error");
         }
     };
 

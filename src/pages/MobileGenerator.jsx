@@ -160,7 +160,7 @@ export default function MobileGenerator() {
         });
 
         return () => unsubscribe();
-    }, [currentUser]);
+    }, [currentUser?.uid]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

@@ -20,7 +20,7 @@ const MinimalHeader = () => {
             }
         });
         return () => unsub();
-    }, [currentUser]);
+    }, [currentUser?.uid]);
 
     const navItems = [
         { path: '/', label: 'Home', icon: Home },

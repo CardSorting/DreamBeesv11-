@@ -140,7 +140,12 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
                             overflow: 'hidden',
                             border: '1px solid #000'
                         }}>
-                            <img src={model.image} alt={model.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <SafeImage
+                                src={model.image}
+                                alt={model.name}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                fallback={<div style={{ width: '100%', height: '100%', background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: '10px', color: '#888' }}>DB</span></div>}
+                            />
                         </div>
                     </div>
                     <div>
@@ -223,10 +228,11 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
                             </button>
                         </>
                     ) : (
-                        <img
+                        <SafeImage
                             src={getOptimizedImageUrl(imgItem.url || imgItem.imageUrl || (typeof imgItem === 'string' ? imgItem : ''))}
                             alt={imgItem.prompt || "Model Generation"}
                             loading={index < 2 ? "eager" : "lazy"}
+                            className="feed-post-image"
                             style={{
                                 width: '100%',
                                 height: '100%',

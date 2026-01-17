@@ -36,7 +36,7 @@ export function useVideoGeneration({
             });
             return () => unsubscribe();
         }
-    }, [currentUser]);
+    }, [currentUser?.uid]);
 
     const triggerVideoAnimation = async (imageUrl, imageId = null, imgAspectRatio = null) => {
         if (generating) return;

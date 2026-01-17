@@ -96,7 +96,7 @@ export default function DressUp() {
             unsubUser();
             unsubQueue();
         };
-    }, [currentUser]);
+    }, [currentUser?.uid]);
 
 
     const handleFileUpload = async (e) => {

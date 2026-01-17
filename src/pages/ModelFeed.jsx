@@ -11,6 +11,7 @@ import { getOptimizedImageUrl, preloadImage } from '../utils';
 import FeedPost from '../components/FeedPost';
 import ShowcaseModal from '../components/ShowcaseModal';
 import { useAppLikes } from '../hooks/useAppLikes';
+import SafeImage from '../components/SafeImage';
 
 const FeedPostSkeleton = () => (
     <div className="post-skeleton animate-pulse">
@@ -184,7 +185,12 @@ const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
                     </h3>
                     <div className="spotlight-card">
                         <div className="spotlight-header">
-                            <img src={featuredModel.image} alt={featuredModel.name} className="spotlight-bg" />
+                            <SafeImage
+                                src={featuredModel.image}
+                                alt={featuredModel.name}
+                                className="spotlight-bg"
+                                fallback={<div className="spotlight-bg" style={{ background: 'linear-gradient(45deg, #1a1a1a, #2a2a2a)' }} />}
+                            />
                             <div className="spotlight-overlay" />
                             <div className="spotlight-content">
                                 <span className="spotlight-badge">Featured</span>
@@ -223,6 +229,10 @@ const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
                     aspect-ratio: 16/10;
                     border: 1px solid rgba(255,255,255,0.1);
                     margin-bottom: 8px;
+                }
+                .spotlight-header {
+                    width: 100%;
+                    height: 100%;
                 }
                 .spotlight-bg {
                     width: 100%;

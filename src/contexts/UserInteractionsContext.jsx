@@ -25,7 +25,7 @@ export function UserInteractionsProvider({ children }) {
     const [hidden, setHidden] = useState([]);
 
     useEffect(() => {
-        if (!currentUser) {
+        if (!currentUser?.uid) {
             setLikedIds(new Set());
             setBookmarkedIds(new Set());
             setHiddenIds(new Set());
@@ -35,8 +35,10 @@ export function UserInteractionsProvider({ children }) {
             return;
         }
 
+        const uid = currentUser.uid;
+
         // Listener for Likes
-        const likesQuery = query(collection(db, `users/${currentUser.uid}/likes`), orderBy('createdAt', 'desc'));
+        const likesQuery = query(collection(db, `users/${uid}/likes`), orderBy('createdAt', 'desc'));
         const unsubLikes = onSnapshot(likesQuery, (snapshot) => {
             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setLikes(data);
@@ -46,7 +48,7 @@ export function UserInteractionsProvider({ children }) {
         });
 
         // Listener for Bookmarks
-        const bookmarksQuery = query(collection(db, `users/${currentUser.uid}/bookmarks`), orderBy('createdAt', 'desc'));
+        const bookmarksQuery = query(collection(db, `users/${uid}/bookmarks`), orderBy('createdAt', 'desc'));
         const unsubBookmarks = onSnapshot(bookmarksQuery, (snapshot) => {
             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setBookmarks(data);
@@ -56,7 +58,7 @@ export function UserInteractionsProvider({ children }) {
         });
 
         // Listener for Hidden Posts
-        const hiddenQuery = query(collection(db, `users/${currentUser.uid}/hidden`), orderBy('createdAt', 'desc'));
+        const hiddenQuery = query(collection(db, `users/${uid}/hidden`), orderBy('createdAt', 'desc'));
         const unsubHidden = onSnapshot(hiddenQuery, (snapshot) => {
             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setHidden(data);
@@ -70,7 +72,7 @@ export function UserInteractionsProvider({ children }) {
             unsubBookmarks();
             unsubHidden();
         };
-    }, [currentUser]);
+    }, [currentUser?.uid]);
 
     // Helpers
     const isLiked = (id) => likedIds.has(id);

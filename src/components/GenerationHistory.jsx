@@ -73,7 +73,7 @@ export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt
         });
 
         return () => unsubscribe();
-    }, [currentUser]);
+    }, [currentUser?.uid]);
 
     const scroll = (direction) => {
         if (scrollContainerRef.current) {
