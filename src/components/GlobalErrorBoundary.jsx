@@ -36,88 +36,103 @@ class GlobalErrorBoundary extends React.Component {
                     justifyContent: 'center',
                     height: '100vh',
                     width: '100vw',
-                    backgroundColor: '#09090b', // zinc-950
-                    color: '#e4e4e7', // zinc-200
-                    fontFamily: 'Inter, sans-serif',
+                    backgroundColor: '#000',
+                    backgroundImage: 'radial-gradient(circle at 50% 50%, #1a1a2e 0%, #000 100%)',
+                    color: '#e4e4e7',
+                    fontFamily: '"Outfit", sans-serif',
                     padding: '20px',
-                    textAlign: 'center'
+                    textAlign: 'center',
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    zIndex: 9999
                 }}>
                     <div style={{
-                        backgroundColor: '#18181b', // zinc-900
-                        padding: '40px',
-                        borderRadius: '16px',
-                        border: '1px solid #27272a', // zinc-800
+                        backgroundColor: 'rgba(24, 24, 27, 0.4)', // zinc-900 with alpha
+                        backdropFilter: 'blur(16px) saturate(180%)',
+                        WebkitBackdropFilter: 'blur(16px) saturate(180%)',
+                        padding: '48px 32px',
+                        borderRadius: '24px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
                         maxWidth: '500px',
-                        width: '100%',
-                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)'
+                        width: '90%',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                        animation: 'fadeInUp 0.6s ease-out'
                     }}>
                         <div style={{
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)', // red-500/10
-                            padding: '16px',
+                            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(139, 92, 246, 0.2))',
+                            padding: '20px',
                             borderRadius: '50%',
                             width: 'fit-content',
-                            margin: '0 auto 24px auto',
+                            margin: '0 auto 28px auto',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center'
+                            justifyContent: 'center',
+                            boxShadow: '0 0 30px rgba(239, 68, 68, 0.2)'
                         }}>
                             <AlertCircle size={48} color="#ef4444" />
                         </div>
 
                         <h1 style={{
-                            fontSize: '24px',
-                            fontWeight: 'bold',
-                            marginBottom: '12px',
-                            color: '#fff'
+                            fontSize: '28px',
+                            fontWeight: '700',
+                            marginBottom: '16px',
+                            color: '#fff',
+                            letterSpacing: '-0.02em'
                         }}>
-                            Something went wrong
+                            Oops! Something drifted
                         </h1>
 
                         <p style={{
-                            marginBottom: '24px',
-                            color: '#a1a1aa', // zinc-400
-                            lineHeight: '1.5'
+                            marginBottom: '32px',
+                            color: 'rgba(255, 255, 255, 0.6)',
+                            lineHeight: '1.6',
+                            fontSize: '16px'
                         }}>
-                            The application encountered an unexpected error.
-                            We've logged this issue and are looking into it.
+                            The application drifted into an unexpected state.
+                            We've captured the glitch and are working to stabilize it.
                         </p>
 
                         {this.state.error && (
                             <div style={{
-                                backgroundColor: '#000',
-                                padding: '12px',
-                                borderRadius: '8px',
+                                backgroundColor: 'rgba(0, 0, 0, 0.3)',
+                                padding: '16px',
+                                borderRadius: '12px',
                                 textAlign: 'left',
-                                marginBottom: '24px',
+                                marginBottom: '32px',
                                 overflow: 'auto',
-                                maxHeight: '150px',
-                                fontSize: '12px',
+                                maxHeight: '120px',
+                                fontSize: '13px',
                                 fontFamily: 'monospace',
-                                color: '#f87171' // red-400
+                                color: '#fca5a5', // red-300
+                                border: '1px solid rgba(239, 68, 68, 0.2)'
                             }}>
                                 {this.state.error.toString()}
                             </div>
                         )}
 
-                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
                             <button
                                 onClick={this.handleReload}
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '8px',
-                                    padding: '10px 20px',
-                                    borderRadius: '8px',
+                                    gap: '10px',
+                                    padding: '12px 24px',
+                                    borderRadius: '12px',
                                     border: 'none',
                                     backgroundColor: '#fff',
                                     color: '#000',
-                                    fontWeight: '600',
+                                    fontWeight: '700',
                                     cursor: 'pointer',
-                                    transition: 'opacity 0.2s'
+                                    transition: 'transform 0.2s, opacity 0.2s',
+                                    fontSize: '15px'
                                 }}
+                                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
                             >
                                 <RefreshCw size={18} />
-                                Reload Page
+                                Fix Glitch
                             </button>
 
                             <button
@@ -125,19 +140,22 @@ class GlobalErrorBoundary extends React.Component {
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
-                                    gap: '8px',
-                                    padding: '10px 20px',
-                                    borderRadius: '8px',
-                                    border: '1px solid #3f3f46', // zinc-700
-                                    backgroundColor: 'transparent',
+                                    gap: '10px',
+                                    padding: '12px 24px',
+                                    borderRadius: '12px',
+                                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
                                     color: '#fff',
-                                    fontWeight: '600',
+                                    fontWeight: '700',
                                     cursor: 'pointer',
-                                    transition: 'background-color 0.2s'
+                                    transition: 'all 0.2s',
+                                    fontSize: '15px'
                                 }}
+                                onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
+                                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'}
                             >
                                 <Home size={18} />
-                                Go Home
+                                Return Home
                             </button>
                         </div>
                     </div>

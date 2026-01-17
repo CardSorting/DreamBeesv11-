@@ -16,6 +16,7 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
     const [lastTap, setLastTap] = useState(0);
     const [isMuted, setIsMuted] = useState(true);
     const [manualUnmute, setManualUnmute] = useState(false);
+    const timerRef = useRef(null);
     const videoRef = useRef(null);
 
     const liked = isLiked(imgItem.id);
@@ -26,10 +27,21 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
         if (now - lastTap < 300) {
             handleLike();
             setShowLargeHeart(true);
-            setTimeout(() => setShowLargeHeart(false), 800);
+            if (timerRef.current) clearTimeout(timerRef.current);
+            timerRef.current = setTimeout(() => {
+                setShowLargeHeart(false);
+                timerRef.current = null;
+            }, 800);
         }
         setLastTap(now);
     };
+
+    // Cleanup on unmount
+    React.useEffect(() => {
+        return () => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+        };
+    }, []);
 
 
 

@@ -8,9 +8,11 @@ import GlobalErrorBoundary from './components/GlobalErrorBoundary.jsx'
 
 // Global Async Error Handler
 window.addEventListener('unhandledrejection', (event) => {
-  console.error('Unhandled Promise Rejection:', event.reason);
-  // Optionally report to a service or toast
-  // toast.error("An unexpected background error occurred"); 
+  console.error('[System] Unhandled Promise Rejection:', event.reason);
+  // In a production environment, this would be sent to Sentry/LogRocket
+  if (import.meta.env.DEV) {
+    console.warn('[Dev] Check your async handlers for missing .catch() or try/catch blocks.');
+  }
 });
 
 createRoot(document.getElementById('root')).render(
