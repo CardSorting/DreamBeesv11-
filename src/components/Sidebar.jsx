@@ -47,7 +47,7 @@ const Sidebar = ({ activeId }) => {
                 { path: '/discovery', label: 'Discovery', icon: Compass },
                 { path: '/videos', label: 'Videos', icon: Film },
                 { path: '/gallery', label: 'Gallery', icon: LayoutGrid },
-                { path: '/models', label: 'Models', icon: Settings },
+
             ]
         },
         {
