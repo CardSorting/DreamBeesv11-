@@ -75,7 +75,13 @@ export default function PersonaChat() {
     const [error, setError] = useState(null);
 
     const scrollRef = useRef(null);
+    const isMounted = useRef(true);
     const functions = getFunctions();
+
+    useEffect(() => {
+        isMounted.current = true;
+        return () => { isMounted.current = false; };
+    }, []);
 
     useEffect(() => {
         const fetchImage = async () => {
@@ -100,18 +106,20 @@ export default function PersonaChat() {
                     docSnap = await getDoc(docRef);
                 }
 
-                if (docSnap.exists()) {
+                if (docSnap.exists() && isMounted.current) {
                     const data = { id: docSnap.id, ...docSnap.data() };
                     if (!data.imageUrl && data.url) data.imageUrl = data.url;
                     setImageItem(data);
-                } else {
+                } else if (isMounted.current) {
                     setError("Image not found. It may have been deleted.");
                     setIsLoading(false);
                 }
             } catch (err) {
                 console.error("Error fetching image:", err);
-                setError("Failed to load image data.");
-                setIsLoading(false);
+                if (isMounted.current) {
+                    setError("Failed to load image data.");
+                    setIsLoading(false);
+                }
             }
         };
 
@@ -128,18 +136,18 @@ export default function PersonaChat() {
                 // If we recently fetched the image, set loading true again just to be safe visually
                 // but actually we handle this with isLoading state generally.
                 // Reset loading ensures we show the "Analyzing" step if we just got the image.
-                if (mounted && !persona) setIsLoading(true);
+                if (isMounted.current && !persona) setIsLoading(true);
 
                 const apiFn = httpsCallable(functions, 'api');
                 const result = await apiFn({ action: 'createPersona', imageId: id, imageUrl: imageItem.imageUrl });
 
                 const data = result.data;
-                if (data.success && mounted) {
+                if (data.success && isMounted.current) {
                     setPersona(data.persona);
 
-                    if (messages.length === 0 && data.persona.greeting) {
+                    if (data.persona.greeting) {
                         setMessages([{
-                            id: 'greeting',
+                            id: 'greeting-' + Date.now(),
                             role: 'model',
                             text: data.persona.greeting,
                             timestamp: Date.now()
@@ -148,20 +156,18 @@ export default function PersonaChat() {
                 }
             } catch (error) {
                 console.error("Persona Init Error:", error);
-                if (mounted) {
+                if (isMounted.current) {
                     toast.error("Could not awaken character. Please try again.");
                     setError("Failed to generate persona. The oracle is silent.");
                 }
             } finally {
-                if (mounted) setIsLoading(false);
+                if (isMounted.current) setIsLoading(false);
             }
         };
 
         if (imageItem) {
             initPersona();
         }
-
-        return () => { mounted = false; };
     }, [id, imageItem, functions, persona]);
 
     const scrollToBottom = (behavior = 'smooth') => {
@@ -216,13 +222,19 @@ export default function PersonaChat() {
                 timestamp: Date.now()
             };
 
-            setMessages(prev => [...prev, replyMsg]);
+            if (isMounted.current) {
+                setMessages(prev => [...prev, replyMsg]);
+            }
 
         } catch (error) {
             console.error("Chat Error:", error);
-            toast.error("Connection interrupted.");
+            if (isMounted.current) {
+                toast.error("Connection interrupted.");
+            }
         } finally {
-            setIsSending(false);
+            if (isMounted.current) {
+                setIsSending(false);
+            }
         }
     };
 

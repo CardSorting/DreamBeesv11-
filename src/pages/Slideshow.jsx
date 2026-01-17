@@ -43,6 +43,12 @@ export default function Slideshow() {
     const [language, setLanguage] = useState('English');
     const [mode, setMode] = useState('poster');
 
+    const isMounted = useRef(true);
+    useEffect(() => {
+        isMounted.current = true;
+        return () => { isMounted.current = false; };
+    }, []);
+
     const handleImageSelect = (file, url) => {
         setSelectedFile(file);
         setPreviewUrl(url);
@@ -91,12 +97,16 @@ export default function Slideshow() {
                 language: language
             });
 
-            setRequestId(data.requestId);
+            if (isMounted.current) {
+                setRequestId(data.requestId);
+            }
 
         } catch (error) {
             console.error("Generation failed:", error);
-            toast.error(`Generation failed: ${error.message}`);
-            setCurrentStep('upload');
+            if (isMounted.current) {
+                toast.error(`Generation failed: ${error.message}`);
+                setCurrentStep('upload');
+            }
         }
     };
 
@@ -136,9 +146,10 @@ export default function Slideshow() {
                 }
 
                 // Only stop listening when fully completed
-                setTimeout(() => {
+                const timer = setTimeout(() => {
                     setRequestId(null);
                 }, 1000);
+                return () => clearTimeout(timer);
 
             } else if (data.status === 'failed') {
                 toast.error(`Failed: ${data.error}`);

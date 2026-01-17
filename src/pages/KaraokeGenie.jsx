@@ -87,6 +87,20 @@ const KaraokeGenie = () => {
         };
     }, []);
 
+    // Cleanup Audio System
+    useEffect(() => {
+        return () => {
+            if (audioContextRef.current) {
+                audioContextRef.current.close().catch(console.error);
+                audioContextRef.current = null;
+            }
+            if (sourceNodeRef.current) {
+                sourceNodeRef.current.disconnect();
+                sourceNodeRef.current = null;
+            }
+        };
+    }, []);
+
     // Volume
     useEffect(() => {
         if (audioRef.current) audioRef.current.volume = volume;
