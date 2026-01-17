@@ -185,15 +185,45 @@ function generateRandomPrompt(gender) {
 // --- Helpers ---
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-async function fetchWithRetry(url, options, retries = 3) {
+// --- Rate Limiter (Pacer) ---
+class RateLimiter {
+    constructor(requestsPerMinute) {
+        this.interval = 60000 / requestsPerMinute;
+        this.lastRequestTime = 0;
+    }
+
+    async wait() {
+        const now = Date.now();
+        const elapsed = now - this.lastRequestTime;
+        if (elapsed < this.interval) {
+            const waitTime = this.interval - elapsed;
+            console.log(`   [Pacing] Waiting ${Math.round(waitTime)}ms to maintain rate limit...`);
+            await sleep(waitTime);
+        }
+        this.lastRequestTime = Date.now();
+    }
+}
+
+const pacer = new RateLimiter(50); // Be slightly conservative (50/min when server is 60/min)
+
+async function fetchWithRetry(url, options, retries = 5) {
     for (let i = 0; i < retries; i++) {
         try {
             const res = await fetch(url, options);
+
+            if (res.status === 429) {
+                const waitTime = Math.pow(2, i) * 2000 + Math.random() * 1000;
+                console.warn(`   [Rate Limit] 429 received. Backing off for ${Math.round(waitTime / 1000)}s...`);
+                await sleep(waitTime);
+                continue;
+            }
+
             if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
             return res;
         } catch (e) {
             if (i === retries - 1) throw e;
-            await sleep(1000 * (i + 1));
+            const waitTime = 1000 * (i + 1);
+            await sleep(waitTime);
         }
     }
 }
@@ -211,9 +241,12 @@ async function main() {
         const gender = i % 2 === 0 ? 'men' : 'women';
         const prompt = generateRandomPrompt(gender);
 
-        console.log(`[${i + 1}/${TOTAL_IMAGES}] Generating (${gender}): ${prompt.substring(0, 50)}...`);
+        console.log(`[${i + 1}/${TOTAL_IMAGES}] Generating (${gender}) [Len: ${prompt.length}]: ${prompt.substring(0, 50)}...`);
 
         try {
+            // 0. Wait for pacer
+            await pacer.wait();
+
             // 1. Submit generation job
             const submitResponse = await fetchWithRetry(`${ENDPOINT_URL}/generate`, {
                 method: "POST",
@@ -231,9 +264,9 @@ async function main() {
             const jobId = submitJson.job_id;
             console.log(`   Submitted job: ${jobId}, polling...`);
 
-            // 2. Poll for result (max 60 seconds)
+            // 2. Poll for result (max 120 seconds)
             let imageBuffer = null;
-            const maxPolls = 30;
+            const maxPolls = 60;
             for (let poll = 0; poll < maxPolls; poll++) {
                 await sleep(2000); // Wait 2 seconds between polls
 

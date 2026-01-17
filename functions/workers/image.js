@@ -84,14 +84,23 @@ export const processImageTask = async (req) => {
             const FLUX_ENDPOINT = "https://mariecoderinc--flux-klein-4b-fastapi-app.modal.run";
 
             // 1. Submit job
-            const submitResponse = await fetchWithRetry(`${FLUX_ENDPOINT}/generate`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    prompt,
-                    height: resolution.height,
-                    width: resolution.width
-                }), timeout: 30000, retries: 2
-            });
+            let submitResponse;
+            try {
+                submitResponse = await fetchWithRetry(`${FLUX_ENDPOINT}/generate`, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        prompt,
+                        height: resolution.height,
+                        width: resolution.width
+                    }), timeout: 45000, retries: 3
+                });
+            } catch (err) {
+                if (err.message.includes("429")) {
+                    logger.warn(`[Throttling] Flux API rate limited (429). Re-queuing task ${requestId}.`);
+                    throw new Error(`Throttling: Flux API Busy (429). Retrying...`);
+                }
+                throw err;
+            }
 
             const submitJson = await submitResponse.json();
             if (!submitJson.job_id) throw new Error("No job_id from Flux API");
