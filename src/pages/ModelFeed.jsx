@@ -346,7 +346,7 @@ const SuggestedPanelMemo = React.memo(SuggestedPanel);
 export default function ModelFeed() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { availableModels, getShowcaseImages, getGlobalShowcaseImages, rateShowcaseImage, getUserVideos, globalShowcaseCache, showcaseCache } = useModel();
+    const { availableModels, getShowcaseImages, getGlobalShowcaseImages, rateShowcaseImage, getUserVideos, globalShowcaseCache, showcaseCache, hasGlobalFeedEnded } = useModel();
 
     // "feedItems" is the master list of all content, shuffled or sorted
     // Initialize from cache if available to prevent flash of loading
