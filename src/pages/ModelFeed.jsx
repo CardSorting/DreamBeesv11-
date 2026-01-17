@@ -3,7 +3,10 @@ import SEO from '../components/SEO';
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
-import { ArrowLeft, Loader2, BadgeCheck, Zap, Settings, LayoutGrid, Music, Sparkles, Presentation, Hexagon, Home, ChevronDown, ChevronRight, LayoutTemplate, User, Film } from 'lucide-react';
+import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
+import AppCard from '../components/AppCard';
+import { ArrowLeft, Loader2, BadgeCheck, Zap, Settings, LayoutGrid, Music, Sparkles, Presentation, Hexagon, Home, ChevronDown, ChevronRight, LayoutTemplate, User, Film, Palette, Gamepad2, Star, Clock, Search, Heart, Smile } from 'lucide-react';
 import { getOptimizedImageUrl, preloadImage } from '../utils';
 import FeedPost from '../components/FeedPost';
 import ShowcaseModal from '../components/ShowcaseModal';
@@ -43,8 +46,51 @@ const CollapsibleGroup = ({ title, children, defaultOpen = true }) => {
 
 import Sidebar from '../components/Sidebar';
 
+// Mapped Icons for Apps
+const ICON_MAP = {
+    Music: Music,
+    Sparkles: Sparkles,
+    Presentation: Presentation,
+    Palette: Palette,
+    Gamepad2: Gamepad2,
+    LayoutGrid: LayoutGrid,
+    Zap: Zap,
+    Star: Star,
+    Clock: Clock,
+    Search: Search,
+    ChevronRight: ChevronRight,
+    Heart: Heart,
+    Smile: Smile
+};
+
 const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
     const [suggestedData, setSuggestedData] = useState({ suggestions: [], featuredModel: null, popularTags: [] });
+    const [featuredApps, setFeaturedApps] = useState([]);
+
+    useEffect(() => {
+        const fetchApps = async () => {
+            try {
+                // Fetch top 5 apps
+                const q = query(collection(db, "apps"), orderBy("order"), limit(5));
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    const loadedApps = querySnapshot.docs.map(doc => {
+                        const data = doc.data();
+                        return {
+                            ...data,
+                            icon: ICON_MAP[data.icon] || LayoutGrid // Map string to component
+                        };
+                    });
+                    setFeaturedApps(loadedApps);
+                }
+            } catch (error) {
+                console.error("Error fetching apps:", error);
+            }
+        };
+
+        fetchApps();
+    }, []);
 
     useEffect(() => {
         if (!availableModels || availableModels.length === 0) return;
@@ -68,10 +114,35 @@ const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
 
     const { suggestions, featuredModel, popularTags } = suggestedData;
 
-    if (!availableModels || availableModels.length === 0) return null;
+    // We render even if availableModels is empty, to show apps
+    // if (!availableModels || availableModels.length === 0) return null; 
 
     return (
         <aside className="feed-sidebar-right">
+            {/* Featured Apps Section */}
+            <div className="sidebar-section">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h3 className="section-title" style={{ marginBottom: 0 }}>FEATURED APPS</h3>
+                    <Link to="/apps" style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        View All <ChevronRight size={12} />
+                    </Link>
+                </div>
+                <div className="sidebar-apps-grid" style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px'
+                }}>
+                    {featuredApps.length > 0 ? (
+                        featuredApps.map((app, idx) => (
+                            <AppCard key={idx} {...app} isCompact={true} />
+                        ))
+                    ) : (
+                        <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px' }}>
+                            Loading Hub...
+                        </div>
+                    )}
+                </div>
+            </div>
             {/* Featured Spotlight */}
             {featuredModel && (
                 <div className="sidebar-section">

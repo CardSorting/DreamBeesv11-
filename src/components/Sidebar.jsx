@@ -37,7 +37,7 @@ const Sidebar = ({ activeId }) => {
         {
             title: "CREATE",
             items: [
-                { path: '/apps', label: 'App Hub', icon: LayoutTemplate },
+
                 { path: '/generate', label: 'Studio', icon: Zap },
             ]
         },
