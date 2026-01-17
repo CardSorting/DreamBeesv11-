@@ -31,7 +31,7 @@ function Layout() {
           <Footer />
         </div>
       )}
-      {!isShowcaseDetail && <BottomNav />}
+      {!isShowcaseDetail && pathname !== '/generate' && <BottomNav />}
       <BackToTop />
     </div>
   );
