@@ -7,6 +7,8 @@ import { db } from '../firebase'; // Ensure this path is correct based on projec
 
 // Components
 import AppCard from '../components/AppCard';
+import { useAuth } from '../contexts/AuthContext';
+import { useAppLikes } from '../hooks/useAppLikes';
 
 const SectionHeader = ({ title }) => (
     <div className="section-header">
@@ -41,7 +43,11 @@ const AppsHub = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [apps, setApps] = useState([]);
     const [visibleCount, setVisibleCount] = useState(3);
+
     const loaderRef = useRef(null);
+
+    const { currentUser } = useAuth();
+    const { isLiked, toggleLike } = useAppLikes(currentUser?.uid);
 
     // Initial Fetch & Update Images
     useEffect(() => {
@@ -54,6 +60,7 @@ const AppsHub = () => {
                     const loadedApps = querySnapshot.docs.map(doc => {
                         const data = doc.data();
                         return {
+                            id: doc.id, // Ensure ID is captured
                             ...data,
                             icon: ICON_MAP[data.icon] || LayoutGrid // Map string to component
                         };
@@ -154,8 +161,14 @@ const AppsHub = () => {
                 <SectionHeader title="Explore Apps" />
                 <div className="play-grid-section">
                     {displayedApps.length > 0 ? (
-                        displayedApps.map((app, idx) => (
-                            <AppCard key={idx} {...app} />
+                        displayedApps.map((app) => (
+                            <AppCard
+                                key={app.id || app.title} // Fallback if no ID, but should have one
+                                {...app}
+                                isLiked={isLiked(app.id)}
+                                likeCount={app.likeCount || 0}
+                                onToggleLike={() => toggleLike(app.id)}
+                            />
                         ))
                     ) : (
                         <div className="no-results">

@@ -10,6 +10,7 @@ import { ArrowLeft, Loader2, BadgeCheck, Zap, Settings, LayoutGrid, Music, Spark
 import { getOptimizedImageUrl, preloadImage } from '../utils';
 import FeedPost from '../components/FeedPost';
 import ShowcaseModal from '../components/ShowcaseModal';
+import { useAppLikes } from '../hooks/useAppLikes';
 
 const FeedPostSkeleton = () => (
     <div className="post-skeleton animate-pulse">
@@ -63,15 +64,27 @@ const ICON_MAP = {
     Smile: Smile
 };
 
+
+
 const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
-    const [suggestedData, setSuggestedData] = useState({ suggestions: [], featuredModel: null, popularTags: [] });
     const [featuredApps, setFeaturedApps] = useState([]);
+
+    // Only fetch featured model for Logic, remove suggestions
+    const [featuredModel, setFeaturedModel] = useState(null);
+
+    const { currentUser } = useAuth();
+    const { isLiked, toggleLike } = useAppLikes(currentUser?.uid);
 
     useEffect(() => {
         const fetchApps = async () => {
             try {
-                // Fetch top 5 apps
-                const q = query(collection(db, "apps"), orderBy("order"), limit(5));
+                // Fetch top apps (we fetch by order for now, but in future could be by likeCount)
+                // We'll fetch slightly more to sort client side if needed, or just rely on 'order' being manually curated for now as 'Featured'
+                // The user asked for "most featured" based on popularity.
+                // Let's try to order by likeCount if possible, or fallback.
+                // Safest: Fetch by order, but maybe sort by likes if they exist?
+                // Actually, let's stick to "order" to ensure list isn't empty, but allow liking.
+                const q = query(collection(db, "apps"), orderBy("order"), limit(10));
                 const querySnapshot = await getDocs(q);
 
                 if (!querySnapshot.empty) {
@@ -82,7 +95,16 @@ const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
                             icon: ICON_MAP[data.icon] || LayoutGrid // Map string to component
                         };
                     });
-                    setFeaturedApps(loadedApps);
+
+                    // Client-side sort by popularity (likes) then order
+                    loadedApps.sort((a, b) => {
+                        const likesA = a.likeCount || 0;
+                        const likesB = b.likeCount || 0;
+                        if (likesA !== likesB) return likesB - likesA;
+                        return (a.order || 999) - (b.order || 999);
+                    });
+
+                    setFeaturedApps(loadedApps.slice(0, 5));
                 }
             } catch (error) {
                 console.error("Error fetching apps:", error);
@@ -98,32 +120,29 @@ const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
         const filtered = availableModels.filter(m => m.id !== currentModel?.id);
         const shuffled = [...filtered].sort(() => 0.5 - Math.random());
 
-        // Extract tags
-        const tags = new Set();
-        availableModels.forEach(m => {
-            if (m.tags) m.tags.forEach(t => tags.add(t));
-        });
-
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setSuggestedData({
-            featuredModel: shuffled[0],
-            suggestions: shuffled.slice(1, 4),
-            popularTags: Array.from(tags).slice(0, 10)
-        });
+        setFeaturedModel(shuffled[0]);
     }, [availableModels, currentModel]);
 
-    const { suggestions, featuredModel, popularTags } = suggestedData;
+    // Cleanup: Removed suggestions/popularTags destructuring since we removed the state
+    // const { suggestions, featuredModel, popularTags } = suggestedData;
 
     // We render even if availableModels is empty, to show apps
     // if (!availableModels || availableModels.length === 0) return null; 
 
     return (
         <aside className="feed-sidebar-right">
-            {/* Featured Apps Section */}
+            {/* Featured Apps Section - Enhanced Styling */}
             <div className="sidebar-section">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h3 className="section-title" style={{ marginBottom: 0 }}>FEATURED APPS</h3>
-                    <Link to="/apps" style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                    <h3 className="section-title" style={{
+                        marginBottom: 0,
+                        fontSize: '0.9rem',
+                        letterSpacing: '0.05em',
+                        color: 'rgba(255,255,255,0.9)'
+                    }}>
+                        <LayoutTemplate size={14} className="inline-icon" style={{ color: '#A78BFA' }} /> APP HUB
+                    </h3>
+                    <Link to="/apps" style={{ fontSize: '0.75rem', color: '#A78BFA', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '2px', fontWeight: '600', padding: '4px 8px', background: 'rgba(167, 139, 250, 0.1)', borderRadius: '12px' }}>
                         View All <ChevronRight size={12} />
                     </Link>
                 </div>
@@ -134,12 +153,25 @@ const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
                 }}>
                     {featuredApps.length > 0 ? (
                         featuredApps.map((app, idx) => (
-                            <AppCard key={idx} {...app} isCompact={true} />
+                            <AppCard
+                                key={idx}
+                                {...app}
+                                isCompact={true}
+                                isLiked={isLiked(app.id)}
+                                likeCount={app.likeCount || 0}
+                                onToggleLike={() => toggleLike(app.id)}
+                            />
                         ))
                     ) : (
-                        <div style={{ padding: '20px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', background: 'rgba(255,255,255,0.03)', borderRadius: '12px' }}>
-                            Loading Hub...
-                        </div>
+                        // Skeleton loader for apps
+                        [1, 2, 3].map(i => (
+                            <div key={i} style={{
+                                height: '60px',
+                                background: 'rgba(255,255,255,0.03)',
+                                borderRadius: '12px',
+                                animation: 'pulse 2s infinite'
+                            }} />
+                        ))
                     )}
                 </div>
             </div>
@@ -166,29 +198,7 @@ const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
                 </div>
             )}
 
-            {/* Suggested List */}
-            <div className="sidebar-section">
-                <h3 className="section-title">SUGGESTED PERSONAS</h3>
-                <div className="suggestions-list">
-                    {suggestions.map(m => (
-                        <div key={m.id} className="suggestion-item">
-                            <Link to={`/model/${m.id}/feed`} className="suggestion-link-content">
-                                <div className="suggestion-avatar">
-                                    <img src={m.image} alt={m.name} />
-                                </div>
-                                <div className="suggestion-info">
-                                    <div className="suggestion-name">
-                                        DreamBees
-                                        <BadgeCheck size={12} className="text-blue-500 fill-blue-500" />
-                                    </div>
-                                    <div className="suggestion-meta">Official Showcase</div>
-                                </div>
-                            </Link>
-                            <button className="suggestion-follow-btn">Follow</button>
-                        </div>
-                    ))}
-                </div>
-            </div>
+
 
             {/* Popular Tags */}
 

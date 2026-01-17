@@ -1,9 +1,26 @@
 import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
-import { Star } from 'lucide-react';
-import '../pages/AppsHub.css';
+import { Star, Heart } from 'lucide-react';
+import './AppCard.css';
 
-const AppCard = memo(({ title, description, icon: Icon, path, tags = [], color = "violet", rating = "4.9", isCompact = false, previewImage }) => {
+const AppCard = memo(({ title, description, icon: Icon, path, tags = [], color = "violet", rating = "4.9", isCompact = false, previewImage, isLiked, onToggleLike, likeCount = 0 }) => {
+    // Optimistic like count
+    const [displayLikes, setDisplayLikes] = React.useState(likeCount);
+
+    // Sync if prop changes drastically (e.g. refresh), but prioritize local optimistic toggle
+    React.useEffect(() => {
+        setDisplayLikes(likeCount);
+    }, [likeCount]);
+
+    const handleLike = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (onToggleLike) {
+            onToggleLike(); // Trigger backend
+            // Optimistic update
+            setDisplayLikes(prev => isLiked ? prev - 1 : prev + 1);
+        }
+    };
     // Map internal color names to playful hexes
     const colorMap = {
         violet: "#A78BFA",
@@ -29,6 +46,18 @@ const AppCard = memo(({ title, description, icon: Icon, path, tags = [], color =
                     <img src={previewImage} alt={`${title} preview`} loading="lazy" />
                 </div>
             )}
+
+            <div className="like-btn-wrapper">
+                <button
+                    className={`like-btn ${isLiked ? 'liked' : ''}`}
+                    onClick={handleLike}
+                >
+                    <Heart size={16} strokeWidth={isLiked ? 0 : 2.5} />
+                </button>
+                <span className="like-count">
+                    {displayLikes > 0 ? displayLikes : ''}
+                </span>
+            </div>
 
             <div className="app-card-content">
                 <div className="app-icon-container">
