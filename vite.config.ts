@@ -23,8 +23,11 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks: {
-            vendor: ['react', 'react-dom', 'react-router-dom', 'framer-motion'],
-            three: ['three', '@react-three/fiber', '@react-three/drei']
+            'react-vendor': ['react', 'react-dom', 'react-router-dom', 'react-helmet-async'],
+            'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage', 'firebase/functions'],
+            'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
+            'ui-vendor': ['framer-motion', 'lucide-react', 'react-hot-toast', 'lenis'],
+            'utils-vendor': ['@aws-sdk/client-s3', '@google/genai', '@openrouter/sdk']
           }
         }
       }

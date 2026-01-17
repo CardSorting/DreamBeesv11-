@@ -182,7 +182,6 @@ export default function MobileGenerator() {
 
     return (
         <div style={{
-            height: '100vh',
             height: '100dvh', // Mobile viewport fix
             display: 'flex',
             flexDirection: 'column',
