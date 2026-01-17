@@ -106,6 +106,15 @@ const KaraokeGenie = () => {
         if (audioRef.current) audioRef.current.volume = volume;
     }, [volume]);
 
+    // Cleanup Blobs
+    useEffect(() => {
+        return () => {
+            if (audioSrc && audioSrc.startsWith('blob:')) {
+                URL.revokeObjectURL(audioSrc);
+            }
+        };
+    }, [audioSrc]);
+
 
     // --- Logic ---
 
@@ -211,6 +220,7 @@ const KaraokeGenie = () => {
             a.href = url;
             a.download = `karaoke_genie_${Date.now()}.mp4`;
             a.click();
+            URL.revokeObjectURL(url);
 
             setRecorderState(RecorderState.COMPLETED);
         } catch (err) {

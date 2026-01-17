@@ -59,6 +59,15 @@ export default function Slideshow() {
         setPreviewUrl(null);
     };
 
+    // Cleanup preview blob
+    useEffect(() => {
+        return () => {
+            if (previewUrl && previewUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(previewUrl);
+            }
+        };
+    }, [previewUrl]);
+
     // Cycle loading messages
 
     // Cycle loading messages
