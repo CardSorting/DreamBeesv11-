@@ -384,15 +384,16 @@ export default function ModelFeed() {
         }
     }, [location.pathname]);
 
-    const [sortMode, setSortMode] = useState('random'); // 'random' | 'top'
+    // Stable Global Model Object
+    const GLOBAL_MODEL = useMemo(() => ({ name: "Global", image: "/dreambees_icon.png" }), []);
 
     const model = useMemo(() => {
-        if (!id) return { name: "Global", image: "/dreambees_icon.png" }; // Virtual model for Global Feed
+        if (!id) return GLOBAL_MODEL;
         if (availableModels.length > 0) {
             return availableModels.find(m => m.id === id) || null;
         }
-        return null;
-    }, [id, availableModels]);
+        return null; // Return null if waiting for models
+    }, [id, availableModels, GLOBAL_MODEL]);
 
     // --- Helper: Stable Shuffle ---
     const shuffleArray = (array) => {
@@ -405,9 +406,11 @@ export default function ModelFeed() {
     };
 
     // Track initialization to prevent duplicate fetches on navigation
+    // We use a ref that survives re-renders but we need to be careful about when we reset it
     const hasInitializedRef = useRef(false);
     const lastIdRef = useRef(id);
 
+    // --- Data Loading Effect ---
     // --- Data Loading Effect ---
     useEffect(() => {
         // Reset initialization when id changes (navigating to different model)
@@ -416,14 +419,13 @@ export default function ModelFeed() {
             lastIdRef.current = id;
         }
 
-        // Skip if already initialized for this id
+        // Skip if already initialized for this id to prevent double-fetching
         if (hasInitializedRef.current) {
-            console.log("[ModelFeed] Already initialized, skipping duplicate fetch");
             return;
         }
 
         const loadShowcase = async () => {
-            // Mark as initialized immediately to prevent race conditions
+            // Mark as initialized immediately
             hasInitializedRef.current = true;
 
             // Reset state ONLY if we don't have cache, to prevent white flash
@@ -436,12 +438,11 @@ export default function ModelFeed() {
             try {
                 let images = [];
                 if (id) {
-                    // Single Model Mode
-                    if (!model || model.name === "Global") return; // Wait for model resolution
-                    console.log(`[ModelFeed] Loading showcase for model: ${model.id}`);
-                    images = await getShowcaseImages(model.id);
+                    // Single Model Mode - Fetch using ID directly (don't wait for model metadata)
+                    console.log(`[ModelFeed] Loading showcase for model: ${id}`);
+                    images = await getShowcaseImages(id);
                 } else {
-                    // Global Feed Mode - context handles deduplication
+                    // Global Feed Mode - use context's robust fetcher
                     console.log("[ModelFeed] Loading global showcase");
                     images = await getGlobalShowcaseImages(false, 'modelfeed_init');
                 }
@@ -478,7 +479,7 @@ export default function ModelFeed() {
             }
         };
 
-        // Initialize immediately - don't wait for models to load for Global Feed
+        // Initialize immediately - detached from model metadata availability
         loadShowcase();
 
         // Cleanup: reset on unmount
@@ -489,7 +490,7 @@ export default function ModelFeed() {
             }
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id, model?.id, getShowcaseImages, getGlobalShowcaseImages, getUserVideos]); // Use model?.id instead of availableModels.length
+    }, [id, getShowcaseImages, getGlobalShowcaseImages, getUserVideos]); // Minimized dependencies
 
 
 

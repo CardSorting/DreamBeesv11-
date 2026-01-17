@@ -19,7 +19,12 @@ const BottomNav = () => {
                 <span className="text-secondary">Video</span>
             </NavLink>
 
-            {/* Center Action Button - Studio */}
+            <NavLink to={currentUser ? "/profile" : "/auth"} className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
+                <User size={24} />
+                <span className="text-secondary">{currentUser ? 'Profile' : 'Sign In'}</span>
+            </NavLink>
+
+            {/* Action Button - Studio (Moved to right) */}
             {currentUser && (
                 <NavLink to="/generate" className="bottom-nav-fab">
                     <div className="fab-inner">
@@ -27,11 +32,6 @@ const BottomNav = () => {
                     </div>
                 </NavLink>
             )}
-
-            <NavLink to={currentUser ? "/profile" : "/auth"} className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-                <User size={24} />
-                <span className="text-secondary">{currentUser ? 'Profile' : 'Sign In'}</span>
-            </NavLink>
         </nav>
     );
 };

@@ -83,13 +83,22 @@ export function ModelProvider({ children }) {
     }, [selectedModel]);
 
     const [showcaseCache, setShowcaseCache] = useState({});
-    // const [globalShowcaseCache, setGlobalShowcaseCache] = useState(null); // MOVED TO GLOBAL HELPER SECTION
+
+    // Refs for stable caching (prevents re-renders and unstable function references)
+    const showcaseCacheRef = useRef({});
+    const videoCacheRef = useRef({});
+
+    // Sync state cache with ref query (optional, for other consumers)
+    useEffect(() => {
+        showcaseCacheRef.current = showcaseCache;
+    }, [showcaseCache]);
+
 
     // Fetch and cache showcase images for a model
-    const getShowcaseImages = async (modelId) => {
-        // 1. Check cache
-        if (showcaseCache[modelId]) {
-            return showcaseCache[modelId];
+    const getShowcaseImages = useCallback(async (modelId) => {
+        // 1. Check cache (Ref first for stability)
+        if (showcaseCacheRef.current[modelId]) {
+            return showcaseCacheRef.current[modelId];
         }
 
         // 2. Try Local Manifest First
@@ -110,7 +119,10 @@ export function ModelProvider({ children }) {
                 }));
 
                 // Update Cache and Return
-                setShowcaseCache(prev => ({ ...prev, [modelId]: images }));
+                const newCache = { ...showcaseCacheRef.current, [modelId]: images };
+                showcaseCacheRef.current = newCache;
+                setShowcaseCache(newCache);
+
                 return images;
             }
         } catch (localErr) {
@@ -149,13 +161,15 @@ export function ModelProvider({ children }) {
             }
 
             // 4. Update Cache
-            setShowcaseCache(prev => ({ ...prev, [modelId]: images }));
+            const newCache = { ...showcaseCacheRef.current, [modelId]: images };
+            showcaseCacheRef.current = newCache;
+            setShowcaseCache(newCache);
             return images;
         } catch (err) {
             console.error("Error fetching showcase images:", err);
             return [];
         }
-    };
+    }, []);
 
     // --- GLOBAL FEED HELPERS ---
     const globalFeedLoadingRef = useRef(false);
@@ -304,14 +318,12 @@ export function ModelProvider({ children }) {
         }
     }, []); // EMPTY dependency array - function is now stable!
 
-    // Video cache
-    const [videoCache, setVideoCache] = useState({});
 
     // Fetch user videos for mixing into feed
     const getUserVideos = useCallback(async (userId) => {
-        if (videoCache[userId]) {
+        if (videoCacheRef.current[userId]) {
             console.log(`[Video Fetch] Returning cached videos for ${userId}`);
-            return videoCache[userId];
+            return videoCacheRef.current[userId];
         }
 
         try {
@@ -341,13 +353,13 @@ export function ModelProvider({ children }) {
                 };
             });
 
-            setVideoCache(prev => ({ ...prev, [userId]: videos }));
+            videoCacheRef.current = { ...videoCacheRef.current, [userId]: videos };
             return videos;
         } catch (error) {
             console.error("Error fetching user videos:", error);
             return [];
         }
-    }, [videoCache]);
+    }, []);
 
     // --- High Velocity Rating Logic (Buffered) ---
     const ratingQueue = useRef(new Map()); // stores { jobId, rating, timestamp } by jobId
