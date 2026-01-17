@@ -14,26 +14,12 @@ const BottomNav = () => {
                 <span className="text-secondary">Home</span>
             </NavLink>
 
-            {isAdmin && (
-                <NavLink to="/apps" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-                    <LayoutTemplate size={24} />
-                    <span className="text-secondary">Apps</span>
-                </NavLink>
-            )}
-
             {/* Center Action Button - Studio */}
             {currentUser && (
                 <NavLink to="/generate" className="bottom-nav-fab">
                     <div className="fab-inner">
                         <Zap size={28} fill="currentColor" />
                     </div>
-                </NavLink>
-            )}
-
-            {isAdmin && (
-                <NavLink to="/models" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-                    <Hexagon size={24} />
-                    <span className="text-secondary">Models</span>
                 </NavLink>
             )}
 

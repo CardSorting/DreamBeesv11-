@@ -12,7 +12,10 @@ const Landing = React.lazy(() => import('../pages/Landing'));
 const ModelFeed = React.lazy(() => import('../pages/ModelFeed'));
 const Auth = React.lazy(() => import('../pages/Auth'));
 const Generator = React.lazy(() => import('../pages/Generator'));
+const MobileGenerator = React.lazy(() => import('../pages/MobileGenerator'));
 const Gallery = React.lazy(() => import('../pages/Gallery'));
+
+import { useIsMobile } from '../hooks/useIsMobile';
 const Models = React.lazy(() => import('../pages/Models'));
 const ImageDetail = React.lazy(() => import('../pages/ImageDetail'));
 const ModelDetail = React.lazy(() => import('../pages/ModelDetail'));
@@ -71,6 +74,7 @@ const pageTransition = {
 
 const AnimatedRoutes = () => {
     const location = useLocation();
+    const isMobile = useIsMobile();
 
     return (
         <AnimatePresence mode="wait">
@@ -99,7 +103,9 @@ const AnimatedRoutes = () => {
 
                         {/* Admin Only Routes */}
                         <Route path="/generate" element={
-                            <PrivateRoute><Generator /></PrivateRoute>
+                            <PrivateRoute>
+                                {isMobile ? <MobileGenerator /> : <Generator />}
+                            </PrivateRoute>
                         } />
                         <Route path="/gallery" element={
                             <AdminRoute><Gallery /></AdminRoute>
