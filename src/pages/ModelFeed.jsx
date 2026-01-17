@@ -486,12 +486,10 @@ export default function ModelFeed() {
         loadShowcase();
 
         // Cleanup: reset on unmount
-        return () => {
-            // Only reset if this is the same id (not during navigation)
-            if (lastIdRef.current === id) {
-                hasInitializedRef.current = false;
-            }
-        };
+        // REMOVED: In StrictMode, cleanup runs on mount, resetting the ref and causing double-fetch.
+        // The id check at the top of the effect handles navigation changes sufficiently.
+        // When real unmount happens, the ref is destroyed anyway.
+
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id, getShowcaseImages, getGlobalShowcaseImages, getUserVideos]); // Minimized dependencies
 
