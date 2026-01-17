@@ -232,7 +232,9 @@ export function ModelProvider({ children }) {
             setIsGlobalFeedLoading(true);
             console.log(`[Global Feed] [from:${source}] Fetching... (Load More: ${loadMore})`);
 
-            const pageSize = 24;
+            // Fetch a larger pool to allow for "Smart Mixing" (Diversity) client-side
+            // If we only fetch 24 and they are all from the same model, no amount of shuffling helps.
+            const pageSize = 75;
             let q = query(
                 collection(db, 'model_showcase_images'),
                 orderBy('createdAt', 'desc'),

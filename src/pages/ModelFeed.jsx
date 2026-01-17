@@ -398,14 +398,44 @@ export default function ModelFeed() {
         return null; // Return null if waiting for models
     }, [id, availableModels, GLOBAL_MODEL]);
 
-    // --- Helper: Stable Shuffle ---
-    const shuffleArray = (array) => {
-        const arr = [...array];
-        for (let i = arr.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [arr[i], arr[j]] = [arr[j], arr[i]];
+    // --- Helper: Smart Mix (Diversity Shuffle) ---
+    const smartMix = (array) => {
+        if (!array || array.length === 0) return [];
+
+        // 1. Group by modelId
+        const groups = {};
+        array.forEach(item => {
+            const mId = item.modelId || 'unknown';
+            if (!groups[mId]) groups[mId] = [];
+            groups[mId].push(item);
+        });
+
+        // 2. Interleave with per-round shuffle (Organically Randomized Round Robin)
+        const result = [];
+        let maxLen = 0;
+        const modelIds = Object.keys(groups);
+        modelIds.forEach(id => maxLen = Math.max(maxLen, groups[id].length));
+
+        // Create a working copy of IDs to shuffle each round
+        let roundIds = [...modelIds];
+
+        for (let i = 0; i < maxLen; i++) {
+            // Shuffle the order of models for THIS specific round
+            // This prevents "A, B, C, A, B, C" patterns and makes it "A, C, B, C, A, B" etc.
+            for (let k = roundIds.length - 1; k > 0; k--) {
+                const j = Math.floor(Math.random() * (k + 1));
+                [roundIds[k], roundIds[j]] = [roundIds[j], roundIds[k]];
+            }
+
+            roundIds.forEach(id => {
+                const group = groups[id];
+                if (i < group.length) {
+                    result.push(group[i]);
+                }
+            });
         }
-        return arr;
+
+        return result;
     };
 
     // Track initialization to prevent duplicate fetches on navigation
@@ -413,13 +443,17 @@ export default function ModelFeed() {
     const hasInitializedRef = useRef(false);
     const lastIdRef = useRef(id);
 
-    // --- Data Loading Effect ---
+    // Track raw fetched count to calculate diffs for mixing
+    const fetchedCountRef = useRef(0);
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
+
     // --- Data Loading Effect ---
     useEffect(() => {
         // Reset initialization when id changes (navigating to different model)
         if (lastIdRef.current !== id) {
             hasInitializedRef.current = false;
             lastIdRef.current = id;
+            fetchedCountRef.current = 0; // Reset raw count
         }
 
         // Skip if already initialized for this id to prevent double-fetching
@@ -454,8 +488,11 @@ export default function ModelFeed() {
                     // Initial Sort/Shuffle
                     let processedImages = [...images];
 
-                    // Default to shuffle for variety
-                    processedImages = shuffleArray(processedImages);
+                    // Track raw count for paginated diffing
+                    fetchedCountRef.current = processedImages.length;
+
+                    // Default to smart mix for diversity
+                    processedImages = smartMix(processedImages);
 
                     setFeedItems(processedImages);
 
@@ -486,9 +523,7 @@ export default function ModelFeed() {
         loadShowcase();
 
         // Cleanup: reset on unmount
-        // REMOVED: In StrictMode, cleanup runs on mount, resetting the ref and causing double-fetch.
-        // The id check at the top of the effect handles navigation changes sufficiently.
-        // When real unmount happens, the ref is destroyed anyway.
+        // REMOVED cleanup to prevent StrictMode double-fetch
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id, getShowcaseImages, getGlobalShowcaseImages, getUserVideos]); // Minimized dependencies
@@ -580,13 +615,44 @@ export default function ModelFeed() {
     // Manual Shuffle Handler
     const handleShuffle = () => {
         setSortMode('random');
-        setFeedItems(prev => shuffleArray(prev));
+        setFeedItems(prev => smartMix(prev));
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const visibleImages = useMemo(() => {
         return imagesToRender.slice(0, displayPage * imagesPerPage);
     }, [imagesToRender, displayPage]);
+
+
+    // --- Infinite Scroll Logic (Robust Backend Fetching) ---
+    const handleLoadMore = async () => {
+        if (isFetchingMore || hasGlobalFeedEnded || id) return; // Only global feed supports infinite scroll for now
+
+        try {
+            setIsFetchingMore(true);
+            // Fetch next page from context
+            const allFetchedImages = await getGlobalShowcaseImages(true, 'infinite_scroll');
+
+            // Calculate Diff (New Items Only)
+            // We use the raw count ref to know where we left off
+            const newImages = allFetchedImages.slice(fetchedCountRef.current);
+
+            if (newImages.length > 0) {
+                console.log(`[Infinite Scroll] Found ${newImages.length} new items. Mixing and appending...`);
+
+                // Mix ONLY the new batch to preserve history
+                const mixedNewImages = smartMix(newImages);
+
+                // Append
+                setFeedItems(prev => [...prev, ...mixedNewImages]);
+                fetchedCountRef.current = allFetchedImages.length;
+            }
+        } catch (err) {
+            console.error("Error loading more images:", err);
+        } finally {
+            setIsFetchingMore(false);
+        }
+    };
 
     useEffect(() => {
         if (!model) return;
@@ -596,9 +662,21 @@ export default function ModelFeed() {
             timeoutId = setTimeout(() => {
                 const scrollPos = window.innerHeight + window.scrollY;
                 const threshold = document.body.offsetHeight - 1200;
+
+                // 1. Local Pagination (Reveal more of what we have)
                 if (scrollPos >= threshold && visibleImages.length < imagesToRender.length) {
                     setDisplayPage(prev => prev + 1);
                 }
+
+                // 2. Backend Fetch (Get more if we are running low)
+                // Trigger if we have shown almost everything we have
+                if (!id && scrollPos >= threshold && !isFetchingMore && !hasGlobalFeedEnded) {
+                    // Check if we are near the end of the loaded buffer
+                    if (visibleImages.length >= imagesToRender.length - 12) { // 1 page buffer
+                        handleLoadMore();
+                    }
+                }
+
                 timeoutId = null;
             }, 150);
         };
@@ -607,7 +685,8 @@ export default function ModelFeed() {
             window.removeEventListener('scroll', handleScroll);
             if (timeoutId) clearTimeout(timeoutId);
         };
-    }, [visibleImages.length, imagesToRender.length, model]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [visibleImages.length, imagesToRender.length, model, isFetchingMore, hasGlobalFeedEnded]);
 
     if (!model) {
         return (
@@ -639,6 +718,59 @@ export default function ModelFeed() {
                 </header>
 
                 {/* Filter & Sort Bar (Global Only) */}
+                {!id && (
+                    <div className="feed-filter-bar">
+                        <div className="filter-scroll">
+                            <button
+                                className={`filter-chip ${activeFilter === 'All' ? 'active' : ''}`}
+                                onClick={() => setActiveFilter('All')}
+                            >
+                                All
+                            </button>
+                            <button
+                                className={`filter-chip ${activeFilter === 'Videos' ? 'active' : ''}`}
+                                onClick={() => navigate('/videos')}
+                            >
+                                Videos
+                            </button>
+                            {/* Dynamic Tag Filters */}
+                            {allTags.slice(0, 5).map(tag => (
+                                <button
+                                    key={tag}
+                                    className={`filter-chip ${activeFilter === tag ? 'active' : ''}`}
+                                    onClick={() => setActiveFilter(activeFilter === tag ? 'All' : tag)}
+                                >
+                                    {tag}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="sort-toggle">
+                            {/* Discover Random Model Button */}
+                            <button
+                                className="sort-btn"
+                                onClick={() => {
+                                    if (availableModels.length > 0) {
+                                        const randomModel = availableModels[Math.floor(Math.random() * availableModels.length)];
+                                        navigate(`/model/${randomModel.id}/feed`);
+                                    }
+                                }}
+                                title="Visit Random Model"
+                            >
+                                <Sparkles size={18} />
+                            </button>
+
+                            {/* Shuffle Feed Button */}
+                            <button
+                                className={`sort-btn ${sortMode === 'random' ? 'active' : ''}`}
+                                onClick={handleShuffle}
+                                title="Shuffle Feed"
+                            >
+                                <LayoutGrid size={18} />
+                            </button>
+                        </div>
+                    </div>
+                )}
 
 
                 <div className="feed-posts-container">
