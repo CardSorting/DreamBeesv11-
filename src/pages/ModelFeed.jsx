@@ -384,6 +384,9 @@ export default function ModelFeed() {
         }
     }, [location.pathname]);
 
+    // Sort Mode State (Restored)
+    const [sortMode, setSortMode] = useState('random'); // 'random' | 'top'
+
     // Stable Global Model Object
     const GLOBAL_MODEL = useMemo(() => ({ name: "Global", image: "/dreambees_icon.png" }), []);
 
