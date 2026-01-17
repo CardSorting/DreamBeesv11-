@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
+import SafeImage from './SafeImage';
 
 const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setActiveShowcaseImage, variant = 'feed' }) => {
     const { currentUser } = useAuth();

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db, functions } from '../../firebase';
@@ -17,6 +17,16 @@ export function useMagicEnhance({
 }) {
     const [isEnhancing, setIsEnhancing] = useState(false);
     const [enhanceStatus, setEnhanceStatus] = useState(''); // 'transforming', 'enhancing', 'uploading', etc.
+    const listenerRef = useRef(null);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (listenerRef.current) {
+                listenerRef.current();
+            }
+        };
+    }, []);
 
     const handleMagicEnhance = async () => {
         if (isEnhancing) return;
@@ -220,14 +230,17 @@ export function useMagicEnhance({
                             setIsEnhancing(false);
                             setEnhanceStatus('');
                             unsubscribe();
+                            listenerRef.current = null;
                         } else if (data.status === 'failed') {
                             clearTimeout(timeoutId);
                             toast.error("Failed: " + (data.error || "Unknown"), { id: 'style-magic' });
                             setIsEnhancing(false);
                             setEnhanceStatus('');
                             unsubscribe();
+                            listenerRef.current = null;
                         }
                     });
+                    listenerRef.current = unsubscribe;
                 } catch (error) {
                     console.error("Enhance request error", error);
                     toast.error("Failed to enhance prompt", { id: 'style-magic' });

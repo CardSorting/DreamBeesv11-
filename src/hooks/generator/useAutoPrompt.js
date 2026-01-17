@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { functions, db } from '../../firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -7,6 +7,16 @@ import { compressImage } from '../../utils';
 
 export function useAutoPrompt(prompt, setPrompt, referenceImage, setReferenceImage, generationMode) {
     const [isAutoPrompting, setIsAutoPrompting] = useState(false);
+    const listenerRef = useRef(null);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (listenerRef.current) {
+                listenerRef.current();
+            }
+        };
+    }, []);
 
     const handleAutoPrompt = async () => {
         if (!referenceImage) return toast.error("Please attach an image first");
@@ -55,17 +65,23 @@ export function useAutoPrompt(prompt, setPrompt, referenceImage, setReferenceIma
                         }
                         setIsAutoPrompting(false);
                         unsub();
+                        listenerRef.current = null;
                     } else if (status === 'failed') {
                         clearProgressTimers();
                         toast.error("Analysis failed: " + snapshot.data().error, { id: 'auto-prompt' });
                         setIsAutoPrompting(false);
                         unsub();
+                        listenerRef.current = null;
                     }
                 }
             });
+            listenerRef.current = unsub;
 
             setTimeout(() => {
-                unsub();
+                if (listenerRef.current) {
+                    listenerRef.current();
+                    listenerRef.current = null;
+                }
                 if (isAutoPrompting) {
                     clearProgressTimers();
                     setIsAutoPrompting(false);

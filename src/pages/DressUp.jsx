@@ -63,6 +63,7 @@ export default function DressUp() {
     const [reels, setReels] = useState(0);
     const [subscriptionStatus, setSubscriptionStatus] = useState('inactive');
     const [userImages, setUserImages] = useState([]);
+    const listenerRef = useRef(null);
 
     // Reset page when tab changes
     useEffect(() => {
@@ -95,6 +96,9 @@ export default function DressUp() {
         return () => {
             unsubUser();
             unsubQueue();
+            if (listenerRef.current) {
+                listenerRef.current();
+            }
         };
     }, [currentUser?.uid]);
 
@@ -245,9 +249,9 @@ export default function DressUp() {
 
             if (requestId) {
                 // Poll/Listen for completion
-                const unsubscribe = onSnapshot(doc(db, "generation_queue", requestId), (docSnap) => {
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
+                const unsubscribe = onSnapshot(doc(db, "generation_queue", requestId), (snapshot) => {
+                    if (snapshot.exists()) {
+                        const data = snapshot.data();
                         if (data.status === 'completed' && data.imageUrl) {
                             setCurrentImage(data.imageUrl); // Use the URL
                             toast.success("Ta-da! Look at that!", {
@@ -256,17 +260,21 @@ export default function DressUp() {
                             });
                             setGenerating(false);
                             unsubscribe();
+                            listenerRef.current = null;
                         } else if (data.status === 'failed') {
                             setGenerating(false);
                             toast.error(`Magic failed: ${data.error || 'Unknown error'}`, { icon: '🪄' });
                             unsubscribe();
+                            listenerRef.current = null;
                         }
                     }
                 }, (error) => {
                     console.error("Queue listener error:", error);
                     setGenerating(false);
                     toast.error("Error tracking magic", { icon: '🪄' });
+                    listenerRef.current = null;
                 });
+                listenerRef.current = unsubscribe;
             } else if (result.data.image) {
                 // Fallback for old synchronous behavior (just in case)
                 setCurrentImage(`data:image/png;base64,${result.data.image}`);
