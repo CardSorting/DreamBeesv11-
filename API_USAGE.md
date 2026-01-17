@@ -2,6 +2,16 @@
 
 This document explains how to use the deployed `flux-klein-4b` Modal application from your own Python scripts or applications.
 
+## Deployment Info
+
+| Item | Value |
+|------|-------|
+| **Production URL** | `https://mariecoderinc--flux-klein-4b-fastapi-app.modal.run` |
+| **App Dashboard** | [modal.com/apps/mariecoderinc/main/deployed/flux-klein-4b](https://modal.com/apps/mariecoderinc/main/deployed/flux-klein-4b) |
+| **Last Deployed** | 2026-01-17 |
+| **GPU** | NVIDIA A10G (24GB VRAM) |
+| **Model** | FLUX.2-klein-4B |
+
 ## Prerequisites
 
 You need the `modal` client installed and authenticated:
@@ -68,21 +78,94 @@ def generate(
 - **Cold Start**: The first request (if the app has been idle) might take ~1 minute to load, but the model is cached in a Volume so it won't re-download.
 - **Warm Generation**: Subsequent requests typically take **~4-6 seconds** on the A10G GPU.
 
-## Web Endpoint (Optional)
+## Web Endpoint (FastAPI - Async Job Pattern)
 
-If you need to access this via HTTP (e.g., from a Node.js app or curl), you can modify the `flux_modal.py` to add a `@modal.web_endpoint` decorator.
+The API now uses an asynchronous "submit and poll" pattern. This is more robust for long-running image generation tasks and prevents HTTP timeouts.
 
-Example modification to `flux_modal.py`:
-```python
-@app.function()
-@modal.web_endpoint(method="POST")
-def web_generate(data: dict):
-    model = Model()
-    png_bytes = model.generate.local(
-        prompt=data.get("prompt"),
-        height=data.get("height", 1024),
-        width=data.get("width", 1024)
-    )
-    return {"image_bytes": png_bytes.hex()}
+### 1. Submit Generation Job
+**POST** `/generate`
+
+```bash
+curl -X POST "https://mariecoderinc--flux-klein-4b-fastapi-app.modal.run/generate" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "prompt": "A futuristic city in the style of cyberpunk"
+     }'
 ```
-*Note: This is not currently deployed. Contact the maintainer to enable it.*
+
+**Response (JSON):**
+```json
+{
+  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+  "status": "queued"
+}
+```
+
+### 2. Poll for Result
+**GET** `/result/{job_id}`
+
+```bash
+curl "https://mariecoderinc--flux-klein-4b-fastapi-app.modal.run/result/550e8400-e29b-41d4-a716-446655440000" --output output.png
+```
+
+- If the job is **still processing**, it returns a JSON status: `{"status": "generating"}`.
+- If the job is **completed**, it returns the PNG image directly.
+- If the job **failed**, it returns a JSON error: `{"status": "failed", "error": "..."}`.
+
+### Optional: Webhook Notifications
+You can provide a `webhook_url` in the generate request. The API will POST a JSON notification once the job is finished or failed.
+
+```bash
+curl -X POST "https://mariecoderinc--flux-klein-4b-fastapi-app.modal.run/generate" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "prompt": "A futuristic city",
+       "webhook_url": "https://your-app.com/api/webhooks/image-gen"
+     }'
+```
+
+### Production Guardrails & Optimization
+The API is optimized for high-volume production use:
+
+- **Result Caching**: Identical requests (same prompt, seed, etc.) return instantly from the cache, saving GPU costs and time. Disable with `"use_cache": false`.
+- **Rate Limiting**: Limited to **10 requests per minute** per client IP.
+- **Circuit Breaker**: If the failure rate exceeds 50%, the endpoint automatically enters a "cool down" mode to protect the backend.
+- **Queue Throttling**: The API rejects new jobs if the processing queue exceeds 50 items.
+- **Safety Filtering**: Simple filtering is applied to block harmful prompts.
+
+### Advanced Request Body (JSON)
+
+- **prompt** _(string, required)_: 1-500 chars.
+- **height/width** _(int, optional)_: 256-1536 (default 1024).
+- **use_cache** _(bool, optional)_: Default `true`.
+- **webhook_url** _(string, optional)_: Callback for completed jobs.
+
+### Health Check & Status
+
+**GET** `/health` - Returns the overall system status.
+
+```bash
+curl https://mariecoderinc--flux-klein-4b-fastapi-app.modal.run/health
+```
+
+**GET** `/result/{job_id}` - Returns the image or the current status of a job.
+
+---
+
+## Quick Test
+
+```bash
+# Health check
+curl https://mariecoderinc--flux-klein-4b-fastapi-app.modal.run/health
+
+# Generate an image
+JOB_ID=$(curl -s -X POST "https://mariecoderinc--flux-klein-4b-fastapi-app.modal.run/generate" \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "A majestic dragon flying over mountains"}' | jq -r '.job_id')
+
+echo "Job ID: $JOB_ID"
+
+# Wait a few seconds, then download the result
+sleep 10
+curl "https://mariecoderinc--flux-klein-4b-fastapi-app.modal.run/result/$JOB_ID" --output dragon.png
+```

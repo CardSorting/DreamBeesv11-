@@ -80,16 +80,43 @@ export const processImageTask = async (req) => {
                 body: JSON.stringify({ prompt, negative_prompt, aspect_ratio: aspectRatio }), timeout: 180000, retries: 3
             });
         } else if (modelId === 'flux-klein-4b') {
-            response = await fetchWithRetry("https://mariecoderinc--flux-klein-4b-web-generate.modal.run", {
+            // Flux uses async job pattern: submit, then poll for result
+            const FLUX_ENDPOINT = "https://mariecoderinc--flux-klein-4b-fastapi-app.modal.run";
+
+            // 1. Submit job
+            const submitResponse = await fetchWithRetry(`${FLUX_ENDPOINT}/generate`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     prompt,
                     height: resolution.height,
-                    width: resolution.width,
-                    num_steps: steps,
-                    seed: req.data.seed || 42
-                }), timeout: 180000, retries: 3
+                    width: resolution.width
+                }), timeout: 30000, retries: 2
             });
+
+            const submitJson = await submitResponse.json();
+            if (!submitJson.job_id) throw new Error("No job_id from Flux API");
+            const jobId = submitJson.job_id;
+            logger.info(`[${requestId}] Flux job submitted: ${jobId}`);
+
+            // 2. Poll for result (max 120 seconds)
+            const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+            let imageBuffer = null;
+            for (let poll = 0; poll < 60; poll++) {
+                await sleep(2000);
+                const resultRes = await fetch(`${FLUX_ENDPOINT}/result/${jobId}`);
+                const ct = resultRes.headers.get('content-type') || '';
+                if (ct.includes('image/')) {
+                    imageBuffer = Buffer.from(await resultRes.arrayBuffer());
+                    break;
+                }
+                const statusJson = await resultRes.json();
+                if (statusJson.status === 'failed') throw new Error(statusJson.error || 'Flux generation failed');
+            }
+            if (!imageBuffer) throw new Error("Flux generation timed out");
+
+            // Skip the normal response parsing; we already have imageBuffer
+            // Jump directly to image processing (after the main if/else block handles response)
+            response = { ok: true, _fluxImageBuffer: imageBuffer };
         } else {
             const params = new URLSearchParams({
                 prompt, model: modelId || "wai-illustrious", negative_prompt,
@@ -107,69 +134,73 @@ export const processImageTask = async (req) => {
             response = await fetchWithRetry(url, { timeout: 180000, retries: 3 });
         }
 
-        if (!response.ok) throw new Error(`Model Provider Error (${response.status}): ${await response.text()}`);
-
-        const contentType = response.headers.get("content-type") || "";
-        const clonedResponse = response.clone();
-        const firstBytesClone = response.clone();
+        if (!response.ok && !response._fluxImageBuffer) throw new Error(`Model Provider Error (${response.status}): ${await response.text()}`);
 
         let imageBuffer;
         let responseProcessed = false;
 
-        try {
-            const firstBytes = await readFirstBytes(firstBytesClone, 12);
-            if (!firstBytes || firstBytes.length === 0) throw new Error("Response body is empty");
-            const detectedFormat = detectImageFormat(firstBytes);
-            const isLikelyImage = detectedFormat !== null;
-            const isLikelyJSON = looksLikeJSON(firstBytes);
+        // Special case: Flux async pattern already has the image buffer
+        if (response._fluxImageBuffer) {
+            imageBuffer = response._fluxImageBuffer;
+            responseProcessed = true;
+        } else {
+            try {
+                const contentType = response.headers.get("content-type") || "";
+                const clonedResponse = response.clone();
+                const firstBytesClone = response.clone();
+                const firstBytes = await readFirstBytes(firstBytesClone, 12);
+                if (!firstBytes || firstBytes.length === 0) throw new Error("Response body is empty");
+                const detectedFormat = detectImageFormat(firstBytes);
+                const isLikelyImage = detectedFormat !== null;
+                const isLikelyJSON = looksLikeJSON(firstBytes);
 
-            if (isLikelyImage) {
-                const arrayBuffer = await clonedResponse.arrayBuffer();
-                imageBuffer = Buffer.from(arrayBuffer);
-                responseProcessed = true;
-            } else if (contentType.includes("application/json") || (isLikelyJSON && !contentType.includes("image/"))) {
-                try {
-                    const jsonData = await clonedResponse.json();
-                    let base64Image = jsonData.image || jsonData.data || jsonData.output || jsonData.result;
-                    if (jsonData.image_bytes) {
-                        imageBuffer = Buffer.from(jsonData.image_bytes, 'hex');
-                        responseProcessed = true;
-                    }
-                    if (typeof base64Image === 'string') {
-                        if (base64Image.startsWith('data:')) {
-                            const matches = base64Image.match(/^data:image\/[^;]+;base64,(.+)$/);
-                            if (matches) imageBuffer = Buffer.from(matches[1], 'base64');
-                        } else if (base64Image.length > 100) {
-                            try { imageBuffer = Buffer.from(base64Image, 'base64'); } catch { }
+                if (isLikelyImage) {
+                    const arrayBuffer = await clonedResponse.arrayBuffer();
+                    imageBuffer = Buffer.from(arrayBuffer);
+                    responseProcessed = true;
+                } else if (contentType.includes("application/json") || (isLikelyJSON && !contentType.includes("image/"))) {
+                    try {
+                        const jsonData = await clonedResponse.json();
+                        let base64Image = jsonData.image || jsonData.data || jsonData.output || jsonData.result;
+                        if (jsonData.image_bytes) {
+                            imageBuffer = Buffer.from(jsonData.image_bytes, 'hex');
+                            responseProcessed = true;
                         }
-                        if (imageBuffer) responseProcessed = true;
+                        if (typeof base64Image === 'string') {
+                            if (base64Image.startsWith('data:')) {
+                                const matches = base64Image.match(/^data:image\/[^;]+;base64,(.+)$/);
+                                if (matches) imageBuffer = Buffer.from(matches[1], 'base64');
+                            } else if (base64Image.length > 100) {
+                                try { imageBuffer = Buffer.from(base64Image, 'base64'); } catch { }
+                            }
+                            if (imageBuffer) responseProcessed = true;
+                        }
+                        if (!responseProcessed && (jsonData.url || jsonData.imageUrl)) {
+                            const ir = await fetchWithTimeout(jsonData.url || jsonData.imageUrl);
+                            imageBuffer = Buffer.from(await ir.arrayBuffer());
+                            responseProcessed = true;
+                        }
+                    } catch {
+                        const fb = response.clone();
+                        const ab = await fb.arrayBuffer();
+                        if (detectImageFormat(Buffer.from(ab))) {
+                            imageBuffer = Buffer.from(ab);
+                            responseProcessed = true;
+                        }
                     }
-                    if (!responseProcessed && (jsonData.url || jsonData.imageUrl)) {
-                        const ir = await fetchWithTimeout(jsonData.url || jsonData.imageUrl);
-                        imageBuffer = Buffer.from(await ir.arrayBuffer());
-                        responseProcessed = true;
-                    }
-                } catch {
-                    const fb = response.clone();
-                    const ab = await fb.arrayBuffer();
-                    if (detectImageFormat(Buffer.from(ab))) {
-                        imageBuffer = Buffer.from(ab);
-                        responseProcessed = true;
-                    }
+                } else {
+                    const ab = await clonedResponse.arrayBuffer();
+                    imageBuffer = Buffer.from(ab);
+                    responseProcessed = true;
                 }
-            } else {
-                const ab = await clonedResponse.arrayBuffer();
-                imageBuffer = Buffer.from(ab);
-                responseProcessed = true;
+                if (!imageBuffer || imageBuffer.length < 100) throw new Error("Invalid image buffer extracted");
+            } catch (error) {
+                logger.error(`[${requestId}] Processing error: ${error.message}`, error);
+                throw error;
             }
-            if (!imageBuffer || imageBuffer.length < 100) throw new Error("Invalid image buffer extracted");
-        } catch (error) {
-            logger.error(`[${requestId}] Processing error: ${error.message}`, error);
-            throw error;
         }
 
-
-
+        // Image processing - runs for all models
         const { default: sharp } = await import("sharp");
         const sharpImg = sharp(imageBuffer);
         const webpBuffer = await sharpImg.webp({ quality: 90 }).toBuffer();

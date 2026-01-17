@@ -11,7 +11,7 @@ import crypto from "crypto";
 // --- Configuration ---
 const PROJECT_ID = "dreambees-alchemist";
 const MODEL_ID = "flux-klein-4b";
-const ENDPOINT_URL = "https://mariecoderinc--flux-klein-4b-web-generate.modal.run";
+const ENDPOINT_URL = "https://mariecoderinc--flux-klein-4b-fastapi-app.modal.run";
 const TOTAL_IMAGES = 400;
 
 // Load Env
@@ -214,23 +214,49 @@ async function main() {
         console.log(`[${i + 1}/${TOTAL_IMAGES}] Generating (${gender}): ${prompt.substring(0, 50)}...`);
 
         try {
-            // 1. Generate
-            const response = await fetchWithRetry(ENDPOINT_URL, {
+            // 1. Submit generation job
+            const submitResponse = await fetchWithRetry(`${ENDPOINT_URL}/generate`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     prompt: prompt,
                     height: 1024,
-                    width: 1024,
-                    num_steps: 4, // Fast flux
-                    seed: Math.floor(Math.random() * 1000000)
+                    width: 1024
                 })
             });
 
-            const json = await response.json();
-            if (!json.image_bytes) throw new Error("No image_bytes in response");
+            const submitJson = await submitResponse.json();
+            if (!submitJson.job_id) throw new Error("No job_id in response");
 
-            const imageBuffer = Buffer.from(json.image_bytes, 'hex');
+            const jobId = submitJson.job_id;
+            console.log(`   Submitted job: ${jobId}, polling...`);
+
+            // 2. Poll for result (max 60 seconds)
+            let imageBuffer = null;
+            const maxPolls = 30;
+            for (let poll = 0; poll < maxPolls; poll++) {
+                await sleep(2000); // Wait 2 seconds between polls
+
+                const resultResponse = await fetch(`${ENDPOINT_URL}/result/${jobId}`);
+                const contentType = resultResponse.headers.get('content-type') || '';
+
+                if (contentType.includes('image/')) {
+                    // Got the image!
+                    const arrayBuffer = await resultResponse.arrayBuffer();
+                    imageBuffer = Buffer.from(arrayBuffer);
+                    break;
+                } else {
+                    // Still processing, check status
+                    const statusJson = await resultResponse.json();
+                    if (statusJson.status === 'failed') {
+                        throw new Error(statusJson.error || 'Generation failed');
+                    }
+                    // Otherwise keep polling
+                }
+            }
+
+            if (!imageBuffer) throw new Error("Timeout waiting for image generation");
+
 
             // 2. Process (WebP + Thumb)
             const sharpImg = sharp(imageBuffer);
