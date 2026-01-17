@@ -11,7 +11,13 @@ const looksLikeJSON = (buffer) => {
 };
 
 export const processImageTask = async (req) => {
-    const { requestId, userId, prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler, promptHash, promptMetadata } = req.data;
+    const { requestId, userId, modelId, negative_prompt, steps = 30, cfg = 7, aspectRatio = '1:1', scheduler, promptHash, promptMetadata } = req.data;
+    let prompt = req.data.prompt;
+
+    // Safety: Cap prompt length to 1500 chars for all models to prevent validation errors (Modal/Zit limit)
+    if (prompt && prompt.length > 1500) {
+        prompt = prompt.substring(0, 1500);
+    }
     const docRef = db.collection("generation_queue").doc(requestId);
 
     const existingDoc = await docRef.get();

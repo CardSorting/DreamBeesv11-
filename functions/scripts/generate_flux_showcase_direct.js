@@ -19,6 +19,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const envPath = path.resolve(__dirname, "../.env");
 
+// Local saving paths
+const SHOWCASE_DIR = path.resolve(__dirname, "../../public/showcase", MODEL_ID);
+const MANIFEST_PATH = path.join(SHOWCASE_DIR, "manifest.json");
+
 try {
     const envFile = await fs.readFile(envPath, "utf-8");
     envFile.split("\n").forEach(line => {
@@ -30,6 +34,9 @@ try {
 } catch (e) {
     console.warn("Could not read .env file, assuming env vars are set.");
 }
+
+// Ensure local directory exists
+await fs.mkdir(SHOWCASE_DIR, { recursive: true });
 
 // B2 Config
 const B2_ENDPOINT = process.env.B2_ENDPOINT;
@@ -65,30 +72,52 @@ const s3Client = new S3Client({
 });
 
 // --- Prompts ---
+// --- Prompts (Masterwork Pass - 1500 Chars) ---
 const subjects = {
     men: [
-        "strikingly handsome K-pop idol archetype", "rugged and chiseled Viking jarl", "ethereal and angelic male supermodel",
-        "mysterious and sharp-featured noir detective", "majestic and powerful ancient Greek god",
-        "dashing and charming high-society billionaire", "cool and alluring cyberpunk street-runner",
-        "heroic and muscular knight in shining armor", "sophisticated and attractive Italian aristocrat",
-        "athletic and perfectly sculpted olympic swimmer", "majestic and beautiful elven prince",
-        "rugged and handsome cowboy", "stylish and charismatic fashion influencer",
-        "deeply attractive and intelligent scholar", "gorgeous and masculine celestial warrior"
+        "a strikingly handsome K-pop idol archetype with a sharp jawline and expressive soul-piercing eyes",
+        "a rugged and chiseled Viking jarl with weathered skin and a majestic braided beard",
+        "an ethereal and angelic male supermodel with porcelain skin and soft flowing hair",
+        "a mysterious and sharp-featured noir detective in a dimly lit rainy cityscape",
+        "a majestic and powerful ancient Greek god with a perfectly sculpted marble-like physique",
+        "a dashing and charming high-society billionaire with a sophisticated and alluring presence",
+        "a cool and alluring cyberpunk street-runner with glowing cybernetic enhancements",
+        "a heroic and muscular knight in ornate shimmering plate armor",
+        "a sophisticated and attractive Italian aristocrat with refined European features",
+        "an athletic and perfectly sculpted olympic swimmer with defined muscle transitions",
+        "a majestic and beautiful elven prince with pointed ears and an otherworldly grace",
+        "a ruggedly handsome cowboy with sun-kissed skin and a determined gaze",
+        "a stylish and charismatic fashion influencer with a trend-setting aesthetic",
+        "a deeply attractive and intelligent scholar with a focused and profound expression",
+        "a gorgeous and masculine celestial warrior with cosmic energy radiating from his core"
     ],
     women: [
-        "breathtakingly beautiful K-pop star archetype", "radiant and ethereal elven queen", "stunningly gorgeous Brazilian supermodel",
-        "elegant and breathtaking Parisian lady", "fiercely beautiful Amazonian warrior", "majestic and radiant Egyptian queen",
-        "captivating and alluring dark-fantasy sorceress", "graceful and stunning prima ballerina",
-        "striking and beautiful cyberpunk netrunner", "mystical and radiant celestial goddess",
-        "glamorous Golden Age Hollywood starlet", "sophisticated and beautiful high-fashion editor",
-        "alluring and divine mermaid queen", "divine and breathtakingly beautiful deity",
-        "chic and stunningly gorgeous minimalist muse"
+        "a breathtakingly beautiful K-pop star archetype with flawless dewy skin and mesmerizing eyes",
+        "a radiant and ethereal elven queen with a crown of woven light and flowing silk robes",
+        "a stunningly gorgeous Brazilian supermodel with sun-golden skin and perfect proportions",
+        "an elegant and breathtaking Parisian lady with a timeless and sophisticated aesthetic",
+        "a fiercely beautiful Amazonian warrior with a powerful and athletic build",
+        "a majestic and radiant Egyptian queen with ornate gold jewelry and striking makeup",
+        "a captivating and alluring dark-fantasy sorceress with mystical energy in her gaze",
+        "a graceful and stunning prima ballerina in a delicate and detailed tulle tutu",
+        "a striking and beautiful cyberpunk netrunner with holographic data-streams around her",
+        "a mystical and radiant celestial goddess with hair made of nebula and starlight",
+        "a glamorous Golden Age Hollywood starlet with perfectly styled waves and red lips",
+        "a sophisticated and beautiful high-fashion editor with a sharp and modern look",
+        "an alluring and divine mermaid queen with shimmering scales and flowing underwater hair",
+        "a divine and breathtakingly beautiful deity from an ancient lost civilization",
+        "a chic and stunningly gorgeous minimalist muse with simple yet profound beauty"
     ],
     expressions: [
-        "with a subtle and alluring smirk", "with an intense and soul-piercing gaze", "with a soft and radiant smile",
-        "with a confident and charismatic expression", "with a mysterious and brooding look",
-        "with a direct and captivating eye contact", "with a serene and peaceful expression",
-        "with a fierce and determined look", "with an elegant and poised expression"
+        "wearing a subtle and alluring smirk that hints at a deep secret",
+        "gazing directly into the lens with an intense and soul-piercing look of confidence",
+        "radiating warmth with a soft and genuine smile that lights up the entire frame",
+        "exhibiting a confident and charismatic expression that commands attention",
+        "brooding with a mysterious and thoughtful look, lost in deep contemplation",
+        "maintaining direct and captivating eye contact that feels deeply personal",
+        "possessing a serene and peaceful expression of absolute tranquility",
+        "showing a fierce and determined look of unyielding resolve",
+        "portraying an elegant and poised expression of royal dignity"
     ],
     ethnicity: [
         "Asian", "African", "Caucasian", "Latino", "Middle Eastern", "South Asian", "Native American",
@@ -96,65 +125,64 @@ const subjects = {
         "Greek", "Italian", "Egyptian", "Korean", "Japanese", "Indian", "French", "Spanish"
     ],
     style: [
-        "Aesthetic masterpiece photography", "8k UHD cinematic film still", "Exquisite high-fashion editorial",
-        "Ultra-detailed digital masterpiece", "Sleek and vibrant modern cyberpunk", "Ethereal and magical high-fantasy",
-        "Moody and artistic masterpiece noir", "Professional commercial beauty advertising",
-        "National Geographic level of hyper-realism", "Hyper-realistic portraiture"
+        "Aesthetic masterpiece photography with a focus on RAW materiality",
+        "8k UHD cinematic film still with professional anamorphic lens rendering",
+        "Exquisite high-fashion editorial for Vogue, emphasizing luxury and texture",
+        "Ultra-detailed digital masterpiece with hyper-realistic surface modeling",
+        "Sleek and vibrant modern cyberpunk aesthetic with high-tech glass and neon",
+        "Ethereal and magical high-fantasy style with glowing mana and soft bokeh",
+        "Moody and artistic masterpiece noir with deep shadows and silvery highlights",
+        "Professional commercial beauty advertising photography with flawless finish",
+        "National Geographic level of hyper-realism, documenting every fine detail",
+        "Hyper-realistic portraiture that captures the very essence of the soul"
     ],
     atmosphere: [
-        "ethereal and mystical aura", "serene and heavenly peace", "bold and majestic power", "alluring and seductive mystery",
-        "heroic and grand scale", "dark and moody cinematic vibe", "dreamy and magical atmosphere",
-        "crisp and ultra-high-definition clarity", "vibrant and electrically energetic"
+        "surrounded by an ethereal and mystical aura of golden light particles",
+        "bathed in a serene and heavenly peace that feels otherworldly",
+        "radiating a bold and majestic power that fills the composition",
+        "shrouded in an alluring and seductive mystery within a luxurious setting",
+        "depicted on a heroic and grand scale with epic backlighting",
+        "captured in a dark and moody cinematic vibe with volumetric atmospheric haze",
+        "enveloped in a dreamy and magical atmosphere with floating crystalline shards",
+        "rendered with crisp and ultra-high-definition clarity in every pixel",
+        "vibrant and electrically energetic with dynamic motion blur accents"
     ],
     lighting: [
-        "golden hour sun with god rays", "dramatic cinematic volumetric lighting", "soft and warm candlelight",
-        "cool blue and vibrant magenta neon lighting", "professional studio softbox beauty lighting",
-        "mysterious and silvery moonlight", "sharp and clean high-contrast rim lighting",
-        "dynamic and moody chiaroscuro lighting", "soft diffused natural morning light",
-        "glittering star-light effects", "rainbow-tinted prism lighting"
+        "illuminated by the golden hour sun casting long, soft god rays through a window",
+        "lit with dramatic cinematic volumetric lighting that creates deep, rich depth",
+        "bathed in the soft and warm flicker of a thousand scented candles",
+        "drenched in cool blue and vibrant magenta neon lighting with realistic reflections",
+        "under professional studio softbox beauty lighting for a flawless and even glow",
+        "placed under the mysterious and silvery glow of a full moonlight through mist",
+        "highlighted by sharp and clean high-contrast rim lighting to define the silhouette",
+        "rendered with dynamic and moody chiaroscuro lighting, emphasizing light and shadow",
+        "softened by diffused natural morning light filtering through sheer curtains",
+        "embellished with glittering star-light effects and subtle lens flares",
+        "artistically hit by rainbow-tinted prism lighting for a spectral aesthetic"
     ],
-    colors: [
-        "teal and orange cinematic color grading", "monochromatic and elegant palettes", "analogous soft warm tones",
-        "vibrant and saturated neon colors", "muted and sophisticated earth tones", "royal gold and deep purple accents",
-        "clean white and minimalist aesthetic", "pastel and dreamy color schemes"
+    materiality: [
+        "The skin texture is hyper-realistic, showing microscopic pores, fine hair, and perfect subsurface scattering of light.",
+        "Every fabric weave is visible, from the intricate silk thread to the heavy grain of premium leather.",
+        "Reflections on the eyes are razor-sharp, mirroring a detailed environment with uncanny accuracy.",
+        "Materials like gold and silver have physically accurate luster and micro-scratches for total realism.",
+        "Sweat or water droplets on the skin have perfect refraction and surface tension properties."
     ],
-    setting: [
-        "vibrant cyberpunk city at night", "sleek futuristic space station", "magical glowing bioluminescent forest",
-        "pristine tropical beach at sunset", "ultra-modern luxury penthouse", "grand ancient medieval castle hall",
-        "clean minimalist studio background", "lush blooming flower garden", "majestic misty mountain range",
-        "rainy neon-lit urban alleyway", "opulent and grand ballroom", "charming and cozy aesthetic cafe"
-    ],
-    camera: [
-        "shot on Sony A7R IV with 85mm f/1.4 lens", "shot on Canon EOS R5 with 50mm f/1.2 L lens",
-        "shot on Hasselblad X2D 100C for extreme detail", "cinematic anamorphic lens look", "macro lens focusing on eyes"
-    ],
-    features: [
-        "perfect facial symmetry with exquisite detail", "mesmerizing irises and intense eyes",
-        "flawless and glowing skin with micro-texture", "sharp and perfectly defined masculine jawline",
-        "expertly styled and detailed shimmering hair", "highly realistic skin pores and subtle freckles",
-        "soft and dewy finish with healthy glow", "perfect face and eyes", "sculpted and aesthetically perfect features"
-    ],
-    skin: [
-        "hyper-realistic skin texture with visible pores", "smooth and glowing skin with high translucency",
-        "detailed skin with realistic subsurface scattering", "soft and velvety skin complexion",
-        "tanned and glowing skin with realistic sheen"
-    ],
-    physique: [
-        "athletic and aesthetically perfect build", "slender and elegant graceful frame",
-        "strong and muscular chiseled body", "tall and majestic imposing stature",
-        "graceful and lean aesthetic physique", "broad shoulders and narrow waist",
-        "toned and perfectly defined aesthetic muscles"
-    ],
-    details: [
-        "extreme level of intricate detail", "razor-sharp focus", "exquisite background bokeh",
-        "perfect rule of thirds composition", "masterful cinematic depth of field",
-        "ultra-realistic PBR materials", "unreal engine 5.4 octane render level"
+    composition: [
+        "The shot uses a masterful rule-of-thirds composition with a shallow depth of field (f/1.4).",
+        "A low-angle dramatic perspective emphasizes the grandeur and presence of the subject.",
+        "Extreme macro focus on the eyes reveals the intricate details of the iris and pupil.",
+        "The background is beautifully blurred into a creamy, high-quality bokeh that isolates the subject.",
+        "Cinematic wide-angle framing captures the subject within a vast and detailed environment."
     ],
     clothing: [
-        "wearing exquisite Dior haute couture", "in sleek and detailed technical Gucci streetwear",
-        "draped in luxurious shimmering Versace silk", "wearing a sharp and tailored Armani tuxedo",
-        "in an elegant and breathtaking flowing McQueen gown", "wearing intricate and detailed royal Chanel armor style",
-        "in stylish modern Balenciaga streetwear", "wearing a cool vintage designer Saint Laurent leather jacket"
+        "wearing exquisite Dior haute couture with intricate hand-stitched detailing",
+        "in sleek and detailed technical Gucci streetwear with layered high-tech fabrics",
+        "draped in luxurious shimmering Versace silk that catches and refracts the light",
+        "wearing a sharp and tailored Armani tuxedo with a subtle velvet texture",
+        "in an elegant and breathtaking flowing McQueen gown with layers of fine lace",
+        "wearing intricate and detailed royal Chanel armor style with gold filigree",
+        "in stylish modern Balenciaga streetwear with bold silhouettes and textures",
+        "wearing a cool vintage designer Saint Laurent leather jacket with authentic wear"
     ]
 };
 
@@ -166,20 +194,26 @@ function generateRandomPrompt(gender) {
     const sty = s.style[Math.floor(Math.random() * s.style.length)];
     const atm = s.atmosphere[Math.floor(Math.random() * s.atmosphere.length)];
     const lig = s.lighting[Math.floor(Math.random() * s.lighting.length)];
-    const col = s.colors[Math.floor(Math.random() * s.colors.length)];
-    const cam = s.camera[Math.floor(Math.random() * s.camera.length)];
-    const set = s.setting[Math.floor(Math.random() * s.setting.length)];
-    const feat = s.features[Math.floor(Math.random() * s.features.length)];
-    const skin = s.skin[Math.floor(Math.random() * s.skin.length)];
-    const phys = s.physique[Math.floor(Math.random() * s.physique.length)];
-    const det = s.details[Math.floor(Math.random() * s.details.length)];
+    const mat = s.materiality[Math.floor(Math.random() * s.materiality.length)];
+    const comp = s.composition[Math.floor(Math.random() * s.composition.length)];
     const out = s.clothing[Math.floor(Math.random() * s.clothing.length)];
 
     // Shot type variety
-    const shotTypes = ["breathtaking close-up portrait", "exquisite medium portrait", "stunning full-body fashion shot", "extreme close-up on eyes"];
+    const shotTypes = ["close-up portrait", "medium portrait", "full-body fashion shot", "extreme macro focus"];
     const shotType = shotTypes[Math.floor(Math.random() * shotTypes.length)];
 
-    return `${sty}, a ${shotType} of a ${subj}, ${exp}, ${eth}, ${phys}, ${feat}, ${skin}, ${out}, ${atm}, ${set}, ${lig}, ${col}, ${cam}, ${det}, exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece`;
+    const promptParts = [
+        sty + ".",
+        `A ${shotType} of ${subj}.`,
+        `Subject is ${exp}, identified as ${eth} heritage.`,
+        `The scene is ${atm} and ${lig}.`,
+        `The subject is ${out}.`,
+        mat,
+        comp,
+        "Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render."
+    ];
+
+    return promptParts.join(" ");
 }
 
 // --- Helpers ---
@@ -237,9 +271,23 @@ async function main() {
 
     // We'll generate men and women
     // Loop 1 to TOTAL_IMAGES
+    // Load or init manifest
+    let manifest = [];
+    try {
+        const manifestData = await fs.readFile(MANIFEST_PATH, "utf-8");
+        manifest = JSON.parse(manifestData);
+    } catch (e) {
+        manifest = [];
+    }
+
     for (let i = 0; i < TOTAL_IMAGES; i++) {
         const gender = i % 2 === 0 ? 'men' : 'women';
-        const prompt = generateRandomPrompt(gender);
+        let prompt = generateRandomPrompt(gender);
+
+        // Enforce 1500 char limit (Model validation)
+        if (prompt.length > 1500) {
+            prompt = prompt.substring(0, 1497) + "...";
+        }
 
         console.log(`[${i + 1}/${TOTAL_IMAGES}] Generating (${gender}) [Len: ${prompt.length}]: ${prompt.substring(0, 50)}...`);
 
@@ -259,7 +307,10 @@ async function main() {
             });
 
             const submitJson = await submitResponse.json();
-            if (!submitJson.job_id) throw new Error("No job_id in response");
+            if (!submitJson.job_id) {
+                console.error("   Full Response:", submitJson);
+                throw new Error(submitJson.detail || "No job_id in response");
+            }
 
             const jobId = submitJson.job_id;
             console.log(`   Submitted job: ${jobId}, polling...`);
@@ -271,6 +322,13 @@ async function main() {
                 await sleep(2000); // Wait 2 seconds between polls
 
                 const resultResponse = await fetch(`${ENDPOINT_URL}/result/${jobId}`);
+                if (resultResponse.status === 404) {
+                    // This is expected if the job is not yet finished or result expired
+                    // But if it's been a while, something might be wrong.
+                    // Actually, the API returns status: processing usually.
+                    continue;
+                }
+
                 const contentType = resultResponse.headers.get('content-type') || '';
 
                 if (contentType.includes('image/')) {
@@ -279,12 +337,15 @@ async function main() {
                     imageBuffer = Buffer.from(arrayBuffer);
                     break;
                 } else {
-                    // Still processing, check status
-                    const statusJson = await resultResponse.json();
-                    if (statusJson.status === 'failed') {
-                        throw new Error(statusJson.error || 'Generation failed');
+                    // Still processing or error, check status
+                    try {
+                        const statusJson = await resultResponse.json();
+                        if (statusJson.status === 'failed') {
+                            throw new Error(statusJson.error || 'Generation failed');
+                        }
+                    } catch (e) {
+                        // Likely still "processing" or raw text
                     }
-                    // Otherwise keep polling
                 }
             }
 
@@ -298,8 +359,15 @@ async function main() {
             const lqipBuffer = await sharpImg.resize(20, 20, { fit: 'inside' }).webp({ quality: 20 }).toBuffer();
             const lqip = `data:image/webp;base64,${lqipBuffer.toString('base64')}`;
 
-            // 3. Upload
+            // 3. Save Locally
             const timestamp = Date.now();
+            const localFileName = `${timestamp}_${i}.webp`;
+            const localThumbName = `${timestamp}_${i}_thumb.webp`;
+
+            await fs.writeFile(path.join(SHOWCASE_DIR, localFileName), webpBuffer);
+            await fs.writeFile(path.join(SHOWCASE_DIR, localThumbName), thumbBuffer);
+
+            // 4. Upload to B2
             const baseKey = `showcase/${MODEL_ID}/${timestamp}_${i}`;
             const originalKey = `${baseKey}.webp`;
             const thumbKey = `${baseKey}_thumb.webp`;
@@ -312,27 +380,33 @@ async function main() {
             const imageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalKey}`;
             const thumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbKey}`;
 
-            // 4. Save to Firestore
-            // We use 'admin' as userId for showcase items or a specific showcase logic? 
-            // Looking at ModelContext, it queries 'model_showcase_images'.
-            // Let's create a doc there.
-
-            await db.collection('model_showcase_images').add({
+            // 5. Save to Firestore
+            const docData = {
                 modelId: MODEL_ID,
                 prompt: prompt,
                 imageUrl: imageUrl,
                 thumbnailUrl: thumbnailUrl,
                 lqip: lqip,
                 createdAt: FieldValue.serverTimestamp(),
-                userId: 'system_seed_script',
-                likesCount: Math.floor(Math.random() * 50) + 10, // Fake initial likes
+                userId: 'system_seed_script_local',
+                likesCount: Math.floor(Math.random() * 50) + 10,
                 bookmarksCount: Math.floor(Math.random() * 10),
-                tags: prompt.toLowerCase().split(' '), // simplistic tagging
                 subject: { gender: gender === 'men' ? 'male' : 'female' },
-                vibe: 'cinematic'
-            });
+                vibe: 'cinematic',
+                localPath: `/showcase/${MODEL_ID}/${localFileName}`,
+                localThumbPath: `/showcase/${MODEL_ID}/${localThumbName}`
+            };
 
-            console.log(`   ✓ Saved: ${imageUrl}`);
+            await db.collection('model_showcase_images').add(docData);
+
+            // 6. Update Manifest
+            manifest.push({
+                ...docData,
+                createdAt: new Date().toISOString()
+            });
+            await fs.writeFile(MANIFEST_PATH, JSON.stringify(manifest, null, 2));
+
+            console.log(`   ✓ Saved Locally & B2: ${localFileName}`);
             successCount++;
 
         } catch (err) {
