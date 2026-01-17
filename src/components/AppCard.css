@@ -273,3 +273,52 @@
 .app-card.compact .app-rating {
     display: none;
 }
+/* Rank Badge */
+.app-rank {
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    width: 20px;
+    height: 20px;
+    background: #F59E0B; /* Amber-500 */
+    color: black;
+    font-size: 0.7rem;
+    font-weight: 800;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    border: 2px solid #131314;
+}
+
+.app-rank.rank-1 {
+    background: #FFD700; /* Gold */
+    width: 24px;
+    height: 24px;
+    font-size: 0.8rem;
+}
+
+.app-rank.rank-2 {
+    background: #C0C0C0; /* Silver */
+}
+
+.app-rank.rank-3 {
+    background: #CD7F32; /* Bronze */
+}
+
+/* Adjust compact mode for rank */
+.app-card.compact .app-rank {
+    top: 4px;
+    left: 4px;
+    width: 16px;
+    height: 16px;
+    font-size: 0.6rem;
+    border-width: 1px;
+}
+.app-card.compact .app-rank.rank-1 {
+    width: 18px;
+    height: 18px;
+    font-size: 0.7rem;
+}

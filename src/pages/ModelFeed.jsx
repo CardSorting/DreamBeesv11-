@@ -159,6 +159,7 @@ const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
                                 isCompact={true}
                                 isLiked={isLiked(app.id)}
                                 likeCount={app.likeCount || 0}
+                                rank={idx + 1}
                                 onToggleLike={() => toggleLike(app.id)}
                             />
                         ))

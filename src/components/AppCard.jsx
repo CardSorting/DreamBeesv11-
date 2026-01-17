@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Star, Heart } from 'lucide-react';
 import './AppCard.css';
 
-const AppCard = memo(({ title, description, icon: Icon, path, tags = [], color = "violet", rating = "4.9", isCompact = false, previewImage, isLiked, onToggleLike, likeCount = 0 }) => {
+const AppCard = memo(({ title, description, icon: Icon, path, tags = [], color = "violet", rating = "4.9", isCompact = false, previewImage, isLiked, onToggleLike, likeCount = 0, rank }) => {
     // Optimistic like count
     const [displayLikes, setDisplayLikes] = React.useState(likeCount);
 
@@ -41,6 +41,12 @@ const AppCard = memo(({ title, description, icon: Icon, path, tags = [], color =
             className={`app-card ${isCompact ? 'compact' : ''} ${previewImage ? 'has-preview' : ''}`}
             style={{ '--card-accent': accentColor }}
         >
+            {rank && (
+                <div className={`app-rank rank-${rank}`}>
+                    {rank}
+                </div>
+            )}
+
             {previewImage && !isCompact && (
                 <div className="app-card-preview">
                     <img src={previewImage} alt={`${title} preview`} loading="lazy" />
