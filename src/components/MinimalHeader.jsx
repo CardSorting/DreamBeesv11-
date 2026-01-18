@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Hexagon, Home, Compass, Zap, Film, User, Plus, Image, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { Hexagon, Home, Compass, Zap, Film, User, Plus, Image, ArrowLeft } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 
 const MinimalHeader = () => {
