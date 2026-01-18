@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Hexagon, Home, Compass, Zap, Film, User, Plus, Image } from 'lucide-react';
+import { Hexagon, Home, Compass, Zap, Film, User, Plus, Image, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -27,19 +27,28 @@ const MinimalHeader = () => {
         { path: '/discovery', label: 'Discovery', icon: Compass },
         { path: '/generate', label: 'Studio', icon: Zap, hideOnMobile: true },
         { path: '/gallery', label: 'Gallery', icon: Image },
-        { path: '/video', label: 'Videos', icon: Film, hideOnMobile: true },
         { path: '/profile', label: 'Profile', icon: User, hideOnMobile: true },
     ];
 
+    const isShowcaseDetail = activePath.startsWith('/discovery/') && activePath !== '/discovery';
+    const isGenerator = activePath === '/generate';
+    // BottomNav logic from App.jsx: !isShowcaseDetail && pathname !== '/generate'
+    const isBottomNavVisible = !isShowcaseDetail && !isGenerator;
+
     return (
-        <header className="minimal-header">
+        <header className={`minimal-header ${isBottomNavVisible ? 'hide-on-mobile-if-nav' : ''}`}>
             <div className="header-content">
-                <Link to="/" className="header-logo">
+                <Link to="/discovery" className="mobile-back-nav">
+                    <ArrowLeft size={20} />
+                    <span>Back to Discovery</span>
+                </Link>
+
+                <Link to="/" className="header-logo desktop-only">
                     <Hexagon size={24} fill="white" className="logo-icon" />
                     <span className="logo-text">DreamBees</span>
                 </Link>
 
-                <nav className="header-nav">
+                <nav className="header-nav desktop-only">
                     {navItems.map((item) => {
                         const isActive = activePath === item.path;
                         return (
@@ -55,7 +64,7 @@ const MinimalHeader = () => {
                     })}
                 </nav>
 
-                <div className="header-actions">
+                <div className="header-actions desktop-only">
                     {currentUser && (
                         <Link to="/pricing" className="credit-badge">
                             <Zap size={14} fill="currentColor" className="zap-icon" />
@@ -191,33 +200,44 @@ const MinimalHeader = () => {
                     color: white;
                 }
 
+                /* Mobile Back Nav */
+                .mobile-back-nav {
+                    display: none;
+                }
+
                 /* Mobile Optimization */
                 @media (max-width: 768px) {
-                    .nav-label {
-                        display: none;
-                    }
-                    
-                    .nav-link.hide-mobile {
-                        display: none;
-                    }
-                    
-                    .nav-link {
-                        padding: 10px;
-                        border-radius: 50%;
-                    }
-                    
-                    .header-content {
-                        padding: 0 16px;
+                    .minimal-header.hide-on-mobile-if-nav {
+                        display: none !important;
                     }
 
-                    .credit-amount {
-                        display: none;
+                    .minimal-header, .minimal-header * {
+                        box-sizing: border-box;
                     }
-                    .credit-badge {
-                        padding: 6px;
+
+                    .header-content {
+                        padding: 0 16px;
+                        height: 52px;
+                        justify-content: flex-start; /* Align back button to left */
                     }
-                    .add-btn {
-                        display: none;
+
+                    .desktop-only {
+                        display: none !important;
+                    }
+
+                    .mobile-back-nav {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        text-decoration: none;
+                        color: rgba(255, 255, 255, 0.9);
+                        font-weight: 500;
+                        font-size: 0.95rem;
+                        transition: opacity 0.2s;
+                    }
+                    
+                    .mobile-back-nav:active {
+                        opacity: 0.7;
                     }
                 }
             `}</style>
