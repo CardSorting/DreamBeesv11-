@@ -382,17 +382,7 @@ export default function ModelFeed() {
 
     const location = useLocation();
 
-    const [activeFilter, setActiveFilter] = useState(() => {
-        return location.pathname === '/videos' ? 'Videos' : 'All';
-    });
-
-    useEffect(() => {
-        if (location.pathname === '/videos') {
-            setActiveFilter('Videos');
-        } else if (location.pathname === '/' && activeFilter === 'Videos') {
-            setActiveFilter('All');
-        }
-    }, [location.pathname]);
+    const [activeFilter, setActiveFilter] = useState('All');
 
     // Sort Mode State (Restored)
     const [sortMode, setSortMode] = useState('random'); // 'random' | 'top'
@@ -737,12 +727,7 @@ export default function ModelFeed() {
                             >
                                 All
                             </button>
-                            <button
-                                className={`filter-chip ${activeFilter === 'Videos' ? 'active' : ''}`}
-                                onClick={() => navigate('/videos')}
-                            >
-                                Videos
-                            </button>
+
                             {/* Dynamic Tag Filters */}
                             {allTags.slice(0, 5).map(tag => (
                                 <button

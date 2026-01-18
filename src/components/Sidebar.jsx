@@ -45,7 +45,7 @@ const Sidebar = ({ activeId }) => {
             title: "DISCOVER",
             items: [
                 { path: '/discovery', label: 'Discovery', icon: Compass },
-                { path: '/videos', label: 'Videos', icon: Film },
+
                 { path: '/gallery', label: 'Gallery', icon: LayoutGrid },
 
             ]
@@ -63,7 +63,7 @@ const Sidebar = ({ activeId }) => {
             if (isAdmin) return true;
             // Public items for everyone
             if (item.path === '/discovery') return true;
-            if (item.path === '/videos') return true;
+
 
             // Logged in users
             if (currentUser) {

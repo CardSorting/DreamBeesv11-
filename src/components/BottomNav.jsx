@@ -14,10 +14,7 @@ const BottomNav = () => {
                 <span className="text-secondary">Home</span>
             </NavLink>
 
-            <NavLink to="/video" className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
-                <Video size={24} />
-                <span className="text-secondary">Video</span>
-            </NavLink>
+
 
             <NavLink to={currentUser ? "/profile" : "/auth"} className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}>
                 <User size={24} />
