@@ -5,7 +5,7 @@ const path = require('path');
 
 const TARGET_DIR = path.join(__dirname, '../public/showcase/wai-illustrious');
 const MANIFEST_PATH = path.join(TARGET_DIR, 'manifest.json');
-const BASE_URL = "https://mariecoderinc--sdxl-multi-model-a10g-model-web-app.modal.run";
+const BASE_URL = "https://mariecoderinc--sdxl-multi-model-a10g-model-web.modal.run";
 
 const PROMPTS = [
     "masterpiece, best quality, 1girl, solo, magical library, floating books, magic circles, indoors, fantasy, light particles, dust, shelves, detailed, dynamic angle",
@@ -84,7 +84,7 @@ async function generateAndSave(prompt, index) {
         let buffer = null;
         for (let i = 0; i < 60; i++) {
             await new Promise(r => setTimeout(r, 2000));
-            const resultRes = await fetch(`${BASE_URL}/jobs/${jobId}`);
+            const resultRes = await fetch(`${BASE_URL}/result/${jobId}`);
 
             if (resultRes.status === 202) continue;
 

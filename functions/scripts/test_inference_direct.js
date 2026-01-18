@@ -20,43 +20,79 @@ async function testModalInference() {
 
     const testCases = [
         {
-            name: "SDXL Multi-Model (Internal)",
-            modelId: "cat-carrier-internal",
+            name: "SDXL Multi-Model H100 (Turbo)",
+            modelId: "cat-carrier-h100",
             test: async () => {
-                const params = new URLSearchParams({
+                const baseUrl = "https://mariecoderinc--sdxl-multi-model-h100-model-web.modal.run";
+                const body = {
                     prompt: "A beautiful sunset over mountains, cinematic lighting, 4k quality",
                     model: "wai-illustrious",
                     negative_prompt: "blurry, low quality",
-                    steps: "30",
-                    cfg: "7",
-                    width: "1344",
-                    height: "768",
+                    steps: 30,
+                    width: 1344,
+                    height: 768,
                     scheduler: "DPM++ 2M Karras"
+                };
+
+                console.log(`   Submitting to: ${baseUrl}/generate...`);
+                // 1. Submit
+                const submitRes = await fetchWithTimeout(`${baseUrl}/generate`, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body),
+                    timeout: 45000
                 });
-                const url = `https://mariecoderinc--sdxl-multi-model-model-web-inference.modal.run?${params.toString()}`;
-                console.log(`   Testing: ${url.substring(0, 100)}...`);
-                const response = await fetchWithTimeout(url, { timeout: 120000 });
-                return response;
+                if (!submitRes.ok) throw new Error(`Submit Failed: ${submitRes.status} ${await submitRes.text()}`);
+                const { job_id } = await submitRes.json();
+                console.log(`   Job ID: ${job_id}`);
+
+                // 2. Poll
+                for (let i = 0; i < 45; i++) {
+                    await new Promise(r => setTimeout(r, 2000));
+                    const res = await fetch(`${baseUrl}/result/${job_id}`);
+                    if (res.status === 202) continue;
+                    if (!res.ok) throw new Error(`Poll Failed: ${res.status}`);
+                    const ct = res.headers.get('content-type');
+                    if (ct && ct.includes('image/')) return res;
+                }
+                throw new Error("Timeout polling H100");
             }
         },
         {
             name: "SDXL Multi-Model A10G",
             modelId: "cat-carrier-a10g",
             test: async () => {
-                const params = new URLSearchParams({
+                const baseUrl = "https://mariecoderinc--sdxl-multi-model-a10g-model-web.modal.run";
+                const body = {
                     prompt: "A beautiful sunset over mountains, cinematic lighting, 4k quality",
                     model: "wai-illustrious",
                     negative_prompt: "blurry, low quality",
-                    steps: "30",
-                    cfg: "7",
-                    width: "1024",
-                    height: "1024",
+                    steps: 30,
+                    width: 1024,
+                    height: 1024,
                     scheduler: "DPM++ 2M Karras"
+                };
+
+                console.log(`   Submitting to: ${baseUrl}/generate...`);
+                // 1. Submit
+                const submitRes = await fetchWithTimeout(`${baseUrl}/generate`, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body),
+                    timeout: 45000
                 });
-                const url = `https://mariecoderinc--sdxl-multi-model-a10g-model-web-inference.modal.run?${params.toString()}`;
-                console.log(`   Testing: ${url.substring(0, 100)}...`);
-                const response = await fetchWithTimeout(url, { timeout: 120000 });
-                return response;
+                if (!submitRes.ok) throw new Error(`Submit Failed: ${submitRes.status} ${await submitRes.text()}`);
+                const { job_id } = await submitRes.json();
+                console.log(`   Job ID: ${job_id}`);
+
+                // 2. Poll
+                for (let i = 0; i < 45; i++) {
+                    await new Promise(r => setTimeout(r, 2000));
+                    const res = await fetch(`${baseUrl}/result/${job_id}`);
+                    if (res.status === 202) continue;
+                    if (!res.ok) throw new Error(`Poll Failed: ${res.status}`);
+                    const ct = res.headers.get('content-type');
+                    if (ct && ct.includes('image/')) return res;
+                }
+                throw new Error("Timeout polling A10G");
             }
         },
         {

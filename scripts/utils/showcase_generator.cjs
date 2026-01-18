@@ -14,7 +14,7 @@ const { DEMO_PROMPTS } = require('./demo_prompts.cjs');
  */
 async function generateShowcase(modelId, prompts = DEMO_PROMPTS, options = {}) {
     // Shared A10G Endpoint (Async)
-    const BASE_URL = "https://mariecoderinc--sdxl-multi-model-a10g-model-web-app.modal.run";
+    const BASE_URL = "https://mariecoderinc--sdxl-multi-model-a10g-model-web.modal.run";
 
     if (!modelId) {
         throw new Error('Model ID is required');
@@ -92,7 +92,7 @@ async function generateShowcase(modelId, prompts = DEMO_PROMPTS, options = {}) {
 /**
  * Helper to call the generation API and return a Buffer
  */
-async function fetchGeneration(modelId, prompt, params, baseUrl = "https://mariecoderinc--sdxl-multi-model-a10g-model-web-app.modal.run") {
+async function fetchGeneration(modelId, prompt, params, baseUrl = "https://mariecoderinc--sdxl-multi-model-a10g-model-web.modal.run") {
     // 1. Submit Job
     const submitUrl = `${baseUrl}/generate`;
     const body = JSON.stringify({
@@ -134,7 +134,7 @@ async function fetchGeneration(modelId, prompt, params, baseUrl = "https://marie
         await new Promise(r => setTimeout(r, 2000));
 
         const result = await new Promise((resolve, reject) => {
-            https.get(`${baseUrl}/jobs/${jobId}`, (res) => {
+            https.get(`${baseUrl}/result/${jobId}`, (res) => {
                 const chunks = [];
                 res.on('data', c => chunks.push(c));
                 res.on('end', () => resolve({
