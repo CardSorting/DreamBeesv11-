@@ -109,6 +109,14 @@ const MODELS = [
         type: 'Flux',
         order: 14,
         isActive: true
+    },
+    {
+        id: 'gemini-2.5-flash-image',
+        name: 'Gemini 2.5 Flash (Image)',
+        description: 'Google\'s fastest multimodal model, optimized for speed and visual quality.',
+        type: 'Gemini',
+        order: 15,
+        isActive: true
     }
 ];
 

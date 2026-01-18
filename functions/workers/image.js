@@ -202,6 +202,40 @@ export const processImageTask = async (req) => {
             // Skip the normal response parsing; we already have imageBuffer
             // Jump directly to image processing (after the main if/else block handles response)
             response = { ok: true, _fluxImageBuffer: imageBuffer };
+        } else if (modelId === 'gemini-2.5-flash-image') {
+            const { VertexAI } = await import("@google-cloud/vertexai");
+            const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
+            const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
+
+            const request = {
+                contents: [
+                    {
+                        role: 'user',
+                        parts: [
+                            { text: prompt }
+                        ]
+                    }
+                ]
+            };
+
+            logger.info(`[${requestId}] Calling Vertex AI for gemini-2.5-flash-image generation`);
+            const result = await model.generateContent(request);
+            const geminiResponse = await result.response;
+
+            const candidate = geminiResponse.candidates?.[0];
+            if (candidate?.finishReason === 'SAFETY') {
+                throw new Error("Blocked by Safety Filter");
+            }
+
+            const imagePart = candidate?.content?.parts?.find(p => p.inlineData);
+            const base64Data = imagePart?.inlineData?.data;
+
+            if (!base64Data) {
+                throw new Error("No image data returned from Gemini");
+            }
+
+            const imageBuffer = Buffer.from(base64Data, 'base64');
+            response = { ok: true, _fluxImageBuffer: imageBuffer };
         } else {
 
             // SDXL Handling

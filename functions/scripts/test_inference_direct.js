@@ -140,6 +140,35 @@ async function testModalInference() {
                 });
                 return response;
             }
+        },
+        {
+            name: "Gemini 2.5 Flash Image",
+            modelId: "gemini-2.5-flash-image",
+            test: async () => {
+                const { VertexAI } = await import("@google-cloud/vertexai");
+                const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
+                const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
+
+                const body = { prompt: "A beautiful sunset over mountains, cinematic lighting" };
+                console.log(`   Testing: gemini-2.5-flash-image via Vertex AI SDK`);
+
+                const result = await model.generateContent({
+                    contents: [{ role: 'user', parts: [{ text: body.prompt }] }]
+                });
+                const response = await result.response;
+                const base64Data = response.candidates?.[0]?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+
+                if (!base64Data) return { ok: false, status: 500, statusText: "No Image Data" };
+
+                const buffer = Buffer.from(base64Data, 'base64');
+                return {
+                    ok: true,
+                    status: 200,
+                    statusText: "OK",
+                    headers: new Map([['content-type', 'image/png']]),
+                    arrayBuffer: async () => buffer.buffer
+                };
+            }
         }
     ];
 
