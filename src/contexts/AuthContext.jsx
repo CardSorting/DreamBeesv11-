@@ -10,9 +10,10 @@ import {
     getRedirectResult
 } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { httpsCallable } from "firebase/functions";
+// import { httpsCallable } from "firebase/functions"; // Removed
 import { functions, db } from "../firebase";
 import LoadingScreen from "../components/LoadingScreen";
+import { useApi } from "../hooks/useApi";
 
 const AuthContext = createContext();
 
@@ -42,6 +43,8 @@ export function AuthProvider({ children }) {
     }
 
 
+    const { call: apiCall } = useApi();
+
     async function ensureUserInitialized(user) {
         if (!user) return;
 
@@ -57,24 +60,17 @@ export function AuthProvider({ children }) {
 
             console.log("User document missing, initializing...");
 
-            // 2. Retry Logic for Creation
-            const initializeUser = httpsCallable(functions, 'api');
-            let attempt = 0;
-            const maxAttempts = 3;
+            // 2. Retry Logic for Creation (Handled by useApi)
+            await apiCall('api', {
+                action: 'initializeUser'
+            }, {
+                retries: 3,
+                timeout: 30000,
+                toastErrors: false // Don't spam user during auto-init, we catch globally if needed
+            });
 
-            while (attempt < maxAttempts) {
-                try {
-                    attempt++;
-                    await initializeUser({ action: 'initializeUser' });
-                    console.log(`User initialization successful on attempt ${attempt}`);
-                    return;
-                } catch (err) {
-                    console.error(`User initialization failed (attempt ${attempt}/${maxAttempts}):`, err);
-                    if (attempt === maxAttempts) throw err;
-                    // Wait 1s before retry
-                    await new Promise(r => setTimeout(r, 1000));
-                }
-            }
+            console.log("User initialization successful via useApi");
+
         } catch (error) {
             console.error("Critical: Failed to ensure user initialization:", error);
             // Optionally set global error state here if strict blocking is needed

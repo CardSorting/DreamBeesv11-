@@ -525,6 +525,10 @@ export default function MobileGenerator() {
                                                 }}
                                                 loading="lazy"
                                                 crossOrigin="anonymous" // Important for html2canvas
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = 'https://placehold.co/600x600/333/999?text=Image+Load+Error';
+                                                }}
                                             />
                                             <div style={{
                                                 position: 'absolute', top: '8px', right: '8px',

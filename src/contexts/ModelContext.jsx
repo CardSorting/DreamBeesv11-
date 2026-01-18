@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, useCallb
 import { toast } from 'react-hot-toast';
 import { db, functions } from '../firebase';
 import { collection, getDocs, query, orderBy, where, limit, startAfter } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
+import { useApi } from '../hooks/useApi';
 import { getOptimizedImageUrl } from '../utils';
 
 const ModelContext = createContext();
@@ -17,6 +17,7 @@ export function ModelProvider({ children }) {
     const [selectedModel, setSelectedModel] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const { call: apiCall } = useApi();
 
     // Load initialization
     useEffect(() => {
@@ -104,7 +105,10 @@ export function ModelProvider({ children }) {
         // 2. Try Local Manifest First
         try {
             console.log(`[Cache Miss] Fetching local showcase for ${modelId}`);
-            const response = await fetch(`/showcase/${modelId}/manifest.json`);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+            const response = await fetch(`/showcase/${modelId}/manifest.json`, { signal: controller.signal });
+            clearTimeout(timeoutId);
             if (response.ok) {
                 const localData = await response.json();
                 console.log(`[Local Showcase] Found ${localData.length} items for ${modelId}`);
@@ -378,12 +382,18 @@ export function ModelProvider({ children }) {
             console.log(`[Batch] Flushing ${queueSnapshot.size} ratings...`);
 
             // Process each rating through cloud function
-            const api = httpsCallable(functions, 'api');
+            // Process each rating through cloud function
+            // Use apiCall but in fire-and-forget mode for individual items? 
+            // Actually, apiCall is async. We can just use it.
+            // Since this is a batch, we might want to just map over them.
+            // Note: apiCall handles auth automatically.
+
             const promises = Array.from(queueSnapshot.values()).map(({ jobId, rating }) => {
-                return api({ action: 'rateGeneration', jobId, rating }).catch(err => {
-                    console.error(`[Batch] Failed to rate ${jobId}:`, err);
-                    return null;
-                });
+                return apiCall('api', { action: 'rateGeneration', jobId, rating }, { toastErrors: false, timeout: 10000 })
+                    .catch(err => {
+                        console.error(`[Batch] Failed to rate ${jobId}:`, err);
+                        return null;
+                    });
             });
 
             try {
@@ -418,8 +428,7 @@ export function ModelProvider({ children }) {
 
         try {
             console.log(`[Rate Showcase] Rating ${rating} for ${imageId}`);
-            const api = httpsCallable(functions, 'api');
-            await api({ action: 'rateShowcaseImage', imageId, rating });
+            await apiCall('api', { action: 'rateShowcaseImage', imageId, rating }, { toastErrors: true });
 
             // Optimistically update cache
             setShowcaseCache(prev => {

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+// import { getFunctions, httpsCallable } from 'firebase/functions'; // Removed
+import { functions } from '../firebase';
+import { useApi } from '../hooks/useApi';
 import { Check, Film, Image, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import SEO from '../components/SEO';
@@ -83,6 +85,8 @@ export default function Pricing() {
     else if (currencyType === 'zaps') packs = ZAP_PACKS;
     else packs = REEL_PACKS;
 
+    const { call: apiCall } = useApi();
+
     const handlePurchase = async (priceId) => {
         if (!currentUser) {
             toast.error("Please log in to purchase.");
@@ -90,8 +94,8 @@ export default function Pricing() {
         }
         setLoading(true);
         try {
-            const api = httpsCallable(functions, 'api');
-            const result = await api({
+            // const api = httpsCallable(functions, 'api');
+            const result = await apiCall('api', {
                 action: 'createStripeCheckout',
                 priceId: priceId,
                 successUrl: window.location.origin + '/generator?success=true',
@@ -101,7 +105,7 @@ export default function Pricing() {
             window.location.href = result.data.url;
         } catch (error) {
             console.error("Error creating checkout session:", error);
-            toast.error("Failed to start checkout. Please try again.");
+            // toast.error("Failed to start checkout. Please try again."); // Handled by useApi
             setLoading(false);
         }
     };

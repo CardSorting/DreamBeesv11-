@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { httpsCallable } from 'firebase/functions';
 import { functions, db } from '../../firebase';
+import { useApi } from '../../hooks/useApi';
 import { doc, onSnapshot } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { compressImage } from '../../utils';
@@ -17,6 +17,8 @@ export function useAutoPrompt(prompt, setPrompt, referenceImage, setReferenceIma
             }
         };
     }, []);
+
+    const { call: apiCall } = useApi();
 
     const handleAutoPrompt = async () => {
         if (!referenceImage) return toast.error("Please attach an image first");
@@ -39,7 +41,7 @@ export function useAutoPrompt(prompt, setPrompt, referenceImage, setReferenceIma
         try {
             toast.loading("Starting analysis...", { id: 'auto-prompt' });
 
-            const api = httpsCallable(functions, 'api', { timeout: 540000 });
+            // const api = httpsCallable(functions, 'api', { timeout: 540000 });
             const payload = { action: 'createAnalysisRequest' };
 
             if (referenceImage.startsWith('data:')) {
@@ -49,7 +51,11 @@ export function useAutoPrompt(prompt, setPrompt, referenceImage, setReferenceIma
                 payload.imageUrl = referenceImage;
             }
 
-            const { data } = await api(payload);
+            const { data } = await apiCall('api', payload, {
+                timeout: 540000,
+                toastErrors: true
+            });
+
             const requestId = data.requestId;
 
             const unsub = onSnapshot(doc(db, "analysis_queue", requestId), (snapshot) => {

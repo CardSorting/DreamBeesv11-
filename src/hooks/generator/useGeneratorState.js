@@ -38,6 +38,15 @@ export function useGeneratorState() {
     const subscriptionStatus = userProfile?.subscriptionStatus || 'inactive';
     const [useTurbo, setUseTurbo] = useState(false);
 
+    // Video & Advanced State
+    const [generationMode, setGenerationMode] = useState('image'); // 'image' | 'video'
+    const [videoDuration, setVideoDuration] = useState(5);
+    const [videoResolution, setVideoResolution] = useState('large_landscape');
+    const [currentJobType, setCurrentJobType] = useState('image');
+
+    // Reference Image
+    const [referenceImage, setReferenceImage] = useState(null);
+
     // Timer Logic
     useEffect(() => {
         if (!generating) {

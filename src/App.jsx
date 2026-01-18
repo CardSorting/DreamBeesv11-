@@ -13,6 +13,7 @@ import BackToTop from './components/BackToTop';
 // Imports for Animations
 import AnimatedRoutes from './components/AnimatedRoutes';
 import SmoothScroll from './components/SmoothScroll';
+import NetworkStatus from './components/NetworkStatus';
 
 function Layout() {
   const { pathname } = useLocation();
@@ -40,6 +41,7 @@ function Layout() {
 function App() {
   return (
     <Router>
+      <NetworkStatus />
       <SmoothScroll />
       <ScrollToTop />
       <AuthProvider>

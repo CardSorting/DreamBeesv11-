@@ -400,20 +400,7 @@ export default function ModelFeed() {
 
 
 
-    const allTags = useMemo(() => {
-        const tags = new Set();
-        // Only collect tags from models that actually have images in the current feed
-        // Use feedItems (or just availableModels if we want ALL tags)
-        // Let's us feedItems to be accurate about what's actually displayable
-        const activeModelIds = new Set(feedItems.map(img => img.modelId));
 
-        availableModels.forEach(m => {
-            if (activeModelIds.has(m.id) && Array.isArray(m.tags)) {
-                m.tags.forEach(t => tags.add(t));
-            }
-        });
-        return Array.from(tags).sort();
-    }, [availableModels, feedItems]); // Re-calc tags only if base data changes
 
     // --- Derived Data for Render ---
     // Helper: Validate if a URL is potentially loadable
@@ -575,32 +562,7 @@ export default function ModelFeed() {
                     </div>
                 </header>
 
-                {/* Filter & Sort Bar (Global Only) */}
-                {!id && (
-                    <div className="feed-filter-bar">
-                        <div className="filter-scroll">
-                            <button
-                                className={`filter-chip ${activeFilter === 'All' ? 'active' : ''}`}
-                                onClick={() => setActiveFilter('All')}
-                            >
-                                All
-                            </button>
 
-                            {/* Dynamic Tag Filters */}
-                            {allTags.slice(0, 5).map(tag => (
-                                <button
-                                    key={tag}
-                                    className={`filter-chip ${activeFilter === tag ? 'active' : ''}`}
-                                    onClick={() => setActiveFilter(activeFilter === tag ? 'All' : tag)}
-                                >
-                                    {tag}
-                                </button>
-                            ))}
-                        </div>
-
-
-                    </div>
-                )}
 
 
                 <div className="feed-posts-container">

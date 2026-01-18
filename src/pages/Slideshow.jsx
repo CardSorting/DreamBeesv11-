@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db, functions } from '../firebase';
-import { httpsCallable } from 'firebase/functions';
+// import { httpsCallable } from 'firebase/functions'; // Removed
+import { useApi } from '../hooks/useApi';
 import { doc, onSnapshot } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { Button } from '../components/Slideshow/Button';
@@ -81,6 +82,8 @@ export default function Slideshow() {
         return () => clearInterval(interval);
     }, [currentStep]);
 
+    const { call: apiCall } = useApi();
+
     const handleGenerate = async () => {
         if (!selectedFile) return toast.error("Please select an image first");
         if (!currentUser) return toast.error("Please sign in to generate");
@@ -97,27 +100,48 @@ export default function Slideshow() {
                 imageBase64 = await compressImage(previewUrl, 1536, 0.85);
             }
 
-            const api = httpsCallable(functions, 'api', { timeout: 540000 });
-
-            const { data } = await api({
+            // const api = httpsCallable(functions, 'api', { timeout: 540000 });
+            const { data } = await apiCall('api', {
                 action: 'createSlideshowGeneration',
                 image: imageBase64,
                 mode: mode,
                 language: language
+            }, {
+                timeout: 540000,
+                toastErrors: true
             });
 
             if (isMounted.current) {
                 setRequestId(data.requestId);
+                localStorage.setItem('slideshowState', JSON.stringify({ requestId: data.requestId, mode }));
             }
 
         } catch (error) {
             console.error("Generation failed:", error);
             if (isMounted.current) {
-                toast.error(`Generation failed: ${error.message}`);
+                // toast handled by useApi
                 setCurrentStep('upload');
             }
         }
     };
+
+    // Restore state on mount
+    useEffect(() => {
+        const saved = localStorage.getItem('slideshowState');
+        if (saved) {
+            try {
+                const { requestId: savedId, mode: savedMode } = JSON.parse(saved);
+                if (savedId) {
+                    console.log("Restoring slideshow generation:", savedId);
+                    setRequestId(savedId);
+                    setMode(savedMode || 'poster');
+                    setCurrentStep('processing');
+                }
+            } catch (e) {
+                console.error("Failed to parse saved state", e);
+            }
+        }
+    }, []);
 
     // Poll for results
     useEffect(() => {
@@ -126,6 +150,9 @@ export default function Slideshow() {
         const unsubscribe = onSnapshot(doc(db, 'generation_queue', requestId), (snapshot) => {
             if (!snapshot.exists()) return;
             const data = snapshot.data();
+
+            // Safety check for unmounted
+            if (!isMounted.current) return;
 
             if (data.status === 'processing') {
                 const total = mode === 'slideshow' ? 8 : 1;
@@ -155,15 +182,20 @@ export default function Slideshow() {
                 }
 
                 // Only stop listening when fully completed
-                const timer = setTimeout(() => {
-                    setRequestId(null);
+                setTimeout(() => {
+                    if (isMounted.current) {
+                        setRequestId(null);
+                        localStorage.removeItem('slideshowState');
+                    }
                 }, 1000);
-                return () => clearTimeout(timer);
+
+                // No return needed here as it's a callback
 
             } else if (data.status === 'failed') {
                 toast.error(`Failed: ${data.error}`);
                 setCurrentStep('upload');
                 setRequestId(null);
+                localStorage.removeItem('slideshowState');
             }
         });
 
@@ -212,7 +244,10 @@ export default function Slideshow() {
 
     const downloadImage = async (url, index) => {
         try {
-            const response = await fetch(url);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout for download
+            const response = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const blob = await response.blob();
             const blobUrl = window.URL.createObjectURL(blob);

@@ -2,6 +2,7 @@ import React, { Suspense } from 'react';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
+import RouteErrorBoundary from './RouteErrorBoundary';
 
 // Import Pages (Re-importing essentially what was in App.jsx)
 // To avoid circular dependencies or massive imports, assuming we can just move the imports here 
@@ -86,81 +87,83 @@ const AnimatedRoutes = () => {
                 variants={pageTransition}
                 style={{ width: '100%', height: '100%' }}
             >
-                <Suspense fallback={<PageLoader />}>
-                    <Routes location={location} key={location.pathname}>
-                        <Route path="/" element={<ModelFeed />} />
-                        <Route path="/landing" element={<Landing />} />
-                        <Route path="/auth" element={<Auth />} />
-                        <Route path="/profile" element={
-                            <PrivateRoute>
-                                <UserProfile />
-                            </PrivateRoute>
-                        } />
+                <RouteErrorBoundary>
+                    <Suspense fallback={<PageLoader />}>
+                        <Routes location={location} key={location.pathname}>
+                            <Route path="/" element={<ModelFeed />} />
+                            <Route path="/landing" element={<Landing />} />
+                            <Route path="/auth" element={<Auth />} />
+                            <Route path="/profile" element={
+                                <PrivateRoute>
+                                    <UserProfile />
+                                </PrivateRoute>
+                            } />
 
-                        <Route path="/discovery" element={<Discovery />} />
-                        <Route path="/discovery/:id" element={<ShowcaseDetail />} />
+                            <Route path="/discovery" element={<Discovery />} />
+                            <Route path="/discovery/:id" element={<ShowcaseDetail />} />
 
 
-                        {/* Admin Only Routes */}
-                        <Route path="/generate" element={
-                            <PrivateRoute>
-                                {isMobile ? <MobileGenerator /> : <Generator />}
-                            </PrivateRoute>
-                        } />
-                        <Route path="/gallery" element={
-                            <AdminRoute><Gallery /></AdminRoute>
-                        } />
-                        <Route path="/gallery/:id" element={
-                            <AdminRoute><ImageDetail /></AdminRoute>
-                        } />
-                        <Route path="/models" element={
-                            <AdminRoute><Models /></AdminRoute>
-                        } />
-                        <Route path="/model/:id" element={
-                            <AdminRoute><ModelDetail /></AdminRoute>
-                        } />
-                        <Route path="/model/:id/feed" element={
-                            <AdminRoute><ModelFeed /></AdminRoute>
-                        } />
+                            {/* Admin Only Routes */}
+                            <Route path="/generate" element={
+                                <PrivateRoute>
+                                    {isMobile ? <MobileGenerator /> : <Generator />}
+                                </PrivateRoute>
+                            } />
+                            <Route path="/gallery" element={
+                                <AdminRoute><Gallery /></AdminRoute>
+                            } />
+                            <Route path="/gallery/:id" element={
+                                <AdminRoute><ImageDetail /></AdminRoute>
+                            } />
+                            <Route path="/models" element={
+                                <AdminRoute><Models /></AdminRoute>
+                            } />
+                            <Route path="/model/:id" element={
+                                <AdminRoute><ModelDetail /></AdminRoute>
+                            } />
+                            <Route path="/model/:id/feed" element={
+                                <AdminRoute><ModelFeed /></AdminRoute>
+                            } />
 
-                        <Route path="/features" element={
-                            <AdminRoute><Features /></AdminRoute>
-                        } />
-                        <Route path="/pricing" element={
-                            <PrivateRoute><Pricing /></PrivateRoute>
-                        } />
-                        <Route path="/about" element={
-                            <AdminRoute><About /></AdminRoute>
-                        } />
-                        <Route path="/contact" element={
-                            <AdminRoute><Contact /></AdminRoute>
-                        } />
-                        <Route path="/privacy" element={<Privacy />} />
-                        <Route path="/terms" element={<Terms />} />
-                        <Route path="/cookies" element={<Cookies />} />
-                        <Route path="/blog" element={<Blog />} />
-                        <Route path="/blog/:id" element={<BlogPost />} />
-                        <Route path="/careers" element={<Careers />} />
-                        <Route path="/brand" element={<Brand />} />
-                        <Route path="/api" element={<Api />} />
-                        <Route path="/showcase" element={<Showcase />} />
+                            <Route path="/features" element={
+                                <AdminRoute><Features /></AdminRoute>
+                            } />
+                            <Route path="/pricing" element={
+                                <PrivateRoute><Pricing /></PrivateRoute>
+                            } />
+                            <Route path="/about" element={
+                                <AdminRoute><About /></AdminRoute>
+                            } />
+                            <Route path="/contact" element={
+                                <AdminRoute><Contact /></AdminRoute>
+                            } />
+                            <Route path="/privacy" element={<Privacy />} />
+                            <Route path="/terms" element={<Terms />} />
+                            <Route path="/cookies" element={<Cookies />} />
+                            <Route path="/blog" element={<Blog />} />
+                            <Route path="/blog/:id" element={<BlogPost />} />
+                            <Route path="/careers" element={<Careers />} />
+                            <Route path="/brand" element={<Brand />} />
+                            <Route path="/api" element={<Api />} />
+                            <Route path="/showcase" element={<Showcase />} />
 
-                        <Route path="/apps" element={
-                            <AdminRoute><AppsHub /></AdminRoute>
-                        } />
-                        <Route path="/karaoke" element={
-                            <AdminRoute><KaraokeGenie /></AdminRoute>
-                        } />
-                        <Route path="/dressup" element={
-                            <AdminRoute><DressUp /></AdminRoute>
-                        } />
-                        <Route path="/slideshow" element={<Slideshow />} />
+                            <Route path="/apps" element={
+                                <AdminRoute><AppsHub /></AdminRoute>
+                            } />
+                            <Route path="/karaoke" element={
+                                <AdminRoute><KaraokeGenie /></AdminRoute>
+                            } />
+                            <Route path="/dressup" element={
+                                <AdminRoute><DressUp /></AdminRoute>
+                            } />
+                            <Route path="/slideshow" element={<Slideshow />} />
 
-                        <Route path="/chat/:id" element={
-                            <PrivateRoute><PersonaChat /></PrivateRoute>
-                        } />
-                    </Routes>
-                </Suspense>
+                            <Route path="/chat/:id" element={
+                                <PrivateRoute><PersonaChat /></PrivateRoute>
+                            } />
+                        </Routes>
+                    </Suspense>
+                </RouteErrorBoundary>
             </motion.div>
         </AnimatePresence>
     );

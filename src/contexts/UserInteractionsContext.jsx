@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { db } from '../firebase';
-import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
+import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, runTransaction } from 'firebase/firestore';
+// import { httpsCallable } from 'firebase/functions'; // Removed, using useApi
 import { useAuth } from './AuthContext';
-import { useModel } from './ModelContext'; // For global rate stats if needed
+import { useModel } from './ModelContext';
+import { useApi } from '../hooks/useApi';
 import toast from 'react-hot-toast';
 
 const UserInteractionsContext = createContext();
@@ -15,6 +16,8 @@ export function useUserInteractions() {
 export function UserInteractionsProvider({ children }) {
     const { currentUser } = useAuth();
     const { rateShowcaseImage } = useModel();
+
+    const { call: apiCall } = useApi();
 
     // Sets for O(1) checks, Arrays for UI lists
     const [likedIds, setLikedIds] = useState(new Set());
@@ -123,8 +126,7 @@ export function UserInteractionsProvider({ children }) {
         setLikedIds(newSet); // Update local state immediately
 
         try {
-            const api = httpsCallable(functions, 'api');
-            await api({
+            await apiCall('api', {
                 action: 'toggleLike',
                 imageId: id,
                 modelId: model?.id || 'unknown',
@@ -135,7 +137,7 @@ export function UserInteractionsProvider({ children }) {
                     prompt: imgItem.prompt || "",
                     aspectRatio: imgItem.aspectRatio || "1/1"
                 }
-            });
+            }, { toastErrors: true }); // Let useApi handle error toasts
 
             if (currentlyLiked) {
                 // Was liked, so we unliked it
@@ -153,7 +155,7 @@ export function UserInteractionsProvider({ children }) {
                 else revertSet.delete(id);
                 return revertSet;
             });
-            toast.error("Action failed. Try again.");
+            // Error toast handled by useApi
         }
     };
 
@@ -173,8 +175,7 @@ export function UserInteractionsProvider({ children }) {
         setBookmarkedIds(newSet);
 
         try {
-            const api = httpsCallable(functions, 'api');
-            await api({
+            await apiCall('api', {
                 action: 'toggleBookmark',
                 imageId: id,
                 modelId: model?.id || 'unknown',
@@ -185,7 +186,7 @@ export function UserInteractionsProvider({ children }) {
                     prompt: imgItem.prompt || "",
                     aspectRatio: imgItem.aspectRatio || "1/1"
                 }
-            });
+            }, { toastErrors: true });
 
             if (currentlySaved) {
                 toast.success("Removed from bookmarks");
@@ -201,7 +202,7 @@ export function UserInteractionsProvider({ children }) {
                 else revertSet.delete(id);
                 return revertSet;
             });
-            toast.error("Action failed. Try again.");
+            // Error toast handled by useApi
         }
     };
 

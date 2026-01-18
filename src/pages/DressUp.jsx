@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { httpsCallable } from 'firebase/functions';
+// import { httpsCallable } from 'firebase/functions'; // Removed
+import { useApi } from '../hooks/useApi';
 import { functions, db } from '../firebase';
 import { collection, query, where, orderBy, limit, onSnapshot, doc, getDocs } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
@@ -102,6 +103,54 @@ export default function DressUp() {
         };
     }, [currentUser?.uid]);
 
+    const startListening = (id) => {
+        if (listenerRef.current) return; // Already listening
+        setGenerating(true);
+
+        // Persist ID
+        localStorage.setItem('dressUpRequestId', id);
+
+        const unsubscribe = onSnapshot(doc(db, "generation_queue", id), (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.data();
+                if (data.status === 'completed' && data.imageUrl) {
+                    setCurrentImage(data.imageUrl); // Use the URL
+                    toast.success("Ta-da! Look at that!", {
+                        icon: '🎉',
+                        style: { background: '#FFD700', color: '#000', fontWeight: 'bold' }
+                    });
+                    setGenerating(false);
+                    unsubscribe();
+                    listenerRef.current = null;
+                    localStorage.removeItem('dressUpRequestId'); // Clear
+                } else if (data.status === 'failed') {
+                    setGenerating(false);
+                    toast.error(`Magic failed: ${data.error || 'Unknown error'}`, { icon: '🪄' });
+                    unsubscribe();
+                    listenerRef.current = null;
+                    localStorage.removeItem('dressUpRequestId'); // Clear
+                }
+            }
+        }, (error) => {
+            console.error("Queue listener error:", error);
+            setGenerating(false);
+            toast.error("Error tracking magic", { icon: '🪄' });
+            listenerRef.current = null;
+            localStorage.removeItem('dressUpRequestId');
+        });
+        listenerRef.current = unsubscribe;
+    };
+
+    // Restore generation on mount
+    useEffect(() => {
+        const savedId = localStorage.getItem('dressUpRequestId');
+        if (savedId) {
+            console.log("Restoring active generation:", savedId);
+            startListening(savedId);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
 
     const handleFileUpload = async (e) => {
         const file = e.target.files[0];
@@ -120,11 +169,13 @@ export default function DressUp() {
         reader.readAsDataURL(file);
     };
 
+    const { call: apiCall } = useApi();
+
     const handleDefaultPick = async (type) => {
         setGenerating(true);
         try {
-            const api = httpsCallable(functions, 'api');
-            const result = await api({
+            // const api = httpsCallable(functions, 'api');
+            const result = await apiCall('api', {
                 action: 'dressUp',
                 prompt: `A cute, friendly photo of a ${type}, bright studio lighting, colorful background, high quality.`
             });
@@ -134,14 +185,17 @@ export default function DressUp() {
             }
         } catch (error) {
             console.error(error);
-            toast.error("Oops! Something went wrong.");
+            // toast.error("Oops! Something went wrong."); // Handled by useApi
         }
         setGenerating(false);
     };
 
     const handleHistoryPick = async (imageUrl) => {
         try {
-            const response = await fetch(imageUrl);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout for image load
+            const response = await fetch(imageUrl, { signal: controller.signal });
+            clearTimeout(timeoutId);
             const blob = await response.blob();
             const reader = new FileReader();
             reader.onloadend = () => setCurrentImage(reader.result);
@@ -185,7 +239,7 @@ export default function DressUp() {
         setGenerating(true);
 
         try {
-            const api = httpsCallable(functions, 'api');
+            // const api = httpsCallable(functions, 'api');
             let prompt = "";
 
             // --- Costumes & Vibes ---
@@ -238,7 +292,8 @@ export default function DressUp() {
                 prompt = `The subject with ${item} on their face. Fun, kid-friendly face paint or makeup style. High quality, clear details.`;
             }
 
-            const result = await api({
+            // const result = await api({
+            const result = await apiCall('api', {
                 action: 'dressUp',
                 image: currentImage,
                 prompt: prompt
@@ -247,34 +302,12 @@ export default function DressUp() {
             // Expect requestId from queue-based backend
             const { requestId } = result.data;
 
+
+
+            // ... inside handleDressUp ...
             if (requestId) {
                 // Poll/Listen for completion
-                const unsubscribe = onSnapshot(doc(db, "generation_queue", requestId), (snapshot) => {
-                    if (snapshot.exists()) {
-                        const data = snapshot.data();
-                        if (data.status === 'completed' && data.imageUrl) {
-                            setCurrentImage(data.imageUrl); // Use the URL
-                            toast.success("Ta-da! Look at that!", {
-                                icon: '🎉',
-                                style: { background: '#FFD700', color: '#000', fontWeight: 'bold' }
-                            });
-                            setGenerating(false);
-                            unsubscribe();
-                            listenerRef.current = null;
-                        } else if (data.status === 'failed') {
-                            setGenerating(false);
-                            toast.error(`Magic failed: ${data.error || 'Unknown error'}`, { icon: '🪄' });
-                            unsubscribe();
-                            listenerRef.current = null;
-                        }
-                    }
-                }, (error) => {
-                    console.error("Queue listener error:", error);
-                    setGenerating(false);
-                    toast.error("Error tracking magic", { icon: '🪄' });
-                    listenerRef.current = null;
-                });
-                listenerRef.current = unsubscribe;
+                startListening(requestId);
             } else if (result.data.image) {
                 // Fallback for old synchronous behavior (just in case)
                 setCurrentImage(`data:image/png;base64,${result.data.image}`);
@@ -288,16 +321,11 @@ export default function DressUp() {
             }
         } catch (error) {
             console.error(error);
-            if (error.message.includes('Insufficient Zaps') || error.message.includes('resource-exhausted')) {
-                toast("You need more Zaps ⚡ for this magic!", {
-                    icon: '⚡',
-                    style: { background: '#FFF3CD', color: '#856404', fontWeight: 'bold' }
-                });
-            } else {
-                toast.error("Oh no! The magic failed. Try again!", { icon: '🪄' });
-            }
+            // Handled by useApi mostly
+            // If zaps error, handled. If other error, also handled.
+
             // Only stop generating if we didn't start a listener (listener handles it on success/fail)
-            if (!error.message.includes('No Request ID')) {
+            if (!error.message.includes('No Request ID')) { // Assuming apiCall might throw specific error
                 setGenerating(false);
             }
         }

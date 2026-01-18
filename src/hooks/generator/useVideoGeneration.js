@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { httpsCallable } from 'firebase/functions';
+// import { httpsCallable } from 'firebase/functions'; // Removed
 import { functions, db } from '../../firebase';
+import { useApi } from '../../hooks/useApi';
 import { doc, onSnapshot, query, collection, where, orderBy, limit } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { compressImage } from '../../utils';
@@ -38,6 +39,8 @@ export function useVideoGeneration({
         }
     }, [currentUser?.uid]);
 
+    const { call: apiCall } = useApi();
+
     const triggerVideoAnimation = async (imageUrl, imageId = null, imgAspectRatio = null) => {
         if (generating) return;
 
@@ -64,12 +67,7 @@ export function useVideoGeneration({
 
         toast.loading("Starting video animation...", { id: 'video-animate' });
 
-        const MAX_RETRIES = 3;
-        let retries = 0;
-        let success = false;
-
         try {
-            const api = httpsCallable(functions, 'api', { timeout: 540000 });
             let processedImage = imageUrl;
 
             if (imageUrl && imageUrl.startsWith('data:')) {
@@ -77,35 +75,24 @@ export function useVideoGeneration({
                 processedImage = await compressImage(imageUrl, 1024, 0.7);
             }
 
-            while (retries < MAX_RETRIES && !success) {
-                try {
-                    const videoResult = await api({
-                        action: 'createVideoGenerationRequest',
-                        autoPrompt: true,
-                        image: processedImage,
-                        duration: videoDuration,
-                        resolution: videoResolution,
-                        aspectRatio: imgAspectRatio || aspectRatio
-                    });
+            // const api = httpsCallable(functions, 'api', { timeout: 540000 });
+            // Replaced with useApi call
+            const { data } = await apiCall('api', {
+                action: 'createVideoGenerationRequest',
+                autoPrompt: true,
+                image: processedImage,
+                duration: videoDuration,
+                resolution: videoResolution,
+                aspectRatio: imgAspectRatio || aspectRatio
+            }, {
+                timeout: 540000,
+                toastErrors: false // We handle specific errors below
+            });
 
-                    setCurrentJobId(videoResult.data.requestId);
-                    success = true;
-                    clearProgressTimers();
-                    toast.success("Video job finished setup!", { id: 'video-animate' });
+            setCurrentJobId(data.requestId);
+            clearProgressTimers();
+            toast.success("Video job finished setup!", { id: 'video-animate' });
 
-                } catch (innerError) {
-                    console.error(`Video attempt ${retries + 1} failed:`, innerError);
-                    const isRetryable = innerError.message?.includes('internal') || innerError.code === 'internal';
-
-                    if (isRetryable && retries < MAX_RETRIES - 1) {
-                        retries++;
-                        await new Promise(resolve => setTimeout(resolve, 2000 * Math.pow(2, retries)));
-                        toast.loading(`Retrying... (Attempt ${retries + 1})`, { id: 'video-animate' });
-                    } else {
-                        throw innerError;
-                    }
-                }
-            }
         } catch (error) {
             clearProgressTimers();
             console.error("Video generation error", error);
@@ -114,6 +101,7 @@ export function useVideoGeneration({
             if (error.message?.includes('concurrency')) errorMessage = "Video generation already in progress.";
             else if (error.code === 'resource-exhausted') errorMessage = "Insufficient Reels balance.";
             else if (error.message?.includes('INVALID_ARGUMENT')) errorMessage = "Image too large or invalid.";
+            else if (error.message) errorMessage = error.message;
 
             toast.error(errorMessage, { id: 'video-animate' });
             setGenerating(false);
