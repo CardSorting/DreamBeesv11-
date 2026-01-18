@@ -67,19 +67,89 @@ export const processImageTask = async (req) => {
 
         let response;
         if (modelId === 'zit-model') {
-            const ZIT_A10G_ENDPOINT = "https://mariecoderinc--zit-a10g-fastapi-app.modal.run/generate";
-            const ZIT_H100_ENDPOINT = "https://mariecoderinc--zit-h100-stable-fastapi-app.modal.run/generate";
-            const endpoint = useTurbo ? ZIT_H100_ENDPOINT : ZIT_A10G_ENDPOINT;
+            const ZIT_A10G_BASE = "https://mariecoderinc--zit-a10g-fastapi-app.modal.run";
+            const ZIT_H100_BASE = "https://mariecoderinc--zit-h100-stable-fastapi-app.modal.run";
+            const baseUrl = useTurbo ? ZIT_H100_BASE : ZIT_A10G_BASE;
+
             const zBody = { prompt, steps, width: resolution.width, height: resolution.height };
 
             if (useTurbo && ['1:1', '16:9', '9:16', '4:3', '3:4', '21:9', '9:21'].includes(aspectRatio)) {
                 delete zBody.width; delete zBody.height; zBody.aspect_ratio = aspectRatio;
             }
-            logger.info(`[${requestId}] Routing zit-model to ${useTurbo ? 'H100' : 'A10G'}: ${endpoint}`);
-            response = await fetchWithRetry(endpoint, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(zBody), timeout: 180000, retries: 3
-            });
+
+            const submitUrl = `${baseUrl}/generate`;
+            logger.info(`[${requestId}] Submitting zit-model job to ${useTurbo ? 'H100' : 'A10G'}: ${submitUrl}`);
+
+            let submitResponse;
+            try {
+                submitResponse = await fetchWithRetry(submitUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(zBody),
+                    timeout: 45000,
+                    retries: 3
+                });
+            } catch (err) {
+                if (err.message.includes("429")) {
+                    logger.warn(`[Throttling] Zit API rate limited (429). Re-queuing task ${requestId}.`);
+                    throw new Error(`Throttling: Zit API Busy (429). Retrying...`);
+                }
+                throw err;
+            }
+
+            if (!submitResponse.ok) {
+                throw new Error(`Zit Submission Failed (${submitResponse.status}): ${await submitResponse.text()}`);
+            }
+
+            const submitJson = await submitResponse.json();
+            if (!submitJson.job_id) throw new Error("No job_id from Zit API");
+            const jobId = submitJson.job_id;
+            logger.info(`[${requestId}] Zit job submitted: ${jobId}`);
+
+            // Poll for result (max 180 seconds)
+            const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+            let imageBuffer = null;
+            // Poll every 2s for up to 90 attempts (180s)
+            for (let poll = 0; poll < 90; poll++) {
+                await sleep(2000);
+                const resultRes = await fetch(`${baseUrl}/result/${jobId}`);
+
+                if (resultRes.status === 202) {
+                    // Still processing
+                    continue;
+                }
+
+                if (!resultRes.ok) {
+                    // Try to parse error
+                    try {
+                        const errJson = await resultRes.json();
+                        if (errJson.status === 'failed') {
+                            throw new Error(errJson.error || `Zit generation failed with status ${resultRes.status}`);
+                        }
+                    } catch (e) {
+                        // ignore json parse error, just throw status error
+                    }
+                    throw new Error(`Zit Polling Error (${resultRes.status}): ${await resultRes.text()}`);
+                }
+
+                const ct = resultRes.headers.get('content-type') || '';
+                if (ct.includes('image/')) {
+                    imageBuffer = Buffer.from(await resultRes.arrayBuffer());
+                    break;
+                }
+
+                const statusJson = await resultRes.json();
+                if (statusJson.status === 'failed') throw new Error(statusJson.error || 'Zit generation failed');
+                if (statusJson.status === 'completed' && !imageBuffer) {
+                    // Should have been binary if completed, but handle edge case if it returns json with url
+                    // (Though docs say binary)
+                    throw new Error('Zit reported completed but returned JSON instead of binary image.');
+                }
+            }
+            if (!imageBuffer) throw new Error("Zit generation timed out");
+
+            // Skip standard response processing
+            response = { ok: true, _fluxImageBuffer: imageBuffer }; // reusing _fluxImageBuffer hack for now as it handles raw buffer bypass
         } else if (modelId === 'qwen-image-2512') {
             response = await fetchWithRetry("https://mariecoderinc--qwen-image-2512-qwenimage-api-generate.modal.run", {
                 method: "POST", headers: { "Content-Type": "application/json" },
@@ -133,20 +203,98 @@ export const processImageTask = async (req) => {
             // Jump directly to image processing (after the main if/else block handles response)
             response = { ok: true, _fluxImageBuffer: imageBuffer };
         } else {
-            const params = new URLSearchParams({
-                prompt, model: modelId || "wai-illustrious", negative_prompt,
-                steps: steps.toString(), cfg: cfg.toString(),
-                width: resolution.width.toString(), height: resolution.height.toString(),
-                scheduler: scheduler || 'DPM++ 2M Karras'
-            });
-            const SDXL_A10G_ENDPOINT = "https://mariecoderinc--sdxl-multi-model-a10g-model-web-inference.modal.run";
-            const INTERNAL_SDXL_ENDPOINT = "https://mariecoderinc--sdxl-multi-model-model-web-inference.modal.run";
-            let endpoint = SDXL_A10G_ENDPOINT;
-            if (req.data.useTurbo) endpoint = INTERNAL_SDXL_ENDPOINT;
 
-            const url = `${endpoint}?${params.toString()}`;
-            if (url.length > 2048) throw new Error("Prompt is too long (URL length limit).");
-            response = await fetchWithRetry(url, { timeout: 180000, retries: 3 });
+            // SDXL Handling
+            const SDXL_A10G_ASYNC_BASE = "https://mariecoderinc--sdxl-multi-model-a10g-model-web-app.modal.run";
+            const INTERNAL_SDXL_ENDPOINT = "https://mariecoderinc--sdxl-multi-model-model-web-inference.modal.run";
+
+            if (req.data.useTurbo) {
+                // Turbo (Internal) - Keep Synchronous for now as no Async docs provided
+                const params = new URLSearchParams({
+                    prompt, model: modelId || "wai-illustrious", negative_prompt,
+                    steps: steps.toString(), cfg: cfg.toString(),
+                    width: resolution.width.toString(), height: resolution.height.toString(),
+                    scheduler: scheduler || 'DPM++ 2M Karras'
+                });
+                const url = `${INTERNAL_SDXL_ENDPOINT}?${params.toString()}`;
+                if (url.length > 2048) throw new Error("Prompt is too long (URL length limit).");
+                response = await fetchWithRetry(url, { timeout: 180000, retries: 3 });
+            } else {
+                // Standard A10G - Use Async Pattern
+                const submitUrl = `${SDXL_A10G_ASYNC_BASE}/generate`;
+                const sBody = {
+                    prompt,
+                    model: modelId || "wai-illustrious",
+                    negative_prompt, // Optional, but usually ignored by some simple endpoints, good to pass if doc allows. Docs don't explicitly forbid extra keys.
+                    steps,
+                    width: resolution.width,
+                    height: resolution.height,
+                    scheduler: scheduler || 'DPM++ 2M Karras'
+                };
+
+                logger.info(`[${requestId}] Submitting SDXL job to A10G (Async): ${submitUrl}`);
+
+                let submitResponse;
+                try {
+                    submitResponse = await fetchWithRetry(submitUrl, {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(sBody), timeout: 45000, retries: 3
+                    });
+                } catch (err) {
+                    if (err.message.includes("429")) {
+                        logger.warn(`[Throttling] SDXL A10G API rate limited (429). Re-queuing task ${requestId}.`);
+                        throw new Error(`Throttling: SDXL A10G API Busy (429). Retrying...`);
+                    }
+                    throw err;
+                }
+
+                if (!submitResponse.ok) {
+                    throw new Error(`SDXL Submission Failed (${submitResponse.status}): ${await submitResponse.text()}`);
+                }
+
+                const submitJson = await submitResponse.json();
+                if (!submitJson.job_id) throw new Error("No job_id from SDXL API");
+                const jobId = submitJson.job_id;
+                logger.info(`[${requestId}] SDXL job submitted: ${jobId}`);
+
+                // Poll for result (max 180 seconds)
+                const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+                let imageBuffer = null;
+                for (let poll = 0; poll < 90; poll++) {
+                    await sleep(2000);
+                    const resultRes = await fetch(`${SDXL_A10G_ASYNC_BASE}/jobs/${jobId}`);
+
+                    if (resultRes.status === 202) continue; // Still processing (Queued/Generating)
+
+                    if (!resultRes.ok) {
+                        try {
+                            const errJson = await resultRes.json();
+                            if (errJson.status === 'failed') {
+                                throw new Error(errJson.error || `SDXL generation failed with status ${resultRes.status}`);
+                            }
+                        } catch (e) {
+                            // ignore
+                        }
+                        throw new Error(`SDXL Polling Error (${resultRes.status}): ${await resultRes.text()}`);
+                    }
+
+                    const ct = resultRes.headers.get('content-type') || '';
+                    if (ct.includes('image/')) {
+                        imageBuffer = Buffer.from(await resultRes.arrayBuffer());
+                        break;
+                    }
+
+                    const statusJson = await resultRes.json();
+                    if (statusJson.status === 'failed') throw new Error(statusJson.error || 'SDXL generation failed');
+                    // Note: Docs say "If processing: Returns JSON ... If complete: Returns Image Binary". 
+                    // So if we get JSON here and it's not failed, it's likely still queued/generating (though usage of 202 vs 200 in poll phase varies, code assumes 200 JSON for status updates in some patterns, but docs specific 202 for SUBMIT response. For Poll, it says "If processing: Returns JSON").
+                    // Let's safe guard: if status is queued/generating, continue.
+                    if (['queued', 'generating', 'processing'].includes(statusJson.status)) continue;
+                }
+
+                if (!imageBuffer) throw new Error("SDXL generation timed out");
+                response = { ok: true, _fluxImageBuffer: imageBuffer }; // reusing _fluxImageBuffer hack
+            }
         }
 
         if (!response.ok && !response._fluxImageBuffer) throw new Error(`Model Provider Error (${response.status}): ${await response.text()}`);

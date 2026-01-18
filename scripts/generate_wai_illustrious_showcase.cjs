@@ -5,7 +5,7 @@ const path = require('path');
 
 const TARGET_DIR = path.join(__dirname, '../public/showcase/wai-illustrious');
 const MANIFEST_PATH = path.join(TARGET_DIR, 'manifest.json');
-const ENDPOINT = "https://cardsorting--sdxl-multi-model-model-web-inference.modal.run";
+const BASE_URL = "https://mariecoderinc--sdxl-multi-model-a10g-model-web-app.modal.run";
 
 const PROMPTS = [
     "masterpiece, best quality, 1girl, solo, magical library, floating books, magic circles, indoors, fantasy, light particles, dust, shelves, detailed, dynamic angle",
@@ -54,27 +54,57 @@ if (!fs.existsSync(TARGET_DIR)) {
 async function generateAndSave(prompt, index) {
     console.log(`[${index + 1}/${PROMPTS.length}] Generating: "${prompt}"...`);
 
-    // SDXL Multi-Model Endpoint uses GET with query params
-    const params = new URLSearchParams({
+    const body = {
         prompt: prompt,
         model: "wai-illustrious",
-        steps: "30",
-        cfg: "7.0",
-        scheduler: "DPM++ 2M Karras", // Using DPM++ as it's often better for anime/illustrative
-        width: "1024",
-        height: "1024"
-    });
+        steps: 30,
+        cfg: 7.0,
+        scheduler: "DPM++ 2M Karras",
+        width: 1024,
+        height: 1024
+    };
 
     try {
-        const response = await fetch(`${ENDPOINT}?${params.toString()}`, {
-            method: "GET"
+        // 1. Submit
+        const submitResponse = await fetch(`${BASE_URL}/generate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
         });
 
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.statusText} ${await response.text()}`);
+        if (!submitResponse.ok) {
+            throw new Error(`Submit API Error: ${submitResponse.statusText} ${await submitResponse.text()}`);
         }
 
-        const buffer = await response.arrayBuffer();
+        const submitJson = await submitResponse.json();
+        const jobId = submitJson.job_id;
+        console.log(`  Job: ${jobId}...`);
+
+        // 2. Poll
+        let buffer = null;
+        for (let i = 0; i < 60; i++) {
+            await new Promise(r => setTimeout(r, 2000));
+            const resultRes = await fetch(`${BASE_URL}/jobs/${jobId}`);
+
+            if (resultRes.status === 202) continue;
+
+            if (!resultRes.ok) {
+                const errText = await resultRes.text();
+                throw new Error(`Polling Error (${resultRes.status}): ${errText}`);
+            }
+
+            const ct = resultRes.headers.get('content-type');
+            if (ct && ct.includes('image/')) {
+                buffer = await resultRes.arrayBuffer();
+                break;
+            }
+
+            // Check for failed
+            const json = await resultRes.json();
+            if (json.status === 'failed') throw new Error(json.error);
+        }
+
+        if (!buffer) throw new Error("Generation timed out");
 
         // Save first image specifically as 'cover.png' for the preview mode usage if index is 0
         const filename = index === 0 ? 'cover.png' : `${Date.now()}_${index}.png`;

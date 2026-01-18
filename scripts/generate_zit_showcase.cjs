@@ -6,7 +6,7 @@ const path = require('path');
 
 const TARGET_DIR = path.join(__dirname, '../public/showcase/zit-model');
 const MANIFEST_PATH = path.join(TARGET_DIR, 'manifest.json');
-const ENDPOINT = "https://mariecoderinc--zit-h100-stable-fastapi-app.modal.run/generate";
+const BASE_URL = "https://mariecoderinc--zit-h100-stable-fastapi-app.modal.run";
 
 // Extremely obsessively beautiful intoxicating women prompts demonstrating range
 const PROMPTS = [
@@ -230,17 +230,48 @@ async function generateAndSave(prompt, index) {
     };
 
     try {
-        const response = await fetch(ENDPOINT, {
+        // 1. Submit Job
+        const submitResponse = await fetch(`${BASE_URL}/generate`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(body)
         });
 
-        if (!response.ok) {
-            throw new Error(`API Error: ${response.statusText}`);
+        if (!submitResponse.ok) {
+            throw new Error(`Submit API Error: ${submitResponse.statusText}`);
         }
 
-        const buffer = await response.arrayBuffer();
+        const submitJson = await submitResponse.json();
+        const jobId = submitJson.job_id;
+        console.log(`  Job submitted: ${jobId}. Polling...`);
+
+        // 2. Poll for Result
+        let buffer = null;
+        for (let i = 0; i < 60; i++) { // 120 seconds max
+            await new Promise(r => setTimeout(r, 2000));
+
+            const resultRes = await fetch(`${BASE_URL}/result/${jobId}`);
+            if (resultRes.status === 202) continue; // Still processing
+
+            if (!resultRes.ok) {
+                const errText = await resultRes.text();
+                throw new Error(`Polling Error (${resultRes.status}): ${errText}`);
+            }
+
+            const ct = resultRes.headers.get('content-type');
+            if (ct && ct.includes('image/')) {
+                buffer = await resultRes.arrayBuffer();
+                break;
+            }
+
+            const statusJson = await resultRes.json();
+            if (statusJson.status === 'failed') {
+                throw new Error(`Job Failed: ${statusJson.error}`);
+            }
+        }
+
+        if (!buffer) throw new Error("Generation timed out");
+
         const filename = `${Date.now()}_${index}.png`;
         const filePath = path.join(TARGET_DIR, filename);
 

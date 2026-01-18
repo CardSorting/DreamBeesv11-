@@ -74,95 +74,102 @@ const s3Client = new S3Client({
 // --- Prompts ---
 const subjects = {
     women: [
-        "a breathtakingly radiant K-pop star with glass skin and sultry, heavy-lidded eyes that sparkle with a hint of forbidden desire",
-        "an ethereal elven queen of transcendent beauty, radiating a magnetic and irresistible allure that borders on the divine",
-        "a stunningly gorgeous Brazilian supermodel with sun-kissed, bronze skin and a gaze that promises unspoken temptation",
-        "an elegant Parisian muse of timeless allure, possessing a sophisticated and deeply seductive presence that is impossible to ignore",
-        "a fiercely beautiful Amazonian warrior with a powerful, athletic grace and striking, piercing eyes that burn with a primal hunger",
-        "a majestic and radiant Egyptian queen with golden-flecked skin and a presence that exudes a powerful, hypnotic sexuality",
-        "a captivating dark-fantasy sorceress of lethal beauty, with a sultry and dangerous allure swirling in her deep violet gaze",
-        "a graceful prima ballerina of exquisite poise, with a delicate neck and a look that whispers of hidden, passionate depths",
-        "a striking cyberpunk netrunner with holographic data-streams reflecting in her seductive, neon-lit feline eyes",
-        "a mystical celestial goddess with skin like moonstone and an alluring, ethereal presence that pulls the soul toward her",
-        "a glamorous Golden Age Hollywood icon with seductive feline eyes, perfectly sculpted scarlet lips, and a gaze of pure, classic desire",
-        "a sophisticated high-fashion muse with a sharp, modern aesthetic and an irresistible, enigmatic presence that teases and tempts",
-        "an alluring mermaid queen with iridescent scales and a hypnotic, siren-like gaze that draws men into the depths",
-        "a divine and breathtakingly beautiful deity from a lost sun-temple, radiating an intense, sultry warmth and ancient, forbidden grace",
-        "a chic, minimalist beauty with porcelain skin and a look of profound, haunting elegance that leaves a lingering ache of desire"
+        "a powerful Elven High Priestess with glowing runes etched into her pale skin and eyes that shine with ancient wisdom",
+        "a battle-hardened Human Paladin with a scarred face, commanding presence, and a halo of divine light",
+        "a mysterious Tiefling Warlock with curling horns, violet skin, and an aura of crackling eldritch energy",
+        "a stoic Dwarven Forge-Cleric with braided copper hair, soot-stained skin, and eyes like burning embers",
+        "an elegant Vampire Aristocrat with porcelain skin, crimson eyes, and a predatory, seductive grace",
+        "an ethereal Merfolk Oracle with iridescent scales, flowing fin-like hair, and a gaze that sees the future",
+        "a radiant Celestial being with wings of living light, golden skin, and an intimidatingly beautiful divine presence",
+        "a dark and alluring Necromancer Queen with skeletal minions in the background and a crown of bone",
+        "a fierce Druidic Guardian with bark-like skin in patches, leaves in her wild hair, and eyes distinct with nature's wrath",
+        "a cunning Drow Rogue with obsidian skin, white hair, and a smirk that promises a quick and silent death",
+        "a majestic Dragonborn Sorceress with shimmering scales, eyes full of elemental power, and a regal stance",
+        "a mystical Dryad spirit merging with a grand oak tree, her form composed of vines, flowers, and soft bioluminescence",
+        "a rugged Human Ranger with camouflage paint, piercing eagle-like eyes, and a bond with the wild",
+        "a regal High Elf Wizard reading from a floating arcane tome, surrounded by geometric magical sigils",
+        "a corrupted Dark Paladin with jagged black armor, pale skin, and eyes weeping black ichor"
     ],
     expressions: [
-        "wearing a subtle and incredibly seductive smirk that hints at a playful and dangerous secret",
-        "gazing directly into the lens with an intense, soul-piercing look of magnetic and irresistible confidence",
-        "radiating breathtaking warmth with a soft, genuine smile that feels like an intimate invitation",
-        "exhibiting a poised and charismatic expression that exerts an irresistible and tempting pull on the viewer",
-        "looking enigmatic and sultry, with a mysterious depth in her gaze that speaks of deep-seated desire",
-        "maintaining direct, captivating eye contact that feels deeply intimate, personal, and profoundly seductive",
-        "possessing a serene and divine expression of absolute, ethereal tranquility that masks a hidden, passionate core",
-        "showing a fierce, determined look of unyielding resolve tempered by a soft, feminine, and tempting grace",
-        "portraying an elegant and regal expression of supreme dignity, combined with a subtle, alluring invitation"
+        "chanting a powerful spell with intense focus and glowing eyes",
+        "glaring with fierce determination and readying a weapon for combat",
+        "smiling mysteriously while holding a glowing magical artifact",
+        "looking up at a massive, looming monster with a mix of fear and resolve",
+        "meditating deeply, levitating slightly off the ground with peaceful energy",
+        "laughing maniacally while unleashing chaotic magical energy",
+        "studying an ancient map with a furrowed brow and intense concentration",
+        "gazing sorrowfully at a fallen comrade or a ruined city",
+        "screaming a war cry, face contorted with rage and adrenaline",
+        "whispering to a small magical familiar perched on her shoulder"
     ],
     ethnicity: [
-        "Asian", "African", "Caucasian", "Latino", "Middle Eastern", "South Asian", "Native American",
-        "Polynesian", "Scandinavian", "Mediterranean", "Mixed Heritage", "Brazilian", "Nordic", "East Asian",
-        "Greek", "Italian", "Egyptian", "Korean", "Japanese", "Indian", "French", "Spanish"
+        // Mixing standard ethnicities to ensure human diversity even in fantasy settings, plus some fantasy-specific descriptors handled in subjects or here
+        "distinctly Nubian features", "classic Nordic features", "sharp angular Elven features", "soft and round Hobbit-like features",
+        "distinctly Asian features", "rugged Celtic features", "ethereal Fey features", "Amazonian features",
+        "Mediterranean features", "South Asian features", "Middle Eastern features", "Native American features",
+        "Deep Gnome features", "infernal Tiefling features with ridges", "celestial Aasimar features"
     ],
     style: [
-        "Aesthetic masterpiece photography with a focus on RAW materiality, soft skin bloom, and a suggestive, intimate mood",
-        "8k UHD cinematic film still with professional anamorphic lens rendering, focusing on her most alluring and tempting features",
-        "Exquisite high-fashion editorial for Vogue Global, emphasizing luxury textures and an atmosphere of high-end seduction",
-        "Ultra-detailed digital masterpiece with hyper-realistic surface modeling and an aura of soft-focus, irresistible allure",
-        "Sleek and vibrant modern cyberpunk aesthetic with high-tech glass and flattering neon rim-light that accentuates her silhouette",
-        "Ethereal and magical high-fantasy style with glowing mana and a dreamlike haze that heightens the sense of forbidden desire",
-        "Moody and artistic masterpiece noir with deep shadows that accentuate her perfect, seductive silhouette and magnetic presence",
-        "Professional commercial beauty advertising photography with a flawless, radiant finish and an undeniable sense of attraction",
-        "National Geographic level of hyper-realism, capturing every fine detail with an artistic and deeply alluring grace",
-        "Hyper-realistic portraiture that captures the very essence of a beautiful, tempting, and profound soul"
+        "flat color illustration, clean vector lines, cel shaded, vibrant punchy colors",
+        "classic ink and watercolor illustration, washing tones, expressive line art",
+        "digital graphic novel style, bold outlines, dynamic shading, comic book aesthetic",
+        "concept art sketch, rough charcoal lines mixed with digital paint, artistic and raw",
+        "tarot card aesthetic, Art Nouveau influence, decorative borders, flat perspective",
+        "storybook illustration, whimsical and detailed, muted pastel palette, intricate pen work",
+        "stained glass art style, geometric shapes, glowing colors, heavy lead lines",
+        "Japanese woodblock print style (Ukiyo-e), flat composition, elegant curves, traditional texture",
+        "poster art style, minimal colors, high contrast, bold silhouette",
+        "oil pastel drawing, textured strokes, vibrant blending, artistic impressionism"
     ],
     atmosphere: [
-        "surrounded by an ethereal and mystical aura of golden light particles, petals, and a sense of sweet, lingering temptation",
-        "bathed in a serene, heavenly peace that feels otherworldly, divine, and heavy with unspoken desire",
-        "radiating a bold, majestic power that fills the composition with an irresistible, feminine grace",
-        "shrouded in an alluring and seductive mystery within a luxurious, velvet-draped, and dimly lit boudoir setting",
-        "depicted on a heroic and grand scale with epic, flattering backlighting that highlights her most desirable attributes",
-        "captured in a dark and moody cinematic vibe with volumetric atmospheric haze and soft shadows that tease the eye",
-        "enveloped in a dreamy, magical atmosphere with floating crystalline shards and a sense of hypnotic, ethereal allure",
-        "rendered with crisp, ultra-high-definition clarity that highlights her flawless beauty and magnetic, tempting presence",
-        "vibrant and electrically energetic with dynamic motion blur and a sense of high-fashion life and intoxicating desire"
+        "inside a dusty, candlelit wizard's tower filled with floating books and potions",
+        "standing in a lush, bioluminescent enchanted forest at twilight",
+        "on a chaotic battlefield with magical explosions and arrow volleys in the background",
+        "in the dark, damp depths of a dungeon with flickering torchlight",
+        "at the altar of a grand, sunlit cathedral with stained glass casting colored light",
+        "in a bustling medieval tavern full of smoke, laughter, and warm hearth light",
+        "on a windswept mountain peak overlooking a vast fantasy kingdom",
+        "in a misty graveyard shrouded in fog and necromantic energy",
+        "underwater in a coral city with rays of sunlight filtering down",
+        "in a void of swirling arcane energy and geometric shapes"
     ],
     lighting: [
-        "illuminated by the golden hour sun casting long, soft god rays and a warm, flattering, and deeply seductive glow",
-        "lit with dramatic cinematic volumetric lighting that creates rich depth and emphasizes her most alluring features",
-        "bathed in the soft, warm flicker of a thousand scented candles, creating an intimate atmosphere of romance and temptation",
-        "drenched in cool blue and vibrant magenta neon lighting that reflects beautifully on her skin, creating a high-tech allure",
-        "under professional studio softbox beauty lighting for a flawless, airbrushed, and even glow that emphasizes her perfection",
-        "placed under the mysterious and silvery glow of a full moonlight, creating a mystical and seductive silver rim-light",
-        "highlighted by sharp and clean high-contrast rim lighting to define her elegant and irresistible silhouette",
-        "rendered with dynamic and moody chiaroscuro lighting, emphasizing light, shadow, mystery, and deep-seated desire",
-        "softened by diffused natural morning light filtering through sheer, delicate curtains in an intimate, private setting",
-        "embellished with glittering star-light effects and subtle, soft lens flares for a magical and alluring touch",
-        "artistically hit by rainbow-tinted prism lighting for a spectral, ethereal, and temptingly beautiful aesthetic"
+        "stylized flat lighting with minimal shadows, emphasizing color and form",
+        "graphic deep shadows creating a high-contrast noir effect",
+        "soft ambient occlusion lighting, even and diffused",
+        "dramatic rim lighting outlining the silhouette in neon colors",
+        "warm golden hour wash, flat and illustrative",
+        "cool moonlight blue, simplified values",
+        "underlighting from a magical source, creating dramatic upward shadows",
+        "flat sunlight, bright and cheerful",
+        "mottled forest light, dappled effects stylized as brushstrokes",
+        "single directional light source for strong comic-book style shadows"
     ],
     materiality: [
-        "The skin texture is hyper-realistic, showing microscopic pores, fine hair, and perfect subsurface scattering of light.",
-        "Every fabric weave is visible, from the intricate silk thread to the heavy grain of premium leather.",
-        "Reflections on the eyes are razor-sharp, mirroring a detailed environment with uncanny accuracy.",
-        "Materials like gold and silver have physically accurate luster and micro-scratches for total realism."
+        "visible paper grain texture, cold press watercolor paper feel",
+        "canvas texture overlay, feeling of traditional oil on canvas",
+        "smooth digital ink finish, crisp and clean edges",
+        "rough charcoal texture, sketchy and artistic",
+        "matte finish, no gloss, gouache painting aesthetic"
     ],
     composition: [
-        "The shot uses a masterful rule-of-thirds composition with a shallow depth of field (f/1.4).",
-        "A low-angle dramatic perspective emphasizes the grandeur and presence of the subject.",
-        "Extreme macro focus on the eyes reveals the intricate details of the iris and pupil.",
-        "The background is beautifully blurred into a creamy, high-quality bokeh that isolates the subject.",
-        "Cinematic wide-angle framing captures the subject within a vast and detailed environment."
+        "dynamic action pose, rule of thirds, Dutch angle for tension",
+        "statuesque hero pose, low angle looking up, epic scale",
+        "intimate close-up, focus on eyes and expression, abstract background",
+        "wide shot establishing the character in a grand environment",
+        "symmetrical composition, religious icon aesthetic, centered subject"
     ],
     clothing: [
-        "wearing exquisite Dior haute couture with intricate hand-stitched detailing, silk lace, and a suggestive silhouette",
-        "in sleek and detailed technical Gucci streetwear with layered high-tech, shimmering fabrics that cling to her form",
-        "draped in luxurious shimmering Versace silk that catches and refracts the light like water, highlighting every curve",
-        "in an elegant and breathtaking flowing McQueen gown with layers of fine, ethereal lace and a daring, seductive design",
-        "wearing intricate and detailed royal Chanel style with gold filigree, pearls, and a presence that demands adoration",
-        "in stylish modern Balenciaga streetwear with bold, avant-garde silhouettes that tease and tempt the viewer",
-        "wearing a sheer, flowing goddess gown made of woven starlight and fine gossamer that reveals a hint of forbidden beauty"
+        "wearing ornate plate armor with gold filigree and a flowing cape",
+        "clad in tattered, hooded wizard robes covered in starry patterns",
+        "wearing tight leather rogue armor with many buckles and hidden daggers",
+        "dressed in simple, roughspun tunic and trousers of a peasant hero",
+        "adorned in the silk and jewelry of a high-fantasy noble courtier",
+        "wearing druidic armor made of hardened bark, leaves, and vines",
+        "clad in dark, spiked armor radiating menacing energy",
+        "wearing ceremonial priestly vestments with embroidered holy symbols",
+        "dressed in exotic, flowing silks from a desert kingdom",
+        "wearing practical adventurer's gear, backpack, and travel cloak"
     ]
 };
 
@@ -178,19 +185,19 @@ function generateRandomPrompt() {
     const comp = s.composition[Math.floor(Math.random() * s.composition.length)];
     const out = s.clothing[Math.floor(Math.random() * s.clothing.length)];
 
-    // Shot type variety
-    const shotTypes = ["close-up portrait", "medium portrait", "full-body fashion shot", "extreme macro focus"];
-    const shotType = shotTypes[Math.floor(Math.random() * shotTypes.length)];
+    // Shot type variety renamed to Art Type variety
+    const artTypes = ["character portrait", "full body illustration", "splash art", "conceptual design sketch"];
+    const artType = artTypes[Math.floor(Math.random() * artTypes.length)];
 
     const promptParts = [
         sty + ".",
-        `A ${shotType} of ${subj}.`,
-        `Subject is ${exp}, identified as ${eth} heritage.`,
-        `The scene is ${atm} and ${lig}.`,
-        `The subject is ${out}.`,
+        `A ${artType} of ${subj}.`,
+        `She is ${exp}, displaying ${eth}.`,
+        `The setting is ${atm} and ${lig}.`,
+        `She is ${out}.`,
         mat,
         comp,
-        "Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render."
+        "illustration, 2d, painting, drawing, sketch, vector art, flat design, no photorealism, no 3d render, artistic, stylized, trending on ArtStation."
     ];
 
     return promptParts.join(" ");

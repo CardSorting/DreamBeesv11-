@@ -13,6 +13,9 @@ const { DEMO_PROMPTS } = require('./demo_prompts.cjs');
  * @param {object} options Optional settings
  */
 async function generateShowcase(modelId, prompts = DEMO_PROMPTS, options = {}) {
+    // Shared A10G Endpoint (Async)
+    const BASE_URL = "https://mariecoderinc--sdxl-multi-model-a10g-model-web-app.modal.run";
+
     if (!modelId) {
         throw new Error('Model ID is required');
     }
@@ -86,31 +89,82 @@ async function generateShowcase(modelId, prompts = DEMO_PROMPTS, options = {}) {
 /**
  * Helper to call the generation API and return a Buffer
  */
-async function fetchGeneration(modelId, prompt, params) {
-    const urlParams = new URLSearchParams({
+/**
+ * Helper to call the generation API and return a Buffer
+ */
+async function fetchGeneration(modelId, prompt, params, baseUrl = "https://mariecoderinc--sdxl-multi-model-a10g-model-web-app.modal.run") {
+    // 1. Submit Job
+    const submitUrl = `${baseUrl}/generate`;
+    const body = JSON.stringify({
         prompt: prompt,
         model: modelId,
-        steps: params.steps,
-        cfg: params.cfg,
-        width: params.width,
-        height: params.height,
+        steps: parseInt(params.steps),
+        cfg: parseFloat(params.cfg),
+        width: parseInt(params.width),
+        height: parseInt(params.height),
         scheduler: params.scheduler
     });
 
-    const url = `https://cardsorting--sdxl-multi-model-model-web-inference.modal.run?${urlParams.toString()}`;
-
-    return new Promise((resolve, reject) => {
-        https.get(url, (res) => {
-            if (res.statusCode !== 200) {
-                reject(new Error(`API Error: ${res.statusCode}`));
-                return;
+    const submitRes = await new Promise((resolve, reject) => {
+        const req = https.request(submitUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(body)
             }
-
-            const chunks = [];
-            res.on('data', (chunk) => chunks.push(chunk));
-            res.on('end', () => resolve(Buffer.concat(chunks)));
-        }).on('error', reject);
+        }, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => resolve({ statusCode: res.statusCode, data }));
+        });
+        req.on('error', reject);
+        req.write(body);
+        req.end();
     });
+
+    if (submitRes.statusCode !== 202) {
+        throw new Error(`Submit Failed (${submitRes.statusCode}): ${submitRes.data}`);
+    }
+
+    const jobId = JSON.parse(submitRes.data).job_id;
+    // console.log(`      Job: ${jobId}`); // Optional log
+
+    // 2. Poll
+    for (let i = 0; i < 60; i++) {
+        await new Promise(r => setTimeout(r, 2000));
+
+        const result = await new Promise((resolve, reject) => {
+            https.get(`${baseUrl}/jobs/${jobId}`, (res) => {
+                const chunks = [];
+                res.on('data', c => chunks.push(c));
+                res.on('end', () => resolve({
+                    statusCode: res.statusCode,
+                    headers: res.headers,
+                    buffer: Buffer.concat(chunks)
+                }));
+            }).on('error', reject);
+        });
+
+        if (result.statusCode === 202) continue; // Queued
+
+        if (result.statusCode !== 200) {
+            throw new Error(`Polling Error (${result.statusCode}): ${result.buffer.toString()}`);
+        }
+
+        const ct = result.headers['content-type'];
+        if (ct && ct.includes('image/')) {
+            return result.buffer;
+        }
+
+        // Check for failed status in JSON
+        try {
+            const json = JSON.parse(result.buffer.toString());
+            if (json.status === 'failed') throw new Error(json.error);
+        } catch (e) {
+            // ignore
+        }
+    }
+    throw new Error("Generation timed out");
 }
 
 // Allow direct execution from CLI
