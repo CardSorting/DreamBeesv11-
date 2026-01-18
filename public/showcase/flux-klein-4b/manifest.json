@@ -6169,5 +6169,651 @@
     "vibe": "cinematic",
     "localPath": "/showcase/flux-klein-4b/1768697278670_352.webp",
     "localThumbPath": "/showcase/flux-klein-4b/1768697278670_352_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Moody and artistic masterpiece noir with deep shadows and silvery highlights. A extreme macro focus of a striking and beautiful cyberpunk netrunner with holographic data-streams around her. Subject is wearing a subtle and alluring smirk that hints at a deep secret, identified as Latino heritage. The scene is depicted on a heroic and grand scale with epic backlighting and artistically hit by rainbow-tinted prism lighting for a spectral aesthetic. The subject is wearing a sharp and tailored Armani tuxedo with a subtle velvet texture. Every fabric weave is visible, from the intricate silk thread to the heavy grain of premium leather. Cinematic wide-angle framing captures the subject within a vast and detailed environment. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697375744_353.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697375744_353_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRqQAAABXRUJQVlA4IJgAAADwBACdASoUABQAPzmUwVmvKicjqAgB4CcJZQDI1Al1ijmP/1fgUUZVIxh9ThfIUAAA/tlB7st/0xyHiuqnPDpN+uNDJrtdY27DzNrjRLw8hcxsy5RPH58kW1f0X8NRAHsoAcQRKp7SPLI7Zbggw9eYdS3/nT6tAT1QNeygPY2bCQVlP1aLBAHxKE0k4oRzR8vTOq5bgAAAAA==",
+    "createdAt": "2026-01-18T00:49:36.392Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 50,
+    "bookmarksCount": 0,
+    "subject": {
+      "gender": "female"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697375744_353.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697375744_353_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Ethereal and magical high-fantasy style with glowing mana and soft bokeh. A extreme macro focus of a deeply attractive and intelligent scholar with a focused and profound expression. Subject is maintaining direct and captivating eye contact that feels deeply personal, identified as Mediterranean heritage. The scene is radiating a bold and majestic power that fills the composition and highlighted by sharp and clean high-contrast rim lighting to define the silhouette. The subject is in an elegant and breathtaking flowing McQueen gown with layers of fine lace. Reflections on the eyes are razor-sharp, mirroring a detailed environment with uncanny accuracy. Extreme macro focus on the eyes reveals the intricate details of the iris and pupil. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697394811_354.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697394811_354_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRpgAAABXRUJQVlA4IIwAAADwBACdASoUABQAPzmUwVmvKicjqAgB4CcJYwC7MuiBY236j69CEjyqwANU1ulqXyAA/tDCL9hePFgcOkRDJUCJttqHb50OW+6l3pTPLD6rR/s63SwHo2WhK7t8Kf5xYQoSF4u+L7ge5JJiYeCJ9VyMchldpdL5HQaqQiV5h3ISMZN94ts6WiQZLSAAAA==",
+    "createdAt": "2026-01-18T00:50:00.457Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 56,
+    "bookmarksCount": 9,
+    "subject": {
+      "gender": "male"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697394811_354.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697394811_354_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "National Geographic level of hyper-realism, documenting every fine detail. A extreme macro focus of a stunningly gorgeous Brazilian supermodel with sun-golden skin and perfect proportions. Subject is exhibiting a confident and charismatic expression that commands attention, identified as Brazilian heritage. The scene is rendered with crisp and ultra-high-definition clarity in every pixel and rendered with dynamic and moody chiaroscuro lighting, emphasizing light and shadow. The subject is in sleek and detailed technical Gucci streetwear with layered high-tech fabrics. Materials like gold and silver have physically accurate luster and micro-scratches for total realism. The shot uses a masterful rule-of-thirds composition with a shallow depth of field (f/1.4). Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697418500_355.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697418500_355_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRpYAAABXRUJQVlA4IIoAAAAwBQCdASoUABQAPzmUwVmvKicjqAgB4CcJYwDGQywAu/UE5sirm4Iabo7kLDXBH2JPUAD+2VqV+wifKzDYfR0cpYctuhW7lspDGloMq+qoNpQUj6+JfT8G8IPpwCHG5WTZgJvDRZbBbNnqbtLiVFEN5nPCy24RLfaimF6JcqNcQr9I5KCdKMAAAAA=",
+    "createdAt": "2026-01-18T00:50:19.167Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 58,
+    "bookmarksCount": 1,
+    "subject": {
+      "gender": "female"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697418500_355.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697418500_355_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Ultra-detailed digital masterpiece with hyper-realistic surface modeling. A close-up portrait of a majestic and powerful ancient Greek god with a perfectly sculpted marble-like physique. Subject is brooding with a mysterious and thoughtful look, lost in deep contemplation, identified as Scandinavian heritage. The scene is captured in a dark and moody cinematic vibe with volumetric atmospheric haze and lit with dramatic cinematic volumetric lighting that creates deep, rich depth. The subject is wearing a sharp and tailored Armani tuxedo with a subtle velvet texture. The skin texture is hyper-realistic, showing microscopic pores, fine hair, and perfect subsurface scattering of light. The background is beautifully blurred into a creamy, high-quality bokeh that isolates the subject. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697444613_356.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697444613_356_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRnYAAABXRUJQVlA4IGoAAABQBACdASoUABQAPzmKu1UvKSYjKA1R4CcJZwAALGMXyoy3OsAnkAYYQMnAAP674oZsVi/keZX98MxCC6QCfvP1MyJXL/kAZ1aUVESwY4X6tWM+bFbfmUkevoI3/zn7t1GRtujjIHa2AAAA",
+    "createdAt": "2026-01-18T00:50:45.369Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 58,
+    "bookmarksCount": 3,
+    "subject": {
+      "gender": "male"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697444613_356.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697444613_356_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "8k UHD cinematic film still with professional anamorphic lens rendering. A medium portrait of a striking and beautiful cyberpunk netrunner with holographic data-streams around her. Subject is brooding with a mysterious and thoughtful look, lost in deep contemplation, identified as Italian heritage. The scene is rendered with crisp and ultra-high-definition clarity in every pixel and bathed in the soft and warm flicker of a thousand scented candles. The subject is in an elegant and breathtaking flowing McQueen gown with layers of fine lace. The skin texture is hyper-realistic, showing microscopic pores, fine hair, and perfect subsurface scattering of light. Cinematic wide-angle framing captures the subject within a vast and detailed environment. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697476925_357.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697476925_357_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRpoAAABXRUJQVlA4II4AAADwBACdASoUABQAPzmUwlmvKicjqAgB4CcJYgC+SBEwsy3YIzKvBio7txNzg/TVOpIA/uL7C3c/gBbMDw2ZfvypsALJp9aohvK6WhKYDKGk5LRar6MM4xL8706eKuIdd8TDmjzHam+M8eOPeQ6AFGTPGtNTrWA10yd3ChDrVp6ob3ZOhBdDa5bBACkXj8AA",
+    "createdAt": "2026-01-18T00:51:17.800Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 17,
+    "bookmarksCount": 3,
+    "subject": {
+      "gender": "female"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697476925_357.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697476925_357_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Ultra-detailed digital masterpiece with hyper-realistic surface modeling. A extreme macro focus of a mysterious and sharp-featured noir detective in a dimly lit rainy cityscape. Subject is exhibiting a confident and charismatic expression that commands attention, identified as Middle Eastern heritage. The scene is rendered with crisp and ultra-high-definition clarity in every pixel and lit with dramatic cinematic volumetric lighting that creates deep, rich depth. The subject is wearing a cool vintage designer Saint Laurent leather jacket with authentic wear. Reflections on the eyes are razor-sharp, mirroring a detailed environment with uncanny accuracy. A low-angle dramatic perspective emphasizes the grandeur and presence of the subject. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697496787_358.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697496787_358_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRooAAABXRUJQVlA4IH4AAACQBACdASoUABQAPzmUwFmvKiajqAgB4CcJZQAAJq/ItQV3pDqxdgrTsq7vgUAA/svnb8vT4MkW4QOGmDc5C8RR2Vclu/ENlTxYs3R2Y9eUID+RCJcBEQNmi61ReV0Z/MuXWLjPC4FMefZBoN5NWeUj+G69Fajs/vvHKodgAAA=",
+    "createdAt": "2026-01-18T00:51:37.434Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 37,
+    "bookmarksCount": 3,
+    "subject": {
+      "gender": "male"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697496787_358.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697496787_358_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Ultra-detailed digital masterpiece with hyper-realistic surface modeling. A medium portrait of a fiercely beautiful Amazonian warrior with a powerful and athletic build. Subject is gazing directly into the lens with an intense and soul-piercing look of confidence, identified as Mixed Heritage heritage. The scene is vibrant and electrically energetic with dynamic motion blur accents and under professional studio softbox beauty lighting for a flawless and even glow. The subject is in stylish modern Balenciaga streetwear with bold silhouettes and textures. The skin texture is hyper-realistic, showing microscopic pores, fine hair, and perfect subsurface scattering of light. The shot uses a masterful rule-of-thirds composition with a shallow depth of field (f/1.4). Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697516274_359.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697516274_359_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRpIAAABXRUJQVlA4IIYAAADwBACdASoUABQAPzmUwFmvKiajqAgB4CcJYwDOajcAYyv0AZuuqzI68FBf4ZDC/gAA/s1OzGidbIN8D4BGU3759Mnk9wkRfDF1SqEsWiGlsg7PVEWBXBWT9PZZaQeQ4pn9a7SMekLr8SRNc8fILUpsw9wWg4KoYb1xbNoQvCBmbxA/ygAAAA==",
+    "createdAt": "2026-01-18T00:51:57.011Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 22,
+    "bookmarksCount": 1,
+    "subject": {
+      "gender": "female"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697516274_359.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697516274_359_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Ethereal and magical high-fantasy style with glowing mana and soft bokeh. A medium portrait of a majestic and beautiful elven prince with pointed ears and an otherworldly grace. Subject is radiating warmth with a soft and genuine smile that lights up the entire frame, identified as Korean heritage. The scene is captured in a dark and moody cinematic vibe with volumetric atmospheric haze and under professional studio softbox beauty lighting for a flawless and even glow. The subject is in an elegant and breathtaking flowing McQueen gown with layers of fine lace. The skin texture is hyper-realistic, showing microscopic pores, fine hair, and perfect subsurface scattering of light. Extreme macro focus on the eyes reveals the intricate details of the iris and pupil. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697534834_360.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697534834_360_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRowAAABXRUJQVlA4IIAAAAAQBQCdASoUABQAPzmUwFmvKiajqAgB4CcJYwDHMBBUkZAMuK2unAdWezloH1sNGNJIAP7c02KbGLPALzpoRO1omrf79GOpjM85+E6GfWdZeHqeQ4RomSMs39swjbavQUz6RSkVNFx3+hJODa0YdolSMFLcJQ/is6m+DVZ4w9SwAA==",
+    "createdAt": "2026-01-18T00:52:15.845Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 56,
+    "bookmarksCount": 4,
+    "subject": {
+      "gender": "male"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697534834_360.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697534834_360_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Sleek and vibrant modern cyberpunk aesthetic with high-tech glass and neon. A medium portrait of an elegant and breathtaking Parisian lady with a timeless and sophisticated aesthetic. Subject is gazing directly into the lens with an intense and soul-piercing look of confidence, identified as Caucasian heritage. The scene is depicted on a heroic and grand scale with epic backlighting and bathed in the soft and warm flicker of a thousand scented candles. The subject is in an elegant and breathtaking flowing McQueen gown with layers of fine lace. Sweat or water droplets on the skin have perfect refraction and surface tension properties. The shot uses a masterful rule-of-thirds composition with a shallow depth of field (f/1.4). Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697555598_361.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697555598_361_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRrIAAABXRUJQVlA4IKYAAACwBACdASoUABQAPzmUwFmvKiajqAgB4CcJaACsAAhGxSOj5TOF+R/uZDwwyyaAAP6lRH0K2bopn3Ep3DgMbKxxeca8RTKajHCQSopbHKlLTH3w5q56A3GtKwmQrOVf3DYvuVS2xJB7Dv6l/YFfnC6HlUaKIlnoR85x3a3l6OSCAoXc8nszp6JT1duXBZQJGjiEkVA6uXGToV6phAgIAqoXxtVoN0gA",
+    "createdAt": "2026-01-18T00:52:36.356Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 39,
+    "bookmarksCount": 7,
+    "subject": {
+      "gender": "female"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697555598_361.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697555598_361_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Professional commercial beauty advertising photography with flawless finish. A close-up portrait of a stylish and charismatic fashion influencer with a trend-setting aesthetic. Subject is portraying an elegant and poised expression of royal dignity, identified as Japanese heritage. The scene is captured in a dark and moody cinematic vibe with volumetric atmospheric haze and softened by diffused natural morning light filtering through sheer curtains. The subject is in an elegant and breathtaking flowing McQueen gown with layers of fine lace. Materials like gold and silver have physically accurate luster and micro-scratches for total realism. The background is beautifully blurred into a creamy, high-quality bokeh that isolates the subject. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697574594_362.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697574594_362_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRoYAAABXRUJQVlA4IHoAAADwBACdASoUABQAPzmSv1mvKaYjqAgB4CcJZwDKAA5WhFNHZjV0rxK7uzfGBV4ntAAA/q+d5oJSlnR/HROtgOdtkneYuXHHx6mCKjvE9iE+Uugwuf2glkG+MRPOJ3uTBOpbb1GCWObs57YoCZdnN5eJ8KUkpJ8GLcAAAA==",
+    "createdAt": "2026-01-18T00:52:55.324Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 57,
+    "bookmarksCount": 1,
+    "subject": {
+      "gender": "male"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697574594_362.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697574594_362_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "National Geographic level of hyper-realism, documenting every fine detail. A medium portrait of a captivating and alluring dark-fantasy sorceress with mystical energy in her gaze. Subject is maintaining direct and captivating eye contact that feels deeply personal, identified as Polynesian heritage. The scene is shrouded in an alluring and seductive mystery within a luxurious setting and rendered with dynamic and moody chiaroscuro lighting, emphasizing light and shadow. The subject is in an elegant and breathtaking flowing McQueen gown with layers of fine lace. Every fabric weave is visible, from the intricate silk thread to the heavy grain of premium leather. Cinematic wide-angle framing captures the subject within a vast and detailed environment. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697596183_363.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697596183_363_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRmIAAABXRUJQVlA4IFYAAADwAwCdASoUABQAPzmOuFavKaSjqA1R4CcJZwAAKWR3KEqXHt4N0IwAAP7o8Q8UNgakYMD1nQgkkodGbKzyfLGuzETtcZukjpKYmfqnif+qD2CCagAAAA==",
+    "createdAt": "2026-01-18T00:53:17.190Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 51,
+    "bookmarksCount": 7,
+    "subject": {
+      "gender": "female"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697596183_363.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697596183_363_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Hyper-realistic portraiture that captures the very essence of the soul. A medium portrait of a majestic and powerful ancient Greek god with a perfectly sculpted marble-like physique. Subject is brooding with a mysterious and thoughtful look, lost in deep contemplation, identified as French heritage. The scene is depicted on a heroic and grand scale with epic backlighting and lit with dramatic cinematic volumetric lighting that creates deep, rich depth. The subject is draped in luxurious shimmering Versace silk that catches and refracts the light. The skin texture is hyper-realistic, showing microscopic pores, fine hair, and perfect subsurface scattering of light. Extreme macro focus on the eyes reveals the intricate details of the iris and pupil. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697616111_364.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697616111_364_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRqgAAABXRUJQVlA4IJwAAABQBQCdASoUABQAPzmUwVmvKicjqAgB4CcJYwCsMyGBw/D7wBzbg7tUEBgFlALCgImCdgAA/qmb28Ze63Rvoc8FcVmrG+mIvs/P7YQOMl7rwB2virKuIHhlkyEO9azvi946kWNAbPiuNVeAX5TKMA3Wa4vEZc/VSYLYH0gcvpGhfh2VzeZS3DgRkYssGlsFiFQ6SKSy96YIZYYAAAA=",
+    "createdAt": "2026-01-18T00:53:36.892Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 10,
+    "bookmarksCount": 8,
+    "subject": {
+      "gender": "male"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697616111_364.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697616111_364_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Moody and artistic masterpiece noir with deep shadows and silvery highlights. A full-body fashion shot of a fiercely beautiful Amazonian warrior with a powerful and athletic build. Subject is possessing a serene and peaceful expression of absolute tranquility, identified as South Asian heritage. The scene is vibrant and electrically energetic with dynamic motion blur accents and lit with dramatic cinematic volumetric lighting that creates deep, rich depth. The subject is in an elegant and breathtaking flowing McQueen gown with layers of fine lace. Every fabric weave is visible, from the intricate silk thread to the heavy grain of premium leather. The background is beautifully blurred into a creamy, high-quality bokeh that isolates the subject. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697636031_365.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697636031_365_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRoIAAABXRUJQVlA4IHYAAADQBACdASoUABQAPzmSv1mvKaajqAgB4CcJZwDN/A0z3NbN/1Ey5P8zblikL/huCAD+0FPkXMKFOv9G+oV07Ted/dhEqNOETGLImMbXRh+4a2lO9sNpkzB7DDz+VIo1J+U2KkNKUJr2uMYwRzTVEj5aVjRi9uAA",
+    "createdAt": "2026-01-18T00:53:56.733Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 49,
+    "bookmarksCount": 3,
+    "subject": {
+      "gender": "female"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697636031_365.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697636031_365_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Aesthetic masterpiece photography with a focus on RAW materiality. A medium portrait of a heroic and muscular knight in ornate shimmering plate armor. Subject is showing a fierce and determined look of unyielding resolve, identified as Mixed Heritage heritage. The scene is enveloped in a dreamy and magical atmosphere with floating crystalline shards and placed under the mysterious and silvery glow of a full moonlight through mist. The subject is in an elegant and breathtaking flowing McQueen gown with layers of fine lace. The skin texture is hyper-realistic, showing microscopic pores, fine hair, and perfect subsurface scattering of light. The shot uses a masterful rule-of-thirds composition with a shallow depth of field (f/1.4). Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697657050_366.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697657050_366_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRowAAABXRUJQVlA4IIAAAACQBACdASoUABQAPzmUwVmvKicjqAgB4CcJZQC/7A486MCBD39Py7yGKtAGHAAA/oNIwGB0vWP5dm2UbP2teNRVlq0L1cji10QHERGLrZgGVNmsAouiVi5bNVaF5MsAKgZDfd1ik7iExaZOaTzxRwTvIjghTPUXR7S1MGodIAAAAA==",
+    "createdAt": "2026-01-18T00:54:17.917Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 39,
+    "bookmarksCount": 1,
+    "subject": {
+      "gender": "male"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697657050_366.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697657050_366_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Professional commercial beauty advertising photography with flawless finish. A medium portrait of a captivating and alluring dark-fantasy sorceress with mystical energy in her gaze. Subject is possessing a serene and peaceful expression of absolute tranquility, identified as Mixed Heritage heritage. The scene is depicted on a heroic and grand scale with epic backlighting and placed under the mysterious and silvery glow of a full moonlight through mist. The subject is in an elegant and breathtaking flowing McQueen gown with layers of fine lace. The skin texture is hyper-realistic, showing microscopic pores, fine hair, and perfect subsurface scattering of light. Cinematic wide-angle framing captures the subject within a vast and detailed environment. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697676156_367.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697676156_367_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRnwAAABXRUJQVlA4IHAAAACQBACdASoUABQAPzmUwVmvKicjqAgB4CcJZQDMHAlJTrQ74Q5w3xyeA3UGkwAA/tA1Elk1XwiKo03yrnlnkLhVZZyQUg4ERZ4diuLjdZ+bTVvWFP9/wc3j+DRf02YYhQDaB9O854g9fxHin0AAAAAA",
+    "createdAt": "2026-01-18T00:54:36.864Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 29,
+    "bookmarksCount": 0,
+    "subject": {
+      "gender": "female"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697676156_367.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697676156_367_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Moody and artistic masterpiece noir with deep shadows and silvery highlights. A medium portrait of a ruggedly handsome cowboy with sun-kissed skin and a determined gaze. Subject is possessing a serene and peaceful expression of absolute tranquility, identified as Middle Eastern heritage. The scene is rendered with crisp and ultra-high-definition clarity in every pixel and rendered with dynamic and moody chiaroscuro lighting, emphasizing light and shadow. The subject is draped in luxurious shimmering Versace silk that catches and refracts the light. The skin texture is hyper-realistic, showing microscopic pores, fine hair, and perfect subsurface scattering of light. The background is beautifully blurred into a creamy, high-quality bokeh that isolates the subject. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697696147_368.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697696147_368_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRpQAAABXRUJQVlA4IIgAAACwBACdASoUABQAPzmUwVmvKicjqAgB4CcJZQDKAA1953dD4SPJzWnwS08CIWgAAP7MQZ9ogu4CYUki9+VtfL0+OxiaQ/IMHPwT3nnQABGLARtbZhRWsaAi+E5HsvEF0YXd1qCpLt88tCYN1M+r/jDX+Y1gE1NM4wfU2Vzvz3inO4hrPUSZuAAA",
+    "createdAt": "2026-01-18T00:54:56.766Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 11,
+    "bookmarksCount": 2,
+    "subject": {
+      "gender": "male"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697696147_368.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697696147_368_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Ethereal and magical high-fantasy style with glowing mana and soft bokeh. A close-up portrait of a breathtakingly beautiful K-pop star archetype with flawless dewy skin and mesmerizing eyes. Subject is possessing a serene and peaceful expression of absolute tranquility, identified as Native American heritage. The scene is shrouded in an alluring and seductive mystery within a luxurious setting and drenched in cool blue and vibrant magenta neon lighting with realistic reflections. The subject is in sleek and detailed technical Gucci streetwear with layered high-tech fabrics. Reflections on the eyes are razor-sharp, mirroring a detailed environment with uncanny accuracy. The shot uses a masterful rule-of-thirds composition with a shallow depth of field (f/1.4). Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697716453_369.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697716453_369_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRpIAAABXRUJQVlA4IIYAAABwBACdASoUABQAPzmUwFmvKiajqAgB4CcJQBYdgffhXkoENC+h24Fgi/abQAD+2nWmYQwzMVzarm8r4LY2GKKQx/BAZ1AQWhaFdzBw6dgRo8dPULhMcI2nAPASlSwGrLUDKEJJa6WVlWJGZVfDlprCt+z3wEfIjfpbtBjH7qv/XPlYClJwAA==",
+    "createdAt": "2026-01-18T00:55:17.143Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 17,
+    "bookmarksCount": 6,
+    "subject": {
+      "gender": "female"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697716453_369.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697716453_369_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "8k UHD cinematic film still with professional anamorphic lens rendering. A close-up portrait of a majestic and powerful ancient Greek god with a perfectly sculpted marble-like physique. Subject is maintaining direct and captivating eye contact that feels deeply personal, identified as Caucasian heritage. The scene is radiating a bold and majestic power that fills the composition and highlighted by sharp and clean high-contrast rim lighting to define the silhouette. The subject is wearing exquisite Dior haute couture with intricate hand-stitched detailing. The skin texture is hyper-realistic, showing microscopic pores, fine hair, and perfect subsurface scattering of light. A low-angle dramatic perspective emphasizes the grandeur and presence of the subject. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697735358_370.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697735358_370_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRpoAAABXRUJQVlA4II4AAABQBQCdASoUABQAPzmUwVmvKicjqAgB4CcJZQDKAywA2qS9SIe+UhV5IkA2EAVUPx89UgAA/uMDBAAWkwZaD630BQi6wn/xptvmF59996Rjc1E0LsfNCw1jECHDglVeDXxvxYULJ0WuXs2Xg6SRCyDvaH0OCtJu/3FY1Xp6vgYdmr6lqcYfijZqGFE2IAAA",
+    "createdAt": "2026-01-18T00:55:36.124Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 14,
+    "bookmarksCount": 8,
+    "subject": {
+      "gender": "male"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697735358_370.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697735358_370_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Sleek and vibrant modern cyberpunk aesthetic with high-tech glass and neon. A full-body fashion shot of a stunningly gorgeous Brazilian supermodel with sun-golden skin and perfect proportions. Subject is gazing directly into the lens with an intense and soul-piercing look of confidence, identified as African heritage. The scene is surrounded by an ethereal and mystical aura of golden light particles and rendered with dynamic and moody chiaroscuro lighting, emphasizing light and shadow. The subject is in sleek and detailed technical Gucci streetwear with layered high-tech fabrics. Every fabric weave is visible, from the intricate silk thread to the heavy grain of premium leather. The background is beautifully blurred into a creamy, high-quality bokeh that isolates the subject. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697755217_371.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697755217_371_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRqIAAABXRUJQVlA4IJYAAACQBACdASoUABQAPzmSv1mvKaajqAgB4CcJQBdgAaMySyD627uGhvslzuAumIAA/nI5pFwksVvbhGVnTxldi0MgTGqlklJKo947YxIjatj9l1zFvQmgv71EP7CMt/eBZZAH9zPH0HfuTFqqKSln8dgMOIH9+RsYhydrVOUQ27AtVQPZc3lt0gRACLADi7E/MpXnGG+YAAA=",
+    "createdAt": "2026-01-18T00:55:55.870Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 52,
+    "bookmarksCount": 7,
+    "subject": {
+      "gender": "female"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697755217_371.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697755217_371_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Professional commercial beauty advertising photography with flawless finish. A medium portrait of a dashing and charming high-society billionaire with a sophisticated and alluring presence. Subject is gazing directly into the lens with an intense and soul-piercing look of confidence, identified as Brazilian heritage. The scene is captured in a dark and moody cinematic vibe with volumetric atmospheric haze and drenched in cool blue and vibrant magenta neon lighting with realistic reflections. The subject is wearing a sharp and tailored Armani tuxedo with a subtle velvet texture. Materials like gold and silver have physically accurate luster and micro-scratches for total realism. Extreme macro focus on the eyes reveals the intricate details of the iris and pupil. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697774039_372.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697774039_372_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRpAAAABXRUJQVlA4IIQAAAAQBACdASoUABQAPzmSv1mvKaajqAgB4CcJQBZwAPNlTOZIRYo6y+MvwAD+2VoqnP+O5N+0oTZAP99Sw4lLbB4VN+7haUj/Od02BX2UL8DE0nT70MDiunxWng/2D+kY7mRM6g0mKtFOhVXdniLUnI/c+HpB6yMXpB2RaSvIBF9pz+sAAAA=",
+    "createdAt": "2026-01-18T00:56:14.707Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 33,
+    "bookmarksCount": 4,
+    "subject": {
+      "gender": "male"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697774039_372.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697774039_372_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Exquisite high-fashion editorial for Vogue, emphasizing luxury and texture. A extreme macro focus of a stunningly gorgeous Brazilian supermodel with sun-golden skin and perfect proportions. Subject is portraying an elegant and poised expression of royal dignity, identified as Mediterranean heritage. The scene is enveloped in a dreamy and magical atmosphere with floating crystalline shards and rendered with dynamic and moody chiaroscuro lighting, emphasizing light and shadow. The subject is in an elegant and breathtaking flowing McQueen gown with layers of fine lace. Reflections on the eyes are razor-sharp, mirroring a detailed environment with uncanny accuracy. A low-angle dramatic perspective emphasizes the grandeur and presence of the subject. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697793037_373.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697793037_373_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRqgAAABXRUJQVlA4IJwAAADwBACdASoUABQAPzmUwVmvKicjqAgB4CcJYwC2yBE0lS1hif+o+X9BhSz8Y4A1zAAA/twq0KWLsvE7bHLax6lrTTHAM1Zc/4WALREJNnTiUji8UilS7rGixLG9ErQQnyAUPqFe5iP+rfm75poc6ISIOolkHKiKENB3yRlOfGhR6p2O/dcOgJKy/tZsZ0OfMJg+TcLFRHGr2R7xIAA=",
+    "createdAt": "2026-01-18T00:56:33.669Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 30,
+    "bookmarksCount": 3,
+    "subject": {
+      "gender": "female"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697793037_373.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697793037_373_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Ultra-detailed digital masterpiece with hyper-realistic surface modeling. A close-up portrait of a stylish and charismatic fashion influencer with a trend-setting aesthetic. Subject is portraying an elegant and poised expression of royal dignity, identified as Nordic heritage. The scene is rendered with crisp and ultra-high-definition clarity in every pixel and artistically hit by rainbow-tinted prism lighting for a spectral aesthetic. The subject is in sleek and detailed technical Gucci streetwear with layered high-tech fabrics. Sweat or water droplets on the skin have perfect refraction and surface tension properties. Extreme macro focus on the eyes reveals the intricate details of the iris and pupil. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697812222_374.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697812222_374_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRoYAAABXRUJQVlA4IHoAAACwBACdASoUABQAPzmSv1mvKaajqAgB4CcJQBhuAZMoFB8LlA48SBD+OAMC2V7AAP6sCv2pWnknxFvz60p611esN/20BdKRXWdaalajAXdo0GZG8NvEWV2fxPei7dQqUbn/6tCGlk6eAtrGi8FG8BkCn1KtIj4gI4AAAA==",
+    "createdAt": "2026-01-18T00:56:53.360Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 25,
+    "bookmarksCount": 8,
+    "subject": {
+      "gender": "male"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697812222_374.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697812222_374_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Ethereal and magical high-fantasy style with glowing mana and soft bokeh. A medium portrait of a sophisticated and beautiful high-fashion editor with a sharp and modern look. Subject is portraying an elegant and poised expression of royal dignity, identified as South Asian heritage. The scene is depicted on a heroic and grand scale with epic backlighting and illuminated by the golden hour sun casting long, soft god rays through a window. The subject is in an elegant and breathtaking flowing McQueen gown with layers of fine lace. The skin texture is hyper-realistic, showing microscopic pores, fine hair, and perfect subsurface scattering of light. The shot uses a masterful rule-of-thirds composition with a shallow depth of field (f/1.4). Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697831656_375.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697831656_375_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRpIAAABXRUJQVlA4IIYAAACwBACdASoUABQAPzmUwVmvKicjqAgB4CcJYwClrBDNWb0ueX0JO2n7vyRFPUQAAP6sCzgX1ZYb1EPMpOu0inmpFyKJaM2wN/0kXdOlNmCiNABVwxDqzswXKpkiPyRcy2ruNCndZr0jiXEDr92KHi6MHtaJRXzuuwECLWL4tHNbux6qWJLAAA==",
+    "createdAt": "2026-01-18T00:57:12.365Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 29,
+    "bookmarksCount": 6,
+    "subject": {
+      "gender": "female"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697831656_375.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697831656_375_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Moody and artistic masterpiece noir with deep shadows and silvery highlights. A full-body fashion shot of a mysterious and sharp-featured noir detective in a dimly lit rainy cityscape. Subject is maintaining direct and captivating eye contact that feels deeply personal, identified as Korean heritage. The scene is enveloped in a dreamy and magical atmosphere with floating crystalline shards and softened by diffused natural morning light filtering through sheer curtains. The subject is wearing a cool vintage designer Saint Laurent leather jacket with authentic wear. Materials like gold and silver have physically accurate luster and micro-scratches for total realism. The background is beautifully blurred into a creamy, high-quality bokeh that isolates the subject. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697857970_376.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697857970_376_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRooAAABXRUJQVlA4IH4AAAAQBACdASoUABQAPzmSwFmvKaajqAgB4CcJZQAAIa3pFXKonynPjlUfMAD8HNR4RGycT2clqDcQWfRUpIUGw6hiuIsh0cfsje5+tDdRbI5PWYuGppWPzSMtt4qGg7alcOySYJiFu7VTO2kZEv3Bk8uK0d8YjFOQlcJ/uh8AAAA=",
+    "createdAt": "2026-01-18T00:57:38.781Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 20,
+    "bookmarksCount": 9,
+    "subject": {
+      "gender": "male"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697857970_376.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697857970_376_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "8k UHD cinematic film still with professional anamorphic lens rendering. A close-up portrait of an alluring and divine mermaid queen with shimmering scales and flowing underwater hair. Subject is exhibiting a confident and charismatic expression that commands attention, identified as Nordic heritage. The scene is depicted on a heroic and grand scale with epic backlighting and bathed in the soft and warm flicker of a thousand scented candles. The subject is in an elegant and breathtaking flowing McQueen gown with layers of fine lace. The skin texture is hyper-realistic, showing microscopic pores, fine hair, and perfect subsurface scattering of light. The shot uses a masterful rule-of-thirds composition with a shallow depth of field (f/1.4). Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697877561_377.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697877561_377_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRqAAAABXRUJQVlA4IJQAAABwBQCdASoUABQAPzmUwFmvKiajqAgB4CcJQBdgkpIGQOACJCwkOYmyZ8HEGCPXEJ/+3K+wAP7ZSygH2ibyt10C8rmg4ljqitOaowpRhCss358V0fiJDRxqkyZMUMASZBZ5ygmQ+iaC0hBisSTcVR0jGAt4quSJm1py42wrKlEOG8mHElmrw4abhTLKxEun5oqC4AAA",
+    "createdAt": "2026-01-18T00:57:58.189Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 27,
+    "bookmarksCount": 6,
+    "subject": {
+      "gender": "female"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697877561_377.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697877561_377_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Aesthetic masterpiece photography with a focus on RAW materiality. A medium portrait of a cool and alluring cyberpunk street-runner with glowing cybernetic enhancements. Subject is exhibiting a confident and charismatic expression that commands attention, identified as Italian heritage. The scene is bathed in a serene and heavenly peace that feels otherworldly and lit with dramatic cinematic volumetric lighting that creates deep, rich depth. The subject is in sleek and detailed technical Gucci streetwear with layered high-tech fabrics. Every fabric weave is visible, from the intricate silk thread to the heavy grain of premium leather. A low-angle dramatic perspective emphasizes the grandeur and presence of the subject. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697897790_378.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697897790_378_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRpYAAABXRUJQVlA4IIoAAABQBACdASoUABQAPzmUwFmvKiajqAgB4CcJZQAAIE1OV4QsuDScmfStJJFgAP6BTTKT4uXwKfzyfZK3A0u4rw0FE+V42YSV37QIT5VLfufydcyXof5ewrmOpvaQazdOZcuK2cNuS/E+Heb6zRoc7B7LopPsjFQnqNk0KpTtWrOGfgjVcUI/NuYQAAA=",
+    "createdAt": "2026-01-18T00:58:18.511Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 15,
+    "bookmarksCount": 8,
+    "subject": {
+      "gender": "male"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697897790_378.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697897790_378_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "National Geographic level of hyper-realism, documenting every fine detail. A close-up portrait of an alluring and divine mermaid queen with shimmering scales and flowing underwater hair. Subject is showing a fierce and determined look of unyielding resolve, identified as Japanese heritage. The scene is surrounded by an ethereal and mystical aura of golden light particles and embellished with glittering star-light effects and subtle lens flares. The subject is wearing exquisite Dior haute couture with intricate hand-stitched detailing. Materials like gold and silver have physically accurate luster and micro-scratches for total realism. Cinematic wide-angle framing captures the subject within a vast and detailed environment. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697917177_379.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697917177_379_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRpYAAABXRUJQVlA4IIoAAADQBACdASoUABQAPzmUwFmvKiajqAgB4CcJQBfJZdUYK6sVyO004X8A9pUfHMUYAAD2fTG6DlAxczcLNJpT4tNetlYptWOFIg+lto7opxLQqkZifuHZOQgvpSqLHFBbOhA5pg0Q+fryB5yd6Y1LggTVU3Sr3hzGKooAxXabsyc4QrfBwALE4AAAAAA=",
+    "createdAt": "2026-01-18T00:58:37.994Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 15,
+    "bookmarksCount": 7,
+    "subject": {
+      "gender": "female"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697917177_379.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697917177_379_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Moody and artistic masterpiece noir with deep shadows and silvery highlights. A close-up portrait of a gorgeous and masculine celestial warrior with cosmic energy radiating from his core. Subject is possessing a serene and peaceful expression of absolute tranquility, identified as Nordic heritage. The scene is bathed in a serene and heavenly peace that feels otherworldly and softened by diffused natural morning light filtering through sheer curtains. The subject is draped in luxurious shimmering Versace silk that catches and refracts the light. Materials like gold and silver have physically accurate luster and micro-scratches for total realism. A low-angle dramatic perspective emphasizes the grandeur and presence of the subject. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697938143_380.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697938143_380_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRq4AAABXRUJQVlA4IKIAAADwBACdASoUABQAPzmUwVmvKicjqAgB4CcJZQDLpApUiywQsqsOsqZOo2GuhcV6TgAA/qw5hk01bd/OFl9r8UEngLCV3P6lHBPjnrAWKtWo3JHgzBvhjdKq7+2kZc5m53fWMbU5SrLneuCRcRekWcwjURHWdq/yBDUwFRyX0L33bkyJJ+xxbSrUAZ8gTL1LLAL/aXkQALFUi1R8eX8mjAvAAAA=",
+    "createdAt": "2026-01-18T00:58:58.963Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 42,
+    "bookmarksCount": 2,
+    "subject": {
+      "gender": "male"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697938143_380.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697938143_380_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Hyper-realistic portraiture that captures the very essence of the soul. A medium portrait of a chic and stunningly gorgeous minimalist muse with simple yet profound beauty. Subject is exhibiting a confident and charismatic expression that commands attention, identified as African heritage. The scene is radiating a bold and majestic power that fills the composition and placed under the mysterious and silvery glow of a full moonlight through mist. The subject is draped in luxurious shimmering Versace silk that catches and refracts the light. The skin texture is hyper-realistic, showing microscopic pores, fine hair, and perfect subsurface scattering of light. The background is beautifully blurred into a creamy, high-quality bokeh that isolates the subject. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697971941_381.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697971941_381_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRp4AAABXRUJQVlA4IJIAAACwBACdASoUABQAPzmUwFmvKaajqAgB4CcJZQDE2A5AAsLKA5tREM9DF74pXMgAAP6/dtUDTOrMPb/y2axzrsdKbJgef9LEPg3GikdUn5pbiUZY2VUZWfeb0L3ru4+bD1kEaxKYMXSNbmW87+rSkg5sPfjVhVqr2XWDcSi4zcQfHqp6XqzS1MsiYWJIP+vfAAAAAA==",
+    "createdAt": "2026-01-18T00:59:32.541Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 18,
+    "bookmarksCount": 7,
+    "subject": {
+      "gender": "female"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697971941_381.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697971941_381_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "8k UHD cinematic film still with professional anamorphic lens rendering. A close-up portrait of a cool and alluring cyberpunk street-runner with glowing cybernetic enhancements. Subject is exhibiting a confident and charismatic expression that commands attention, identified as South Asian heritage. The scene is radiating a bold and majestic power that fills the composition and artistically hit by rainbow-tinted prism lighting for a spectral aesthetic. The subject is in stylish modern Balenciaga streetwear with bold silhouettes and textures. Sweat or water droplets on the skin have perfect refraction and surface tension properties. Cinematic wide-angle framing captures the subject within a vast and detailed environment. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697991472_382.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768697991472_382_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRqoAAABXRUJQVlA4IJ4AAABwBACdASoUABQAPzmUwVmvKicjqAgB4CcJYwC2FAe/mylpqrjB/EjO+dH46AD+y3IIu+1cfE08+WiaaBCzSAjuqLMG5TG9A6WqusSC481RpAucby+6AgJC6IENIDEwk2uJIbVa9EQFCV6ONGN8B40Z8nHoPeJeULegwK/wGez6hAiQmwFAmwqLy/MmAalpAmVuYksUCBw/vIMevI48AA==",
+    "createdAt": "2026-01-18T00:59:52.164Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 42,
+    "bookmarksCount": 4,
+    "subject": {
+      "gender": "male"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768697991472_382.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768697991472_382_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Hyper-realistic portraiture that captures the very essence of the soul. A medium portrait of a graceful and stunning prima ballerina in a delicate and detailed tulle tutu. Subject is portraying an elegant and poised expression of royal dignity, identified as African heritage. The scene is radiating a bold and majestic power that fills the composition and softened by diffused natural morning light filtering through sheer curtains. The subject is in an elegant and breathtaking flowing McQueen gown with layers of fine lace. Sweat or water droplets on the skin have perfect refraction and surface tension properties. The background is beautifully blurred into a creamy, high-quality bokeh that isolates the subject. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768698011677_383.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768698011677_383_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRpAAAABXRUJQVlA4IIQAAAAwBQCdASoUABQAPzmSv1mvKaajqAgB4CcJYwC90BG5KIQRP1UAmivQu/JRxve3s6PcgAD+043eHhC6X215B1AayVwfwnMtBnUImsJauwoQRyNUTy3FBqbZ2S41URyNep14QkB6sEZVOqtl0wMKtUSPfYAVyJERjTzWnDSMGtOvJKNAAAA=",
+    "createdAt": "2026-01-18T01:00:12.234Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 50,
+    "bookmarksCount": 2,
+    "subject": {
+      "gender": "female"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768698011677_383.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768698011677_383_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Professional commercial beauty advertising photography with flawless finish. A medium portrait of an athletic and perfectly sculpted olympic swimmer with defined muscle transitions. Subject is gazing directly into the lens with an intense and soul-piercing look of confidence, identified as Middle Eastern heritage. The scene is bathed in a serene and heavenly peace that feels otherworldly and softened by diffused natural morning light filtering through sheer curtains. The subject is wearing intricate and detailed royal Chanel armor style with gold filigree. Materials like gold and silver have physically accurate luster and micro-scratches for total realism. The shot uses a masterful rule-of-thirds composition with a shallow depth of field (f/1.4). Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768698033200_384.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768698033200_384_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRqIAAABXRUJQVlA4IJYAAAAwBQCdASoUABQAPzmUwVmvKicjqAgB4CcJZQDH5ywA1kIsX9y9x/fk6+J8i+1zBIMEYAD+3p7uJlAx7Ypd5jJVwR8Kp+S8Kdb9MoFuiDhJIh3jlR73EDMpIuNwo5pKFU5W9fxsv7udOpZW3xaE9luMx2DHJ8LqaF03guTP1TkxQvRZVQpMeyiQsmc7zIswL4qJZiIAAAA=",
+    "createdAt": "2026-01-18T01:00:34.915Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 47,
+    "bookmarksCount": 4,
+    "subject": {
+      "gender": "male"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768698033200_384.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768698033200_384_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Exquisite high-fashion editorial for Vogue, emphasizing luxury and texture. A medium portrait of a striking and beautiful cyberpunk netrunner with holographic data-streams around her. Subject is gazing directly into the lens with an intense and soul-piercing look of confidence, identified as South Asian heritage. The scene is depicted on a heroic and grand scale with epic backlighting and softened by diffused natural morning light filtering through sheer curtains. The subject is in an elegant and breathtaking flowing McQueen gown with layers of fine lace. The skin texture is hyper-realistic, showing microscopic pores, fine hair, and perfect subsurface scattering of light. Extreme macro focus on the eyes reveals the intricate details of the iris and pupil. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768698084773_385.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768698084773_385_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRqAAAABXRUJQVlA4IJQAAAAQBQCdASoUABQAPzmSv1mvKaajqAgB4CcJZQDH6agAlaYtvujglTKgX4XwIFG/MBQAAP5IgSlDqJaE21dDZLMGygprJZ+dBZ/INqsv25ZUxAWlG3XJrnfAMMEz0Ui/8on+TDkG43rUiiIW55/I7Weoxl87pE1bksiRIsUvAMGGrTTIJ5BqCHbETFSutseiWqwAAAAA",
+    "createdAt": "2026-01-18T01:01:25.444Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 52,
+    "bookmarksCount": 7,
+    "subject": {
+      "gender": "female"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768698084773_385.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768698084773_385_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Hyper-realistic portraiture that captures the very essence of the soul. A extreme macro focus of a cool and alluring cyberpunk street-runner with glowing cybernetic enhancements. Subject is brooding with a mysterious and thoughtful look, lost in deep contemplation, identified as Polynesian heritage. The scene is bathed in a serene and heavenly peace that feels otherworldly and bathed in the soft and warm flicker of a thousand scented candles. The subject is wearing exquisite Dior haute couture with intricate hand-stitched detailing. The skin texture is hyper-realistic, showing microscopic pores, fine hair, and perfect subsurface scattering of light. Extreme macro focus on the eyes reveals the intricate details of the iris and pupil. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768698105380_386.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768698105380_386_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRqgAAABXRUJQVlA4IJwAAAAQBQCdASoUABQAPzmUwFmvKiajqAgB4CcJQBgfqYAucchdlaXKwCNslhJPIktCJ00gAP6554MQyIAPCQ/LdSW19eym9G63CZjm23hGkLh2ViW7wF0vVKonSMXrbaD/kmUI6NpwDvt5rq5kHfDvak8gcy6lYM7I7sZSzjEzGgFJB05MPXMbYIQ2M2O+lUeSWQkqSU7YeYE/VySAAAA=",
+    "createdAt": "2026-01-18T01:01:46.127Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 56,
+    "bookmarksCount": 4,
+    "subject": {
+      "gender": "male"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768698105380_386.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768698105380_386_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Aesthetic masterpiece photography with a focus on RAW materiality. A extreme macro focus of a glamorous Golden Age Hollywood starlet with perfectly styled waves and red lips. Subject is radiating warmth with a soft and genuine smile that lights up the entire frame, identified as Italian heritage. The scene is bathed in a serene and heavenly peace that feels otherworldly and artistically hit by rainbow-tinted prism lighting for a spectral aesthetic. The subject is wearing intricate and detailed royal Chanel armor style with gold filigree. Reflections on the eyes are razor-sharp, mirroring a detailed environment with uncanny accuracy. Extreme macro focus on the eyes reveals the intricate details of the iris and pupil. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768698125618_387.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768698125618_387_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRrIAAABXRUJQVlA4IKYAAAAwBQCdASoUABQAPzmSwFmvKaajqAgB4CcJZACxHxgBIOVoY6+1AmPaEjqVd8tjVUIlgADNaCZikFz/rYjMRRs5AgRYGj8MKFgR87C33YDMs2M/u+GF/cqFy5DPLPshb5LbckfKwVVHYdR9v7WhMIaV9+1GcmqU9qVT4bIIaGzqhblGU7jC+WorwrUl+q3/2G/gTFGrRdQaft+ObQx2tiNyBAK0AAAA",
+    "createdAt": "2026-01-18T01:02:06.867Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 38,
+    "bookmarksCount": 8,
+    "subject": {
+      "gender": "female"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768698125618_387.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768698125618_387_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Moody and artistic masterpiece noir with deep shadows and silvery highlights. A close-up portrait of a dashing and charming high-society billionaire with a sophisticated and alluring presence. Subject is wearing a subtle and alluring smirk that hints at a deep secret, identified as South Asian heritage. The scene is depicted on a heroic and grand scale with epic backlighting and placed under the mysterious and silvery glow of a full moonlight through mist. The subject is in stylish modern Balenciaga streetwear with bold silhouettes and textures. Reflections on the eyes are razor-sharp, mirroring a detailed environment with uncanny accuracy. The shot uses a masterful rule-of-thirds composition with a shallow depth of field (f/1.4). Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768698147715_388.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768698147715_388_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRoIAAABXRUJQVlA4IHYAAAAwBQCdASoUABQAPzmUwVmvKicjqAgB4CcJZwC4qA5FSoKwYgaBcQbvIzxn8Jp6RY+AAAD+z//3mmwXWk7yJP3TZP3CtoR0QaQ4iE+ZMQbuLoSo0CdSIcYwOi41pQjyUI7DqRyp/cfqY1WSdxIskwLpiKPAAAAA",
+    "createdAt": "2026-01-18T01:02:28.663Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 13,
+    "bookmarksCount": 0,
+    "subject": {
+      "gender": "male"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768698147715_388.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768698147715_388_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Exquisite high-fashion editorial for Vogue, emphasizing luxury and texture. A medium portrait of a majestic and radiant Egyptian queen with ornate gold jewelry and striking makeup. Subject is wearing a subtle and alluring smirk that hints at a deep secret, identified as French heritage. The scene is vibrant and electrically energetic with dynamic motion blur accents and embellished with glittering star-light effects and subtle lens flares. The subject is wearing a cool vintage designer Saint Laurent leather jacket with authentic wear. Materials like gold and silver have physically accurate luster and micro-scratches for total realism. Cinematic wide-angle framing captures the subject within a vast and detailed environment. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768698196581_389.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768698196581_389_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRqwAAABXRUJQVlA4IKAAAADwBACdASoUABQAPzmSwFmvKaajqAgB4CcJYwAAMW17WnWtjLaWvgrv1Z7trQbApgAA/qJ041Vk38lJt1Dpm0/fLqeG5mpfRycWy/VaCsrNLH80RX48sfZaUBll6fS3EcuPboGSwNZcL28M6cgvx/lHJFibNaWoiPl5XOzyqT9ZjNHh+xDAgaUG/a3hY99g83osq7dc4cNNWRQjuMVdQAAA",
+    "createdAt": "2026-01-18T01:03:17.329Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 52,
+    "bookmarksCount": 4,
+    "subject": {
+      "gender": "female"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768698196581_389.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768698196581_389_thumb.webp"
+  },
+  {
+    "modelId": "flux-klein-4b",
+    "prompt": "Aesthetic masterpiece photography with a focus on RAW materiality. A extreme macro focus of an athletic and perfectly sculpted olympic swimmer with defined muscle transitions. Subject is brooding with a mysterious and thoughtful look, lost in deep contemplation, identified as Egyptian heritage. The scene is vibrant and electrically energetic with dynamic motion blur accents and under professional studio softbox beauty lighting for a flawless and even glow. The subject is in sleek and detailed technical Gucci streetwear with layered high-tech fabrics. Sweat or water droplets on the skin have perfect refraction and surface tension properties. Extreme macro focus on the eyes reveals the intricate details of the iris and pupil. Exceptionally beautiful and handsome, winner of photography awards, masterwork, sharp focus, consistent anatomy, masterpiece, ultra-high fidelity, Unreal Engine 5.4 render style, path traced, octane render.",
+    "imageUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768698230632_390.webp",
+    "thumbnailUrl": "https://cdn.dreambeesai.com/file/printeregg/showcase/flux-klein-4b/1768698230632_390_thumb.webp",
+    "lqip": "data:image/webp;base64,UklGRqIAAABXRUJQVlA4IJYAAACwBACdASoUABQAPzmSu1gvKiWjqAqp4CcJQBdgAe//RMhC5urg5/OPw7zrAstAAP7O7JSV0VVDqUWd6yTeoGJNOztZYtBdoWNCjcal0Ko+swDSo3YRlzJ1qZr/nydcaUtdaUss4Yj4aXrwn7Ub3A3Yy9c21uvcT9oceI51VIQeO+9WVig0Nh4GhALoahXGPbkNC0AAAAA=",
+    "createdAt": "2026-01-18T01:03:51.649Z",
+    "userId": "system_seed_script_local",
+    "likesCount": 14,
+    "bookmarksCount": 0,
+    "subject": {
+      "gender": "male"
+    },
+    "vibe": "cinematic",
+    "localPath": "/showcase/flux-klein-4b/1768698230632_390.webp",
+    "localThumbPath": "/showcase/flux-klein-4b/1768698230632_390_thumb.webp"
   }
 ]

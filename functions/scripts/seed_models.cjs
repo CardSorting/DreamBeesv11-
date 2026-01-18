@@ -81,7 +81,7 @@ const MODELS = [
         description: 'Advanced Qwen model for high-fidelity image generation.',
         type: 'SDXL',
         order: 11,
-        isActive: true,
+        isActive: false,
         image: '/showcase/qwen-image-2512/cover.png'
     },
     {
