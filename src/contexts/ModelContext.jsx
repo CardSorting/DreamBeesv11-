@@ -39,7 +39,7 @@ export function ModelProvider({ children }) {
                     });
                 });
 
-                setAvailableModels(models.filter(m => m.id !== 'qwen-image-2512' && m.isActive !== false));
+                setAvailableModels(models);
 
                 // Prioritize saved model, then current selection (if any), then ZIT-model, then first available
                 if (models.length > 0) {

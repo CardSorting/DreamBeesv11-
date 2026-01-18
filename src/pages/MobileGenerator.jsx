@@ -348,7 +348,7 @@ export default function MobileGenerator() {
                         <div style={{ padding: '8px 12px', fontSize: '0.85rem', fontWeight: '600', color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                             Select Model
                         </div>
-                        {availableModels?.map(model => (
+                        {availableModels?.filter(m => m.isActive !== false).map(model => (
                             <button
                                 key={model.id}
                                 onClick={() => {

@@ -42,7 +42,7 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
     if (!isOpen) return null;
 
     // Filter models safely
-    const filteredModels = (models || []).filter(model => {
+    const filteredModels = (models || []).filter(model => model.isActive !== false).filter(model => {
         if (!model) return false;
         const nameMatch = model.name?.toLowerCase().includes(searchQuery.toLowerCase());
         const tagMatch = model.tags?.some(tag => tag?.toLowerCase().includes(searchQuery.toLowerCase()));
