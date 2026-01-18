@@ -23,12 +23,12 @@ const MinimalHeader = () => {
     }, [currentUser?.uid]);
 
     const navItems = [
-        { path: '/', label: 'Home', icon: Home },
+        { path: '/', label: 'Home', icon: Home, hideOnMobile: true },
         { path: '/discovery', label: 'Discovery', icon: Compass },
-        { path: '/generate', label: 'Studio', icon: Zap },
+        { path: '/generate', label: 'Studio', icon: Zap, hideOnMobile: true },
         { path: '/gallery', label: 'Gallery', icon: Image },
-        { path: '/videos', label: 'Videos', icon: Film },
-        { path: '/profile', label: 'Profile', icon: User },
+        { path: '/video', label: 'Videos', icon: Film, hideOnMobile: true },
+        { path: '/profile', label: 'Profile', icon: User, hideOnMobile: true },
     ];
 
     return (
@@ -46,7 +46,7 @@ const MinimalHeader = () => {
                             <Link
                                 key={item.path}
                                 to={item.path}
-                                className={`nav-link ${isActive ? 'active' : ''}`}
+                                className={`nav-link ${isActive ? 'active' : ''} ${item.hideOnMobile ? 'hide-mobile' : ''}`}
                             >
                                 <item.icon size={18} className="nav-icon" />
                                 <span className="nav-label">{item.label}</span>
@@ -194,6 +194,10 @@ const MinimalHeader = () => {
                 /* Mobile Optimization */
                 @media (max-width: 768px) {
                     .nav-label {
+                        display: none;
+                    }
+                    
+                    .nav-link.hide-mobile {
                         display: none;
                     }
                     
