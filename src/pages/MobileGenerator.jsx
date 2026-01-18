@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
 import { useGenerationLogic } from '../hooks/generator/useGenerationLogic';
 import { db } from '../firebase';
-import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { Send, Sparkles, Bot, User as UserIcon, Image as ImageIcon, Download, RefreshCw, Copy, X, ChevronDown, Check } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import html2canvas from 'html2canvas';
@@ -49,6 +49,62 @@ export default function MobileGenerator() {
         return () => clearInterval(interval);
     }, [generating]);
 
+    // History Fetching (Pull-based)
+    const fetchMessages = async () => {
+        if (!currentUser) return;
+        try {
+            const q = query(
+                collection(db, 'generation_queue'),
+                where('userId', '==', currentUser.uid),
+                orderBy('createdAt', 'desc'),
+                limit(20)
+            );
+
+            const snapshot = await getDocs(q);
+            const jobs = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            })).reverse();
+
+            const chatMessages = jobs.flatMap(job => {
+                const msgs = [];
+                if (job.prompt) {
+                    msgs.push({
+                        id: job.id + '_prompt',
+                        role: 'user',
+                        content: job.prompt,
+                        createdAt: job.createdAt
+                    });
+                }
+                if (job.status === 'completed' && job.imageUrl) {
+                    msgs.push({
+                        id: job.id + '_image',
+                        role: 'assistant',
+                        type: 'image',
+                        content: job.imageUrl,
+                        createdAt: job.createdAt,
+                        jobId: job.id,
+                        model: job.modelId,
+                        prompt: job.prompt
+                    });
+                } else if (job.status === 'failed') {
+                    msgs.push({
+                        id: job.id + '_error',
+                        role: 'assistant',
+                        type: 'error',
+                        content: 'Generation failed.',
+                        createdAt: job.createdAt
+                    });
+                }
+                return msgs;
+            });
+
+            setMessages(chatMessages);
+        } catch (error) {
+            console.error("Error fetching chat history:", error);
+        }
+    };
+
     // Logic Hook
     const { handleGenerate } = useGenerationLogic({
         prompt: inputValue,
@@ -70,6 +126,8 @@ export default function MobileGenerator() {
             // but effectively the remote message will replace it.
             // We'll clear local "generating" message types.
             setLocalMessages(prev => prev.filter(m => m.type !== 'generating'));
+            // Refresh history
+            fetchMessages();
             // Force scroll to bottom when generation completes
             setTimeout(scrollToBottom, 100);
         },
@@ -96,71 +154,6 @@ export default function MobileGenerator() {
         scrollToBottom();
     }, [displayMessages.length, loadingStatus, generating]);
 
-    // History Listener
-    useEffect(() => {
-        if (!currentUser) return;
-
-        const q = query(
-            collection(db, 'generation_queue'),
-            where('userId', '==', currentUser.uid),
-            orderBy('createdAt', 'desc'),
-            limit(20)
-        );
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const jobs = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            })).reverse();
-
-            const chatMessages = jobs.flatMap(job => {
-                const msgs = [];
-                // User Prompt
-                if (job.prompt) {
-                    msgs.push({
-                        id: job.id + '_prompt',
-                        role: 'user',
-                        content: job.prompt,
-                        createdAt: job.createdAt
-                    });
-                }
-                // Assistant Response
-                if (job.status === 'completed' && job.imageUrl) {
-                    msgs.push({
-                        id: job.id + '_image',
-                        role: 'assistant',
-                        type: 'image',
-                        content: job.imageUrl,
-                        createdAt: job.createdAt,
-                        jobId: job.id,
-                        model: job.modelId,
-                        prompt: job.prompt // Store prompt for regeneration
-                    });
-                } else if (job.status === 'processing' || job.status === 'queued') {
-                    msgs.push({
-                        id: job.id + '_loading',
-                        role: 'assistant',
-                        type: 'loading',
-                        content: 'Generating...',
-                        createdAt: job.createdAt
-                    });
-                } else if (job.status === 'failed') {
-                    msgs.push({
-                        id: job.id + '_error',
-                        role: 'assistant',
-                        type: 'error',
-                        content: 'Generation failed.',
-                        createdAt: job.createdAt
-                    });
-                }
-                return msgs;
-            });
-
-            setMessages(chatMessages);
-        });
-
-        return () => unsubscribe();
-    }, [currentUser?.uid]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

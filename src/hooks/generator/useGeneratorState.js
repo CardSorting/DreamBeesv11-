@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { db } from '../../firebase';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { useUserInteractions } from '../../contexts/UserInteractionsContext';
 
 export function useGeneratorState() {
     const [searchParams] = useSearchParams();
     const { currentUser } = useAuth();
+    // Centralized Profile Data
+    const { userProfile } = useUserInteractions();
 
     // UI State
     const [isModelModalOpen, setIsModelModalOpen] = useState(false);
@@ -31,37 +32,11 @@ export function useGeneratorState() {
     const [negPrompt, setNegPrompt] = useState(searchParams.get('negPrompt') || "");
     const [seed, setSeed] = useState(parseInt(searchParams.get('seed')) || -1);
 
-    // Advanced / User State
-    const [zaps, setZaps] = useState(5);
-    const [reels, setReels] = useState(null);
-    const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+    // Advanced / User State (From Context)
+    const zaps = userProfile?.zaps || 5;
+    const reels = userProfile?.reels || 0;
+    const subscriptionStatus = userProfile?.subscriptionStatus || 'inactive';
     const [useTurbo, setUseTurbo] = useState(false);
-
-    // Video State
-    const [generationMode, setGenerationMode] = useState('image'); // 'image' | 'video'
-    const [videoDuration, setVideoDuration] = useState(6);
-    const [videoResolution, setVideoResolution] = useState('1080p');
-    const [currentJobType, setCurrentJobType] = useState('image');
-
-    // Reference Image
-    const [referenceImage, setReferenceImage] = useState(null);
-
-    // Sync User Data
-    useEffect(() => {
-        if (!currentUser) return;
-        const unsub = onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                setZaps(data.zaps !== undefined ? data.zaps : (data.credits !== undefined ? data.credits : 5));
-                setReels(data.reels !== undefined ? data.reels : 0);
-                setSubscriptionStatus(data.subscriptionStatus);
-            } else {
-                setZaps(5);
-                setSubscriptionStatus('inactive');
-            }
-        });
-        return () => unsub();
-    }, [currentUser?.uid]);
 
     // Timer Logic
     useEffect(() => {

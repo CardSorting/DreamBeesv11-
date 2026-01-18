@@ -2,25 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Hexagon, Home, Compass, Zap, Film, User, Plus, Image, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
+import { Hexagon, Home, Compass, Zap, Film, User, Plus, Image, ArrowLeft } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useUserInteractions } from '../contexts/UserInteractionsContext';
 
 const MinimalHeader = () => {
     const location = useLocation();
     const activePath = location.pathname;
     const { currentUser } = useAuth();
-    const [zaps, setZaps] = useState(0);
-
-    useEffect(() => {
-        if (!currentUser) return;
-        const unsub = onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                setZaps(data.zaps !== undefined ? data.zaps : (data.credits !== undefined ? data.credits : 0));
-            }
-        });
-        return () => unsub();
-    }, [currentUser?.uid]);
+    const { userProfile } = useUserInteractions();
+    const zaps = userProfile?.zaps || 0;
 
     const navItems = [
         { path: '/', label: 'Home', icon: Home, hideOnMobile: true },

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { functions, db } from '../firebase';
-import { collection, query, where, orderBy, limit, onSnapshot, doc } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, onSnapshot, doc, getDocs } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
+import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { Upload, X, RotateCcw, Sparkles, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { compressImage } from '../utils';
@@ -54,48 +55,47 @@ const LOADING_MSG = "MAKING MAGIC...";
 
 export default function DressUp() {
     const { currentUser } = useAuth();
+    const { userProfile } = useUserInteractions(); // Centralized
     const [currentImage, setCurrentImage] = useState(null); // base64
     const [viewMode, setViewMode] = useState('main'); // 'main' | 'fashion' | 'accessories' | 'costumes'
-    const [activeTab, setActiveTab] = useState('Roles 🕵️'); // Default to Roles since Costumes is now a drill-down
+    const [activeTab, setActiveTab] = useState('Roles 🕵️');
     const [page, setPage] = useState(0);
     const [generating, setGenerating] = useState(false);
-    const [zaps, setZaps] = useState(0);
-    const [reels, setReels] = useState(0);
-    const [subscriptionStatus, setSubscriptionStatus] = useState('inactive');
+
+    // Derived from Context
+    const zaps = userProfile?.zaps || 0;
+
     const [userImages, setUserImages] = useState([]);
-    const listenerRef = useRef(null);
+    const listenerRef = useRef(null); // Keep for the generation queue listener specific to the active job
 
     // Reset page when tab changes
     useEffect(() => {
         setPage(0);
     }, [activeTab]);
 
-    // Fetch user's recent images for "Stickers"
+    // Fetch user's recent images for "Stickers" (One-time Fetch)
     useEffect(() => {
         if (!currentUser) return;
-        const unsubUser = onSnapshot(doc(db, "users", currentUser.uid), (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                setZaps(data.zaps !== undefined ? data.zaps : (data.credits !== undefined ? data.credits : 0));
-                setReels(data.reels || 0);
-                setSubscriptionStatus(data.subscriptionStatus || 'inactive');
-            }
-        });
 
-        const q = query(
-            collection(db, 'generation_queue'),
-            where('userId', '==', currentUser.uid),
-            orderBy('createdAt', 'desc'),
-            limit(10)
-        );
-        const unsubQueue = onSnapshot(q, (snapshot) => {
-            const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setUserImages(docs);
-        });
+        const fetchHistory = async () => {
+            try {
+                const q = query(
+                    collection(db, 'generation_queue'),
+                    where('userId', '==', currentUser.uid),
+                    orderBy('createdAt', 'desc'),
+                    limit(10)
+                );
+                const snapshot = await getDocs(q);
+                const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setUserImages(docs);
+            } catch (err) {
+                console.warn("Failed to load sticker history:", err);
+            }
+        };
+
+        fetchHistory();
 
         return () => {
-            unsubUser();
-            unsubQueue();
             if (listenerRef.current) {
                 listenerRef.current();
             }

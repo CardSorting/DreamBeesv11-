@@ -24,6 +24,14 @@ export function UserInteractionsProvider({ children }) {
     const [bookmarks, setBookmarks] = useState([]);
     const [hidden, setHidden] = useState([]);
 
+    // User Profile Data (Centralized Sync)
+    const [userProfile, setUserProfile] = useState({
+        zaps: 5,
+        reels: 0,
+        credits: 5,
+        subscriptionStatus: 'inactive'
+    });
+
     useEffect(() => {
         if (!currentUser?.uid) {
             setLikedIds(new Set());
@@ -67,10 +75,27 @@ export function UserInteractionsProvider({ children }) {
             console.warn("Global hidden listener failed:", error);
         });
 
+        // Listener for User Profile (Zaps, Credits, Subscription)
+        const userDocRef = doc(db, 'users', uid);
+        const unsubProfile = onSnapshot(userDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setUserProfile({
+                    zaps: data.zaps !== undefined ? data.zaps : (data.credits !== undefined ? data.credits : 5),
+                    credits: data.credits !== undefined ? data.credits : 5,
+                    reels: data.reels || 0,
+                    subscriptionStatus: data.subscriptionStatus || 'inactive'
+                });
+            }
+        }, (error) => {
+            console.warn("Global profile listener failed:", error);
+        });
+
         return () => {
             unsubLikes();
             unsubBookmarks();
             unsubHidden();
+            unsubProfile();
         };
     }, [currentUser?.uid]);
 
@@ -212,6 +237,101 @@ export function UserInteractionsProvider({ children }) {
         }
     };
 
+    // --- App Likes Logic (Moved from useAppLikes) ---
+    const [likedAppIds, setLikedAppIds] = useState(new Set());
+
+    useEffect(() => {
+        if (!currentUser?.uid) {
+            setLikedAppIds(new Set());
+            return;
+        }
+
+        const uid = currentUser.uid;
+        const likedAppsRef = collection(db, 'users', uid, 'likedApps');
+
+        const unsubLikedApps = onSnapshot(likedAppsRef, (snapshot) => {
+            const newSet = new Set();
+            snapshot.forEach((doc) => {
+                newSet.add(doc.id);
+            });
+            setLikedAppIds(newSet);
+        }, (error) => {
+            console.warn("Global likedApps listener failed:", error);
+        });
+
+        return () => {
+            unsubLikedApps();
+        };
+    }, [currentUser?.uid]);
+
+    const isAppLiked = (appId) => likedAppIds.has(appId);
+
+    // Adapted from useAppLikes toggle logic but simplified for context
+    // This uses Transaction in a cloud function ideally, but we'll port the client-side transaction logic 
+    // from useAppLikes here or keep it simple. useAppLikes used client-side transaction.
+    // For consistency with other interactions here, we should ideally use a Callable if available, 
+    // but the original code used client SDK transaction. To minimize regression risk, I will port 
+    // the client-side transaction logic here.
+
+    // We need to import runTransaction for this.
+    const toggleAppLike = async (appId) => {
+        if (!currentUser) return false;
+
+        const uid = currentUser.uid;
+        // Optimistic update
+        const currentlyLiked = likedAppIds.has(appId);
+        setLikedAppIds(prev => {
+            const next = new Set(prev);
+            if (currentlyLiked) next.delete(appId);
+            else next.add(appId);
+            return next;
+        });
+
+        try {
+            const { runTransaction } = await import('firebase/firestore'); // Dynamic import or ensure top-level import
+            const { doc } = await import('firebase/firestore');
+
+            const appRef = doc(db, 'apps', appId);
+            const userLikeRef = doc(db, 'users', uid, 'likedApps', appId);
+
+            await runTransaction(db, async (transaction) => {
+                const likeDoc = await transaction.get(userLikeRef);
+                const exists = likeDoc.exists();
+
+                const appDoc = await transaction.get(appRef);
+                if (!appDoc.exists()) {
+                    throw new Error("App does not exist!");
+                }
+
+                const currentLikes = appDoc.data().likeCount || 0;
+                let newLikes = currentLikes;
+
+                if (exists) {
+                    transaction.delete(userLikeRef);
+                    newLikes = Math.max(0, currentLikes - 1);
+                } else {
+                    transaction.set(userLikeRef, {
+                        timestamp: new Date()
+                    });
+                    newLikes = currentLikes + 1;
+                }
+
+                transaction.update(appRef, { likeCount: newLikes });
+            });
+            return true;
+        } catch (error) {
+            console.error("Error toggling app like:", error);
+            // Revert
+            setLikedAppIds(prev => {
+                const next = new Set(prev);
+                if (currentlyLiked) next.add(appId);
+                else next.delete(appId);
+                return next;
+            });
+            return false;
+        }
+    };
+
     const value = {
         likedIds,
         bookmarkedIds,
@@ -223,7 +343,12 @@ export function UserInteractionsProvider({ children }) {
         hiddenIds,
         isHidden,
         toggleLike,
-        toggleBookmark
+        toggleBookmark,
+        userProfile, // Global Sync
+        // New App Likes
+        likedAppIds,
+        isAppLiked,
+        toggleAppLike
     };
 
     return (

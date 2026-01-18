@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
-import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { getOptimizedImageUrl, getLCPAttributes, preloadImage } from '../utils';
 import { ChevronLeft, ChevronRight, Clock, Wand2 } from 'lucide-react';
@@ -30,49 +30,46 @@ export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt
     useEffect(() => {
         if (!currentUser) return;
 
-        const q = query(
-            collection(db, 'generation_queue'),
-            where('userId', '==', currentUser.uid),
-            where('status', '==', 'completed'),
-            orderBy('createdAt', 'desc'),
-            limit(20)
-        );
+        const fetchHistory = async () => {
+            try {
+                const q = query(
+                    collection(db, 'generation_queue'),
+                    where('userId', '==', currentUser.uid),
+                    where('status', '==', 'completed'),
+                    orderBy('createdAt', 'desc'),
+                    limit(20)
+                );
 
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const jobs = snapshot.docs
-                .map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }))
-                .filter(job => !job.hidden); // Filter out hidden (disliked) items
+                const snapshot = await getDocs(q);
+                const jobs = snapshot.docs
+                    .map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }))
+                    .filter(job => !job.hidden);
 
-            const isNewItem = history.length > 0 && jobs.length > 0 && jobs[0].id !== history[0].id;
-            setHistory(jobs);
-            setLoading(false);
+                const isNewItem = history.length > 0 && jobs.length > 0 && jobs[0].id !== history[0].id;
+                setHistory(jobs);
+                setLoading(false);
 
-            // Programmatic Preloading for LCP
-            jobs.slice(0, 5).forEach(job => {
-                const preloadUrl = getOptimizedImageUrl(job.thumbnailUrl || job.imageUrl);
-                preloadImage(preloadUrl, 'auto'); // History is secondary but good to preload
-            });
+                // Programmatic Preloading for LCP
+                jobs.slice(0, 5).forEach(job => {
+                    const preloadUrl = getOptimizedImageUrl(job.thumbnailUrl || job.imageUrl);
+                    preloadImage(preloadUrl, 'auto');
+                });
 
-            if (isNewItem && scrollContainerRef.current) {
-                setTimeout(() => {
-                    scrollContainerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
-                }, 300);
+                if (isNewItem && scrollContainerRef.current) {
+                    setTimeout(() => {
+                        scrollContainerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+                    }, 300);
+                }
+            } catch (error) {
+                console.error("Error fetching history:", error);
+                setLoading(false);
             }
-        }, (error) => {
-            console.error("Error fetching history:", error);
-            // Ignore index building errors which are temporary
-            if (error.code === 'failed-precondition') {
-                console.warn("History index is building...");
-            } else {
-                toast.error("Could not sync history", { id: 'history-error' });
-            }
-            setLoading(false);
-        });
+        };
 
-        return () => unsubscribe();
+        fetchHistory();
     }, [currentUser?.uid]);
 
     const scroll = (direction) => {
