@@ -157,7 +157,7 @@ export const processImageTask = async (req) => {
             });
         } else if (modelId === 'flux-klein-4b') {
             // Flux uses async job pattern: submit, then poll for result
-            const FLUX_ENDPOINT = "https://mariecoderinc--flux-klein-4b-fastapi-app.modal.run";
+            const FLUX_ENDPOINT = "https://mariecoderinc--flux-klein-4b-flux-fastapi-app.modal.run";
 
             // 1. Submit job
             let submitResponse;
