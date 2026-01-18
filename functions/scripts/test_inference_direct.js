@@ -2,6 +2,12 @@
  * Direct test of backend inference endpoints
  * This tests the actual inference APIs without going through Firebase Functions
  */
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 async function fetchWithTimeout(resource, options = {}) {
     const { timeout = 60000 } = options;
@@ -46,7 +52,7 @@ async function testModalInference() {
                 console.log(`   Job ID: ${job_id}`);
 
                 // 2. Poll
-                for (let i = 0; i < 45; i++) {
+                for (let i = 0; i < 90; i++) {
                     await new Promise(r => setTimeout(r, 2000));
                     const res = await fetch(`${baseUrl}/result/${job_id}`);
                     if (res.status === 202) continue;
@@ -84,7 +90,7 @@ async function testModalInference() {
                 console.log(`   Job ID: ${job_id}`);
 
                 // 2. Poll
-                for (let i = 0; i < 45; i++) {
+                for (let i = 0; i < 90; i++) {
                     await new Promise(r => setTimeout(r, 2000));
                     const res = await fetch(`${baseUrl}/result/${job_id}`);
                     if (res.status === 202) continue;
@@ -130,7 +136,7 @@ async function testModalInference() {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(body),
-                    timeout: 180000 // Increased timeout to 3 minutes
+                    timeout: 180000
                 });
                 return response;
             }
@@ -163,6 +169,7 @@ async function testModalInference() {
             const contentType = response.headers.get("content-type") || "";
             let imageSize = 0;
             let hasImage = false;
+            let buffer = null;
 
             if (contentType.includes("application/json")) {
                 const jsonData = await response.json();
@@ -194,29 +201,42 @@ async function testModalInference() {
                     }
                 }
             } else if (contentType.includes("image/")) {
-                const buffer = Buffer.from(await response.arrayBuffer());
+                buffer = Buffer.from(await response.arrayBuffer());
                 imageSize = buffer.length;
                 hasImage = true;
                 console.log(`   Response type: ${contentType}`);
                 console.log(`   ✓ Image size: ${(imageSize / 1024).toFixed(2)} KB`);
             } else {
                 // Try to detect if it's an image anyway
-                const buffer = Buffer.from(await response.arrayBuffer());
+                const ab = await response.arrayBuffer();
+                buffer = Buffer.from(ab);
                 imageSize = buffer.length;
-                if (imageSize > 1000) { // Likely an image if > 1KB
+                if (imageSize > 1000) {
                     hasImage = true;
                     console.log(`   Response type: Binary (likely image)`);
                     console.log(`   ✓ Image size: ${(imageSize / 1024).toFixed(2)} KB`);
                 }
             }
 
-            if (hasImage) {
-                console.log(`   ✓ SUCCESS: Image generated successfully`);
+            if (hasImage && buffer) {
+                // Save image
+                const filename = `test_output_${testCase.modelId}.png`;
+                const outputPath = path.resolve(__dirname, "../../", filename);
+                fs.writeFileSync(outputPath, buffer);
+                console.log(`   ✓ SUCCESS: Image saved to ${filename}`);
                 results.push({
                     name: testCase.name,
                     success: true,
                     elapsed: parseFloat(elapsed),
                     imageSize
+                });
+            } else if (hasImage) {
+                console.log(`   ✓ SUCCESS: Image generated (URL or Base64)`);
+                results.push({
+                    name: testCase.name,
+                    success: true,
+                    elapsed: parseFloat(elapsed),
+                    imageSize: 0
                 });
             } else {
                 console.log(`   ⚠ WARNING: Response received but no image detected`);
