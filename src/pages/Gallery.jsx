@@ -15,6 +15,7 @@ export default function Gallery() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedIds, setSelectedIds] = useState([]);
     const [isSelectionMode, setIsSelectionMode] = useState(false);
+    const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'mockup', 'image', 'video'
     const { currentUser } = useAuth();
 
     const [lastVisibleId, setLastVisibleId] = useState(null);
@@ -27,12 +28,14 @@ export default function Gallery() {
         // Initial fetch
         async function fetchInitial() {
             if (!currentUser) return;
+            setLoading(true);
             try {
                 const api = httpsCallable(functions, 'api');
                 const result = await api({
                     action: 'getUserImages',
                     limit: LIMIT,
-                    searchQuery: searchQuery || undefined
+                    searchQuery: searchQuery || undefined,
+                    filter: activeFilter // Pass filter
                 });
 
                 const data = result.data;
@@ -61,7 +64,7 @@ export default function Gallery() {
         }
 
         fetchInitial();
-    }, [currentUser, searchQuery]); // Re-run if user or search changes
+    }, [currentUser, searchQuery, activeFilter]); // Re-run if filter changes
 
     const loadMore = async () => {
         if (!currentUser || !lastVisibleId || loadingMore || !hasMore) return;
@@ -73,7 +76,8 @@ export default function Gallery() {
                 limit: LIMIT,
                 startAfterId: lastVisibleId,
                 startAfterCollection: lastVisibleType,
-                searchQuery: searchQuery || undefined
+                searchQuery: searchQuery || undefined,
+                filter: activeFilter
             });
 
             const data = result.data;
@@ -262,9 +266,34 @@ export default function Gallery() {
                     </div>
                 </div>
 
-                {/* Sub-header / Search */}
-                <div style={{ display: 'flex', gap: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '24px' }}>
-                    <div className="search-wrapper" style={{ flex: 1, maxWidth: '400px', background: 'transparent', border: 'none', padding: 0 }}>
+                {/* Sub-header / Search & Filter */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', borderBottom: '1px solid var(--color-border)', paddingBottom: '24px' }}>
+
+                    {/* Filter Tabs */}
+                    <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+                        {['all', 'mockup', 'image'].map(f => (
+                            <button
+                                key={f}
+                                onClick={() => setActiveFilter(f)}
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '100px',
+                                    fontSize: '0.9rem',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    border: 'none',
+                                    textTransform: 'capitalize',
+                                    background: activeFilter === f ? 'white' : 'transparent',
+                                    color: activeFilter === f ? 'black' : 'var(--color-text-muted)',
+                                    transition: 'all 0.2s'
+                                }}
+                            >
+                                {f === 'all' ? 'All' : f + 's'}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="search-wrapper" style={{ flex: 1, height: '44px', background: 'transparent', border: 'none', padding: 0 }}>
                         <Search className="search-icon" size={18} color="var(--color-text-muted)" style={{ left: 0 }} />
                         <input
                             type="text"
@@ -272,7 +301,7 @@ export default function Gallery() {
                             className="search-input"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            style={{ paddingLeft: '32px', background: 'transparent', border: 'none', fontSize: '1rem' }}
+                            style={{ paddingLeft: '32px', background: 'transparent', border: 'none', fontSize: '1rem', height: '100%' }}
                         />
                     </div>
                 </div>
