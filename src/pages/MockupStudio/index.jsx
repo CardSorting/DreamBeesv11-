@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
+import './MockupStudio.css';
 
 import { Button } from './components/Button';
 import { Spinner } from './components/Spinner';
@@ -77,7 +78,7 @@ const MockupStudio = () => {
                         return {
                             id: doc.id,
                             ...data,
-                            icon: <IconComponent className="w-8 h-8" />
+                            icon: <IconComponent className="ms-icon-lg" />
                         };
                     });
                     // specific sort if needed, otherwise random/insertion order
@@ -98,9 +99,9 @@ const MockupStudio = () => {
 
     // Icons for Categories (SVG strings ported)
     const categoryIcons = {
-        All: (<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>),
-        Vehicles: (<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14l-2.5-5h-9L5 12z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 12h16v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4z" /></svg>),
-        Electronics: (<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>),
+        All: (<svg className="ms-icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>),
+        Vehicles: (<svg className="ms-icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 12h14l-2.5-5h-9L5 12z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 12h16v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4z" /></svg>),
+        Electronics: (<svg className="ms-icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>),
     };
 
     const getIcon = (cat) => categoryIcons[cat] || categoryIcons['All'];
@@ -314,42 +315,42 @@ const MockupStudio = () => {
 
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 pb-20">
+        <div className="mockup-studio-page">
 
 
-            <main className="flex-grow container mx-auto px-4 py-8 sm:px-6 lg:px-8 flex flex-col">
+            <main className="mockup-studio-main">
 
                 {/* Error Notification */}
                 {error && (
-                    <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg relative flex items-center gap-3">
+                    <div className="ms-error-alert">
                         <span className="font-bold">Error:</span> {error}
-                        <button onClick={() => setError(null)} className="ml-auto">✕</button>
+                        <button onClick={() => setError(null)} className="ms-error-close">✕</button>
                     </div>
                 )}
 
                 {/* State: IDLE (Upload Area) */}
                 {appState === AppState.IDLE && (
-                    <div className="flex-grow flex flex-col items-center justify-center py-12">
-                        <div className="text-center space-y-4 max-w-2xl mb-12">
-                            <h2 className="text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">Mockup Studio</h2>
-                            <p className="text-xl text-slate-500 font-light">Turn designs into photorealistic product shots instantly.</p>
+                    <div className="ms-idle-container">
+                        <div className="ms-title-block">
+                            <h2>Mockup Studio</h2>
+                            <p>Turn designs into photorealistic product shots instantly.</p>
                         </div>
 
                         <div
-                            className={`relative w-full max-w-3xl aspect-[2/1] min-h-[320px] rounded-3xl border-2 border-dashed transition-all duration-300 ease-out cursor-pointer group flex flex-col items-center justify-center p-8 ${isDragging ? 'border-indigo-500 bg-indigo-50/30' : 'border-slate-300 bg-white hover:border-indigo-400 hover:bg-slate-50'}`}
+                            className={`ms-upload-dropzone ${isDragging ? 'is-dragging' : ''}`}
                             onDragEnter={handleDragEnter} onDragLeave={handleDragLeave} onDragOver={handleDragOver} onDrop={handleDrop} onClick={triggerFileInput}
                         >
-                            <div className="flex flex-col items-center space-y-6">
-                                <div className={`w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-300 ${isDragging ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400 group-hover:bg-indigo-600 group-hover:text-white'}`}>
-                                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            <div className="ms-dropzone-content">
+                                <div className="ms-dropzone-icon-wrapper">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                 </div>
-                                <div className="text-center space-y-2">
-                                    <h3 className="text-xl font-semibold text-slate-900">Upload your design</h3>
-                                    <p className="text-slate-500 text-sm">Drag and drop or click to browse</p>
+                                <div className="ms-dropzone-text">
+                                    <h3>Upload your design</h3>
+                                    <p>Drag and drop or click to browse</p>
                                 </div>
-                                <div className="flex gap-2">
+                                <div className="ms-file-formats">
                                     {['PNG', 'JPG', 'WEBP'].map(ext => (
-                                        <span key={ext} className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md">{ext}</span>
+                                        <span key={ext} className="ms-format-tag">{ext}</span>
                                     ))}
                                 </div>
                             </div>
@@ -361,32 +362,32 @@ const MockupStudio = () => {
 
                 {/* State: BULK RESULT */}
                 {appState === AppState.BULK_RESULT && (
-                    <div className="max-w-4xl mx-auto w-full mt-12 bg-white rounded-2xl shadow-xl border border-slate-200 p-10 text-center">
-                        <h2 className="text-3xl font-extrabold text-slate-900 mb-4">Collection Ready!</h2>
-                        <div className="flex justify-center gap-4 mt-8">
-                            <Button onClick={downloadZip} className="px-8 py-4 text-lg">Download ZIP</Button>
-                            <Button variant="outline" onClick={handleReset} className="px-8 py-4 text-lg">Create New</Button>
+                    <div className="ms-bulk-result-container">
+                        <h2>Collection Ready!</h2>
+                        <div className="ms-bulk-actions">
+                            <Button onClick={downloadZip} className="ms-btn-lg">Download ZIP</Button>
+                            <Button variant="outline" onClick={handleReset} className="ms-btn-lg">Create New</Button>
                         </div>
                     </div>
                 )}
 
                 {/* State: RESULT (Single) */}
                 {appState === AppState.RESULT && generatedImageUrl && (
-                    <div className="max-w-6xl mx-auto w-full mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
+                    <div className="ms-result-grid animate-fade-in">
                         {/* Image Display */}
-                        <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-2 overflow-hidden">
-                            <img src={generatedImageUrl} alt="Generated Mockup" className="w-full h-auto rounded-xl" />
+                        <div className="ms-result-image-card">
+                            <img src={generatedImageUrl} alt="Generated Mockup" />
                         </div>
 
                         {/* Actions */}
-                        <div className="flex flex-col justify-center space-y-6">
-                            <h2 className="text-3xl font-bold">Your Mockup is Ready</h2>
-                            <p className="text-slate-600">Generated with {selectedPreset ? selectedPreset.label : 'custom settings'}.</p>
+                        <div className="ms-result-details">
+                            <h2>Your Mockup is Ready</h2>
+                            <p>Generated with {selectedPreset ? selectedPreset.label : 'custom settings'}.</p>
 
-                            <div className="flex flex-col gap-4">
-                                <Button onClick={downloadImage} className="w-full py-4 text-lg">Download Image</Button>
-                                <Button variant="outline" onClick={() => setAppState(AppState.PREVIEW)} className="w-full py-4">Make Another Variation</Button>
-                                <Button variant="secondary" onClick={handleReset} className="w-full py-4">Start Over</Button>
+                            <div className="ms-result-actions">
+                                <Button onClick={downloadImage} className="ms-w-full ms-btn-lg">Download Image</Button>
+                                <Button variant="outline" onClick={() => setAppState(AppState.PREVIEW)} className="ms-w-full">Make Another Variation</Button>
+                                <Button variant="secondary" onClick={handleReset} className="ms-w-full">Start Over</Button>
                             </div>
                         </div>
                     </div>
@@ -395,28 +396,28 @@ const MockupStudio = () => {
 
                 {/* State: PREVIEW & GENERATING */}
                 {(appState === AppState.PREVIEW || appState === AppState.GENERATING || appState === AppState.BULK_GENERATING) && (
-                    <div className={`max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 mt-4 ${appState === AppState.RESULT ? 'hidden' : ''}`}>
+                    <div className={`ms-workspace-grid ${appState === AppState.RESULT ? 'hidden' : ''}`}>
 
                         {/* Left Column: Preview */}
-                        <div className="lg:col-span-4 flex flex-col space-y-4">
-                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col sticky top-24">
-                                <div className="p-4 border-b border-slate-100 flex justify-between items-center">
-                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Source</h3>
-                                    <button onClick={handleReset} className="text-xs text-indigo-600 hover:text-indigo-800 font-medium">Replace</button>
+                        <div className="ms-preview-column">
+                            <div className="ms-preview-card">
+                                <div className="ms-preview-header">
+                                    <h3 className="ms-preview-label">Source</h3>
+                                    <button onClick={handleReset} className="ms-replace-btn">Replace</button>
                                 </div>
-                                <div className="p-6 bg-slate-50 flex items-center justify-center min-h-[300px]">
+                                <div className="ms-preview-content">
                                     {previewUrl && (
-                                        <div className="relative shadow-xl rounded-lg overflow-hidden">
-                                            <img src={previewUrl} alt="Preview" className={`max-w-full max-h-[400px] object-contain ${appState === AppState.GENERATING ? 'opacity-50 blur-sm' : ''}`} />
-                                            {appState === AppState.GENERATING && <div className="absolute inset-0 flex items-center justify-center"><Spinner /></div>}
+                                        <div className="ms-preview-image-wrapper">
+                                            <img src={previewUrl} alt="Preview" className={`${appState === AppState.GENERATING ? 'loading' : ''}`} />
+                                            {appState === AppState.GENERATING && <div className="ms-preview-loader-overlay"><Spinner /></div>}
                                         </div>
                                     )}
                                 </div>
                                 {appState === AppState.BULK_GENERATING && bulkProgress && (
-                                    <div className="p-4 bg-indigo-50 border-t border-indigo-100">
-                                        <p className="text-indigo-700 font-bold mb-2">Generating... {bulkProgress.current} / {bulkProgress.total}</p>
-                                        <div className="w-full bg-indigo-200 rounded-full h-2">
-                                            <div className="bg-indigo-600 h-2 rounded-full transition-all" style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}></div>
+                                    <div className="ms-bulk-progress">
+                                        <p>Generating... {bulkProgress.current} / {bulkProgress.total}</p>
+                                        <div className="ms-progress-track">
+                                            <div className="ms-progress-fill" style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}></div>
                                         </div>
                                     </div>
                                 )}
@@ -424,90 +425,88 @@ const MockupStudio = () => {
                         </div>
 
                         {/* Right Column: Controls */}
-                        <div className="lg:col-span-8 flex flex-col space-y-6">
-                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
+                        <div className="ms-controls-column">
+                            <div className="ms-main-controls-card">
 
                                 {/* Product Selector */}
-                                <section className="mb-10">
-                                    <div className="flex flex-col gap-6 mb-6">
-                                        <div className="flex flex-col sm:flex-row justify-between gap-4">
-                                            <h2 className="text-lg font-bold flex items-center gap-2">
-                                                <span className="w-1 h-6 bg-indigo-600 rounded-full"></span> Select Product
-                                            </h2>
-                                            <input
-                                                type="text" placeholder="Search..."
-                                                className="border border-slate-200 rounded-lg px-4 py-2 w-full sm:w-64"
-                                                value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                                            />
-                                        </div>
-                                        {/* Categories */}
-                                        <div className="flex flex-wrap gap-2">
-                                            {productCategories.map(cat => (
-                                                <button
-                                                    key={cat} onClick={() => setActiveProductCategory(cat)}
-                                                    className={`px-3 py-1 rounded-full text-xs font-semibold border ${activeProductCategory === cat ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-200 text-slate-600'}`}
-                                                >
-                                                    {cat} <span className="opacity-50 ml-1">{categoryCounts[cat]}</span>
-                                                </button>
-                                            ))}
-                                        </div>
+                                <section className="ms-section">
+                                    <div className="ms-section-top-row">
+                                        <h2 className="ms-section-header">
+                                            <span className="ms-accent-bar"></span> Select Product
+                                        </h2>
+                                        <input
+                                            type="text" placeholder="Search..."
+                                            className="ms-search-input"
+                                            value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                                        />
                                     </div>
 
-                                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 max-h-[300px] overflow-y-auto custom-scrollbar">
+                                    <div className="ms-category-pills">
+                                        {productCategories.map(cat => (
+                                            <button
+                                                key={cat} onClick={() => setActiveProductCategory(cat)}
+                                                className={`ms-pill-btn ${activeProductCategory === cat ? 'active' : ''}`}
+                                            >
+                                                {cat} <span className="opacity-50 ml-1">{categoryCounts[cat]}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="ms-item-grid custom-scrollbar">
                                         {loadingItems ? (
-                                            <div className="col-span-full flex justify-center py-10 opacity-50">
+                                            <div className="ms-full-span flex justify-center py-10 opacity-50">
                                                 <Spinner />
                                             </div>
                                         ) : filteredItems.map(item => (
                                             <button
                                                 key={item.id} onClick={() => setSelectedItemId(item.id)}
-                                                className={`flex flex-col items-center justify-center p-2 rounded-xl border aspect-square transition-all ${selectedItemId === item.id ? 'border-indigo-600 bg-indigo-50 text-indigo-700 ring-2 ring-indigo-600' : 'border-slate-100 bg-white hover:border-indigo-200'}`}
+                                                className={`ms-item-btn ${selectedItemId === item.id ? 'selected' : ''}`}
                                             >
-                                                <div className="text-2xl mb-2 flex items-center justify-center">{item.icon}</div>
-                                                <span className="text-[10px] font-semibold text-center leading-tight line-clamp-2">{item.label}</span>
+                                                <div className="ms-item-icon">{item.icon}</div>
+                                                <span className="ms-item-label">{item.label}</span>
                                             </button>
                                         ))}
                                     </div>
                                 </section>
 
                                 {/* Scene Selector */}
-                                <section className="mb-10">
-                                    <h2 className="text-lg font-bold flex items-center gap-2 mb-4">
-                                        <span className="w-1 h-6 bg-indigo-600 rounded-full"></span> Select Environment
+                                <section className="ms-section">
+                                    <h2 className="ms-section-header mb-4">
+                                        <span className="ms-accent-bar"></span> Select Environment
                                     </h2>
-                                    <div className="flex flex-wrap gap-2 mb-4">
+                                    <div className="ms-category-pills mb-4">
                                         {presetCategories.map(cat => (
-                                            <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${activeCategory === cat ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-500 border-slate-200'}`}>
+                                            <button key={cat} onClick={() => setActiveCategory(cat)} className={`ms-pill-btn ms-pill-btn-dark ${activeCategory === cat ? 'active' : ''}`}>
                                                 {cat}
                                             </button>
                                         ))}
                                     </div>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    <div className="ms-preset-grid">
                                         {filteredPresets.map(preset => (
-                                            <button key={preset.id} onClick={() => setSelectedPresetId(preset.id)} className={`flex flex-col items-center p-3 rounded-xl border text-center ${selectedPresetId === preset.id ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-600' : 'border-slate-100 bg-white hover:border-indigo-200'}`}>
-                                                <span className="text-2xl mb-1">{preset.icon}</span>
-                                                <span className={`text-xs font-bold ${selectedPresetId === preset.id ? 'text-indigo-900' : 'text-slate-700'}`}>{preset.label}</span>
+                                            <button key={preset.id} onClick={() => setSelectedPresetId(preset.id)} className={`ms-preset-btn ${selectedPresetId === preset.id ? 'selected' : ''}`}>
+                                                <span className="ms-preset-icon">{preset.icon}</span>
+                                                <span className="ms-preset-label">{preset.label}</span>
                                             </button>
                                         ))}
                                     </div>
                                 </section>
 
                                 {/* Custom Prompt */}
-                                <section className="mb-8">
-                                    <label className="block text-sm font-bold mb-2">Custom Details (Optional)</label>
+                                <section className="ms-section">
+                                    <label className="ms-input-label">Custom Details (Optional)</label>
                                     <input
                                         type="text"
                                         value={customPrompt} onChange={e => setCustomPrompt(e.target.value)}
-                                        className="w-full border border-slate-200 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500"
+                                        className="ms-text-input"
                                         placeholder="E.g., pink lighting, Cyberpunk aesthetic..."
                                     />
                                 </section>
 
-                                <div className="flex flex-col sm:flex-row gap-4">
+                                <div className="ms-action-row">
                                     <Button
                                         onClick={handleGenerate}
                                         disabled={appState !== AppState.PREVIEW}
-                                        className="flex-1 py-4 text-lg shadow-indigo-200 shadow-lg"
+                                        className="ms-flex-1 ms-btn-lg"
                                     >
                                         {appState === AppState.GENERATING ? 'Magically Rendering...' : 'Generate Mockup'}
                                     </Button>
