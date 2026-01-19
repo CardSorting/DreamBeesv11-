@@ -248,18 +248,31 @@ const MockupStudio = () => {
                             <div className="gacha-results-panel animate-fade-in">
                                 <h2>Fresh Honey!</h2>
 
-                                <div className="gacha-results-grid">
-                                    {gachaPrizes.map((prize, idx) => (
-                                        <div key={prize.id} className="gacha-grid-item animate-pop-in" style={{ animationDelay: `${idx * 150}ms` }}>
-                                            <div className="grid-image-container">
-                                                <img src={prize.url} alt={prize.label} />
-                                                <div className="grid-overlay">
-                                                    <span className="grid-label">{prize.label}</span>
-                                                </div>
+                                {gachaPrizes.length === 1 ? (
+                                    // Single Result (Hero Layout)
+                                    <div className="gacha-single-result animate-pop-in">
+                                        <div className="single-image-container">
+                                            <img src={gachaPrizes[0].url} alt={gachaPrizes[0].label} />
+                                            <div className="single-overlay">
+                                                <span className="single-label">{gachaPrizes[0].label}</span>
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
+                                    </div>
+                                ) : (
+                                    // Multiple Results (Grid Layout)
+                                    <div className="gacha-results-grid">
+                                        {gachaPrizes.map((prize, idx) => (
+                                            <div key={prize.id} className="gacha-grid-item animate-pop-in" style={{ animationDelay: `${idx * 150}ms` }}>
+                                                <div className="grid-image-container">
+                                                    <img src={prize.url} alt={prize.label} />
+                                                    <div className="grid-overlay">
+                                                        <span className="grid-label">{prize.label}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
 
                                 <Button variant="outline" onClick={handleReset} className="btn-secondary full-width">
                                     Harvest More

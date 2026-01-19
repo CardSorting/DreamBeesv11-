@@ -462,3 +462,55 @@
         padding: 1.5rem;
     }
 }
+
+/* SINGLE RESULT HERO LAYOUT */
+.gacha-single-result {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 2rem;
+    width: 100%;
+}
+
+.single-image-container {
+    width: 100%;
+    max-width: 400px;
+    /* Hero size */
+    aspect-ratio: 1;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    border: 4px solid #FFC107;
+    background: white;
+}
+
+.single-image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.single-image-container:hover img {
+    transform: scale(1.05);
+}
+
+.single-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    padding: 40px 20px 20px 20px;
+    color: white;
+    text-align: center;
+}
+
+.single-label {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}

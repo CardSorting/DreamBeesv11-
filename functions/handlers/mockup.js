@@ -149,7 +149,7 @@ export const handleGachaSpin = async (request) => {
 
     // Select 3 random unique items
     const shuffledItems = [...MOCKUP_ITEMS].sort(() => 0.5 - Math.random());
-    const selectedItems = shuffledItems.slice(0, 3);
+    const selectedItems = shuffledItems.slice(0, 1);
     logger.info(`[Gacha] Selected items: ${selectedItems.map(i => i.label).join(', ')}`);
 
     // Parallel Generation
