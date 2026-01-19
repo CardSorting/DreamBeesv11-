@@ -863,3 +863,56 @@
 .app-card.has-preview .app-footer {
     padding: 0 16px 16px;
 }
+/* --- Pagination --- */
+.apps-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 40px;
+    padding: 32px 0;
+    border-top: 1px solid var(--play-border);
+}
+
+.page-numbers {
+    display: flex;
+    gap: 8px;
+}
+
+.page-nav-btn,
+.page-num-btn {
+    min-width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--play-surface);
+    border: 1px solid var(--play-border);
+    border-radius: 8px;
+    color: var(--play-text-primary);
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.page-nav-btn:hover:not(:disabled),
+.page-num-btn:hover {
+    background-color: var(--play-surface-hover);
+    border-color: var(--play-primary);
+}
+
+.page-num-btn.active {
+    background-color: var(--play-primary);
+    color: var(--play-bg);
+    border-color: var(--play-primary);
+}
+
+.page-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.rotate-180 {
+    transform: rotate(180deg);
+}
+

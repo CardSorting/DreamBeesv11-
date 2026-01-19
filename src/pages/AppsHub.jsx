@@ -42,9 +42,8 @@ const ICON_MAP = {
 const AppsHub = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [apps, setApps] = useState([]);
-    const [visibleCount, setVisibleCount] = useState(3);
-
-    const loaderRef = useRef(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const APPS_PER_PAGE = 6;
 
     const { currentUser } = useAuth();
     const { isLiked, toggleLike } = useAppLikes(currentUser?.uid);
@@ -61,6 +60,7 @@ const AppsHub = () => {
                     icon: Presentation, // Using Presentation icon
                     tags: ['design', 'mockup', 'product', '3d'],
                     path: '/mockup-studio',
+                    previewImage: '/app-previews/mockup-studio.png',
                     isNew: true
                 };
 
@@ -101,35 +101,17 @@ const AppsHub = () => {
     }, [searchQuery, apps]);
 
     // Pagination Logic
-    const displayedApps = useMemo(() => filteredApps.slice(0, visibleCount), [filteredApps, visibleCount]);
-    const hasMore = visibleCount < filteredApps.length;
+    const totalPages = Math.ceil(filteredApps.length / APPS_PER_PAGE);
 
-    // Infinite Scroll Observer
+    const displayedApps = useMemo(() => {
+        const startIndex = (currentPage - 1) * APPS_PER_PAGE;
+        return filteredApps.slice(startIndex, startIndex + APPS_PER_PAGE);
+    }, [filteredApps, currentPage]);
+
+    // Reset pagination when search changes
     useEffect(() => {
-        const observer = new IntersectionObserver((entries) => {
-            const target = entries[0];
-            if (target.isIntersecting && hasMore) {
-                // Simulate network delay for feel, or just load instantly
-                setTimeout(() => {
-                    setVisibleCount(prev => prev + 6);
-                }, 300); // 300ms delay for "loading" feel
-            }
-        }, {
-            root: null,
-            rootMargin: '100px', // Load before user hits bottom
-            threshold: 0.1
-        });
-
-        if (loaderRef.current) {
-            observer.observe(loaderRef.current);
-        }
-
-        return () => {
-            if (loaderRef.current) {
-                observer.unobserve(loaderRef.current);
-            }
-        };
-    }, [hasMore, filteredApps.length]); // Re-run if dependencies change
+        setCurrentPage(1);
+    }, [searchQuery]);
 
     return (
         <div className="play-store-container">
@@ -211,11 +193,36 @@ const AppsHub = () => {
                     </div>
                 </div>
 
-                {/* Infinite Scroll Sentinel */}
-                {hasMore && (
-                    <div ref={loaderRef} className="loading-sentinel">
-                        {/* Optional: Add a subtle spinner here if desired, otherwise invisible trigger */}
-                        <div className="loading-spinner"></div>
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="apps-pagination">
+                        <button
+                            className="page-nav-btn"
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        >
+                            <ChevronRight size={20} className="rotate-180" />
+                        </button>
+
+                        <div className="page-numbers">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(num => (
+                                <button
+                                    key={num}
+                                    className={`page-num-btn ${currentPage === num ? 'active' : ''}`}
+                                    onClick={() => setCurrentPage(num)}
+                                >
+                                    {num}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button
+                            className="page-nav-btn"
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        >
+                            <ChevronRight size={20} />
+                        </button>
                     </div>
                 )}
             </div>

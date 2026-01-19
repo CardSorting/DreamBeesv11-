@@ -60,14 +60,12 @@ const MockupStudio = () => {
     const categoryScrollRef = useRef(null);
 
     const presetCategories = ['All', 'Studio', 'Lifestyle', 'Nature', 'Urban', 'Vintage'];
-    const productCategories = [
-        'All',
-        'Vehicles', 'Electronics', 'Anime',
-        'Home', 'Bedroom', 'Bathroom', 'Pets', 'Tools',
-        'Bakery', 'Kitchen', 'Dining',
-        'Candy', 'Snacks', 'Drinks', 'Bottled', 'Canned', 'Freezer',
-        'Stickers', 'Packaging', 'Medical', 'Signs', 'Print', 'Apparel', 'Accessories', 'Media', 'Toys', 'Sports', 'Jewelry', 'Acrylic'
-    ];
+
+    // Dynamically derive unique categories from mockupItems
+    const productCategories = useMemo(() => {
+        const cats = new Set(mockupItems.map(item => item.category));
+        return ['All', ...([...cats].filter(Boolean).sort())];
+    }, [mockupItems]);
 
     // Fetch Mockup Items
     useEffect(() => {
@@ -148,9 +146,9 @@ const MockupStudio = () => {
     // Calculate counts for badges
     const categoryCounts = useMemo(() => {
         const counts = { All: mockupItems.length };
-        productCategories.forEach(cat => {
-            if (cat !== 'All') {
-                counts[cat] = mockupItems.filter(i => i.category === cat).length;
+        mockupItems.forEach(item => {
+            if (item.category) {
+                counts[item.category] = (counts[item.category] || 0) + 1;
             }
         });
         return counts;
