@@ -100,14 +100,15 @@ const MockupStudio = () => {
                         const prizes = result.data.prizes;
 
                         // Save Metadata to Firestore in parallel (Defensive)
+                        // Save Metadata to Firestore in parallel (Defensive)
                         const savePromises = prizes.map(async (prize) => {
                             try {
-                                await addDoc(collection(db, 'generations'), {
+                                await addDoc(collection(db, 'images'), {
                                     userId: currentUser.uid,
                                     userEmail: currentUser.email,
                                     userDisplayName: currentUser.displayName || 'Anonymous',
                                     prompt: prize.prompt,
-                                    url: prize.url,
+                                    imageUrl: prize.url,
                                     thumbnailUrl: prize.url,
                                     type: 'mockup',
                                     isPublic: true,
@@ -115,12 +116,11 @@ const MockupStudio = () => {
                                     modelId: 'gemini-2.5-flash-image',
                                     mockupLabel: prize.label,
                                     presetLabel: prize.presetLabel,
-                                    likes: 0
+                                    likesCount: 0,
+                                    bookmarksCount: 0
                                 });
                             } catch (fireError) {
                                 console.error("Failed to save to gallery:", fireError);
-                                // Non-blocking usage: don't throw, just log. 
-                                // User still gets to see their ephemeral result.
                             }
                         });
 
@@ -181,8 +181,8 @@ const MockupStudio = () => {
                     </div>
                 )}
 
-                {/* Machine Container - Split Layout */}
-                <div className="gacha-machine-container split-layout">
+                {/* Machine Container - Split Layout (unless PRIZE) */}
+                <div className={`gacha-machine-container ${appState !== AppState.PRIZE ? 'split-layout' : 'full-layout'}`}>
 
                     {/* Left Panel: Controls & HUD */}
                     <div className="gacha-ui-panel">
@@ -238,25 +238,24 @@ const MockupStudio = () => {
                             </div>
                         )}
 
-                        {/* STATE: PRIZE (Results List) */}
+                        {/* STATE: PRIZE (Results Grid) */}
                         {appState === AppState.PRIZE && (
                             <div className="gacha-results-panel animate-fade-in">
                                 <h2>Fresh Honey!</h2>
-                                <div className="gacha-capsules-list">
+
+                                <div className="gacha-results-grid">
                                     {gachaPrizes.map((prize, idx) => (
-                                        <div key={prize.id} className="gacha-list-item animate-pop-in" style={{ animationDelay: `${idx * 150}ms` }}>
-                                            <div className="item-thumb">
+                                        <div key={prize.id} className="gacha-grid-item animate-pop-in" style={{ animationDelay: `${idx * 150}ms` }}>
+                                            <div className="grid-image-container">
                                                 <img src={prize.url} alt={prize.label} />
-                                            </div>
-                                            <div className="item-details">
-                                                <span className="item-name">{prize.label}</span>
-                                                <a href={prize.url} download={prize.filename} className="item-download-link">
-                                                    Download
-                                                </a>
+                                                <div className="grid-overlay">
+                                                    <span className="grid-label">{prize.label}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
+
                                 <Button variant="outline" onClick={handleReset} className="btn-secondary full-width">
                                     Harvest More
                                 </Button>
@@ -264,10 +263,12 @@ const MockupStudio = () => {
                         )}
                     </div>
 
-                    {/* Right Panel: 3D Stage */}
-                    <div className="gacha-3d-stage">
-                        <BeeCrateScene appState={appState} />
-                    </div>
+                    {/* Right Panel: 3D Stage (Hide when showing prizes) */}
+                    {appState !== AppState.PRIZE && (
+                        <div className="gacha-3d-stage">
+                            <BeeCrateScene appState={appState} />
+                        </div>
+                    )}
 
                 </div>
             </main>

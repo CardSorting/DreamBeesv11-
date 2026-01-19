@@ -28,7 +28,7 @@ export default function UserProfile() {
         const fetchUserMockups = async () => {
             try {
                 const q = query(
-                    collection(db, 'generations'),
+                    collection(db, 'images'),
                     where('userId', '==', currentUser.uid),
                     where('type', '==', 'mockup'),
                     orderBy('createdAt', 'desc')

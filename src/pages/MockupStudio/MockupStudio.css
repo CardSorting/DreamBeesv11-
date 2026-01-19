@@ -91,6 +91,21 @@
     /* Sidebar width + Stage */
 }
 
+/* --- FULL LAYOUT (Results) --- */
+.gacha-machine-container.full-layout {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.gacha-machine-container.full-layout .gacha-ui-panel {
+    border-right: none;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    background: rgba(255, 255, 255, 0.6);
+}
+
 /* --- LEFT PANEL (UI) --- */
 .gacha-ui-panel {
     background: rgba(255, 255, 255, 0.4);
@@ -274,7 +289,7 @@
     color: #5D4037;
 }
 
-/* PRIZE STATE: Results List */
+/* PRIZE STATE: NEW GRID LAYOUT */
 .gacha-results-panel {
     width: 100%;
     height: 100%;
@@ -290,69 +305,63 @@
     text-align: center;
 }
 
-.gacha-capsules-list {
+.gacha-results-grid {
     flex-grow: 1;
     overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    padding-right: 0.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 1rem;
+    padding: 0.5rem;
     margin-bottom: 1rem;
     /* Custom Scrollbar */
     scrollbar-width: thin;
     scrollbar-color: #FFB74D transparent;
 }
 
-.gacha-list-item {
-    display: flex;
-    align-items: center;
+.gacha-grid-item {
     background: white;
-    padding: 0.5rem;
-    border-radius: 0.75rem;
-    border: 2px solid #FFECB3;
-    gap: 0.75rem;
-    transition: transform 0.2s;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 3px solid #FFECB3;
+    transition: transform 0.2s, border-color 0.2s;
+    aspect-ratio: 1;
 }
 
-.gacha-list-item:hover {
-    transform: translateX(4px);
+.gacha-grid-item:hover {
+    transform: translateY(-4px);
     border-color: var(--bee-primary);
 }
 
-.item-thumb {
-    width: 48px;
-    height: 48px;
-    background: #212121;
-    border-radius: 0.5rem;
-    overflow: hidden;
-    flex-shrink: 0;
+.grid-image-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
 }
 
-.item-thumb img {
+.grid-image-container img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.item-details {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-}
-
-.item-name {
+.grid-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    padding: 20px 8px 8px 8px;
+    color: white;
+    font-size: 0.75rem;
     font-weight: 700;
-    font-size: 0.9rem;
-    color: #333;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.2s;
 }
 
-.item-download-link {
-    font-size: 0.8rem;
-    color: var(--bee-primary-dark);
-    font-weight: 600;
-    text-decoration: none;
-    text-transform: uppercase;
+.gacha-grid-item:hover .grid-overlay {
+    opacity: 1;
 }
 
 .full-width {
