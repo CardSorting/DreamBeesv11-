@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import SEO from '../components/SEO';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, limit, getDocs, startAfter } from 'firebase/firestore';
-import { Loader2, Heart } from 'lucide-react';
+import { Loader2, Heart, Palette } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import SuggestedPanel from '../components/SuggestedPanel';
 import { useModel } from '../contexts/ModelContext';
@@ -30,7 +30,7 @@ export default function MockupFeed() {
                 collection(db, 'generations'),
                 where('type', '==', 'mockup'),
                 where('isPublic', '==', true),
-                orderBy('createdAt', 'desc'),
+                // orderBy('createdAt', 'desc'), // TODO: Re-enable after building compound index
                 limit(20)
             );
 
@@ -165,8 +165,56 @@ export default function MockupFeed() {
                         )}
 
                         {!loading && images.length === 0 && (
-                            <div className="text-center text-zinc-500 py-20">
-                                No mockups found. Go to the Studio to create one!
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: '60px 20px',
+                                gap: '20px',
+                                textAlign: 'center',
+                                color: 'rgba(255,255,255,0.6)'
+                            }}>
+                                <div style={{
+                                    width: '80px',
+                                    height: '80px',
+                                    borderRadius: '50%',
+                                    background: 'rgba(255,255,255,0.05)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    marginBottom: '10px'
+                                }}>
+                                    <Palette size={40} style={{ opacity: 0.8 }} />
+                                </div>
+                                <div>
+                                    <h3 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'white', marginBottom: '8px' }}>
+                                        No mockups yet
+                                    </h3>
+                                    <p style={{ maxWidth: '300px', margin: '0 auto' }}>
+                                        Be the first to share your designs with the community.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => navigate('/mockup-studio')}
+                                    style={{
+                                        marginTop: '10px',
+                                        padding: '12px 24px',
+                                        borderRadius: '30px',
+                                        background: 'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)',
+                                        color: 'white',
+                                        border: 'none',
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                        fontSize: '1rem',
+                                        boxShadow: '0 4px 15px rgba(168, 85, 247, 0.4)',
+                                        transition: 'transform 0.2s ease',
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+                                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                                >
+                                    Create Mockup
+                                </button>
                             </div>
                         )}
                     </section>
