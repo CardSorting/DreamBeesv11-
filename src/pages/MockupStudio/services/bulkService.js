@@ -12,12 +12,13 @@ export class BulkService {
         this.isCancelled = true;
     }
 
-    async processItems(items, file, onProgress) {
+    async processItems(items, file, onProgress, onItemComplete) {
         const presets = presetFactory.getPresets();
         const zip = new JSZip();
 
         let processed = 0;
         let success = 0;
+        const generatedImages = [];
 
         for (const item of items) {
             if (this.isCancelled) break;
@@ -53,6 +54,27 @@ export class BulkService {
 
                 // 2. Add directly to buffer
                 zip.file(filename, base64Data, { base64: true });
+
+                const imageData = {
+                    id: `${item.id}-${Date.now()}`,
+                    url: base64DataUrl,
+                    filename: filename,
+                    label: item.label,
+                    presetLabel: randomPreset.label,
+                    prompt: interpolatedScenePrompt,
+                    mockupItemId: item.id,
+                    presetId: randomPreset.id
+                };
+                generatedImages.push(imageData);
+
+                // Side effect: Save to DB or other actions
+                if (onItemComplete) {
+                    try {
+                        await onItemComplete(imageData);
+                    } catch (callbackError) {
+                        console.warn('onItemComplete callback failed', callbackError);
+                    }
+                }
 
                 success++;
 
@@ -97,20 +119,20 @@ export class BulkService {
             }
         });
 
-        return zipBlob;
+        return { zipBlob, generatedImages };
     }
 
-    async generateAll(file, onProgress) {
+    async generateAll(file, onProgress, onItemComplete) {
         this.isCancelled = false;
-        return this.processItems(MOCKUP_ITEMS, file, onProgress);
+        return this.processItems(MOCKUP_ITEMS, file, onProgress, onItemComplete);
     }
 
-    async generateRandomSubset(file, count, onProgress) {
+    async generateRandomSubset(file, count, onProgress, onItemComplete) {
         this.isCancelled = false;
         // Shuffle and slice
         const shuffled = [...MOCKUP_ITEMS].sort(() => 0.5 - Math.random());
         const selected = shuffled.slice(0, Math.min(count, shuffled.length));
-        return this.processItems(selected, file, onProgress);
+        return this.processItems(selected, file, onProgress, onItemComplete);
     }
 }
 

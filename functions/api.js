@@ -167,6 +167,7 @@ export const api = onCall({ memory: "256MiB" }, async (request) => {
 
             // Mockup Studio
             case 'generateMockup': return Mockup.handleGenerateMockup(request);
+            case 'gachaSpin': return Mockup.handleGachaSpin(request);
 
             // Data & Ratings
             case 'getGenerationHistory': return Data.handleGetGenerationHistory(request);

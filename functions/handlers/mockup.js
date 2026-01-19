@@ -2,6 +2,8 @@ import { logger, getS3Client } from "../lib/utils.js";
 import { VertexAI } from "@google-cloud/vertexai";
 import { withVertexRateLimiting } from "../lib/rateLimiter.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
+import { MOCKUP_ITEMS, MOCKUP_PRESETS } from "../lib/mockupData.js";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 // Initialize Vertex AI
 const project = process.env.GCLOUD_PROJECT || "dreambees-alchemist";
@@ -12,6 +14,138 @@ const MODEL_NAME = "gemini-2.5-flash-image";
 
 const getModel = () => {
     return vertexAI.getGenerativeModel({ model: MODEL_NAME });
+};
+
+/**
+ * Helper to generate a single mockup
+ */
+const generateSingleMockup = async (imageBase64, item, preset, userUid) => {
+    try {
+        const generativeModel = getModel();
+
+        // Interpolate prompt
+        const interpolatedScenePrompt = preset.prompt.replace(/{subject}/g, item.subjectNoun);
+
+        // Construct Full Prompt
+        const fullPrompt = `
+      Act as a world-class commercial product photographer. Your goal is to produce a hyper-realistic e-commerce mockup of a physical ${item.formatSpec} featuring the provided design.
+      
+      Scene Environment: ${interpolatedScenePrompt}
+      
+      CRITICAL INSTRUCTIONS FOR IMAGE APPLICATION:
+      1. SURFACE INTEGRATION: The input image is the DESIGN that must be printed/applied onto the ${item.formatSpec}. It is NOT a photo of the product; it is the source graphic.
+      2. GEOMETRIC WRAPPING: You must perfectly warp and wrap the design to match the curvature, folds, and perspective of the physical object. 
+      3. MATERIAL TEXTURE: The design must inherit the surface texture of the substrate.
+      
+      VISUAL REQUIREMENTS:
+      - LIGHTING: Use complex, multi-source studio lighting.
+      - REALISM: 4k resolution, highly detailed, sharp focus, professional studio quality, product photography
+      
+      Output only the final product image.
+    `;
+
+        const requestPayload = {
+            contents: [{
+                role: 'user',
+                parts: [
+                    { inlineData: { mimeType: 'image/png', data: imageBase64 } },
+                    { text: fullPrompt }
+                ]
+            }],
+        };
+
+        // Generation
+        const response = await withVertexRateLimiting(async () => {
+            const res = await generativeModel.generateContent(requestPayload);
+            return res.response;
+        }, { context: 'Mockup Generation', retries: 3 });
+
+        // Extract Image
+        const candidate = response.candidates?.[0];
+        let outputImageBase64 = null;
+        if (candidate?.content?.parts) {
+            for (const part of candidate.content.parts) {
+                if (part.inlineData?.data) {
+                    outputImageBase64 = part.inlineData.data;
+                    break;
+                }
+            }
+        }
+
+        if (!outputImageBase64) throw new Error("No image generated.");
+
+        // Upload to B2
+        const s3 = await getS3Client();
+        const timestamp = Date.now();
+        const safeLabel = item.label.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const safePreset = preset.label.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const key = `mockups/${userUid}/${timestamp}-${safeLabel}-${safePreset}.png`;
+        const buffer = Buffer.from(outputImageBase64, 'base64');
+
+        await s3.send(new PutObjectCommand({
+            Bucket: B2_BUCKET,
+            Key: key,
+            Body: buffer,
+            ContentType: 'image/png'
+        }));
+
+        const url = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${key}`;
+
+        return {
+            id: `${item.id}-${timestamp}`,
+            url: url,
+            filename: `${safeLabel}-${safePreset}.png`,
+            label: item.label,
+            presetLabel: preset.label,
+            prompt: interpolatedScenePrompt,
+            mockupItemId: item.id,
+            presetId: preset.id,
+            success: true
+        };
+
+    } catch (error) {
+        logger.error(`Failed to generate ${item.label}:`, error);
+        return { success: false, error: error.message };
+    }
+};
+
+/**
+ * Handles the Gacha Spin action: 3 random unique mockups
+ */
+export const handleGachaSpin = async (request) => {
+    const { image } = request.data;
+    const uid = request.auth?.uid || 'anonymous';
+
+    if (!image) {
+        throw new Error("No image token provided.");
+    }
+
+    // Decode base64
+    const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
+
+    // Select 3 random unique items
+    const shuffledItems = [...MOCKUP_ITEMS].sort(() => 0.5 - Math.random());
+    const selectedItems = shuffledItems.slice(0, 3);
+
+    // Parallel Generation
+    const promises = selectedItems.map(item => {
+        // Random Preset for each
+        const randomPreset = MOCKUP_PRESETS[Math.floor(Math.random() * MOCKUP_PRESETS.length)];
+        return generateSingleMockup(base64Data, item, randomPreset, uid);
+    });
+
+    // Wait all (we want to return what succeeds)
+    const results = await Promise.all(promises);
+    const successfulPrizes = results.filter(r => r.success);
+
+    if (successfulPrizes.length === 0) {
+        throw new Error("The machine jammed! No prizes were generated.");
+    }
+
+    return {
+        success: true,
+        prizes: successfulPrizes
+    };
 };
 
 /**
@@ -116,7 +250,8 @@ export const handleGenerateMockup = async (request) => {
         // Optional: Save to B2 storage
         if (options?.saveToStorage) {
             try {
-                const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+                // Ensure import works or use require if needed, but module import is standard in this project
+                // const { PutObjectCommand } = await import("@aws-sdk/client-s3"); // Already imported at top
                 const s3 = await getS3Client();
                 const timestamp = Date.now();
                 const key = `mockups/${request.auth?.uid || 'anonymous'}/${timestamp}.png`;
