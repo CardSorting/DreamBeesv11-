@@ -272,10 +272,10 @@ const main = async () => {
             console.log(`   ❌ Failed: ${error.message}`);
         }
 
-        // Longer delay between requests to avoid rate limiting (1 req/min)
+        // Longer delay between requests to avoid rate limiting (1 req per 2 min)
         if (i < CONFIG.COUNT - 1) {
-            console.log(`   ⏳ Waiting 60s before next request (quota limit)...`);
-            await new Promise(r => setTimeout(r, 60000));
+            console.log(`   ⏳ Waiting 2 minutes before next request (quota limit)...`);
+            await new Promise(r => setTimeout(r, 120000));
         }
     }
 

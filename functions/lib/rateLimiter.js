@@ -13,12 +13,12 @@ import { logger } from "./utils.js";
  * @param {Function} fn - Async function to execute
  * @param {Object} options - Configuration options
  * @param {number} options.retries - Number of retry attempts (default: 3)
- * @param {number} options.baseDelay - Base delay in ms (default: 20000 = 20s)
+ * @param {number} options.baseDelay - Base delay in ms (default: 5000 = 5s for interactive use)
  * @param {string} options.context - Context string for logging
  * @returns {Promise<any>} - Result from the function
  */
 export async function withVertexRateLimiting(fn, options = {}) {
-    const { retries = 3, baseDelay = 20000, context = 'Vertex AI' } = options;
+    const { retries = 3, baseDelay = 5000, context = 'Vertex AI' } = options;
 
     for (let attempt = 0; attempt < retries; attempt++) {
         try {
