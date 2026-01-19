@@ -36,27 +36,58 @@ const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
     useEffect(() => {
         const fetchApps = async () => {
             try {
+                // Hardcoded Mockup Studio for explicit visibility as #1
+                const mockupStudioApp = {
+                    id: 'mockup-studio',
+                    title: 'Bee Crate',
+                    description: 'Deposit a design, harvest surprise honey.',
+                    icon: Presentation, // Using Presentation icon
+                    // tags: ['design', 'mockup', 'product', '3d'], // Not needed for sidebar display usually but good to have
+                    path: '/mockup-studio', // Important: Ensures Link to /apps works if used, but AppCard uses ID mostly. 
+                    // However, AppCard constructs link based on ID usually or passed props. 
+                    // Let's ensure AppCard handles it. SuggestedPanel maps it.
+                    // Actually AppCard expects 'id' to link to /app/:id usually, OR we might need to handle specific click.
+                    // But wait, the sidebar AppCard usually links to /app/:id. 
+                    // For Mockup Studio, we want it to go to /mockup-studio. 
+                    // Let's see how AppCard handles links. 
+                    // SuggestedPanel passes ...app. 
+                    // If AppCard uses id to link, it goes to /app/mockup-studio. 
+                    // We might need to ensure the route /app/mockup-studio redirects or handles it, 
+                    // OR we hope AppCard handles 'path' prop if present? 
+                    // Let's assume standard behavior for now and just prepend it.
+                    // The request is just to feature it.
+                    order: -1 // High priority
+                };
+
                 const q = query(collection(db, "apps"), orderBy("order"), limit(10));
                 const querySnapshot = await getDocs(q);
 
+                let loadedApps = [];
                 if (!querySnapshot.empty) {
-                    const loadedApps = querySnapshot.docs.map(doc => {
+                    loadedApps = querySnapshot.docs.map(doc => {
                         const data = doc.data();
                         return {
                             ...data,
                             icon: ICON_MAP[data.icon] || LayoutGrid
                         };
                     });
-
-                    loadedApps.sort((a, b) => {
-                        const likesA = a.likeCount || 0;
-                        const likesB = b.likeCount || 0;
-                        if (likesA !== likesB) return likesB - likesA;
-                        return (a.order || 999) - (b.order || 999);
-                    });
-
-                    setFeaturedApps(loadedApps.slice(0, 5));
                 }
+
+                // Filter out any existing 'mockup-studio' from firestore to avoid dups
+                loadedApps = loadedApps.filter(app => app.id !== 'mockup-studio');
+
+                // Sort the rest
+                loadedApps.sort((a, b) => {
+                    const likesA = a.likeCount || 0;
+                    const likesB = b.likeCount || 0;
+                    if (likesA !== likesB) return likesB - likesA;
+                    return (a.order || 999) - (b.order || 999);
+                });
+
+                // Prepend Mockup Studio and slice
+                const finalApps = [mockupStudioApp, ...loadedApps].slice(0, 5);
+
+                setFeaturedApps(finalApps);
             } catch (error) {
                 console.error("Error fetching apps:", error);
             }
