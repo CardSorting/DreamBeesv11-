@@ -4,6 +4,7 @@ import './MockupStudio.css';
 import { Button } from './components/Button';
 import { bulkService } from './services/bulkService';
 import { useAuth } from '../../contexts/AuthContext';
+import BeeCrateScene from './BeeCrateScene';
 
 const AppState = {
     IDLE: 'IDLE',          // Waiting for coin (image)
@@ -172,86 +173,88 @@ const MockupStudio = () => {
                 {/* Machine Container */}
                 <div className="gacha-machine-container">
 
-                    {/* STATE: IDLE (Coin/Token Slot) */}
-                    {appState === AppState.IDLE && (
-                        <div className={`gacha-slot-area ${isDragging ? 'is-dragging' : ''}`}
-                            onDragEnter={handleDragEnter} onDragLeave={handleDragLeave}
-                            onDragOver={handleDragOver} onDrop={handleDrop}
-                            onClick={triggerFileInput}>
+                    {/* 3D Scene Layer - Always rendered for smooth transitions */}
+                    <div className="gacha-3d-layer">
+                        <BeeCrateScene appState={appState} />
+                    </div>
 
-                            <div className="gacha-slot-visual">
-                                <div className="gacha-coin-slot beehive-slot">
-                                    <div className="gacha-insert-label">DEPOSIT NECTAR</div>
-                                </div>
-                            </div>
+                    {/* UI Layer */}
+                    <div className="gacha-ui-layer">
+                        {/* STATE: IDLE (Coin/Token Slot) */}
+                        {appState === AppState.IDLE && (
+                            <div className={`gacha-slot-area ${isDragging ? 'is-dragging' : ''}`}
+                                onDragEnter={handleDragEnter} onDragLeave={handleDragLeave}
+                                onDragOver={handleDragOver} onDrop={handleDrop}
+                                onClick={triggerFileInput}>
 
-                            <p className="gacha-instruction">Drop your design here to feed the hive</p>
-                            <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" />
-                        </div>
-                    )}
-
-                    {/* STATE: READY (Crank It) */}
-                    {appState === AppState.READY && (
-                        <div className="gacha-crank-area animate-fade-in">
-                            <div className="gacha-preview-token honeycomb-border">
-                                <img src={previewUrl} alt="Your Token" />
-                            </div>
-                            <div className="gacha-controls">
-                                <Button onClick={handleGachaSpin} className="gacha-crank-btn bee-btn">
-                                    OPEN HIVES
-                                </Button>
-                                <button onClick={handleReset} className="gacha-reset-text">
-                                    Discard Nectar
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* STATE: SPINNING (Animation) */}
-                    {appState === AppState.SPINNING && (
-                        <div className="gacha-spinning-area animate-fade-in">
-                            <div className="gacha-machine-visual shaking beehive-visual">
-                                <div className="gacha-globe">
-                                    <div className="gacha-capsule c1 honey-cell"></div>
-                                    <div className="gacha-capsule c2 honey-cell"></div>
-                                    <div className="gacha-capsule c3 honey-cell"></div>
-                                </div>
-                            </div>
-                            <div className="gacha-status-text">
-                                {spinProgress ?
-                                    `Extracting Honey ${spinProgress.current}/${spinProgress.total}...` :
-                                    " buzzing..."}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* STATE: PRIZE (Results) */}
-                    {appState === AppState.PRIZE && (
-                        <div className="gacha-prize-area animate-fade-in">
-                            <h2>🍯 FRESH HONEY! 3 CRATES UNLOCKED! 🍯</h2>
-
-                            <div className="gacha-capsules-grid">
-                                {gachaPrizes.map((prize, idx) => (
-                                    <div key={prize.id} className="gacha-capsule-card animate-pop-in" style={{ animationDelay: `${idx * 150}ms` }}>
-                                        <div className="gacha-capsule-img honey-cell-img">
-                                            <img src={prize.url} alt={prize.label} />
-                                        </div>
-                                        <div className="gacha-capsule-info">
-                                            <span className="prize-name">{prize.label}</span>
-                                            <span className="prize-rarity">{prize.presetLabel}</span>
-                                            <a href={prize.url} download={prize.filename} className="prize-download-btn">
-                                                Download Honey
-                                            </a>
-                                        </div>
+                                <div className="gacha-slot-visual">
+                                    <div className="gacha-coin-slot beehive-slot">
+                                        <div className="gacha-insert-label">DEPOSIT NECTAR</div>
                                     </div>
-                                ))}
-                            </div>
+                                </div>
 
-                            <div className="gacha-actions">
-                                <Button variant="outline" onClick={handleReset} className="btn-secondary">Harvest More</Button>
+                                <p className="gacha-instruction">Drop your design here to feed the hive</p>
+                                <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" />
                             </div>
-                        </div>
-                    )}
+                        )}
+
+                        {/* STATE: READY (Crank It) */}
+                        {appState === AppState.READY && (
+                            <div className="gacha-crank-area animate-fade-in">
+                                <div className="gacha-preview-token honeycomb-border">
+                                    <img src={previewUrl} alt="Your Token" />
+                                </div>
+                                <div className="gacha-controls">
+                                    <Button onClick={handleGachaSpin} className="gacha-crank-btn bee-btn">
+                                        OPEN HIVES
+                                    </Button>
+                                    <button onClick={handleReset} className="gacha-reset-text">
+                                        Discard Nectar
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* STATE: SPINNING (Animation) */}
+                        {appState === AppState.SPINNING && (
+                            <div className="gacha-spinning-area animate-fade-in">
+                                {/* Visual is now handled by 3D Scene */}
+                                <div className="gacha-status-text">
+                                    {spinProgress ?
+                                        `Extracting Honey ${spinProgress.current}/${spinProgress.total}...` :
+                                        " buzzing..."}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* STATE: PRIZE (Results) */}
+                        {appState === AppState.PRIZE && (
+                            <div className="gacha-prize-area animate-fade-in">
+                                <h2>🍯 FRESH HONEY! 3 CRATES UNLOCKED! 🍯</h2>
+
+                                <div className="gacha-capsules-grid">
+                                    {gachaPrizes.map((prize, idx) => (
+                                        <div key={prize.id} className="gacha-capsule-card animate-pop-in" style={{ animationDelay: `${idx * 150}ms` }}>
+                                            <div className="gacha-capsule-img honey-cell-img">
+                                                <img src={prize.url} alt={prize.label} />
+                                            </div>
+                                            <div className="gacha-capsule-info">
+                                                <span className="prize-name">{prize.label}</span>
+                                                <span className="prize-rarity">{prize.presetLabel}</span>
+                                                <a href={prize.url} download={prize.filename} className="prize-download-btn">
+                                                    Download Honey
+                                                </a>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="gacha-actions">
+                                    <Button variant="outline" onClick={handleReset} className="btn-secondary">Harvest More</Button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
 
                 </div>
             </main>
