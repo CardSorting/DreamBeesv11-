@@ -87,7 +87,9 @@ export function UserInteractionsProvider({ children }) {
                     zaps: data.zaps !== undefined ? data.zaps : (data.credits !== undefined ? data.credits : 5),
                     credits: data.credits !== undefined ? data.credits : 5,
                     reels: data.reels || 0,
-                    subscriptionStatus: data.subscriptionStatus || 'inactive'
+                    subscriptionStatus: data.subscriptionStatus || 'inactive',
+                    username: data.username || '',
+                    displayPreference: data.displayPreference || 'name'
                 });
             }
         }, (error) => {

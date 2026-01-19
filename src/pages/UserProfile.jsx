@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import SEO from '../components/SEO';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,90 +14,39 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function UserProfile() {
     const { currentUser } = useAuth();
     const { availableModels } = useModel();
-    const { likes, bookmarks } = useUserInteractions(); // Instant access from global cache
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState({ username: '', displayPreference: 'name' }); // 'name' or 'username'
+    const [savingProfile, setSavingProfile] = useState(false);
 
-    const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'liked', 'saved', 'mockups'
-    const [selectedImage, setSelectedImage] = useState(null);
-    const [selectedModel, setSelectedModel] = useState(null);
-    const [mockups, setMockups] = useState([]);
-    const [loadingMockups, setLoadingMockups] = useState(true);
-
-    // Fetch User Mockups
+    // Load initial profile data
     useEffect(() => {
+        if (userProfile) {
+            setEditForm({
+                username: userProfile.username || '',
+                displayPreference: userProfile.displayPreference || 'name'
+            });
+        }
+    }, [userProfile]);
+
+    const handleSaveProfile = async () => {
         if (!currentUser) return;
-
-        const fetchUserMockups = async () => {
-            try {
-                const q = query(
-                    collection(db, 'images'),
-                    where('userId', '==', currentUser.uid),
-                    where('type', '==', 'mockup'),
-                    orderBy('createdAt', 'desc')
-                );
-                const snapshot = await getDocs(q);
-                const items = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-                setMockups(items);
-            } catch (err) {
-                console.error("Failed to load mockups", err);
-            } finally {
-                setLoadingMockups(false);
-            }
-        };
-
-        fetchUserMockups();
-    }, [currentUser]);
-
-    // Data is already loaded by Context, but we can simulate a brief fade-in if desired, 
-    // or just show immediately.
-    const loading = false; // Context handles loading in background, we can show content instantly.
-
-    // Derived Data
-    const getDisplayedItems = () => {
-        if (activeFilter === 'liked') return likes;
-        if (activeFilter === 'saved') return bookmarks;
-        if (activeFilter === 'mockups') return mockups;
-
-        // For 'all', merge and de-dupe (an image could be liked AND saved)
-        // Prefer the 'saved' instance or merge props if needed.
-        // Actually, let's just show unique images.
-        const allMap = new Map();
-        [...likes, ...bookmarks, ...mockups].forEach(item => {
-            if (!allMap.has(item.id)) {
-                allMap.set(item.id, item);
-            }
-        });
-        // Sort by createdAt (newest first)
-        return Array.from(allMap.values()).sort((a, b) =>
-            (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
-        );
-    };
-
-    const displayedItems = getDisplayedItems();
-
-    const handleImageClick = (image) => {
-        // If it's a mockup, it might not have modelId in availableModels, but we handle fallback
-        const model = availableModels.find(m => m.id === image.modelId) || { name: 'Bee Crate', id: 'mockup-studio', image: '' };
-        setSelectedModel(model);
-        setSelectedImage(image);
-    };
-
-    const getEmptyStateMessage = () => {
-        switch (activeFilter) {
-            case 'liked':
-                return { title: 'No Favorites Yet', subtitle: "Double-tap images in the feed to build your collection of favorites." };
-            case 'saved':
-                return { title: 'No Bookmarks', subtitle: "Save prompts and generations here for quick access later." };
-            case 'mockups':
-                return { title: 'No Mockups', subtitle: "Visit the Bee Crate to harvest product visuals." };
-            default:
-                return { title: 'Studio Empty', subtitle: "Your personal library is empty. Start generating or exploring!" };
+        setSavingProfile(true);
+        try {
+            const { doc, setDoc } = await import('firebase/firestore');
+            const userRef = doc(db, 'users', currentUser.uid);
+            await setDoc(userRef, {
+                username: editForm.username,
+                displayPreference: editForm.displayPreference
+            }, { merge: true });
+            toast.success("Profile updated");
+            setIsEditing(false);
+        } catch (error) {
+            console.error("Error saving profile:", error);
+            toast.error("Failed to update profile");
+        } finally {
+            setSavingProfile(false);
         }
     };
-
-    const emptyState = getEmptyStateMessage();
 
     if (!currentUser) {
         return (
@@ -116,14 +66,107 @@ export default function UserProfile() {
 
             {/* Header Section */}
             <div className="dashboard-header">
-                <div>
-                    <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
-                        My Studio
-                    </h1>
-                    <p className="text-zinc-400 mt-2 text-lg">
-                        Manage your personal collection of generations and discoveries.
-                    </p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '20px' }}>
+                    <div>
+                        <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
+                            My Studio
+                        </h1>
+                        <p className="text-zinc-400 mt-2 text-lg">
+                            Manage your personal collection of generations and discoveries.
+                        </p>
+                    </div>
+
+                    <button
+                        onClick={() => setIsEditing(true)}
+                        className="bee-btn"
+                        style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+                    >
+                        Edit Profile
+                    </button>
                 </div>
+
+                {/* Edit Profile Modal */}
+                {isEditing && (
+                    <div style={{
+                        position: 'fixed', inset: 0, zIndex: 100,
+                        background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+                    }}>
+                        <div style={{
+                            background: '#1a1a1a', border: '1px solid #333', borderRadius: '16px',
+                            padding: '30px', maxWidth: '400px', width: '100%', position: 'relative'
+                        }}>
+                            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '20px' }}>Edit Profile</h2>
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', color: '#888', marginBottom: '8px' }}>Username</label>
+                                <div style={{ position: 'relative' }}>
+                                    <span style={{ position: 'absolute', left: '12px', top: '12px', color: '#666' }}>@</span>
+                                    <input
+                                        type="text"
+                                        value={editForm.username}
+                                        onChange={e => setEditForm({ ...editForm, username: e.target.value.replace(/\s+/g, '').toLowerCase() })}
+                                        placeholder="username"
+                                        style={{
+                                            width: '100%', background: '#0a0a0a', border: '1px solid #333',
+                                            padding: '12px 12px 12px 30px', borderRadius: '8px', color: 'white', outline: 'none'
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: '24px' }}>
+                                <label style={{ display: 'block', fontSize: '0.85rem', color: '#888', marginBottom: '12px' }}>Display Preference</label>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <button
+                                        onClick={() => setEditForm({ ...editForm, displayPreference: 'name' })}
+                                        style={{
+                                            flex: 1, padding: '10px', borderRadius: '8px',
+                                            border: editForm.displayPreference === 'name' ? '1px solid #a855f7' : '1px solid #333',
+                                            background: editForm.displayPreference === 'name' ? 'rgba(168, 85, 247, 0.1)' : 'transparent',
+                                            color: editForm.displayPreference === 'name' ? 'white' : '#666',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        Use Name
+                                        <div style={{ fontSize: '0.7em', marginTop: '4px', opacity: 0.7 }}>{currentUser?.displayName}</div>
+                                    </button>
+                                    <button
+                                        onClick={() => setEditForm({ ...editForm, displayPreference: 'username' })}
+                                        style={{
+                                            flex: 1, padding: '10px', borderRadius: '8px',
+                                            border: editForm.displayPreference === 'username' ? '1px solid #a855f7' : '1px solid #333',
+                                            background: editForm.displayPreference === 'username' ? 'rgba(168, 85, 247, 0.1)' : 'transparent',
+                                            color: editForm.displayPreference === 'username' ? 'white' : '#666',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        Use Username
+                                        <div style={{ fontSize: '0.7em', marginTop: '4px', opacity: 0.7 }}>@{editForm.username || '...'}</div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button
+                                    onClick={() => setIsEditing(false)}
+                                    className="btn-secondary"
+                                    style={{ flex: 1, padding: '12px', borderRadius: '8px', cursor: 'pointer' }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleSaveProfile}
+                                    className="bee-btn"
+                                    disabled={savingProfile}
+                                    style={{ flex: 1 }}
+                                >
+                                    {savingProfile ? 'Saving...' : 'Save Changes'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Stats Cards Row */}
                 <div className="stats-grid">

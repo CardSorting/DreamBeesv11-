@@ -4,6 +4,7 @@ import './MockupStudio.css';
 import { Button } from './components/Button';
 import { bulkService } from './services/bulkService';
 import { useAuth } from '../../contexts/AuthContext';
+import { useUserInteractions } from '../../contexts/UserInteractionsContext';
 import BeeCrateScene from './BeeCrateScene';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
@@ -17,6 +18,8 @@ const AppState = {
 
 const MockupStudio = () => {
     const { currentUser } = useAuth();
+    const { userProfile } = useUserInteractions();
+
     const [appState, setAppState] = useState(AppState.IDLE);
     const [selectedFile, setSelectedFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
@@ -106,7 +109,9 @@ const MockupStudio = () => {
                                 await addDoc(collection(db, 'images'), {
                                     userId: currentUser.uid,
                                     userEmail: currentUser.email,
-                                    userDisplayName: currentUser.displayName || 'Anonymous',
+                                    userDisplayName: (userProfile?.displayPreference === 'username' && userProfile?.username)
+                                        ? `@${userProfile.username}`
+                                        : (currentUser.displayName || 'Anonymous'),
                                     prompt: prize.prompt,
                                     imageUrl: prize.url,
                                     thumbnailUrl: prize.url,
