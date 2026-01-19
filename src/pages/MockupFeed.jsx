@@ -4,12 +4,15 @@ import { db } from '../firebase';
 import { collection, query, where, orderBy, limit, getDocs, startAfter } from 'firebase/firestore';
 import { Loader2, Heart } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
+import SuggestedPanel from '../components/SuggestedPanel';
+import { useModel } from '../contexts/ModelContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import './Discovery.css'; // Re-use discovery styles
 
 export default function MockupFeed() {
     const navigate = useNavigate();
+    const { availableModels } = useModel();
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [lastDoc, setLastDoc] = useState(null);
@@ -219,6 +222,11 @@ export default function MockupFeed() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            <SuggestedPanel
+                availableModels={availableModels}
+                setActiveFilter={() => navigate('/discovery')}
+            />
         </div>
     );
 }

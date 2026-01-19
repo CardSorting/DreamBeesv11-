@@ -1,15 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Hexagon, Home, Compass, Zap, Film, User, Plus, Image, ArrowLeft } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Hexagon, Home, Compass, Zap, Film, User, Plus, Image, ArrowLeft, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 
 const MinimalHeader = () => {
     const location = useLocation();
     const activePath = location.pathname;
-    const { currentUser } = useAuth();
+    const { currentUser, logout } = useAuth();
     const { userProfile } = useUserInteractions();
     const zaps = userProfile?.zaps || 0;
+    const navigate = useNavigate();
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+            navigate('/');
+        } catch (error) {
+            console.error('Failed to log out', error);
+        }
+    };
 
     const navItems = [
         { path: '/', label: 'Home', icon: Home, hideOnMobile: true },
@@ -55,13 +65,31 @@ const MinimalHeader = () => {
 
                 <div className="header-actions desktop-only">
                     {currentUser && (
-                        <Link to="/pricing" className="credit-badge">
-                            <Zap size={14} fill="currentColor" className="zap-icon" />
-                            <span className="credit-amount">{typeof zaps === 'number' ? zaps.toFixed(0) : '0'}</span>
-                            <div className="add-btn">
-                                <Plus size={12} />
+                        <>
+                            <div className="user-profile-display">
+                                {currentUser.photoURL ? (
+                                    <img src={currentUser.photoURL} alt="User" className="user-avatar" />
+                                ) : (
+                                    <div className="user-avatar-placeholder">
+                                        <User size={14} />
+                                    </div>
+                                )}
+                                <span className="user-name">
+                                    {currentUser.displayName || currentUser.email?.split('@')[0] || 'User'}
+                                </span>
                             </div>
-                        </Link>
+
+                            <Link to="/pricing" className="credit-badge">
+                                <Zap size={14} fill="currentColor" className="zap-icon" />
+                                <span className="credit-amount">{typeof zaps === 'number' ? zaps.toFixed(0) : '0'}</span>
+                                <div className="add-btn">
+                                    <Plus size={12} />
+                                </div>
+                            </Link>
+                            <button onClick={handleLogout} className="logout-btn" title="Sign Out">
+                                <LogOut size={16} />
+                            </button>
+                        </>
                     )}
                 </div>
             </div>
@@ -189,46 +217,113 @@ const MinimalHeader = () => {
                     color: white;
                 }
 
+    
                 /* Mobile Back Nav */
+            .mobile-back-nav {
+                display: none;
+            }
+
+            .user-profile-display {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 4px 8px 4px 4px;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 20px;
+                margin-right: 8px;
+            }
+
+            .user-avatar {
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                object-fit: cover;
+                background: rgba(255, 255, 255, 0.1);
+            }
+
+            .user-avatar-placeholder {
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.1);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: rgba(255, 255, 255, 0.8);
+            }
+
+            .user-name {
+                font-size: 0.85rem;
+                font-weight: 500;
+                color: rgba(255, 255, 255, 0.9);
+                max-width: 120px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .logout-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 32px;
+                height: 32px;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 50%;
+                color: rgba(255, 255, 255, 0.6);
+                cursor: pointer;
+                transition: all 0.2s ease;
+                border: none;
+                margin-left: 0;
+            }
+
+            .logout-btn:hover {
+                background: rgba(255, 59, 48, 0.1); /* Red tint on hover for logout */
+                color: #ff453a;
+            }
+
+            /* Mobile Optimization */
+            @media (max-width: 768px) {
+                .minimal-header.hide-on-mobile-if-nav {
+                    display: none !important;
+                }
+
+                .minimal-header, .minimal-header * {
+                    box-sizing: border-box;
+                }
+
+                .header-content {
+                    padding: 0 16px;
+                    height: 52px;
+                    justify-content: flex-start; /* Align back button to left */
+                }
+
+                .desktop-only {
+                    display: none !important;
+                }
+                
+                /* Hide user name on mobile to save space, keep avatar if needed or just hide the whole block if it's in desktop-only section */
+                /* The current structure puts header-actions in desktop-only, so this entire block is hidden on mobile anyway. */
+                /* If we wanted it on mobile, we'd need to move it out of desktop-only or change that class. */
+                /* For now, adhering to 'desktop-only' parent behavior as per existing code structure. */
+
                 .mobile-back-nav {
-                    display: none;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    text-decoration: none;
+                    color: rgba(255, 255, 255, 0.9);
+                    font-weight: 500;
+                    font-size: 0.95rem;
+                    transition: opacity 0.2s;
                 }
-
-                /* Mobile Optimization */
-                @media (max-width: 768px) {
-                    .minimal-header.hide-on-mobile-if-nav {
-                        display: none !important;
-                    }
-
-                    .minimal-header, .minimal-header * {
-                        box-sizing: border-box;
-                    }
-
-                    .header-content {
-                        padding: 0 16px;
-                        height: 52px;
-                        justify-content: flex-start; /* Align back button to left */
-                    }
-
-                    .desktop-only {
-                        display: none !important;
-                    }
-
-                    .mobile-back-nav {
-                        display: flex;
-                        align-items: center;
-                        gap: 8px;
-                        text-decoration: none;
-                        color: rgba(255, 255, 255, 0.9);
-                        font-weight: 500;
-                        font-size: 0.95rem;
-                        transition: opacity 0.2s;
-                    }
-                    
-                    .mobile-back-nav:active {
-                        opacity: 0.7;
-                    }
+                
+                .mobile-back-nav:active {
+                    opacity: 0.7;
                 }
+            }
             `}</style>
         </header>
     );
