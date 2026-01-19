@@ -7,7 +7,18 @@ import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
 import SafeImage from './SafeImage';
 
-const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setActiveShowcaseImage, variant = 'feed' }) => {
+const FeedPost = ({
+    imgItem,
+    index,
+    model,
+    getOptimizedImageUrl,
+    navigate,
+    setActiveShowcaseImage,
+    variant = 'feed',
+    headerTitle,
+    headerSubtitle,
+    avatarImage
+}) => {
     const { currentUser } = useAuth();
     const { isLiked, isBookmarked, toggleLike, toggleBookmark, hidePost, isHidden } = useUserInteractions();
 
@@ -123,7 +134,8 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
                 width: '100%',
                 margin: isMasonry ? '0 0 16px 0' : '0 auto',
                 boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
-                breakInside: 'avoid' // Crucial for CSS columns
+                breakInside: 'avoid', // Crucial for CSS columns
+                marginBottom: isMasonry ? '16px' : '40px'
             }}
         >
             {/* Post Header */}
@@ -154,8 +166,8 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
                             border: '1px solid #000'
                         }}>
                             <SafeImage
-                                src={model.image}
-                                alt={model.name}
+                                src={avatarImage || model?.image}
+                                alt={headerTitle || model?.name}
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                 fallback={<div style={{ width: '100%', height: '100%', background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: '10px', color: '#888' }}>DB</span></div>}
                             />
@@ -163,10 +175,14 @@ const FeedPost = ({ imgItem, index, model, getOptimizedImageUrl, navigate, setAc
                     </div>
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'white', letterSpacing: '-0.01em' }}>DreamBees</div>
+                            <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'white', letterSpacing: '-0.01em' }}>
+                                {headerTitle || "DreamBees"}
+                            </div>
                             <BadgeCheck size={14} className="text-blue-500 fill-blue-500" />
                         </div>
-                        <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: '500' }}>Official Showcase</div>
+                        <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', fontWeight: '500' }}>
+                            {headerSubtitle || "Official Showcase"}
+                        </div>
                     </div>
                 </div>
                 <button className="btn-ghost" style={{ padding: '8px', opacity: 0.5 }}>

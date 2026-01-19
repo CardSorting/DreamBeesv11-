@@ -2,17 +2,20 @@ import React, { useEffect, useState, useRef } from 'react';
 import SEO from '../components/SEO';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, limit, getDocs, startAfter } from 'firebase/firestore';
-import { Loader2, Heart, Palette } from 'lucide-react';
+import { Loader2, Heart, Palette, Flag } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import SuggestedPanel from '../components/SuggestedPanel';
 import { useModel } from '../contexts/ModelContext';
+import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import FeedPost from '../components/FeedPost';
 import './Discovery.css'; // Re-use discovery styles
 
 export default function MockupFeed() {
     const navigate = useNavigate();
     const { availableModels } = useModel();
+    const { isLiked, toggleLike, isHidden, hidePost } = useUserInteractions();
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [lastDoc, setLastDoc] = useState(null);
@@ -113,41 +116,30 @@ export default function MockupFeed() {
                         </p>
                     </div>
 
-                    {/* Grid */}
-                    <section className="gallery-section" style={{ minHeight: '60vh' }}>
-                        <div className="masonry-grid">
-                            {images.map((imgItem, index) => {
-                                // Default square for mockups usually
-                                const ratio = '1/1';
+                    {/* Feed List */}
+                    <section className="feed-posts-container" style={{ maxWidth: '600px', margin: '0 auto', paddingBottom: '60px' }}>
+                        {images.map((imgItem, index) => {
+                            // Mock Model Data for the FeedPost
+                            const mockModel = {
+                                name: "Studio",
+                                image: "/dreambees_icon.png" // Fallback or global icon
+                            };
 
-                                return (
-                                    <article
-                                        key={imgItem.id}
-                                        className="masonry-item group"
-                                        style={{
-                                            cursor: 'pointer',
-                                            animation: `fadeInUp 0.6s ease ${index * 0.05}s both`
-                                        }}
-                                        onClick={() => setFocusImage(imgItem)}
-                                    >
-                                        <div className="image-card">
-                                            <div className="image-wrapper" style={{
-                                                aspectRatio: ratio,
-                                                background: '#1a1a1a',
-                                                overflow: 'hidden'
-                                            }}>
-                                                <img
-                                                    src={imgItem.thumbnailUrl || imgItem.url}
-                                                    alt={imgItem.prompt}
-                                                    loading="lazy"
-                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </article>
-                                );
-                            })}
-                        </div>
+                            return (
+                                <FeedPost
+                                    key={imgItem.id}
+                                    imgItem={imgItem}
+                                    index={index}
+                                    model={mockModel}
+                                    getOptimizedImageUrl={(url) => url} // No optimization needed for now
+                                    navigate={navigate}
+                                    setActiveShowcaseImage={setFocusImage}
+                                    headerTitle={imgItem.userDisplayName || "Creator"}
+                                    headerSubtitle="Mockup Studio"
+                                    avatarImage="/dreambees_icon.png" // Use app icon as avatar for now
+                                />
+                            );
+                        })}
 
                         {/* Sentinel */}
                         <div ref={lastImageElementRef} style={{ height: '20px', margin: '20px 0' }}>
