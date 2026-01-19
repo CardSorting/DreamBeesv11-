@@ -2,6 +2,7 @@
 import { db, FieldValue } from "../firebaseInit.js";
 import { getS3Client, fetchWithTimeout, fetchWithRetry, readFirstBytes, detectImageFormat, logger, retryOperation } from "../lib/utils.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
+import { withVertexRateLimiting } from "../lib/rateLimiter.js";
 
 // Local helper
 const looksLikeJSON = (buffer) => {
@@ -219,8 +220,12 @@ export const processImageTask = async (req) => {
             };
 
             logger.info(`[${requestId}] Calling Vertex AI for gemini-2.5-flash-image generation`);
-            const result = await model.generateContent(request);
-            const geminiResponse = await result.response;
+
+            // Wrap with rate limiting for 429 errors
+            const geminiResponse = await withVertexRateLimiting(async () => {
+                const result = await model.generateContent(request);
+                return result.response;
+            }, { context: `Image Generation ${requestId}`, retries: 3 });
 
             const candidate = geminiResponse.candidates?.[0];
             if (candidate?.finishReason === 'SAFETY') {

@@ -1,7 +1,6 @@
-import { db } from '../../firebase';
+import { db } from '../firebase';
 import { collection, getDocs, query } from 'firebase/firestore';
 import { Icons } from '../pages/MockupStudio/components/MockupIcons';
-import React from 'react';
 
 // Singleton instance module-level variable
 let cachedItems = null;
@@ -42,7 +41,7 @@ export const mockupCache = {
                     return {
                         id: doc.id,
                         ...data,
-                        icon: <IconComponent className="ms-icon-lg" />
+                        IconComponent // Store reference, render in consuming component
                     };
                 });
 

@@ -529,7 +529,7 @@ const MockupStudio = () => {
                                                 key={item.id} onClick={() => setSelectedItemId(item.id)}
                                                 className={`ms-item-btn ${selectedItemId === item.id ? 'selected' : ''}`}
                                             >
-                                                <div className="ms-item-icon">{item.icon}</div>
+                                                <div className="ms-item-icon">{item.IconComponent && <item.IconComponent className="ms-icon-lg" />}</div>
                                                 <span className="ms-item-label">{item.label}</span>
                                             </button>
                                         ))}

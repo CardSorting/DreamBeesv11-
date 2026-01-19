@@ -2,6 +2,7 @@
  * Mockup Feed Seed Script
  * 
  * Generates sample mockups using Vertex AI Gemini and seeds the `generations` collection.
+ * Uses Backblaze B2 for storage (same as showcase scripts).
  * 
  * Usage:
  *   node --experimental-modules scripts/seed_mockup_feed.js
@@ -11,12 +12,30 @@
 import { VertexAI } from "@google-cloud/vertexai";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import { getStorage } from "firebase-admin/storage";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// ============================================================================
+// Load Environment Variables
+// ============================================================================
+
+const envPath = path.resolve(__dirname, "../.env");
+try {
+    const envFile = await fs.readFile(envPath, "utf-8");
+    envFile.split("\n").forEach(line => {
+        const [key, value] = line.split("=");
+        if (key && value && !key.startsWith("#")) {
+            process.env[key.trim()] = value.trim();
+        }
+    });
+} catch (e) {
+    console.warn("Could not read .env file, assuming env vars are set.");
+}
 
 // ============================================================================
 // Configuration
@@ -26,30 +45,48 @@ const CONFIG = {
     COUNT: parseInt(process.argv.find(a => a.startsWith('--count='))?.split('=')[1] || '5'),
     SYSTEM_USER_ID: 'system-seed-account',
     SYSTEM_USER_NAME: 'DreamBees Studio',
-    PROJECT_ID: process.env.GCLOUD_PROJECT || 'dreambees-alchemist',
-    STORAGE_BUCKET: 'dreambees-alchemist.appspot.com',
+    PROJECT_ID: 'dreambees-alchemist',
     MODEL_NAME: 'gemini-2.5-flash-image',
     LOCATION: 'us-central1'
 };
 
+// B2 Config
+const B2_ENDPOINT = process.env.B2_ENDPOINT;
+const B2_REGION = process.env.B2_REGION;
+const B2_BUCKET = process.env.B2_BUCKET;
+const B2_KEY_ID = process.env.B2_KEY_ID;
+const B2_APP_KEY = process.env.B2_APP_KEY;
+const B2_PUBLIC_URL = process.env.B2_PUBLIC_URL;
+
+if (!B2_KEY_ID || !B2_APP_KEY) {
+    console.error("❌ Missing B2 Credentials in .env");
+    process.exit(1);
+}
+
 // ============================================================================
-// Initialize Firebase Admin (using Application Default Credentials)
+// Initialize Firebase Admin
 // ============================================================================
 
 try {
-    initializeApp({
-        projectId: CONFIG.PROJECT_ID,
-        storageBucket: CONFIG.STORAGE_BUCKET
-    });
+    initializeApp({ projectId: CONFIG.PROJECT_ID });
 } catch (e) {
     // App may already be initialized
-    if (!e.message.includes('already exists')) {
-        throw e;
-    }
 }
 
 const db = getFirestore();
-const bucket = getStorage().bucket();
+
+// ============================================================================
+// Initialize S3 Client (B2)
+// ============================================================================
+
+const s3Client = new S3Client({
+    endpoint: B2_ENDPOINT,
+    region: B2_REGION,
+    credentials: {
+        accessKeyId: B2_KEY_ID,
+        secretAccessKey: B2_APP_KEY,
+    },
+});
 
 // ============================================================================
 // Initialize Vertex AI
@@ -62,7 +99,7 @@ const getModel = () => {
 };
 
 // ============================================================================
-// Preset Definitions (Ported from PresetFactory.js)
+// Preset Definitions
 // ============================================================================
 
 const PRESETS = [
@@ -77,7 +114,7 @@ const PRESETS = [
 ];
 
 // ============================================================================
-// Sample Items (Subset from seed_mockup_items.cjs)
+// Sample Items
 // ============================================================================
 
 const SAMPLE_ITEMS = [
@@ -92,17 +129,10 @@ const SAMPLE_ITEMS = [
 ];
 
 // ============================================================================
-// Simple Design Generator (Creates gradient/pattern PNGs as base64)
+// Simple Design Generator
 // ============================================================================
 
-/**
- * Generates a simple test design as a base64 PNG.
- * Uses a canvas-like approach via a solid color with text overlay concept.
- * Since we don't have canvas in Node, we'll use a pre-made placeholder or describe to Gemini.
- */
 const generateSimpleDesign = (index) => {
-    // For simplicity, we'll use a text-based prompt approach instead of actual image generation
-    // Gemini will imagine a simple design based on the description
     const colors = ['blue', 'red', 'green', 'purple', 'orange', 'pink', 'teal', 'gold'];
     const patterns = ['geometric abstract pattern', 'minimalist logo', 'bold typography', 'gradient waves', 'floral illustration', 'retro badge'];
 
@@ -116,7 +146,7 @@ const generateSimpleDesign = (index) => {
 // Mockup Generation
 // ============================================================================
 
-const generateMockup = async (designDescription, item, preset) => {
+const generateMockup = async (designDescription, item, preset, retries = 3) => {
     const model = getModel();
 
     const scenePrompt = preset.prompt.replace(/{subject}/g, item.subjectNoun);
@@ -139,48 +169,61 @@ CRITICAL INSTRUCTIONS:
 Output only the final product mockup image.
     `.trim();
 
-    const result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
-        generationConfig: {
-            responseModalities: ['TEXT', 'IMAGE']
+    for (let attempt = 0; attempt < retries; attempt++) {
+        try {
+            const result = await model.generateContent({
+                contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+                generationConfig: {
+                    responseModalities: ['TEXT', 'IMAGE']
+                }
+            });
+
+            const response = await result.response;
+            const candidates = response.candidates;
+
+            if (!candidates || candidates.length === 0) {
+                throw new Error("No candidates returned from Vertex AI");
+            }
+
+            // Extract image from response
+            for (const part of candidates[0].content.parts || []) {
+                if (part.inlineData?.data) {
+                    return part.inlineData.data;
+                }
+            }
+
+            throw new Error("No image generated");
+        } catch (error) {
+            if (error.message.includes('429') && attempt < retries - 1) {
+                const waitTime = Math.pow(2, attempt + 1) * 10000; // 20s, 40s, 80s
+                console.log(`   ⚠️  Rate limited, waiting ${waitTime / 1000}s before retry ${attempt + 2}/${retries}...`);
+                await new Promise(r => setTimeout(r, waitTime));
+                continue;
+            }
+            throw error;
         }
-    });
-
-    const response = await result.response;
-    const candidates = response.candidates;
-
-    if (!candidates || candidates.length === 0) {
-        throw new Error("No candidates returned from Vertex AI");
     }
-
-    // Extract image from response
-    for (const part of candidates[0].content.parts || []) {
-        if (part.inlineData?.data) {
-            return part.inlineData.data;
-        }
-    }
-
-    throw new Error("No image generated");
 };
 
 // ============================================================================
-// Upload & Save
+// Upload to B2 & Save to Firestore
 // ============================================================================
 
 const uploadAndSave = async (imageBase64, item, preset, designDesc) => {
     const timestamp = Date.now();
-    const filename = `mockups/${CONFIG.SYSTEM_USER_ID}/${timestamp}.png`;
+    const key = `mockups/${timestamp}.png`;
 
-    // Upload to Storage
-    const file = bucket.file(filename);
+    // Upload to B2
     const buffer = Buffer.from(imageBase64, 'base64');
 
-    await file.save(buffer, {
-        metadata: { contentType: 'image/png' }
-    });
+    await s3Client.send(new PutObjectCommand({
+        Bucket: B2_BUCKET,
+        Key: key,
+        Body: buffer,
+        ContentType: 'image/png'
+    }));
 
-    await file.makePublic();
-    const url = `https://storage.googleapis.com/${CONFIG.STORAGE_BUCKET}/${filename}`;
+    const url = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${key}`;
 
     // Create Firestore document
     const docRef = await db.collection('generations').add({
@@ -206,7 +249,7 @@ const uploadAndSave = async (imageBase64, item, preset, designDesc) => {
 // ============================================================================
 
 const main = async () => {
-    console.log(`\n🎨 Mockup Feed Seed Script`);
+    console.log(`\n🎨 Mockup Feed Seed Script (B2 Storage)`);
     console.log(`   Generating ${CONFIG.COUNT} mockups...\n`);
 
     let successCount = 0;
@@ -229,10 +272,10 @@ const main = async () => {
             console.log(`   ❌ Failed: ${error.message}`);
         }
 
-        // Longer delay between requests to avoid rate limiting
+        // Longer delay between requests to avoid rate limiting (1 req/min)
         if (i < CONFIG.COUNT - 1) {
-            console.log(`   ⏳ Waiting 5s before next request...`);
-            await new Promise(r => setTimeout(r, 5000));
+            console.log(`   ⏳ Waiting 60s before next request (quota limit)...`);
+            await new Promise(r => setTimeout(r, 60000));
         }
     }
 
