@@ -33,6 +33,10 @@
 }
 
 /* Common Utilities */
+.hidden {
+    display: none !important;
+}
+
 .mockup-studio-page {
     min-height: 100vh;
     background-color: var(--ms-color-slate-50);
