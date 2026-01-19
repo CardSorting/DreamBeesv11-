@@ -1,8 +1,8 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, useLocation } from 'react-router-dom';
-import { AuthProvider, useAuth, AuthContext } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ModelProvider } from './contexts/ModelContext';
-import { UserInteractionsProvider, UserInteractionsContext } from './contexts/UserInteractionsContext';
+import { UserInteractionsProvider, useUserInteractions } from './contexts/UserInteractionsContext';
 import { Toaster } from 'react-hot-toast';
 import MinimalHeader from './components/MinimalHeader';
 import Footer from './components/Footer';
@@ -19,8 +19,8 @@ function Layout() {
   const { pathname } = useLocation();
   const isLanding = pathname === '/';
 
-  const { currentUser } = React.useContext(AuthContext);
-  const { userProfile, isProfileLoaded } = React.useContext(UserInteractionsContext);
+  const { currentUser } = useAuth();
+  const { userProfile, isProfileLoaded } = useUserInteractions();
 
   const isShowcaseDetail = pathname.startsWith('/discovery/') && pathname !== '/discovery';
 

@@ -24,7 +24,32 @@ export default function MockupFeed() {
 
     const observer = useRef();
     const lastImageElementRef = useRef();
+    const [isTransitioning, setIsTransitioning] = useState(false);
     const [creatorFilter, setCreatorFilter] = useState(null); // { id: '...', name: '...' }
+
+    const handleFilterChange = (newFilter) => {
+        // If clicking the same filter, do nothing
+        if (creatorFilter?.id === newFilter?.id) return;
+
+        setIsTransitioning(true);
+
+        // Wait for fade out (300ms)
+        setTimeout(() => {
+            setCreatorFilter(newFilter);
+
+            // Instant scroll to top while hidden
+            if (window.lenis) {
+                window.lenis.scrollTo(0, { immediate: true });
+            } else {
+                window.scrollTo(0, 0);
+            }
+
+            // Fade back in
+            setTimeout(() => {
+                setIsTransitioning(false);
+            }, 100);
+        }, 300);
+    };
 
     const fetchMockups = async (isLoadMore = false) => {
         try {
@@ -78,6 +103,7 @@ export default function MockupFeed() {
         setLastDoc(null); // Reset lastDoc for new query
         setHasMore(true); // Assume more data for new query
         fetchMockups();
+        // Scroll logic moved to handleFilterChange
     }, [creatorFilter]);
 
     // Intersection Observer for Infinite Scroll
@@ -98,6 +124,19 @@ export default function MockupFeed() {
 
     return (
         <div className="feed-layout-wrapper">
+            {/* Transition Overlay */}
+            <div
+                style={{
+                    position: 'fixed',
+                    inset: 0,
+                    background: '#09090b', // Match dark theme background
+                    zIndex: 9999, // High z-index to cover everything
+                    opacity: isTransitioning ? 1 : 0,
+                    pointerEvents: isTransitioning ? 'all' : 'none',
+                    transition: 'opacity 0.3s ease-in-out'
+                }}
+            />
+
             <SEO
                 title="Mockup Gallery - DreamBees"
                 description="Explore community generated product mockups."
@@ -144,7 +183,7 @@ export default function MockupFeed() {
                                 </span>
                             </div>
                             <button
-                                onClick={() => setCreatorFilter(null)}
+                                onClick={() => handleFilterChange(null)}
                                 style={{
                                     background: 'transparent',
                                     border: 'none',
@@ -184,11 +223,10 @@ export default function MockupFeed() {
                                     avatarImage="/dreambees_icon.png" // Use app icon as avatar for now
                                     onCreatorClick={() => {
                                         if (imgItem.userId) {
-                                            setCreatorFilter({
+                                            handleFilterChange({
                                                 id: imgItem.userId,
                                                 name: creatorName
                                             });
-                                            window.scrollTo({ top: 0, behavior: 'smooth' });
                                         }
                                     }}
                                 />
