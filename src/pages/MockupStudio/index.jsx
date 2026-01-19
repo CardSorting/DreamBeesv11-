@@ -463,33 +463,9 @@ const MockupStudio = () => {
 
                 {/* State: PREVIEW & GENERATING */}
                 {(appState === AppState.PREVIEW || appState === AppState.GENERATING || appState === AppState.BULK_GENERATING) && (
-                    <div className={`ms-workspace-grid ${appState === AppState.RESULT ? 'hidden' : ''}`}>
+                    <div className={`ms-workspace-single ${appState === AppState.RESULT ? 'hidden' : ''}`}>
 
-                        {/* Left Column: Preview */}
-                        <div className="ms-preview-column">
-                            <div className="ms-preview-card">
-                                <div className="ms-preview-header">
-                                    <h3 className="ms-preview-label">Source</h3>
-                                    <button onClick={handleReset} className="ms-replace-btn">Replace</button>
-                                </div>
-                                <div className="ms-preview-content">
-                                    {previewUrl && (
-                                        <div className="ms-preview-image-wrapper">
-                                            <img src={previewUrl} alt="Preview" className={`${appState === AppState.GENERATING ? 'loading' : ''}`} />
-                                            {appState === AppState.GENERATING && <div className="ms-preview-loader-overlay"><Spinner /></div>}
-                                        </div>
-                                    )}
-                                </div>
-                                {appState === AppState.BULK_GENERATING && bulkProgress && (
-                                    <div className="ms-bulk-progress">
-                                        <p>Generating... {bulkProgress.current} / {bulkProgress.total}</p>
-                                        <div className="ms-progress-track">
-                                            <div className="ms-progress-fill" style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}></div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+
 
                         {/* Right Column: Controls */}
                         <div className="ms-controls-column">
@@ -498,8 +474,9 @@ const MockupStudio = () => {
                                 {/* Product Selector */}
                                 <section className="mb-6">
                                     <div className="flex flex-col gap-3 mb-4">
-                                        <h2 className="ms-section-header">
-                                            <span className="ms-accent-bar"></span> Select Product
+                                        <h2 className="ms-section-header flex justify-between items-center w-full">
+                                            <span className="flex items-center gap-2"><span className="ms-accent-bar"></span> Select Product</span>
+                                            <Button variant="outline" onClick={handleReset} className="text-xs px-2 py-1 h-auto">Start Over</Button>
                                         </h2>
                                         <input
                                             type="text" placeholder="Search..."
