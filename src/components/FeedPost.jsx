@@ -17,7 +17,8 @@ const FeedPost = ({
     variant = 'feed',
     headerTitle,
     headerSubtitle,
-    avatarImage
+    avatarImage,
+    onCreatorClick
 }) => {
     const { currentUser } = useAuth();
     const { isLiked, isBookmarked, toggleLike, toggleBookmark, hidePost, isHidden } = useUserInteractions();
@@ -146,7 +147,20 @@ const FeedPost = ({
                 justifyContent: 'space-between',
                 borderBottom: '1px solid rgba(255,255,255,0.02)'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div
+                    onClick={(e) => {
+                        if (onCreatorClick) {
+                            e.stopPropagation();
+                            onCreatorClick();
+                        }
+                    }}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '14px',
+                        cursor: onCreatorClick ? 'pointer' : 'default'
+                    }}
+                >
                     <div style={{
                         width: '36px',
                         height: '36px',

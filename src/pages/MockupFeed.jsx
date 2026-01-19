@@ -24,6 +24,7 @@ export default function MockupFeed() {
 
     const observer = useRef();
     const lastImageElementRef = useRef();
+    const [creatorFilter, setCreatorFilter] = useState(null); // { id: '...', name: '...' }
 
     const fetchMockups = async (isLoadMore = false) => {
         try {
@@ -39,6 +40,10 @@ export default function MockupFeed() {
 
             if (isLoadMore && lastDoc) {
                 q = query(q, startAfter(lastDoc));
+            }
+
+            if (creatorFilter) {
+                q = query(q, where('userId', '==', creatorFilter.id));
             }
 
             const snapshot = await getDocs(q);
@@ -69,8 +74,11 @@ export default function MockupFeed() {
     };
 
     useEffect(() => {
+        setImages([]); // Clear images when filter changes
+        setLastDoc(null); // Reset lastDoc for new query
+        setHasMore(true); // Assume more data for new query
         fetchMockups();
-    }, []);
+    }, [creatorFilter]);
 
     // Intersection Observer for Infinite Scroll
     useEffect(() => {
@@ -116,6 +124,41 @@ export default function MockupFeed() {
                         </p>
                     </div>
 
+                    {/* Filter Indicator */}
+                    {creatorFilter && (
+                        <div style={{
+                            maxWidth: '600px',
+                            margin: '0 auto 20px',
+                            padding: '0 20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: 'rgba(168, 85, 247, 0.1)',
+                            border: '1px solid rgba(168, 85, 247, 0.3)',
+                            borderRadius: '8px',
+                            height: '50px'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span style={{ fontSize: '0.9rem', color: '#d8b4fe' }}>
+                                    Filtering by <strong>{creatorFilter.name}</strong>
+                                </span>
+                            </div>
+                            <button
+                                onClick={() => setCreatorFilter(null)}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: 'white',
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                    textDecoration: 'underline'
+                                }}
+                            >
+                                Clear Filter
+                            </button>
+                        </div>
+                    )}
+
                     {/* Feed List */}
                     <section className="feed-posts-container" style={{ maxWidth: '600px', margin: '0 auto', paddingBottom: '60px' }}>
                         {images.map((imgItem, index) => {
@@ -124,6 +167,8 @@ export default function MockupFeed() {
                                 name: "Studio",
                                 image: "/dreambees_icon.png" // Fallback or global icon
                             };
+
+                            const creatorName = imgItem.userDisplayName || "Creator";
 
                             return (
                                 <FeedPost
@@ -134,9 +179,18 @@ export default function MockupFeed() {
                                     getOptimizedImageUrl={(url) => url} // No optimization needed for now
                                     navigate={navigate}
                                     setActiveShowcaseImage={setFocusImage}
-                                    headerTitle={imgItem.userDisplayName || "Creator"}
+                                    headerTitle={creatorName}
                                     headerSubtitle="Mockup Studio"
                                     avatarImage="/dreambees_icon.png" // Use app icon as avatar for now
+                                    onCreatorClick={() => {
+                                        if (imgItem.userId) {
+                                            setCreatorFilter({
+                                                id: imgItem.userId,
+                                                name: creatorName
+                                            });
+                                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                                        }
+                                    }}
                                 />
                             );
                         })}
