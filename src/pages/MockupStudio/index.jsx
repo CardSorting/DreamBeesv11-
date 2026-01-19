@@ -170,16 +170,12 @@ const MockupStudio = () => {
                     </div>
                 )}
 
-                {/* Machine Container */}
-                <div className="gacha-machine-container">
+                {/* Machine Container - Split Layout */}
+                <div className="gacha-machine-container split-layout">
 
-                    {/* 3D Scene Layer - Always rendered for smooth transitions */}
-                    <div className="gacha-3d-layer">
-                        <BeeCrateScene appState={appState} />
-                    </div>
+                    {/* Left Panel: Controls & HUD */}
+                    <div className="gacha-ui-panel">
 
-                    {/* UI Layer */}
-                    <div className="gacha-ui-layer">
                         {/* STATE: IDLE (Coin/Token Slot) */}
                         {appState === AppState.IDLE && (
                             <div className={`gacha-slot-area ${isDragging ? 'is-dragging' : ''}`}
@@ -200,60 +196,66 @@ const MockupStudio = () => {
 
                         {/* STATE: READY (Crank It) */}
                         {appState === AppState.READY && (
-                            <div className="gacha-crank-area animate-fade-in">
-                                <div className="gacha-preview-token honeycomb-border">
-                                    <img src={previewUrl} alt="Your Token" />
+                            <div className="gacha-control-group animate-fade-in">
+                                <div className="token-preview-card">
+                                    <div className="gacha-preview-token honeycomb-border">
+                                        <img src={previewUrl} alt="Your Token" />
+                                    </div>
+                                    <p className="token-label">Nectar Ready!</p>
                                 </div>
-                                <div className="gacha-controls">
+
+                                <div className="action-buttons">
                                     <Button onClick={handleGachaSpin} className="gacha-crank-btn bee-btn">
-                                        OPEN HIVES
+                                        Open Hives
                                     </Button>
                                     <button onClick={handleReset} className="gacha-reset-text">
-                                        Discard Nectar
+                                        Discard
                                     </button>
                                 </div>
                             </div>
                         )}
 
-                        {/* STATE: SPINNING (Animation) */}
+                        {/* STATE: SPINNING (Status) */}
                         {appState === AppState.SPINNING && (
-                            <div className="gacha-spinning-area animate-fade-in">
-                                {/* Visual is now handled by 3D Scene */}
+                            <div className="gacha-status-display animate-fade-in">
+                                <div className="spinner-loader"></div>
                                 <div className="gacha-status-text">
                                     {spinProgress ?
-                                        `Extracting Honey ${spinProgress.current}/${spinProgress.total}...` :
-                                        " buzzing..."}
+                                        `Extracting Honey ${spinProgress.current}/${spinProgress.total}` :
+                                        "Buzzing..."}
                                 </div>
                             </div>
                         )}
 
-                        {/* STATE: PRIZE (Results) */}
+                        {/* STATE: PRIZE (Results List) */}
                         {appState === AppState.PRIZE && (
-                            <div className="gacha-prize-area animate-fade-in">
-                                <h2>🍯 FRESH HONEY! 3 CRATES UNLOCKED! 🍯</h2>
-
-                                <div className="gacha-capsules-grid">
+                            <div className="gacha-results-panel animate-fade-in">
+                                <h2>Fresh Honey!</h2>
+                                <div className="gacha-capsules-list">
                                     {gachaPrizes.map((prize, idx) => (
-                                        <div key={prize.id} className="gacha-capsule-card animate-pop-in" style={{ animationDelay: `${idx * 150}ms` }}>
-                                            <div className="gacha-capsule-img honey-cell-img">
+                                        <div key={prize.id} className="gacha-list-item animate-pop-in" style={{ animationDelay: `${idx * 150}ms` }}>
+                                            <div className="item-thumb">
                                                 <img src={prize.url} alt={prize.label} />
                                             </div>
-                                            <div className="gacha-capsule-info">
-                                                <span className="prize-name">{prize.label}</span>
-                                                <span className="prize-rarity">{prize.presetLabel}</span>
-                                                <a href={prize.url} download={prize.filename} className="prize-download-btn">
-                                                    Download Honey
+                                            <div className="item-details">
+                                                <span className="item-name">{prize.label}</span>
+                                                <a href={prize.url} download={prize.filename} className="item-download-link">
+                                                    Download
                                                 </a>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
-
-                                <div className="gacha-actions">
-                                    <Button variant="outline" onClick={handleReset} className="btn-secondary">Harvest More</Button>
-                                </div>
+                                <Button variant="outline" onClick={handleReset} className="btn-secondary full-width">
+                                    Harvest More
+                                </Button>
                             </div>
                         )}
+                    </div>
+
+                    {/* Right Panel: 3D Stage */}
+                    <div className="gacha-3d-stage">
+                        <BeeCrateScene appState={appState} />
                     </div>
 
                 </div>

@@ -314,14 +314,15 @@ const SceneContent = ({ appState }) => {
             <PerspectiveCamera makeDefault position={[0, 0, 9]} fov={45} />
             <ambientLight intensity={1.2} />
 
-            {/* The Main Light (Disco Ready) */}
-            <spotLight ref={lightRef} position={[10, 10, 10]} angle={0.25} penumbra={1} intensity={2} castShadow color="#FFF3E0" />
+            {/* The Main Light (Disco Ready) - Removed castShadow to prevent self-shadow flashing artifacts */}
+            <spotLight ref={lightRef} position={[10, 10, 10]} angle={0.25} penumbra={1} intensity={2} color="#FFF3E0" />
 
             <pointLight position={[-10, 5, -5]} intensity={1} color="#FFAB00" />
 
             <Stars radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={0.5} />
 
-            <Sparkles count={80} scale={10} size={2} speed={0.2} opacity={0.6} color="#FFD700" />
+            {/* Passive particles (Dust/Pollen) */}
+            <Sparkles count={80} scale={10} size={2} speed={0.4} opacity={0.5} color="#FFD700" />
 
             {appState === 'PRIZE' && (
                 <Sparkles count={300} scale={12} size={10} speed={4} opacity={1} color="#FFF" noise={2} />
@@ -335,12 +336,22 @@ const SceneContent = ({ appState }) => {
                 polar={[-Math.PI / 6, Math.PI / 6]}
                 azimuth={[-Math.PI / 4, Math.PI / 4]}
             >
-                <Float speed={2} rotationIntensity={0.2} floatIntensity={0.5}>
+                <Float speed={2} rotationIntensity={0.2} floatIntensity={0.5} floatingRange={[0.2, 0.8]}>
                     <BeeHiveMachine appState={appState} />
                 </Float>
             </PresentationControls>
 
-            <ContactShadows position={[0, -4, 0]} opacity={0.4} scale={20} blur={2} far={4} color="#FF6F00" />
+            {/* Shadow fixes: frames={1} forces continuous update to prevent temporal flickering */}
+            <ContactShadows
+                frames={1}
+                position={[0, -4.5, 0]}
+                opacity={0.5}
+                scale={30}
+                blur={2}
+                far={20}
+                resolution={1024}
+                color="#E65100"
+            />
         </>
     );
 };
