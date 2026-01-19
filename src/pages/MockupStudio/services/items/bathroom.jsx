@@ -1,8 +1,8 @@
 import React from 'react';
-import { MockupItem } from '../../types';
+
 import { Icons } from '../../components/MockupIcons';
 
-export const bathroomItems: MockupItem[] = [
+export const bathroomItems = [
   {
     id: 'bath_towel',
     label: 'Bath Towel',

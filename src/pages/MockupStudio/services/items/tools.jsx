@@ -1,8 +1,8 @@
 import React from 'react';
-import { MockupItem } from '../../types';
+
 import { Icons } from '../../components/MockupIcons';
 
-export const toolItems: MockupItem[] = [
+export const toolItems = [
   {
     id: 'hammer',
     label: 'Claw Hammer',

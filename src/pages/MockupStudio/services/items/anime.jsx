@@ -1,8 +1,8 @@
 import React from 'react';
-import { MockupItem } from '../../types';
+
 import { Icons } from '../../components/MockupIcons';
 
-export const animeItems: MockupItem[] = [
+export const animeItems = [
   {
     id: 'wall_scroll',
     label: 'Wall Scroll',

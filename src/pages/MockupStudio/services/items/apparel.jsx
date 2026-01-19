@@ -1,8 +1,8 @@
 import React from 'react';
-import { MockupItem } from '../../types';
+
 import { Icons } from '../../components/MockupIcons';
 
-export const apparelItems: MockupItem[] = [
+export const apparelItems = [
   {
     id: 'tshirt_screenprint',
     label: 'Standard T-Shirt',

@@ -1,8 +1,8 @@
 import React from 'react';
-import { MockupItem } from '../../types';
+
 import { Icons } from '../../components/MockupIcons';
 
-export const medicalItems: MockupItem[] = [
+export const medicalItems = [
   {
     id: 'pill_bottle_amber',
     label: 'Pill Bottle (Amber)',

@@ -1,8 +1,8 @@
 import React from 'react';
-import { MockupItem } from '../../types';
+
 import { Icons } from '../../components/MockupIcons';
 
-export const vehicleItems: MockupItem[] = [
+export const vehicleItems = [
   {
     id: 'sedan_wrap',
     label: 'Sedan Wrap',

@@ -1,8 +1,8 @@
 import React from 'react';
-import { MockupItem } from '../../types';
+
 import { Icons } from '../../components/MockupIcons';
 
-export const printItems: MockupItem[] = [
+export const printItems = [
   {
     id: 'print_4x6',
     label: '4x6 Print',

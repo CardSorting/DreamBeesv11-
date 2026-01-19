@@ -1,8 +1,8 @@
 import React from 'react';
-import { MockupItem } from '../../types';
+
 import { Icons } from '../../components/MockupIcons';
 
-export const packagingItems: MockupItem[] = [
+export const packagingItems = [
   {
     id: 'protein_tub',
     label: 'Protein Tub',

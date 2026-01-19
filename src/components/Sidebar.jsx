@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
     Home, User, LayoutTemplate, Zap, Film, LayoutGrid, Settings, Hexagon,
-    ChevronDown, ChevronRight, Compass
+    ChevronDown, ChevronRight, Compass,
+    Package, Images // Imported for Mockup features
 } from 'lucide-react';
 
 const CollapsibleGroup = ({ title, children, defaultOpen = true }) => {
@@ -39,6 +40,7 @@ const Sidebar = ({ activeId }) => {
             items: [
 
                 { path: '/generate', label: 'Studio', icon: Zap },
+                { path: '/mockup-studio', label: 'Mockup Studio', icon: Package },
             ]
         },
         {
@@ -47,6 +49,7 @@ const Sidebar = ({ activeId }) => {
                 { path: '/discovery', label: 'Discovery', icon: Compass },
 
                 { path: '/gallery', label: 'Gallery', icon: LayoutGrid },
+                { path: '/mockups', label: 'Mockups', icon: Images },
 
             ]
         },
@@ -63,11 +66,13 @@ const Sidebar = ({ activeId }) => {
             if (isAdmin) return true;
             // Public items for everyone
             if (item.path === '/discovery') return true;
+            if (item.path === '/mockups') return true;
 
 
             // Logged in users
             if (currentUser) {
                 if (item.path === '/generate') return true;
+                if (item.path === '/mockup-studio') return true;
                 if (item.path === '/pricing') return true;
             }
 

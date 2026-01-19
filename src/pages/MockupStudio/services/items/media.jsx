@@ -1,8 +1,8 @@
 import React from 'react';
-import { MockupItem } from '../../types';
+
 import { Icons } from '../../components/MockupIcons';
 
-export const mediaItems: MockupItem[] = [
+export const mediaItems = [
   {
     id: 'vhs_tape',
     label: 'VHS Tape',

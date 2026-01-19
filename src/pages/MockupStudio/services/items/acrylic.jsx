@@ -1,8 +1,8 @@
 import React from 'react';
-import { MockupItem } from '../../types';
+
 import { Icons } from '../../components/MockupIcons';
 
-export const acrylicItems: MockupItem[] = [
+export const acrylicItems = [
   {
     id: 'acrylic_standee',
     label: 'Acrylic Standee',

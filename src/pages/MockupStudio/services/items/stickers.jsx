@@ -1,8 +1,8 @@
 import React from 'react';
-import { MockupItem } from '../../types';
+
 import { Icons } from '../../components/MockupIcons';
 
-export const stickerItems: MockupItem[] = [
+export const stickerItems = [
   {
     id: 'sticker_diecut',
     label: 'Die-Cut Sticker',
