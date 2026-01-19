@@ -1,28 +1,35 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter as Router, useLocation } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth, AuthContext } from './contexts/AuthContext';
 import { ModelProvider } from './contexts/ModelContext';
-import { UserInteractionsProvider } from './contexts/UserInteractionsContext';
+import { UserInteractionsProvider, UserInteractionsContext } from './contexts/UserInteractionsContext';
 import { Toaster } from 'react-hot-toast';
 import MinimalHeader from './components/MinimalHeader';
 import Footer from './components/Footer';
 import BottomNav from './components/BottomNav';
 import ScrollToTop from './components/ScrollToTop';
 import BackToTop from './components/BackToTop';
-
 // Imports for Animations
 import AnimatedRoutes from './components/AnimatedRoutes';
 import SmoothScroll from './components/SmoothScroll';
 import NetworkStatus from './components/NetworkStatus';
+import UsernameOnboarding from './components/UsernameOnboarding';
 
 function Layout() {
   const { pathname } = useLocation();
   const isLanding = pathname === '/';
 
+  const { currentUser } = React.useContext(AuthContext);
+  const { userProfile, isProfileLoaded } = React.useContext(UserInteractionsContext);
+
   const isShowcaseDetail = pathname.startsWith('/discovery/') && pathname !== '/discovery';
+
+  // Check if we need to show onboarding
+  const showOnboarding = currentUser && isProfileLoaded && !userProfile.username;
 
   return (
     <div className="app-layout">
+      {showOnboarding && <UsernameOnboarding />}
       {!pathname.startsWith('/discovery') && !pathname.startsWith('/model/') && !pathname.startsWith('/mockups') && pathname !== '/' && <MinimalHeader />}
       <main className="app-main">
         <AnimatedRoutes />

@@ -32,8 +32,11 @@ export function UserInteractionsProvider({ children }) {
         zaps: 5,
         reels: 0,
         credits: 5,
-        subscriptionStatus: 'inactive'
+        subscriptionStatus: 'inactive',
+        username: '',
+        displayPreference: 'name'
     });
+    const [isProfileLoaded, setIsProfileLoaded] = useState(false);
 
     useEffect(() => {
         if (!currentUser?.uid) {
@@ -43,6 +46,7 @@ export function UserInteractionsProvider({ children }) {
             setLikes([]);
             setBookmarks([]);
             setHidden([]);
+            setIsProfileLoaded(false);
             return;
         }
 
@@ -92,8 +96,10 @@ export function UserInteractionsProvider({ children }) {
                     displayPreference: data.displayPreference || 'name'
                 });
             }
+            setIsProfileLoaded(true);
         }, (error) => {
             console.warn("Global profile listener failed:", error);
+            setIsProfileLoaded(true); // Don't block app on error, but maybe won't show onboarding
         });
 
         return () => {
@@ -351,7 +357,8 @@ export function UserInteractionsProvider({ children }) {
         // New App Likes
         likedAppIds,
         isAppLiked,
-        toggleAppLike
+        toggleAppLike,
+        isProfileLoaded
     };
 
     return (
