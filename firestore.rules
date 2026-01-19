@@ -37,6 +37,25 @@ service cloud.firestore {
       allow read: if true;
     }
 
+    // Generations: User-generated content (mockups, etc.)
+    // Default private, public only if isPublic == true
+    match /generations/{generationId} {
+      // Public read: only if explicitly marked public
+      allow read: if resource.data.isPublic == true;
+      
+      // Owner read: authenticated user can always read their own
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // Create: authenticated user, must own the document
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      
+      // Update: owner only, restricted to specific fields
+      allow update: if request.auth != null
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['isPublic', 'likes', 'hidden']);
+    }
+
     // Generation Queue: Users can create requests for themselves.
     match /generation_queue/{requestId} {
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
