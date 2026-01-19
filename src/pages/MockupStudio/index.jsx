@@ -6,9 +6,11 @@ import { Spinner } from './components/Spinner';
 import { generateMockup } from './services/geminiService';
 import { bulkService } from './services/bulkService';
 import { presetFactory } from './services/PresetFactory';
-import { db } from '../../firebase';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { Icons } from './components/MockupIcons';
+import { mockupCache } from '../../services/mockupCache';
+import { db, storage } from '../../firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Default items fallback if DB is empty or loading fails
 const DEFAULT_ITEMS = [];
@@ -23,6 +25,7 @@ const AppState = {
 };
 
 const MockupStudio = () => {
+    const { currentUser } = useAuth();
     const [appState, setAppState] = useState(AppState.IDLE);
     const [selectedFile, setSelectedFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
@@ -67,28 +70,15 @@ const MockupStudio = () => {
         return ['All', ...([...cats].filter(Boolean).sort())];
     }, [mockupItems]);
 
-    // Fetch Mockup Items
+    // Fetch Mockup Items - using Cache Service
     useEffect(() => {
         const fetchItems = async () => {
             try {
-                const q = query(collection(db, 'mockup_items'));
-                const snapshot = await getDocs(q);
+                const items = await mockupCache.getAll();
+                setMockupItems(items);
 
-                if (!snapshot.empty) {
-                    const items = snapshot.docs.map(doc => {
-                        const data = doc.data();
-                        const IconComponent = Icons[data.iconName] || Icons.Print; // Fallback
-                        return {
-                            id: doc.id,
-                            ...data,
-                            icon: <IconComponent className="ms-icon-lg" />
-                        };
-                    });
-                    // specific sort if needed, otherwise random/insertion order
-                    setMockupItems(items);
-                    if (items.length > 0) {
-                        setSelectedItemId(items[0].id);
-                    }
+                if (items.length > 0 && !selectedItemId) {
+                    setSelectedItemId(items[0].id);
                 }
             } catch (err) {
                 console.error("Failed to load mockup items:", err);
@@ -98,7 +88,7 @@ const MockupStudio = () => {
             }
         };
         fetchItems();
-    }, []);
+    }, []); // Empty dependency array is safe here due to caching logic
 
     // Icons for Categories (SVG strings ported)
     const categoryIcons = {
@@ -202,6 +192,10 @@ const MockupStudio = () => {
 
     const handleGenerate = async () => {
         if (!selectedFile) return;
+        if (!currentUser) {
+            setError('Please sign in to generate mockups.');
+            return;
+        }
 
         setAppState(AppState.GENERATING);
         setError(null);
@@ -216,12 +210,36 @@ const MockupStudio = () => {
                 finalInstruction += ` ${customPrompt.trim()}`;
             }
 
-            const resultImage = await generateMockup(selectedFile, finalInstruction, {
+            const resultImageBase64 = await generateMockup(selectedFile, finalInstruction, {
                 quality: 'high',
                 format: selectedItem.formatSpec
             });
 
-            setGeneratedImageUrl(resultImage);
+            // 1. Upload to Firebase Storage
+            const timestamp = Date.now();
+            const storagePath = `mockups/${currentUser.uid}/${timestamp}.png`;
+            const storageRef = ref(storage, storagePath);
+            await uploadString(storageRef, resultImageBase64, 'data_url');
+            const downloadUrl = await getDownloadURL(storageRef);
+
+            // 2. Save to Firestore (Generations Collection -> Public Feed)
+            await addDoc(collection(db, 'generations'), {
+                userId: currentUser.uid,
+                userEmail: currentUser.email, // Optional: for display if profile is missing
+                userDisplayName: currentUser.displayName || 'Anonymous',
+                prompt: finalInstruction,
+                url: downloadUrl,
+                thumbnailUrl: downloadUrl,
+                type: 'mockup',
+                isPublic: true,
+                createdAt: serverTimestamp(),
+                modelId: 'gemini-2.5-flash-image', // Tagging the model
+                presetId: selectedPresetId,
+                itemId: selectedItemId,
+                likes: 0
+            });
+
+            setGeneratedImageUrl(resultImageBase64); // Keep using base64 for immediate display if preferred, or use URL
             setAppState(AppState.RESULT);
         } catch (err) {
             console.error(err);
@@ -559,6 +577,30 @@ const MockupStudio = () => {
                                             >
                                                 &rarr;
                                             </button>
+                                        </div>
+                                    )}
+
+                                    {/* Empty State / Initialize DB */}
+                                    {!loadingItems && mockupItems.length === 0 && (
+                                        <div className="ms-full-span py-10 text-center flex flex-col items-center gap-4">
+                                            <p className="opacity-50">No products found. Database might be empty.</p>
+                                            <Button
+                                                onClick={async () => {
+                                                    setLoadingItems(true);
+                                                    try {
+                                                        const { seedService } = await import('../../services/seedService');
+                                                        await seedService.seedMockupItems();
+                                                        mockupCache.invalidate(); // Clear cache to force reload
+                                                        window.location.reload(); // Simple reload to fetch fresh
+                                                    } catch (err) {
+                                                        console.error(err);
+                                                        setError('Failed to seed database.');
+                                                        setLoadingItems(false);
+                                                    }
+                                                }}
+                                            >
+                                                Initialize Database
+                                            </Button>
                                         </div>
                                     )}
                                 </section>

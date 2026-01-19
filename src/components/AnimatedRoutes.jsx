@@ -35,6 +35,7 @@ const PersonaChat = React.lazy(() => import('../pages/PersonaChat'));
 const Discovery = React.lazy(() => import('../pages/Discovery'));
 const ShowcaseDetail = React.lazy(() => import('../pages/ShowcaseDetail'));
 const MockupStudio = React.lazy(() => import('../pages/MockupStudio'));
+const MockupFeed = React.lazy(() => import('../pages/MockupFeed'));
 
 import { Privacy, Terms, Cookies } from '../pages/Legal';
 import { Careers, Brand, Api, Showcase } from '../pages/Misc';
@@ -94,6 +95,7 @@ const AnimatedRoutes = () => {
 
                             <Route path="/discovery" element={<Discovery />} />
                             <Route path="/discovery/:id" element={<ShowcaseDetail />} />
+                            <Route path="/mockups" element={<MockupFeed />} />
 
 
                             {/* Admin Only Routes */}

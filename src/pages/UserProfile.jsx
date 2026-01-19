@@ -3,7 +3,9 @@ import SEO from '../components/SEO';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
-import { Loader2, Heart, Bookmark, AlertCircle, Zap, Layers, Search } from 'lucide-react';
+import { Loader2, Heart, Bookmark, AlertCircle, Zap, Layers, Search, Package } from 'lucide-react';
+import { db } from '../firebase';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 
 import ShowcaseModal from '../components/ShowcaseModal';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,9 +15,39 @@ export default function UserProfile() {
     const { availableModels } = useModel();
     const { likes, bookmarks } = useUserInteractions(); // Instant access from global cache
 
-    const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'liked', 'saved'
+    const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'liked', 'saved', 'mockups'
     const [selectedImage, setSelectedImage] = useState(null);
     const [selectedModel, setSelectedModel] = useState(null);
+    const [mockups, setMockups] = useState([]);
+    const [loadingMockups, setLoadingMockups] = useState(true);
+
+    // Fetch User Mockups
+    useEffect(() => {
+        if (!currentUser) return;
+
+        const fetchUserMockups = async () => {
+            try {
+                const q = query(
+                    collection(db, 'generations'),
+                    where('userId', '==', currentUser.uid),
+                    where('type', '==', 'mockup'),
+                    orderBy('createdAt', 'desc')
+                );
+                const snapshot = await getDocs(q);
+                const items = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                setMockups(items);
+            } catch (err) {
+                console.error("Failed to load mockups", err);
+            } finally {
+                setLoadingMockups(false);
+            }
+        };
+
+        fetchUserMockups();
+    }, [currentUser]);
 
     // Data is already loaded by Context, but we can simulate a brief fade-in if desired, 
     // or just show immediately.
@@ -25,12 +57,13 @@ export default function UserProfile() {
     const getDisplayedItems = () => {
         if (activeFilter === 'liked') return likes;
         if (activeFilter === 'saved') return bookmarks;
+        if (activeFilter === 'mockups') return mockups;
 
         // For 'all', merge and de-dupe (an image could be liked AND saved)
         // Prefer the 'saved' instance or merge props if needed.
         // Actually, let's just show unique images.
         const allMap = new Map();
-        [...likes, ...bookmarks].forEach(item => {
+        [...likes, ...bookmarks, ...mockups].forEach(item => {
             if (!allMap.has(item.id)) {
                 allMap.set(item.id, item);
             }
@@ -44,7 +77,8 @@ export default function UserProfile() {
     const displayedItems = getDisplayedItems();
 
     const handleImageClick = (image) => {
-        const model = availableModels.find(m => m.id === image.modelId) || { name: 'Unknown Model', id: 'unknown', image: '' };
+        // If it's a mockup, it might not have modelId in availableModels, but we handle fallback
+        const model = availableModels.find(m => m.id === image.modelId) || { name: 'Mockup Studio', id: 'mockup-studio', image: '' };
         setSelectedModel(model);
         setSelectedImage(image);
     };
@@ -55,6 +89,8 @@ export default function UserProfile() {
                 return { title: 'No Favorites Yet', subtitle: "Double-tap images in the feed to build your collection of favorites." };
             case 'saved':
                 return { title: 'No Bookmarks', subtitle: "Save prompts and generations here for quick access later." };
+            case 'mockups':
+                return { title: 'No Mockups', subtitle: "Visit the Mockup Studio to create product visuals." };
             default:
                 return { title: 'Studio Empty', subtitle: "Your personal library is empty. Start generating or exploring!" };
         }
@@ -110,6 +146,16 @@ export default function UserProfile() {
                             <div className="stat-label">Saved</div>
                         </div>
                     </div>
+
+                    <div className="stat-card">
+                        <div className="stat-icon bg-purple-500/10 text-purple-400">
+                            <Package size={24} />
+                        </div>
+                        <div>
+                            <div className="stat-value">{mockups.length}</div>
+                            <div className="stat-label">Mockups</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -120,6 +166,7 @@ export default function UserProfile() {
                         { id: 'all', label: 'All Media', icon: Layers },
                         { id: 'liked', label: 'Liked', icon: Heart },
                         { id: 'saved', label: 'Saved', icon: Bookmark },
+                        { id: 'mockups', label: 'Mockups', icon: Package },
                     ].map(filter => (
                         <button
                             key={filter.id}
