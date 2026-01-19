@@ -152,19 +152,19 @@ const MockupStudio = () => {
     };
 
     return (
-        <div className="gacha-page">
+        <div className="gacha-page bee-theme">
             <main className="gacha-main">
 
                 {/* Title */}
                 <header className="gacha-header">
-                    <h1>Gachapon Studio</h1>
-                    <p>Insert your design. Get 3 surprise mockups.</p>
+                    <h1>Bee Crate</h1>
+                    <p>Deposit your design. Harvest 3 surprise honey-crates.</p>
                 </header>
 
                 {/* Error Notification */}
                 {error && (
                     <div className="ms-error-alert">
-                        <span className="font-bold">Glitch:</span> {error}
+                        <span className="font-bold">Buzz Kill:</span> {error}
                         <button onClick={() => setError(null)} className="ms-error-close">✕</button>
                     </div>
                 )}
@@ -180,12 +180,12 @@ const MockupStudio = () => {
                             onClick={triggerFileInput}>
 
                             <div className="gacha-slot-visual">
-                                <div className="gacha-coin-slot">
-                                    <div className="gacha-insert-label">INSERT DESIGN</div>
+                                <div className="gacha-coin-slot beehive-slot">
+                                    <div className="gacha-insert-label">DEPOSIT NECTAR</div>
                                 </div>
                             </div>
 
-                            <p className="gacha-instruction">Drop your design here to start</p>
+                            <p className="gacha-instruction">Drop your design here to feed the hive</p>
                             <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" />
                         </div>
                     )}
@@ -193,15 +193,15 @@ const MockupStudio = () => {
                     {/* STATE: READY (Crank It) */}
                     {appState === AppState.READY && (
                         <div className="gacha-crank-area animate-fade-in">
-                            <div className="gacha-preview-token">
+                            <div className="gacha-preview-token honeycomb-border">
                                 <img src={previewUrl} alt="Your Token" />
                             </div>
                             <div className="gacha-controls">
-                                <Button onClick={handleGachaSpin} className="gacha-crank-btn">
-                                    SPIN GACHAPON
+                                <Button onClick={handleGachaSpin} className="gacha-crank-btn bee-btn">
+                                    OPEN HIVES
                                 </Button>
                                 <button onClick={handleReset} className="gacha-reset-text">
-                                    Change Token
+                                    Discard Nectar
                                 </button>
                             </div>
                         </div>
@@ -210,17 +210,17 @@ const MockupStudio = () => {
                     {/* STATE: SPINNING (Animation) */}
                     {appState === AppState.SPINNING && (
                         <div className="gacha-spinning-area animate-fade-in">
-                            <div className="gacha-machine-visual shaking">
+                            <div className="gacha-machine-visual shaking beehive-visual">
                                 <div className="gacha-globe">
-                                    <div className="gacha-capsule c1"></div>
-                                    <div className="gacha-capsule c2"></div>
-                                    <div className="gacha-capsule c3"></div>
+                                    <div className="gacha-capsule c1 honey-cell"></div>
+                                    <div className="gacha-capsule c2 honey-cell"></div>
+                                    <div className="gacha-capsule c3 honey-cell"></div>
                                 </div>
                             </div>
                             <div className="gacha-status-text">
                                 {spinProgress ?
-                                    `Dispensing Capsule ${spinProgress.current}/${spinProgress.total}...` :
-                                    "Cranking..."}
+                                    `Extracting Honey ${spinProgress.current}/${spinProgress.total}...` :
+                                    " buzzing..."}
                             </div>
                         </div>
                     )}
@@ -228,19 +228,19 @@ const MockupStudio = () => {
                     {/* STATE: PRIZE (Results) */}
                     {appState === AppState.PRIZE && (
                         <div className="gacha-prize-area animate-fade-in">
-                            <h2>🎉 YOU GOT 3 PRIZES! 🎉</h2>
+                            <h2>🍯 FRESH HONEY! 3 CRATES UNLOCKED! 🍯</h2>
 
                             <div className="gacha-capsules-grid">
                                 {gachaPrizes.map((prize, idx) => (
                                     <div key={prize.id} className="gacha-capsule-card animate-pop-in" style={{ animationDelay: `${idx * 150}ms` }}>
-                                        <div className="gacha-capsule-img">
+                                        <div className="gacha-capsule-img honey-cell-img">
                                             <img src={prize.url} alt={prize.label} />
                                         </div>
                                         <div className="gacha-capsule-info">
                                             <span className="prize-name">{prize.label}</span>
                                             <span className="prize-rarity">{prize.presetLabel}</span>
                                             <a href={prize.url} download={prize.filename} className="prize-download-btn">
-                                                Download
+                                                Download Honey
                                             </a>
                                         </div>
                                     </div>
@@ -248,7 +248,7 @@ const MockupStudio = () => {
                             </div>
 
                             <div className="gacha-actions">
-                                <Button variant="outline" onClick={handleReset} className="btn-secondary">Play Again</Button>
+                                <Button variant="outline" onClick={handleReset} className="btn-secondary">Harvest More</Button>
                             </div>
                         </div>
                     )}

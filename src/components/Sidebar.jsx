@@ -40,7 +40,7 @@ const Sidebar = ({ activeId }) => {
             items: [
 
                 { path: '/generate', label: 'Studio', icon: Zap },
-                { path: '/mockup-studio', label: 'Mockup Studio', icon: Package },
+                { path: '/mockup-studio', label: 'Bee Crate', icon: Package },
             ]
         },
         {

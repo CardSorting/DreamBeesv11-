@@ -55,8 +55,8 @@ const AppsHub = () => {
                 // Hardcoded Mockup Studio for explicit visibility without Firestore update
                 const mockupStudioApp = {
                     id: 'mockup-studio',
-                    title: 'Mockup Studio',
-                    description: 'Turn designs into photorealistic product shots instantly.',
+                    title: 'Bee Crate',
+                    description: 'Deposit a design, harvest surprise honey-mockups.',
                     icon: Presentation, // Using Presentation icon
                     tags: ['design', 'mockup', 'product', '3d'],
                     path: '/mockup-studio',

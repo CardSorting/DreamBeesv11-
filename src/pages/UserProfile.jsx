@@ -78,7 +78,7 @@ export default function UserProfile() {
 
     const handleImageClick = (image) => {
         // If it's a mockup, it might not have modelId in availableModels, but we handle fallback
-        const model = availableModels.find(m => m.id === image.modelId) || { name: 'Mockup Studio', id: 'mockup-studio', image: '' };
+        const model = availableModels.find(m => m.id === image.modelId) || { name: 'Bee Crate', id: 'mockup-studio', image: '' };
         setSelectedModel(model);
         setSelectedImage(image);
     };
@@ -90,7 +90,7 @@ export default function UserProfile() {
             case 'saved':
                 return { title: 'No Bookmarks', subtitle: "Save prompts and generations here for quick access later." };
             case 'mockups':
-                return { title: 'No Mockups', subtitle: "Visit the Mockup Studio to create product visuals." };
+                return { title: 'No Mockups', subtitle: "Visit the Bee Crate to harvest product visuals." };
             default:
                 return { title: 'Studio Empty', subtitle: "Your personal library is empty. Start generating or exploring!" };
         }
