@@ -1,0 +1,7702 @@
+[
+  {
+    "id": "duvet_cover",
+    "label": "Duvet Set",
+    "description": "Queen size duvet cover bedding.",
+    "category": "Bedroom",
+    "iconName": "Duvet"
+  },
+  {
+    "id": "pillowcase_standard",
+    "label": "Pillowcase",
+    "description": "Standard cotton pillowcase.",
+    "category": "Bedroom",
+    "iconName": "Pillow"
+  },
+  {
+    "id": "eye_mask",
+    "label": "Sleep Mask",
+    "description": "Silk sleep eye mask.",
+    "category": "Bedroom",
+    "iconName": "EyeMask"
+  },
+  {
+    "id": "throw_pillow",
+    "label": "Throw Pillow",
+    "description": "Square decorative throw pillow.",
+    "category": "Bedroom",
+    "iconName": "Pillow"
+  },
+  {
+    "id": "bed_runner",
+    "label": "Bed Runner",
+    "description": "Decorative fabric bed scarf.",
+    "category": "Bedroom",
+    "iconName": "BedRunner"
+  },
+  {
+    "id": "alarm_clock",
+    "label": "Alarm Clock",
+    "description": "Modern digital bedside clock.",
+    "category": "Bedroom",
+    "iconName": "AlarmClock"
+  },
+  {
+    "id": "diffuser_bedroom",
+    "label": "Reed Diffuser",
+    "description": "Glass bottle scent diffuser.",
+    "category": "Bedroom",
+    "iconName": "Diffuser"
+  },
+  {
+    "id": "slippers",
+    "label": "Slippers",
+    "description": "Plush indoor house slippers.",
+    "category": "Bedroom",
+    "iconName": "Slippers"
+  },
+  {
+    "id": "laundry_hamper",
+    "label": "Laundry Hamper",
+    "description": "Fabric laundry basket.",
+    "category": "Bedroom",
+    "iconName": "Hamper"
+  },
+  {
+    "id": "bed_sheet",
+    "label": "Bed Sheet",
+    "description": "Flat top bed sheet texture.",
+    "category": "Bedroom",
+    "iconName": "Duvet"
+  },
+  {
+    "id": "pill_bottle_amber",
+    "label": "Pill Bottle (Amber)",
+    "description": "Classic amber prescription pill bottle.",
+    "category": "Medical",
+    "iconName": "PillBottle"
+  },
+  {
+    "id": "pill_bottle_white",
+    "label": "Supplement Bottle",
+    "description": "White plastic supplement bottle.",
+    "category": "Medical",
+    "iconName": "PillBottle"
+  },
+  {
+    "id": "medical_dropper",
+    "label": "Dropper Bottle",
+    "description": "Amber glass medical dropper bottle.",
+    "category": "Medical",
+    "iconName": "MedicalDropper"
+  },
+  {
+    "id": "nasal_spray",
+    "label": "Nasal Spray",
+    "description": "Plastic medical spray bottle.",
+    "category": "Medical",
+    "iconName": "NasalSpray"
+  },
+  {
+    "id": "blister_pack",
+    "label": "Blister Pack",
+    "description": "Foil and plastic pill blister pack.",
+    "category": "Medical",
+    "iconName": "BlisterPack"
+  },
+  {
+    "id": "ointment_tube",
+    "label": "Ointment Tube",
+    "description": "Aluminum medical ointment tube.",
+    "category": "Medical",
+    "iconName": "OintmentTube"
+  },
+  {
+    "id": "first_aid_kit",
+    "label": "First Aid Kit",
+    "description": "Hard case first aid kit.",
+    "category": "Medical",
+    "iconName": "FirstAidKit"
+  },
+  {
+    "id": "test_kit",
+    "label": "Test Kit",
+    "description": "Medical rapid test cassette.",
+    "category": "Medical",
+    "iconName": "TestKit"
+  },
+  {
+    "id": "pharmacy_bag",
+    "label": "Pharmacy Bag",
+    "description": "Paper prescription bag.",
+    "category": "Medical",
+    "iconName": "PharmacyBag"
+  },
+  {
+    "id": "medical_scrubs",
+    "label": "Scrubs Top",
+    "description": "V-neck medical scrubs top.",
+    "category": "Medical",
+    "iconName": "Scrubs"
+  },
+  {
+    "id": "lab_coat",
+    "label": "Lab Coat",
+    "description": "White medical lab coat.",
+    "category": "Medical",
+    "iconName": "LabCoat"
+  },
+  {
+    "id": "patient_wristband",
+    "label": "Wristband",
+    "description": "Hospital patient identification band.",
+    "category": "Medical",
+    "iconName": "Wristband"
+  },
+  {
+    "id": "hospital_id",
+    "label": "Hospital ID",
+    "description": "Staff identification badge.",
+    "category": "Medical",
+    "iconName": "HospitalID"
+  },
+  {
+    "id": "pill_organizer",
+    "label": "Pill Organizer",
+    "description": "Weekly plastic pill sorter.",
+    "category": "Medical",
+    "iconName": "PillOrganizer"
+  },
+  {
+    "id": "dental_floss",
+    "label": "Dental Floss",
+    "description": "Plastic dental floss container.",
+    "category": "Medical",
+    "iconName": "DentalFloss"
+  },
+  {
+    "id": "vaccine_vial",
+    "label": "Vial",
+    "description": "Glass medical vaccine vial.",
+    "category": "Medical",
+    "iconName": "Vial"
+  },
+  {
+    "id": "iv_bag",
+    "label": "IV Bag",
+    "description": "Clear plastic IV fluid bag.",
+    "category": "Medical",
+    "iconName": "IVBag"
+  },
+  {
+    "id": "blood_bag",
+    "label": "Blood Bag",
+    "description": "Medical blood transfusion bag.",
+    "category": "Medical",
+    "iconName": "BloodBag"
+  },
+  {
+    "id": "syringe_box",
+    "label": "Syringe Box",
+    "description": "Retail box for syringes.",
+    "category": "Medical",
+    "iconName": "SyringeBox"
+  },
+  {
+    "id": "syringe_item",
+    "label": "Syringe",
+    "description": "Disposable plastic syringe.",
+    "category": "Medical",
+    "iconName": "SyringeItem"
+  },
+  {
+    "id": "bandage_box",
+    "label": "Bandage Box",
+    "description": "Box of adhesive bandages.",
+    "category": "Medical",
+    "iconName": "FirstAidKit"
+  },
+  {
+    "id": "glove_box",
+    "label": "Glove Box",
+    "description": "Box of disposable exam gloves.",
+    "category": "Medical",
+    "iconName": "GloveBox"
+  },
+  {
+    "id": "medical_mask_box",
+    "label": "Mask Box",
+    "description": "Box of surgical masks.",
+    "category": "Medical",
+    "iconName": "MedicalMask"
+  },
+  {
+    "id": "surgical_mask",
+    "label": "Surgical Mask",
+    "description": "Pleated medical face mask.",
+    "category": "Medical",
+    "iconName": "MaskItem"
+  },
+  {
+    "id": "n95_mask",
+    "label": "N95 Respirator",
+    "description": "N95 protective face mask.",
+    "category": "Medical",
+    "iconName": "N95Mask"
+  },
+  {
+    "id": "face_shield",
+    "label": "Face Shield",
+    "description": "Transparent protective face shield.",
+    "category": "Medical",
+    "iconName": "FaceShield"
+  },
+  {
+    "id": "prescription_pad",
+    "label": "Rx Pad",
+    "description": "Doctor\\",
+    "category": "Medical",
+    "iconName": "PrescriptionPad"
+  },
+  {
+    "id": "medical_folder",
+    "label": "Medical Chart",
+    "description": "Manila medical file folder.",
+    "category": "Medical",
+    "iconName": "MedicalFolder"
+  },
+  {
+    "id": "biohazard_bag",
+    "label": "Biohazard Bag",
+    "description": "Red medical waste bag.",
+    "category": "Medical",
+    "iconName": "BiohazardBag"
+  },
+  {
+    "id": "thermometer_box",
+    "label": "Thermometer",
+    "description": "Digital thermometer packaging.",
+    "category": "Medical",
+    "iconName": "ThermometerBox"
+  },
+  {
+    "id": "stethoscope",
+    "label": "Stethoscope",
+    "description": "Acoustic medical stethoscope.",
+    "category": "Medical",
+    "iconName": "Stethoscope"
+  },
+  {
+    "id": "inhaler",
+    "label": "Asthma Inhaler",
+    "description": "Metered-dose inhaler.",
+    "category": "Medical",
+    "iconName": "Inhaler"
+  },
+  {
+    "id": "bp_monitor",
+    "label": "BP Monitor",
+    "description": "Digital blood pressure monitor.",
+    "category": "Medical",
+    "iconName": "BPMonitor"
+  },
+  {
+    "id": "pulse_oximeter",
+    "label": "Pulse Oximeter",
+    "description": "Finger pulse oximeter.",
+    "category": "Medical",
+    "iconName": "PulseOximeter"
+  },
+  {
+    "id": "glucose_meter",
+    "label": "Glucose Meter",
+    "description": "Blood glucose monitoring system.",
+    "category": "Medical",
+    "iconName": "GlucoseMeter"
+  },
+  {
+    "id": "bandage_roll",
+    "label": "Gauze Bandage",
+    "description": "Rolled white medical gauze.",
+    "category": "Medical",
+    "iconName": "BandageRoll"
+  },
+  {
+    "id": "medicine_cup",
+    "label": "Medicine Cup",
+    "description": "Plastic dosing cup.",
+    "category": "Medical",
+    "iconName": "MedicineCup"
+  },
+  {
+    "id": "contact_lens_case",
+    "label": "Lens Case",
+    "description": "Contact lens storage case.",
+    "category": "Medical",
+    "iconName": "ContactLensCase"
+  },
+  {
+    "id": "hot_water_bottle",
+    "label": "Hot Water Bottle",
+    "description": "Rubber hot water bottle.",
+    "category": "Medical",
+    "iconName": "HotWaterBottle"
+  },
+  {
+    "id": "ice_pack",
+    "label": "Gel Ice Pack",
+    "description": "Reusable cold compress pack.",
+    "category": "Medical",
+    "iconName": "IcePack"
+  },
+  {
+    "id": "booster_pack",
+    "label": "Booster Pack",
+    "description": "Foil trading card booster pack.",
+    "category": "Toys",
+    "iconName": "BoosterPack"
+  },
+  {
+    "id": "vinyl_figure_box",
+    "label": "Figure Box",
+    "description": "Square vinyl figure window box.",
+    "category": "Toys",
+    "iconName": "FigureBox"
+  },
+  {
+    "id": "skateboard",
+    "label": "Skateboard",
+    "description": "Wooden skateboard deck bottom.",
+    "category": "Toys",
+    "iconName": "Skateboard"
+  },
+  {
+    "id": "teddy_bear",
+    "label": "Teddy Bear",
+    "description": "Classic plush teddy bear.",
+    "category": "Toys",
+    "iconName": "TeddyBear"
+  },
+  {
+    "id": "rubber_duck",
+    "label": "Rubber Duck",
+    "description": "Yellow rubber bath duck.",
+    "category": "Toys",
+    "iconName": "RubberDuck"
+  },
+  {
+    "id": "rpg_dice",
+    "label": "RPG Dice",
+    "description": "20-sided polyhedral dice (D20).",
+    "category": "Toys",
+    "iconName": "Dice"
+  },
+  {
+    "id": "flying_disc",
+    "label": "Flying Disc",
+    "description": "Plastic sport flying disc.",
+    "category": "Toys",
+    "iconName": "FlyingDisc"
+  },
+  {
+    "id": "minifigure",
+    "label": "Minifigure",
+    "description": "Plastic building block character.",
+    "category": "Toys",
+    "iconName": "Minifigure"
+  },
+  {
+    "id": "beach_ball",
+    "label": "Beach Ball",
+    "description": "Inflatable beach ball.",
+    "category": "Toys",
+    "iconName": "BeachBall"
+  },
+  {
+    "id": "yoyo",
+    "label": "Yo-Yo",
+    "description": "Classic plastic yo-yo toy.",
+    "category": "Toys",
+    "iconName": "YoYo"
+  },
+  {
+    "id": "board_game",
+    "label": "Board Game",
+    "description": "Rectangular board game box.",
+    "category": "Toys",
+    "iconName": "BoardGame"
+  },
+  {
+    "id": "playing_cards",
+    "label": "Playing Cards",
+    "description": "Standard playing card tuck box.",
+    "category": "Toys",
+    "iconName": "Card"
+  },
+  {
+    "id": "action_figure_blister",
+    "label": "Figure Blister",
+    "description": "Action figure blister pack.",
+    "category": "Toys",
+    "iconName": "BlisterPack"
+  },
+  {
+    "id": "car_blister",
+    "label": "Car Blister",
+    "description": "Die-cast car blister pack.",
+    "category": "Toys",
+    "iconName": "BlisterPack"
+  },
+  {
+    "id": "video_game_case",
+    "label": "Game Case",
+    "description": "Modern blue video game case.",
+    "category": "Toys",
+    "iconName": "GameCase"
+  },
+  {
+    "id": "retro_cartridge",
+    "label": "Retro Cart",
+    "description": "Classic grey NES style cartridge.",
+    "category": "Toys",
+    "iconName": "GameCartridge"
+  },
+  {
+    "id": "puzzle_box",
+    "label": "Puzzle Box",
+    "description": "Square jigsaw puzzle box.",
+    "category": "Toys",
+    "iconName": "PuzzleBox"
+  },
+  {
+    "id": "anime_figure",
+    "label": "Scale Figure",
+    "description": "PVC scale anime character figure.",
+    "category": "Toys",
+    "iconName": "AnimeFigure"
+  },
+  {
+    "id": "plush",
+    "label": "Chibi Plush",
+    "description": "Soft stuffed chibi character plush toy.",
+    "category": "Toys",
+    "iconName": "Plush"
+  },
+  {
+    "id": "capsule_toy",
+    "label": "Gachapon",
+    "description": "Plastic capsule toy figure.",
+    "category": "Toys",
+    "iconName": "CapsuleToy"
+  },
+  {
+    "id": "bobblehead",
+    "label": "Bobblehead",
+    "description": "Custom baseball player bobblehead figure.",
+    "category": "Toys",
+    "iconName": "Bobblehead"
+  },
+  {
+    "id": "game_boy_cart",
+    "label": "Handheld Cart",
+    "description": "Small square grey handheld game cartridge.",
+    "category": "Toys",
+    "iconName": "GameCartridge"
+  },
+  {
+    "id": "card_sleeve",
+    "label": "Card Sleeve",
+    "description": "Protective trading card sleeve.",
+    "category": "Toys",
+    "iconName": "CardSleeve"
+  },
+  {
+    "id": "puzzle_cube",
+    "label": "Puzzle Cube",
+    "description": "3x3 twisty puzzle cube.",
+    "category": "Toys",
+    "iconName": "PuzzleCube"
+  },
+  {
+    "id": "lunchbox",
+    "label": "Retro Lunchbox",
+    "description": "Metal tin lunchbox with handle.",
+    "category": "Toys",
+    "iconName": "Lunchbox"
+  },
+  {
+    "id": "dough_tub",
+    "label": "Dough Tub",
+    "description": "Plastic modeling dough container.",
+    "category": "Toys",
+    "iconName": "DoughTub"
+  },
+  {
+    "id": "balloon",
+    "label": "Balloon",
+    "description": "Inflated latex party balloon.",
+    "category": "Toys",
+    "iconName": "Balloon"
+  },
+  {
+    "id": "kite",
+    "label": "Diamond Kite",
+    "description": "Classic diamond-shaped kite.",
+    "category": "Toys",
+    "iconName": "Kite"
+  },
+  {
+    "id": "arcade_stick",
+    "label": "Arcade Stick",
+    "description": "Arcade fight stick controller.",
+    "category": "Toys",
+    "iconName": "ArcadeStick"
+  },
+  {
+    "id": "wooden_block",
+    "label": "Toy Block",
+    "description": "Wooden alphabet building block.",
+    "category": "Toys",
+    "iconName": "ToyBlock"
+  },
+  {
+    "id": "paddleball",
+    "label": "Paddleball",
+    "description": "Wooden paddle with ball on string.",
+    "category": "Toys",
+    "iconName": "Paddleball"
+  },
+  {
+    "id": "water_blaster",
+    "label": "Water Blaster",
+    "description": "Plastic water squirt gun.",
+    "category": "Toys",
+    "iconName": "WaterBlaster"
+  },
+  {
+    "id": "spinning_top",
+    "label": "Spinning Top",
+    "description": "Classic metal spinning top.",
+    "category": "Toys",
+    "iconName": "SpinningTop"
+  },
+  {
+    "id": "slime_jar",
+    "label": "Slime Jar",
+    "description": "Clear plastic jar of goo.",
+    "category": "Toys",
+    "iconName": "SlimeJar"
+  },
+  {
+    "id": "fidget_spinner",
+    "label": "Fidget Spinner",
+    "description": "Three-pronged fidget spinner.",
+    "category": "Toys",
+    "iconName": "FidgetSpinner"
+  },
+  {
+    "id": "doll_box",
+    "label": "Doll Box",
+    "description": "Tall window box for fashion doll.",
+    "category": "Toys",
+    "iconName": "DollBox"
+  },
+  {
+    "id": "card_binder",
+    "label": "Card Binder",
+    "description": "Collector trading card album.",
+    "category": "Toys",
+    "iconName": "Binder"
+  },
+  {
+    "id": "rc_controller",
+    "label": "RC Controller",
+    "description": "Remote control for RC car/drone.",
+    "category": "Toys",
+    "iconName": "RCController"
+  },
+  {
+    "id": "chess_board",
+    "label": "Chess Board",
+    "description": "Folding wooden chess board.",
+    "category": "Toys",
+    "iconName": "ChessBoard"
+  },
+  {
+    "id": "domino_box",
+    "label": "Domino Box",
+    "description": "Rectangular domino set box.",
+    "category": "Toys",
+    "iconName": "DominoBox"
+  },
+  {
+    "id": "magic_ball",
+    "label": "Magic Ball",
+    "description": "Fortune-telling novelty ball.",
+    "category": "Toys",
+    "iconName": "MagicBall"
+  },
+  {
+    "id": "dart_board",
+    "label": "Dart Board",
+    "description": "Bristle dartboard wall game.",
+    "category": "Toys",
+    "iconName": "DartBoard"
+  },
+  {
+    "id": "sedan_wrap",
+    "label": "Sedan Wrap",
+    "description": "Modern 4-door sedan car wrap.",
+    "category": "Vehicles",
+    "iconName": "Sedan"
+  },
+  {
+    "id": "delivery_van",
+    "label": "Delivery Van",
+    "description": "Commercial cargo delivery van.",
+    "category": "Vehicles",
+    "iconName": "Van"
+  },
+  {
+    "id": "box_truck",
+    "label": "Box Truck",
+    "description": "Large commercial moving truck.",
+    "category": "Vehicles",
+    "iconName": "BoxTruck"
+  },
+  {
+    "id": "pickup_truck",
+    "label": "Pickup Truck",
+    "description": "Heavy duty pickup truck.",
+    "category": "Vehicles",
+    "iconName": "Pickup"
+  },
+  {
+    "id": "semi_truck",
+    "label": "Semi Truck",
+    "description": "Large 18-wheeler semi trailer truck.",
+    "category": "Vehicles",
+    "iconName": "SemiTruck"
+  },
+  {
+    "id": "tanker_truck",
+    "label": "Tanker Truck",
+    "description": "Liquid transport tanker truck.",
+    "category": "Vehicles",
+    "iconName": "Tanker"
+  },
+  {
+    "id": "dump_truck",
+    "label": "Dump Truck",
+    "description": "Construction dump truck.",
+    "category": "Vehicles",
+    "iconName": "DumpTruck"
+  },
+  {
+    "id": "city_bus",
+    "label": "City Bus",
+    "description": "City transit bus advertisement.",
+    "category": "Vehicles",
+    "iconName": "Bus"
+  },
+  {
+    "id": "school_bus",
+    "label": "School Bus",
+    "description": "Classic yellow school bus.",
+    "category": "Vehicles",
+    "iconName": "SchoolBus"
+  },
+  {
+    "id": "ambulance",
+    "label": "Ambulance",
+    "description": "Emergency ambulance vehicle.",
+    "category": "Vehicles",
+    "iconName": "Ambulance"
+  },
+  {
+    "id": "police_car",
+    "label": "Police Car",
+    "description": "Police interceptor vehicle.",
+    "category": "Vehicles",
+    "iconName": "PoliceCar"
+  },
+  {
+    "id": "fire_truck",
+    "label": "Fire Truck",
+    "description": "Red fire engine truck.",
+    "category": "Vehicles",
+    "iconName": "FireTruck"
+  },
+  {
+    "id": "sports_car",
+    "label": "Sports Car",
+    "description": "Luxury high-performance sports car.",
+    "category": "Vehicles",
+    "iconName": "SportsCar"
+  },
+  {
+    "id": "food_truck",
+    "label": "Food Truck",
+    "description": "Street food truck service window.",
+    "category": "Vehicles",
+    "iconName": "FoodTruck"
+  },
+  {
+    "id": "motorcycle",
+    "label": "Motorcycle",
+    "description": "Sport bike motorcycle.",
+    "category": "Vehicles",
+    "iconName": "Motorcycle"
+  },
+  {
+    "id": "bicycle",
+    "label": "Bicycle",
+    "description": "Urban city bicycle frame.",
+    "category": "Vehicles",
+    "iconName": "Bicycle"
+  },
+  {
+    "id": "scooter",
+    "label": "E-Scooter",
+    "description": "Electric city scooter.",
+    "category": "Vehicles",
+    "iconName": "Scooter"
+  },
+  {
+    "id": "atv",
+    "label": "ATV",
+    "description": "All-terrain quad bike.",
+    "category": "Vehicles",
+    "iconName": "ATV"
+  },
+  {
+    "id": "snowmobile",
+    "label": "Snowmobile",
+    "description": "Winter snowmobile sled.",
+    "category": "Vehicles",
+    "iconName": "Snowmobile"
+  },
+  {
+    "id": "rv_camper",
+    "label": "RV Camper",
+    "description": "Recreational vehicle motorhome.",
+    "category": "Vehicles",
+    "iconName": "RV"
+  },
+  {
+    "id": "subway_car",
+    "label": "Subway Car",
+    "description": "Metro train car exterior.",
+    "category": "Vehicles",
+    "iconName": "Subway"
+  },
+  {
+    "id": "train_locomotive",
+    "label": "Train Engine",
+    "description": "Diesel locomotive train engine.",
+    "category": "Vehicles",
+    "iconName": "Train"
+  },
+  {
+    "id": "trailer",
+    "label": "Cargo Trailer",
+    "description": "Enclosed cargo trailer.",
+    "category": "Vehicles",
+    "iconName": "Trailer"
+  },
+  {
+    "id": "private_jet",
+    "label": "Private Jet",
+    "description": "Business jet fuselage.",
+    "category": "Vehicles",
+    "iconName": "Plane"
+  },
+  {
+    "id": "helicopter",
+    "label": "Helicopter",
+    "description": "Private civilian helicopter.",
+    "category": "Vehicles",
+    "iconName": "Helicopter"
+  },
+  {
+    "id": "hot_air_balloon",
+    "label": "Hot Air Balloon",
+    "description": "Large hot air balloon envelope.",
+    "category": "Vehicles",
+    "iconName": "HotAirBalloon"
+  },
+  {
+    "id": "blimp",
+    "label": "Blimp",
+    "description": "Aerial advertising blimp.",
+    "category": "Vehicles",
+    "iconName": "Blimp"
+  },
+  {
+    "id": "boat_hull",
+    "label": "Speed Boat",
+    "description": "Motorboat hull branding.",
+    "category": "Vehicles",
+    "iconName": "Boat"
+  },
+  {
+    "id": "yacht",
+    "label": "Luxury Yacht",
+    "description": "Large luxury yacht profile.",
+    "category": "Vehicles",
+    "iconName": "Yacht"
+  },
+  {
+    "id": "jet_ski",
+    "label": "Jet Ski",
+    "description": "Personal watercraft.",
+    "category": "Vehicles",
+    "iconName": "JetSki"
+  },
+  {
+    "id": "golf_cart",
+    "label": "Golf Cart",
+    "description": "Standard golf cart.",
+    "category": "Vehicles",
+    "iconName": "GolfCart"
+  },
+  {
+    "id": "race_car",
+    "label": "Race Car",
+    "description": "Formula style race car.",
+    "category": "Vehicles",
+    "iconName": "RaceCar"
+  },
+  {
+    "id": "taxi",
+    "label": "Taxi Cab",
+    "description": "Yellow city taxi cab.",
+    "category": "Vehicles",
+    "iconName": "Taxi"
+  },
+  {
+    "id": "tuk_tuk",
+    "label": "Tuk Tuk",
+    "description": "Auto rickshaw taxi.",
+    "category": "Vehicles",
+    "iconName": "TukTuk"
+  },
+  {
+    "id": "tractor",
+    "label": "Tractor",
+    "description": "Farm agricultural tractor.",
+    "category": "Vehicles",
+    "iconName": "Tractor"
+  },
+  {
+    "id": "forklift",
+    "label": "Forklift",
+    "description": "Warehouse forklift truck.",
+    "category": "Vehicles",
+    "iconName": "Forklift"
+  },
+  {
+    "id": "necklace_box",
+    "label": "Necklace Box",
+    "description": "Elegant velvet necklace box.",
+    "category": "Jewelry",
+    "iconName": "JewelryBox"
+  },
+  {
+    "id": "diamond_ring",
+    "label": "Diamond Ring",
+    "description": "Solitaire diamond engagement ring.",
+    "category": "Jewelry",
+    "iconName": "DiamondRing"
+  },
+  {
+    "id": "gold_ring",
+    "label": "Gold Ring",
+    "description": "Gold band ring on surface.",
+    "category": "Jewelry",
+    "iconName": "Ring"
+  },
+  {
+    "id": "pendant_necklace",
+    "label": "Pendant",
+    "description": "Silver chain with pendant.",
+    "category": "Jewelry",
+    "iconName": "Necklace"
+  },
+  {
+    "id": "pearl_necklace",
+    "label": "Pearl Necklace",
+    "description": "Classic pearl strand necklace.",
+    "category": "Jewelry",
+    "iconName": "PearlNecklace"
+  },
+  {
+    "id": "dog_tag",
+    "label": "Dog Tag",
+    "description": "Metal dog tag necklace.",
+    "category": "Jewelry",
+    "iconName": "DogTag"
+  },
+  {
+    "id": "earring_card",
+    "label": "Earring Card",
+    "description": "Paper display card for earrings.",
+    "category": "Jewelry",
+    "iconName": "Earrings"
+  },
+  {
+    "id": "bracelet",
+    "label": "Chain Bracelet",
+    "description": "Chain bracelet on cushion.",
+    "category": "Jewelry",
+    "iconName": "Bracelet"
+  },
+  {
+    "id": "bangle",
+    "label": "Bangle",
+    "description": "Solid metal bangle bracelet.",
+    "category": "Jewelry",
+    "iconName": "Bangle"
+  },
+  {
+    "id": "classic_watch",
+    "label": "Wrist Watch",
+    "description": "Classic analog wrist watch.",
+    "category": "Jewelry",
+    "iconName": "Watch"
+  },
+  {
+    "id": "cufflinks",
+    "label": "Cufflinks",
+    "description": "Pair of metal cufflinks.",
+    "category": "Jewelry",
+    "iconName": "Cufflinks"
+  },
+  {
+    "id": "brooch",
+    "label": "Brooch",
+    "description": "Decorative lapel brooch pin.",
+    "category": "Jewelry",
+    "iconName": "Brooch"
+  },
+  {
+    "id": "jewelry_pouch",
+    "label": "Velvet Pouch",
+    "description": "Drawstring jewelry pouch.",
+    "category": "Jewelry",
+    "iconName": "JewelryPouch"
+  },
+  {
+    "id": "dinner_plate",
+    "label": "Dinner Plate",
+    "description": "Ceramic round dinner plate.",
+    "category": "Dining",
+    "iconName": "Plate"
+  },
+  {
+    "id": "cloth_napkin",
+    "label": "Cloth Napkin",
+    "description": "Folded linen dinner napkin.",
+    "category": "Dining",
+    "iconName": "Napkin"
+  },
+  {
+    "id": "placemat",
+    "label": "Placemat",
+    "description": "Rectangular table placemat.",
+    "category": "Dining",
+    "iconName": "Mousepad"
+  },
+  {
+    "id": "coaster_set",
+    "label": "Coaster Set",
+    "description": "Stack of drink coasters.",
+    "category": "Dining",
+    "iconName": "Coaster"
+  },
+  {
+    "id": "ramen_bowl",
+    "label": "Ramen Bowl",
+    "description": "Ceramic noodle bowl.",
+    "category": "Dining",
+    "iconName": "Bowl"
+  },
+  {
+    "id": "serving_platter",
+    "label": "Serving Platter",
+    "description": "Oval ceramic serving platter.",
+    "category": "Dining",
+    "iconName": "Platter"
+  },
+  {
+    "id": "wine_glass",
+    "label": "Wine Glass",
+    "description": "Stemmed wine glass.",
+    "category": "Dining",
+    "iconName": "WineGlass"
+  },
+  {
+    "id": "martini_glass",
+    "label": "Martini Glass",
+    "description": "Classic triangular cocktail glass.",
+    "category": "Dining",
+    "iconName": "MartiniGlass"
+  },
+  {
+    "id": "rocks_glass",
+    "label": "Whiskey Glass",
+    "description": "Heavy base rocks glass.",
+    "category": "Dining",
+    "iconName": "WhiskeyGlass"
+  },
+  {
+    "id": "table_tent",
+    "label": "Table Tent",
+    "description": "Paper table menu tent.",
+    "category": "Dining",
+    "iconName": "TableTent"
+  },
+  {
+    "id": "table_runner",
+    "label": "Table Runner",
+    "description": "Fabric table runner.",
+    "category": "Dining",
+    "iconName": "TableRunner"
+  },
+  {
+    "id": "espresso_cup",
+    "label": "Espresso Cup",
+    "description": "Small espresso cup.",
+    "category": "Dining",
+    "iconName": "EspressoCup"
+  },
+  {
+    "id": "mug",
+    "label": "Mug",
+    "description": "11oz white ceramic coffee mug.",
+    "category": "Home",
+    "iconName": "Mug"
+  },
+  {
+    "id": "tumbler",
+    "label": "Tumbler",
+    "description": "Stainless steel travel tumbler.",
+    "category": "Home",
+    "iconName": "Tumbler"
+  },
+  {
+    "id": "water_bottle",
+    "label": "Water Bottle",
+    "description": "Aluminum sports water bottle.",
+    "category": "Home",
+    "iconName": "WaterBottle"
+  },
+  {
+    "id": "coaster",
+    "label": "Coaster",
+    "description": "Round cork drink coaster.",
+    "category": "Home",
+    "iconName": "Coaster"
+  },
+  {
+    "id": "glass_cup",
+    "label": "Glass Cup",
+    "description": "16oz can-shaped glass cup.",
+    "category": "Home",
+    "iconName": "GlassCup"
+  },
+  {
+    "id": "mousepad",
+    "label": "Mousepad",
+    "description": "Standard 9x8 inch fabric mousepad.",
+    "category": "Home",
+    "iconName": "Mousepad"
+  },
+  {
+    "id": "desk_mat",
+    "label": "Desk Mat",
+    "description": "Large extended desk mousepad.",
+    "category": "Home",
+    "iconName": "DeskMat"
+  },
+  {
+    "id": "playmat",
+    "label": "Playmat",
+    "description": "Large 24x14 inch desk/game mat.",
+    "category": "Home",
+    "iconName": "Playmat"
+  },
+  {
+    "id": "yoga_mat",
+    "label": "Yoga Mat",
+    "description": "Rolled foam yoga exercise mat.",
+    "category": "Home",
+    "iconName": "YogaMat"
+  },
+  {
+    "id": "blanket",
+    "label": "Blanket",
+    "description": "Soft plush fleece throw blanket.",
+    "category": "Home",
+    "iconName": "Blanket"
+  },
+  {
+    "id": "candle",
+    "label": "Candle",
+    "description": "Glass jar soy wax candle.",
+    "category": "Home",
+    "iconName": "Candle"
+  },
+  {
+    "id": "body_pillow",
+    "label": "Body Pillow",
+    "description": "Long Dakimakura body pillow.",
+    "category": "Home",
+    "iconName": "BodyPillow"
+  },
+  {
+    "id": "koozie",
+    "label": "Koozie",
+    "description": "Foam can cooler sleeve.",
+    "category": "Home",
+    "iconName": "Koozie"
+  },
+  {
+    "id": "soccer_ball",
+    "label": "Soccer Ball",
+    "description": "Classic hexagonal panel soccer ball.",
+    "category": "Sports",
+    "iconName": "SoccerBall"
+  },
+  {
+    "id": "basketball",
+    "label": "Basketball",
+    "description": "Textured orange rubber basketball.",
+    "category": "Sports",
+    "iconName": "Basketball"
+  },
+  {
+    "id": "football",
+    "label": "Football",
+    "description": "Leather American football.",
+    "category": "Sports",
+    "iconName": "Football"
+  },
+  {
+    "id": "baseball",
+    "label": "Baseball",
+    "description": "White leather baseball.",
+    "category": "Sports",
+    "iconName": "Baseball"
+  },
+  {
+    "id": "tennis_ball",
+    "label": "Tennis Ball",
+    "description": "Fuzzy neon yellow tennis ball.",
+    "category": "Sports",
+    "iconName": "TennisBall"
+  },
+  {
+    "id": "hockey_puck",
+    "label": "Hockey Puck",
+    "description": "Black rubber hockey puck.",
+    "category": "Sports",
+    "iconName": "HockeyPuck"
+  },
+  {
+    "id": "golf_ball",
+    "label": "Golf Ball",
+    "description": "Dimpled white golf ball.",
+    "category": "Sports",
+    "iconName": "GolfBall"
+  },
+  {
+    "id": "boxing_glove",
+    "label": "Boxing Glove",
+    "description": "Leather boxing glove.",
+    "category": "Sports",
+    "iconName": "BoxingGlove"
+  },
+  {
+    "id": "punching_bag",
+    "label": "Punching Bag",
+    "description": "Heavy hanging punching bag.",
+    "category": "Sports",
+    "iconName": "PunchingBag"
+  },
+  {
+    "id": "sports_jersey",
+    "label": "Soccer Jersey",
+    "description": "Short sleeve athletic team jersey.",
+    "category": "Sports",
+    "iconName": "SportsJersey"
+  },
+  {
+    "id": "basketball_jersey",
+    "label": "Basketball Jersey",
+    "description": "Sleeveless team jersey.",
+    "category": "Sports",
+    "iconName": "BasketballJersey"
+  },
+  {
+    "id": "baseball_bat",
+    "label": "Baseball Bat",
+    "description": "Wooden baseball bat.",
+    "category": "Sports",
+    "iconName": "BaseballBat"
+  },
+  {
+    "id": "cricket_bat",
+    "label": "Cricket Bat",
+    "description": "Willow wood cricket bat.",
+    "category": "Sports",
+    "iconName": "CricketBat"
+  },
+  {
+    "id": "yoga_block",
+    "label": "Yoga Block",
+    "description": "Foam yoga exercise block.",
+    "category": "Sports",
+    "iconName": "YogaBlock"
+  },
+  {
+    "id": "yoga_ball",
+    "label": "Yoga Ball",
+    "description": "Large rubber exercise ball.",
+    "category": "Sports",
+    "iconName": "YogaBall"
+  },
+  {
+    "id": "sports_towel",
+    "label": "Gym Towel",
+    "description": "Folded microfiber sports towel.",
+    "category": "Sports",
+    "iconName": "SportsTowel"
+  },
+  {
+    "id": "shaker_bottle",
+    "label": "Shaker Bottle",
+    "description": "Plastic protein shaker bottle.",
+    "category": "Sports",
+    "iconName": "ShakerBottle"
+  },
+  {
+    "id": "volleyball",
+    "label": "Volleyball",
+    "description": "White leather volleyball.",
+    "category": "Sports",
+    "iconName": "Volleyball"
+  },
+  {
+    "id": "rugby_ball",
+    "label": "Rugby Ball",
+    "description": "Oval synthetic rugby match ball.",
+    "category": "Sports",
+    "iconName": "RugbyBall"
+  },
+  {
+    "id": "surfboard",
+    "label": "Surfboard",
+    "description": "Longboard surfboard standing upright.",
+    "category": "Sports",
+    "iconName": "Surfboard"
+  },
+  {
+    "id": "snowboard",
+    "label": "Snowboard",
+    "description": "Modern snowboard deck.",
+    "category": "Sports",
+    "iconName": "Snowboard"
+  },
+  {
+    "id": "snow_goggles",
+    "label": "Snow Goggles",
+    "description": "Reflective ski/snowboard goggles.",
+    "category": "Sports",
+    "iconName": "SnowGoggles"
+  },
+  {
+    "id": "ping_pong_paddle",
+    "label": "Ping Pong Paddle",
+    "description": "Table tennis paddle with rubber face.",
+    "category": "Sports",
+    "iconName": "PingPongPaddle"
+  },
+  {
+    "id": "pickleball_paddle",
+    "label": "Pickleball Paddle",
+    "description": "Composite pickleball paddle.",
+    "category": "Sports",
+    "iconName": "PickleballPaddle"
+  },
+  {
+    "id": "bowling_pin",
+    "label": "Bowling Pin",
+    "description": "Classic white bowling pin.",
+    "category": "Sports",
+    "iconName": "BowlingPin"
+  },
+  {
+    "id": "dumbbell",
+    "label": "Dumbbell",
+    "description": "Rubber hex dumbbell weight.",
+    "category": "Sports",
+    "iconName": "Dumbbell"
+  },
+  {
+    "id": "kettlebell",
+    "label": "Kettlebell",
+    "description": "Cast iron kettlebell weight.",
+    "category": "Sports",
+    "iconName": "Kettlebell"
+  },
+  {
+    "id": "helmet",
+    "label": "Helmet",
+    "description": "Protective sports helmet.",
+    "category": "Sports",
+    "iconName": "Helmet"
+  },
+  {
+    "id": "trophy",
+    "label": "Trophy",
+    "description": "Gold championship trophy cup.",
+    "category": "Sports",
+    "iconName": "Trophy"
+  },
+  {
+    "id": "medal",
+    "label": "Medal",
+    "description": "Gold award medal on ribbon.",
+    "category": "Sports",
+    "iconName": "Medal"
+  },
+  {
+    "id": "bath_towel",
+    "label": "Bath Towel",
+    "description": "Folded fluffy cotton bath towel.",
+    "category": "Bathroom",
+    "iconName": "BathTowel"
+  },
+  {
+    "id": "hand_towel",
+    "label": "Hand Towel",
+    "description": "Hanging bathroom hand towel.",
+    "category": "Bathroom",
+    "iconName": "BathTowel"
+  },
+  {
+    "id": "shower_curtain",
+    "label": "Shower Curtain",
+    "description": "Fabric shower curtain pattern.",
+    "category": "Bathroom",
+    "iconName": "ShowerCurtain"
+  },
+  {
+    "id": "bath_mat",
+    "label": "Bath Mat",
+    "description": "Plush bathroom floor mat.",
+    "category": "Bathroom",
+    "iconName": "BathMat"
+  },
+  {
+    "id": "soap_dispenser",
+    "label": "Soap Dispenser",
+    "description": "Ceramic liquid soap pump bottle.",
+    "category": "Bathroom",
+    "iconName": "SoapDispenser"
+  },
+  {
+    "id": "toothbrush_holder",
+    "label": "Toothbrush Cup",
+    "description": "Ceramic holder for toothbrushes.",
+    "category": "Bathroom",
+    "iconName": "ToothbrushHolder"
+  },
+  {
+    "id": "bath_bomb",
+    "label": "Bath Bomb",
+    "description": "Round fizzy bath bomb.",
+    "category": "Bathroom",
+    "iconName": "BathBomb"
+  },
+  {
+    "id": "bathroom_scale",
+    "label": "Digital Scale",
+    "description": "Glass digital bathroom body scale.",
+    "category": "Bathroom",
+    "iconName": "Scale"
+  },
+  {
+    "id": "loofah",
+    "label": "Bath Loofah",
+    "description": "Mesh bath sponge pouf.",
+    "category": "Bathroom",
+    "iconName": "Loofah"
+  },
+  {
+    "id": "toiletry_bag",
+    "label": "Toiletry Bag",
+    "description": "Waterproof zippered wash bag.",
+    "category": "Bathroom",
+    "iconName": "TechPouch"
+  },
+  {
+    "id": "earbuds_case",
+    "label": "Earbuds Case",
+    "description": "Glossy white wireless earbuds charging case.",
+    "category": "Accessories",
+    "iconName": "EarbudsCase"
+  },
+  {
+    "id": "desk_calendar",
+    "label": "Desk Calendar",
+    "description": "Standing spiral-bound desk flip calendar.",
+    "category": "Print",
+    "iconName": "DeskCalendar"
+  },
+  {
+    "id": "id_badge",
+    "label": "ID Badge",
+    "description": "Plastic employee ID badge holder.",
+    "category": "Accessories",
+    "iconName": "IDBadge"
+  },
+  {
+    "id": "camp_mug",
+    "label": "Camp Mug",
+    "description": "Enamel camping mug with metal rim.",
+    "category": "Home",
+    "iconName": "CampMug"
+  },
+  {
+    "id": "tech_pouch",
+    "label": "Tech Pouch",
+    "description": "Zippered cable organizer pouch.",
+    "category": "Accessories",
+    "iconName": "TechPouch"
+  },
+  {
+    "id": "acrylic_block",
+    "label": "Acrylic Block",
+    "description": "Clear acrylic branding award block.",
+    "category": "Home",
+    "iconName": "AcrylicBlock"
+  },
+  {
+    "id": "presentation_folder",
+    "label": "Presentation Folder",
+    "description": "Corporate presentation folder.",
+    "category": "Print",
+    "iconName": "PresentationFolder"
+  },
+  {
+    "id": "hammer",
+    "label": "Claw Hammer",
+    "description": "Steel claw hammer with grip.",
+    "category": "Tools",
+    "iconName": "Hammer"
+  },
+  {
+    "id": "tape_measure",
+    "label": "Tape Measure",
+    "description": "Retractable tape measure.",
+    "category": "Tools",
+    "iconName": "TapeMeasure"
+  },
+  {
+    "id": "power_drill",
+    "label": "Power Drill",
+    "description": "Cordless power drill driver.",
+    "category": "Tools",
+    "iconName": "Drill"
+  },
+  {
+    "id": "screwdriver",
+    "label": "Screwdriver",
+    "description": "Classic screwdriver handle.",
+    "category": "Tools",
+    "iconName": "Screwdriver"
+  },
+  {
+    "id": "pliers",
+    "label": "Pliers",
+    "description": "Standard pliers with grip.",
+    "category": "Tools",
+    "iconName": "Pliers"
+  },
+  {
+    "id": "utility_knife",
+    "label": "Utility Knife",
+    "description": "Retractable box cutter knife.",
+    "category": "Tools",
+    "iconName": "UtilityKnife"
+  },
+  {
+    "id": "spirit_level",
+    "label": "Spirit Level",
+    "description": "Bubble level tool.",
+    "category": "Tools",
+    "iconName": "Level"
+  },
+  {
+    "id": "paint_bucket",
+    "label": "Paint Bucket",
+    "description": "1-gallon paint bucket.",
+    "category": "Tools",
+    "iconName": "PaintBucket"
+  },
+  {
+    "id": "paint_brush",
+    "label": "Paint Brush",
+    "description": "Wide flat paint brush.",
+    "category": "Tools",
+    "iconName": "PaintBrush"
+  },
+  {
+    "id": "wrench",
+    "label": "Wrench",
+    "description": "Adjustable metal wrench.",
+    "category": "Tools",
+    "iconName": "Wrench"
+  },
+  {
+    "id": "hard_hat",
+    "label": "Hard Hat",
+    "description": "Construction safety helmet.",
+    "category": "Tools",
+    "iconName": "HardHat"
+  },
+  {
+    "id": "safety_vest",
+    "label": "Safety Vest",
+    "description": "High-vis reflective vest.",
+    "category": "Tools",
+    "iconName": "SafetyVest"
+  },
+  {
+    "id": "work_gloves",
+    "label": "Work Gloves",
+    "description": "Leather safety work gloves.",
+    "category": "Tools",
+    "iconName": "WorkGloves"
+  },
+  {
+    "id": "traffic_cone",
+    "label": "Traffic Cone",
+    "description": "Orange safety traffic cone.",
+    "category": "Tools",
+    "iconName": "TrafficCone"
+  },
+  {
+    "id": "jerry_can",
+    "label": "Jerry Can",
+    "description": "Plastic fuel container.",
+    "category": "Tools",
+    "iconName": "JerryCan"
+  },
+  {
+    "id": "toolbox",
+    "label": "Tool Box",
+    "description": "Metal latch tool box.",
+    "category": "Tools",
+    "iconName": "ToolBox"
+  },
+  {
+    "id": "hand_saw",
+    "label": "Hand Saw",
+    "description": "Traditional wood saw.",
+    "category": "Tools",
+    "iconName": "Saw"
+  },
+  {
+    "id": "circular_saw",
+    "label": "Circular Saw",
+    "description": "Power circular saw.",
+    "category": "Tools",
+    "iconName": "CircularSaw"
+  },
+  {
+    "id": "padlock",
+    "label": "Padlock",
+    "description": "Brass or steel security lock.",
+    "category": "Tools",
+    "iconName": "Padlock"
+  },
+  {
+    "id": "flashlight",
+    "label": "Flashlight",
+    "description": "Tactical LED flashlight.",
+    "category": "Tools",
+    "iconName": "Flashlight"
+  },
+  {
+    "id": "tshirt_screenprint",
+    "label": "Standard T-Shirt",
+    "description": "Classic heavyweight cotton crew neck t-shirt.",
+    "category": "Apparel",
+    "iconName": "SimpleShirt"
+  },
+  {
+    "id": "tshirt_vintage",
+    "label": "Vintage Tee",
+    "description": "Washed oversized tee with cracked print.",
+    "category": "Apparel",
+    "iconName": "VintageTee"
+  },
+  {
+    "id": "tshirt_acid_wash",
+    "label": "Acid Wash Tee",
+    "description": "Textured acid wash/mineral wash tee.",
+    "category": "Apparel",
+    "iconName": "VintageTee"
+  },
+  {
+    "id": "tshirt_tiedye",
+    "label": "Tie-Dye Tee",
+    "description": "Spiral tie-dye cotton t-shirt.",
+    "category": "Apparel",
+    "iconName": "TieDyeShirt"
+  },
+  {
+    "id": "tshirt_longsleeve",
+    "label": "Long Sleeve",
+    "description": "Standard cotton long sleeve tee.",
+    "category": "Apparel",
+    "iconName": "LongSleeve"
+  },
+  {
+    "id": "crop_top",
+    "label": "Crop Top",
+    "description": "Fitted cotton crop top.",
+    "category": "Apparel",
+    "iconName": "CropTop"
+  },
+  {
+    "id": "polo_shirt",
+    "label": "Polo Shirt",
+    "description": "Classic pique cotton polo shirt.",
+    "category": "Apparel",
+    "iconName": "Polo"
+  },
+  {
+    "id": "sweatshirt",
+    "label": "Sweatshirt",
+    "description": "Heavyweight cotton crewneck sweatshirt.",
+    "category": "Apparel",
+    "iconName": "Sweatshirt"
+  },
+  {
+    "id": "hoodie_puff",
+    "label": "Puff Print Hoodie",
+    "description": "Fleece hoodie with 3D puff print.",
+    "category": "Apparel",
+    "iconName": "Hoodie"
+  },
+  {
+    "id": "hoodie_zip",
+    "label": "Zip-Up Hoodie",
+    "description": "Cotton fleece zip-up hoodie.",
+    "category": "Apparel",
+    "iconName": "ZipHoodie"
+  },
+  {
+    "id": "varsity_jacket",
+    "label": "Varsity Jacket",
+    "description": "Wool letterman jacket with chenille patches.",
+    "category": "Apparel",
+    "iconName": "VarsityJacket"
+  },
+  {
+    "id": "jacket_denim",
+    "label": "Denim Jacket",
+    "description": "Classic blue denim trucker jacket.",
+    "category": "Apparel",
+    "iconName": "DenimJacket"
+  },
+  {
+    "id": "jacket_puffer",
+    "label": "Puffer Jacket",
+    "description": "Quilted nylon puffer jacket.",
+    "category": "Apparel",
+    "iconName": "PufferJacket"
+  },
+  {
+    "id": "baby_jumper",
+    "label": "Baby Jumper",
+    "description": "Soft cotton baby one-piece bodysuit.",
+    "category": "Apparel",
+    "iconName": "BabyOnePiece"
+  },
+  {
+    "id": "sweatpants",
+    "label": "Sweatpants",
+    "description": "Cotton fleece jogger sweatpants.",
+    "category": "Apparel",
+    "iconName": "Pants"
+  },
+  {
+    "id": "leggings",
+    "label": "Leggings",
+    "description": "All-over print spandex leggings.",
+    "category": "Apparel",
+    "iconName": "Leggings"
+  },
+  {
+    "id": "socks_knit",
+    "label": "Knit Socks",
+    "description": "Jacquard knit crew socks.",
+    "category": "Apparel",
+    "iconName": "Socks"
+  },
+  {
+    "id": "apron",
+    "label": "Canvas Apron",
+    "description": "Heavy cotton canvas kitchen apron.",
+    "category": "Apparel",
+    "iconName": "Apron"
+  },
+  {
+    "id": "beanie_embroidered",
+    "label": "Beanie",
+    "description": "Knit cuff beanie cap with embroidery.",
+    "category": "Apparel",
+    "iconName": "Beanie"
+  },
+  {
+    "id": "beanie_leather_patch",
+    "label": "Patch Beanie",
+    "description": "Beanie with leather patch.",
+    "category": "Apparel",
+    "iconName": "Beanie"
+  },
+  {
+    "id": "baseball_cap",
+    "label": "Dad Hat",
+    "description": "Cotton twill baseball cap.",
+    "category": "Apparel",
+    "iconName": "Cap"
+  },
+  {
+    "id": "trucker_hat",
+    "label": "Trucker Hat",
+    "description": "Foam front mesh back trucker hat.",
+    "category": "Apparel",
+    "iconName": "TruckerHat"
+  },
+  {
+    "id": "bucket_hat",
+    "label": "Bucket Hat",
+    "description": "Cotton twill bucket hat.",
+    "category": "Apparel",
+    "iconName": "BucketHat"
+  },
+  {
+    "id": "sports_headband",
+    "label": "Headband",
+    "description": "Athletic sports headband.",
+    "category": "Apparel",
+    "iconName": "Headband"
+  },
+  {
+    "id": "soccer_jersey",
+    "label": "Soccer Jersey",
+    "description": "Sublimated poly sports jersey.",
+    "category": "Apparel",
+    "iconName": "SportsJersey"
+  },
+  {
+    "id": "burger_wrap",
+    "label": "Burger Wrapper",
+    "description": "Foil burger wrapper.",
+    "category": "FastFood",
+    "iconName": "Burger"
+  },
+  {
+    "id": "burger_box_clamshell",
+    "label": "Burger Box",
+    "description": "Paperboard clamshell box.",
+    "category": "FastFood",
+    "iconName": "Burger"
+  },
+  {
+    "id": "chicken_sandwich_bag",
+    "label": "Sandwich Bag",
+    "description": "Foil lined sandwich bag.",
+    "category": "FastFood",
+    "iconName": "Burger"
+  },
+  {
+    "id": "nugget_box",
+    "label": "Nugget Box",
+    "description": "Rectangular nugget carton.",
+    "category": "FastFood",
+    "iconName": "NuggetBox"
+  },
+  {
+    "id": "chicken_bucket",
+    "label": "Chicken Bucket",
+    "description": "Paper bucket for fried chicken.",
+    "category": "FastFood",
+    "iconName": "ChickenBucket"
+  },
+  {
+    "id": "fry_carton",
+    "label": "Fry Carton",
+    "description": "Red paper fry scoop.",
+    "category": "FastFood",
+    "iconName": "Fries"
+  },
+  {
+    "id": "fry_bag",
+    "label": "Fry Bag",
+    "description": "Small paper fry bag.",
+    "category": "FastFood",
+    "iconName": "FryBag"
+  },
+  {
+    "id": "onion_ring_box",
+    "label": "Onion Ring Box",
+    "description": "Wide snack box.",
+    "category": "FastFood",
+    "iconName": "ChickenBucket"
+  },
+  {
+    "id": "hot_dog_boat",
+    "label": "Hot Dog Boat",
+    "description": "Paper food boat.",
+    "category": "FastFood",
+    "iconName": "HotDog"
+  },
+  {
+    "id": "corn_dog",
+    "label": "Corn Dog",
+    "description": "Corn dog on a stick.",
+    "category": "FastFood",
+    "iconName": "CornDog"
+  },
+  {
+    "id": "pizza_slice_tray",
+    "label": "Pizza Slice Tray",
+    "description": "Triangular paper plate.",
+    "category": "FastFood",
+    "iconName": "PizzaSlice"
+  },
+  {
+    "id": "pizza_box_whole",
+    "label": "Pizza Box",
+    "description": "Closed pizza delivery box.",
+    "category": "FastFood",
+    "iconName": "PizzaBox"
+  },
+  {
+    "id": "taco_shell",
+    "label": "Hard Taco",
+    "description": "Hard shell taco.",
+    "category": "FastFood",
+    "iconName": "Taco"
+  },
+  {
+    "id": "soft_taco_wrap",
+    "label": "Soft Taco Wrap",
+    "description": "Foil wrapper for soft taco.",
+    "category": "FastFood",
+    "iconName": "Wrap"
+  },
+  {
+    "id": "burrito_foil",
+    "label": "Burrito Foil",
+    "description": "Standing foil-wrapped burrito.",
+    "category": "FastFood",
+    "iconName": "Burrito"
+  },
+  {
+    "id": "burrito_bowl",
+    "label": "Burrito Bowl",
+    "description": "Oval bowl with lid.",
+    "category": "FastFood",
+    "iconName": "Bowl"
+  },
+  {
+    "id": "nachos_tray",
+    "label": "Nachos Tray",
+    "description": "Plastic tray with cheese compartment.",
+    "category": "FastFood",
+    "iconName": "Basket"
+  },
+  {
+    "id": "quesadilla_box",
+    "label": "Quesadilla Box",
+    "description": "Flat triangular box.",
+    "category": "FastFood",
+    "iconName": "PizzaBox"
+  },
+  {
+    "id": "sub_wrap",
+    "label": "Sub Wrap",
+    "description": "Paper sub sandwich wrap.",
+    "category": "FastFood",
+    "iconName": "SubSandwich"
+  },
+  {
+    "id": "gyro_wrap",
+    "label": "Gyro Wrap",
+    "description": "Pita sandwich in foil.",
+    "category": "FastFood",
+    "iconName": "Wrap"
+  },
+  {
+    "id": "kebab_box",
+    "label": "Kebab Box",
+    "description": "Tall open kebab box.",
+    "category": "FastFood",
+    "iconName": "NoodlePail"
+  },
+  {
+    "id": "chinese_pail",
+    "label": "Noodle Pail",
+    "description": "Folded paper takeout pail.",
+    "category": "FastFood",
+    "iconName": "NoodlePail"
+  },
+  {
+    "id": "egg_roll_bag",
+    "label": "Egg Roll Bag",
+    "description": "Small wax paper bag.",
+    "category": "FastFood",
+    "iconName": "FryBag"
+  },
+  {
+    "id": "sushi_tray_plastic",
+    "label": "Sushi Tray",
+    "description": "Black plastic tray with lid.",
+    "category": "FastFood",
+    "iconName": "Sushi"
+  },
+  {
+    "id": "bento_box",
+    "label": "Bento Box",
+    "description": "Compartment bento container.",
+    "category": "FastFood",
+    "iconName": "Sushi"
+  },
+  {
+    "id": "ramen_bowl_paper",
+    "label": "Ramen Bowl",
+    "description": "Paper noodle bowl with lid.",
+    "category": "FastFood",
+    "iconName": "Bowl"
+  },
+  {
+    "id": "salad_bowl_plastic",
+    "label": "Salad Bowl",
+    "description": "Clear plastic salad bowl.",
+    "category": "FastFood",
+    "iconName": "Bowl"
+  },
+  {
+    "id": "soup_cup_paper",
+    "label": "Soup Cup",
+    "description": "Heavy paper soup cup.",
+    "category": "FastFood",
+    "iconName": "DrinkCup"
+  },
+  {
+    "id": "soda_cup_paper",
+    "label": "Soda Cup",
+    "description": "Paper drink cup with straw.",
+    "category": "FastFood",
+    "iconName": "DrinkCup"
+  },
+  {
+    "id": "milkshake_cup",
+    "label": "Milkshake Cup",
+    "description": "Clear cup with whipped cream.",
+    "category": "FastFood",
+    "iconName": "DrinkCup"
+  },
+  {
+    "id": "slushie_cup",
+    "label": "Slushie Cup",
+    "description": "Cup with dome lid.",
+    "category": "FastFood",
+    "iconName": "DrinkCup"
+  },
+  {
+    "id": "ice_cream_cone_paper",
+    "label": "Cone Sleeve",
+    "description": "Paper sleeve on waffle cone.",
+    "category": "FastFood",
+    "iconName": "IceCream"
+  },
+  {
+    "id": "sundae_cup",
+    "label": "Sundae Cup",
+    "description": "Plastic dessert cup.",
+    "category": "FastFood",
+    "iconName": "DrinkCup"
+  },
+  {
+    "id": "churro_sleeve",
+    "label": "Churro Sleeve",
+    "description": "Long paper pocket.",
+    "category": "FastFood",
+    "iconName": "Fries"
+  },
+  {
+    "id": "pretzel_paper",
+    "label": "Pretzel Wrap",
+    "description": "Greaseproof paper sheet.",
+    "category": "FastFood",
+    "iconName": "Pretzel"
+  },
+  {
+    "id": "popcorn_tub",
+    "label": "Popcorn Tub",
+    "description": "Movie theater popcorn bucket.",
+    "category": "FastFood",
+    "iconName": "ChickenBucket"
+  },
+  {
+    "id": "tenders_basket",
+    "label": "Tenders Basket",
+    "description": "Plastic diner basket.",
+    "category": "FastFood",
+    "iconName": "Basket"
+  },
+  {
+    "id": "fish_chips_box",
+    "label": "Fish & Chips",
+    "description": "Newsprint style box.",
+    "category": "FastFood",
+    "iconName": "NuggetBox"
+  },
+  {
+    "id": "donut_box_single",
+    "label": "Single Donut",
+    "description": "Small individual donut box.",
+    "category": "FastFood",
+    "iconName": "Donut"
+  },
+  {
+    "id": "cookie_bag_paper",
+    "label": "Cookie Bag",
+    "description": "Small glassine bag.",
+    "category": "FastFood",
+    "iconName": "FryBag"
+  },
+  {
+    "id": "onion_ring_tower",
+    "label": "Onion Ring Tower",
+    "description": "Vertical stack of onion rings.",
+    "category": "FastFood",
+    "iconName": "OnionRings"
+  },
+  {
+    "id": "mozzarella_sticks",
+    "label": "Mozzarella Sticks",
+    "description": "Box of cheese sticks.",
+    "category": "FastFood",
+    "iconName": "MozzarellaSticks"
+  },
+  {
+    "id": "slider_trio",
+    "label": "Slider Trio",
+    "description": "Three mini burgers.",
+    "category": "FastFood",
+    "iconName": "Slider"
+  },
+  {
+    "id": "chicken_sandwich_premium",
+    "label": "Premium Chicken",
+    "description": "Brioche bun chicken sandwich.",
+    "category": "FastFood",
+    "iconName": "Burger"
+  },
+  {
+    "id": "fish_sandwich",
+    "label": "Fish Sandwich",
+    "description": "Square fish fillet burger.",
+    "category": "FastFood",
+    "iconName": "Burger"
+  },
+  {
+    "id": "croissant_sandwich",
+    "label": "Croissant Sandwich",
+    "description": "Breakfast egg croissant.",
+    "category": "FastFood",
+    "iconName": "Burger"
+  },
+  {
+    "id": "biscuit_sandwich",
+    "label": "Biscuit Sandwich",
+    "description": "Sausage biscuit.",
+    "category": "FastFood",
+    "iconName": "Biscuit"
+  },
+  {
+    "id": "hash_brown",
+    "label": "Hash Brown",
+    "description": "Oval hash brown patty.",
+    "category": "FastFood",
+    "iconName": "HashBrown"
+  },
+  {
+    "id": "pancake_platter",
+    "label": "Pancake Platter",
+    "description": "Styrofoam breakfast container.",
+    "category": "FastFood",
+    "iconName": "Pancakes"
+  },
+  {
+    "id": "waffle_fry_box",
+    "label": "Waffle Fries",
+    "description": "Carton of waffle cut fries.",
+    "category": "FastFood",
+    "iconName": "WaffleFries"
+  },
+  {
+    "id": "loaded_fries",
+    "label": "Loaded Fries",
+    "description": "Fries with cheese and bacon.",
+    "category": "FastFood",
+    "iconName": "LoadedFries"
+  },
+  {
+    "id": "chili_dog",
+    "label": "Chili Dog",
+    "description": "Hot dog with chili topping.",
+    "category": "FastFood",
+    "iconName": "ChiliDog"
+  },
+  {
+    "id": "quesadilla_folded",
+    "label": "Quesadilla",
+    "description": "Grilled folded tortilla.",
+    "category": "FastFood",
+    "iconName": "PizzaBox"
+  },
+  {
+    "id": "nachos_box_grande",
+    "label": "Grande Nachos",
+    "description": "Large box of nachos.",
+    "category": "FastFood",
+    "iconName": "ChickenBucket"
+  },
+  {
+    "id": "taco_salad",
+    "label": "Taco Salad",
+    "description": "Crispy tortilla bowl salad.",
+    "category": "FastFood",
+    "iconName": "TacoSalad"
+  },
+  {
+    "id": "churro_bag",
+    "label": "Churros",
+    "description": "Paper bag of mini churros.",
+    "category": "FastFood",
+    "iconName": "FryBag"
+  },
+  {
+    "id": "dipped_cone",
+    "label": "Dipped Cone",
+    "description": "Chocolate dipped soft serve.",
+    "category": "FastFood",
+    "iconName": "DippedCone"
+  },
+  {
+    "id": "fancy_shake",
+    "label": "Mason Jar Shake",
+    "description": "Over-the-top milkshake.",
+    "category": "FastFood",
+    "iconName": "FancyShake"
+  },
+  {
+    "id": "smoothie_cup",
+    "label": "Smoothie",
+    "description": "Clear plastic smoothie cup.",
+    "category": "FastFood",
+    "iconName": "DrinkCup"
+  },
+  {
+    "id": "iced_coffee",
+    "label": "Iced Coffee",
+    "description": "Plastic cup with ice coffee.",
+    "category": "FastFood",
+    "iconName": "DrinkCup"
+  },
+  {
+    "id": "hot_coffee_paper",
+    "label": "Hot Coffee",
+    "description": "Paper coffee cup with lid.",
+    "category": "FastFood",
+    "iconName": "DrinkCup"
+  },
+  {
+    "id": "kids_meal_box",
+    "label": "Kids Meal",
+    "description": "Cardboard box with handles.",
+    "category": "FastFood",
+    "iconName": "KidsMealBox"
+  },
+  {
+    "id": "apple_pie_sleeve",
+    "label": "Apple Pie",
+    "description": "Rectangular pie sleeve.",
+    "category": "FastFood",
+    "iconName": "ApplePie"
+  },
+  {
+    "id": "cinnamon_stix",
+    "label": "Cinnamon Stix",
+    "description": "Box of breadsticks.",
+    "category": "FastFood",
+    "iconName": "PizzaBox"
+  },
+  {
+    "id": "chicken_wings_box",
+    "label": "Wings Box",
+    "description": "Styrofoam wing container.",
+    "category": "FastFood",
+    "iconName": "WingBox"
+  },
+  {
+    "id": "boneless_wings",
+    "label": "Boneless Wings",
+    "description": "Plastic container of wings.",
+    "category": "FastFood",
+    "iconName": "NuggetBox"
+  },
+  {
+    "id": "teriyaki_bowl",
+    "label": "Teriyaki Bowl",
+    "description": "Bowl with rice and chicken.",
+    "category": "FastFood",
+    "iconName": "RiceBowl"
+  },
+  {
+    "id": "egg_tart",
+    "label": "Egg Tart",
+    "description": "Portuguese egg tart.",
+    "category": "FastFood",
+    "iconName": "Donut"
+  },
+  {
+    "id": "bao_bun",
+    "label": "Bao Bun",
+    "description": "Steamed pork bun.",
+    "category": "FastFood",
+    "iconName": "BaoBun"
+  },
+  {
+    "id": "dim_sum_box",
+    "label": "Dim Sum Box",
+    "description": "Small takeout box.",
+    "category": "FastFood",
+    "iconName": "NuggetBox"
+  },
+  {
+    "id": "spring_rolls",
+    "label": "Spring Rolls",
+    "description": "Fried spring rolls.",
+    "category": "FastFood",
+    "iconName": "SpringRoll"
+  },
+  {
+    "id": "curry_bowl",
+    "label": "Curry Bowl",
+    "description": "Bowl of curry and rice.",
+    "category": "FastFood",
+    "iconName": "RiceBowl"
+  },
+  {
+    "id": "gyro_platter",
+    "label": "Gyro Platter",
+    "description": "Plate with gyro meat and pita.",
+    "category": "FastFood",
+    "iconName": "GyroPlatter"
+  },
+  {
+    "id": "falafel_wrap",
+    "label": "Falafel Wrap",
+    "description": "Pita wrap with falafel.",
+    "category": "FastFood",
+    "iconName": "Wrap"
+  },
+  {
+    "id": "poutine",
+    "label": "Poutine",
+    "description": "Fries with gravy and curds.",
+    "category": "FastFood",
+    "iconName": "Poutine"
+  },
+  {
+    "id": "corn_cob",
+    "label": "Corn on Cob",
+    "description": "Foil wrapped corn.",
+    "category": "FastFood",
+    "iconName": "Burrito"
+  },
+  {
+    "id": "baked_potato",
+    "label": "Baked Potato",
+    "description": "Loaded baked potato container.",
+    "category": "FastFood",
+    "iconName": "BakedPotato"
+  },
+  {
+    "id": "bread_bowl",
+    "label": "Bread Bowl",
+    "description": "Soup in sourdough bowl.",
+    "category": "FastFood",
+    "iconName": "BreadBowl"
+  },
+  {
+    "id": "salad_shaker",
+    "label": "Salad Shaker",
+    "description": "Tall plastic salad cup.",
+    "category": "FastFood",
+    "iconName": "DrinkCup"
+  },
+  {
+    "id": "parfait_cup",
+    "label": "Yogurt Parfait",
+    "description": "Yogurt with granola.",
+    "category": "FastFood",
+    "iconName": "Parfait"
+  },
+  {
+    "id": "macaron_box",
+    "label": "Macaron Box",
+    "description": "Slider box for macarons.",
+    "category": "Bakery",
+    "iconName": "MacaronBox"
+  },
+  {
+    "id": "donut_box",
+    "label": "Donut Box",
+    "description": "Flat box for donuts.",
+    "category": "Bakery",
+    "iconName": "DonutBox"
+  },
+  {
+    "id": "cake_box",
+    "label": "Cake Box",
+    "description": "Square window cake box.",
+    "category": "Bakery",
+    "iconName": "CakeBox"
+  },
+  {
+    "id": "cupcake_wrapper",
+    "label": "Cupcake Wrapper",
+    "description": "Patterned cupcake liner.",
+    "category": "Bakery",
+    "iconName": "Cupcake"
+  },
+  {
+    "id": "bread_bag",
+    "label": "Bread Bag",
+    "description": "Paper bread loaf bag.",
+    "category": "Bakery",
+    "iconName": "BreadBag"
+  },
+  {
+    "id": "cookie_pouch",
+    "label": "Cookie Pouch",
+    "description": "Resealable cookie bag.",
+    "category": "Bakery",
+    "iconName": "CoffeeBag"
+  },
+  {
+    "id": "pie_box",
+    "label": "Pie Box",
+    "description": "Window pie packaging box.",
+    "category": "Bakery",
+    "iconName": "PieBox"
+  },
+  {
+    "id": "flour_sack",
+    "label": "Flour Sack",
+    "description": "Paper flour/sugar sack.",
+    "category": "Bakery",
+    "iconName": "FlourBag"
+  },
+  {
+    "id": "croissant",
+    "label": "Croissant",
+    "description": "Flaky butter croissant.",
+    "category": "Bakery",
+    "iconName": "Croissant"
+  },
+  {
+    "id": "baguette",
+    "label": "Baguette",
+    "description": "French baguette in paper sleeve.",
+    "category": "Bakery",
+    "iconName": "Baguette"
+  },
+  {
+    "id": "muffin",
+    "label": "Muffin",
+    "description": "Standard muffin in liner.",
+    "category": "Bakery",
+    "iconName": "Muffin"
+  },
+  {
+    "id": "cinnamon_roll",
+    "label": "Cinnamon Roll",
+    "description": "Iced cinnamon roll.",
+    "category": "Bakery",
+    "iconName": "CinnamonRoll"
+  },
+  {
+    "id": "soft_pretzel",
+    "label": "Soft Pretzel",
+    "description": "Salted soft baked pretzel.",
+    "category": "Bakery",
+    "iconName": "SoftPretzel"
+  },
+  {
+    "id": "fruit_tart",
+    "label": "Fruit Tart",
+    "description": "Mini fruit tart pastry.",
+    "category": "Bakery",
+    "iconName": "Tart"
+  },
+  {
+    "id": "eclair",
+    "label": "Eclair",
+    "description": "Chocolate topped eclair.",
+    "category": "Bakery",
+    "iconName": "Eclair"
+  },
+  {
+    "id": "cookie_stack",
+    "label": "Cookie Stack",
+    "description": "Stack of chocolate chip cookies.",
+    "category": "Bakery",
+    "iconName": "CookieStack"
+  },
+  {
+    "id": "cake_slice",
+    "label": "Cake Slice",
+    "description": "Slice of layer cake on plate.",
+    "category": "Bakery",
+    "iconName": "CakeSlice"
+  },
+  {
+    "id": "loaf_pan",
+    "label": "Loaf Cake",
+    "description": "Banana bread in loaf pan.",
+    "category": "Bakery",
+    "iconName": "LoafPan"
+  },
+  {
+    "id": "pastry_box_window",
+    "label": "Pastry Box",
+    "description": "Rectangular window box.",
+    "category": "Bakery",
+    "iconName": "PastryBox"
+  },
+  {
+    "id": "cake_pop",
+    "label": "Cake Pop",
+    "description": "Round cake pop on stick.",
+    "category": "Bakery",
+    "iconName": "CakePop"
+  },
+  {
+    "id": "cannoli",
+    "label": "Cannoli",
+    "description": "Ricotta filled cannoli.",
+    "category": "Bakery",
+    "iconName": "Cannoli"
+  },
+  {
+    "id": "bagel",
+    "label": "Bagel",
+    "description": "Sesame seed bagel.",
+    "category": "Bakery",
+    "iconName": "Bagel"
+  },
+  {
+    "id": "biscotti",
+    "label": "Biscotti",
+    "description": "Almond biscotti cookie.",
+    "category": "Bakery",
+    "iconName": "Biscotti"
+  },
+  {
+    "id": "danish",
+    "label": "Fruit Danish",
+    "description": "Square fruit danish pastry.",
+    "category": "Bakery",
+    "iconName": "Danish"
+  },
+  {
+    "id": "brownie",
+    "label": "Brownie",
+    "description": "Fudge brownie square.",
+    "category": "Bakery",
+    "iconName": "Brownie"
+  },
+  {
+    "id": "cheesecake",
+    "label": "Cheesecake",
+    "description": "Slice of cheesecake.",
+    "category": "Bakery",
+    "iconName": "Cheesecake"
+  },
+  {
+    "id": "wedding_cake",
+    "label": "Wedding Cake",
+    "description": "Three-tier wedding cake.",
+    "category": "Bakery",
+    "iconName": "WeddingCake"
+  },
+  {
+    "id": "scone",
+    "label": "Scone",
+    "description": "Triangle baked scone.",
+    "category": "Bakery",
+    "iconName": "Scone"
+  },
+  {
+    "id": "chip_tube",
+    "label": "Chip Tube",
+    "description": "Cylindrical cardboard chip tube.",
+    "category": "Snacks",
+    "iconName": "ChipTube"
+  },
+  {
+    "id": "pretzel_bag",
+    "label": "Pretzel Bag",
+    "description": "Bag of salted pretzels.",
+    "category": "Snacks",
+    "iconName": "Pretzel"
+  },
+  {
+    "id": "popcorn_micro",
+    "label": "Microwave Popcorn",
+    "description": "Folded popcorn bag.",
+    "category": "Snacks",
+    "iconName": "PopcornBagMicro"
+  },
+  {
+    "id": "tortilla_chips",
+    "label": "Tortilla Chips",
+    "description": "Bag of corn chips.",
+    "category": "Snacks",
+    "iconName": "TortillaChip"
+  },
+  {
+    "id": "salsa_jar",
+    "label": "Salsa Jar",
+    "description": "Glass jar of salsa.",
+    "category": "Snacks",
+    "iconName": "SalsaJar"
+  },
+  {
+    "id": "dip_tub",
+    "label": "Dip Tub",
+    "description": "Plastic dip container.",
+    "category": "Snacks",
+    "iconName": "DipTub"
+  },
+  {
+    "id": "nut_can",
+    "label": "Mixed Nuts",
+    "description": "Composite nut can.",
+    "category": "Snacks",
+    "iconName": "NutCan"
+  },
+  {
+    "id": "trail_mix",
+    "label": "Trail Mix",
+    "description": "Stand-up pouch.",
+    "category": "Snacks",
+    "iconName": "TrailMix"
+  },
+  {
+    "id": "rice_treat",
+    "label": "Rice Treat",
+    "description": "Marshmallow rice bar.",
+    "category": "Snacks",
+    "iconName": "RiceTreat"
+  },
+  {
+    "id": "protein_bar",
+    "label": "Protein Bar",
+    "description": "Foil bar wrapper.",
+    "category": "Snacks",
+    "iconName": "ProteinBar"
+  },
+  {
+    "id": "cookie_sleeve",
+    "label": "Cookie Sleeve",
+    "description": "Pack of round cookies.",
+    "category": "Snacks",
+    "iconName": "CookieSleeve"
+  },
+  {
+    "id": "cheese_crackers",
+    "label": "Cheese Crackers",
+    "description": "Box of snack crackers.",
+    "category": "Snacks",
+    "iconName": "CrackerBox"
+  },
+  {
+    "id": "cheese_puffs",
+    "label": "Cheese Puffs",
+    "description": "Bag of puffy snacks.",
+    "category": "Snacks",
+    "iconName": "CheesePuff"
+  },
+  {
+    "id": "beef_stick",
+    "label": "Meat Stick",
+    "description": "Vacuum sealed beef stick.",
+    "category": "Snacks",
+    "iconName": "MeatStick"
+  },
+  {
+    "id": "dried_mango",
+    "label": "Dried Fruit",
+    "description": "Bag of dried fruit.",
+    "category": "Snacks",
+    "iconName": "DriedFruit"
+  },
+  {
+    "id": "choco_pretzels",
+    "label": "Choco Pretzels",
+    "description": "Chocolate covered pretzels.",
+    "category": "Snacks",
+    "iconName": "Pretzel"
+  },
+  {
+    "id": "fruit_snacks",
+    "label": "Fruit Snacks",
+    "description": "Gummy fruit snack pouch.",
+    "category": "Snacks",
+    "iconName": "GummyBear"
+  },
+  {
+    "id": "seaweed_snack",
+    "label": "Seaweed Pack",
+    "description": "Roasted seaweed tray.",
+    "category": "Snacks",
+    "iconName": "SeaweedPack"
+  },
+  {
+    "id": "pork_rinds",
+    "label": "Pork Rinds",
+    "description": "Fried pork rinds bag.",
+    "category": "Snacks",
+    "iconName": "CheesePuff"
+  },
+  {
+    "id": "sunflower_seeds",
+    "label": "Sunflower Seeds",
+    "description": "Bag of seeds.",
+    "category": "Snacks",
+    "iconName": "SeedBag"
+  },
+  {
+    "id": "pet_bed",
+    "label": "Pet Bed",
+    "description": "Plush round dog/cat bed.",
+    "category": "Pets",
+    "iconName": "PetBed"
+  },
+  {
+    "id": "pet_bowl",
+    "label": "Ceramic Bowl",
+    "description": "Ceramic pet food bowl.",
+    "category": "Pets",
+    "iconName": "PetBowl"
+  },
+  {
+    "id": "pet_feeding_mat",
+    "label": "Feeding Mat",
+    "description": "Silicone or fabric bowl mat.",
+    "category": "Pets",
+    "iconName": "FeedingMat"
+  },
+  {
+    "id": "treat_jar",
+    "label": "Treat Jar",
+    "description": "Ceramic treat canister with lid.",
+    "category": "Pets",
+    "iconName": "TreatJar"
+  },
+  {
+    "id": "dog_collar",
+    "label": "Dog Collar",
+    "description": "Nylon dog collar with buckle.",
+    "category": "Pets",
+    "iconName": "Collar"
+  },
+  {
+    "id": "dog_leash",
+    "label": "Dog Leash",
+    "description": "Standard nylon dog leash.",
+    "category": "Pets",
+    "iconName": "Leash"
+  },
+  {
+    "id": "pet_bandana",
+    "label": "Pet Bandana",
+    "description": "Triangular fabric neck bandana.",
+    "category": "Pets",
+    "iconName": "Bandana"
+  },
+  {
+    "id": "dog_hoodie",
+    "label": "Dog Hoodie",
+    "description": "Cotton pullover pet hoodie.",
+    "category": "Pets",
+    "iconName": "DogHoodie"
+  },
+  {
+    "id": "dog_raincoat",
+    "label": "Dog Raincoat",
+    "description": "Waterproof yellow rain slicker.",
+    "category": "Pets",
+    "iconName": "DogRaincoat"
+  },
+  {
+    "id": "pet_carrier",
+    "label": "Pet Carrier",
+    "description": "Soft-sided travel carrier bag.",
+    "category": "Pets",
+    "iconName": "PetCarrier"
+  },
+  {
+    "id": "waste_bag_holder",
+    "label": "Bag Holder",
+    "description": "Clip-on waste bag dispenser.",
+    "category": "Pets",
+    "iconName": "WasteBag"
+  },
+  {
+    "id": "pet_id_tag",
+    "label": "ID Tag",
+    "description": "Metal bone-shaped ID tag.",
+    "category": "Pets",
+    "iconName": "PetTag"
+  },
+  {
+    "id": "cat_scratcher",
+    "label": "Cat Scratcher",
+    "description": "Cardboard cat scratcher pad.",
+    "category": "Pets",
+    "iconName": "CatScratcher"
+  },
+  {
+    "id": "cat_house",
+    "label": "Cat House",
+    "description": "Cardboard or fabric cat cube.",
+    "category": "Pets",
+    "iconName": "CatHouse"
+  },
+  {
+    "id": "squeaky_toy",
+    "label": "Plush Toy",
+    "description": "Bone shaped plush squeaky toy.",
+    "category": "Pets",
+    "iconName": "PetToy"
+  },
+  {
+    "id": "fish_tank",
+    "label": "Fish Tank",
+    "description": "Small glass desktop aquarium.",
+    "category": "Pets",
+    "iconName": "FishTank"
+  },
+  {
+    "id": "edible_undies",
+    "label": "Edible Undies",
+    "description": "Candy necklace underwear.",
+    "category": "Adult Gifts",
+    "iconName": "BabyOnePiece"
+  },
+  {
+    "id": "willy_warmer",
+    "label": "Willy Warmer",
+    "description": "Knitted gag warmer.",
+    "category": "Adult Gifts",
+    "iconName": "Socks"
+  },
+  {
+    "id": "mankini",
+    "label": "Neon Mankini",
+    "description": "Bright green sling swimsuit.",
+    "category": "Adult Gifts",
+    "iconName": "BabyOnePiece"
+  },
+  {
+    "id": "boob_stress_ball",
+    "label": "Boob Stress Ball",
+    "description": "Soft squeeze toy.",
+    "category": "Adult Gifts",
+    "iconName": "StressBall"
+  },
+  {
+    "id": "butt_stress_ball",
+    "label": "Butt Stress Ball",
+    "description": "Peach shaped squeeze toy.",
+    "category": "Adult Gifts",
+    "iconName": "StressBall"
+  },
+  {
+    "id": "ring_for_sex_bell",
+    "label": "Sex Bell",
+    "description": "Red metal desk bell.",
+    "category": "Adult Gifts",
+    "iconName": "Bell"
+  },
+  {
+    "id": "pecker_straws",
+    "label": "Pecker Straws",
+    "description": "Novelty shape drinking straws.",
+    "category": "Adult Gifts",
+    "iconName": "DrinkCup"
+  },
+  {
+    "id": "condom_tin",
+    "label": "Condom Tin",
+    "description": "Round metal tin for protection.",
+    "category": "Adult Gifts",
+    "iconName": "RoundTin"
+  },
+  {
+    "id": "inflatable_sheep",
+    "label": "Love Sheep",
+    "description": "Inflatable gag gift animal.",
+    "category": "Adult Gifts",
+    "iconName": "Inflatable"
+  },
+  {
+    "id": "blowup_doll_male",
+    "label": "Male Doll",
+    "description": "Inflatable male companion.",
+    "category": "Adult Gifts",
+    "iconName": "Inflatable"
+  },
+  {
+    "id": "grow_boyfriend",
+    "label": "Grow a Boyfriend",
+    "description": "Water expanding figure.",
+    "category": "Adult Gifts",
+    "iconName": "BlisterPack"
+  },
+  {
+    "id": "grow_girlfriend",
+    "label": "Grow a Girlfriend",
+    "description": "Water expanding figure.",
+    "category": "Adult Gifts",
+    "iconName": "BlisterPack"
+  },
+  {
+    "id": "pasta_shapes",
+    "label": "Naughty Pasta",
+    "description": "Novelty shaped dry pasta.",
+    "category": "Adult Gifts",
+    "iconName": "GummyBear"
+  },
+  {
+    "id": "sexy_apron_nurse",
+    "label": "Nurse Apron",
+    "description": "Apron with sexy nurse print.",
+    "category": "Adult Gifts",
+    "iconName": "Apron"
+  },
+  {
+    "id": "sexy_apron_fireman",
+    "label": "Fireman Apron",
+    "description": "Apron with muscular fireman print.",
+    "category": "Adult Gifts",
+    "iconName": "Apron"
+  },
+  {
+    "id": "boob_mug",
+    "label": "Boob Mug",
+    "description": "Ceramic mug with shape.",
+    "category": "Adult Gifts",
+    "iconName": "Mug"
+  },
+  {
+    "id": "fart_pills",
+    "label": "Fart Pills",
+    "description": "Novelty candy medicine bottle.",
+    "category": "Adult Gifts",
+    "iconName": "PillBottle"
+  },
+  {
+    "id": "penis_gummies",
+    "label": "Pecker Gummies",
+    "description": "Bag of shaped gummy candy.",
+    "category": "Adult Gifts",
+    "iconName": "GummyBear"
+  },
+  {
+    "id": "soap_rope",
+    "label": "Soap on Rope",
+    "description": "Novelty shaped soap on rope.",
+    "category": "Adult Gifts",
+    "iconName": "SoapBar"
+  },
+  {
+    "id": "toilet_paper_money",
+    "label": "Money TP",
+    "description": "Toilet paper printed with cash.",
+    "category": "Adult Gifts",
+    "iconName": "BathTowel"
+  },
+  {
+    "id": "toilet_paper_crime",
+    "label": "Crime Scene TP",
+    "description": "Yellow caution tape print TP.",
+    "category": "Adult Gifts",
+    "iconName": "BathTowel"
+  },
+  {
+    "id": "massage_oil",
+    "label": "Massage Oil",
+    "description": "Bottle of scented massage oil.",
+    "category": "Adult Gifts",
+    "iconName": "Lotion"
+  },
+  {
+    "id": "lube_bottle",
+    "label": "Lube Bottle",
+    "description": "Personal lubricant pump bottle.",
+    "category": "Adult Gifts",
+    "iconName": "Pump"
+  },
+  {
+    "id": "massage_candle",
+    "label": "Massage Candle",
+    "description": "Pourable oil candle.",
+    "category": "Adult Gifts",
+    "iconName": "Candle"
+  },
+  {
+    "id": "fuzzy_handcuffs",
+    "label": "Fuzzy Cuffs",
+    "description": "Fur lined toy handcuffs.",
+    "category": "Adult Gifts",
+    "iconName": "Handcuffs"
+  },
+  {
+    "id": "satin_blindfold",
+    "label": "Satin Blindfold",
+    "description": "Soft eye mask for play.",
+    "category": "Adult Gifts",
+    "iconName": "Blindfold"
+  },
+  {
+    "id": "feather_tickler",
+    "label": "Feather Tickler",
+    "description": "Tickler with handle.",
+    "category": "Adult Gifts",
+    "iconName": "Feather"
+  },
+  {
+    "id": "leather_paddle",
+    "label": "Paddle",
+    "description": "Faux leather paddle.",
+    "category": "Adult Gifts",
+    "iconName": "Paddle"
+  },
+  {
+    "id": "whip_toy",
+    "label": "Flogger",
+    "description": "Novelty tassel whip.",
+    "category": "Adult Gifts",
+    "iconName": "Whip"
+  },
+  {
+    "id": "kama_sutra_cards",
+    "label": "Position Cards",
+    "description": "Deck of position illustrations.",
+    "category": "Adult Gifts",
+    "iconName": "CardDeck"
+  },
+  {
+    "id": "position_dice",
+    "label": "Position Dice",
+    "description": "Glow in dark action dice.",
+    "category": "Adult Gifts",
+    "iconName": "DiceFuzzy"
+  },
+  {
+    "id": "coupon_book",
+    "label": "Naughty Coupons",
+    "description": "Book of romantic IOUs.",
+    "category": "Adult Gifts",
+    "iconName": "Book"
+  },
+  {
+    "id": "body_paint",
+    "label": "Body Paint",
+    "description": "Jar of edible chocolate paint.",
+    "category": "Adult Gifts",
+    "iconName": "Jar"
+  },
+  {
+    "id": "body_tape",
+    "label": "Body Tape",
+    "description": "Roll of bondage tape.",
+    "category": "Adult Gifts",
+    "iconName": "TapeRoll"
+  },
+  {
+    "id": "pasties",
+    "label": "Nipple Pasties",
+    "description": "Decorative covers.",
+    "category": "Adult Gifts",
+    "iconName": "Sticker"
+  },
+  {
+    "id": "pheromone_spray",
+    "label": "Pheromone Spray",
+    "description": "Attraction perfume.",
+    "category": "Adult Gifts",
+    "iconName": "SprayBottle"
+  },
+  {
+    "id": "beer_pong_kit",
+    "label": "Strip Pong",
+    "description": "Beer pong kit with dare balls.",
+    "category": "Adult Gifts",
+    "iconName": "BeerPong"
+  },
+  {
+    "id": "roulette_game",
+    "label": "Shot Roulette",
+    "description": "Drinking roulette wheel.",
+    "category": "Adult Gifts",
+    "iconName": "BoardGame"
+  },
+  {
+    "id": "spin_bottle",
+    "label": "Spin The Bottle",
+    "description": "Glass game with arrow.",
+    "category": "Adult Gifts",
+    "iconName": "Beer"
+  },
+  {
+    "id": "drunk_jenga",
+    "label": "Tipsy Tower",
+    "description": "Stacking blocks with commands.",
+    "category": "Adult Gifts",
+    "iconName": "ToyBlock"
+  },
+  {
+    "id": "hip_flask_glitter",
+    "label": "Glitter Flask",
+    "description": "Sparkly hip flask.",
+    "category": "Adult Gifts",
+    "iconName": "HipFlask"
+  },
+  {
+    "id": "hidden_flask_brush",
+    "label": "Brush Flask",
+    "description": "Flask hidden in hairbrush.",
+    "category": "Adult Gifts",
+    "iconName": "HairBrush"
+  },
+  {
+    "id": "beer_helmet_boobs",
+    "label": "Boob Helmet",
+    "description": "Drinking helmet with shape.",
+    "category": "Adult Gifts",
+    "iconName": "Helmet"
+  },
+  {
+    "id": "shot_glass_necklace",
+    "label": "Shot Necklace",
+    "description": "Shot glass on beads.",
+    "category": "Adult Gifts",
+    "iconName": "ShotGlass"
+  },
+  {
+    "id": "yard_glass",
+    "label": "Yard Glass",
+    "description": "Tall novelty ale glass.",
+    "category": "Adult Gifts",
+    "iconName": "BeerGlass"
+  },
+  {
+    "id": "beer_belt",
+    "label": "Beer Belt",
+    "description": "Waist belt for 6-pack.",
+    "category": "Adult Gifts",
+    "iconName": "FannyPack"
+  },
+  {
+    "id": "wine_stopper_novelty",
+    "label": "Funny Stopper",
+    "description": "Rubber chicken wine stopper.",
+    "category": "Adult Gifts",
+    "iconName": "RubberChicken"
+  },
+  {
+    "id": "bottle_opener_wall",
+    "label": "Wall Opener",
+    "description": "Mounted opener with catcher.",
+    "category": "Adult Gifts",
+    "iconName": "Beer"
+  },
+  {
+    "id": "chambong",
+    "label": "Champagne Bong",
+    "description": "Glass shooter for champagne.",
+    "category": "Adult Gifts",
+    "iconName": "ChampagneBottle"
+  },
+  {
+    "id": "strip_poker_chips",
+    "label": "Naughty Chips",
+    "description": "Poker chips with favors.",
+    "category": "Adult Gifts",
+    "iconName": "ChallengeCoin"
+  },
+  {
+    "id": "hen_sash",
+    "label": "Bride Sash",
+    "description": "Satin sash with text.",
+    "category": "Adult Gifts",
+    "iconName": "Sash"
+  },
+  {
+    "id": "bride_tiara",
+    "label": "Willy Tiara",
+    "description": "Tiara with shapes.",
+    "category": "Adult Gifts",
+    "iconName": "Sash"
+  },
+  {
+    "id": "scavenger_hunt",
+    "label": "Dare List",
+    "description": "Bachelorette scavenger hunt card.",
+    "category": "Adult Gifts",
+    "iconName": "Card"
+  },
+  {
+    "id": "party_whistle",
+    "label": "Pecker Whistle",
+    "description": "Whistle necklace.",
+    "category": "Adult Gifts",
+    "iconName": "SignalHorn"
+  },
+  {
+    "id": "feather_boa",
+    "label": "Feather Boa",
+    "description": "Fluffy pink boa.",
+    "category": "Adult Gifts",
+    "iconName": "Sash"
+  },
+  {
+    "id": "veil_headband",
+    "label": "Bride Veil",
+    "description": "Short veil on headband.",
+    "category": "Adult Gifts",
+    "iconName": "Headband"
+  },
+  {
+    "id": "temp_tattoos",
+    "label": "Bride Tribe Tattoos",
+    "description": "Gold foil temporary tattoos.",
+    "category": "Adult Gifts",
+    "iconName": "Sticker"
+  },
+  {
+    "id": "groom_blowup",
+    "label": "Inflatable Groom",
+    "description": "Blow up man in tux.",
+    "category": "Adult Gifts",
+    "iconName": "Inflatable"
+  },
+  {
+    "id": "fake_pregnancy",
+    "label": "Fake Test",
+    "description": "Positive pregnancy test prank.",
+    "category": "Adult Gifts",
+    "iconName": "TestKit"
+  },
+  {
+    "id": "paternity_test",
+    "label": "Fake Paternity",
+    "description": "Joke DNA test kit box.",
+    "category": "Adult Gifts",
+    "iconName": "TestKit"
+  },
+  {
+    "id": "truck_nutz",
+    "label": "Truck Balls",
+    "description": "Hanging bumper accessory.",
+    "category": "Adult Gifts",
+    "iconName": "Keychain"
+  },
+  {
+    "id": "car_lashes",
+    "label": "Car Lashes",
+    "description": "Eyelashes for headlights.",
+    "category": "Adult Gifts",
+    "iconName": "Lashes"
+  },
+  {
+    "id": "fake_poop",
+    "label": "Fake Poop",
+    "description": "Realistic plastic turd.",
+    "category": "Adult Gifts",
+    "iconName": "FakePoop"
+  },
+  {
+    "id": "parking_ticket",
+    "label": "Fake Ticket",
+    "description": "Prank parking violation.",
+    "category": "Adult Gifts",
+    "iconName": "EventTicket"
+  },
+  {
+    "id": "lottery_ticket",
+    "label": "Fake Lotto",
+    "description": "Winner scratch card prank.",
+    "category": "Adult Gifts",
+    "iconName": "EventTicket"
+  },
+  {
+    "id": "bumper_sticker_rude",
+    "label": "Rude Sticker",
+    "description": "Offensive car bumper sticker.",
+    "category": "Adult Gifts",
+    "iconName": "BumperSticker"
+  },
+  {
+    "id": "stash_can",
+    "label": "Stash Can",
+    "description": "Soda can safe.",
+    "category": "Adult Gifts",
+    "iconName": "SodaCan"
+  },
+  {
+    "id": "book_safe",
+    "label": "Book Safe",
+    "description": "Hollowed out book.",
+    "category": "Adult Gifts",
+    "iconName": "Book"
+  },
+  {
+    "id": "rock_key_hider",
+    "label": "Fake Rock",
+    "description": "Key hider stone.",
+    "category": "Adult Gifts",
+    "iconName": "PetBed"
+  },
+  {
+    "id": "swear_coloring",
+    "label": "Sweary Coloring",
+    "description": "Adult coloring book.",
+    "category": "Adult Gifts",
+    "iconName": "Book"
+  },
+  {
+    "id": "insult_mug",
+    "label": "Insult Mug",
+    "description": "Mug with rude gesture.",
+    "category": "Adult Gifts",
+    "iconName": "Mug"
+  },
+  {
+    "id": "butt_face_soap",
+    "label": "Butt Face Soap",
+    "description": "Double sided soap bar.",
+    "category": "Adult Gifts",
+    "iconName": "SoapBar"
+  },
+  {
+    "id": "bacon_bandages",
+    "label": "Bacon Bandages",
+    "description": "Meat printed adhesive strips.",
+    "category": "Adult Gifts",
+    "iconName": "BandageRoll"
+  },
+  {
+    "id": "jesus_shave",
+    "label": "Miracle Shave",
+    "description": "Holy shaving cream can.",
+    "category": "Adult Gifts",
+    "iconName": "SprayCan"
+  },
+  {
+    "id": "prescription_koozie",
+    "label": "Prescription Koozie",
+    "description": "Rx bottle can cooler.",
+    "category": "Adult Gifts",
+    "iconName": "Koozie"
+  },
+  {
+    "id": "wine_glass_bottle",
+    "label": "Bottle Glass",
+    "description": "Wine bottle with glass top.",
+    "category": "Adult Gifts",
+    "iconName": "WineBottle"
+  },
+  {
+    "id": "billboard_highway",
+    "label": "Billboard",
+    "description": "Large outdoor highway billboard.",
+    "category": "Signs",
+    "iconName": "Billboard"
+  },
+  {
+    "id": "billboard_vertical",
+    "label": "City Billboard",
+    "description": "Vertical urban digital billboard.",
+    "category": "Signs",
+    "iconName": "Billboard"
+  },
+  {
+    "id": "digital_kiosk",
+    "label": "Digital Kiosk",
+    "description": "Freestanding digital touchscreen totem.",
+    "category": "Signs",
+    "iconName": "DigitalKiosk"
+  },
+  {
+    "id": "bus_stop_ad",
+    "label": "Bus Stop Ad",
+    "description": "Glass shelter advertising poster.",
+    "category": "Signs",
+    "iconName": "BusStop"
+  },
+  {
+    "id": "subway_ad",
+    "label": "Subway Ad",
+    "description": "Interior train car advertising card.",
+    "category": "Signs",
+    "iconName": "BusStop"
+  },
+  {
+    "id": "standee_lifesize",
+    "label": "Cardboard Standee",
+    "description": "Life-size cardboard cutout standee.",
+    "category": "Signs",
+    "iconName": "Standee"
+  },
+  {
+    "id": "mascot_costume",
+    "label": "Lifesize Plush",
+    "description": "Giant wearable mascot costume.",
+    "category": "Signs",
+    "iconName": "Mascot"
+  },
+  {
+    "id": "a_frame_sign",
+    "label": "A-Frame Sign",
+    "description": "Sidewalk sandwich board sign.",
+    "category": "Signs",
+    "iconName": "AFrame"
+  },
+  {
+    "id": "chalkboard_sign",
+    "label": "Chalkboard Sign",
+    "description": "Rustic wooden A-frame chalkboard.",
+    "category": "Signs",
+    "iconName": "Chalkboard"
+  },
+  {
+    "id": "menu_board",
+    "label": "Menu Board",
+    "description": "Hanging cafe menu board.",
+    "category": "Signs",
+    "iconName": "MenuBoard"
+  },
+  {
+    "id": "yard_sign",
+    "label": "Yard Sign",
+    "description": "Corrugated plastic lawn sign.",
+    "category": "Signs",
+    "iconName": "YardSign"
+  },
+  {
+    "id": "real_estate_sign",
+    "label": "Real Estate Post",
+    "description": "Hanging post real estate sign.",
+    "category": "Signs",
+    "iconName": "RealEstatePost"
+  },
+  {
+    "id": "storefront_blade",
+    "label": "Blade Sign",
+    "description": "Round hanging shop sign.",
+    "category": "Signs",
+    "iconName": "BladeSign"
+  },
+  {
+    "id": "window_decal",
+    "label": "Window Decal",
+    "description": "Vinyl shop window graphic.",
+    "category": "Signs",
+    "iconName": "WindowDecal"
+  },
+  {
+    "id": "neon_sign",
+    "label": "Neon Sign",
+    "description": "Glowing wall-mounted neon light.",
+    "category": "Signs",
+    "iconName": "NeonSign"
+  },
+  {
+    "id": "lightbox_poster",
+    "label": "Lightbox",
+    "description": "Illuminated movie poster box.",
+    "category": "Signs",
+    "iconName": "Lightbox"
+  },
+  {
+    "id": "marquee_sign",
+    "label": "Marquee",
+    "description": "Vintage cinema marquee sign.",
+    "category": "Signs",
+    "iconName": "Marquee"
+  },
+  {
+    "id": "rollup_banner",
+    "label": "Roll-up Banner",
+    "description": "Retractable standing event banner.",
+    "category": "Signs",
+    "iconName": "RollUpBanner"
+  },
+  {
+    "id": "feather_flag",
+    "label": "Feather Flag",
+    "description": "Teardrop marketing banner.",
+    "category": "Signs",
+    "iconName": "FeatherFlag"
+  },
+  {
+    "id": "fence_banner",
+    "label": "Fence Banner",
+    "description": "Construction mesh fence banner.",
+    "category": "Signs",
+    "iconName": "FenceBanner"
+  },
+  {
+    "id": "trade_show_backdrop",
+    "label": "Event Backdrop",
+    "description": "Large curved trade show display.",
+    "category": "Signs",
+    "iconName": "Backdrop"
+  },
+  {
+    "id": "podium_counter",
+    "label": "Event Podium",
+    "description": "Branded trade show counter.",
+    "category": "Signs",
+    "iconName": "Podium"
+  },
+  {
+    "id": "event_tent",
+    "label": "Event Tent",
+    "description": "Branded pop-up canopy tent.",
+    "category": "Signs",
+    "iconName": "Tent"
+  },
+  {
+    "id": "table_cover",
+    "label": "Table Cover",
+    "description": "Draped event table cloth.",
+    "category": "Signs",
+    "iconName": "TableCover"
+  },
+  {
+    "id": "table_stand",
+    "label": "Tabletop Sign",
+    "description": "Acrylic tabletop display stand.",
+    "category": "Signs",
+    "iconName": "TableStand"
+  },
+  {
+    "id": "office_door_sign",
+    "label": "Door Plate",
+    "description": "Office door nameplate.",
+    "category": "Signs",
+    "iconName": "DoorPlate"
+  },
+  {
+    "id": "wayfinding_sign",
+    "label": "Wayfinding",
+    "description": "Directional signage post.",
+    "category": "Signs",
+    "iconName": "Wayfinding"
+  },
+  {
+    "id": "floor_decal",
+    "label": "Floor Decal",
+    "description": "Adhesive vinyl floor graphic.",
+    "category": "Signs",
+    "iconName": "FloorDecal"
+  },
+  {
+    "id": "shelf_wobbler",
+    "label": "Shelf Wobbler",
+    "description": "Retail shelf edge tag.",
+    "category": "Signs",
+    "iconName": "ShelfWobbler"
+  },
+  {
+    "id": "car_magnet",
+    "label": "Car Magnet",
+    "description": "Magnetic vehicle door sign.",
+    "category": "Signs",
+    "iconName": "CarMagnet"
+  },
+  {
+    "id": "monument_sign",
+    "label": "Monument Sign",
+    "description": "Ground-level stone entrance sign.",
+    "category": "Signs",
+    "iconName": "MonumentSign"
+  },
+  {
+    "id": "street_pole_banner",
+    "label": "Street Banner",
+    "description": "Vertical vinyl lamp post banner.",
+    "category": "Signs",
+    "iconName": "Flag"
+  },
+  {
+    "id": "print_4x6",
+    "label": "4x6 Print",
+    "description": "Standard postcard size photo print.",
+    "category": "Print",
+    "iconName": "Print"
+  },
+  {
+    "id": "newspaper",
+    "label": "Newspaper",
+    "description": "Folded daily newspaper.",
+    "category": "Print",
+    "iconName": "Newspaper"
+  },
+  {
+    "id": "menu",
+    "label": "Restaurant Menu",
+    "description": "Tall cafe or restaurant menu.",
+    "category": "Print",
+    "iconName": "Menu"
+  },
+  {
+    "id": "hardcover_book",
+    "label": "Hardcover Book",
+    "description": "Hardcover book with dust jacket.",
+    "category": "Print",
+    "iconName": "Book"
+  },
+  {
+    "id": "paperback_book",
+    "label": "Paperback",
+    "description": "Softcover paperback novel.",
+    "category": "Print",
+    "iconName": "Book"
+  },
+  {
+    "id": "magazine",
+    "label": "Magazine",
+    "description": "Glossy magazine cover.",
+    "category": "Print",
+    "iconName": "Magazine"
+  },
+  {
+    "id": "brochure",
+    "label": "Brochure",
+    "description": "Tri-fold marketing brochure.",
+    "category": "Print",
+    "iconName": "Brochure"
+  },
+  {
+    "id": "business_cards",
+    "label": "Business Cards",
+    "description": "Stack of business cards.",
+    "category": "Print",
+    "iconName": "BizCard"
+  },
+  {
+    "id": "stationery",
+    "label": "Stationery",
+    "description": "Letterhead and envelope.",
+    "category": "Print",
+    "iconName": "GreetingCard"
+  },
+  {
+    "id": "hang_tag",
+    "label": "Hang Tag",
+    "description": "Clothing retail price tag.",
+    "category": "Print",
+    "iconName": "HangTag"
+  },
+  {
+    "id": "door_hanger",
+    "label": "Door Hanger",
+    "description": "Hotel style door hanger.",
+    "category": "Print",
+    "iconName": "DoorHanger"
+  },
+  {
+    "id": "event_ticket",
+    "label": "Event Ticket",
+    "description": "Concert or event stub ticket.",
+    "category": "Print",
+    "iconName": "EventTicket"
+  },
+  {
+    "id": "wall_calendar",
+    "label": "Calendar",
+    "description": "Spiral bound wall calendar.",
+    "category": "Print",
+    "iconName": "WallCalendar"
+  },
+  {
+    "id": "atc_card",
+    "label": "Trade Card",
+    "description": "2.5 x 3.5 inch collectible card.",
+    "category": "Print",
+    "iconName": "Card"
+  },
+  {
+    "id": "notebook",
+    "label": "Notebook",
+    "description": "Spiral bound notebook.",
+    "category": "Print",
+    "iconName": "Notebook"
+  },
+  {
+    "id": "greeting_card",
+    "label": "Greeting Card",
+    "description": "Folded 5x7 greeting card.",
+    "category": "Print",
+    "iconName": "GreetingCard"
+  },
+  {
+    "id": "flag",
+    "label": "Flag",
+    "description": "Polyester fabric wall flag with grommets.",
+    "category": "Print",
+    "iconName": "Flag"
+  },
+  {
+    "id": "banner",
+    "label": "Banner",
+    "description": "Large vinyl wall banner with grommets.",
+    "category": "Print",
+    "iconName": "Banner"
+  },
+  {
+    "id": "poster",
+    "label": "Poster",
+    "description": "Large vertical wall poster.",
+    "category": "Print",
+    "iconName": "Poster"
+  },
+  {
+    "id": "canvas_print",
+    "label": "Canvas Print",
+    "description": "Wrapped canvas wall art.",
+    "category": "Print",
+    "iconName": "Canvas"
+  },
+  {
+    "id": "bookmark",
+    "label": "Bookmark",
+    "description": "Cardstock bookmark with tassel.",
+    "category": "Print",
+    "iconName": "Bookmark"
+  },
+  {
+    "id": "gaming_pc_tower",
+    "label": "Gaming PC Tower",
+    "description": "High-end PC case with glass panel.",
+    "category": "Electronics",
+    "iconName": "GamingPC"
+  },
+  {
+    "id": "gaming_laptop_lid",
+    "label": "Gaming Laptop",
+    "description": "Closed high-performance laptop.",
+    "category": "Electronics",
+    "iconName": "GamingLaptop"
+  },
+  {
+    "id": "monitor_screen",
+    "label": "Gaming Monitor",
+    "description": "Ultrawide gaming monitor.",
+    "category": "Electronics",
+    "iconName": "Monitor"
+  },
+  {
+    "id": "laptop_screen",
+    "label": "Laptop Screen",
+    "description": "Modern aluminum laptop screen.",
+    "category": "Electronics",
+    "iconName": "Laptop"
+  },
+  {
+    "id": "tablet_screen",
+    "label": "Tablet",
+    "description": "Pro tablet device screen.",
+    "category": "Electronics",
+    "iconName": "Tablet"
+  },
+  {
+    "id": "ps5_side",
+    "label": "Modern Console",
+    "description": "Sleek white vertical console.",
+    "category": "Electronics",
+    "iconName": "Console"
+  },
+  {
+    "id": "xbox_series",
+    "label": "Box Console",
+    "description": "Monolithic black rectangular console.",
+    "category": "Electronics",
+    "iconName": "GamingPC"
+  },
+  {
+    "id": "retro_console",
+    "label": "Retro Console",
+    "description": "Classic 8-bit grey console.",
+    "category": "Electronics",
+    "iconName": "RetroConsole"
+  },
+  {
+    "id": "retro_handheld",
+    "label": "Retro Handheld",
+    "description": "Vertical grey handheld game boy style.",
+    "category": "Electronics",
+    "iconName": "RetroHandheld"
+  },
+  {
+    "id": "clamshell_handheld",
+    "label": "Clamshell Console",
+    "description": "Dual screen clamshell handheld.",
+    "category": "Electronics",
+    "iconName": "ClamshellHandheld"
+  },
+  {
+    "id": "modern_handheld",
+    "label": "Modern Handheld",
+    "description": "Wide pro handheld gaming PC.",
+    "category": "Electronics",
+    "iconName": "ModernHandheld"
+  },
+  {
+    "id": "arcade_cabinet",
+    "label": "Arcade Cabinet",
+    "description": "Retro standing arcade machine.",
+    "category": "Electronics",
+    "iconName": "ArcadeCabinet"
+  },
+  {
+    "id": "game_controller",
+    "label": "Pro Controller",
+    "description": "Wireless gaming controller.",
+    "category": "Electronics",
+    "iconName": "Controller"
+  },
+  {
+    "id": "fight_stick",
+    "label": "Arcade Stick",
+    "description": "Tournament arcade fight stick.",
+    "category": "Electronics",
+    "iconName": "Joystick"
+  },
+  {
+    "id": "racing_wheel",
+    "label": "Racing Wheel",
+    "description": "Sim racing steering wheel.",
+    "category": "Electronics",
+    "iconName": "RacingWheel"
+  },
+  {
+    "id": "crt_monitor",
+    "label": "CRT TV",
+    "description": "Retro CRT gaming television.",
+    "category": "Electronics",
+    "iconName": "CRT"
+  },
+  {
+    "id": "gaming_chair",
+    "label": "Gaming Chair",
+    "description": "Racer style gaming chair.",
+    "category": "Electronics",
+    "iconName": "GamingChair"
+  },
+  {
+    "id": "streaming_mic",
+    "label": "Stream Mic",
+    "description": "Broadcast quality desktop microphone.",
+    "category": "Electronics",
+    "iconName": "Microphone"
+  },
+  {
+    "id": "smartphone_screen",
+    "label": "Smartphone",
+    "description": "High-end bezel-less smartphone.",
+    "category": "Electronics",
+    "iconName": "Smartphone"
+  },
+  {
+    "id": "mechanical_keyboard",
+    "label": "Mech Keyboard",
+    "description": "Custom mechanical keyboard.",
+    "category": "Electronics",
+    "iconName": "Keyboard"
+  },
+  {
+    "id": "gaming_mouse",
+    "label": "Gaming Mouse",
+    "description": "RGB gaming mouse.",
+    "category": "Electronics",
+    "iconName": "Mouse"
+  },
+  {
+    "id": "stream_deck",
+    "label": "Macro Pad",
+    "description": "Customizable stream controller.",
+    "category": "Electronics",
+    "iconName": "StreamDeck"
+  },
+  {
+    "id": "gpu_backplate",
+    "label": "Graphics Card",
+    "description": "High-end GPU backplate.",
+    "category": "Electronics",
+    "iconName": "GPU"
+  },
+  {
+    "id": "headphones",
+    "label": "Headphones",
+    "description": "Over-ear noise canceling headphones.",
+    "category": "Electronics",
+    "iconName": "Headphones"
+  },
+  {
+    "id": "vr_headset",
+    "label": "VR Headset",
+    "description": "Virtual reality headset visor.",
+    "category": "Electronics",
+    "iconName": "VRHeadset"
+  },
+  {
+    "id": "drone",
+    "label": "Drone",
+    "description": "Camera drone top shell.",
+    "category": "Electronics",
+    "iconName": "Drone"
+  },
+  {
+    "id": "dslr_camera",
+    "label": "Camera",
+    "description": "Mirrorless camera body skin.",
+    "category": "Electronics",
+    "iconName": "Camera"
+  },
+  {
+    "id": "smart_speaker",
+    "label": "Smart Speaker",
+    "description": "Fabric mesh smart speaker.",
+    "category": "Electronics",
+    "iconName": "SmartSpeaker"
+  },
+  {
+    "id": "external_ssd",
+    "label": "Portable SSD",
+    "description": "Portable external solid state drive.",
+    "category": "Electronics",
+    "iconName": "SSD"
+  },
+  {
+    "id": "wifi_router",
+    "label": "Gaming Router",
+    "description": "High-performance Wi-Fi router.",
+    "category": "Electronics",
+    "iconName": "Router"
+  },
+  {
+    "id": "spice_jar",
+    "label": "Spice Jar",
+    "description": "Glass spice shaker jar.",
+    "category": "Bottled",
+    "iconName": "SpiceJar"
+  },
+  {
+    "id": "honey_jar",
+    "label": "Honey Jar",
+    "description": "Hexagonal glass honey jar.",
+    "category": "Bottled",
+    "iconName": "HoneyJar"
+  },
+  {
+    "id": "olive_oil",
+    "label": "Olive Oil",
+    "description": "Tall glass olive oil bottle.",
+    "category": "Bottled",
+    "iconName": "OliveOil"
+  },
+  {
+    "id": "hot_sauce",
+    "label": "Hot Sauce",
+    "description": "Glass hot sauce bottle.",
+    "category": "Bottled",
+    "iconName": "HotSauce"
+  },
+  {
+    "id": "maple_syrup",
+    "label": "Maple Syrup",
+    "description": "Glass syrup bottle with handle.",
+    "category": "Bottled",
+    "iconName": "OliveOil"
+  },
+  {
+    "id": "salad_dressing",
+    "label": "Salad Dressing",
+    "description": "Plastic dressing bottle.",
+    "category": "Bottled",
+    "iconName": "PumpBottle"
+  },
+  {
+    "id": "bbq_sauce",
+    "label": "BBQ Sauce",
+    "description": "Glass barbecue sauce bottle.",
+    "category": "Bottled",
+    "iconName": "VitaminBottle"
+  },
+  {
+    "id": "tea_tin",
+    "label": "Tea Tin",
+    "description": "Metal loose leaf tea tin.",
+    "category": "Canned",
+    "iconName": "TeaTin"
+  },
+  {
+    "id": "coffee_bag_bean",
+    "label": "Coffee Beans",
+    "description": "Gusseted coffee bean bag.",
+    "category": "Packaging",
+    "iconName": "CoffeeBag"
+  },
+  {
+    "id": "egg_carton",
+    "label": "Egg Carton",
+    "description": "Pulp egg carton label.",
+    "category": "Packaging",
+    "iconName": "EggCarton"
+  },
+  {
+    "id": "sachet_packet",
+    "label": "Sachet",
+    "description": "Small condiment packet.",
+    "category": "Packaging",
+    "iconName": "Sachet"
+  },
+  {
+    "id": "lollipop",
+    "label": "Lollipop",
+    "description": "Round lollipop with wrapper.",
+    "category": "Candy",
+    "iconName": "Lollipop"
+  },
+  {
+    "id": "swirl_lollipop",
+    "label": "Giant Swirl Pop",
+    "description": "Large colorful swirl lollipop.",
+    "category": "Candy",
+    "iconName": "SwirlPop"
+  },
+  {
+    "id": "ring_pop",
+    "label": "Ring Pop",
+    "description": "Jewel candy on plastic ring.",
+    "category": "Candy",
+    "iconName": "RingPop"
+  },
+  {
+    "id": "candy_necklace",
+    "label": "Candy Necklace",
+    "description": "Pastel candy bead necklace.",
+    "category": "Candy",
+    "iconName": "Lollipop"
+  },
+  {
+    "id": "candy_bar",
+    "label": "Chocolate Bar",
+    "description": "Foil chocolate bar wrapper.",
+    "category": "Candy",
+    "iconName": "Candy"
+  },
+  {
+    "id": "chocolate_egg",
+    "label": "Chocolate Egg",
+    "description": "Foil wrapped surprise egg.",
+    "category": "Candy",
+    "iconName": "ChocoEgg"
+  },
+  {
+    "id": "gum_pack",
+    "label": "Chewing Gum",
+    "description": "Rectangular chewing gum pack.",
+    "category": "Candy",
+    "iconName": "Candy"
+  },
+  {
+    "id": "gum_tape",
+    "label": "Bubble Gum Tape",
+    "description": "Round gum tape dispenser.",
+    "category": "Candy",
+    "iconName": "GumTape"
+  },
+  {
+    "id": "gummy_bag",
+    "label": "Gummy Bears",
+    "description": "Small pouch of gummy candy.",
+    "category": "Candy",
+    "iconName": "GummyBear"
+  },
+  {
+    "id": "gummy_worms_bag",
+    "label": "Gummy Worms",
+    "description": "Bag of wiggly gummy worms.",
+    "category": "Candy",
+    "iconName": "GummyWorm"
+  },
+  {
+    "id": "hard_candy_bag",
+    "label": "Hard Candy Bag",
+    "description": "Bag of assorted hard candies.",
+    "category": "Candy",
+    "iconName": "HardCandyBag"
+  },
+  {
+    "id": "sour_belts_pack",
+    "label": "Sour Belts",
+    "description": "Resealable pack of sour belts.",
+    "category": "Candy",
+    "iconName": "SourBelt"
+  },
+  {
+    "id": "licorice_box",
+    "label": "Licorice Sticks",
+    "description": "Box of black or red licorice.",
+    "category": "Candy",
+    "iconName": "Licorice"
+  },
+  {
+    "id": "movie_candy_box",
+    "label": "Theater Box",
+    "description": "Rectangular theater candy box.",
+    "category": "Candy",
+    "iconName": "MovieBox"
+  },
+  {
+    "id": "chocolate_box_gift",
+    "label": "Chocolate Box",
+    "description": "Square gift box for chocolates.",
+    "category": "Candy",
+    "iconName": "ChocolateBox"
+  },
+  {
+    "id": "heart_chocolate_box",
+    "label": "Heart Choco Box",
+    "description": "Heart-shaped chocolate gift box.",
+    "category": "Candy",
+    "iconName": "ChocolateBox"
+  },
+  {
+    "id": "jelly_bean_jar",
+    "label": "Jelly Bean Jar",
+    "description": "Glass jar filled with jelly beans.",
+    "category": "Candy",
+    "iconName": "JellyBeanJar"
+  },
+  {
+    "id": "gumball_machine",
+    "label": "Gumball Machine",
+    "description": "Classic desktop gumball machine.",
+    "category": "Candy",
+    "iconName": "Gumball"
+  },
+  {
+    "id": "cotton_candy_tub",
+    "label": "Cotton Candy Tub",
+    "description": "Plastic tub of fluffy cotton candy.",
+    "category": "Candy",
+    "iconName": "CottonCandyTub"
+  },
+  {
+    "id": "rock_candy_stick",
+    "label": "Rock Candy",
+    "description": "Sugar crystals on a wooden stick.",
+    "category": "Candy",
+    "iconName": "RockCandy"
+  },
+  {
+    "id": "jawbreaker_giant",
+    "label": "Giant Jawbreaker",
+    "description": "Large speckled hard candy.",
+    "category": "Candy",
+    "iconName": "Jawbreaker"
+  },
+  {
+    "id": "candy_cane",
+    "label": "Candy Cane",
+    "description": "Classic striped candy cane.",
+    "category": "Candy",
+    "iconName": "CandyCane"
+  },
+  {
+    "id": "marshmallow_bag",
+    "label": "Marshmallows",
+    "description": "Bag of fluffy marshmallows.",
+    "category": "Candy",
+    "iconName": "Marshmallow"
+  },
+  {
+    "id": "taffy_twist",
+    "label": "Taffy Wrap",
+    "description": "Individual salt water taffy wrap.",
+    "category": "Candy",
+    "iconName": "TaffyWrap"
+  },
+  {
+    "id": "truffle_box",
+    "label": "Truffle Box",
+    "description": "Fancy chocolate truffle box.",
+    "category": "Candy",
+    "iconName": "MacaronBox"
+  },
+  {
+    "id": "mint_tin",
+    "label": "Mint Tin",
+    "description": "Metal mint candy tin.",
+    "category": "Candy",
+    "iconName": "Tin"
+  },
+  {
+    "id": "flow_wrap",
+    "label": "Candy Wrapper",
+    "description": "Shiny foil flow wrap packaging.",
+    "category": "Candy",
+    "iconName": "FlowWrap"
+  },
+  {
+    "id": "ice_cream_tub",
+    "label": "Ice Cream Pint",
+    "description": "Paper ice cream pint container.",
+    "category": "Freezer",
+    "iconName": "IceCream"
+  },
+  {
+    "id": "frozen_pizza",
+    "label": "Frozen Pizza",
+    "description": "Boxed frozen pizza.",
+    "category": "Freezer",
+    "iconName": "Pizza"
+  },
+  {
+    "id": "frozen_meal",
+    "label": "Frozen Meal",
+    "description": "Rectangular frozen dinner box.",
+    "category": "Freezer",
+    "iconName": "FrozenMeal"
+  },
+  {
+    "id": "frozen_veggies",
+    "label": "Veggie Bag",
+    "description": "Bag of frozen vegetables.",
+    "category": "Freezer",
+    "iconName": "ChipsBag"
+  },
+  {
+    "id": "popsicle_box",
+    "label": "Popsicle Box",
+    "description": "Box of ice pops.",
+    "category": "Freezer",
+    "iconName": "Box"
+  },
+  {
+    "id": "yogurt_cup",
+    "label": "Yogurt Cup",
+    "description": "Plastic yogurt cup.",
+    "category": "Freezer",
+    "iconName": "YogurtCup"
+  },
+  {
+    "id": "soup_can",
+    "label": "Soup Can",
+    "description": "Standard metal soup can.",
+    "category": "Canned",
+    "iconName": "SoupCan"
+  },
+  {
+    "id": "tuna_can",
+    "label": "Tuna Can",
+    "description": "Short metal tuna fish can.",
+    "category": "Canned",
+    "iconName": "Tin"
+  },
+  {
+    "id": "sardine_tin",
+    "label": "Sardine Tin",
+    "description": "Rectangular sardine tin with tab.",
+    "category": "Canned",
+    "iconName": "SardineTin"
+  },
+  {
+    "id": "mason_jar",
+    "label": "Mason Jar",
+    "description": "Glass jar for jams or pickles.",
+    "category": "Canned",
+    "iconName": "MasonJar"
+  },
+  {
+    "id": "spam_tin",
+    "label": "Luncheon Meat",
+    "description": "Rectangular luncheon meat tin.",
+    "category": "Canned",
+    "iconName": "Tin"
+  },
+  {
+    "id": "chips_bag",
+    "label": "Chips Bag",
+    "description": "Foil snack chips bag.",
+    "category": "Snacks",
+    "iconName": "ChipsBag"
+  },
+  {
+    "id": "cereal_box",
+    "label": "Cereal Box",
+    "description": "Standard cardboard cereal box.",
+    "category": "Snacks",
+    "iconName": "CerealBox"
+  },
+  {
+    "id": "cracker_box",
+    "label": "Cracker Box",
+    "description": "Rectangular cracker box.",
+    "category": "Snacks",
+    "iconName": "CrackerBox"
+  },
+  {
+    "id": "granola_bar",
+    "label": "Granola Bar",
+    "description": "Single granola bar wrapper.",
+    "category": "Snacks",
+    "iconName": "Granola"
+  },
+  {
+    "id": "popcorn_bucket",
+    "label": "Popcorn",
+    "description": "Paper popcorn bucket.",
+    "category": "Snacks",
+    "iconName": "Popcorn"
+  },
+  {
+    "id": "beef_jerky",
+    "label": "Beef Jerky",
+    "description": "Resealable jerky bag.",
+    "category": "Snacks",
+    "iconName": "CoffeeBag"
+  },
+  {
+    "id": "burger_box",
+    "label": "Burger Box",
+    "description": "Paperboard clamshell burger box.",
+    "category": "Snacks",
+    "iconName": "BurgerBox"
+  },
+  {
+    "id": "takeout_box",
+    "label": "Takeout Box",
+    "description": "Paper food takeout container.",
+    "category": "Snacks",
+    "iconName": "TakeoutBox"
+  },
+  {
+    "id": "noodle_box",
+    "label": "Noodle Box",
+    "description": "Paper takeout noodle pail.",
+    "category": "Snacks",
+    "iconName": "NoodleBox"
+  },
+  {
+    "id": "sushi_tray",
+    "label": "Sushi Tray",
+    "description": "Plastic sushi takeout tray.",
+    "category": "Snacks",
+    "iconName": "SushiTray"
+  },
+  {
+    "id": "pizza_box_open",
+    "label": "Pizza Box (Open)",
+    "description": "Open pizza box showing lid branding.",
+    "category": "Snacks",
+    "iconName": "PizzaBoxOpen"
+  },
+  {
+    "id": "sandwich_wrap",
+    "label": "Deli Wrap",
+    "description": "Deli sandwich paper wrap.",
+    "category": "Snacks",
+    "iconName": "SandwichWrap"
+  },
+  {
+    "id": "soda_can",
+    "label": "Soda Can",
+    "description": "12oz aluminum beverage can.",
+    "category": "Drinks",
+    "iconName": "SodaCan"
+  },
+  {
+    "id": "energy_drink",
+    "label": "Energy Drink",
+    "description": "Slim aluminum energy drink can.",
+    "category": "Drinks",
+    "iconName": "EnergyDrink"
+  },
+  {
+    "id": "glass_soda",
+    "label": "Glass Soda",
+    "description": "Classic glass soda bottle.",
+    "category": "Drinks",
+    "iconName": "Beer"
+  },
+  {
+    "id": "water_bottle_plastic",
+    "label": "Water Bottle",
+    "description": "Plastic water bottle.",
+    "category": "Drinks",
+    "iconName": "WaterBottle"
+  },
+  {
+    "id": "milk_carton",
+    "label": "Milk Carton",
+    "description": "Paperboard milk carton.",
+    "category": "Drinks",
+    "iconName": "MilkCarton"
+  },
+  {
+    "id": "two_liter",
+    "label": "2L Bottle",
+    "description": "Large 2-liter soda bottle.",
+    "category": "Drinks",
+    "iconName": "TwoLiter"
+  },
+  {
+    "id": "juice_box",
+    "label": "Juice Box",
+    "description": "Tetra Pak juice box.",
+    "category": "Drinks",
+    "iconName": "Juice"
+  },
+  {
+    "id": "coffee_cup",
+    "label": "Coffee Cup",
+    "description": "Paper takeout cup with sleeve.",
+    "category": "Drinks",
+    "iconName": "CoffeePaperCup"
+  },
+  {
+    "id": "coffee_carafe",
+    "label": "Coffee Carafe",
+    "description": "Glass diner style coffee pot.",
+    "category": "Drinks",
+    "iconName": "Carafe"
+  },
+  {
+    "id": "bubble_tea",
+    "label": "Bubble Tea",
+    "description": "Plastic cup with boba and straw.",
+    "category": "Drinks",
+    "iconName": "BubbleTea"
+  },
+  {
+    "id": "wine_bottle",
+    "label": "Wine Bottle",
+    "description": "Glass wine bottle with label.",
+    "category": "Drinks",
+    "iconName": "WineBottle"
+  },
+  {
+    "id": "liquor_bottle",
+    "label": "Liquor Bottle",
+    "description": "Square glass liquor bottle.",
+    "category": "Drinks",
+    "iconName": "LiquorBottle"
+  },
+  {
+    "id": "beer_bottle",
+    "label": "Beer Bottle",
+    "description": "Amber glass beer bottle.",
+    "category": "Drinks",
+    "iconName": "Beer"
+  },
+  {
+    "id": "juice_pouch",
+    "label": "Juice Pouch",
+    "description": "Foil drink pouch.",
+    "category": "Drinks",
+    "iconName": "JuicePouch"
+  },
+  {
+    "id": "beer_glass",
+    "label": "Pint Glass",
+    "description": "Standard beer pint glass.",
+    "category": "Drinks",
+    "iconName": "BeerGlass"
+  },
+  {
+    "id": "shot_glass",
+    "label": "Shot Glass",
+    "description": "Small glass shot glass.",
+    "category": "Drinks",
+    "iconName": "ShotGlass"
+  },
+  {
+    "id": "champagne_bottle",
+    "label": "Champagne",
+    "description": "Luxury champagne bottle.",
+    "category": "Bottled",
+    "iconName": "ChampagneBottle"
+  },
+  {
+    "id": "flask_bottle",
+    "label": "Hydro Flask",
+    "description": "Trendy insulated water bottle.",
+    "category": "Bottled",
+    "iconName": "FlaskBottle"
+  },
+  {
+    "id": "juice_jug",
+    "label": "Juice Jug",
+    "description": "Large handled plastic juice jug.",
+    "category": "Bottled",
+    "iconName": "JuiceJug"
+  },
+  {
+    "id": "acrylic_standee",
+    "label": "Acrylic Standee",
+    "description": "Custom character standee with base.",
+    "category": "Acrylic",
+    "iconName": "AcrylicStandee"
+  },
+  {
+    "id": "acrylic_charm",
+    "label": "Clear Charm",
+    "description": "Clear acrylic keychain charm.",
+    "category": "Acrylic",
+    "iconName": "AcrylicCharm"
+  },
+  {
+    "id": "holo_charm",
+    "label": "Holographic Charm",
+    "description": "Broken glass holographic charm.",
+    "category": "Acrylic",
+    "iconName": "AcrylicCharm"
+  },
+  {
+    "id": "acrylic_shaker",
+    "label": "Shaker Charm",
+    "description": "Thick acrylic shaker with loose bits.",
+    "category": "Acrylic",
+    "iconName": "AcrylicShaker"
+  },
+  {
+    "id": "hotel_key_tag",
+    "label": "Hotel Key Tag",
+    "description": "Retro diamond shaped key tag.",
+    "category": "Acrylic",
+    "iconName": "HotelKeyTag"
+  },
+  {
+    "id": "acrylic_pin",
+    "label": "Acrylic Pin",
+    "description": "Printed acrylic pin with epoxy dome.",
+    "category": "Acrylic",
+    "iconName": "AcrylicPin"
+  },
+  {
+    "id": "acrylic_magnet",
+    "label": "Acrylic Magnet",
+    "description": "Die-cut clear acrylic magnet.",
+    "category": "Acrylic",
+    "iconName": "AcrylicPin"
+  },
+  {
+    "id": "cake_topper",
+    "label": "Cake Topper",
+    "description": "Laser cut acrylic cake decoration.",
+    "category": "Acrylic",
+    "iconName": "CakeTopper"
+  },
+  {
+    "id": "acrylic_ornament",
+    "label": "Ornament",
+    "description": "Clear round holiday ornament.",
+    "category": "Acrylic",
+    "iconName": "AcrylicOrnament"
+  },
+  {
+    "id": "acrylic_invite",
+    "label": "Acrylic Invite",
+    "description": "Transparent wedding invitation card.",
+    "category": "Acrylic",
+    "iconName": "AcrylicInvite"
+  },
+  {
+    "id": "photo_block",
+    "label": "Photo Block",
+    "description": "Thick free-standing acrylic photo block.",
+    "category": "Acrylic",
+    "iconName": "AcrylicBlockPhoto"
+  },
+  {
+    "id": "wall_scroll",
+    "label": "Wall Scroll",
+    "description": "Fabric wall scroll poster.",
+    "category": "Anime",
+    "iconName": "WallScroll"
+  },
+  {
+    "id": "animation_cel",
+    "label": "Animation Cel",
+    "description": "Hand-painted acetate celluloid.",
+    "category": "Anime",
+    "iconName": "AnimationCel"
+  },
+  {
+    "id": "production_sketch",
+    "label": "Genga Sketch",
+    "description": "Animator production drawing.",
+    "category": "Anime",
+    "iconName": "GengaSketch"
+  },
+  {
+    "id": "movie_flyer",
+    "label": "Cinema Flyer",
+    "description": "B5 Japanese movie flyer.",
+    "category": "Anime",
+    "iconName": "MovieFlyer"
+  },
+  {
+    "id": "dakimakura",
+    "label": "Dakimakura",
+    "description": "Long body pillow cover.",
+    "category": "Anime",
+    "iconName": "BodyPillow"
+  },
+  {
+    "id": "holo_can_badge",
+    "label": "Holo Badge",
+    "description": "Glitter/Broken glass holo badge.",
+    "category": "Anime",
+    "iconName": "HoloBadge"
+  },
+  {
+    "id": "secret_rare_card",
+    "label": "Secret Rare TCG",
+    "description": "Etched foil trading card.",
+    "category": "Anime",
+    "iconName": "SecretRare"
+  },
+  {
+    "id": "mini_clear_poster",
+    "label": "Mini Clear Poster",
+    "description": "Transparent desktop poster.",
+    "category": "Anime",
+    "iconName": "ClearPoster"
+  },
+  {
+    "id": "art_folio",
+    "label": "Art Folio",
+    "description": "Premium print presentation folder.",
+    "category": "Anime",
+    "iconName": "ArtFolio"
+  },
+  {
+    "id": "memorial_ticket",
+    "label": "Memorial Ticket",
+    "description": "Collectible movie style ticket.",
+    "category": "Anime",
+    "iconName": "MemorialTicket"
+  },
+  {
+    "id": "microfiber_towel",
+    "label": "Character Towel",
+    "description": "Long microfiber sport towel.",
+    "category": "Anime",
+    "iconName": "MicrofiberTowel"
+  },
+  {
+    "id": "shikishi_board",
+    "label": "Shikishi Board",
+    "description": "Japanese autograph board.",
+    "category": "Anime",
+    "iconName": "Shikishi"
+  },
+  {
+    "id": "itabag_backpack",
+    "label": "Itabag",
+    "description": "Backpack with clear window display.",
+    "category": "Anime",
+    "iconName": "Itabag"
+  },
+  {
+    "id": "penlight",
+    "label": "Penlight",
+    "description": "Concert light stick.",
+    "category": "Anime",
+    "iconName": "Penlight"
+  },
+  {
+    "id": "omamori_charm",
+    "label": "Omamori",
+    "description": "Japanese fabric amulet charm.",
+    "category": "Anime",
+    "iconName": "Omamori"
+  },
+  {
+    "id": "ema_board",
+    "label": "Ema Board",
+    "description": "Wooden prayer plaque.",
+    "category": "Anime",
+    "iconName": "Ema"
+  },
+  {
+    "id": "washi_tape_tower",
+    "label": "Washi Tape",
+    "description": "Decorative character tape rolls.",
+    "category": "Anime",
+    "iconName": "WashiTapeTower"
+  },
+  {
+    "id": "clear_file",
+    "label": "Clear File",
+    "description": "A4 plastic document folder.",
+    "category": "Anime",
+    "iconName": "ClearFile"
+  },
+  {
+    "id": "happi_coat",
+    "label": "Happi Coat",
+    "description": "Traditional festival coat.",
+    "category": "Anime",
+    "iconName": "Happi"
+  },
+  {
+    "id": "uchiwa_fan",
+    "label": "Uchiwa Fan",
+    "description": "Plastic hand fan.",
+    "category": "Anime",
+    "iconName": "Uchiwa"
+  },
+  {
+    "id": "manga_volume",
+    "label": "Manga Volume",
+    "description": "Tankobon manga book.",
+    "category": "Anime",
+    "iconName": "Tankobon"
+  },
+  {
+    "id": "doujinshi",
+    "label": "Doujinshi",
+    "description": "Thin fan comic book.",
+    "category": "Anime",
+    "iconName": "Doujinshi"
+  },
+  {
+    "id": "nesoberi_plush",
+    "label": "Nesoberi",
+    "description": "Lying down plush doll.",
+    "category": "Anime",
+    "iconName": "Nesoberi"
+  },
+  {
+    "id": "acrylic_standee_anime",
+    "label": "Acrylic Standee",
+    "description": "Character stand figure.",
+    "category": "Anime",
+    "iconName": "AcrylicStandee"
+  },
+  {
+    "id": "acrylic_diorama",
+    "label": "Acrylic Diorama",
+    "description": "Multi-layered acrylic display.",
+    "category": "Anime",
+    "iconName": "AcrylicDiorama"
+  },
+  {
+    "id": "gacha_capsule",
+    "label": "Gacha Capsule",
+    "description": "Mini toy in a plastic capsule.",
+    "category": "Anime",
+    "iconName": "GachaCapsule"
+  },
+  {
+    "id": "booster_box_anime",
+    "label": "Booster Box",
+    "description": "Full TCG retail display box.",
+    "category": "Anime",
+    "iconName": "BoosterBox"
+  },
+  {
+    "id": "button_badge_anime",
+    "label": "Can Badge",
+    "description": "Round metal button badge.",
+    "category": "Anime",
+    "iconName": "Pin"
+  },
+  {
+    "id": "cosplay_wig",
+    "label": "Cosplay Wig",
+    "description": "Styled character wig on head.",
+    "category": "Anime",
+    "iconName": "CosplayWig"
+  },
+  {
+    "id": "rubber_strap",
+    "label": "Rubber Strap",
+    "description": "PVC rubber keychain charm.",
+    "category": "Anime",
+    "iconName": "RubberStrap"
+  },
+  {
+    "id": "art_book",
+    "label": "Art Book",
+    "description": "Glossy hardcover illustration book.",
+    "category": "Anime",
+    "iconName": "ArtBook"
+  },
+  {
+    "id": "bluray_box",
+    "label": "Blu-ray Box",
+    "description": "Collector\\",
+    "category": "Anime",
+    "iconName": "BluRayBox"
+  },
+  {
+    "id": "otaku_pegboard",
+    "label": "Display Pegboard",
+    "description": "Hanging retail display.",
+    "category": "Anime",
+    "iconName": "Pegboard"
+  },
+  {
+    "id": "mochi_plush",
+    "label": "Mochi Plush",
+    "description": "Round soft stacking plush.",
+    "category": "Anime",
+    "iconName": "MochiPlush"
+  },
+  {
+    "id": "ticket_holder",
+    "label": "Ticket Holder",
+    "description": "Plastic ticket file folder.",
+    "category": "Anime",
+    "iconName": "TicketHolder"
+  },
+  {
+    "id": "cafe_coaster",
+    "label": "Cafe Coaster",
+    "description": "Paper collaboration cafe coaster.",
+    "category": "Anime",
+    "iconName": "CafeCoaster"
+  },
+  {
+    "id": "shitajiki",
+    "label": "Shitajiki",
+    "description": "Plastic pencil board.",
+    "category": "Anime",
+    "iconName": "Shitajiki"
+  },
+  {
+    "id": "sensu_fan",
+    "label": "Folding Fan",
+    "description": "Traditional folding fan.",
+    "category": "Anime",
+    "iconName": "Sensu"
+  },
+  {
+    "id": "kinchaku",
+    "label": "Kinchaku",
+    "description": "Fabric drawstring pouch.",
+    "category": "Anime",
+    "iconName": "Kinchaku"
+  },
+  {
+    "id": "noren_curtain",
+    "label": "Noren Curtain",
+    "description": "Split doorway curtain.",
+    "category": "Anime",
+    "iconName": "Noren"
+  },
+  {
+    "id": "character_hanger",
+    "label": "Char Hanger",
+    "description": "Character face clothes hanger.",
+    "category": "Anime",
+    "iconName": "CharacterHanger"
+  },
+  {
+    "id": "wafer_card",
+    "label": "Wafer Card",
+    "description": "Metallic collectible wafer card.",
+    "category": "Anime",
+    "iconName": "WaferCard"
+  },
+  {
+    "id": "blind_box_anime",
+    "label": "Blind Box",
+    "description": "Individual mystery figure box.",
+    "category": "Anime",
+    "iconName": "BlindBox"
+  },
+  {
+    "id": "acrylic_frame",
+    "label": "Acrylic Frame",
+    "description": "Stand for cards or photos.",
+    "category": "Anime",
+    "iconName": "AcrylicFrame"
+  },
+  {
+    "id": "clear_poster",
+    "label": "Clear Poster",
+    "description": "Transparent plastic poster.",
+    "category": "Anime",
+    "iconName": "ClearPoster"
+  },
+  {
+    "id": "standee_base",
+    "label": "Standee Base",
+    "description": "Printed base for stand figures.",
+    "category": "Anime",
+    "iconName": "StandeeBase"
+  },
+  {
+    "id": "cheki_photo",
+    "label": "Instant Photo",
+    "description": "Instax style mini photo.",
+    "category": "Anime",
+    "iconName": "Cheki"
+  },
+  {
+    "id": "badge_rosette",
+    "label": "Rosette",
+    "description": "Ribbon badge holder.",
+    "category": "Anime",
+    "iconName": "Rosette"
+  },
+  {
+    "id": "acrylic_clock",
+    "label": "Acrylic Clock",
+    "description": "Desktop acrylic clock.",
+    "category": "Anime",
+    "iconName": "AcrylicClock"
+  },
+  {
+    "id": "tote",
+    "label": "Tote Bag",
+    "description": "Natural beige cotton canvas tote bag.",
+    "category": "Accessories",
+    "iconName": "Tote"
+  },
+  {
+    "id": "pen",
+    "label": "Pen",
+    "description": "Ballpoint pen with logo imprint.",
+    "category": "Accessories",
+    "iconName": "Pen"
+  },
+  {
+    "id": "drawstring_backpack",
+    "label": "Drawstring Bag",
+    "description": "Polyester cinch drawstring backpack.",
+    "category": "Accessories",
+    "iconName": "DrawstringBag"
+  },
+  {
+    "id": "backpack",
+    "label": "Backpack",
+    "description": "Classic school backpack.",
+    "category": "Accessories",
+    "iconName": "Backpack"
+  },
+  {
+    "id": "laptop_sleeve",
+    "label": "Laptop Sleeve",
+    "description": "Neoprene laptop protective sleeve.",
+    "category": "Accessories",
+    "iconName": "LaptopSleeve"
+  },
+  {
+    "id": "usb_drive",
+    "label": "USB Drive",
+    "description": "Swivel flash drive.",
+    "category": "Accessories",
+    "iconName": "USB"
+  },
+  {
+    "id": "power_bank",
+    "label": "Power Bank",
+    "description": "Portable battery charger.",
+    "category": "Accessories",
+    "iconName": "PowerBank"
+  },
+  {
+    "id": "jet_tag",
+    "label": "Jet Tag",
+    "description": "Embroidered fabric keychain flight tag.",
+    "category": "Accessories",
+    "iconName": "JetTag"
+  },
+  {
+    "id": "phonecase",
+    "label": "Case",
+    "description": "Glossy hard shell smartphone case.",
+    "category": "Accessories",
+    "iconName": "Phone"
+  },
+  {
+    "id": "badge_reel",
+    "label": "Badge Reel",
+    "description": "Retractable ID badge holder.",
+    "category": "Accessories",
+    "iconName": "BadgeReel"
+  },
+  {
+    "id": "smartwatch",
+    "label": "Smartwatch",
+    "description": "Digital smartwatch screen interface.",
+    "category": "Accessories",
+    "iconName": "Smartwatch"
+  },
+  {
+    "id": "pin_button",
+    "label": "Pin",
+    "description": "Round glossy metal pin button.",
+    "category": "Accessories",
+    "iconName": "Pin"
+  },
+  {
+    "id": "enamel_pin",
+    "label": "Enamel Pin",
+    "description": "Hard enamel metal lapel pin.",
+    "category": "Accessories",
+    "iconName": "EnamelPin"
+  },
+  {
+    "id": "challenge_coin",
+    "label": "Challenge Coin",
+    "description": "Metal challenge coin with relief detail.",
+    "category": "Accessories",
+    "iconName": "ChallengeCoin"
+  },
+  {
+    "id": "keychain",
+    "label": "Keychain",
+    "description": "Clear acrylic charm keychain.",
+    "category": "Accessories",
+    "iconName": "Keychain"
+  },
+  {
+    "id": "guitar_pick",
+    "label": "Guitar Pick",
+    "description": "Standard celluloid guitar pick.",
+    "category": "Accessories",
+    "iconName": "GuitarPick"
+  },
+  {
+    "id": "car_wrap",
+    "label": "Car Wrap",
+    "description": "Full vinyl vehicle wrap design.",
+    "category": "Accessories",
+    "iconName": "Car"
+  },
+  {
+    "id": "umbrella",
+    "label": "Umbrella",
+    "description": "Compact travel umbrella.",
+    "category": "Accessories",
+    "iconName": "Umbrella"
+  },
+  {
+    "id": "lighter",
+    "label": "Lighter",
+    "description": "Custom printed pocket lighter.",
+    "category": "Accessories",
+    "iconName": "Lighter"
+  },
+  {
+    "id": "lip_balm",
+    "label": "Lip Balm",
+    "description": "Standard lip balm tube.",
+    "category": "Accessories",
+    "iconName": "LipBalm"
+  },
+  {
+    "id": "lanyard",
+    "label": "Lanyard",
+    "description": "Polyester neck lanyard.",
+    "category": "Accessories",
+    "iconName": "Lanyard"
+  },
+  {
+    "id": "embroidery_patch",
+    "label": "Embroidery Patch",
+    "description": "Iron-on embroidered fabric patch.",
+    "category": "Accessories",
+    "iconName": "EmbroideryPatch"
+  },
+  {
+    "id": "stress_ball",
+    "label": "Stress Ball",
+    "description": "Round foam stress reliever.",
+    "category": "Accessories",
+    "iconName": "StressBall"
+  },
+  {
+    "id": "wireless_charger",
+    "label": "Wireless Charger",
+    "description": "Qi charging pad.",
+    "category": "Accessories",
+    "iconName": "WirelessCharger"
+  },
+  {
+    "id": "bluetooth_speaker",
+    "label": "Speaker",
+    "description": "Portable Bluetooth speaker.",
+    "category": "Accessories",
+    "iconName": "Speaker"
+  },
+  {
+    "id": "phone_grip",
+    "label": "Phone Grip",
+    "description": "Collapsible phone grip holder.",
+    "category": "Accessories",
+    "iconName": "PhoneGrip"
+  },
+  {
+    "id": "sticky_notes",
+    "label": "Sticky Notes",
+    "description": "3x3 sticky note pad.",
+    "category": "Accessories",
+    "iconName": "StickyNotes"
+  },
+  {
+    "id": "lunch_bag",
+    "label": "Lunch Bag",
+    "description": "Insulated lunch cooler bag.",
+    "category": "Accessories",
+    "iconName": "LunchBag"
+  },
+  {
+    "id": "fanny_pack",
+    "label": "Fanny Pack",
+    "description": "Nylon waist bag fanny pack.",
+    "category": "Accessories",
+    "iconName": "FannyPack"
+  },
+  {
+    "id": "duffle_bag",
+    "label": "Duffle Bag",
+    "description": "Sports gym duffle bag.",
+    "category": "Accessories",
+    "iconName": "DuffleBag"
+  },
+  {
+    "id": "mouse",
+    "label": "Mouse",
+    "description": "Wireless computer mouse.",
+    "category": "Accessories",
+    "iconName": "Mouse"
+  },
+  {
+    "id": "chef_hat",
+    "label": "Chef Hat",
+    "description": "Professional chef toque.",
+    "category": "Kitchen",
+    "iconName": "ChefHat"
+  },
+  {
+    "id": "apron_kitchen",
+    "label": "Chef Apron",
+    "description": "Full bib kitchen apron.",
+    "category": "Kitchen",
+    "iconName": "Apron"
+  },
+  {
+    "id": "oven_mitt",
+    "label": "Oven Mitt",
+    "description": "Quilted heat resistant mitt.",
+    "category": "Kitchen",
+    "iconName": "OvenMitt"
+  },
+  {
+    "id": "cutting_board",
+    "label": "Cutting Board",
+    "description": "Wooden chopping board.",
+    "category": "Kitchen",
+    "iconName": "CuttingBoard"
+  },
+  {
+    "id": "kitchen_towel",
+    "label": "Tea Towel",
+    "description": "Printed cotton kitchen towel.",
+    "category": "Kitchen",
+    "iconName": "SportsTowel"
+  },
+  {
+    "id": "frying_pan",
+    "label": "Frying Pan",
+    "description": "Cast iron skillet pan.",
+    "category": "Kitchen",
+    "iconName": "FryingPan"
+  },
+  {
+    "id": "cooking_pot",
+    "label": "Cooking Pot",
+    "description": "Stainless steel stock pot.",
+    "category": "Kitchen",
+    "iconName": "CookingPot"
+  },
+  {
+    "id": "rolling_pin",
+    "label": "Rolling Pin",
+    "description": "Wooden baking rolling pin.",
+    "category": "Kitchen",
+    "iconName": "RollingPin"
+  },
+  {
+    "id": "chef_knife",
+    "label": "Chef Knife",
+    "description": "Professional chef knife.",
+    "category": "Kitchen",
+    "iconName": "Knife"
+  },
+  {
+    "id": "butcher_paper",
+    "label": "Butcher Paper",
+    "description": "Roll of butcher paper.",
+    "category": "Kitchen",
+    "iconName": "ButcherPaper"
+  },
+  {
+    "id": "whoopee_cushion",
+    "label": "Whoopee Cushion",
+    "description": "Classic rubber whoopee cushion.",
+    "category": "Novelty",
+    "iconName": "WhoopeeCushion"
+  },
+  {
+    "id": "chattering_teeth",
+    "label": "Chattering Teeth",
+    "description": "Wind-up chattering teeth toy.",
+    "category": "Novelty",
+    "iconName": "ChatteringTeeth"
+  },
+  {
+    "id": "rubber_chicken",
+    "label": "Rubber Chicken",
+    "description": "Yellow rubber chicken squeaky toy.",
+    "category": "Novelty",
+    "iconName": "RubberChicken"
+  },
+  {
+    "id": "groucho_glasses",
+    "label": "Disguise Glasses",
+    "description": "Glasses with nose and mustache.",
+    "category": "Novelty",
+    "iconName": "GrouchoGlasses"
+  },
+  {
+    "id": "joy_buzzer",
+    "label": "Joy Buzzer",
+    "description": "Handshake buzzer ring.",
+    "category": "Novelty",
+    "iconName": "JoyBuzzer"
+  },
+  {
+    "id": "shock_pen",
+    "label": "Shock Pen",
+    "description": "Electric shock ballpoint pen.",
+    "category": "Novelty",
+    "iconName": "Pen"
+  },
+  {
+    "id": "shock_gum",
+    "label": "Shock Gum",
+    "description": "Pack of shock chewing gum.",
+    "category": "Novelty",
+    "iconName": "Candy"
+  },
+  {
+    "id": "fake_vomit",
+    "label": "Fake Vomit",
+    "description": "Plastic fake vomit puddle.",
+    "category": "Novelty",
+    "iconName": "FakePoop"
+  },
+  {
+    "id": "fake_poop",
+    "label": "Fake Poop",
+    "description": "Realistic plastic dog poop.",
+    "category": "Novelty",
+    "iconName": "FakePoop"
+  },
+  {
+    "id": "snake_can",
+    "label": "Snake Can",
+    "description": "Nut can with spring snake.",
+    "category": "Novelty",
+    "iconName": "NutCan"
+  },
+  {
+    "id": "xray_specs",
+    "label": "X-Ray Specs",
+    "description": "Retro X-ray vision glasses.",
+    "category": "Novelty",
+    "iconName": "GrouchoGlasses"
+  },
+  {
+    "id": "fart_spray",
+    "label": "Fart Spray",
+    "description": "Liquid fart spray bottle.",
+    "category": "Novelty",
+    "iconName": "SprayBottle"
+  },
+  {
+    "id": "air_horn",
+    "label": "Air Horn",
+    "description": "Handheld air horn can.",
+    "category": "Novelty",
+    "iconName": "SignalHorn"
+  },
+  {
+    "id": "finger_trap",
+    "label": "Finger Trap",
+    "description": "Woven bamboo finger trap.",
+    "category": "Novelty",
+    "iconName": "PaperTube"
+  },
+  {
+    "id": "bald_cap",
+    "label": "Bald Cap",
+    "description": "Latex bald head cap.",
+    "category": "Novelty",
+    "iconName": "Mask"
+  },
+  {
+    "id": "fake_mustache",
+    "label": "Fake Mustache",
+    "description": "Adhesive fake mustache.",
+    "category": "Novelty",
+    "iconName": "Sticker"
+  },
+  {
+    "id": "vampire_teeth",
+    "label": "Vampire Teeth",
+    "description": "Plastic vampire fangs.",
+    "category": "Novelty",
+    "iconName": "ChatteringTeeth"
+  },
+  {
+    "id": "fake_blood",
+    "label": "Fake Blood",
+    "description": "Tube of fake blood.",
+    "category": "Novelty",
+    "iconName": "Tube"
+  },
+  {
+    "id": "severed_finger",
+    "label": "Severed Finger",
+    "description": "Realistic rubber finger.",
+    "category": "Novelty",
+    "iconName": "FakePoop"
+  },
+  {
+    "id": "arrow_headband",
+    "label": "Arrow Headband",
+    "description": "Arrow through head prop.",
+    "category": "Novelty",
+    "iconName": "Headband"
+  },
+  {
+    "id": "potato_gun",
+    "label": "Potato Gun",
+    "description": "Red plastic spud gun.",
+    "category": "Novelty",
+    "iconName": "WaterBlaster"
+  },
+  {
+    "id": "squirting_flower",
+    "label": "Squirt Flower",
+    "description": "Lapel flower that squirts water.",
+    "category": "Novelty",
+    "iconName": "Brooch"
+  },
+  {
+    "id": "magic_8_ball",
+    "label": "Magic 8 Ball",
+    "description": "Fortune telling ball.",
+    "category": "Novelty",
+    "iconName": "MagicBall"
+  },
+  {
+    "id": "pet_rock",
+    "label": "Pet Rock",
+    "description": "Rock in a box.",
+    "category": "Novelty",
+    "iconName": "Box"
+  },
+  {
+    "id": "drinking_bird",
+    "label": "Drinking Bird",
+    "description": "Dipping bird science toy.",
+    "category": "Novelty",
+    "iconName": "RubberDuck"
+  },
+  {
+    "id": "plasma_ball",
+    "label": "Plasma Ball",
+    "description": "Electric plasma globe.",
+    "category": "Novelty",
+    "iconName": "MagicBall"
+  },
+  {
+    "id": "lava_lamp",
+    "label": "Lava Lamp",
+    "description": "Retro liquid motion lamp.",
+    "category": "Novelty",
+    "iconName": "WaterBottle"
+  },
+  {
+    "id": "singing_fish",
+    "label": "Singing Fish",
+    "description": "Wall mounted singing bass.",
+    "category": "Novelty",
+    "iconName": "Mascot"
+  },
+  {
+    "id": "toilet_mug",
+    "label": "Toilet Mug",
+    "description": "Ceramic mug shaped like a toilet.",
+    "category": "Novelty",
+    "iconName": "Mug"
+  },
+  {
+    "id": "parking_ticket",
+    "label": "Fake Ticket",
+    "description": "Prank parking violation ticket.",
+    "category": "Novelty",
+    "iconName": "EventTicket"
+  },
+  {
+    "id": "lottery_ticket",
+    "label": "Fake Lotto",
+    "description": "Fake winning lottery scratcher.",
+    "category": "Novelty",
+    "iconName": "EventTicket"
+  },
+  {
+    "id": "money_tp",
+    "label": "Money TP",
+    "description": "Toilet paper printed with money.",
+    "category": "Novelty",
+    "iconName": "BathTowel"
+  },
+  {
+    "id": "horse_mask",
+    "label": "Horse Mask",
+    "description": "Latex horse head mask.",
+    "category": "Novelty",
+    "iconName": "Mask"
+  },
+  {
+    "id": "guy_fawkes",
+    "label": "Anonymous Mask",
+    "description": "Guy Fawkes style mask.",
+    "category": "Novelty",
+    "iconName": "Mask"
+  },
+  {
+    "id": "beer_helmet",
+    "label": "Beer Helmet",
+    "description": "Drinking hat with straws.",
+    "category": "Novelty",
+    "iconName": "Helmet"
+  },
+  {
+    "id": "umbrella_hat",
+    "label": "Umbrella Hat",
+    "description": "Head mounted umbrella.",
+    "category": "Novelty",
+    "iconName": "Umbrella"
+  },
+  {
+    "id": "propeller_hat",
+    "label": "Propeller Beanie",
+    "description": "Beanie with spinning propeller.",
+    "category": "Novelty",
+    "iconName": "Beanie"
+  },
+  {
+    "id": "tuxedo_shirt",
+    "label": "Tuxedo T-Shirt",
+    "description": "T-shirt printed with tuxedo.",
+    "category": "Novelty",
+    "iconName": "TShirt"
+  },
+  {
+    "id": "muscle_shirt",
+    "label": "Muscle Shirt",
+    "description": "T-shirt printed with muscles.",
+    "category": "Novelty",
+    "iconName": "TShirt"
+  },
+  {
+    "id": "hula_girl",
+    "label": "Dashboard Hula",
+    "description": "Bobble waist hula girl.",
+    "category": "Novelty",
+    "iconName": "Bobblehead"
+  },
+  {
+    "id": "dancing_flower",
+    "label": "Solar Flower",
+    "description": "Solar powered dancing flower.",
+    "category": "Novelty",
+    "iconName": "Candle"
+  },
+  {
+    "id": "stress_popper",
+    "label": "Eye Popper",
+    "description": "Squeeze toy with popping eyes.",
+    "category": "Novelty",
+    "iconName": "StressBall"
+  },
+  {
+    "id": "screaming_chicken",
+    "label": "Screaming Chicken",
+    "description": "Long neck rubber chicken.",
+    "category": "Novelty",
+    "iconName": "RubberChicken"
+  },
+  {
+    "id": "tiny_hands",
+    "label": "Tiny Hands",
+    "description": "Small plastic hands on sticks.",
+    "category": "Novelty",
+    "iconName": "PhoneGrip"
+  },
+  {
+    "id": "finger_puppets",
+    "label": "Finger Puppets",
+    "description": "Set of monster finger puppets.",
+    "category": "Novelty",
+    "iconName": "Minifigure"
+  },
+  {
+    "id": "slap_bracelet",
+    "label": "Slap Bracelet",
+    "description": "Reflective slap wristband.",
+    "category": "Novelty",
+    "iconName": "Bracelet"
+  },
+  {
+    "id": "snap_pops",
+    "label": "Snap Pops",
+    "description": "Box of bang snaps.",
+    "category": "Novelty",
+    "iconName": "Matchbox"
+  },
+  {
+    "id": "bang_gun",
+    "label": "Bang Gun",
+    "description": "Toy gun with flag.",
+    "category": "Novelty",
+    "iconName": "WaterBlaster"
+  },
+  {
+    "id": "prank_gift_box",
+    "label": "Prank Gift Box",
+    "description": "Empty box with fake product.",
+    "category": "Novelty",
+    "iconName": "PrankBox"
+  },
+  {
+    "id": "dehydrated_water",
+    "label": "Dehydrated Water",
+    "description": "Can of empty water.",
+    "category": "Novelty",
+    "iconName": "PaintCan"
+  },
+  {
+    "id": "canned_air",
+    "label": "Canned Air",
+    "description": "Can of fresh air.",
+    "category": "Novelty",
+    "iconName": "SodaCan"
+  },
+  {
+    "id": "invisible_leash",
+    "label": "Invisible Dog",
+    "description": "Stiff leash with harness.",
+    "category": "Novelty",
+    "iconName": "Leash"
+  },
+  {
+    "id": "panic_button",
+    "label": "Panic Button",
+    "description": "Red emergency button.",
+    "category": "Novelty",
+    "iconName": "Button"
+  },
+  {
+    "id": "easy_button",
+    "label": "Easy Button",
+    "description": "Red button saying ",
+    "category": "Novelty",
+    "iconName": "Button"
+  },
+  {
+    "id": "fake_camera",
+    "label": "Dummy Camera",
+    "description": "Fake security camera with LED.",
+    "category": "Novelty",
+    "iconName": "Camera"
+  },
+  {
+    "id": "shock_lighter",
+    "label": "Shock Lighter",
+    "description": "Fake lighter that shocks.",
+    "category": "Novelty",
+    "iconName": "Lighter"
+  },
+  {
+    "id": "stink_bomb",
+    "label": "Stink Bomb",
+    "description": "Glass vial stink bomb.",
+    "category": "Novelty",
+    "iconName": "Vial"
+  },
+  {
+    "id": "disappearing_ink",
+    "label": "Magic Ink",
+    "description": "Bottle of blue disappearing ink.",
+    "category": "Novelty",
+    "iconName": "Dropper"
+  },
+  {
+    "id": "plastic_roach",
+    "label": "Fake Roach",
+    "description": "Realistic plastic cockroach.",
+    "category": "Novelty",
+    "iconName": "FakePoop"
+  },
+  {
+    "id": "plastic_spider",
+    "label": "Fake Spider",
+    "description": "Black plastic spider.",
+    "category": "Novelty",
+    "iconName": "FakePoop"
+  },
+  {
+    "id": "fly_ice_cube",
+    "label": "Fly in Ice",
+    "description": "Plastic ice cube with fly.",
+    "category": "Novelty",
+    "iconName": "AcrylicBlock"
+  },
+  {
+    "id": "nail_finger",
+    "label": "Nail Finger",
+    "description": "Bandage with nail through it.",
+    "category": "Novelty",
+    "iconName": "BandageRoll"
+  },
+  {
+    "id": "funny_sunglasses",
+    "label": "Pixel Glasses",
+    "description": "8-bit pixelated sunglasses.",
+    "category": "Novelty",
+    "iconName": "GrouchoGlasses"
+  },
+  {
+    "id": "squirting_camera",
+    "label": "Squirt Camera",
+    "description": "Camera that squirts water.",
+    "category": "Novelty",
+    "iconName": "Camera"
+  },
+  {
+    "id": "squirting_ring",
+    "label": "Squirt Ring",
+    "description": "Ring with water bulb.",
+    "category": "Novelty",
+    "iconName": "Ring"
+  },
+  {
+    "id": "newtons_cradle",
+    "label": "Newtons Cradle",
+    "description": "Desktop pendulum balls.",
+    "category": "Novelty",
+    "iconName": "SpinningTop"
+  },
+  {
+    "id": "pin_art",
+    "label": "Pin Art",
+    "description": "3D pin impression toy.",
+    "category": "Novelty",
+    "iconName": "AcrylicBlock"
+  },
+  {
+    "id": "billy_bass",
+    "label": "Wall Fish",
+    "description": "Singing fish on plaque.",
+    "category": "Novelty",
+    "iconName": "Mascot"
+  },
+  {
+    "id": "prescription_mug",
+    "label": "Rx Mug",
+    "description": "Mug looking like pill bottle.",
+    "category": "Novelty",
+    "iconName": "PillBottle"
+  },
+  {
+    "id": "sudoku_tp",
+    "label": "Sudoku TP",
+    "description": "Toilet paper with puzzles.",
+    "category": "Novelty",
+    "iconName": "BathTowel"
+  },
+  {
+    "id": "hazmat_suit",
+    "label": "Hazmat Suit",
+    "description": "Yellow costume suit.",
+    "category": "Novelty",
+    "iconName": "Sweatshirt"
+  },
+  {
+    "id": "sumo_suit",
+    "label": "Sumo Suit",
+    "description": "Inflatable wrestler suit.",
+    "category": "Novelty",
+    "iconName": "PufferJacket"
+  },
+  {
+    "id": "trex_costume",
+    "label": "T-Rex Suit",
+    "description": "Inflatable dinosaur costume.",
+    "category": "Novelty",
+    "iconName": "Mascot"
+  },
+  {
+    "id": "alien_glasses",
+    "label": "Alien Glasses",
+    "description": "Green alien eye glasses.",
+    "category": "Novelty",
+    "iconName": "GrouchoGlasses"
+  },
+  {
+    "id": "novelty_tie",
+    "label": "Piano Tie",
+    "description": "Necktie with piano keys.",
+    "category": "Novelty",
+    "iconName": "TShirt"
+  },
+  {
+    "id": "bikini_shirt",
+    "label": "Bikini Tee",
+    "description": "T-shirt with bikini body print.",
+    "category": "Novelty",
+    "iconName": "TShirt"
+  },
+  {
+    "id": "solar_flower",
+    "label": "Flip Flap",
+    "description": "Solar dancing plant.",
+    "category": "Novelty",
+    "iconName": "Candle"
+  },
+  {
+    "id": "hand_buzzer",
+    "label": "Hand Buzzer",
+    "description": "Classic wind-up buzzer.",
+    "category": "Novelty",
+    "iconName": "JoyBuzzer"
+  },
+  {
+    "id": "vhs_tape",
+    "label": "VHS Tape",
+    "description": "Retro VHS video cassette tape.",
+    "category": "Media",
+    "iconName": "VHS"
+  },
+  {
+    "id": "cassette_tape",
+    "label": "Cassette Tape",
+    "description": "Vintage audio cassette tape.",
+    "category": "Media",
+    "iconName": "Cassette"
+  },
+  {
+    "id": "cd_jewel_case",
+    "label": "CD Case",
+    "description": "Standard CD jewel case with cover.",
+    "category": "Media",
+    "iconName": "CDCase"
+  },
+  {
+    "id": "cd_digipak",
+    "label": "Digipak",
+    "description": "Cardboard gatefold CD case.",
+    "category": "Media",
+    "iconName": "Digipak"
+  },
+  {
+    "id": "vinyl_record",
+    "label": "Vinyl Record",
+    "description": "12-inch vinyl record LP sleeve.",
+    "category": "Media",
+    "iconName": "Vinyl"
+  },
+  {
+    "id": "vinyl_label",
+    "label": "Vinyl Label",
+    "description": "Center label of a vinyl record.",
+    "category": "Media",
+    "iconName": "VinylLabel"
+  },
+  {
+    "id": "clapperboard",
+    "label": "Clapperboard",
+    "description": "Film production clapperboard.",
+    "category": "Media",
+    "iconName": "Clapperboard"
+  },
+  {
+    "id": "mic_flag",
+    "label": "Mic Flag",
+    "description": "Square microphone brand flag.",
+    "category": "Media",
+    "iconName": "MicFlag"
+  },
+  {
+    "id": "sketchbook_open",
+    "label": "Sketchbook",
+    "description": "Open spiral sketchbook.",
+    "category": "Media",
+    "iconName": "Sketchbook"
+  },
+  {
+    "id": "spray_paint",
+    "label": "Spray Paint",
+    "description": "Aerosol spray paint can.",
+    "category": "Media",
+    "iconName": "SprayPaint"
+  },
+  {
+    "id": "paint_tubes",
+    "label": "Paint Tube",
+    "description": "Metal oil or acrylic paint tube.",
+    "category": "Media",
+    "iconName": "PaintTube"
+  },
+  {
+    "id": "watercolor_set",
+    "label": "Watercolor Set",
+    "description": "Pan watercolor paint set.",
+    "category": "Media",
+    "iconName": "Watercolor"
+  },
+  {
+    "id": "sticker_diecut",
+    "label": "Die-Cut Sticker",
+    "description": "Single vinyl sticker with contour cut.",
+    "category": "Stickers",
+    "iconName": "DieCutSticker"
+  },
+  {
+    "id": "sticker_holo",
+    "label": "Holo Sticker",
+    "description": "Iridescent holographic vinyl sticker.",
+    "category": "Stickers",
+    "iconName": "HoloSticker"
+  },
+  {
+    "id": "sticker_sheet",
+    "label": "Sticker Sheet",
+    "description": "A5 sheet with multiple kiss-cut stickers.",
+    "category": "Stickers",
+    "iconName": "StickerSheet"
+  },
+  {
+    "id": "sticker_roll",
+    "label": "Sticker Roll",
+    "description": "Roll of round adhesive stickers.",
+    "category": "Stickers",
+    "iconName": "StickerRoll"
+  },
+  {
+    "id": "sticker_bumper",
+    "label": "Bumper Sticker",
+    "description": "Wide rectangular car bumper sticker.",
+    "category": "Stickers",
+    "iconName": "BumperSticker"
+  },
+  {
+    "id": "sticker_slap",
+    "label": "Street Slap",
+    "description": "Urban rectangular street sticker.",
+    "category": "Stickers",
+    "iconName": "SlapTag"
+  },
+  {
+    "id": "sticker_pile",
+    "label": "Sticker Pile",
+    "description": "Disorganized pile of die-cut stickers.",
+    "category": "Stickers",
+    "iconName": "StickerPile"
+  },
+  {
+    "id": "sticker_clear",
+    "label": "Clear Sticker",
+    "description": "Transparent vinyl decal.",
+    "category": "Stickers",
+    "iconName": "ClearSticker"
+  },
+  {
+    "id": "laptop_skin",
+    "label": "Laptop Skin",
+    "description": "Full cover laptop lid decal.",
+    "category": "Stickers",
+    "iconName": "LaptopSkin"
+  },
+  {
+    "id": "sticker_transfer",
+    "label": "Transfer Decal",
+    "description": "Vinyl lettering with transfer tape.",
+    "category": "Stickers",
+    "iconName": "TransferDecal"
+  },
+  {
+    "id": "sticker_epoxy",
+    "label": "Epoxy Dome",
+    "description": "3D resin coated dome sticker.",
+    "category": "Stickers",
+    "iconName": "EpoxySticker"
+  },
+  {
+    "id": "sticker_namebadge",
+    "label": "Name Badge",
+    "description": "Hello My Name Is sticker tag.",
+    "category": "Stickers",
+    "iconName": "NameBadge"
+  },
+  {
+    "id": "sticker_kraft",
+    "label": "Kraft Sticker",
+    "description": "Eco-friendly brown paper sticker.",
+    "category": "Stickers",
+    "iconName": "KraftSticker"
+  },
+  {
+    "id": "sticker_gold",
+    "label": "Gold Foil",
+    "description": "Metallic gold foil stamped sticker.",
+    "category": "Stickers",
+    "iconName": "GoldFoil"
+  },
+  {
+    "id": "sticker_glitter",
+    "label": "Glitter Sticker",
+    "description": "Sparkling glitter vinyl sticker.",
+    "category": "Stickers",
+    "iconName": "GlitterSticker"
+  },
+  {
+    "id": "washi_tape",
+    "label": "Washi Tape",
+    "description": "Decorative masking tape roll.",
+    "category": "Stickers",
+    "iconName": "WashiTape"
+  },
+  {
+    "id": "protein_tub",
+    "label": "Protein Tub",
+    "description": "Large plastic supplement tub.",
+    "category": "Bottles",
+    "iconName": "ProteinTub"
+  },
+  {
+    "id": "detergent_bottle",
+    "label": "Detergent Jug",
+    "description": "Plastic handle liquid detergent bottle.",
+    "category": "Bottles",
+    "iconName": "DetergentBottle"
+  },
+  {
+    "id": "cream_jar",
+    "label": "Cosmetic Jar",
+    "description": "Glass cream/cosmetic jar.",
+    "category": "Bottles",
+    "iconName": "CreamJar"
+  },
+  {
+    "id": "pump_bottle",
+    "label": "Pump Bottle",
+    "description": "Lotion bottle with pump dispenser.",
+    "category": "Bottles",
+    "iconName": "PumpBottle"
+  },
+  {
+    "id": "spray_bottle",
+    "label": "Spray Bottle",
+    "description": "Plastic spray bottle.",
+    "category": "Bottles",
+    "iconName": "SprayBottle"
+  },
+  {
+    "id": "vitamin_bottle",
+    "label": "Vitamin Bottle",
+    "description": "Plastic supplement bottle.",
+    "category": "Bottles",
+    "iconName": "VitaminBottle"
+  },
+  {
+    "id": "dropper_bottle",
+    "label": "Dropper Bottle",
+    "description": "Glass cosmetic dropper bottle.",
+    "category": "Bottles",
+    "iconName": "Dropper"
+  },
+  {
+    "id": "cosmetic_tube",
+    "label": "Cosmetic Tube",
+    "description": "Soft plastic squeeze tube.",
+    "category": "Bottles",
+    "iconName": "CosmeticTube"
+  },
+  {
+    "id": "deodorant_stick",
+    "label": "Deodorant",
+    "description": "Plastic deodorant stick container.",
+    "category": "Bottles",
+    "iconName": "Deodorant"
+  },
+  {
+    "id": "lipstick",
+    "label": "Lipstick",
+    "description": "Luxury lipstick tube.",
+    "category": "Bottles",
+    "iconName": "Lipstick"
+  },
+  {
+    "id": "mascara",
+    "label": "Mascara",
+    "description": "Mascara wand tube.",
+    "category": "Bottles",
+    "iconName": "Mascara"
+  },
+  {
+    "id": "perfume_bottle",
+    "label": "Perfume Bottle",
+    "description": "Glass fragrance bottle.",
+    "category": "Bottles",
+    "iconName": "Perfume"
+  },
+  {
+    "id": "shampoo_bottle",
+    "label": "Shampoo Bottle",
+    "description": "Tall plastic shampoo bottle.",
+    "category": "Bottles",
+    "iconName": "Shampoo"
+  },
+  {
+    "id": "cleaner_spray",
+    "label": "Trigger Spray",
+    "description": "Household cleaning spray bottle.",
+    "category": "Bottles",
+    "iconName": "TriggerSpray"
+  },
+  {
+    "id": "paint_can",
+    "label": "Paint Can",
+    "description": "Metal gallon paint can.",
+    "category": "Bottles",
+    "iconName": "PaintCan"
+  },
+  {
+    "id": "jerry_can_plastic",
+    "label": "Jerry Can",
+    "description": "Industrial plastic canister.",
+    "category": "Bottles",
+    "iconName": "JerryCanPlastic"
+  },
+  {
+    "id": "plastic_bucket",
+    "label": "Plastic Bucket",
+    "description": "5-gallon utility bucket.",
+    "category": "Bottles",
+    "iconName": "PlasticBucket"
+  },
+  {
+    "id": "growler",
+    "label": "Growler Jug",
+    "description": "Amber glass beer growler.",
+    "category": "Bottles",
+    "iconName": "Growler"
+  },
+  {
+    "id": "squeeze_bottle",
+    "label": "Squeeze Bottle",
+    "description": "Plastic chef squeeze bottle.",
+    "category": "Bottles",
+    "iconName": "SqueezeBottle"
+  },
+  {
+    "id": "boston_round",
+    "label": "Boston Round",
+    "description": "Standard Boston Round bottle.",
+    "category": "Bottles",
+    "iconName": "BostonRound"
+  },
+  {
+    "id": "syrup_jug",
+    "label": "Syrup Jug",
+    "description": "Glass jug with finger loop.",
+    "category": "Bottles",
+    "iconName": "DetergentBottle"
+  },
+  {
+    "id": "flask_flat",
+    "label": "Pocket Flask",
+    "description": "Glass spirit flask.",
+    "category": "Bottles",
+    "iconName": "Flask"
+  },
+  {
+    "id": "mini_liquor",
+    "label": "Mini Bottle",
+    "description": "Small 50ml nip bottle.",
+    "category": "Bottles",
+    "iconName": "LiquorBottle"
+  },
+  {
+    "id": "test_tube",
+    "label": "Test Tube",
+    "description": "Glass test tube with cork.",
+    "category": "Bottles",
+    "iconName": "TestTube"
+  },
+  {
+    "id": "maple_leaf_bottle",
+    "label": "Leaf Bottle",
+    "description": "Maple leaf shaped glass bottle.",
+    "category": "Bottles",
+    "iconName": "LeafBottle"
+  },
+  {
+    "id": "potion_bottle",
+    "label": "Potion Bottle",
+    "description": "Round bottom potion flask.",
+    "category": "Bottles",
+    "iconName": "PotionBottle"
+  },
+  {
+    "id": "honey_bear",
+    "label": "Honey Bear",
+    "description": "Plastic bear shaped honey bottle.",
+    "category": "Bottles",
+    "iconName": "HoneyBear"
+  },
+  {
+    "id": "roll_on_bottle",
+    "label": "Roll-on Bottle",
+    "description": "Glass roll-on applicator bottle.",
+    "category": "Bottles",
+    "iconName": "RollOnBottle"
+  },
+  {
+    "id": "standup_pouch",
+    "label": "Stand-up Pouch",
+    "description": "Resealable stand-up pouch.",
+    "category": "Bags",
+    "iconName": "CoffeeBag"
+  },
+  {
+    "id": "spout_pouch",
+    "label": "Spout Pouch",
+    "description": "Liquid spout squeeze pouch.",
+    "category": "Bags",
+    "iconName": "SpoutPouch"
+  },
+  {
+    "id": "shopping_bag",
+    "label": "Shopping Bag",
+    "description": "Retail paper shopping bag.",
+    "category": "Bags",
+    "iconName": "ShopBag"
+  },
+  {
+    "id": "kraft_pouch",
+    "label": "Kraft Pouch",
+    "description": "Paper stand-up pouch.",
+    "category": "Bags",
+    "iconName": "KraftPouch"
+  },
+  {
+    "id": "diecut_bag",
+    "label": "Merch Bag",
+    "description": "Plastic die-cut handle bag.",
+    "category": "Bags",
+    "iconName": "DieCutBag"
+  },
+  {
+    "id": "bubble_mailer",
+    "label": "Bubble Mailer",
+    "description": "Padded shipping envelope.",
+    "category": "Bags",
+    "iconName": "BubbleMailer"
+  },
+  {
+    "id": "poly_mailer",
+    "label": "Poly Mailer",
+    "description": "Plastic shipping bag.",
+    "category": "Bags",
+    "iconName": "PolyMailerBag"
+  },
+  {
+    "id": "woven_sack",
+    "label": "Woven Sack",
+    "description": "Large woven rice/feed bag.",
+    "category": "Bags",
+    "iconName": "WovenSack"
+  },
+  {
+    "id": "burlap_sack",
+    "label": "Burlap Sack",
+    "description": "Rustic jute coffee sack.",
+    "category": "Bags",
+    "iconName": "BurlapSack"
+  },
+  {
+    "id": "popcorn_bag_paper",
+    "label": "Popcorn Bag",
+    "description": "Classic paper popcorn bag.",
+    "category": "Bags",
+    "iconName": "PopcornBag"
+  },
+  {
+    "id": "stick_pack",
+    "label": "Stick Pack",
+    "description": "Single serve powder sachet.",
+    "category": "Bags",
+    "iconName": "StickPack"
+  },
+  {
+    "id": "ziplock_bag",
+    "label": "Ziplock Bag",
+    "description": "Clear resealable storage bag.",
+    "category": "Bags",
+    "iconName": "ZiplockBag"
+  },
+  {
+    "id": "cement_sack",
+    "label": "Cement Sack",
+    "description": "Heavy duty multi-wall paper sack.",
+    "category": "Bags",
+    "iconName": "CementSack"
+  },
+  {
+    "id": "tea_sachet",
+    "label": "Tea Sachet",
+    "description": "Individual tea bag envelope.",
+    "category": "Bags",
+    "iconName": "FlowWrap"
+  },
+  {
+    "id": "courier_satchel",
+    "label": "Courier Satchel",
+    "description": "Plastic express courier bag.",
+    "category": "Bags",
+    "iconName": "CourierSatchel"
+  },
+  {
+    "id": "dry_bag",
+    "label": "Dry Bag",
+    "description": "Waterproof roll-top bag.",
+    "category": "Bags",
+    "iconName": "DryBag"
+  },
+  {
+    "id": "sandwich_bag",
+    "label": "Sandwich Bag",
+    "description": "Clear plastic zip sandwich bag.",
+    "category": "Bags",
+    "iconName": "SandwichBag"
+  },
+  {
+    "id": "garment_bag",
+    "label": "Garment Bag",
+    "description": "Plastic dry cleaning cover.",
+    "category": "Bags",
+    "iconName": "GarmentBag"
+  },
+  {
+    "id": "ice_bag",
+    "label": "Ice Bag",
+    "description": "Heavy duty drawstring ice bag.",
+    "category": "Bags",
+    "iconName": "IceBag"
+  },
+  {
+    "id": "mylar_bag",
+    "label": "Mylar Bag",
+    "description": "Foil barrier packaging pouch.",
+    "category": "Bags",
+    "iconName": "MylarBag"
+  },
+  {
+    "id": "bread_loaf_bag",
+    "label": "Bread Loaf Bag",
+    "description": "Plastic bread bag with twist tie.",
+    "category": "Bags",
+    "iconName": "BreadLoafBag"
+  },
+  {
+    "id": "tube_box",
+    "label": "Toothpaste Box",
+    "description": "Long rectangular toothpaste box.",
+    "category": "Boxes",
+    "iconName": "TubeBox"
+  },
+  {
+    "id": "mailer_box",
+    "label": "Mailer Box",
+    "description": "E-commerce subscription mailer box.",
+    "category": "Boxes",
+    "iconName": "MailerBox"
+  },
+  {
+    "id": "soap_box",
+    "label": "Soap Bar Box",
+    "description": "Small rectangular soap box.",
+    "category": "Boxes",
+    "iconName": "SoapBox"
+  },
+  {
+    "id": "shipping_box",
+    "label": "Shipping Box",
+    "description": "Corrugated cardboard delivery box.",
+    "category": "Boxes",
+    "iconName": "ShipBox"
+  },
+  {
+    "id": "retail_box",
+    "label": "Product Box",
+    "description": "Square retail packaging box.",
+    "category": "Boxes",
+    "iconName": "Box"
+  },
+  {
+    "id": "shoe_box",
+    "label": "Shoe Box",
+    "description": "Rectangular cardboard shoe box.",
+    "category": "Boxes",
+    "iconName": "ShoeBox"
+  },
+  {
+    "id": "tissue_box",
+    "label": "Tissue Box",
+    "description": "Square facial tissue box.",
+    "category": "Boxes",
+    "iconName": "TissueBox"
+  },
+  {
+    "id": "matchbox",
+    "label": "Matchbox",
+    "description": "Small slide drawer box.",
+    "category": "Boxes",
+    "iconName": "Matchbox"
+  },
+  {
+    "id": "wine_box",
+    "label": "Wine Box",
+    "description": "Single bottle wine box.",
+    "category": "Boxes",
+    "iconName": "WineBox"
+  },
+  {
+    "id": "hanging_box",
+    "label": "Hang Tab Box",
+    "description": "Retail box with euro hanger.",
+    "category": "Boxes",
+    "iconName": "HangTabBox"
+  },
+  {
+    "id": "pillow_box",
+    "label": "Pillow Box",
+    "description": "Curved pillow gift box.",
+    "category": "Boxes",
+    "iconName": "PillowBox"
+  },
+  {
+    "id": "gable_box",
+    "label": "Gable Box",
+    "description": "Box with handle top.",
+    "category": "Boxes",
+    "iconName": "GableBox"
+  },
+  {
+    "id": "gift_box_ribbon",
+    "label": "Gift Box",
+    "description": "Luxury box with ribbon.",
+    "category": "Boxes",
+    "iconName": "GiftBoxRibbon"
+  },
+  {
+    "id": "magnetic_box",
+    "label": "Magnetic Box",
+    "description": "Premium hinged lid box.",
+    "category": "Boxes",
+    "iconName": "MagneticBox"
+  },
+  {
+    "id": "pizza_slice_box",
+    "label": "Pizza Slice Box",
+    "description": "Triangular pizza box.",
+    "category": "Boxes",
+    "iconName": "PizzaSliceBox"
+  },
+  {
+    "id": "book_mailer",
+    "label": "Book Mailer",
+    "description": "Cardboard cross-wrap mailer.",
+    "category": "Boxes",
+    "iconName": "BookMailer"
+  },
+  {
+    "id": "window_envelope",
+    "label": "Window Envelope",
+    "description": "Standard business envelope.",
+    "category": "Boxes",
+    "iconName": "WindowEnvelope"
+  },
+  {
+    "id": "wooden_crate",
+    "label": "Wooden Crate",
+    "description": "Slatted shipping crate.",
+    "category": "Boxes",
+    "iconName": "WoodenCrate"
+  },
+  {
+    "id": "hat_box",
+    "label": "Hat Box",
+    "description": "Round rigid hat box with lid.",
+    "category": "Boxes",
+    "iconName": "HatBox"
+  },
+  {
+    "id": "cigar_box",
+    "label": "Cigar Box",
+    "description": "Wooden cigar display box.",
+    "category": "Boxes",
+    "iconName": "CigarBox"
+  },
+  {
+    "id": "cigarette_pack",
+    "label": "Cigarette Pack",
+    "description": "Flip-top cigarette box.",
+    "category": "Boxes",
+    "iconName": "CigarettePack"
+  },
+  {
+    "id": "archive_box",
+    "label": "Archive Box",
+    "description": "Corrugated document storage box.",
+    "category": "Boxes",
+    "iconName": "ArchiveBox"
+  },
+  {
+    "id": "pastry_box",
+    "label": "Pastry Box",
+    "description": "Windowed bakery box.",
+    "category": "Boxes",
+    "iconName": "PastryBox"
+  },
+  {
+    "id": "jewelry_gift_box",
+    "label": "Jewelry Box",
+    "description": "Small square gift box.",
+    "category": "Boxes",
+    "iconName": "GiftBoxRibbon"
+  },
+  {
+    "id": "playing_card_box",
+    "label": "Card Tuck Box",
+    "description": "Poker playing card box.",
+    "category": "Boxes",
+    "iconName": "TuckBox"
+  },
+  {
+    "id": "big_box_software",
+    "label": "Software Box",
+    "description": "Vintage big box PC game packaging.",
+    "category": "Boxes",
+    "iconName": "BigSoftwareBox"
+  },
+  {
+    "id": "tea_bag_box",
+    "label": "Tea Box",
+    "description": "Small square tea box.",
+    "category": "Boxes",
+    "iconName": "TeaBox"
+  },
+  {
+    "id": "storage_bin_box",
+    "label": "Storage Bin",
+    "description": "Plastic storage tote with lid.",
+    "category": "Boxes",
+    "iconName": "StorageBin"
+  },
+  {
+    "id": "french_fry_box",
+    "label": "Fry Box",
+    "description": "Paperboard scoop fry container.",
+    "category": "Boxes",
+    "iconName": "FryBox"
+  },
+  {
+    "id": "paper_tube",
+    "label": "Paper Tube",
+    "description": "Cylindrical cardboard packaging tube.",
+    "category": "Packaging",
+    "iconName": "PaperTube"
+  },
+  {
+    "id": "cookie_tin",
+    "label": "Round Tin",
+    "description": "Metal cookie or tea tin.",
+    "category": "Packaging",
+    "iconName": "RoundTin"
+  },
+  {
+    "id": "makeup_compact",
+    "label": "Compact Case",
+    "description": "Round makeup powder compact.",
+    "category": "Packaging",
+    "iconName": "Compact"
+  },
+  {
+    "id": "drink_carrier",
+    "label": "Drink Carrier",
+    "description": "Cardboard takeout cup carrier.",
+    "category": "Packaging",
+    "iconName": "CoffeeCarrier"
+  },
+  {
+    "id": "blister_card",
+    "label": "Blister Pack",
+    "description": "Retail card blister pack.",
+    "category": "Packaging",
+    "iconName": "RetailBlister"
+  },
+  {
+    "id": "rigid_mailer",
+    "label": "Rigid Mailer",
+    "description": "Cardboard photo envelope.",
+    "category": "Packaging",
+    "iconName": "RigidMailer"
+  },
+  {
+    "id": "steel_drum",
+    "label": "Steel Drum",
+    "description": "55-gallon industrial drum.",
+    "category": "Packaging",
+    "iconName": "SteelDrum"
+  },
+  {
+    "id": "clamshell_clear",
+    "label": "Clear Clamshell",
+    "description": "Plastic produce container.",
+    "category": "Packaging",
+    "iconName": "ClamshellPlastic"
+  },
+  {
+    "id": "fiber_box",
+    "label": "Fiber Box",
+    "description": "Biodegradable takeout clamshell.",
+    "category": "Packaging",
+    "iconName": "FiberClamshell"
+  },
+  {
+    "id": "cone_sleeve",
+    "label": "Cone Sleeve",
+    "description": "Paper ice cream cone wrapper.",
+    "category": "Packaging",
+    "iconName": "ConeSleeve"
+  },
+  {
+    "id": "cup_sleeve",
+    "label": "Cup Sleeve",
+    "description": "Cardboard coffee cup insulator.",
+    "category": "Packaging",
+    "iconName": "CupSleeve"
+  },
+  {
+    "id": "caulk_tube",
+    "label": "Caulk Tube",
+    "description": "Construction adhesive cartridge.",
+    "category": "Packaging",
+    "iconName": "CaulkTube"
+  },
+  {
+    "id": "cd_spindle",
+    "label": "CD Spindle",
+    "description": "Plastic disc cakebox.",
+    "category": "Packaging",
+    "iconName": "CDSpindle"
+  },
+  {
+    "id": "paint_tube_art",
+    "label": "Art Paint Tube",
+    "description": "Metal artist paint tube.",
+    "category": "Packaging",
+    "iconName": "PaintTube"
+  },
+  {
+    "id": "beer_keg",
+    "label": "Beer Keg",
+    "description": "Stainless steel beer keg.",
+    "category": "Packaging",
+    "iconName": "Keg"
+  },
+  {
+    "id": "shipping_pallet",
+    "label": "Wood Pallet",
+    "description": "Standard wooden shipping pallet.",
+    "category": "Packaging",
+    "iconName": "Pallet"
+  },
+  {
+    "id": "packing_tape",
+    "label": "Tape Roll",
+    "description": "Roll of clear packing tape.",
+    "category": "Packaging",
+    "iconName": "TapeRoll"
+  },
+  {
+    "id": "shrink_wrap",
+    "label": "Shrink Pack",
+    "description": "Shrink wrapped bottle case.",
+    "category": "Packaging",
+    "iconName": "ShrinkWrap"
+  },
+  {
+    "id": "zip_tie",
+    "label": "Zip Tie Tag",
+    "description": "Security seal tag.",
+    "category": "Packaging",
+    "iconName": "ZipTie"
+  },
+  {
+    "id": "shampoo_bottle",
+    "label": "Shampoo",
+    "description": "Plastic shampoo bottle.",
+    "category": "Hair",
+    "iconName": "Pump"
+  },
+  {
+    "id": "conditioner_bottle",
+    "label": "Conditioner",
+    "description": "Plastic conditioner bottle.",
+    "category": "Hair",
+    "iconName": "Pump"
+  },
+  {
+    "id": "hair_mask",
+    "label": "Hair Mask",
+    "description": "Deep conditioner tub.",
+    "category": "Hair",
+    "iconName": "Jar"
+  },
+  {
+    "id": "hair_oil",
+    "label": "Hair Oil",
+    "description": "Small pump oil.",
+    "category": "Hair",
+    "iconName": "Serum"
+  },
+  {
+    "id": "dry_shampoo",
+    "label": "Dry Shampoo",
+    "description": "Aerosol can.",
+    "category": "Hair",
+    "iconName": "SprayCan"
+  },
+  {
+    "id": "paddle_brush",
+    "label": "Paddle Brush",
+    "description": "Large flat hair brush.",
+    "category": "Hair",
+    "iconName": "HairBrush"
+  },
+  {
+    "id": "round_brush",
+    "label": "Round Brush",
+    "description": "Cylindrical styling brush.",
+    "category": "Hair",
+    "iconName": "HairBrush"
+  },
+  {
+    "id": "comb_wide",
+    "label": "Wide Tooth Comb",
+    "description": "Detangling comb.",
+    "category": "Hair",
+    "iconName": "Comb"
+  },
+  {
+    "id": "hair_claw",
+    "label": "Claw Clip",
+    "description": "Plastic hair claw clip.",
+    "category": "Hair",
+    "iconName": "Comb"
+  },
+  {
+    "id": "hair_ties",
+    "label": "Hair Ties",
+    "description": "Card of elastic bands.",
+    "category": "Hair",
+    "iconName": "SheetMask"
+  },
+  {
+    "id": "hair_spray",
+    "label": "Hair Spray",
+    "description": "Aerosol hair spray can.",
+    "category": "Hair",
+    "iconName": "SprayCan"
+  },
+  {
+    "id": "hair_mousse",
+    "label": "Hair Mousse",
+    "description": "Foam mousse canister.",
+    "category": "Hair",
+    "iconName": "SprayCan"
+  },
+  {
+    "id": "hair_gel",
+    "label": "Hair Gel",
+    "description": "Tub of styling gel.",
+    "category": "Hair",
+    "iconName": "Jar"
+  },
+  {
+    "id": "hair_wax",
+    "label": "Hair Wax",
+    "description": "Tin of pomade/wax.",
+    "category": "Hair",
+    "iconName": "Jar"
+  },
+  {
+    "id": "hair_dye",
+    "label": "Hair Dye Box",
+    "description": "Retail hair color box.",
+    "category": "Hair",
+    "iconName": "Box"
+  },
+  {
+    "id": "wax_strips",
+    "label": "Wax Strips",
+    "description": "Box of hair removal strips.",
+    "category": "Hair",
+    "iconName": "SheetMask"
+  },
+  {
+    "id": "heat_protectant",
+    "label": "Heat Spray",
+    "description": "Spray bottle heat protectant.",
+    "category": "Hair",
+    "iconName": "SprayBottle"
+  },
+  {
+    "id": "curl_cream",
+    "label": "Curl Cream",
+    "description": "Pump bottle for curls.",
+    "category": "Hair",
+    "iconName": "Pump"
+  },
+  {
+    "id": "leave_in_cond",
+    "label": "Leave-in Spray",
+    "description": "Conditioner spray.",
+    "category": "Hair",
+    "iconName": "SprayBottle"
+  },
+  {
+    "id": "shampoo_bar",
+    "label": "Shampoo Bar",
+    "description": "Solid shampoo bar.",
+    "category": "Hair",
+    "iconName": "SoapBar"
+  },
+  {
+    "id": "conditioner_bar",
+    "label": "Conditioner Bar",
+    "description": "Solid conditioner bar.",
+    "category": "Hair",
+    "iconName": "SoapBar"
+  },
+  {
+    "id": "makeup_sponge",
+    "label": "Makeup Sponge",
+    "description": "Egg shaped sponge.",
+    "category": "Beauty Tools",
+    "iconName": "Sponge"
+  },
+  {
+    "id": "makeup_brushes",
+    "label": "Brush Set",
+    "description": "Set of makeup brushes.",
+    "category": "Beauty Tools",
+    "iconName": "Brush"
+  },
+  {
+    "id": "jade_roller",
+    "label": "Jade Roller",
+    "description": "Facial roller tool.",
+    "category": "Beauty Tools",
+    "iconName": "Roller"
+  },
+  {
+    "id": "eyelash_curler",
+    "label": "Eyelash Curler",
+    "description": "Metal eyelash curler.",
+    "category": "Beauty Tools",
+    "iconName": "EyelashCurler"
+  },
+  {
+    "id": "tweezers",
+    "label": "Tweezers",
+    "description": "Slanted stainless steel tweezers.",
+    "category": "Beauty Tools",
+    "iconName": "Tweezers"
+  },
+  {
+    "id": "blotting_paper",
+    "label": "Blotting Paper",
+    "description": "Pack of oil absorbing sheets.",
+    "category": "Beauty Tools",
+    "iconName": "Compact"
+  },
+  {
+    "id": "sponge_wedge",
+    "label": "Wedge Sponge",
+    "description": "Foam makeup wedge.",
+    "category": "Beauty Tools",
+    "iconName": "Sponge"
+  },
+  {
+    "id": "powder_puff",
+    "label": "Powder Puff",
+    "description": "Soft velour powder puff.",
+    "category": "Beauty Tools",
+    "iconName": "Sponge"
+  },
+  {
+    "id": "cotton_pads",
+    "label": "Cotton Pads",
+    "description": "Stack of round pads.",
+    "category": "Beauty Tools",
+    "iconName": "Jar"
+  },
+  {
+    "id": "hand_mirror",
+    "label": "Hand Mirror",
+    "description": "Handheld vanity mirror.",
+    "category": "Beauty Tools",
+    "iconName": "Mirror"
+  },
+  {
+    "id": "gua_sha",
+    "label": "Gua Sha",
+    "description": "Facial massage stone.",
+    "category": "Beauty Tools",
+    "iconName": "GuaSha"
+  },
+  {
+    "id": "ice_globe",
+    "label": "Ice Globes",
+    "description": "Glass cooling globes.",
+    "category": "Beauty Tools",
+    "iconName": "Roller"
+  },
+  {
+    "id": "derma_roller",
+    "label": "Derma Roller",
+    "description": "Microneedle roller tool.",
+    "category": "Beauty Tools",
+    "iconName": "Roller"
+  },
+  {
+    "id": "konjac_sponge",
+    "label": "Konjac Sponge",
+    "description": "Natural facial sponge.",
+    "category": "Beauty Tools",
+    "iconName": "Sponge"
+  },
+  {
+    "id": "reusable_rounds",
+    "label": "Cotton Rounds",
+    "description": "Mesh bag of reusable pads.",
+    "category": "Beauty Tools",
+    "iconName": "SheetMask"
+  },
+  {
+    "id": "facial_razor",
+    "label": "Face Razor",
+    "description": "Small dermaplaning tool.",
+    "category": "Beauty Tools",
+    "iconName": "Razor"
+  },
+  {
+    "id": "nose_strip",
+    "label": "Pore Strip",
+    "description": "Nose pore cleaning strip.",
+    "category": "Beauty Tools",
+    "iconName": "SheetMask"
+  },
+  {
+    "id": "eye_patches",
+    "label": "Eye Patches",
+    "description": "Under eye gel masks.",
+    "category": "Beauty Tools",
+    "iconName": "SheetMask"
+  },
+  {
+    "id": "face_wipes",
+    "label": "Face Wipes",
+    "description": "Pack of cleansing wipes.",
+    "category": "Beauty Tools",
+    "iconName": "SheetMask"
+  },
+  {
+    "id": "shower_cap",
+    "label": "Shower Cap",
+    "description": "Plastic shower cap.",
+    "category": "Wellness",
+    "iconName": "SheetMask"
+  },
+  {
+    "id": "soap_dish",
+    "label": "Soap Dish",
+    "description": "Ceramic soap holder.",
+    "category": "Wellness",
+    "iconName": "SoapBar"
+  },
+  {
+    "id": "pumice_stone",
+    "label": "Pumice Stone",
+    "description": "Volcanic foot stone.",
+    "category": "Wellness",
+    "iconName": "SoapBar"
+  },
+  {
+    "id": "travel_bottles",
+    "label": "Travel Set",
+    "description": "Set of mini bottles.",
+    "category": "Wellness",
+    "iconName": "Tube"
+  },
+  {
+    "id": "hand_sanitizer",
+    "label": "Hand Sanitizer",
+    "description": "Small pocket bottle.",
+    "category": "Wellness",
+    "iconName": "Serum"
+  },
+  {
+    "id": "toothpaste_tube",
+    "label": "Toothpaste",
+    "description": "Squeeze toothpaste tube.",
+    "category": "Wellness",
+    "iconName": "Tube"
+  },
+  {
+    "id": "toothbrush_bamboo",
+    "label": "Bamboo Brush",
+    "description": "Eco bamboo toothbrush.",
+    "category": "Wellness",
+    "iconName": "Toothbrush"
+  },
+  {
+    "id": "mouthwash",
+    "label": "Mouthwash",
+    "description": "Plastic mouthwash bottle.",
+    "category": "Wellness",
+    "iconName": "Pump"
+  },
+  {
+    "id": "floss_picks",
+    "label": "Floss Picks",
+    "description": "Bag of floss picks.",
+    "category": "Wellness",
+    "iconName": "SheetMask"
+  },
+  {
+    "id": "essential_oil",
+    "label": "Essential Oil",
+    "description": "Small 10ml amber bottle.",
+    "category": "Wellness",
+    "iconName": "Serum"
+  },
+  {
+    "id": "lipstick_matte",
+    "label": "Matte Lipstick",
+    "description": "Classic matte bullet lipstick.",
+    "category": "Cosmetics",
+    "iconName": "Lipstick"
+  },
+  {
+    "id": "lipstick_satin",
+    "label": "Satin Lipstick",
+    "description": "Creamy satin finish lipstick.",
+    "category": "Cosmetics",
+    "iconName": "Lipstick"
+  },
+  {
+    "id": "lip_gloss_wand",
+    "label": "Lip Gloss",
+    "description": "Clear tube with doe-foot applicator.",
+    "category": "Cosmetics",
+    "iconName": "Mascara"
+  },
+  {
+    "id": "liquid_lipstick",
+    "label": "Liquid Lipstick",
+    "description": "Matte liquid lipstick tube.",
+    "category": "Cosmetics",
+    "iconName": "Mascara"
+  },
+  {
+    "id": "lip_tint",
+    "label": "Lip Tint",
+    "description": "Small bottle lip stain.",
+    "category": "Cosmetics",
+    "iconName": "NailPolish"
+  },
+  {
+    "id": "lip_balm_tube",
+    "label": "Lip Balm Stick",
+    "description": "Standard plastic lip balm.",
+    "category": "Cosmetics",
+    "iconName": "Lipstick"
+  },
+  {
+    "id": "lip_balm_jar",
+    "label": "Lip Balm Pot",
+    "description": "Small round lip balm jar.",
+    "category": "Cosmetics",
+    "iconName": "Jar"
+  },
+  {
+    "id": "lip_scrub",
+    "label": "Lip Scrub",
+    "description": "Sugar lip scrub jar.",
+    "category": "Cosmetics",
+    "iconName": "Jar"
+  },
+  {
+    "id": "lip_liner",
+    "label": "Lip Liner",
+    "description": "Wooden lip liner pencil.",
+    "category": "Cosmetics",
+    "iconName": "Brush"
+  },
+  {
+    "id": "lip_crayon",
+    "label": "Lip Crayon",
+    "description": "Chunky lip crayon pencil.",
+    "category": "Cosmetics",
+    "iconName": "Lipstick"
+  },
+  {
+    "id": "gloss_squeeze",
+    "label": "Squeeze Gloss",
+    "description": "Slanted tip gloss tube.",
+    "category": "Cosmetics",
+    "iconName": "Tube"
+  },
+  {
+    "id": "lip_mask_sheet",
+    "label": "Lip Sheet Mask",
+    "description": "Hydrogel lip patch.",
+    "category": "Cosmetics",
+    "iconName": "SheetMask"
+  },
+  {
+    "id": "lip_mask_jar",
+    "label": "Lip Mask",
+    "description": "Tiny jar.",
+    "category": "Cosmetics",
+    "iconName": "Jar"
+  },
+  {
+    "id": "mascara_vol",
+    "label": "Volume Mascara",
+    "description": "Chunky mascara tube.",
+    "category": "Cosmetics",
+    "iconName": "Mascara"
+  },
+  {
+    "id": "mascara_len",
+    "label": "Length Mascara",
+    "description": "Slim mascara tube.",
+    "category": "Cosmetics",
+    "iconName": "Mascara"
+  },
+  {
+    "id": "eyeliner_liquid",
+    "label": "Liquid Liner",
+    "description": "Felt tip eyeliner pen.",
+    "category": "Cosmetics",
+    "iconName": "Brush"
+  },
+  {
+    "id": "eyeliner_pencil",
+    "label": "Kohl Pencil",
+    "description": "Classic eye pencil.",
+    "category": "Cosmetics",
+    "iconName": "Brush"
+  },
+  {
+    "id": "gel_liner_pot",
+    "label": "Gel Liner",
+    "description": "Glass pot with gel liner.",
+    "category": "Cosmetics",
+    "iconName": "Jar"
+  },
+  {
+    "id": "eyeshadow_single",
+    "label": "Single Shadow",
+    "description": "Individual eyeshadow compact.",
+    "category": "Cosmetics",
+    "iconName": "Compact"
+  },
+  {
+    "id": "eyeshadow_quad",
+    "label": "Shadow Quad",
+    "description": "4-pan eyeshadow palette.",
+    "category": "Cosmetics",
+    "iconName": "Palette"
+  },
+  {
+    "id": "eyeshadow_palette",
+    "label": "Pro Palette",
+    "description": "12-pan eyeshadow palette.",
+    "category": "Cosmetics",
+    "iconName": "Palette"
+  },
+  {
+    "id": "brow_pencil",
+    "label": "Brow Pencil",
+    "description": "Mechanical brow pencil.",
+    "category": "Cosmetics",
+    "iconName": "Brush"
+  },
+  {
+    "id": "brow_gel",
+    "label": "Brow Gel",
+    "description": "Mini mascara style brow gel.",
+    "category": "Cosmetics",
+    "iconName": "Mascara"
+  },
+  {
+    "id": "false_lashes",
+    "label": "False Lashes",
+    "description": "Box of strip lashes.",
+    "category": "Cosmetics",
+    "iconName": "Lashes"
+  },
+  {
+    "id": "brow_pomade",
+    "label": "Brow Pomade",
+    "description": "Small glass dipbrow pot.",
+    "category": "Cosmetics",
+    "iconName": "Jar"
+  },
+  {
+    "id": "foundation_bottle",
+    "label": "Liquid Foundation",
+    "description": "Glass bottle with pump.",
+    "category": "Cosmetics",
+    "iconName": "Pump"
+  },
+  {
+    "id": "foundation_stick",
+    "label": "Stick Foundation",
+    "description": "Cream foundation stick.",
+    "category": "Cosmetics",
+    "iconName": "Lipstick"
+  },
+  {
+    "id": "cushion_compact",
+    "label": "Cushion Compact",
+    "description": "Round cushion foundation.",
+    "category": "Cosmetics",
+    "iconName": "Compact"
+  },
+  {
+    "id": "concealer_wand",
+    "label": "Concealer",
+    "description": "Liquid concealer tube.",
+    "category": "Cosmetics",
+    "iconName": "Mascara"
+  },
+  {
+    "id": "concealer_pot",
+    "label": "Pot Concealer",
+    "description": "Cream concealer jar.",
+    "category": "Cosmetics",
+    "iconName": "Jar"
+  },
+  {
+    "id": "loose_powder",
+    "label": "Loose Powder",
+    "description": "Sifter jar with powder.",
+    "category": "Cosmetics",
+    "iconName": "Jar"
+  },
+  {
+    "id": "pressed_powder",
+    "label": "Pressed Powder",
+    "description": "Round powder compact.",
+    "category": "Cosmetics",
+    "iconName": "Compact"
+  },
+  {
+    "id": "face_primer",
+    "label": "Primer Tube",
+    "description": "Squeeze tube primer.",
+    "category": "Cosmetics",
+    "iconName": "Tube"
+  },
+  {
+    "id": "setting_spray",
+    "label": "Setting Spray",
+    "description": "Spray bottle.",
+    "category": "Cosmetics",
+    "iconName": "Serum"
+  },
+  {
+    "id": "bb_cream",
+    "label": "BB Cream",
+    "description": "Tube of BB cream.",
+    "category": "Cosmetics",
+    "iconName": "Tube"
+  },
+  {
+    "id": "blush_powder",
+    "label": "Powder Blush",
+    "description": "Round blush compact.",
+    "category": "Cosmetics",
+    "iconName": "Compact"
+  },
+  {
+    "id": "blush_cream",
+    "label": "Cream Blush",
+    "description": "Small pot cream blush.",
+    "category": "Cosmetics",
+    "iconName": "Jar"
+  },
+  {
+    "id": "bronzer_compact",
+    "label": "Bronzer",
+    "description": "Large round bronzer.",
+    "category": "Cosmetics",
+    "iconName": "Compact"
+  },
+  {
+    "id": "highlighter_powder",
+    "label": "Highlighter",
+    "description": "Pressed highlighter.",
+    "category": "Cosmetics",
+    "iconName": "Compact"
+  },
+  {
+    "id": "highlighter_stick",
+    "label": "Glow Stick",
+    "description": "Cream highlighter stick.",
+    "category": "Cosmetics",
+    "iconName": "Lipstick"
+  },
+  {
+    "id": "contour_stick",
+    "label": "Contour Stick",
+    "description": "Cream contour stick.",
+    "category": "Cosmetics",
+    "iconName": "Lipstick"
+  },
+  {
+    "id": "contour_palette",
+    "label": "Contour Kit",
+    "description": "3-pan contour palette.",
+    "category": "Cosmetics",
+    "iconName": "Palette"
+  },
+  {
+    "id": "face_palette",
+    "label": "Face Palette",
+    "description": "Multi-use face palette.",
+    "category": "Cosmetics",
+    "iconName": "Palette"
+  },
+  {
+    "id": "liquid_blush",
+    "label": "Liquid Blush",
+    "description": "Tube with doe-foot.",
+    "category": "Cosmetics",
+    "iconName": "Mascara"
+  },
+  {
+    "id": "baking_powder",
+    "label": "Baking Powder",
+    "description": "Loose powder tub.",
+    "category": "Cosmetics",
+    "iconName": "Jar"
+  },
+  {
+    "id": "setting_powder_pressed",
+    "label": "Setting Powder",
+    "description": "Pressed setting powder.",
+    "category": "Cosmetics",
+    "iconName": "Compact"
+  },
+  {
+    "id": "contour_cream",
+    "label": "Cream Contour",
+    "description": "Cream contour palette.",
+    "category": "Cosmetics",
+    "iconName": "Palette"
+  },
+  {
+    "id": "cleanser_gel",
+    "label": "Gel Cleanser",
+    "description": "Pump bottle cleanser.",
+    "category": "Cosmetics",
+    "iconName": "Pump"
+  },
+  {
+    "id": "cleanser_foam",
+    "label": "Foam Cleanser",
+    "description": "Squeeze tube cleanser.",
+    "category": "Cosmetics",
+    "iconName": "Tube"
+  },
+  {
+    "id": "face_toner",
+    "label": "Toner Bottle",
+    "description": "Clear liquid toner bottle.",
+    "category": "Cosmetics",
+    "iconName": "Serum"
+  },
+  {
+    "id": "face_essence",
+    "label": "Essence",
+    "description": "Glass essence bottle.",
+    "category": "Cosmetics",
+    "iconName": "Serum"
+  },
+  {
+    "id": "serum_dropper",
+    "label": "Serum Dropper",
+    "description": "Glass dropper bottle.",
+    "category": "Cosmetics",
+    "iconName": "Serum"
+  },
+  {
+    "id": "ampoule",
+    "label": "Ampoule",
+    "description": "Small concentrated serum.",
+    "category": "Cosmetics",
+    "iconName": "Serum"
+  },
+  {
+    "id": "moisturizer_jar",
+    "label": "Face Cream",
+    "description": "Glass cream jar.",
+    "category": "Cosmetics",
+    "iconName": "Jar"
+  },
+  {
+    "id": "gel_cream",
+    "label": "Gel Cream",
+    "description": "Translucent jar.",
+    "category": "Cosmetics",
+    "iconName": "Jar"
+  },
+  {
+    "id": "eye_cream",
+    "label": "Eye Cream",
+    "description": "Small tube or jar.",
+    "category": "Cosmetics",
+    "iconName": "Tube"
+  },
+  {
+    "id": "face_oil",
+    "label": "Face Oil",
+    "description": "Glass oil bottle.",
+    "category": "Cosmetics",
+    "iconName": "Serum"
+  },
+  {
+    "id": "clay_mask",
+    "label": "Clay Mask",
+    "description": "Jar of clay mask.",
+    "category": "Cosmetics",
+    "iconName": "Jar"
+  },
+  {
+    "id": "sheet_mask",
+    "label": "Sheet Mask",
+    "description": "Foil sachet packet.",
+    "category": "Cosmetics",
+    "iconName": "SheetMask"
+  },
+  {
+    "id": "sleeping_mask",
+    "label": "Sleep Mask",
+    "description": "Overnight mask jar.",
+    "category": "Cosmetics",
+    "iconName": "Jar"
+  },
+  {
+    "id": "sunscreen_tube",
+    "label": "Sunscreen",
+    "description": "Squeeze tube SPF.",
+    "category": "Cosmetics",
+    "iconName": "Tube"
+  },
+  {
+    "id": "face_mist",
+    "label": "Face Mist",
+    "description": "Spray bottle mist.",
+    "category": "Cosmetics",
+    "iconName": "Serum"
+  },
+  {
+    "id": "micellar_water",
+    "label": "Micellar Water",
+    "description": "Clear plastic bottle.",
+    "category": "Cosmetics",
+    "iconName": "Serum"
+  },
+  {
+    "id": "makeup_remover",
+    "label": "Makeup Remover",
+    "description": "Bi-phase liquid bottle.",
+    "category": "Cosmetics",
+    "iconName": "Serum"
+  },
+  {
+    "id": "exfoliant_scrub",
+    "label": "Face Scrub",
+    "description": "Tube of scrub.",
+    "category": "Cosmetics",
+    "iconName": "Tube"
+  },
+  {
+    "id": "acne_patches",
+    "label": "Pimple Patches",
+    "description": "Flat pouch packet.",
+    "category": "Cosmetics",
+    "iconName": "SheetMask"
+  },
+  {
+    "id": "frosted_dropper",
+    "label": "Frosted Dropper",
+    "description": "Frosted glass dropper.",
+    "category": "Cosmetics",
+    "iconName": "Serum"
+  },
+  {
+    "id": "airless_pump",
+    "label": "Airless Pump",
+    "description": "Modern airless pump bottle.",
+    "category": "Cosmetics",
+    "iconName": "Pump"
+  },
+  {
+    "id": "aluminum_jar",
+    "label": "Aluminum Tin",
+    "description": "Metal cosmetic tin.",
+    "category": "Cosmetics",
+    "iconName": "Jar"
+  },
+  {
+    "id": "aluminum_tube",
+    "label": "Aluminum Tube",
+    "description": "Metal squeeze tube.",
+    "category": "Cosmetics",
+    "iconName": "Tube"
+  },
+  {
+    "id": "soft_touch_tube",
+    "label": "Soft Tube",
+    "description": "Matte soft-touch tube.",
+    "category": "Cosmetics",
+    "iconName": "Tube"
+  },
+  {
+    "id": "bamboo_jar",
+    "label": "Bamboo Jar",
+    "description": "Cosmetic jar with bamboo lid.",
+    "category": "Cosmetics",
+    "iconName": "Jar"
+  },
+  {
+    "id": "body_wash",
+    "label": "Body Wash",
+    "description": "Large shower gel bottle.",
+    "category": "Cosmetics",
+    "iconName": "Pump"
+  },
+  {
+    "id": "body_lotion",
+    "label": "Body Lotion",
+    "description": "Pump lotion bottle.",
+    "category": "Cosmetics",
+    "iconName": "Pump"
+  },
+  {
+    "id": "body_butter",
+    "label": "Body Butter",
+    "description": "Wide tub of cream.",
+    "category": "Cosmetics",
+    "iconName": "Jar"
+  },
+  {
+    "id": "hand_cream",
+    "label": "Hand Cream",
+    "description": "Small metal tube.",
+    "category": "Cosmetics",
+    "iconName": "Tube"
+  },
+  {
+    "id": "foot_cream",
+    "label": "Foot Cream",
+    "description": "Plastic tube.",
+    "category": "Cosmetics",
+    "iconName": "Tube"
+  },
+  {
+    "id": "bath_salts",
+    "label": "Bath Salts",
+    "description": "Jar of salts.",
+    "category": "Cosmetics",
+    "iconName": "Jar"
+  },
+  {
+    "id": "bath_bomb_beauty",
+    "label": "Bath Bomb",
+    "description": "Round fizzy sphere.",
+    "category": "Cosmetics",
+    "iconName": "SoapBar"
+  },
+  {
+    "id": "soap_bar_beauty",
+    "label": "Bar Soap",
+    "description": "Rectangular soap bar.",
+    "category": "Cosmetics",
+    "iconName": "SoapBar"
+  },
+  {
+    "id": "body_scrub",
+    "label": "Body Scrub",
+    "description": "Tub of sugar scrub.",
+    "category": "Cosmetics",
+    "iconName": "Jar"
+  },
+  {
+    "id": "body_oil",
+    "label": "Body Oil",
+    "description": "Spray oil bottle.",
+    "category": "Cosmetics",
+    "iconName": "Serum"
+  },
+  {
+    "id": "body_shimmer",
+    "label": "Body Shimmer",
+    "description": "Shimmer oil bottle.",
+    "category": "Cosmetics",
+    "iconName": "Serum"
+  },
+  {
+    "id": "self_tanner",
+    "label": "Self Tanner",
+    "description": "Tanning mousse pump.",
+    "category": "Cosmetics",
+    "iconName": "Pump"
+  },
+  {
+    "id": "tanning_oil",
+    "label": "Tanning Oil",
+    "description": "Spray oil bottle.",
+    "category": "Cosmetics",
+    "iconName": "SprayBottle"
+  },
+  {
+    "id": "after_sun",
+    "label": "Aloe Gel",
+    "description": "Green aloe vera gel.",
+    "category": "Cosmetics",
+    "iconName": "Pump"
+  },
+  {
+    "id": "foot_mask",
+    "label": "Foot Mask",
+    "description": "Exfoliating foot booties.",
+    "category": "Cosmetics",
+    "iconName": "SheetMask"
+  },
+  {
+    "id": "hand_mask",
+    "label": "Hand Mask",
+    "description": "Moisturizing hand gloves.",
+    "category": "Cosmetics",
+    "iconName": "SheetMask"
+  },
+  {
+    "id": "bath_tea",
+    "label": "Bath Tea",
+    "description": "Large herbal bath bag.",
+    "category": "Cosmetics",
+    "iconName": "SheetMask"
+  },
+  {
+    "id": "perfume_bottle_fancy",
+    "label": "Perfume",
+    "description": "Elegant glass perfume.",
+    "category": "Cosmetics",
+    "iconName": "Perfume"
+  },
+  {
+    "id": "solid_perfume",
+    "label": "Solid Perfume",
+    "description": "Metal slider tin.",
+    "category": "Cosmetics",
+    "iconName": "Compact"
+  },
+  {
+    "id": "perfume_atomizer",
+    "label": "Travel Atomizer",
+    "description": "Refillable perfume spray.",
+    "category": "Cosmetics",
+    "iconName": "Lipstick"
+  },
+  {
+    "id": "room_spray",
+    "label": "Room Spray",
+    "description": "Home fragrance spray.",
+    "category": "Cosmetics",
+    "iconName": "SprayBottle"
+  },
+  {
+    "id": "beard_oil",
+    "label": "Beard Oil",
+    "description": "Dropper bottle for beard.",
+    "category": "Mens Care",
+    "iconName": "Serum"
+  },
+  {
+    "id": "shaving_cream",
+    "label": "Shave Cream",
+    "description": "Can of shaving foam.",
+    "category": "Mens Care",
+    "iconName": "SprayCan"
+  },
+  {
+    "id": "safety_razor",
+    "label": "Safety Razor",
+    "description": "Metal safety razor.",
+    "category": "Mens Care",
+    "iconName": "Razor"
+  },
+  {
+    "id": "aftershave",
+    "label": "Aftershave",
+    "description": "Glass splash bottle.",
+    "category": "Mens Care",
+    "iconName": "Serum"
+  },
+  {
+    "id": "nail_polish",
+    "label": "Nail Polish",
+    "description": "Glass polish bottle.",
+    "category": "Nails",
+    "iconName": "NailPolish"
+  },
+  {
+    "id": "nail_file",
+    "label": "Nail File",
+    "description": "Emery board.",
+    "category": "Nails",
+    "iconName": "Brush"
+  },
+  {
+    "id": "nail_buffer",
+    "label": "Nail Buffer",
+    "description": "Block buffer.",
+    "category": "Nails",
+    "iconName": "Sponge"
+  },
+  {
+    "id": "cuticle_oil",
+    "label": "Cuticle Oil Pen",
+    "description": "Brush tip oil pen.",
+    "category": "Nails",
+    "iconName": "Lipstick"
+  },
+  {
+    "id": "nail_remover",
+    "label": "Polish Remover",
+    "description": "Pump dispenser bottle.",
+    "category": "Nails",
+    "iconName": "Pump"
+  },
+  {
+    "id": "nail_clippers",
+    "label": "Nail Clippers",
+    "description": "Metal clippers.",
+    "category": "Nails",
+    "iconName": "Tweezers"
+  },
+  {
+    "id": "toe_separators",
+    "label": "Toe Separators",
+    "description": "Foam pedicure spacers.",
+    "category": "Nails",
+    "iconName": "Sponge"
+  },
+  {
+    "id": "nail_stickers",
+    "label": "Nail Stickers",
+    "description": "Sheet of nail art decals.",
+    "category": "Nails",
+    "iconName": "SheetMask"
+  }
+]
