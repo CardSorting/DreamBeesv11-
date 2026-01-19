@@ -4,6 +4,8 @@ import { withVertexRateLimiting } from "../lib/rateLimiter.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
 import { MOCKUP_ITEMS, MOCKUP_PRESETS } from "../lib/mockupData.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { retryOperation } from "../lib/utils.js";
+import { HarmCategory, HarmBlockThreshold } from "@google-cloud/vertexai";
 
 // Initialize Vertex AI
 const project = process.env.GCLOUD_PROJECT || "dreambees-alchemist";
@@ -21,6 +23,7 @@ const getModel = () => {
  */
 const generateSingleMockup = async (imageBase64, item, preset, userUid) => {
     try {
+        logger.info(`[Mockup] Generating ${item.label}...`);
         const generativeModel = getModel();
 
         // Interpolate prompt
@@ -52,13 +55,21 @@ const generateSingleMockup = async (imageBase64, item, preset, userUid) => {
                     { text: fullPrompt }
                 ]
             }],
+            safetySettings: [
+                { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+                { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+                { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+                { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH }
+            ]
         };
 
         // Generation
+        logger.info(`[Mockup] Sending request to Vertex AI for ${item.label}...`);
         const response = await withVertexRateLimiting(async () => {
             const res = await generativeModel.generateContent(requestPayload);
             return res.response;
-        }, { context: 'Mockup Generation', retries: 3 });
+        }, { context: `Mockup-${item.label}`, retries: 3 });
+        logger.info(`[Mockup] Vertex AI response received for ${item.label}`);
 
         // Extract Image
         const candidate = response.candidates?.[0];
@@ -72,9 +83,14 @@ const generateSingleMockup = async (imageBase64, item, preset, userUid) => {
             }
         }
 
-        if (!outputImageBase64) throw new Error("No image generated.");
+        if (!outputImageBase64) {
+            const finishReason = candidate?.finishReason;
+            const safetyRatings = candidate?.safetyRatings;
+            logger.error(`[Mockup] No image generated. Reason: ${finishReason}`, { safetyRatings });
+            throw new Error(`No image generated (Reason: ${finishReason})`);
+        }
 
-        // Upload to B2
+        // Upload to B2 with Rewrite/Retry
         const s3 = await getS3Client();
         const timestamp = Date.now();
         const safeLabel = item.label.replace(/[^a-z0-9]/gi, '_').toLowerCase();
@@ -82,12 +98,19 @@ const generateSingleMockup = async (imageBase64, item, preset, userUid) => {
         const key = `mockups/${userUid}/${timestamp}-${safeLabel}-${safePreset}.png`;
         const buffer = Buffer.from(outputImageBase64, 'base64');
 
-        await s3.send(new PutObjectCommand({
-            Bucket: B2_BUCKET,
-            Key: key,
-            Body: buffer,
-            ContentType: 'image/png'
-        }));
+        logger.info(`[Mockup] Uploading to B2: ${key}`);
+
+        // Wrap S3 upload in retry logic
+        await retryOperation(async () => {
+            await s3.send(new PutObjectCommand({
+                Bucket: B2_BUCKET,
+                Key: key,
+                Body: buffer,
+                ContentType: 'image/png'
+            }));
+        }, { retries: 3, backoff: 500, context: `B2-Upload-${safeLabel}` });
+
+        logger.info(`[Mockup] Upload success: ${key}`);
 
         const url = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${key}`;
 
@@ -113,6 +136,7 @@ const generateSingleMockup = async (imageBase64, item, preset, userUid) => {
  * Handles the Gacha Spin action: 3 random unique mockups
  */
 export const handleGachaSpin = async (request) => {
+    logger.info("[Gacha] Spin started", { uid: request.auth?.uid });
     const { image } = request.data;
     const uid = request.auth?.uid || 'anonymous';
 
@@ -126,19 +150,27 @@ export const handleGachaSpin = async (request) => {
     // Select 3 random unique items
     const shuffledItems = [...MOCKUP_ITEMS].sort(() => 0.5 - Math.random());
     const selectedItems = shuffledItems.slice(0, 3);
+    logger.info(`[Gacha] Selected items: ${selectedItems.map(i => i.label).join(', ')}`);
 
     // Parallel Generation
-    const promises = selectedItems.map(item => {
+    logger.info("[Gacha] Starting parallel generation...");
+    const promises = selectedItems.map((item, idx) => {
         // Random Preset for each
         const randomPreset = MOCKUP_PRESETS[Math.floor(Math.random() * MOCKUP_PRESETS.length)];
+        logger.info(`[Gacha] Item ${idx + 1}: ${item.label} with preset ${randomPreset.label}`);
         return generateSingleMockup(base64Data, item, randomPreset, uid);
     });
 
     // Wait all (we want to return what succeeds)
     const results = await Promise.all(promises);
+    logger.info("[Gacha] All generations completed/failed.");
+
     const successfulPrizes = results.filter(r => r.success);
+    logger.info(`[Gacha] Success count: ${successfulPrizes.length}/${results.length}`);
 
     if (successfulPrizes.length === 0) {
+        // Log the errors
+        results.forEach(r => { if (!r.success) logger.error("Gacha Item Failed", r.error); });
         throw new Error("The machine jammed! No prizes were generated.");
     }
 

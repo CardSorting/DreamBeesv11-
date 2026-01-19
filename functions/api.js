@@ -23,7 +23,7 @@ import * as Mockup from "./handlers/mockup.js";
 // Main API Dispatcher
 // ============================================================================
 
-export const api = onCall({ memory: "256MiB" }, async (request) => {
+export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (request) => {
     logger.info(`[API] Incoming request: action=${request.data?.action}, uid=${request.auth?.uid}`);
 
     // Basic App Check logging (Warn Mode)

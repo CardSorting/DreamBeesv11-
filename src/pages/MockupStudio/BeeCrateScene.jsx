@@ -1,8 +1,8 @@
 import React, { useRef, useState, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import {
-    OrbitControls, Float, Sphere, MeshDistortMaterial, RoundedBox,
-    Stars, Sparkles, PerspectiveCamera, PresentationControls, ContactShadows,
+    Sphere, MeshDistortMaterial, RoundedBox,
+    Stars, Sparkles, PerspectiveCamera, ContactShadows,
     Trail, Box
 } from '@react-three/drei';
 import * as THREE from 'three';
@@ -29,12 +29,21 @@ const CrankHandle = ({ appState }) => {
     useFrame((state, delta) => {
         if (!ref.current) return;
 
+        // Safety: Clamp delta to avoid physics explosions on lag spikes
+        const dt = Math.min(delta, 0.1);
+
         if (isSpinning) {
             // Spin fast!
-            ref.current.rotation.x -= 15 * delta;
+            const nextRot = ref.current.rotation.x - 10 * dt;
+            if (Number.isFinite(nextRot)) {
+                ref.current.rotation.x = nextRot;
+            }
         } else {
             // Gentle bob when idle
-            ref.current.rotation.x = Math.sin(state.clock.elapsedTime * 2) * 0.2;
+            const nextRot = Math.sin(state.clock.elapsedTime * 2) * 0.2;
+            if (Number.isFinite(nextRot)) {
+                ref.current.rotation.x = nextRot;
+            }
         }
     });
 
@@ -71,42 +80,53 @@ const HoneyCapsule = ({ position, color, seed, appState }) => {
     useFrame((state, delta) => {
         if (!ref.current) return;
 
+        // Safety: Clamp delta
+        const dt = Math.min(delta, 0.1);
+
         if (isSpinning) {
-            // POPCORN PHYSICS: Bounce around randomly inside
+            // VORTEX SWIRL: Smooth spiral motion instead of chaotic bouncing
             const time = state.clock.elapsedTime;
-            const noiseX = Math.sin(time * 15 + seed) * 0.8;
-            const noiseY = Math.cos(time * 20 + seed) * 0.8;
-            const noiseZ = Math.sin(time * 12 + seed * 2) * 0.8;
 
-            ref.current.position.set(
-                initialPos.x + noiseX,
-                initialPos.y + noiseY,
-                initialPos.z + noiseZ
-            );
+            // Smooth Vortex
+            const angle = time * 3 + seed * 1.5;
+            const y = Math.sin(time * 2 + seed) * 0.8;
+            const x = Math.cos(angle) * 0.8;
+            const z = Math.sin(angle) * 0.8;
 
-            ref.current.rotation.x += 10 * delta;
-            ref.current.rotation.y += 10 * delta;
+            if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z)) {
+                ref.current.position.lerp(new THREE.Vector3(
+                    initialPos.x * 0.2 + x,
+                    y,
+                    initialPos.z * 0.2 + z
+                ), 0.1);
+            }
+
+            const nextRotX = ref.current.rotation.x + 3 * dt;
+            const nextRotY = ref.current.rotation.y + 3 * dt;
+
+            if (Number.isFinite(nextRotX)) ref.current.rotation.x = nextRotX;
+            if (Number.isFinite(nextRotY)) ref.current.rotation.y = nextRotY;
 
         } else if (isPrize) {
             // EJECTION: Launch out towards camera z-axis
-            // Simple lerp for now, could be a curve
-            const t = state.clock.elapsedTime; // This is continuous, ideally reset or use local state
-            // But simple trick: Just lerp to a "front" position
-
             const targetPos = new THREE.Vector3(
                 (seed % 3 - 1) * 2, // Spread X
                 (seed % 2 === 0 ? 1 : -1) * 1.5, // Spread Y
                 4 // Pop out Z
             );
 
+            // Safer lerp
             ref.current.position.lerp(targetPos, 0.05);
-            ref.current.rotation.x += 0.5 * delta;
+
+            const nextRotX = ref.current.rotation.x + 0.5 * dt;
+            if (Number.isFinite(nextRotX)) ref.current.rotation.x = nextRotX;
 
         } else {
             // Return to rest
             ref.current.position.lerp(initialPos, 0.1);
             // Gentle idle float
-            ref.current.position.y = initialPos.y + Math.sin(state.clock.elapsedTime * 2 + seed) * 0.05;
+            const nextY = initialPos.y + Math.sin(state.clock.elapsedTime * 2 + seed) * 0.05;
+            if (Number.isFinite(nextY)) ref.current.position.y = nextY;
         }
     });
 
@@ -137,10 +157,15 @@ const FlyingBee = ({ offset = 0, radius = 2.5, speed = 1, appState }) => {
     const wingRight = useRef();
 
     const isSpinning = appState === 'SPINNING';
-    const currentSpeed = isSpinning ? speed * 4 : speed;
+    // Gentle speed increase, not frantic
+    const currentSpeed = isSpinning ? speed * 1.5 : speed;
 
     useFrame((state, delta) => {
         if (!ref.current) return;
+
+        // Safety: Clamp delta
+        // const dt = Math.min(delta, 0.1); // Not used for orbits directly in this math, but good practice if we needed it
+
         const time = state.clock.elapsedTime;
         const t = time * currentSpeed + offset;
 
@@ -149,15 +174,20 @@ const FlyingBee = ({ offset = 0, radius = 2.5, speed = 1, appState }) => {
         const z = Math.cos(t) * radius;
         const y = Math.sin(t * 2) * 0.5; // Bobbing
 
-        ref.current.position.set(x, y, z);
-        ref.current.lookAt(0, y, 0);
+        if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z)) {
+            ref.current.position.set(x, y, z);
+            // lookAt triggers matrix updates, ensure safe values
+            if (Math.abs(x) > 0.001 || Math.abs(z) > 0.001) {
+                ref.current.lookAt(0, y, 0);
+            }
+        }
 
         // FLAPPING WINGS
         // Flap speed is crazy high
         const flap = Math.sin(time * 60);
         const flapAngle = flap * 0.5;
 
-        if (wingLeft.current && wingRight.current) {
+        if (wingLeft.current && wingRight.current && Number.isFinite(flapAngle)) {
             wingLeft.current.rotation.z = 0.2 + flapAngle;
             wingRight.current.rotation.z = -0.2 - flapAngle;
         }
@@ -214,17 +244,34 @@ const BeeHiveMachine = ({ appState }) => {
 
         // Spin Animation
         if (isSpinning) {
-            // Chaotic Shake
-            groupRef.current.rotation.y += 0.3;
-            groupRef.current.position.x = Math.sin(state.clock.elapsedTime * 50) * 0.2; // Harder shake
-            groupRef.current.position.y = Math.cos(state.clock.elapsedTime * 60) * 0.15;
-            groupRef.current.rotation.z = Math.sin(state.clock.elapsedTime * 25) * 0.1;
+            // Rhythmic Processing Animation (Breathing/Chumming)
+            const t = state.clock.elapsedTime;
+            // Gentle scale pulse
+            const scalePulse = 1 + Math.sin(t * 10) * 0.02;
+            groupRef.current.scale.set(scalePulse, scalePulse, scalePulse);
+
+            // Smooth vertical pump (like a piston)
+            groupRef.current.position.y = Math.sin(t * 12) * 0.05;
+
+            // Gentle rhythmic wobble (not chaotic)
+            groupRef.current.rotation.z = Math.sin(t * 5) * 0.05;
+            groupRef.current.rotation.x = Math.cos(t * 3) * 0.05;
         } else {
             // Gentle stabilization
-            groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, 0, 0.1);
-            groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, 0, 0.1);
-            groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, 0, 0.1);
-            groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, 0, 0.1);
+            groupRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+            // Gentle stabilization - Ensure we don't propagate NaNs
+            if (!Number.isNaN(groupRef.current.rotation.y)) {
+                groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, 0, 0.1);
+            }
+            if (!Number.isNaN(groupRef.current.position.x)) {
+                groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, 0, 0.1);
+            }
+            if (!Number.isNaN(groupRef.current.position.y)) {
+                groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, 0, 0.1);
+            }
+            if (!Number.isNaN(groupRef.current.rotation.z)) {
+                groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, 0, 0.1);
+            }
         }
     });
 
@@ -293,18 +340,32 @@ const BeeHiveMachine = ({ appState }) => {
 const SceneContent = ({ appState }) => {
     const lightRef = useRef();
 
-    useFrame((state) => {
+    useFrame((state, delta) => {
         if (!lightRef.current) return;
 
+        // Safety: Clamp delta
+        // const dt = Math.min(delta, 0.1); 
+
         if (appState === 'SPINNING') {
-            // DISCO STROBE
-            const t = state.clock.elapsedTime * 20;
-            lightRef.current.intensity = 2 + Math.sin(t) * 1.5;
-            // Shift colors slightly
-            const hue = (Math.sin(t * 0.1) + 1) * 0.1; // Gold range
-            lightRef.current.color.setHSL(hue, 1, 0.5);
+            // Warm Amber Pulse (Breathing Light, not Strobe)
+            const t = state.clock.elapsedTime * 4;
+            // Smooth sine wave for intensity
+            const intensity = 2.5 + Math.sin(t) * 1;
+            if (Number.isFinite(intensity)) {
+                lightRef.current.intensity = intensity;
+            }
+
+            // Warm Gold/Orange Shift
+            const hue = 0.08 + Math.sin(t * 0.5) * 0.02; // Tight Gold/Orange range
+            if (Number.isFinite(hue)) {
+                lightRef.current.color.setHSL(hue, 1, 0.6);
+            }
         } else {
-            lightRef.current.intensity = THREE.MathUtils.lerp(lightRef.current.intensity, 2, 0.1);
+            // Safe Lerp
+            const nextIntensity = THREE.MathUtils.lerp(lightRef.current.intensity, 2, 0.1);
+            if (Number.isFinite(nextIntensity)) {
+                lightRef.current.intensity = nextIntensity;
+            }
             lightRef.current.color.set("#FFF3E0");
         }
     });
@@ -328,18 +389,10 @@ const SceneContent = ({ appState }) => {
                 <Sparkles count={300} scale={12} size={10} speed={4} opacity={1} color="#FFF" noise={2} />
             )}
 
-            <PresentationControls
-                global
-                config={{ mass: 2, tension: 500 }}
-                snap={{ mass: 4, tension: 1500 }}
-                rotation={[0, 0.3, 0]}
-                polar={[-Math.PI / 6, Math.PI / 6]}
-                azimuth={[-Math.PI / 4, Math.PI / 4]}
-            >
-                <Float speed={2} rotationIntensity={0.2} floatIntensity={0.5} floatingRange={[0.2, 0.8]}>
-                    <BeeHiveMachine appState={appState} />
-                </Float>
-            </PresentationControls>
+            {/* Interaction disabled to prevent crashes */}
+            <group rotation={[0, 0.3, 0]}>
+                <BeeHiveMachine appState={appState} />
+            </group>
 
             {/* Shadow fixes: frames={1} forces continuous update to prevent temporal flickering */}
             <ContactShadows
@@ -349,7 +402,7 @@ const SceneContent = ({ appState }) => {
                 scale={30}
                 blur={2}
                 far={20}
-                resolution={1024}
+                resolution={512}
                 color="#E65100"
             />
         </>

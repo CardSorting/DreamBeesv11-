@@ -5,6 +5,8 @@ import { Button } from './components/Button';
 import { bulkService } from './services/bulkService';
 import { useAuth } from '../../contexts/AuthContext';
 import BeeCrateScene from './BeeCrateScene';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '../../firebase';
 
 const AppState = {
     IDLE: 'IDLE',          // Waiting for coin (image)
@@ -97,25 +99,34 @@ const MockupStudio = () => {
                     if (result.data && result.data.success && result.data.prizes) {
                         const prizes = result.data.prizes;
 
-                        // Save Metadata to Firestore in parallel
+                        // Save Metadata to Firestore in parallel (Defensive)
                         const savePromises = prizes.map(async (prize) => {
-                            await addDoc(collection(db, 'generations'), {
-                                userId: currentUser.uid,
-                                userEmail: currentUser.email,
-                                userDisplayName: currentUser.displayName || 'Anonymous',
-                                prompt: prize.prompt,
-                                url: prize.url,
-                                thumbnailUrl: prize.url,
-                                type: 'mockup',
-                                isPublic: true,
-                                createdAt: serverTimestamp(),
-                                modelId: 'gemini-2.5-flash-image',
-                                mockupLabel: prize.label,
-                                presetLabel: prize.presetLabel,
-                                likes: 0
-                            });
+                            try {
+                                await addDoc(collection(db, 'generations'), {
+                                    userId: currentUser.uid,
+                                    userEmail: currentUser.email,
+                                    userDisplayName: currentUser.displayName || 'Anonymous',
+                                    prompt: prize.prompt,
+                                    url: prize.url,
+                                    thumbnailUrl: prize.url,
+                                    type: 'mockup',
+                                    isPublic: true,
+                                    createdAt: serverTimestamp(),
+                                    modelId: 'gemini-2.5-flash-image',
+                                    mockupLabel: prize.label,
+                                    presetLabel: prize.presetLabel,
+                                    likes: 0
+                                });
+                            } catch (fireError) {
+                                console.error("Failed to save to gallery:", fireError);
+                                // Non-blocking usage: don't throw, just log. 
+                                // User still gets to see their ephemeral result.
+                            }
                         });
 
+                        // We don't await this strictly for the UI to update, but usually good to finish before "done"
+                        // But to be super responsive, we can set state immediately? 
+                        // Let's stick to awaiting but with the catch above, it won't fail global Promise.all
                         await Promise.all(savePromises);
 
                         setGachaPrizes(prizes);
