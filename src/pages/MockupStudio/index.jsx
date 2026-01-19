@@ -52,7 +52,12 @@ const MockupStudio = () => {
     const [customPrompt, setCustomPrompt] = useState('');
     const [error, setError] = useState(null);
 
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 6;
+
     const fileInputRef = useRef(null);
+    const categoryScrollRef = useRef(null);
 
     const presetCategories = ['All', 'Studio', 'Lifestyle', 'Nature', 'Urban', 'Vintage'];
     const productCategories = [
@@ -120,12 +125,25 @@ const MockupStudio = () => {
             const q = searchQuery.toLowerCase();
             items = items.filter(item =>
                 item.label.toLowerCase().includes(q) ||
-                item.subjectNoun.toLowerCase().includes(q) ||
+                (item.subjectNoun && item.subjectNoun.toLowerCase().includes(q)) ||
                 item.description.toLowerCase().includes(q)
             );
         }
         return items;
     }, [mockupItems, activeProductCategory, searchQuery]);
+
+    // Derived Paginated Items
+    const paginatedItems = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredItems.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [filteredItems, currentPage]);
+
+    const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
+
+    // Reset pagination when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeProductCategory, searchQuery]);
 
     // Calculate counts for badges
     const categoryCounts = useMemo(() => {
@@ -302,6 +320,16 @@ const MockupStudio = () => {
         }
     };
 
+    const scrollCategories = (direction) => {
+        if (categoryScrollRef.current) {
+            const scrollAmount = 300;
+            categoryScrollRef.current.scrollBy({
+                left: direction === 'left' ? -scrollAmount : scrollAmount,
+                behavior: 'smooth'
+            });
+        }
+    };
+
     const downloadImage = () => {
         if (generatedImageUrl) {
             const a = document.createElement('a');
@@ -311,6 +339,29 @@ const MockupStudio = () => {
             a.click();
             document.body.removeChild(a);
         }
+    };
+
+    const getPageNumbers = () => {
+        const pages = [];
+        const maxVisible = 5;
+
+        if (totalPages <= maxVisible + 2) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+        } else {
+            pages.push(1);
+            if (currentPage > 3) pages.push('...');
+
+            const start = Math.max(2, currentPage - 1);
+            const end = Math.min(totalPages - 1, currentPage + 1);
+
+            for (let i = start; i <= end; i++) {
+                if (!pages.includes(i)) pages.push(i);
+            }
+
+            if (currentPage < totalPages - 2) pages.push('...');
+            pages.push(totalPages);
+        }
+        return pages;
     };
 
 
@@ -429,8 +480,8 @@ const MockupStudio = () => {
                             <div className="ms-main-controls-card">
 
                                 {/* Product Selector */}
-                                <section className="ms-section">
-                                    <div className="ms-section-top-row">
+                                <section className="mb-6">
+                                    <div className="flex flex-col gap-3 mb-4">
                                         <h2 className="ms-section-header">
                                             <span className="ms-accent-bar"></span> Select Product
                                         </h2>
@@ -439,17 +490,17 @@ const MockupStudio = () => {
                                             className="ms-search-input"
                                             value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                                         />
-                                    </div>
-
-                                    <div className="ms-category-pills">
-                                        {productCategories.map(cat => (
-                                            <button
-                                                key={cat} onClick={() => setActiveProductCategory(cat)}
-                                                className={`ms-pill-btn ${activeProductCategory === cat ? 'active' : ''}`}
-                                            >
-                                                {cat} <span className="opacity-50 ml-1">{categoryCounts[cat]}</span>
-                                            </button>
-                                        ))}
+                                        {/* Categories */}
+                                        <div className="ms-category-pills">
+                                            {productCategories.map(cat => (
+                                                <button
+                                                    key={cat} onClick={() => setActiveProductCategory(cat)}
+                                                    className={`ms-pill-btn ${activeProductCategory === cat ? 'active' : ''}`}
+                                                >
+                                                    {cat} <span className="count">{categoryCounts[cat]}</span>
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
 
                                     <div className="ms-item-grid custom-scrollbar">
@@ -457,7 +508,7 @@ const MockupStudio = () => {
                                             <div className="ms-full-span flex justify-center py-10 opacity-50">
                                                 <Spinner />
                                             </div>
-                                        ) : filteredItems.map(item => (
+                                        ) : paginatedItems.map(item => (
                                             <button
                                                 key={item.id} onClick={() => setSelectedItemId(item.id)}
                                                 className={`ms-item-btn ${selectedItemId === item.id ? 'selected' : ''}`}
@@ -466,17 +517,66 @@ const MockupStudio = () => {
                                                 <span className="ms-item-label">{item.label}</span>
                                             </button>
                                         ))}
+
+                                        {filteredItems.length === 0 && !loadingItems && (
+                                            <div className="ms-full-span py-10 text-center opacity-50">
+                                                No products found matching your search or category.
+                                            </div>
+                                        )}
                                     </div>
+
+                                    {/* Pagination Controls */}
+                                    {totalPages > 1 && (
+                                        <div className="ms-pagination">
+                                            <button
+                                                className="ms-page-nav-btn"
+                                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                                disabled={currentPage === 1}
+                                                aria-label="Previous page"
+                                            >
+                                                &larr;
+                                            </button>
+
+                                            <div className="ms-page-numbers">
+                                                {getPageNumbers().map((p, i) => (
+                                                    p === '...' ? (
+                                                        <span key={`sep-${i}`} className="ms-page-sep">...</span>
+                                                    ) : (
+                                                        <button
+                                                            key={p}
+                                                            onClick={() => setCurrentPage(p)}
+                                                            className={`ms-page-num-btn ${currentPage === p ? 'active' : ''}`}
+                                                        >
+                                                            {p}
+                                                        </button>
+                                                    )
+                                                ))}
+                                            </div>
+
+                                            <button
+                                                className="ms-page-nav-btn"
+                                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                                disabled={currentPage === totalPages}
+                                                aria-label="Next page"
+                                            >
+                                                &rarr;
+                                            </button>
+                                        </div>
+                                    )}
                                 </section>
 
                                 {/* Scene Selector */}
-                                <section className="ms-section">
-                                    <h2 className="ms-section-header mb-4">
+                                <section className="mb-6">
+                                    <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
                                         <span className="ms-accent-bar"></span> Select Environment
                                     </h2>
-                                    <div className="ms-category-pills mb-4">
+                                    <div className="flex flex-wrap gap-1 mb-4">
                                         {presetCategories.map(cat => (
-                                            <button key={cat} onClick={() => setActiveCategory(cat)} className={`ms-pill-btn ms-pill-btn-dark ${activeCategory === cat ? 'active' : ''}`}>
+                                            <button
+                                                key={cat}
+                                                onClick={() => setActiveCategory(cat)}
+                                                className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase border transition-all ${activeCategory === cat ? 'bg-slate-900 text-white border-slate-900 shadow-sm' : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'}`}
+                                            >
                                                 {cat}
                                             </button>
                                         ))}
