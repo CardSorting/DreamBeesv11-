@@ -22,6 +22,21 @@
     /* Ensure it can go full width */
 }
 
+/* Sidebar Styles matching ModelFeed */
+.feed-sidebar-left {
+    width: 245px;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    padding: 32px 24px 20px 24px;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+    z-index: 10;
+    flex-shrink: 0;
+}
+
 /* Page Header */
 .page-title {
     font-size: 3rem;
@@ -35,11 +50,157 @@
     letter-spacing: -0.02em;
 }
 
+/* Sidebar Right Styles matching ModelFeed */
+.feed-sidebar-right {
+    width: 320px;
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    scrollbar-width: none;
+    flex-shrink: 0;
+}
+
+.feed-sidebar-right::-webkit-scrollbar {
+    display: none;
+}
+
+.section-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 8px;
+    letter-spacing: 0.05em;
+}
+
+.inline-icon {
+    display: inline-block;
+    margin-right: 6px;
+    margin-bottom: 2px;
+    color: #fbbf24;
+}
+
+.spotlight-card {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    aspect-ratio: 16/10;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: 8px;
+}
+
+.spotlight-header {
+    width: 100%;
+    height: 100%;
+}
+
+.spotlight-bg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.spotlight-card:hover .spotlight-bg {
+    transform: scale(1.05);
+}
+
+.spotlight-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.2) 60%, transparent 100%);
+}
+
+.spotlight-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.spotlight-badge {
+    background: #f59e0b;
+    color: #000;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.spotlight-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.spotlight-desc {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0 0 8px 0;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.spotlight-btn {
+    background: #fff;
+    color: #000;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 99px;
+    text-decoration: none;
+}
+
+.panel-footer {
+    margin-top: 24px;
+    color: rgba(255, 255, 255, 0.2);
+    font-size: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 24px;
+}
+
+.footer-links {
+    margin-top: 12px;
+    line-height: 1.6;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+}
+
+.footer-links span {
+    cursor: pointer;
+}
+
+.footer-links span:hover {
+    text-decoration: underline;
+}
+
 .page-subtitle {
     color: rgba(255, 255, 255, 0.6);
     margin-bottom: 20px;
     font-size: 0.9rem;
     letter-spacing: 0.05em;
+}
+
+@media (max-width: 1200px) {
+    .feed-sidebar-right {
+        display: none;
+    }
 }
 
 

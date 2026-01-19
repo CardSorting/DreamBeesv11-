@@ -17,6 +17,7 @@ import * as Transformation from "./handlers/transformation.js";
 import * as Data from "./handlers/data.js";
 import * as Billing from "./handlers/billing.js";
 import * as Persona from "./handlers/persona.js";
+import * as Mockup from "./handlers/mockup.js";
 
 // ============================================================================
 // Main API Dispatcher
@@ -163,6 +164,9 @@ export const api = onCall({ memory: "256MiB" }, async (request) => {
             // Billing
             case 'createStripeCheckout': return Billing.handleCreateStripeCheckout(request);
             case 'createStripePortalSession': return Billing.handleCreateStripePortalSession(request);
+
+            // Mockup Studio
+            case 'generateMockup': return Mockup.handleGenerateMockup(request);
 
             // Data & Ratings
             case 'getGenerationHistory': return Data.handleGetGenerationHistory(request);

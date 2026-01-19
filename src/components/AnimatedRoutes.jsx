@@ -34,6 +34,7 @@ const AppsHub = React.lazy(() => import('../pages/AppsHub'));
 const PersonaChat = React.lazy(() => import('../pages/PersonaChat'));
 const Discovery = React.lazy(() => import('../pages/Discovery'));
 const ShowcaseDetail = React.lazy(() => import('../pages/ShowcaseDetail'));
+const MockupStudio = React.lazy(() => import('../pages/MockupStudio'));
 
 import { Privacy, Terms, Cookies } from '../pages/Legal';
 import { Careers, Brand, Api, Showcase } from '../pages/Misc';
@@ -56,15 +57,7 @@ function PrivateRoute({ children }) {
     return currentUser ? children : <Navigate to="/auth" />;
 }
 
-function AdminRoute({ children }) {
-    const { currentUser } = useAuth();
-    const isAdmin = currentUser?.uid === 'prT9j3royVTstWLDDcKMoUOU7aQ2';
 
-    if (!currentUser) return <Navigate to="/auth" />;
-    if (!isAdmin) return <Navigate to="/" replace />;
-
-    return children;
-}
 
 const pageTransition = {
     initial: { opacity: 0, y: 10 },
@@ -110,32 +103,32 @@ const AnimatedRoutes = () => {
                                 </PrivateRoute>
                             } />
                             <Route path="/gallery" element={
-                                <AdminRoute><Gallery /></AdminRoute>
+                                <PrivateRoute><Gallery /></PrivateRoute>
                             } />
                             <Route path="/gallery/:id" element={
-                                <AdminRoute><ImageDetail /></AdminRoute>
+                                <PrivateRoute><ImageDetail /></PrivateRoute>
                             } />
                             <Route path="/models" element={
-                                <AdminRoute><Models /></AdminRoute>
+                                <PrivateRoute><Models /></PrivateRoute>
                             } />
                             <Route path="/model/:id" element={
-                                <AdminRoute><ModelDetail /></AdminRoute>
+                                <PrivateRoute><ModelDetail /></PrivateRoute>
                             } />
                             <Route path="/model/:id/feed" element={
-                                <AdminRoute><ModelFeed /></AdminRoute>
+                                <PrivateRoute><ModelFeed /></PrivateRoute>
                             } />
 
                             <Route path="/features" element={
-                                <AdminRoute><Features /></AdminRoute>
+                                <PrivateRoute><Features /></PrivateRoute>
                             } />
                             <Route path="/pricing" element={
                                 <PrivateRoute><Pricing /></PrivateRoute>
                             } />
                             <Route path="/about" element={
-                                <AdminRoute><About /></AdminRoute>
+                                <PrivateRoute><About /></PrivateRoute>
                             } />
                             <Route path="/contact" element={
-                                <AdminRoute><Contact /></AdminRoute>
+                                <PrivateRoute><Contact /></PrivateRoute>
                             } />
                             <Route path="/privacy" element={<Privacy />} />
                             <Route path="/terms" element={<Terms />} />
@@ -148,15 +141,20 @@ const AnimatedRoutes = () => {
                             <Route path="/showcase" element={<Showcase />} />
 
                             <Route path="/apps" element={
-                                <AdminRoute><AppsHub /></AdminRoute>
+                                <PrivateRoute><AppsHub /></PrivateRoute>
                             } />
                             <Route path="/karaoke" element={
-                                <AdminRoute><KaraokeGenie /></AdminRoute>
+                                <PrivateRoute><KaraokeGenie /></PrivateRoute>
                             } />
                             <Route path="/dressup" element={
-                                <AdminRoute><DressUp /></AdminRoute>
+                                <PrivateRoute><DressUp /></PrivateRoute>
                             } />
                             <Route path="/slideshow" element={<Slideshow />} />
+
+                            {/* Apps */}
+                            <Route path="/mockup-studio" element={
+                                <PrivateRoute><MockupStudio /></PrivateRoute>
+                            } />
 
                             <Route path="/chat/:id" element={
                                 <PrivateRoute><PersonaChat /></PrivateRoute>

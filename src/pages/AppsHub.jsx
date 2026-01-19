@@ -53,20 +53,35 @@ const AppsHub = () => {
     useEffect(() => {
         const fetchApps = async () => {
             try {
+                // Hardcoded Mockup Studio for explicit visibility without Firestore update
+                const mockupStudioApp = {
+                    id: 'mockup-studio',
+                    title: 'Mockup Studio',
+                    description: 'Turn designs into photorealistic product shots instantly.',
+                    icon: Presentation, // Using Presentation icon
+                    tags: ['design', 'mockup', 'product', '3d'],
+                    path: '/mockup-studio',
+                    isNew: true
+                };
+
                 const q = query(collection(db, "apps"), orderBy("order"));
                 const querySnapshot = await getDocs(q);
 
+                let loadedApps = [];
                 if (!querySnapshot.empty) {
-                    const loadedApps = querySnapshot.docs.map(doc => {
+                    loadedApps = querySnapshot.docs.map(doc => {
                         const data = doc.data();
                         return {
-                            id: doc.id, // Ensure ID is captured
+                            id: doc.id,
                             ...data,
-                            icon: ICON_MAP[data.icon] || LayoutGrid // Map string to component
+                            icon: ICON_MAP[data.icon] || LayoutGrid
                         };
                     });
-                    setApps(loadedApps);
                 }
+
+                // Prepend or Append Mockup Studio
+                setApps([mockupStudioApp, ...loadedApps]);
+
             } catch (error) {
                 console.error("Error fetching apps:", error);
             }

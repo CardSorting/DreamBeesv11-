@@ -1,0 +1,247 @@
+import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
+import SEO from '../components/SEO';
+import { useModel } from '../contexts/ModelContext';
+import { useUserInteractions } from '../contexts/UserInteractionsContext';
+import { Sparkles, Loader2, CheckCircle2, Heart, Flag } from 'lucide-react';
+import { getOptimizedImageUrl, getImageSrcSet } from '../utils';
+import { useNavigate } from 'react-router-dom';
+import './Discovery.css';
+
+export default function DiscoveryMobile() {
+    const navigate = useNavigate();
+    const {
+        getGlobalShowcaseImages,
+        globalShowcaseCache,
+        isGlobalFeedLoading,
+        availableModels,
+        hasGlobalFeedEnded,
+        getShowcaseImages,
+        showcaseCache
+    } = useModel();
+    const { isLiked, toggleLike, isHidden, hidePost } = useUserInteractions();
+
+    // -- MODEL STATE --
+    const [activeModelId, setActiveModelId] = useState('all');
+
+    // Scroll to top on model change
+    const handleModelSelect = (modelId) => {
+        if (activeModelId === modelId) return;
+        setActiveModelId(modelId);
+        window.scrollTo(0, 0);
+    };
+
+    // Load specific model data if selected
+    useEffect(() => {
+        if (activeModelId !== 'all') {
+            getShowcaseImages(activeModelId);
+        }
+    }, [activeModelId, getShowcaseImages]);
+
+    // COMPUTE FILTERED IMAGES
+    const displayImages = React.useMemo(() => {
+        const source = activeModelId === 'all'
+            ? globalShowcaseCache
+            : (showcaseCache[activeModelId] || []);
+
+        return source.filter(img => !isHidden(img.id));
+    }, [activeModelId, globalShowcaseCache, showcaseCache, isHidden]);
+
+    // Track initialization and scroll states with refs for stability
+    const hasInitializedRef = useRef(false);
+    const observerRef = useRef(null);
+    const sentinelRef = useRef(null);
+    const isLoadingRef = useRef(false);
+    const lastFetchTimeRef = useRef(0);
+    const hasReachedEndRef = useRef(false);
+
+    // Configuration
+    const DEBOUNCE_MS = 800; // Minimum time between fetch attempts
+    const PREFETCH_THRESHOLD = '600px'; // How far before sentinel to start loading
+
+    // Sync loading state to ref for stable callback access
+    useEffect(() => {
+        isLoadingRef.current = isGlobalFeedLoading;
+    }, [isGlobalFeedLoading]);
+
+    // 0. Scroll to top immediately on mount
+    useLayoutEffect(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }, []);
+
+    // 1. Initial Load - Stable, one-time trigger
+    useEffect(() => {
+        // Skip if we already have data to prevent re-fetching on view mode switch if desired, 
+        // but for now we'll prioritize ensuring content is there.
+        if (hasInitializedRef.current) return;
+        hasInitializedRef.current = true;
+
+        if (globalShowcaseCache.length === 0) {
+            getGlobalShowcaseImages(false, 'discovery_mobile_init');
+        }
+
+        return () => {
+            hasInitializedRef.current = false;
+            hasReachedEndRef.current = false;
+        };
+    }, [getGlobalShowcaseImages, globalShowcaseCache.length]);
+
+    // 2. Robust Infinite Scroll Handler - Debounced & Guarded
+    const handleLoadMore = useCallback(async () => {
+        const now = Date.now();
+        const timeSinceLastFetch = now - lastFetchTimeRef.current;
+
+        if (isLoadingRef.current) return;
+        if (activeModelId !== 'all') return;
+        if (hasReachedEndRef.current) return;
+        if (timeSinceLastFetch < DEBOUNCE_MS) return;
+        if (globalShowcaseCache.length === 0) return;
+
+        lastFetchTimeRef.current = now;
+        const result = await getGlobalShowcaseImages(true, 'discovery_mobile_scroll');
+
+        if (result && result.length === globalShowcaseCache.length) {
+            hasReachedEndRef.current = true;
+        }
+    }, [getGlobalShowcaseImages, globalShowcaseCache.length, activeModelId]);
+
+    // 3. Intersection Observer Setup
+    useEffect(() => {
+        if (observerRef.current) observerRef.current.disconnect();
+
+        observerRef.current = new IntersectionObserver(
+            (entries) => {
+                const [entry] = entries;
+                if (entry.isIntersecting) {
+                    handleLoadMore();
+                }
+            },
+            {
+                rootMargin: PREFETCH_THRESHOLD,
+                threshold: 0.1
+            }
+        );
+
+        if (sentinelRef.current) {
+            observerRef.current.observe(sentinelRef.current);
+        }
+
+        return () => {
+            if (observerRef.current) observerRef.current.disconnect();
+        };
+    }, [handleLoadMore]);
+
+    // Derived state for UI
+    const isInitialLoading = (isGlobalFeedLoading && globalShowcaseCache.length === 0 && activeModelId === 'all') || (activeModelId !== 'all' && !showcaseCache[activeModelId]);
+    const isLoadingMore = isGlobalFeedLoading && globalShowcaseCache.length > 0 && activeModelId === 'all';
+    const hasReachedEnd = hasReachedEndRef.current || hasGlobalFeedEnded;
+
+    // Helper for Like Toggle to prevent bubble up
+    const handleToggleLike = (e, imgItem) => {
+        e.stopPropagation();
+        const model = availableModels.find(m => m.id === imgItem.modelId);
+        toggleLike(imgItem, model);
+    };
+
+    const handleImageClick = useCallback((imgItem) => {
+        navigate(`/discovery/${imgItem.id}`);
+    }, [navigate]);
+
+    return (
+        <div className="mobile-discovery-wrapper" style={{ paddingBottom: '80px', background: '#000', minHeight: '100vh' }}>
+            <SEO
+                title="Discover AI Art - DreamBees"
+                description="Explore a curated feed of AI-generated artwork on mobile."
+            />
+
+            {/* Mobile Header */}
+            <header className="mobile-feed-header">
+                <h1 className="page-title" style={{ fontSize: '1.5rem', margin: 0 }}>DISCOVERY</h1>
+            </header>
+
+            {/* Model Selection Pills */}
+            <div className="models-header-bar" style={{ padding: '0 16px 16px 16px', margin: '16px 0' }}>
+                <button
+                    className={`model-pill ${activeModelId === 'all' ? 'active' : ''}`}
+                    onClick={() => handleModelSelect('all')}
+                >
+                    All Models
+                </button>
+                {availableModels.map(model => (
+                    <button
+                        key={model.id}
+                        className={`model-pill ${activeModelId === model.id ? 'active' : ''}`}
+                        onClick={() => handleModelSelect(model.id)}
+                    >
+                        {model.name}
+                    </button>
+                ))}
+            </div>
+
+            {/* Content Container - Single Column */}
+            <div className="discovery-container" style={{ padding: '0 12px' }}>
+                <div className="masonry-grid">
+                    {displayImages.map((imgItem, index) => {
+                        const ratio = imgItem.aspectRatio || '1/1';
+                        const liked = isLiked(imgItem.id);
+
+                        return (
+                            <article
+                                key={imgItem.id || index}
+                                className="masonry-item"
+                                onClick={() => handleImageClick(imgItem)}
+                                style={{ marginBottom: '8px' }}
+                            >
+                                <div className="image-card">
+                                    <div className="image-wrapper" style={{
+                                        aspectRatio: ratio,
+                                        background: imgItem.lqip ? `url(${imgItem.lqip}) center/cover no-repeat` : 'rgba(255,255,255,0.02)',
+                                    }}>
+                                        <img
+                                            src={getOptimizedImageUrl(imgItem.thumbnailUrl || imgItem.url)}
+                                            srcSet={getImageSrcSet(imgItem)}
+                                            alt={imgItem.prompt}
+                                            loading={index < 4 ? "eager" : "lazy"}
+                                            style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                objectFit: 'cover',
+                                                display: 'block'
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="image-meta" style={{ opacity: 1, background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)' }}>
+                                        <button
+                                            onClick={(e) => handleToggleLike(e, imgItem)}
+                                            className="meta-badge"
+                                            style={{ border: 'none', background: 'transparent' }}
+                                        >
+                                            <Heart
+                                                size={18}
+                                                fill={liked ? "#ff3040" : "rgba(255,255,255,0.8)"}
+                                                color={liked ? "#ff3040" : "rgba(255,255,255,0.8)"}
+                                            />
+                                        </button>
+                                    </div>
+                                </div>
+                            </article>
+                        );
+                    })}
+                </div>
+
+                {/* Loading States */}
+                {isInitialLoading && (
+                    <div style={{ padding: '40px', display: 'flex', justifyContent: 'center' }}>
+                        <Loader2 size={32} className="animate-spin" style={{ color: '#a855f7' }} />
+                    </div>
+                )}
+
+                <div ref={sentinelRef} style={{ padding: '20px', textAlign: 'center', minHeight: '40px' }}>
+                    {isLoadingMore && <Loader2 size={24} className="animate-spin" style={{ color: '#a855f7', margin: '0 auto' }} />}
+                    {hasReachedEnd && !isLoadingMore && displayImages.length > 0 && (
+                        <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>End of feed</span>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
