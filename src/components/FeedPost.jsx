@@ -385,27 +385,57 @@ const FeedPost = ({
 
 
 
+                        <motion.button
+                            whileTap={{ scale: 0.8 }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (imgItem.mockupItemId) {
+                                    navigate(`/mockup-catalog/item/${imgItem.mockupItemId}`);
+                                } else {
+                                    toast.error("Cannot remix this item");
+                                }
+                            }}
+                            style={{
+                                background: 'rgba(255,255,255,0.1)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                color: 'white',
+                                cursor: 'pointer',
+                                padding: '6px 12px',
+                                borderRadius: '20px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                fontSize: '0.8rem',
+                                fontWeight: 600
+                            }}
+                            title="Remix this design"
+                        >
+                            <Aperture size={16} /> Remix
+                        </motion.button>
                     </div>
-                    <motion.button
-                        whileTap={{ scale: 0.8 }}
-                        onClick={handleSave}
-                        style={{ background: 'none', border: 'none', color: bookmarked ? 'white' : 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
-                        title="Save"
-                    >
-                        <Bookmark size={28} fill={bookmarked ? "currentColor" : "none"} strokeWidth={1.5} />
-                    </motion.button>
 
-                    <motion.button
-                        whileTap={{ scale: 0.8 }}
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            hidePost(imgItem);
-                        }}
-                        style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
-                        title="Hide Post"
-                    >
-                        <Flag size={28} strokeWidth={1.5} />
-                    </motion.button>
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                        <motion.button
+                            whileTap={{ scale: 0.8 }}
+                            onClick={handleSave}
+                            style={{ background: 'none', border: 'none', color: bookmarked ? 'white' : 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
+                            title="Save"
+                        >
+                            <Bookmark size={28} fill={bookmarked ? "currentColor" : "none"} strokeWidth={1.5} />
+                        </motion.button>
+
+                        <motion.button
+                            whileTap={{ scale: 0.8 }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                hidePost(imgItem);
+                            }}
+                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
+                            title="Hide Post"
+                        >
+                            <Flag size={28} strokeWidth={1.5} />
+                        </motion.button>
+                    </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '20px', marginBottom: '12px' }}>
