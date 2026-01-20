@@ -32,7 +32,7 @@ const Sidebar = ({ activeId }) => {
 
     // Primary Top Level
     const homeLink = { path: '/', label: 'Home', icon: Home };
-    const profileLink = { path: '/profile', label: 'Profile', icon: User };
+
 
     const navGroups = [
         {
@@ -48,7 +48,7 @@ const Sidebar = ({ activeId }) => {
             items: [
                 { path: '/discovery', label: 'Discovery', icon: Compass },
 
-                { path: '/gallery', label: 'Gallery', icon: LayoutGrid },
+
                 { path: '/mockups', label: 'Mockups', icon: Images },
 
             ]
@@ -98,13 +98,7 @@ const Sidebar = ({ activeId }) => {
                         <homeLink.icon size={20} />
                         <span className="link-label">{homeLink.label}</span>
                     </Link>
-                    <Link
-                        to={profileLink.path}
-                        className={`sidebar-link primary-link ${activeId === profileLink.path ? 'active' : ''}`}
-                    >
-                        <profileLink.icon size={20} />
-                        <span className="link-label">{profileLink.label}</span>
-                    </Link>
+
                 </div>
 
                 {/* Groups */}
