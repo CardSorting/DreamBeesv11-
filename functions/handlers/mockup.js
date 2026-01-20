@@ -6,6 +6,8 @@ import { MOCKUP_ITEMS, MOCKUP_PRESETS } from "../lib/mockupData.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { retryOperation } from "../lib/utils.js";
 import { HarmCategory, HarmBlockThreshold } from "@google-cloud/vertexai";
+import { db, FieldValue } from "../firebaseInit.js";
+import { HttpsError } from "firebase-functions/v2/https";
 
 // Initialize Vertex AI
 const project = process.env.GCLOUD_PROJECT || "dreambees-alchemist";
@@ -13,6 +15,42 @@ const location = "us-central1";
 const vertexAI = new VertexAI({ project, location });
 
 const MODEL_NAME = "gemini-2.5-flash-image";
+
+/**
+ * Checks config and deducts zaps.
+ * Returns the cost that was deducted.
+ * @param {string} uid 
+ * @returns {Promise<number>} The amount of zaps deducted
+ */
+const checkAndDeductZaps = async (uid) => {
+    // 1. Check Config for Cost
+    const configDoc = await db.collection("sys_config").doc("mockup_studio").get();
+    const config = configDoc.exists ? configDoc.data() : {};
+
+    // Default to 0.25 if not specified (Micro-transaction style)
+    const cost = (config.cost_per_generation !== undefined) ? Number(config.cost_per_generation) : 0.25;
+
+    // 2. Deduct Zaps
+    await db.runTransaction(async (t) => {
+        const userRef = db.collection('users').doc(uid);
+        const userDoc = await t.get(userRef);
+
+        if (!userDoc.exists) {
+            throw new HttpsError('not-found', "User not found");
+        }
+
+        const zaps = userDoc.data().zaps || 0;
+
+        if (zaps < cost) {
+            throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${cost} Zaps.`);
+        }
+
+        t.update(userRef, { zaps: FieldValue.increment(-cost) });
+    });
+
+    logger.info(`[Billing] Deducted ${cost} Zaps from ${uid}`);
+    return cost;
+};
 
 const getModel = () => {
     return vertexAI.getGenerativeModel({ model: MODEL_NAME });
@@ -138,11 +176,18 @@ const generateSingleMockup = async (imageBase64, item, preset, userUid) => {
 export const handleGachaSpin = async (request) => {
     logger.info("[Gacha] Spin started", { uid: request.auth?.uid });
     const { image } = request.data;
-    const uid = request.auth?.uid || 'anonymous';
+    const uid = request.auth?.uid;
+
+    if (!uid) {
+        throw new HttpsError('unauthenticated', "User must be authenticated to use Gacha Spin.");
+    }
 
     if (!image) {
         throw new Error("No image token provided.");
     }
+
+    // Cost Check & Deduction
+    const costDeducted = await checkAndDeductZaps(uid);
 
     // Decode base64
     const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
@@ -171,6 +216,17 @@ export const handleGachaSpin = async (request) => {
     if (successfulPrizes.length === 0) {
         // Log the errors
         results.forEach(r => { if (!r.success) logger.error("Gacha Item Failed", r.error); });
+
+        // Refund if we took money and failed completely
+        if (costDeducted > 0) {
+            try {
+                await db.collection('users').doc(uid).update({ zaps: FieldValue.increment(costDeducted) });
+                logger.info(`[Billing] Refunded ${costDeducted} Zaps to ${uid} due to total failure.`);
+            } catch (e) {
+                logger.error(`[Billing] Failed to refund user ${uid}`, e);
+            }
+        }
+
         throw new Error("The machine jammed! No prizes were generated.");
     }
 
@@ -187,10 +243,18 @@ export const handleGachaSpin = async (request) => {
  */
 export const handleGenerateMockup = async (request) => {
     const { image, instruction, options } = request.data;
+    const uid = request.auth?.uid;
+
+    if (!uid) {
+        throw new HttpsError('unauthenticated', "User must be authenticated.");
+    }
 
     if (!image) {
         throw new Error("No image data provided.");
     }
+
+    // Cost Check
+    const costDeducted = await checkAndDeductZaps(uid);
 
     try {
         const generativeModel = getModel();
@@ -305,6 +369,16 @@ export const handleGenerateMockup = async (request) => {
         return result;
 
     } catch (error) {
+        // Refund on failure
+        if (costDeducted > 0) {
+            try {
+                await db.collection('users').doc(uid).update({ zaps: FieldValue.increment(costDeducted) });
+                logger.info(`[Billing] Refunded ${costDeducted} Zaps to ${uid} due to failure.`);
+            } catch (e) {
+                logger.error(`[Billing] Failed to refund user ${uid}`, e);
+            }
+        }
+
         logger.error("Mockup Generation Error:", error);
         throw new Error(`Mockup generation failed: ${error.message}`);
     }
