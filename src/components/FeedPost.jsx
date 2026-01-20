@@ -18,7 +18,8 @@ const FeedPost = ({
     headerTitle,
     headerSubtitle,
     avatarImage,
-    onCreatorClick
+    onCreatorClick,
+    onTagClick
 }) => {
     const { currentUser } = useAuth();
     const { isLiked, isBookmarked, toggleLike, toggleBookmark, hidePost, isHidden } = useUserInteractions();
@@ -453,10 +454,27 @@ const FeedPost = ({
 
 
 
-                <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '8px', opacity: 0.6 }}>
-
-                    <span style={{ color: 'var(--color-accent-primary)', fontSize: '0.8rem', fontWeight: '500' }}>#AI</span>
-                    <span style={{ color: 'var(--color-accent-primary)', fontSize: '0.8rem', fontWeight: '500' }}>#DreamBees</span>
+                <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '8px', opacity: 0.8 }}>
+                    {['#AI', '#DreamBees'].map(tag => (
+                        <span
+                            key={tag}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (onTagClick) onTagClick(tag);
+                            }}
+                            style={{
+                                color: 'var(--color-accent-primary)',
+                                fontSize: '0.8rem',
+                                fontWeight: '500',
+                                cursor: onTagClick ? 'pointer' : 'default',
+                                transition: 'opacity 0.2s',
+                            }}
+                            onMouseEnter={(e) => e.target.style.opacity = '1'}
+                            onMouseLeave={(e) => e.target.style.opacity = '0.8'}
+                        >
+                            {tag}
+                        </span>
+                    ))}
                 </div>
 
                 <div style={{ marginTop: '24px' }}></div>

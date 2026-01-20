@@ -167,8 +167,40 @@ export default function MockupFeed() {
                         </p>
                     </div>
 
+                    {/* Tag Filters */}
+                    <div style={{
+                        maxWidth: '600px',
+                        margin: '0 auto 20px',
+                        display: 'flex',
+                        gap: '10px',
+                        justifyContent: 'center',
+                        flexWrap: 'wrap'
+                    }}>
+                        {['All', '#AI', '#DreamBees'].map(tag => (
+                            <button
+                                key={tag}
+                                onClick={() => handleFilterChange({ type: 'tag', value: tag })}
+                                style={{
+                                    padding: '8px 16px',
+                                    borderRadius: '20px',
+                                    background: (creatorFilter?.type === 'tag' && creatorFilter.value === tag) || (!creatorFilter && tag === 'All')
+                                        ? 'var(--primary)'
+                                        : 'rgba(255,255,255,0.05)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    color: 'white',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 500,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease'
+                                }}
+                            >
+                                {tag}
+                            </button>
+                        ))}
+                    </div>
+
                     {/* Filter Indicator */}
-                    {creatorFilter && (
+                    {creatorFilter && creatorFilter.type !== 'tag' && (
                         <div style={{
                             maxWidth: '600px',
                             margin: '0 auto 20px',
@@ -233,6 +265,7 @@ export default function MockupFeed() {
                                             });
                                         }
                                     }}
+                                    onTagClick={(tag) => handleFilterChange({ type: 'tag', value: tag })}
                                 />
                             );
                         })}
