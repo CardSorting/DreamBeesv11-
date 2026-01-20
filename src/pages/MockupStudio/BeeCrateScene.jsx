@@ -5,7 +5,7 @@ import {
     Stars, Sparkles, PerspectiveCamera, ContactShadows,
     Trail, Box
 } from '@react-three/drei';
-import * as THREE from 'three';
+import { Vector3, DoubleSide, MathUtils } from 'three';
 
 // --- Geometry Components ---
 
@@ -73,7 +73,7 @@ const CrankHandle = ({ appState }) => {
 
 const HoneyCapsule = ({ position, color, seed, appState }) => {
     const ref = useRef();
-    const [initialPos] = useState(() => new THREE.Vector3(...position));
+    const [initialPos] = useState(() => new Vector3(...position));
     const isSpinning = appState === 'SPINNING';
     const isPrize = appState === 'PRIZE';
 
@@ -94,7 +94,7 @@ const HoneyCapsule = ({ position, color, seed, appState }) => {
             const z = Math.sin(angle) * 0.8;
 
             if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z)) {
-                ref.current.position.lerp(new THREE.Vector3(
+                ref.current.position.lerp(new Vector3(
                     initialPos.x * 0.2 + x,
                     y,
                     initialPos.z * 0.2 + z
@@ -109,7 +109,7 @@ const HoneyCapsule = ({ position, color, seed, appState }) => {
 
         } else if (isPrize) {
             // EJECTION: Launch out towards camera z-axis
-            const targetPos = new THREE.Vector3(
+            const targetPos = new Vector3(
                 (seed % 3 - 1) * 2, // Spread X
                 (seed % 2 === 0 ? 1 : -1) * 1.5, // Spread Y
                 4 // Pop out Z
@@ -224,11 +224,11 @@ const FlyingBee = ({ offset = 0, radius = 2.5, speed = 1, appState }) => {
             <group position={[0, 0.15, 0]}>
                 <mesh ref={wingLeft} position={[0.1, 0, 0]} rotation={[0, 0, 0.2]}>
                     <circleGeometry args={[0.25, 16]} />
-                    <meshStandardMaterial color="white" transparent opacity={0.8} side={THREE.DoubleSide} />
+                    <meshStandardMaterial color="white" transparent opacity={0.8} side={DoubleSide} />
                 </mesh>
                 <mesh ref={wingRight} position={[-0.1, 0, 0]} rotation={[0, 0, -0.2]}>
                     <circleGeometry args={[0.25, 16]} />
-                    <meshStandardMaterial color="white" transparent opacity={0.8} side={THREE.DoubleSide} />
+                    <meshStandardMaterial color="white" transparent opacity={0.8} side={DoubleSide} />
                 </mesh>
             </group>
         </group>
@@ -258,19 +258,19 @@ const BeeHiveMachine = ({ appState }) => {
             groupRef.current.rotation.x = Math.cos(t * 3) * 0.05;
         } else {
             // Gentle stabilization
-            groupRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+            groupRef.current.scale.lerp(new Vector3(1, 1, 1), 0.1);
             // Gentle stabilization - Ensure we don't propagate NaNs
             if (!Number.isNaN(groupRef.current.rotation.y)) {
-                groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, 0, 0.1);
+                groupRef.current.rotation.y = MathUtils.lerp(groupRef.current.rotation.y, 0, 0.1);
             }
             if (!Number.isNaN(groupRef.current.position.x)) {
-                groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, 0, 0.1);
+                groupRef.current.position.x = MathUtils.lerp(groupRef.current.position.x, 0, 0.1);
             }
             if (!Number.isNaN(groupRef.current.position.y)) {
-                groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, 0, 0.1);
+                groupRef.current.position.y = MathUtils.lerp(groupRef.current.position.y, 0, 0.1);
             }
             if (!Number.isNaN(groupRef.current.rotation.z)) {
-                groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, 0, 0.1);
+                groupRef.current.rotation.z = MathUtils.lerp(groupRef.current.rotation.z, 0, 0.1);
             }
         }
     });
@@ -362,7 +362,7 @@ const SceneContent = ({ appState }) => {
             }
         } else {
             // Safe Lerp
-            const nextIntensity = THREE.MathUtils.lerp(lightRef.current.intensity, 2, 0.1);
+            const nextIntensity = MathUtils.lerp(lightRef.current.intensity, 2, 0.1);
             if (Number.isFinite(nextIntensity)) {
                 lightRef.current.intensity = nextIntensity;
             }

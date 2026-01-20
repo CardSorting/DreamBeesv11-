@@ -9,9 +9,13 @@ import toast from 'react-hot-toast';
 
 const UserInteractionsContext = createContext();
 
-export function useUserInteractions() {
-    return useContext(UserInteractionsContext);
-}
+export const useUserInteractions = () => {
+    const context = useContext(UserInteractionsContext);
+    if (context === undefined) {
+        throw new Error('useUserInteractions must be used within a UserInteractionsProvider');
+    }
+    return context;
+};
 
 export function UserInteractionsProvider({ children }) {
     const { currentUser } = useAuth();

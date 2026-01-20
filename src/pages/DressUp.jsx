@@ -352,7 +352,15 @@ export default function DressUp() {
                 {currentImage ? (
                     <div className="stage-content animate-pop">
                         <div className="paper-frame">
-                            <img src={currentImage} alt="Subject" className="paper-doll-image" />
+                            <img
+                                src={currentImage}
+                                alt="Subject"
+                                className="paper-doll-image"
+                                onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    console.warn('Failed to load main dress-up image');
+                                }}
+                            />
                         </div>
 
                         <button
@@ -389,7 +397,11 @@ export default function DressUp() {
                                             style={{ position: 'relative' }}
                                         >
                                             {img.status === 'completed' ? (
-                                                <img src={img.thumbnailUrl || img.imageUrl} alt="Sticker" />
+                                                <img
+                                                    src={img.thumbnailUrl || img.imageUrl}
+                                                    alt="Sticker"
+                                                    onError={(e) => e.target.style.opacity = '0.3'}
+                                                />
                                             ) : img.status === 'processing' ? (
                                                 <div className="flex-center" style={{ width: '100%', height: '100%', background: '#27272a' }}>
                                                     <Sparkles className="animate-spin text-yellow-400" size={20} />

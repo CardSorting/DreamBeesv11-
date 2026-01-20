@@ -12,9 +12,40 @@ class GlobalErrorBoundary extends React.Component {
         return { hasError: true, error };
     }
 
+    componentDidMount() {
+        window.addEventListener('unhandledrejection', this.handleUnhandledRejection);
+        window.addEventListener('error', this.handleGlobalError);
+    }
+
+    componentWillUnmount() {
+        window.removeEventListener('unhandledrejection', this.handleUnhandledRejection);
+        window.removeEventListener('error', this.handleGlobalError);
+    }
+
+    handleUnhandledRejection = (event) => {
+        // Prevent default console error logging if we're handling it
+        // event.preventDefault(); 
+        console.error("GlobalErrorBoundary Caught Unhandled Rejection:", event.reason);
+        this.setState({
+            hasError: true,
+            error: event.reason instanceof Error ? event.reason : new Error(String(event.reason)),
+            errorInfo: { componentStack: 'Unhandled Promise Rejection' }
+        });
+    };
+
+    handleGlobalError = (event) => {
+        // event.error might be undefined for cross-origin script errors
+        console.error("GlobalErrorBoundary Caught Global Error:", event.error || event.message);
+        this.setState({
+            hasError: true,
+            error: event.error || new Error(event.message || 'Unknown Global Error'),
+            errorInfo: { componentStack: 'Global Script Error' }
+        });
+    };
+
     componentDidCatch(error, errorInfo) {
         // You can also log the error to an error reporting service
-        console.error("GlobalErrorBoundary Caught Error:", error, errorInfo);
+        console.error("GlobalErrorBoundary Caught React Error:", error, errorInfo);
         this.setState({ error, errorInfo });
     }
 

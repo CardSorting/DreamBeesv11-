@@ -143,6 +143,9 @@ export default function DiscoveryDesktop() {
 
         const result = await getGlobalShowcaseImages(true, 'discovery_scroll');
 
+        // Check if component is still mounted before using refs or state
+        if (!hasInitializedRef.current) return;
+
         // Check if we've reached the end (no new items loaded)
         if (result && result.length === globalShowcaseCache.length) {
             console.log('[Discovery] 🏁 End of feed reached');
@@ -219,8 +222,13 @@ export default function DiscoveryDesktop() {
         }
 
         setIsFocusLoading(true);
+
+        const isMounted = { current: true };
+
         // Small delay to allow animation to start smoothly
         const timer = setTimeout(() => {
+            if (!isMounted.current) return;
+
             let recommendations = getBalancedRecommendations(
                 focusImage,
                 globalShowcaseCache,
@@ -246,11 +254,16 @@ export default function DiscoveryDesktop() {
                 recommendations = [...recommendations, ...fillers];
             }
 
-            setRelatedImages(recommendations);
-            setIsFocusLoading(false);
+            if (isMounted.current) {
+                setRelatedImages(recommendations);
+                setIsFocusLoading(false);
+            }
         }, 100);
 
-        return () => clearTimeout(timer);
+        return () => {
+            isMounted.current = false;
+            clearTimeout(timer);
+        };
     }, [focusImage, globalShowcaseCache]);
 
     return (

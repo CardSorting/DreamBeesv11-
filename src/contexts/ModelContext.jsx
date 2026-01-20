@@ -9,7 +9,11 @@ const ModelContext = createContext();
 
 // eslint-disable-next-line react-refresh/only-export-components
 export function useModel() {
-    return useContext(ModelContext);
+    const context = useContext(ModelContext);
+    if (context === undefined) {
+        throw new Error('useModel must be used within a ModelProvider');
+    }
+    return context;
 }
 
 export function ModelProvider({ children }) {

@@ -14,39 +14,43 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-if (!firebaseConfig.apiKey) {
-  console.error("Firebase API Key is missing! Check your .env file.");
-}
-
-const app = initializeApp(firebaseConfig);
-
-
-
-export const auth = getAuth(app);
+let app;
+let auth;
 let dbInstance;
+let storage;
+let functions;
 
 try {
-  // Use memory cache explicitly to prevent "Unexpected state" internal assertion errors
-  // often caused by corrupted IndexedDB data from previous sessions/versions.
-  // This trades offline persistence for stability.
-  dbInstance = initializeFirestore(app, {
-    localCache: memoryLocalCache(),
-  });
-  console.log("[Firebase] Firestore initialized (Memory Cache Mode).");
-} catch (error) {
-  console.error("[Firebase] Primary Firestore initialization failed. Attempting fallback...", error);
-  try {
-    // Ultimate fallback to default settings if the explicit config fails
-    dbInstance = getFirestore(app);
-    console.log("[Firebase] Firestore initialized with default settings (Fallback).");
-  } catch (fallbackError) {
-    console.error("[Firebase] CRITICAL: Firestore initialization completely failed.", fallbackError);
-    // Ensure db export is at least undefined or null rather than crashing module load? 
-    // Actually, throwing here might be better to surface the fatal error, 
-    // but the user asked for "fault tolerant", so let's allow it to proceed (db will be undefined/broken but app runs).
+  if (!firebaseConfig.apiKey) {
+    throw new Error("Missing Firebase API Key. Check .env configuration.");
   }
+
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  storage = getStorage(app);
+  functions = getFunctions(app, 'us-central1');
+
+  try {
+    // Use memory cache explicitly to prevent "Unexpected state" internal assertion errors
+    dbInstance = initializeFirestore(app, {
+      localCache: memoryLocalCache(),
+    });
+    console.log("[Firebase] Firestore initialized (Memory Cache Mode).");
+  } catch (firestoreError) {
+    console.warn("[Firebase] Primary Firestore initialization failed. Attempting fallback...", firestoreError);
+    try {
+      dbInstance = getFirestore(app);
+      console.log("[Firebase] Firestore initialized with default settings (Fallback).");
+    } catch (fallbackError) {
+      console.error("[Firebase] CRITICAL: Firestore initialization completely failed.", fallbackError);
+      // dbInstance remains undefined
+    }
+  }
+
+} catch (error) {
+  console.error("[Firebase] CRITICAL: Firebase app initialization failed.", error);
+  // Create mock objects or leave as undefined to allow app to render error boundary
 }
 
+export { auth, storage, functions };
 export const db = dbInstance;
-export const storage = getStorage(app);
-export const functions = getFunctions(app, 'us-central1');

@@ -471,6 +471,10 @@ const FeedItem = React.memo(({ image, index, isActive, isLiked, onToggleLike, on
                     className="feed-image"
                     loading={Math.abs(index - isActive) < 5 ? "eager" : "lazy"}
                     decoding="async"
+                    onError={(e) => {
+                        e.target.style.display = 'none';
+                        // Optional: You could also set e.target.src to a placeholder
+                    }}
                 />
 
                 {/* Double Tap Heart Animation */}

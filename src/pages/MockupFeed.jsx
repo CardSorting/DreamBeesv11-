@@ -120,6 +120,10 @@ export default function MockupFeed() {
         if (lastImageElementRef.current) {
             observer.current.observe(lastImageElementRef.current);
         }
+
+        return () => {
+            if (observer.current) observer.current.disconnect();
+        };
     }, [loading, hasMore]);
 
     return (
