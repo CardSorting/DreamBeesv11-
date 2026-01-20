@@ -385,33 +385,31 @@ const FeedPost = ({
 
 
 
-                        <motion.button
-                            whileTap={{ scale: 0.8 }}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                if (imgItem.mockupItemId) {
+                        {imgItem.mockupItemId && (
+                            <motion.button
+                                whileTap={{ scale: 0.8 }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
                                     navigate(`/mockup-catalog/item/${imgItem.mockupItemId}`);
-                                } else {
-                                    toast.error("Cannot remix this item");
-                                }
-                            }}
-                            style={{
-                                background: 'rgba(255,255,255,0.1)',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                color: 'white',
-                                cursor: 'pointer',
-                                padding: '6px 12px',
-                                borderRadius: '20px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                fontSize: '0.8rem',
-                                fontWeight: 600
-                            }}
-                            title="Remix this design"
-                        >
-                            <Aperture size={16} /> Remix
-                        </motion.button>
+                                }}
+                                style={{
+                                    background: 'rgba(255,255,255,0.1)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    padding: '6px 12px',
+                                    borderRadius: '20px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 600
+                                }}
+                                title="Remix this design"
+                            >
+                                <Aperture size={16} /> Remix
+                            </motion.button>
+                        )}
                     </div>
 
                     <div style={{ display: 'flex', gap: '12px' }}>
