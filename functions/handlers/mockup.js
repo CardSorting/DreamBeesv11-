@@ -383,3 +383,95 @@ export const handleGenerateMockup = async (request) => {
         throw new Error(`Mockup generation failed: ${error.message}`);
     }
 };
+
+/**
+ * Generates a specific Mockup Item with a Preset
+ */
+export const handleGenerateMockupItem = async (request) => {
+    const { image, itemId, presetId } = request.data;
+    const uid = request.auth?.uid;
+
+    if (!uid) {
+        throw new HttpsError('unauthenticated', "User must be authenticated.");
+    }
+    if (!image) {
+        throw new Error("No image data provided.");
+    }
+    if (!itemId) {
+        throw new Error("No item ID provided.");
+    }
+
+    // 1. Look up Item and Preset from code config
+    const item = MOCKUP_ITEMS.find(i => i.id === itemId);
+    if (!item) {
+        throw new HttpsError('not-found', `Mockup Item '${itemId}' not found in backend config.`);
+    }
+
+    // Default to 'clean studio' if no preset provided
+    let preset = null;
+    if (presetId) {
+        preset = MOCKUP_PRESETS.find(p => p.id === presetId);
+    }
+    if (!preset) {
+        preset = MOCKUP_PRESETS.find(p => p.id === 'studio') || MOCKUP_PRESETS[0];
+    }
+
+    // 2. Cost Check & Deduction
+    const costDeducted = await checkAndDeductZaps(uid);
+
+    try {
+        // 3. Generate
+        // Decode base64
+        const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
+
+        const result = await generateSingleMockup(base64Data, item, preset, uid);
+
+        if (!result.success) {
+            throw new Error(result.error);
+        }
+
+        // 4. Save to Firestore (reuse 'generations' collection like MockupFeed)
+        try {
+            const userRef = db.collection('users').doc(uid);
+            const userDoc = await userRef.get();
+            const userData = userDoc.exists ? userDoc.data() : {};
+
+            await db.collection('generations').doc(result.id).set({
+                id: result.id,
+                userId: uid,
+                userDisplayName: userData.displayName || 'Anonymous',
+                userPhotoURL: userData.photoURL || '',
+                type: 'mockup',
+                url: result.url, // B2 URL
+                thumbnailUrl: result.url, // Same for now
+                prompt: result.prompt,
+                label: item.label,
+                mockupItemId: item.id, // Important for "Items created with..." query
+                presetId: preset.id,
+                createdAt: FieldValue.serverTimestamp(),
+                isPublic: true, // Default to true for feed
+                likes: 0,
+                views: 0
+            });
+            logger.info(`[Mockup] Saved metadata to generations/${result.id}`);
+        } catch (dbError) {
+            logger.error(`[Mockup] Failed to save metadata to Firestore:`, dbError);
+            // Don't fail the request, just log it. The user still got their image.
+        }
+
+        return result;
+
+    } catch (error) {
+        // Refund on failure
+        if (costDeducted > 0) {
+            try {
+                await db.collection('users').doc(uid).update({ zaps: FieldValue.increment(costDeducted) });
+                logger.info(`[Billing] Refunded ${costDeducted} Zaps to ${uid} due to failure.`);
+            } catch (e) {
+                logger.error(`[Billing] Failed to refund user ${uid}`, e);
+            }
+        }
+        logger.error(`Failed to generate item ${itemId}:`, error);
+        throw new HttpsError('internal', `Generation failed: ${error.message}`);
+    }
+};

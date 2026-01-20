@@ -1,0 +1,319 @@
+.mpp-container {
+    padding-top: 80px;
+    padding-bottom: 120px;
+    min-height: 100vh;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 90%;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* Back Button */
+.mpp-back-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0;
+    width: fit-content;
+    transition: color 0.3s ease;
+}
+
+.mpp-back-btn:hover {
+    color: var(--primary);
+}
+
+.mpp-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: start;
+}
+
+/* Left Column: Visuals */
+.mpp-visual-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.mpp-preview-stage {
+    width: 100%;
+    aspect-ratio: 1/1;
+    background: #111;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.mpp-preview-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: transform 0.5s ease;
+}
+
+.mpp-preview-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    color: var(--text-secondary);
+}
+
+.mpp-result-overlay {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+/* Right Column: Controls */
+.mpp-controls-col {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+}
+
+.mpp-header h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(to right, #fff, #aaa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.mpp-header p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+.mpp-section h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mpp-upload-area {
+    width: 100%;
+    height: 160px;
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.02);
+    position: relative;
+    overflow: hidden;
+}
+
+.mpp-upload-area:hover {
+    border-color: var(--primary);
+    background: rgba(var(--primary-rgb), 0.05);
+}
+
+.mpp-upload-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.5;
+}
+
+.mpp-presets-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.mpp-preset-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.mpp-preset-card:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.mpp-preset-card.active {
+    border-color: var(--primary);
+    background: rgba(var(--primary-rgb), 0.1);
+    box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.3);
+}
+
+.mpp-preset-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.mpp-actions {
+    margin-top: 1rem;
+}
+
+.mpp-generate-btn {
+    width: 100%;
+    padding: 1.2rem;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 16px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    box-shadow: 0 10px 20px rgba(var(--primary-rgb), 0.3);
+}
+
+.mpp-generate-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 30px rgba(var(--primary-rgb), 0.4);
+}
+
+.mpp-generate-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(1);
+}
+
+.mpp-loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* Gallery Section */
+.mpp-gallery-section {
+    width: 100%;
+}
+
+.mpp-gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    /* Slightly larger */
+    gap: 1.5rem;
+}
+
+.mpp-gallery-card {
+    background: var(--bg-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    cursor: pointer;
+}
+
+.mpp-gallery-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--primary);
+    box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.5);
+}
+
+.mpp-gallery-image-wrapper {
+    aspect-ratio: 1;
+    overflow: hidden;
+    position: relative;
+    background: #000;
+}
+
+.mpp-gallery-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.mpp-gallery-card:hover .mpp-gallery-image {
+    transform: scale(1.05);
+}
+
+.mpp-gallery-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 1rem;
+}
+
+.mpp-gallery-card:hover .mpp-gallery-overlay {
+    opacity: 1;
+}
+
+.mpp-gallery-info {
+    padding: 0.8rem;
+    background: var(--bg-secondary);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mpp-gallery-user {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.mpp-user-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    object-fit: cover;
+}
+
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 900px) {
+    .mpp-content {
+        grid-template-columns: 1fr;
+    }
+
+    .mpp-presets-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

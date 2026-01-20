@@ -201,7 +201,7 @@ const MockupCatalog = () => {
     };
 
     const handleItemSelect = (item) => {
-        alert(`Selected: ${item.label} (Coming Soon: Item Generation)`);
+        navigate(`/mockup-catalog/item/${item.id}`);
     };
 
     return (

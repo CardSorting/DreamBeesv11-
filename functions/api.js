@@ -168,6 +168,7 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
             // Mockup Studio
             case 'generateMockup': return Mockup.handleGenerateMockup(request);
             case 'gachaSpin': return Mockup.handleGachaSpin(request);
+            case 'generateMockupItem': return Mockup.handleGenerateMockupItem(request);
 
             // Data & Ratings
             case 'getGenerationHistory': return Data.handleGetGenerationHistory(request);
