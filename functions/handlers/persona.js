@@ -6,6 +6,48 @@ import { fetchWithRetry, logger } from "../lib/utils.js";
 // Initialize Vertex AI
 const vertexAI = new VertexAI({ project: process.env.GCLOUD_PROJECT, location: "us-central1" });
 
+/**
+ * Checks config and deducts zaps.
+ * @param {string} uid 
+ * @param {string} action 'create' | 'chat'
+ * @returns {Promise<number>} The amount of zaps deducted
+ */
+const checkAndDeductZaps = async (uid, action) => {
+    const db = getFirestore();
+    const configDoc = await db.collection("sys_config").doc("persona").get();
+    const config = configDoc.exists ? configDoc.data() : {};
+
+    // Default Costs: Create = 5, Chat = 0.25
+    let cost = 0;
+    if (action === 'create') {
+        cost = (config.cost_create !== undefined) ? Number(config.cost_create) : 5;
+    } else if (action === 'chat') {
+        cost = (config.cost_chat !== undefined) ? Number(config.cost_chat) : 0.25;
+    }
+
+    if (cost === 0) return 0;
+
+    await db.runTransaction(async (t) => {
+        const userRef = db.collection('users').doc(uid);
+        const userDoc = await t.get(userRef);
+
+        if (!userDoc.exists) {
+            throw new HttpsError('not-found', "User not found");
+        }
+
+        const zaps = userDoc.data().zaps || 0;
+
+        if (zaps < cost) {
+            throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${cost} Zaps.`);
+        }
+
+        t.update(userRef, { zaps: FieldValue.increment(-cost) });
+    });
+
+    logger.info(`[Billing] Deducted ${cost} Zaps from ${uid} for Persona:${action}`);
+    return cost;
+};
+
 // Helper to interact with the Generative Model
 async function generatePersonaFromImage(imageBuffer, mimeType) {
     const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -70,6 +112,9 @@ export const handleCreatePersona = async (request) => {
         return { success: true, persona: personaDoc.data(), isNew: false };
     }
 
+    // Billing for Creation
+    const costDeducted = await checkAndDeductZaps(userId, 'create');
+
     // 2. Fetch the image
     let imageBuffer;
     let mimeType = 'image/webp'; // Default for our app
@@ -82,6 +127,10 @@ export const handleCreatePersona = async (request) => {
         if (contentType) mimeType = contentType;
     } catch (e) {
         logger.error("Image Download Error", e);
+        // Refund
+        if (costDeducted > 0) {
+            await db.collection('users').doc(userId).update({ zaps: FieldValue.increment(costDeducted) }).catch(err => logger.error("Refund failed", err));
+        }
         throw new HttpsError('internal', `Could not download image source: ${e.message}`);
     }
 
@@ -99,6 +148,10 @@ export const handleCreatePersona = async (request) => {
         };
     } catch (e) {
         logger.error("Gemini Persona Generation Error", e);
+        // Refund
+        if (costDeducted > 0) {
+            await db.collection('users').doc(userId).update({ zaps: FieldValue.increment(costDeducted) }).catch(err => logger.error("Refund failed", err));
+        }
         // Distinguish model errors (likely transient) from other internal errors
         throw new HttpsError('internal', "The oracle failed to read the personality. Please try again.");
     }
@@ -108,6 +161,10 @@ export const handleCreatePersona = async (request) => {
         await personaRef.set(personaData);
     } catch (e) {
         logger.error("Firestore Write Error", e);
+        // Refund (Unlikely to fail here, but good practice)
+        if (costDeducted > 0) {
+            await db.collection('users').doc(userId).update({ zaps: FieldValue.increment(costDeducted) }).catch(err => logger.error("Refund failed", err));
+        }
         throw new HttpsError('internal', "Failed to awaken persona (storage error).");
     }
 
@@ -121,13 +178,17 @@ export const handleChatPersona = async (request) => {
     if (!request.auth) {
         throw new HttpsError('unauthenticated', 'User must be logged in.');
     }
-
+    const userId = request.auth.uid;
     const db = getFirestore();
+
     const personaDoc = await db.collection('personas').doc(imageId).get();
 
     if (!personaDoc.exists) {
         throw new HttpsError('not-found', 'Persona not found.');
-    }
+    } // Reading persona is free? Yes.
+
+    // Billing for Chat
+    const costDeducted = await checkAndDeductZaps(userId, 'chat');
 
     const persona = personaDoc.data();
 
@@ -220,6 +281,10 @@ export const handleChatPersona = async (request) => {
 
     } catch (e) {
         logger.error("Gemini Chat Error", e);
+        // Refund
+        if (costDeducted > 0) {
+            await db.collection('users').doc(userId).update({ zaps: FieldValue.increment(costDeducted) }).catch(err => logger.error("Refund failed", err));
+        }
         throw new HttpsError('internal', "Failed to get character response.");
     }
 };

@@ -150,8 +150,30 @@ export const handleCreateSlideshowGeneration = async (request) => {
 
 export const handleGenerateVideoPrompt = async (request) => {
     const { image, imageUrl } = request.data;
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
+
+    const COST = 1;
+
     try {
+        // Deduct Zaps
+        await db.runTransaction(async (t) => {
+            const userRef = db.collection('users').doc(uid);
+            const userDoc = await t.get(userRef);
+            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+            const zaps = userDoc.data().zaps || 0;
+            if (zaps < COST) throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`);
+            t.update(userRef, { zaps: FieldValue.increment(-COST) });
+        });
+
         const prompt = await generateVisionPrompt(imageUrl || image);
         return { prompt };
-    } catch (e) { throw new HttpsError('internal', e.message); }
+
+    } catch (e) {
+        // Refund on failure if not resource exhausted
+        if (e.code !== 'resource-exhausted') {
+            await db.collection('users').doc(uid).update({ zaps: FieldValue.increment(COST) }).catch(err => logger.error("Refund failed", err));
+        }
+        throw new HttpsError('internal', e.message);
+    }
 };

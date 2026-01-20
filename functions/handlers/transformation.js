@@ -10,17 +10,28 @@ export const handleCreateAnalysisRequest = async (request) => {
     const { image, imageUrl } = request.data;
     if (!image && !imageUrl) throw new HttpsError('invalid-argument', "Image required");
 
+    const COST = 0.5;
+
     try {
+        await db.runTransaction(async (t) => {
+            const userRef = db.collection('users').doc(uid);
+            const userDoc = await t.get(userRef);
+            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+            const zaps = userDoc.data().zaps || 0;
+            if (zaps < COST) throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`);
+            t.update(userRef, { zaps: FieldValue.increment(-COST) });
+        });
+
         const docRef = await db.collection('analysis_queue').add({ userId: uid, image: image || null, imageUrl: imageUrl || null, status: 'queued', createdAt: new Date() });
 
-        // Enqueue task to 'universalWorker'
         // Enqueue task to 'backgroundWorker'
         await getFunctions().taskQueue('locations/us-central1/functions/backgroundWorker').enqueue({
             taskType: 'analysis',
             requestId: docRef.id,
             userId: uid,
             image: image || null,
-            imageUrl: imageUrl || null
+            imageUrl: imageUrl || null,
+            cost: COST // Pass cost for refund if needed
         });
 
         return { requestId: docRef.id };
@@ -33,16 +44,28 @@ export const handleCreateEnhanceRequest = async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
     if (!request.data.prompt) throw new HttpsError('invalid-argument', "Prompt required");
+
+    const COST = 1;
+
     try {
+        await db.runTransaction(async (t) => {
+            const userRef = db.collection('users').doc(uid);
+            const userDoc = await t.get(userRef);
+            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+            const zaps = userDoc.data().zaps || 0;
+            if (zaps < COST) throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`);
+            t.update(userRef, { zaps: FieldValue.increment(-COST) });
+        });
+
         const docRef = await db.collection('enhance_queue').add({ userId: uid, originalPrompt: request.data.prompt, status: 'queued', createdAt: new Date() });
 
-        // Enqueue task to 'universalWorker'
         // Enqueue task to 'urgentWorker'
         await getFunctions().taskQueue('locations/us-central1/functions/urgentWorker').enqueue({
             taskType: 'enhance',
             requestId: docRef.id,
             userId: uid,
-            originalPrompt: request.data.prompt
+            originalPrompt: request.data.prompt,
+            cost: COST
         });
 
         return { requestId: docRef.id };
