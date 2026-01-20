@@ -11,6 +11,11 @@ const MinimalHeader = () => {
     const { userProfile } = useUserInteractions();
     const zaps = userProfile?.zaps || 0;
     const navigate = useNavigate();
+    const [imageError, setImageError] = useState(false);
+
+    useEffect(() => {
+        setImageError(false);
+    }, [currentUser?.photoURL]);
 
     const handleLogout = async () => {
         try {
@@ -67,8 +72,13 @@ const MinimalHeader = () => {
                     {currentUser && (
                         <>
                             <div className="user-profile-display">
-                                {currentUser.photoURL ? (
-                                    <img src={currentUser.photoURL} alt="User" className="user-avatar" />
+                                {currentUser.photoURL && !imageError ? (
+                                    <img
+                                        src={currentUser.photoURL}
+                                        alt="User"
+                                        className="user-avatar"
+                                        onError={() => setImageError(true)}
+                                    />
                                 ) : (
                                     <div className="user-avatar-placeholder">
                                         <User size={14} />
