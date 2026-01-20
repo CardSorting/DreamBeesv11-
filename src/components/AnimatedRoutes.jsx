@@ -9,33 +9,36 @@ import RouteErrorBoundary from './RouteErrorBoundary';
 // OR we can make this component accept children routes, but that's harder with AnimatePresence.
 // Better to move the Route definitions here.
 
-const Landing = React.lazy(() => import('../pages/Landing'));
-const ModelFeed = React.lazy(() => import('../pages/ModelFeed'));
-const Auth = React.lazy(() => import('../pages/Auth'));
-const Generator = React.lazy(() => import('../pages/Generator'));
-const MobileGenerator = React.lazy(() => import('../pages/MobileGenerator'));
-const Gallery = React.lazy(() => import('../pages/Gallery'));
+// Import lazyRetry utility
+import { lazyRetry } from '../utils/lazyRetry';
+
+const Landing = lazyRetry(() => import('../pages/Landing'));
+const ModelFeed = lazyRetry(() => import('../pages/ModelFeed'));
+const Auth = lazyRetry(() => import('../pages/Auth'));
+const Generator = lazyRetry(() => import('../pages/Generator'));
+const MobileGenerator = lazyRetry(() => import('../pages/MobileGenerator'));
+const Gallery = lazyRetry(() => import('../pages/Gallery'));
 
 import { useIsMobile } from '../hooks/useIsMobile';
-const Models = React.lazy(() => import('../pages/Models'));
-const ImageDetail = React.lazy(() => import('../pages/ImageDetail'));
-const ModelDetail = React.lazy(() => import('../pages/ModelDetail'));
-const Features = React.lazy(() => import('../pages/Features'));
-const Pricing = React.lazy(() => import('../pages/Pricing'));
-const About = React.lazy(() => import('../pages/About'));
-const Contact = React.lazy(() => import('../pages/Contact'));
-const UserProfile = React.lazy(() => import('../pages/UserProfile'));
-const BlogPost = React.lazy(() => import('../pages/BlogPost'));
-const Blog = React.lazy(() => import('../pages/Blog'));
-const KaraokeGenie = React.lazy(() => import('../pages/KaraokeGenie'));
-const DressUp = React.lazy(() => import('../pages/DressUp'));
-const Slideshow = React.lazy(() => import('../pages/Slideshow'));
-const AppsHub = React.lazy(() => import('../pages/AppsHub'));
-const PersonaChat = React.lazy(() => import('../pages/PersonaChat'));
-const Discovery = React.lazy(() => import('../pages/Discovery'));
-const ShowcaseDetail = React.lazy(() => import('../pages/ShowcaseDetail'));
-const MockupStudio = React.lazy(() => import('../pages/MockupStudio'));
-const MockupFeed = React.lazy(() => import('../pages/MockupFeed'));
+const Models = lazyRetry(() => import('../pages/Models'));
+const ImageDetail = lazyRetry(() => import('../pages/ImageDetail'));
+const ModelDetail = lazyRetry(() => import('../pages/ModelDetail'));
+const Features = lazyRetry(() => import('../pages/Features'));
+const Pricing = lazyRetry(() => import('../pages/Pricing'));
+const About = lazyRetry(() => import('../pages/About'));
+const Contact = lazyRetry(() => import('../pages/Contact'));
+const UserProfile = lazyRetry(() => import('../pages/UserProfile'));
+const BlogPost = lazyRetry(() => import('../pages/BlogPost'));
+const Blog = lazyRetry(() => import('../pages/Blog'));
+const KaraokeGenie = lazyRetry(() => import('../pages/KaraokeGenie'));
+const DressUp = lazyRetry(() => import('../pages/DressUp'));
+const Slideshow = lazyRetry(() => import('../pages/Slideshow'));
+const AppsHub = lazyRetry(() => import('../pages/AppsHub'));
+const PersonaChat = lazyRetry(() => import('../pages/PersonaChat'));
+const Discovery = lazyRetry(() => import('../pages/Discovery'));
+const ShowcaseDetail = lazyRetry(() => import('../pages/ShowcaseDetail'));
+const MockupStudio = lazyRetry(() => import('../pages/MockupStudio'));
+const MockupFeed = lazyRetry(() => import('../pages/MockupFeed'));
 
 import { Privacy, Terms, Cookies } from '../pages/Legal';
 import { Careers, Brand, Api, Showcase } from '../pages/Misc';
