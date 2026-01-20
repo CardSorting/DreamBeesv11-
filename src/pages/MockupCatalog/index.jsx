@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import './MockupCatalog.css';
 
 import Breadcrumbs from './components/Breadcrumbs';
@@ -11,13 +11,14 @@ import CatalogSidebar from './components/CatalogSidebar';
 import Pagination from './components/Pagination';
 import { CATEGORY_MAPPING } from './categoryData';
 import { useAuth } from '../../contexts/AuthContext';
+import { slugify, unslugify } from './utils/slugs';
 
-const ITEMS_PER_PAGE = 3; // Strict limit as requested by user
+const ITEMS_PER_PAGE = 6; // Limit updated to 6 as requested
 
 const MockupCatalog = () => {
     const { currentUser } = useAuth();
     const navigate = useNavigate();
-    const [searchParams, setSearchParams] = useSearchParams();
+    const { categorySlug, subcategorySlug } = useParams();
 
     // Data State
     const [mockupItems, setMockupItems] = useState([]);
@@ -26,9 +27,12 @@ const MockupCatalog = () => {
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
 
-    // Navigation State derived from URL
-    const activeCategory = searchParams.get('category');
-    const activeSubcategory = searchParams.get('subcategory');
+    // Navigation State derived from URL Slugs
+    const activeCategory = categorySlug ? unslugify(categorySlug, Object.keys(CATEGORY_MAPPING)) : null;
+
+    // For subcategories, we need to check all children lists
+    const allSubcategories = Object.values(CATEGORY_MAPPING).flatMap(c => c.children);
+    const activeSubcategory = subcategorySlug ? unslugify(subcategorySlug, allSubcategories) : null;
 
     const path = [];
     if (activeCategory) path.push(activeCategory);
@@ -59,20 +63,24 @@ const MockupCatalog = () => {
         fetchItems();
     }, []);
 
-    // Helper to update URL
+    // Helper to update URL using slugs
     const handleNavigation = (category, subcategory = null) => {
-        const params = {};
-        if (category) params.category = category;
-        if (subcategory) params.subcategory = subcategory;
-        setSearchParams(params);
+        let url = '/mockup-catalog';
+        if (category) {
+            url += `/${slugify(category)}`;
+            if (subcategory) {
+                url += `/${slugify(subcategory)}`;
+            }
+        }
+        navigate(url);
 
-        // Scroll to top of content on navigation
+        // Scroll to top of content on navigation (unless just pagination)
         window.scrollTo(0, 0);
     };
 
     const handleBreadcrumbNavigate = (crumb, index) => {
         if (crumb === null) {
-            setSearchParams({});
+            navigate('/mockup-catalog');
         } else {
             if (index === 0) {
                 handleNavigation(path[0]);

@@ -164,6 +164,12 @@ const AnimatedRoutes = () => {
                             <Route path="/mockup-catalog" element={
                                 <PrivateRoute><MockupCatalog /></PrivateRoute>
                             } />
+                            <Route path="/mockup-catalog/:categorySlug" element={
+                                <PrivateRoute><MockupCatalog /></PrivateRoute>
+                            } />
+                            <Route path="/mockup-catalog/:categorySlug/:subcategorySlug" element={
+                                <PrivateRoute><MockupCatalog /></PrivateRoute>
+                            } />
 
                             <Route path="/chat/:id" element={
                                 <PrivateRoute><PersonaChat /></PrivateRoute>
