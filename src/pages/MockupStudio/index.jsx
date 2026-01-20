@@ -168,7 +168,40 @@ const MockupStudio = () => {
         setSpinProgress(null);
         setError(null);
         if (fileInputRef.current) fileInputRef.current.value = '';
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
+
+    // Render Helper: Mode Toggle
+    const renderModeToggle = () => (
+        <div className="mode-toggle-container w-full flex flex-col items-center">
+            {/* The wrapper gets data-mode attribute to drive CSS */}
+            <div className="premium-toggle-wrapper" data-mode={isTCGMode ? 'tcg' : 'standard'}>
+
+                {/* Sliding Background (positioned by CSS based on data-mode) */}
+                <div className="premium-toggle-slider"></div>
+
+                {/* Standard Button */}
+                <button
+                    onClick={(e) => { e.stopPropagation(); setIsTCGMode(false); }}
+                    className={`premium-toggle-btn ${!isTCGMode ? 'active' : 'inactive'}`}
+                >
+                    <span className="text-lg">🍯</span> Standard
+                </button>
+
+                {/* TCG Button */}
+                <button
+                    onClick={(e) => { e.stopPropagation(); setIsTCGMode(true); }}
+                    className={`premium-toggle-btn ${isTCGMode ? 'active' : 'inactive'}`}
+                >
+                    <span className="text-lg">🃏</span> TCG Mode
+                </button>
+            </div>
+
+            <p className="premium-toggle-subtext">
+                {isTCGMode ? "Authentic Trading Card Mockups" : "Standard Hive Product Mockups"}
+            </p>
+        </div>
+    );
 
     return (
         <div className="gacha-page bee-theme">
@@ -196,19 +229,24 @@ const MockupStudio = () => {
 
                         {/* STATE: IDLE (Coin/Token Slot) */}
                         {appState === AppState.IDLE && (
-                            <div className={`gacha-slot-area ${isDragging ? 'is-dragging' : ''}`}
-                                onDragEnter={handleDragEnter} onDragLeave={handleDragLeave}
-                                onDragOver={handleDragOver} onDrop={handleDrop}
-                                onClick={triggerFileInput}>
+                            <div className="w-full flex flex-col items-center">
+                                {/* Toggle Visible in Idle too */}
+                                {renderModeToggle()}
 
-                                <div className="gacha-slot-visual">
-                                    <div className="gacha-coin-slot beehive-slot">
-                                        <div className="gacha-insert-label">DEPOSIT NECTAR</div>
+                                <div className={`gacha-slot-area ${isDragging ? 'is-dragging' : ''}`}
+                                    onDragEnter={handleDragEnter} onDragLeave={handleDragLeave}
+                                    onDragOver={handleDragOver} onDrop={handleDrop}
+                                    onClick={triggerFileInput}>
+
+                                    <div className="gacha-slot-visual">
+                                        <div className="gacha-coin-slot beehive-slot">
+                                            <div className="gacha-insert-label">DEPOSIT NECTAR</div>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <p className="gacha-instruction">Drop your design here to feed the hive</p>
-                                <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" />
+                                    <p className="gacha-instruction">Drop your design here to feed the hive</p>
+                                    <input type="file" className="hidden" ref={fileInputRef} onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" />
+                                </div>
                             </div>
                         )}
 
@@ -222,19 +260,7 @@ const MockupStudio = () => {
                                     <p className="token-label">Nectar Ready!</p>
                                 </div>
 
-                                <div className="mode-toggle-container mb-4 flex items-center justify-center gap-3">
-                                    <span className={`text-sm font-bold ${!isTCGMode ? 'text-amber-500' : 'text-gray-400'}`}>Standard</span>
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={isTCGMode}
-                                            onChange={(e) => setIsTCGMode(e.target.checked)}
-                                            className="sr-only peer"
-                                        />
-                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
-                                    </label>
-                                    <span className={`text-sm font-bold ${isTCGMode ? 'text-indigo-500' : 'text-gray-400'}`}>TCG</span>
-                                </div>
+                                {renderModeToggle()}
 
                                 <div className="action-buttons">
                                     <Button onClick={handleGachaSpin} className="gacha-crank-btn bee-btn">
