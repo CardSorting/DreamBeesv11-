@@ -2,7 +2,7 @@ import { logger, getS3Client } from "../lib/utils.js";
 import { VertexAI } from "@google-cloud/vertexai";
 import { withVertexRateLimiting } from "../lib/rateLimiter.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
-import { MOCKUP_ITEMS, MOCKUP_PRESETS } from "../lib/mockupData.js";
+import { MOCKUP_ITEMS, MOCKUP_PRESETS, TCG_ITEMS, TCG_PRESETS } from "../lib/mockupData.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { retryOperation } from "../lib/utils.js";
 import { HarmCategory, HarmBlockThreshold } from "@google-cloud/vertexai";
@@ -192,8 +192,18 @@ export const handleGachaSpin = async (request) => {
     // Decode base64
     const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
 
-    // Select 3 random unique items
-    const shuffledItems = [...MOCKUP_ITEMS].sort(() => 0.5 - Math.random());
+    // Select items based on mode
+    let sourceItems = MOCKUP_ITEMS;
+    let sourcePresets = MOCKUP_PRESETS;
+
+    if (request.data.mode === 'tcg') {
+        sourceItems = TCG_ITEMS;
+        sourcePresets = TCG_PRESETS;
+        logger.info("[Gacha] Mode: TCG/CCG Active");
+    }
+
+    // Select random unique items (currently just 1 for cost saving/speed as per user pref)
+    const shuffledItems = [...sourceItems].sort(() => 0.5 - Math.random());
     const selectedItems = shuffledItems.slice(0, 1);
     logger.info(`[Gacha] Selected items: ${selectedItems.map(i => i.label).join(', ')}`);
 
@@ -201,7 +211,7 @@ export const handleGachaSpin = async (request) => {
     logger.info("[Gacha] Starting parallel generation...");
     const promises = selectedItems.map((item, idx) => {
         // Random Preset for each
-        const randomPreset = MOCKUP_PRESETS[Math.floor(Math.random() * MOCKUP_PRESETS.length)];
+        const randomPreset = sourcePresets[Math.floor(Math.random() * sourcePresets.length)];
         logger.info(`[Gacha] Item ${idx + 1}: ${item.label} with preset ${randomPreset.label}`);
         return generateSingleMockup(base64Data, item, randomPreset, uid);
     });

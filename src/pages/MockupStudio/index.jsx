@@ -28,6 +28,7 @@ const MockupStudio = () => {
     const [gachaPrizes, setGachaPrizes] = useState([]);
     const [zipBlob, setZipBlob] = useState(null);
     const [spinProgress, setSpinProgress] = useState(null);
+    const [isTCGMode, setIsTCGMode] = useState(false);
 
     const [error, setError] = useState(null);
     const fileInputRef = useRef(null);
@@ -96,7 +97,8 @@ const MockupStudio = () => {
 
                     const result = await apiFn({
                         action: 'gachaSpin',
-                        image: base64Token
+                        image: base64Token,
+                        mode: isTCGMode ? 'tcg' : 'standard'
                     });
 
                     if (result.data && result.data.success && result.data.prizes) {
@@ -218,6 +220,20 @@ const MockupStudio = () => {
                                         <img src={previewUrl} alt="Your Token" />
                                     </div>
                                     <p className="token-label">Nectar Ready!</p>
+                                </div>
+
+                                <div className="mode-toggle-container mb-4 flex items-center justify-center gap-3">
+                                    <span className={`text-sm font-bold ${!isTCGMode ? 'text-amber-500' : 'text-gray-400'}`}>Standard</span>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={isTCGMode}
+                                            onChange={(e) => setIsTCGMode(e.target.checked)}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-500"></div>
+                                    </label>
+                                    <span className={`text-sm font-bold ${isTCGMode ? 'text-indigo-500' : 'text-gray-400'}`}>TCG</span>
                                 </div>
 
                                 <div className="action-buttons">

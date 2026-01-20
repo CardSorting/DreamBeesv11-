@@ -256,3 +256,161 @@ export const MOCKUP_ITEMS = [
     }
 ];
 
+export const TCG_PRESETS = [
+    {
+        id: 'gaming_mat',
+        label: 'Gaming Mat',
+        prompt: 'Place the {subject} flat on a neoprene trading card game playmat. Soft studio lighting, faint hexagonal pattern on the mat.',
+        category: 'Gaming'
+    },
+    {
+        id: 'velvet_cloth',
+        label: 'Velvet Cloth',
+        prompt: 'Place the {subject} on a rich, dark purple velvet fortune telling cloth. Dramatic spotlighting, mystical atmosphere.',
+        category: 'Gaming'
+    },
+    {
+        id: 'poker_table',
+        label: 'Poker Table',
+        prompt: 'Place the {subject} on a green felt casino poker table. Dim ambient lighting, shallow depth of field.',
+        category: 'Gaming'
+    },
+    {
+        id: 'collector_slab',
+        label: 'Graded Slab',
+        prompt: 'The {subject} is encased in a professional PSA-style acrylic grading slab, standing upright on a white surface. Studio lighting reflecting off the plastic case.',
+        category: 'Gaming'
+    },
+    // Reuse some good general ones
+    ...MOCKUP_PRESETS.filter(p => ['wood', 'marble', 'industrial', 'akiba_night'].includes(p.id))
+];
+
+export const TCG_ITEMS = [
+    {
+        id: 'tcg_pokemon',
+        label: 'Poke-Style Holo',
+        formatSpec: 'holographic collectible trading card inspired by Pokemon TCG aesthetics. The design is the main monster art. Yellow borders, HP text, energy symbols subtly integrated.',
+        subjectNoun: 'trading card',
+        category: 'TCG'
+    },
+    {
+        id: 'tcg_magic',
+        label: 'Fantasy TCG',
+        formatSpec: 'vintage fantasy trading card inspired by Magic: The Gathering aesthetics. The design is the card art. Parchment texture borders, mana symbols, painted style.',
+        subjectNoun: 'trading card',
+        category: 'TCG'
+    },
+    {
+        id: 'tcg_yugioh',
+        label: 'Duel Monster',
+        formatSpec: 'anime trading card inspired by Yu-Gi-Oh aesthetics. The design is the monster image. Orange/brown frame, attack/defense stars, detailed tech-magic borders.',
+        subjectNoun: 'trading card',
+        category: 'TCG'
+    },
+    {
+        id: 'tcg_sports',
+        label: 'Sports Chrome',
+        formatSpec: 'modern chromium sports trading card. High gloss refractor finish, futuristic angular graphics overlay, autograph area at bottom.',
+        subjectNoun: 'sports card',
+        category: 'TCG'
+    },
+    {
+        id: 'tcg_fullart',
+        label: 'Full Art Holo',
+        formatSpec: 'borderless full-art collector\'s card. Etched holographic texture over the entire surface. The design extends to the very edges.',
+        subjectNoun: 'collectible card',
+        category: 'TCG'
+    },
+    {
+        id: 'tcg_vintage',
+        label: 'Vintage Tobacco',
+        formatSpec: '1900s era tobacco trading card. Thick matte cardboard, muted colors, and distressed edges. Old-school typography.',
+        subjectNoun: 'vintage card',
+        category: 'TCG'
+    },
+    {
+        id: 'tcg_cyberpunk',
+        label: 'Netrunner ID',
+        formatSpec: 'futuristic transparent data-card. Glowing neon circuitry traces, semi-opaque plastic material, cyberpunk interface elements.',
+        subjectNoun: 'data card',
+        category: 'TCG'
+    },
+    {
+        id: 'tcg_gold',
+        label: 'Solid Gold 1/1',
+        formatSpec: 'luxurious 24k gold-plated metal card. Laser engraved details, heavy metallic shine/reflections. Serial number "1 of 1" stamped.',
+        subjectNoun: 'metal card',
+        category: 'TCG'
+    },
+    {
+        id: 'tcg_pixel',
+        label: '8-Bit Retro',
+        formatSpec: 'retro video game trading card. Pixelated design aesthetic, scanline filter effect, 90s arcade vibe.',
+        subjectNoun: 'game card',
+        category: 'TCG'
+    },
+    {
+        id: 'tcg_dark_fantasy',
+        label: 'Grim Grimoire',
+        formatSpec: 'dark gothic fantasy card. Distressed leather-like border texture, silver foil runes, eldritch horror aesthetic.',
+        subjectNoun: 'gothic card',
+        category: 'TCG'
+    },
+    {
+        id: 'tcg_shattered',
+        label: 'Shattered Glass',
+        formatSpec: 'trading card with a "shattered glass" or "cracked ice" holographic pattern overlay. Prismatic reflections fracturing the light.',
+        subjectNoun: 'holographic card',
+        category: 'TCG'
+    },
+    {
+        id: 'tcg_relic',
+        label: 'Relic Insert',
+        formatSpec: 'premium thick trading card containing an embedded piece of fabric material (relic) in a window. Fancy bordered cutout.',
+        subjectNoun: 'relic card',
+        category: 'TCG'
+    },
+    {
+        id: 'tcg_graded',
+        label: 'Graded Gem Mint',
+        formatSpec: 'collectible card encased in a hard plastic grading slab with a "GEM MINT 10" label at the top. Ultrasonic weld seams.',
+        subjectNoun: 'graded card',
+        category: 'TCG'
+    },
+    {
+        id: 'tcg_acetate',
+        label: 'Clear Acetate',
+        formatSpec: 'see-through clear plastic acetate trading card. The design is printed on transparent plastic with opaque backing only behind the subject.',
+        subjectNoun: 'clear card',
+        category: 'TCG'
+    },
+    {
+        id: 'tcg_sketch',
+        label: 'Artist Sketch',
+        formatSpec: 'rare "1 of 1" artist sketch card. Hand-drawn graphite and marker aesthetic on thick card stock. Rough, authentic art style.',
+        subjectNoun: 'sketch card',
+        category: 'TCG'
+    },
+    {
+        id: 'tcg_lenticular',
+        label: 'Lenticular 3D',
+        formatSpec: 'ridged plastic lenticular motion card. The image appears to shift and move. Grooved surface texture.',
+        subjectNoun: '3D card',
+        category: 'TCG'
+    },
+    {
+        id: 'tcg_hanafuda',
+        label: 'Flower Card',
+        formatSpec: 'traditional Japanese Hanafuda card. Small, thick stiff backing, bold flat colors, nature motifs, distinct black border.',
+        subjectNoun: 'hanafuda card',
+        category: 'TCG'
+    },
+    {
+        id: 'tcg_tarot',
+        label: 'Tarot Card',
+        formatSpec: 'tall mystical Tarot card. Gold foil ornate Art Nouveau borders. The design is the central figure. worn paper texture.',
+        subjectNoun: 'tarot card',
+        category: 'TCG'
+    }
+];
+
