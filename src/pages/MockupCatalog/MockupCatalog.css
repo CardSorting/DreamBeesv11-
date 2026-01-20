@@ -1,7 +1,10 @@
 /* Layout Structure */
 :root {
     --bg-primary: var(--color-bg);
+    --bg-primary-rgb: 5, 5, 5;
+    /* Helper for rgba */
     --bg-secondary: var(--color-bg-subtle, #111);
+    --bg-secondary-rgb: 17, 17, 17;
     --bg-tertiary: var(--color-zinc-800, #222);
 
     --text-primary: var(--color-text-main);
@@ -530,22 +533,107 @@
         width: 100%;
         border-right: none;
         border-bottom: 1px solid var(--border-color);
-        padding: 1rem;
+        padding: 0.75rem 1rem;
         height: auto;
+        /* User requested to remove sticky behavior */
+        position: relative;
+        background: var(--bg-secondary);
     }
 
     .mc-sidebar-menu {
         flex-direction: row;
         overflow-x: auto;
-        gap: 1rem;
-        padding-bottom: 0.5rem;
+        gap: 0.75rem;
+        padding-bottom: 0px;
+        -webkit-overflow-scrolling: touch;
+        /* Smooth scroll */
+        scrollbar-width: none;
+        /* Firefox */
+    }
+
+    .mc-sidebar-menu::-webkit-scrollbar {
+        display: none;
+        /* Chrome/Safari */
     }
 
     .mc-sidebar-group {
         flex-shrink: 0;
+        border-radius: 99px;
+        /* Pill shape on mobile */
+    }
+
+    .mc-sidebar-parent {
+        padding: 0.5rem 1rem;
+        border-radius: 99px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+
+    .mc-sidebar-group.active .mc-sidebar-parent {
+        background: var(--accent-primary);
+        color: white;
+        border-color: var(--accent-primary);
+    }
+
+    .mc-chevron-wrapper {
+        display: none;
+        /* Hide chevron on mobile pills */
     }
 
     .mc-sidebar-children {
         display: none !important;
+    }
+
+    .mc-sidebar-title,
+    .mc-sidebar-footer {
+        display: none;
+    }
+
+    /* Content Adjustments */
+    .mc-content-area {
+        padding: 1rem;
+    }
+
+    .mc-grid {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 1rem;
+    }
+
+    /* Hero Adjustments */
+    .mc-hero-banner {
+        padding: 2rem 1.5rem;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .mc-hero-content {
+        max-width: 100%;
+    }
+
+    .mc-hero-content h1 {
+        font-size: 2rem;
+    }
+
+    .mc-hero-visual {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        right: 0;
+        bottom: 0;
+        top: auto;
+        opacity: 0.3;
+        transform: translate(30%, 30%);
+        /* Push away to avoid text overlap */
+    }
+
+    /* Hide specific desktop elements if needed */
+    .mc-top-bar {
+        padding: 1rem;
+        position: relative;
+        /* Remove sticky on mobile */
+        top: auto;
+        background: transparent;
     }
 }

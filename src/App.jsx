@@ -14,9 +14,11 @@ import AnimatedRoutes from './components/AnimatedRoutes';
 import SmoothScroll from './components/SmoothScroll';
 import NetworkStatus from './components/NetworkStatus';
 import UsernameOnboarding from './components/UsernameOnboarding';
+import { useIsMobile } from './hooks/useIsMobile';
 
 function Layout() {
   const { pathname } = useLocation();
+  const isMobile = useIsMobile();
   const isLanding = pathname === '/';
 
   const { currentUser } = useAuth();
@@ -34,7 +36,7 @@ function Layout() {
       <main className="app-main">
         <AnimatedRoutes />
       </main>
-      {!isLanding && !isShowcaseDetail && pathname !== '/generate' && (
+      {!isLanding && !isShowcaseDetail && pathname !== '/generate' && !(pathname.startsWith('/mockup-catalog') && isMobile) && (
         <div className="app-footer">
           <Footer />
         </div>
