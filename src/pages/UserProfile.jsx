@@ -4,9 +4,10 @@ import SEO from '../components/SEO';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
-import { Loader2, Heart, Bookmark, AlertCircle, Zap, Layers, Search, Package } from 'lucide-react';
+import { Loader2, Heart, Bookmark, AlertCircle, Zap, Layers, Search, Package, Lock } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { isValidUsername } from '../utils/usernameValidation';
 
 import ShowcaseModal from '../components/ShowcaseModal';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,6 +18,53 @@ export default function UserProfile() {
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({ username: '', displayPreference: 'name' }); // 'name' or 'username'
     const [savingProfile, setSavingProfile] = useState(false);
+    const { userProfile } = useUserInteractions();
+
+    const { likes, bookmarks, mockups, loadUserInteractions } = useUserInteractions();
+    const [activeFilter, setActiveFilter] = useState('all');
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [selectedModel, setSelectedModel] = useState(null);
+    const [usernameError, setUsernameError] = useState(null);
+
+    // Filter Logic
+    const getFilteredItems = () => {
+        switch (activeFilter) {
+            case 'liked': return likes;
+            case 'saved': return bookmarks;
+            case 'mockups': return mockups;
+            default:
+                // Combine relevant valid items for "All" view
+                // This logic might need refinement based on exact product requirements usually
+                // For now, let's just show mockups + maybe likes that are yours? 
+                // Or simplified: Just showing mockups and saved items
+                return [...mockups, ...bookmarks].sort((a, b) => {
+                    const dateA = a.createdAt?.seconds || 0;
+                    const dateB = b.createdAt?.seconds || 0;
+                    return dateB - dateA;
+                });
+        }
+    };
+
+    const displayedItems = getFilteredItems();
+    const loading = false; // derive from context normally
+
+    // Empty State Config
+    const emptyStates = {
+        all: { title: "Your Studio is Empty", subtitle: "Start creating to fill your personal gallery." },
+        liked: { title: "No Favorites Yet", subtitle: "Tap the heart on images you love to save them here." },
+        saved: { title: "No Saved Items", subtitle: "Bookmark generations to access them later." },
+        mockups: { title: "No Mockups Created", subtitle: "Head to the Mockup Studio to create your first product mockup." }
+    };
+
+    const emptyState = emptyStates[activeFilter] || emptyStates.all;
+
+
+    const handleImageClick = (item) => {
+        setSelectedImage(item);
+        // Attempt to find model if possible, or pass item metadata
+        // For now pass item as is mostly sufficient for display
+        setSelectedModel(availableModels.find(m => m.id === item.modelId) || { name: 'Unknown Model', id: 'unknown' });
+    };
 
     // Load initial profile data
     useEffect(() => {
@@ -30,14 +78,36 @@ export default function UserProfile() {
 
     const handleSaveProfile = async () => {
         if (!currentUser) return;
+
+        // If username is changing (meaning it wasn't set before, or we are allowing changes)
+        // Check validation
+        if (!userProfile?.username && editForm.username) {
+            const validation = isValidUsername(editForm.username);
+            if (!validation.valid) {
+                setUsernameError(validation.error);
+                toast.error(validation.error);
+                return;
+            }
+        }
+
         setSavingProfile(true);
+        setUsernameError(null);
+
         try {
             const { doc, setDoc } = await import('firebase/firestore');
             const userRef = doc(db, 'users', currentUser.uid);
-            await setDoc(userRef, {
-                username: editForm.username,
+
+            const updateData = {
                 displayPreference: editForm.displayPreference
-            }, { merge: true });
+            };
+
+            // Only update username if it wasn't set before
+            if (!userProfile?.username && editForm.username) {
+                updateData.username = editForm.username;
+            }
+
+            await setDoc(userRef, updateData, { merge: true });
+
             toast.success("Profile updated");
             setIsEditing(false);
         } catch (error) {
@@ -101,18 +171,40 @@ export default function UserProfile() {
                             <div style={{ marginBottom: '20px' }}>
                                 <label style={{ display: 'block', fontSize: '0.85rem', color: '#888', marginBottom: '8px' }}>Username</label>
                                 <div style={{ position: 'relative' }}>
-                                    <span style={{ position: 'absolute', left: '12px', top: '12px', color: '#666' }}>@</span>
+                                    <span style={{ position: 'absolute', left: '12px', top: '12px', color: userProfile?.username ? '#444' : '#666' }}>@</span>
                                     <input
                                         type="text"
                                         value={editForm.username}
-                                        onChange={e => setEditForm({ ...editForm, username: e.target.value.replace(/\s+/g, '').toLowerCase() })}
+                                        onChange={e => {
+                                            if (!userProfile?.username) {
+                                                const val = e.target.value.replace(/\s+/g, '').toLowerCase();
+                                                setEditForm({ ...editForm, username: val });
+                                                setUsernameError(null);
+                                            }
+                                        }}
                                         placeholder="username"
+                                        disabled={!!userProfile?.username}
                                         style={{
-                                            width: '100%', background: '#0a0a0a', border: '1px solid #333',
-                                            padding: '12px 12px 12px 30px', borderRadius: '8px', color: 'white', outline: 'none'
+                                            width: '100%',
+                                            background: userProfile?.username ? '#111' : '#0a0a0a',
+                                            border: usernameError ? '1px solid #ef4444' : '1px solid #333',
+                                            padding: '12px 12px 12px 30px',
+                                            borderRadius: '8px',
+                                            color: userProfile?.username ? '#666' : 'white',
+                                            outline: 'none',
+                                            cursor: userProfile?.username ? 'not-allowed' : 'text'
                                         }}
                                     />
+                                    {userProfile?.username && (
+                                        <Lock size={14} style={{ position: 'absolute', right: '12px', top: '14px', color: '#444' }} />
+                                    )}
                                 </div>
+                                {usernameError && (
+                                    <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '6px' }}>{usernameError}</p>
+                                )}
+                                {userProfile?.username && (
+                                    <p style={{ color: '#666', fontSize: '0.8rem', marginTop: '6px' }}>Username cannot be changed once set.</p>
+                                )}
                             </div>
 
                             <div style={{ marginBottom: '24px' }}>
@@ -149,7 +241,17 @@ export default function UserProfile() {
 
                             <div style={{ display: 'flex', gap: '10px' }}>
                                 <button
-                                    onClick={() => setIsEditing(false)}
+                                    onClick={() => {
+                                        setIsEditing(false);
+                                        setUsernameError(null);
+                                        // Reset form to current profile
+                                        if (userProfile) {
+                                            setEditForm({
+                                                username: userProfile.username || '',
+                                                displayPreference: userProfile.displayPreference || 'name'
+                                            });
+                                        }
+                                    }}
                                     className="btn-secondary"
                                     style={{ flex: 1, padding: '12px', borderRadius: '8px', cursor: 'pointer' }}
                                 >

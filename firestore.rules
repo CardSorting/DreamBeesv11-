@@ -4,7 +4,25 @@ service cloud.firestore {
     
     // User Profiles: Users can read/write their own profile
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      // Allow read/write if own profile
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
+      // Update rules: 
+      // 1. Must be own profile
+      // 2. If 'username' is being updated:
+      //    a. It must NOT have existed before (immutable) OR it must be the same as before
+      //    b. It must match regex ^[a-z0-9_]{3,30}$ (sanitization)
+      allow write: if request.auth != null && request.auth.uid == userId
+                   && (
+                     !('username' in request.resource.data) || 
+                     (
+                       // If checking for immutability:
+                       // Either it didn't exist before OR it matches what it was (no change)
+                       (!('username' in resource.data) || resource.data.username == request.resource.data.username) &&
+                       // And validation:
+                       request.resource.data.username.matches('^[a-z0-9_]{3,30}$')
+                     )
+                   );
       
       match /likes/{likeId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;

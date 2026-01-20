@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import { isValidUsername } from '../utils/usernameValidation';
 import './UsernameOnboarding.css';
 
 export default function UsernameOnboarding() {
@@ -10,15 +11,20 @@ export default function UsernameOnboarding() {
     const [username, setUsername] = useState('');
     const [displayPreference, setDisplayPreference] = useState('name'); // 'name' or 'username'
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState(null);
 
     const handleSave = async () => {
         if (!currentUser) return;
-        if (!username.trim() || username.length < 3) {
-            toast.error("Username must be at least 3 characters");
+
+        const validation = isValidUsername(username);
+        if (!validation.valid) {
+            setError(validation.error);
+            toast.error(validation.error);
             return;
         }
 
         setSaving(true);
+        setError(null);
         try {
             const userRef = doc(db, 'users', currentUser.uid);
             await setDoc(userRef, {
@@ -54,12 +60,16 @@ export default function UsernameOnboarding() {
                         <input
                             type="text"
                             value={username}
-                            onChange={e => setUsername(e.target.value.replace(/\s+/g, '').toLowerCase())}
+                            onChange={e => {
+                                setUsername(e.target.value.replace(/\s+/g, '').toLowerCase());
+                                setError(null);
+                            }}
                             placeholder="username"
                             autoFocus
-                            className="username-input"
+                            className={`username-input ${error ? 'error' : ''}`}
                         />
                     </div>
+                    {error && <p className="error-text">{error}</p>}
                 </div>
 
                 <div className="input-group">
@@ -90,6 +100,16 @@ export default function UsernameOnboarding() {
                     {saving ? 'Setting up...' : 'Get Started'}
                 </button>
             </div>
+            <style>{`
+                .username-input.error {
+                    border-color: #ef4444;
+                }
+                .error-text {
+                    color: #ef4444;
+                    font-size: 0.8rem;
+                    margin-top: 6px;
+                }
+            `}</style>
         </div>
     );
 }
