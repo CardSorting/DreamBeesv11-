@@ -59,7 +59,7 @@ export default function MockupFeed() {
                 collection(db, 'generations'),
                 where('type', '==', 'mockup'),
                 where('isPublic', '==', true),
-                // orderBy('createdAt', 'desc'), // TODO: Re-enable after building compound index
+                orderBy('createdAt', 'desc'),
                 limit(20)
             );
 

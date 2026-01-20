@@ -90,7 +90,7 @@ export function UserInteractionsProvider({ children }) {
 
         // Listener for Mockups
         const mockupsQuery = query(
-            collection(db, 'images'),
+            collection(db, 'generations'),
             where('userId', '==', uid),
             where('type', '==', 'mockup'),
             orderBy('createdAt', 'desc')
