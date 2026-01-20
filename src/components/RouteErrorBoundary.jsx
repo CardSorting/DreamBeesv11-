@@ -15,10 +15,21 @@ class RouteErrorBoundary extends React.Component {
         console.error("Route Error:", error, errorInfo);
     }
 
-    handleReload = () => {
-        // Try to recover state by remounting? simpler to just reload page or reset state
-        // For now, reload page is safest, but we could try clear error
+    componentDidUpdate(prevProps) {
+        // Automatically reset error if location changes (requires router prop or similar trigger)
+        // For simplicity, we rely on the parent wrapper to remount us or we can use a key
+        // But if this component stays mounted and location updates, we should clear error.
+        // We can't easily detect location change here without props.
+        if (this.props.resetKeys && prevProps.resetKeys !== this.props.resetKeys) {
+            this.handleReset();
+        }
+    }
+
+    handleReset = () => {
         this.setState({ hasError: false, error: null });
+    };
+
+    handleReload = () => {
         window.location.reload();
     };
 
@@ -33,27 +44,51 @@ class RouteErrorBoundary extends React.Component {
                     justifyContent: 'center',
                     minHeight: '50vh', // Takes up space but not full screen
                     textAlign: 'center',
-                    color: '#e4e4e7'
+                    color: '#e4e4e7',
+                    animation: 'fadeIn 0.5s ease-out'
                 }}>
                     <div style={{
                         backgroundColor: 'rgba(239, 68, 68, 0.1)',
                         padding: '24px',
                         borderRadius: '50%',
-                        marginBottom: '24px'
+                        marginBottom: '24px',
+                        boxShadow: '0 0 20px rgba(239, 68, 68, 0.2)'
                     }}>
                         <AlertTriangle size={48} color="#ef4444" />
                     </div>
 
                     <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '12px' }}>
-                        This page hit a snag
+                        This part of the hive is buzzing...
                     </h2>
 
                     <p style={{ color: '#a1a1aa', maxWidth: '400px', marginBottom: '32px', lineHeight: '1.6' }}>
-                        We couldn't load this specific part of the application.
-                        The rest of the app is still working!
+                        We encountered a glitch in this specific area. The rest of the application is still safe to explore.
                     </p>
 
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                        <button
+                            onClick={this.handleReset}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '12px 24px',
+                                backgroundColor: 'rgb(79, 70, 229)', // Indigo-600
+                                color: 'white',
+                                borderRadius: '12px',
+                                fontWeight: '600',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '15px',
+                                transition: 'background-color 0.2s'
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgb(67, 56, 202)'}
+                            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'rgb(79, 70, 229)'}
+                        >
+                            <RefreshCw size={18} />
+                            Try Again
+                        </button>
+
                         <button
                             onClick={this.handleReload}
                             style={{
@@ -61,14 +96,17 @@ class RouteErrorBoundary extends React.Component {
                                 alignItems: 'center',
                                 gap: '8px',
                                 padding: '12px 24px',
-                                backgroundColor: '#fff',
-                                color: '#000',
+                                backgroundColor: 'rgba(255,255,255,0.05)',
+                                color: '#fff',
                                 borderRadius: '12px',
                                 fontWeight: '600',
-                                border: 'none',
+                                border: '1px solid rgba(255,255,255,0.1)',
                                 cursor: 'pointer',
-                                fontSize: '15px'
+                                fontSize: '15px',
+                                transition: 'background-color 0.2s'
                             }}
+                            onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
+                            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'}
                         >
                             <RefreshCw size={18} />
                             Reload Page
@@ -81,21 +119,21 @@ class RouteErrorBoundary extends React.Component {
                                 alignItems: 'center',
                                 gap: '8px',
                                 padding: '12px 24px',
-                                backgroundColor: 'rgba(255,255,255,0.1)',
-                                color: '#fff',
+                                backgroundColor: 'transparent',
+                                color: '#a1a1aa',
                                 borderRadius: '12px',
                                 fontWeight: '600',
-                                border: '1px solid rgba(255,255,255,0.1)',
+                                border: '1px solid transparent',
                                 cursor: 'pointer',
-                                fontSize: '15px'
+                                fontSize: '15px',
+                                transition: 'color 0.2s'
                             }}
+                            onMouseEnter={e => e.currentTarget.style.color = 'white'}
+                            onMouseLeave={e => e.currentTarget.style.color = '#a1a1aa'}
                         >
-                            Return Home
+                            Or go Home
                         </button>
                     </div>
-
-                    {/* Optional technical details for dev */}
-                    {/* {this.state.error && <pre style={{marginTop: 20, fontSize: 10, opacity: 0.5}}>{this.state.error.message}</pre>} */}
                 </div>
             );
         }

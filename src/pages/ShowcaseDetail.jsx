@@ -562,7 +562,7 @@ const FeedItem = React.memo(({ image, index, isActive, isLiked, onToggleLike, on
                         {/* Color palette indicator */}
                         {image.colors?.dominant && (
                             <div className="palette-dots">
-                                {image.colors.dominant.slice(0, 3).map((color, i) => (
+                                {(image.colors?.dominant || []).slice(0, 3).map((color, i) => (
                                     <span
                                         key={i}
                                         className="palette-dot"

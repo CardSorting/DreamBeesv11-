@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { db } from '../firebase';
-import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, runTransaction } from 'firebase/firestore';
+import { collection, doc, setDoc, deleteDoc, onSnapshot, query, where, orderBy, runTransaction } from 'firebase/firestore';
 // import { httpsCallable } from 'firebase/functions'; // Removed, using useApi
 import { useAuth } from './AuthContext';
 import { useModel } from './ModelContext';
@@ -314,8 +314,9 @@ export function UserInteractionsProvider({ children }) {
         });
 
         try {
-            const { runTransaction } = await import('firebase/firestore'); // Dynamic import or ensure top-level import
-            const { doc } = await import('firebase/firestore');
+            // Dynamic imports removed in favor of top-level imports
+            // const { runTransaction } = await import('firebase/firestore'); 
+            // const { doc } = await import('firebase/firestore');
 
             const appRef = doc(db, 'apps', appId);
             const userLikeRef = doc(db, 'users', uid, 'likedApps', appId);

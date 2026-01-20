@@ -13,7 +13,7 @@ export function useModel() {
 }
 
 export function ModelProvider({ children }) {
-    const [availableModels, setAvailableModels] = useState([]);
+    const [availableModels, setAvailableModels] = useState([]); // Models should always be an array
     const [selectedModel, setSelectedModel] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -273,6 +273,11 @@ export function ModelProvider({ children }) {
 
             const newImages = snapshot.docs.map(doc => {
                 const data = doc.data();
+                // Defensive check to ensure we have a valid object to optimize
+                if (!data || (!data.imageUrl && !data.url)) {
+                    console.warn('[Global Feed] Skipping invalid doc:', doc.id);
+                    return null;
+                }
                 const optimizedUrl = getOptimizedImageUrl(data.imageUrl || data.url);
 
                 // Stricter URL validation - must be valid and at least 10 chars

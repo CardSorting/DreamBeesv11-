@@ -380,7 +380,7 @@ export default function DressUp() {
                             <div className="sticker-collection">
                                 <h3 className="sticker-title">Who do you want to dress up? 🎭</h3>
                                 <div className="sticker-scroll">
-                                    {userImages.map(img => (
+                                    {(userImages || []).map(img => (
                                         <button
                                             key={img.id}
                                             className={`sticker-btn ${img.status === 'processing' ? 'processing' : ''}`}

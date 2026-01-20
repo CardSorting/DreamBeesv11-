@@ -4,7 +4,7 @@ import { AlertCircle, RefreshCw, Home } from 'lucide-react';
 class GlobalErrorBoundary extends React.Component {
     constructor(props) {
         super(props);
-        this.state = { hasError: false, error: null, errorInfo: null };
+        this.state = { hasError: false, error: null, errorInfo: null, showDetails: false };
     }
 
     static getDerivedStateFromError(error) {
@@ -24,6 +24,10 @@ class GlobalErrorBoundary extends React.Component {
 
     handleGoHome = () => {
         window.location.href = '/';
+    };
+
+    toggleDetails = () => {
+        this.setState(prevState => ({ showDetails: !prevState.showDetails }));
     };
 
     render() {
@@ -57,7 +61,10 @@ class GlobalErrorBoundary extends React.Component {
                         maxWidth: '500px',
                         width: '90%',
                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-                        animation: 'fadeInUp 0.6s ease-out'
+                        animation: 'fadeInUp 0.6s ease-out',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center'
                     }}>
                         <div style={{
                             background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(139, 92, 246, 0.2))',
@@ -80,43 +87,26 @@ class GlobalErrorBoundary extends React.Component {
                             color: '#fff',
                             letterSpacing: '-0.02em'
                         }}>
-                            Oops! Something drifted
+                            The Hive Stumbled
                         </h1>
 
                         <p style={{
                             marginBottom: '32px',
                             color: 'rgba(255, 255, 255, 0.6)',
                             lineHeight: '1.6',
-                            fontSize: '16px'
+                            fontSize: '16px',
+                            maxWidth: '400px'
                         }}>
-                            The application drifted into an unexpected state.
-                            We've captured the glitch and are working to stabilize it.
+                            We encountered an unexpected error. The drones are already buzzing to fix it.
                         </p>
 
-                        {this.state.error && (
-                            <div style={{
-                                backgroundColor: 'rgba(0, 0, 0, 0.3)',
-                                padding: '16px',
-                                borderRadius: '12px',
-                                textAlign: 'left',
-                                marginBottom: '32px',
-                                overflow: 'auto',
-                                maxHeight: '120px',
-                                fontSize: '13px',
-                                fontFamily: 'monospace',
-                                color: '#fca5a5', // red-300
-                                border: '1px solid rgba(239, 68, 68, 0.2)'
-                            }}>
-                                {this.state.error.toString()}
-                            </div>
-                        )}
-
-                        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap', width: '100%', marginBottom: '24px' }}>
                             <button
                                 onClick={this.handleReload}
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
+                                    justifyContent: 'center',
                                     gap: '10px',
                                     padding: '12px 24px',
                                     borderRadius: '12px',
@@ -126,13 +116,15 @@ class GlobalErrorBoundary extends React.Component {
                                     fontWeight: '700',
                                     cursor: 'pointer',
                                     transition: 'transform 0.2s, opacity 0.2s',
-                                    fontSize: '15px'
+                                    fontSize: '15px',
+                                    flex: 1,
+                                    minWidth: '140px'
                                 }}
                                 onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
                                 onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
                             >
                                 <RefreshCw size={18} />
-                                Fix Glitch
+                                Try Again
                             </button>
 
                             <button
@@ -140,6 +132,7 @@ class GlobalErrorBoundary extends React.Component {
                                 style={{
                                     display: 'flex',
                                     alignItems: 'center',
+                                    justifyContent: 'center',
                                     gap: '10px',
                                     padding: '12px 24px',
                                     borderRadius: '12px',
@@ -149,7 +142,9 @@ class GlobalErrorBoundary extends React.Component {
                                     fontWeight: '700',
                                     cursor: 'pointer',
                                     transition: 'all 0.2s',
-                                    fontSize: '15px'
+                                    fontSize: '15px',
+                                    flex: 1,
+                                    minWidth: '140px'
                                 }}
                                 onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
                                 onMouseLeave={e => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'}
@@ -158,6 +153,50 @@ class GlobalErrorBoundary extends React.Component {
                                 Return Home
                             </button>
                         </div>
+
+                        {this.state.error && (
+                            <div style={{ width: '100%' }}>
+                                <button
+                                    onClick={this.toggleDetails}
+                                    style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        color: 'rgba(255, 255, 255, 0.4)',
+                                        fontSize: '13px',
+                                        cursor: 'pointer',
+                                        textDecoration: 'underline',
+                                        padding: '8px'
+                                    }}
+                                >
+                                    {this.state.showDetails ? 'Hide Technical Details' : 'Show Technical Details'}
+                                </button>
+
+                                {this.state.showDetails && (
+                                    <div style={{
+                                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                                        padding: '16px',
+                                        borderRadius: '12px',
+                                        textAlign: 'left',
+                                        marginTop: '12px',
+                                        overflow: 'auto',
+                                        maxHeight: '150px',
+                                        fontSize: '12px',
+                                        fontFamily: 'monospace',
+                                        color: '#fca5a5', // red-300
+                                        border: '1px solid rgba(239, 68, 68, 0.2)',
+                                        width: '100%',
+                                        boxSizing: 'border-box'
+                                    }}>
+                                        <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>{this.state.error.toString()}</div>
+                                        {this.state.errorInfo && (
+                                            <div style={{ whiteSpace: 'pre-wrap', opacity: 0.7 }}>
+                                                {this.state.errorInfo.componentStack}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             );

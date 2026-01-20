@@ -14,13 +14,20 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function UserProfile() {
     const { currentUser } = useAuth();
-    const { availableModels } = useModel();
+    const { availableModels: contextModels } = useModel();
+    const availableModels = contextModels || []; // Defensive fallback
+
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({ username: '', displayPreference: 'name' }); // 'name' or 'username'
     const [savingProfile, setSavingProfile] = useState(false);
     const { userProfile } = useUserInteractions();
 
-    const { likes = [], bookmarks = [], mockups = [], loadUserInteractions } = useUserInteractions();
+    const { likes: ctxLikes, bookmarks: ctxBookmarks, mockups: ctxMockups, loadUserInteractions } = useUserInteractions();
+
+    // Defensive Fallbacks
+    const likes = ctxLikes || [];
+    const bookmarks = ctxBookmarks || [];
+    const mockups = ctxMockups || [];
     const [activeFilter, setActiveFilter] = useState('all');
     const [selectedImage, setSelectedImage] = useState(null);
     const [selectedModel, setSelectedModel] = useState(null);
@@ -94,7 +101,7 @@ export default function UserProfile() {
         setUsernameError(null);
 
         try {
-            const { doc, setDoc } = await import('firebase/firestore');
+            // const { doc, setDoc } = await import('firebase/firestore'); // Removed dynamic import
             const userRef = doc(db, 'users', currentUser.uid);
 
             const updateData = {

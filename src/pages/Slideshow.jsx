@@ -132,13 +132,14 @@ export default function Slideshow() {
             try {
                 const { requestId: savedId, mode: savedMode } = JSON.parse(saved);
                 if (savedId) {
-                    console.log("Restoring slideshow generation:", savedId);
+                    console.log("Restoring slideshow session:", savedId);
                     setRequestId(savedId);
-                    setMode(savedMode || 'poster');
+                    setMode(savedMode || 'poster'); // Restore mode if saved
                     setCurrentStep('processing');
                 }
-            } catch (e) {
-                console.error("Failed to parse saved state", e);
+            } catch (err) {
+                console.warn("Failed to parse saved slideshow session:", err);
+                localStorage.removeItem('slideshowState'); // Clean up bad data
             }
         }
     }, []);
