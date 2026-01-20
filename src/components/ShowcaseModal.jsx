@@ -10,15 +10,16 @@ const ShowcaseModal = ({ image, onClose, model }) => {
     const { hidePost, isHidden } = useUserInteractions();
     const navigate = useNavigate();
 
+    // Defensive check: If image is missing, don't render anything (or could render error state)
+    if (!image) return null;
+
     // Auto close if hidden while open
-    if (!image || isHidden(image.id)) {
-        if (image && isHidden(image.id)) {
-            // slightly delayed close if we just hid it? Or immediate?
-            // If it's hidden, we shouldn't show it.
-            // If the user *just* hid it, we probably want to show a toast and close.
-            // But if we return null, it just disappears.
-            onClose();
-        }
+    if (isHidden(image.id)) {
+        // slightly delayed close if we just hid it? Or immediate?
+        // If it's hidden, we shouldn't show it.
+        // If the user *just* hid it, we probably want to show a toast and close.
+        // But if we return null, it just disappears.
+        onClose();
         return null;
     }
 
@@ -103,7 +104,7 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                         <button
                             onClick={() => {
                                 const newRating = image.rating === 1 ? 0 : 1;
-                                rateShowcaseImage(image.id, newRating, model.id);
+                                rateShowcaseImage(image.id, newRating, model?.id); // Safe model access
                             }}
                             className={`btn-ghost ${image.rating === 1 ? 'active-vote' : ''}`}
                             style={{
@@ -122,7 +123,7 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                         <button
                             onClick={() => {
                                 const newRating = image.rating === -1 ? 0 : -1;
-                                rateShowcaseImage(image.id, newRating, model.id);
+                                rateShowcaseImage(image.id, newRating, model?.id); // Safe model access
                             }}
                             className={`btn-ghost ${image.rating === -1 ? 'active-vote' : ''}`}
                             style={{

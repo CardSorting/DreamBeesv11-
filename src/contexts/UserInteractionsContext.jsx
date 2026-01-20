@@ -26,6 +26,7 @@ export function UserInteractionsProvider({ children }) {
     const [likes, setLikes] = useState([]);
     const [bookmarks, setBookmarks] = useState([]);
     const [hidden, setHidden] = useState([]);
+    const [mockups, setMockups] = useState([]);
 
     // User Profile Data (Centralized Sync)
     const [userProfile, setUserProfile] = useState({
@@ -46,6 +47,7 @@ export function UserInteractionsProvider({ children }) {
             setLikes([]);
             setBookmarks([]);
             setHidden([]);
+            setMockups([]);
             setIsProfileLoaded(false);
             return;
         }
@@ -82,6 +84,20 @@ export function UserInteractionsProvider({ children }) {
             console.warn("Global hidden listener failed:", error);
         });
 
+        // Listener for Mockups
+        const mockupsQuery = query(
+            collection(db, 'images'),
+            where('userId', '==', uid),
+            where('type', '==', 'mockup'),
+            orderBy('createdAt', 'desc')
+        );
+        const unsubMockups = onSnapshot(mockupsQuery, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setMockups(data);
+        }, (error) => {
+            console.warn("Global mockups listener failed:", error);
+        });
+
         // Listener for User Profile (Zaps, Credits, Subscription)
         const userDocRef = doc(db, 'users', uid);
         const unsubProfile = onSnapshot(userDocRef, (docSnap) => {
@@ -106,6 +122,7 @@ export function UserInteractionsProvider({ children }) {
             unsubLikes();
             unsubBookmarks();
             unsubHidden();
+            unsubMockups();
             unsubProfile();
         };
     }, [currentUser?.uid]);
@@ -346,6 +363,7 @@ export function UserInteractionsProvider({ children }) {
         bookmarkedIds,
         likes,
         bookmarks,
+        mockups,
         isLiked,
         isBookmarked,
         hidePost,

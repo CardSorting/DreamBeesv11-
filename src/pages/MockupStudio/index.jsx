@@ -18,7 +18,7 @@ const AppState = {
 
 const MockupStudio = () => {
     const { currentUser } = useAuth();
-    const { userProfile } = useUserInteractions();
+    const { userProfile = {} } = useUserInteractions();
 
     const [appState, setAppState] = useState(AppState.IDLE);
     const [selectedFile, setSelectedFile] = useState(null);

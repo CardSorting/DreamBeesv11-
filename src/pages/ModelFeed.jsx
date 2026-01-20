@@ -244,7 +244,7 @@ export default function ModelFeed() {
         let sourceData = activeFilter === 'Videos' ? videos : feedItems;
 
         const seenUrls = new Set();
-        let filtered = (sourceData || [])
+        let filtered = (Array.isArray(sourceData) ? sourceData : [])
             .filter(img => {
                 if (!img) return false;
 
@@ -272,7 +272,7 @@ export default function ModelFeed() {
         if (!id && activeFilter !== 'All' && activeFilter !== 'Videos') {
             filtered = filtered.filter(img => {
                 // Check Model Tags
-                const modelTags = img._model?.tags || [];
+                const modelTags = img?._model?.tags || [];
                 if (modelTags.includes(activeFilter)) return true;
 
                 // Check Discovery Vibe Tags (NEW)

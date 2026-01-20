@@ -53,25 +53,46 @@ class RouteErrorBoundary extends React.Component {
                         The rest of the app is still working!
                     </p>
 
-                    <button
-                        onClick={this.handleReload}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            padding: '12px 24px',
-                            backgroundColor: '#fff',
-                            color: '#000',
-                            borderRadius: '12px',
-                            fontWeight: '600',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '16px'
-                        }}
-                    >
-                        <RefreshCw size={18} />
-                        Reload Page
-                    </button>
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                        <button
+                            onClick={this.handleReload}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '12px 24px',
+                                backgroundColor: '#fff',
+                                color: '#000',
+                                borderRadius: '12px',
+                                fontWeight: '600',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '15px'
+                            }}
+                        >
+                            <RefreshCw size={18} />
+                            Reload Page
+                        </button>
+
+                        <button
+                            onClick={() => window.location.href = '/'}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '12px 24px',
+                                backgroundColor: 'rgba(255,255,255,0.1)',
+                                color: '#fff',
+                                borderRadius: '12px',
+                                fontWeight: '600',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                cursor: 'pointer',
+                                fontSize: '15px'
+                            }}
+                        >
+                            Return Home
+                        </button>
+                    </div>
 
                     {/* Optional technical details for dev */}
                     {/* {this.state.error && <pre style={{marginTop: 20, fontSize: 10, opacity: 0.5}}>{this.state.error.message}</pre>} */}

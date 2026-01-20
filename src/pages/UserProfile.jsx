@@ -20,7 +20,7 @@ export default function UserProfile() {
     const [savingProfile, setSavingProfile] = useState(false);
     const { userProfile } = useUserInteractions();
 
-    const { likes, bookmarks, mockups, loadUserInteractions } = useUserInteractions();
+    const { likes = [], bookmarks = [], mockups = [], loadUserInteractions } = useUserInteractions();
     const [activeFilter, setActiveFilter] = useState('all');
     const [selectedImage, setSelectedImage] = useState(null);
     const [selectedModel, setSelectedModel] = useState(null);
