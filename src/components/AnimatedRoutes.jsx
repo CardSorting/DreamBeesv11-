@@ -39,6 +39,7 @@ const Discovery = lazyRetry(() => import('../pages/Discovery'));
 const ShowcaseDetail = lazyRetry(() => import('../pages/ShowcaseDetail'));
 const MockupStudio = lazyRetry(() => import('../pages/MockupStudio'));
 const MockupFeed = lazyRetry(() => import('../pages/MockupFeed'));
+const MockupCatalog = lazyRetry(() => import('../pages/MockupCatalog'));
 
 import { Privacy, Terms, Cookies } from '../pages/Legal';
 import { Careers, Brand, Api, Showcase } from '../pages/Misc';
@@ -159,6 +160,9 @@ const AnimatedRoutes = () => {
                             {/* Apps */}
                             <Route path="/mockup-studio" element={
                                 <PrivateRoute><MockupStudio /></PrivateRoute>
+                            } />
+                            <Route path="/mockup-catalog" element={
+                                <PrivateRoute><MockupCatalog /></PrivateRoute>
                             } />
 
                             <Route path="/chat/:id" element={
