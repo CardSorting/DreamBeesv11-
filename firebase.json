@@ -23,6 +23,22 @@
         "function": "serveSitemap"
       },
       {
+        "source": "/discovery/**",
+        "function": "web"
+      },
+      {
+        "source": "/model/**",
+        "function": "web"
+      },
+      {
+        "source": "/blog/**",
+        "function": "web"
+      },
+      {
+        "source": "/mockup-catalog/**",
+        "function": "web"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

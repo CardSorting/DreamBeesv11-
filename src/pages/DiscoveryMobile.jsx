@@ -5,6 +5,7 @@ import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { Sparkles, Loader2, CheckCircle2, Heart, Flag } from 'lucide-react';
 import { getOptimizedImageUrl, getImageSrcSet } from '../utils';
 import { useNavigate, useParams } from 'react-router-dom';
+import { slugify } from '../utils/urlHelpers';
 import './Discovery.css';
 
 export default function DiscoveryMobile() {
@@ -156,7 +157,8 @@ export default function DiscoveryMobile() {
     };
 
     const handleImageClick = useCallback((imgItem) => {
-        navigate(`/discovery/${imgItem.id}`);
+        const slug = slugify(imgItem.prompt?.slice(0, 40) || 'artwork');
+        navigate(`/discovery/${slug}-${imgItem.id}`);
     }, [navigate]);
 
     return (

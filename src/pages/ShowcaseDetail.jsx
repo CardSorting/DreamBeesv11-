@@ -14,6 +14,8 @@ import {
 } from '../utils/relevance';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { slugify } from '../utils/urlHelpers';
+import toast from 'react-hot-toast';
 import SEO from '../components/SEO';
 import './ShowcaseDetail.css';
 
@@ -22,7 +24,9 @@ const CACHE_TARGET = 150;
 const HISTORY_CAP = 100; // Max history items to track
 
 const ShowcaseDetail = () => {
-    const { id } = useParams();
+    const { id: rawId } = useParams();
+    // Support slugified IDs (...-ID)
+    const id = (rawId && rawId.includes('-')) ? rawId.split('-').pop() : rawId;
     const navigate = useNavigate();
 
     // Core Data
@@ -347,6 +351,7 @@ const ShowcaseDetail = () => {
                 title={currentItem ? `${currentItem.prompt?.slice(0, 50)}... | Discovery - DreamBees` : 'Showcase | Discovery - DreamBees'}
                 description={currentItem ? `AI-generated artwork: "${currentItem.prompt}". Explore more creative designs on DreamBees.` : "Infinite AI Art Feed - Explore community-generated masterpieces."}
                 image={currentItem ? (currentItem.url || currentItem.imageUrl) : undefined}
+                canonical={currentItem ? `/discovery/${slugify(currentItem.prompt?.slice(0, 40) || 'artwork')}-${currentItem.id}` : `/discovery/${id}`}
                 structuredData={{
                     "@context": "https://schema.org",
                     "@graph": [
@@ -367,7 +372,7 @@ const ShowcaseDetail = () => {
                             "itemListElement": [
                                 { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
                                 { "@type": "ListItem", "position": 2, "name": "Discover", "item": "https://dreambeesai.com/discovery" },
-                                { "@type": "ListItem", "position": 3, "name": "Artwork", "item": `https://dreambeesai.com/discovery/${id}` }
+                                { "@type": "ListItem", "position": 3, "name": "Artwork", "item": `https://dreambeesai.com/discovery/${currentItem ? slugify(currentItem.prompt?.slice(0, 40) || 'artwork') + '-' + currentItem.id : id}` }
                             ]
                         }
                     ]
@@ -456,6 +461,9 @@ const ShowcaseDetail = () => {
 
 // Sub-component for individual feed pages
 const FeedItem = React.memo(({ image, index, isActive, isLiked, onToggleLike, onHide, onMoreLikeThis, modelName, navigate }) => {
+    // Generate deterministic slug for this specific item
+    const currentSlug = slugify(image.prompt?.slice(0, 40) || 'artwork');
+    const deterministicUrl = `${window.location.origin}/discovery/${currentSlug}-${image.id}`;
 
     // Double tap logic
     const lastTap = useRef(0);
@@ -549,8 +557,8 @@ const FeedItem = React.memo(({ image, index, isActive, isLiked, onToggleLike, on
                 <div className="action-btn-wrapper">
                     <button className="action-btn" onClick={(e) => {
                         e.stopPropagation();
-                        navigator.clipboard.writeText(window.location.href);
-                        // Could use a proper toast here
+                        navigator.clipboard.writeText(deterministicUrl);
+                        toast.success("Link copied!");
                     }}>
                         <Share2 size={24} />
                     </button>

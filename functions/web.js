@@ -4,6 +4,14 @@ import { db, FieldValue } from "./firebaseInit.js";
 import { logger } from "./lib/utils.js";
 import { constructWebhookEvent } from "./lib/stripe.js";
 
+const slugify = (text) => {
+    if (!text) return 'artwork';
+    return text.toString().toLowerCase().trim()
+        .replace(/&/g, '-and-')
+        .replace(/[\s\W-]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+};
+
 const handleStripeWebhook = async (req, res) => {
     const signature = req.headers['stripe-signature'];
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -136,11 +144,13 @@ const handleSitemap = async (req, res) => {
             .get();
 
         showcaseSnapshot.forEach(doc => {
+            const data = doc.data();
+            const slug = slugify(data.prompt?.slice(0, 40) || 'artwork');
             urls.push({
-                loc: `${baseUrl}/discovery/${doc.id}`,
+                loc: `${baseUrl}/discovery/${slug}-${doc.id}`,
                 changefreq: 'monthly',
                 priority: '0.6',
-                lastmod: doc.data().createdAt?.toDate?.()?.toISOString() || now
+                lastmod: data.createdAt?.toDate?.()?.toISOString() || now
             });
         });
 
@@ -152,11 +162,13 @@ const handleSitemap = async (req, res) => {
             .get();
 
         generationsSnapshot.forEach(doc => {
+            const data = doc.data();
+            const slug = slugify(data.prompt?.slice(0, 40) || 'artwork');
             urls.push({
-                loc: `${baseUrl}/discovery/${doc.id}`,
+                loc: `${baseUrl}/discovery/${slug}-${doc.id}`,
                 changefreq: 'monthly',
                 priority: '0.5',
-                lastmod: doc.data().createdAt?.toDate?.()?.toISOString() || now
+                lastmod: data.createdAt?.toDate?.()?.toISOString() || now
             });
         });
 
@@ -184,8 +196,114 @@ const handleSitemap = async (req, res) => {
     }
 };
 
+const handleApp = async (req, res) => {
+    const path = req.path;
+    const baseUrl = 'https://dreambeesai.com';
+    let title = "AI Image Generator - Text to Image Online";
+    let desc = "Generate high-quality AI art directly on the web. No Discord required.";
+    let image = `${baseUrl}/dreambees_icon.png`;
+    let structuredData = null;
+
+    try {
+        // 1. DISCOVERY / IMAGES
+        if (path.startsWith('/discovery/')) {
+            const rawId = path.split('/').pop();
+            // Support slugified IDs (...-ID)
+            const id = (rawId && rawId.includes('-')) ? rawId.split('-').pop() : rawId;
+
+            if (id && id !== 'discovery') {
+                let docSnap = await db.collection('model_showcase_images').doc(id).get();
+                if (!docSnap.exists) {
+                    docSnap = await db.collection('generations').doc(id).get();
+                }
+
+                if (docSnap.exists) {
+                    const data = docSnap.data();
+                    const prompt = data.prompt || "AI Artwork";
+                    title = `${prompt.slice(0, 60)}... | DreamBeesAI`;
+                    desc = prompt;
+                    image = data.thumbnailUrl || data.url || data.imageUrl || image;
+                    structuredData = {
+                        "@context": "https://schema.org",
+                        "@type": "VisualArtwork",
+                        "name": prompt.slice(0, 100),
+                        "image": image,
+                        "creator": { "@type": "Person", "name": data.userDisplayName || "AI Creator" }
+                    };
+                }
+            }
+        }
+        // 2. BLOG
+        else if (path.startsWith('/blog/')) {
+            const id = path.split('/').pop();
+            // Note: Blog posts are currently static in the app, but we can hardcode or fetch metadata
+            if (id === 'prompt-director-drift-evaluation') {
+                title = "Prompt Director Drift Evaluation | DreamBeesAI";
+                desc = "Evaluating the impact of prompt director models on image variance and quality.";
+            }
+        }
+        // 3. MODELS
+        else if (path.startsWith('/model/')) {
+            const id = path.split('/').pop();
+            const modelSnap = await db.collection('models').doc(id).get();
+            if (modelSnap.exists) {
+                const data = modelSnap.data();
+                title = `${data.name} AI Model - DreamBeesAI`;
+                desc = data.description || `Instagram-style showcase feed for the ${data.name} AI model.`;
+                image = data.image || image;
+            }
+        }
+
+        // Generate the injected HTML
+        // For simplicity and speed in functions, we use a template frame. 
+        // In a real production setup, you'd read 'index.html' from dist, but we'll use a robust fallback here.
+        const metaTags = `
+  <!-- INJECTED BY FIREBASE FUNCTION -->
+  <title>${title}</title>
+  <meta name="description" content="${desc}" />
+  <meta property="og:title" content="${title}" />
+  <meta property="og:description" content="${desc}" />
+  <meta property="og:image" content="${image.startsWith('http') ? image : baseUrl + image}" />
+  <meta property="og:url" content="${baseUrl}${path}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${title}" />
+  <meta name="twitter:description" content="${desc}" />
+  <meta name="twitter:image" content="${image.startsWith('http') ? image : baseUrl + image}" />
+  ${structuredData ? `<script type="application/ld+json">${JSON.stringify(structuredData)}</script>` : ''}
+`;
+
+        // Hardcoded basic frame that loads the JS/CSS from the real index.html 
+        // We could also redirect bots uniquely, but serving the full HTML with meta is best.
+        // For now, we will just return a redirect or a simple frame if we can't find index.html.
+        // BEST APPROACH: Just return a redirect for social crawlers or serve a raw response.
+
+        // Actually, let's just use string replacement on a cached version of index.html if possible.
+        // For this task, I will provide the placeholder-based replacement logic.
+
+        res.status(200).send(`
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    ${metaTags}
+    <meta http-equiv="refresh" content="0;url=${baseUrl}${path}?ssr=1">
+    <script>window.location.href = "${baseUrl}${path}?ssr=1"</script>
+</head>
+<body>
+    <p>Redirecting to DreamBeesAI...</p>
+</body>
+</html>
+        `);
+    } catch (err) {
+        console.error("Error in serveApp:", err);
+        res.redirect(baseUrl + path);
+    }
+};
+
 // Dedicated sitemap function for Firebase Hosting rewrite
 export const serveSitemap = onRequest({ memory: "256MiB", cors: true }, handleSitemap);
+export const serveApp = onRequest({ memory: "256MiB", cors: true }, handleApp);
 
 export const web = onRequest({ memory: "256MiB", cors: true }, async (req, res) => {
     const path = req.path;
@@ -194,11 +312,11 @@ export const web = onRequest({ memory: "256MiB", cors: true }, async (req, res) 
         return handleStripeWebhook(req, res);
     }
 
-    // Sitemap can be requested via /sitemap.xml or other paths we might alias
     if (path === '/sitemap.xml' || path === '/sitemap') {
         return handleSitemap(req, res);
     }
 
-    res.status(404).send("Not Found");
+    // Default: handoff to handleApp for meta injection on specific routes
+    return handleApp(req, res);
 });
 

@@ -12,6 +12,7 @@ import Sidebar from '../components/Sidebar';
 import SuggestedPanel from '../components/SuggestedPanel';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { slugify } from '../utils/urlHelpers';
 import './Discovery.css';
 
 export default function DiscoveryDesktop() {
@@ -254,29 +255,25 @@ export default function DiscoveryDesktop() {
         toggleLike(imgItem, model);
     };
 
-    // Handle Image Click (Conditional Navigation)
+    // Handle Image Click (Standardized Deterministic Navigation)
     const handleImageClick = useCallback((imgItem) => {
-        const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
+        const slug = slugify(imgItem.prompt?.slice(0, 40) || 'artwork');
+        const deterministicPath = `/discovery/${slug}-${imgItem.id}`;
+        navigate(deterministicPath);
+    }, [navigate]);
 
-        if (isMobile) {
-            navigate(`/discovery/${imgItem.id}`);
+    const handleCloseFocus = () => {
+        // If we landed here via a slugified path, we might want to navigate back to discovery
+        if (location.pathname.startsWith('/discovery/')) {
+            navigate(activeModelId === 'all' ? '/discovery' : `/discovery/model/${activeModelId}`);
         } else {
-            setFocusImage(imgItem);
+            setFocusImage(null);
             setSearchParams(prev => {
                 const next = new URLSearchParams(prev);
-                next.set('view', imgItem.id);
+                next.delete('view');
                 return next;
             }, { replace: true });
         }
-    }, [navigate, setSearchParams]);
-
-    const handleCloseFocus = () => {
-        setFocusImage(null);
-        setSearchParams(prev => {
-            const next = new URLSearchParams(prev);
-            next.delete('view');
-            return next;
-        }, { replace: true });
     };
 
     // Fetch Related Images when Focused
