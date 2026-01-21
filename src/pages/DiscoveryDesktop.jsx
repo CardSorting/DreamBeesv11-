@@ -259,7 +259,7 @@ export default function DiscoveryDesktop() {
     // Handle Image Click (Standardized Deterministic Navigation)
     const handleImageClick = useCallback((imgItem) => {
         const slug = slugify(imgItem.prompt?.slice(0, 40) || 'artwork');
-        const deterministicPath = `/discovery/${slug}-${imgItem.id}`;
+        const deterministicPath = `/discovery/${slug}--${imgItem.id}`;
         navigate(deterministicPath);
     }, [navigate]);
 

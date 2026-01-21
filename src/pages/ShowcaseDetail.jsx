@@ -25,8 +25,16 @@ const HISTORY_CAP = 100; // Max history items to track
 
 const ShowcaseDetail = () => {
     const { id: rawId } = useParams();
-    // Support slugified IDs (...-ID)
-    const id = (rawId && rawId.includes('-')) ? rawId.split('-').pop() : rawId;
+    // Support robust ID extraction: 
+    // 1. Double hyphen separator (new standard) 
+    // 2. Single hyphen separator (legacy)
+    // 3. Fallback to rawId
+    const id = useMemo(() => {
+        if (!rawId) return null;
+        if (rawId.includes('--')) return rawId.split('--').pop();
+        if (rawId.includes('-')) return rawId.split('-').pop();
+        return rawId;
+    }, [rawId]);
     const navigate = useNavigate();
 
     // Core Data
@@ -71,32 +79,38 @@ const ShowcaseDetail = () => {
                 getGlobalShowcaseImages(true, 'showcasedetail_init');
             }
 
-            let startImage = visibleGlobalCache.find(img => img.id === id);
+            let startImage = visibleGlobalCache.find(img => img.id === id || img.id === rawId);
 
-            // If not in cache, fetch directly (Check both official showcase and user generations)
+            // If not in cache, fetch directly (Try both extracted id and full rawId)
             if (!startImage) {
-                try {
-                    // 1. Try official showcase
-                    const showcaseRef = doc(db, 'model_showcase_images', id);
-                    const showcaseSnap = await getDoc(showcaseRef);
+                const tryIds = [rawId];
+                if (id && id !== rawId) tryIds.push(id);
 
-                    if (showcaseSnap.exists()) {
-                        startImage = { id: showcaseSnap.id, ...showcaseSnap.data() };
-                    } else {
-                        // 2. Try user generations (if public)
-                        const generationRef = doc(db, 'generations', id);
-                        const generationSnap = await getDoc(generationRef);
+                for (const targetId of tryIds) {
+                    try {
+                        // 1. Try official showcase
+                        const showcaseRef = doc(db, 'model_showcase_images', targetId);
+                        const showcaseSnap = await getDoc(showcaseRef);
 
-                        if (generationSnap.exists()) {
-                            const data = generationSnap.data();
-                            // Only allow public generations to be viewed here for SEO safety
-                            if (data.isPublic) {
-                                startImage = { id: generationSnap.id, ...data };
+                        if (showcaseSnap.exists()) {
+                            startImage = { id: showcaseSnap.id, ...showcaseSnap.data() };
+                            break;
+                        } else {
+                            // 2. Try user generations (if public)
+                            const generationRef = doc(db, 'generations', targetId);
+                            const generationSnap = await getDoc(generationRef);
+
+                            if (generationSnap.exists()) {
+                                const data = generationSnap.data();
+                                if (data.isPublic) {
+                                    startImage = { id: generationSnap.id, ...data };
+                                    break;
+                                }
                             }
                         }
+                    } catch (err) {
+                        console.error(`Error fetching image for ID ${targetId}:`, err);
                     }
-                } catch (err) {
-                    console.error("Error fetching start image from collections:", err);
                 }
             }
 
@@ -142,7 +156,8 @@ const ShowcaseDetail = () => {
                     // Update URL silently (replace) without full reload
                     const img = images[index];
                     if (img && img.id !== id) {
-                        navigate(`/discovery/${img.id}`, { replace: true });
+                        const slug = slugify(img.prompt?.slice(0, 40) || 'artwork');
+                        navigate(`/discovery/${slug}--${img.id}`, { replace: true });
 
                         // Mark as seen
                         seenIdsRef.current.add(img.id);
@@ -351,7 +366,7 @@ const ShowcaseDetail = () => {
                 title={currentItem ? `${currentItem.prompt?.slice(0, 50)}... | Discovery - DreamBees` : 'Showcase | Discovery - DreamBees'}
                 description={currentItem ? `AI-generated artwork: "${currentItem.prompt}". Explore more creative designs on DreamBees.` : "Infinite AI Art Feed - Explore community-generated masterpieces."}
                 image={currentItem ? (currentItem.url || currentItem.imageUrl) : undefined}
-                canonical={currentItem ? `/discovery/${slugify(currentItem.prompt?.slice(0, 40) || 'artwork')}-${currentItem.id}` : `/discovery/${id}`}
+                canonical={currentItem ? `/discovery/${slugify(currentItem.prompt?.slice(0, 40) || 'artwork')}--${currentItem.id}` : `/discovery/${id}`}
                 structuredData={{
                     "@context": "https://schema.org",
                     "@graph": [
