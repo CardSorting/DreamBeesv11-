@@ -67,16 +67,44 @@ async function generateBanana() {
             throw new Error("\nTimeout polling for image.");
         }
 
-        const outputPath = path.resolve(__dirname, "../../public/app-previews/mockup-studio.png");
+        // --- Upload to B2 ---
+        console.log("Uploading to B2...");
 
-        // Ensure directory exists
-        const dir = path.dirname(outputPath);
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
+        // Initialize S3 Client (Lazy load to keep script clean if unused)
+        const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
+
+        // Load Env Vars if not present (simple manual parse as fallback)
+        if (!process.env.B2_KEY_ID) {
+            const envPath = path.resolve(__dirname, "../.env");
+            try {
+                const envFile = fs.readFileSync(envPath, "utf-8");
+                envFile.split("\n").forEach(line => {
+                    const [key, value] = line.split("=");
+                    if (key && value && !key.startsWith("#")) process.env[key.trim()] = value.trim();
+                });
+            } catch (e) { /* ignore */ }
         }
 
-        fs.writeFileSync(outputPath, buffer);
-        console.log(`\nSuccess! Image saved to: ${outputPath}`);
+        const s3Client = new S3Client({
+            endpoint: process.env.B2_ENDPOINT,
+            region: process.env.B2_REGION,
+            credentials: {
+                accessKeyId: process.env.B2_KEY_ID,
+                secretAccessKey: process.env.B2_APP_KEY,
+            },
+        });
+
+        const key = "app-previews/mockup-studio.png";
+
+        await s3Client.send(new PutObjectCommand({
+            Bucket: process.env.B2_BUCKET,
+            Key: key,
+            Body: buffer,
+            ContentType: "image/png"
+        }));
+
+        const publicUrl = `${process.env.B2_PUBLIC_URL}/file/${process.env.B2_BUCKET}/${key}`;
+        console.log(`\nSuccess! Image uploaded to: ${publicUrl}`);
         process.exit(0);
 
     } catch (error) {
