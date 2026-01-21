@@ -556,8 +556,8 @@ export const formatMemeWithGemini = async (imageUrl, text, userId = 'system') =>
     const finalImageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalFilename}`;
     const finalThumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbFilename}`;
 
-    // Save to Firestore 'images' collection
-    const imageRef = await db.collection("images").add({
+    // Save to Firestore 'memes' collection
+    const imageRef = await db.collection("memes").add({
         userId,
         prompt: text, // Saving the meme text as the prompt
         aspectRatio: "match_input_image",

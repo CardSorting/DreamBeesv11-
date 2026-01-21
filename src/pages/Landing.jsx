@@ -629,9 +629,8 @@ function AccordionItem({ title, children }) {
 }
 
 function MarqueeImages() {
-    // Dynamic import of generated assets
-    const generatedImages = import.meta.glob('../assets/images/landing/*.png', { eager: true, query: '?url', import: 'default' });
-    const generatedImageUrls = Object.values(generatedImages);
+    // Use generated assets from manifest
+    const generatedImageUrls = Object.values(landingAssets);
 
     // Fallback if no images generated yet
     const hasGeneratedCallback = generatedImageUrls.length > 0;
@@ -718,9 +717,12 @@ function ValueItem({ text }) {
 }
 
 // Demo Asset Imports
-import demoAngel from '../assets/images/landing/ethereal_clockwork_angel_ascending_over_foggy_victorian.jpeg';
-import demoLibrary from '../assets/images/landing/infinite_arcane_library_with_spiraling_towers_of.jpeg';
-import demoPhoenix from '../assets/images/landing/majestic_cosmic_phoenix_formed_from_supernova_stardust.jpeg';
+import landingAssets from '../data/landing_assets.json';
+
+// Map specific demo images from manifest
+const demoAngel = landingAssets['ethereal_clockwork_angel_ascending_over_foggy_victorian.jpeg'];
+const demoLibrary = landingAssets['infinite_arcane_library_with_spiraling_towers_of.jpeg'];
+const demoPhoenix = landingAssets['majestic_cosmic_phoenix_formed_from_supernova_stardust.jpeg'];
 
 function InteractiveDemo() {
     const demos = [

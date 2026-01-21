@@ -33,3 +33,7 @@ dist-ssr
 # Firebase Admin SDK keys
 *-adminsdk-*.json
 service-account.json
+
+# Test Artifacts
+test_output_*.png
+

@@ -336,13 +336,7 @@ async function main() {
             const lqipBuffer = await sharpImg.resize(20, 20, { fit: 'inside' }).webp({ quality: 20 }).toBuffer();
             const lqip = `data:image/webp;base64,${lqipBuffer.toString('base64')}`;
 
-            // 3. Save Locally
-            const timestamp = Date.now();
-            const localFileName = `${timestamp}_women_${i}.webp`;
-            const localThumbName = `${timestamp}_women_${i}_thumb.webp`;
-
-            await fs.writeFile(path.join(SHOWCASE_DIR, localFileName), webpBuffer);
-            await fs.writeFile(path.join(SHOWCASE_DIR, localThumbName), thumbBuffer);
+            // 3. Skip Local Save - Upload directly to B2
 
             // 4. Upload to B2
             const baseKey = `showcase/${MODEL_ID}/${timestamp}_women_${i}`;
@@ -369,21 +363,12 @@ async function main() {
                 likesCount: Math.floor(Math.random() * 50) + 10,
                 bookmarksCount: Math.floor(Math.random() * 10),
                 subject: { gender: 'female' },
-                vibe: 'cinematic',
-                localPath: `/showcase/${MODEL_ID}/${localFileName}`,
-                localThumbPath: `/showcase/${MODEL_ID}/${localThumbName}`
+                vibe: 'cinematic'
             };
 
             await db.collection('model_showcase_images').add(docData);
 
-            // 6. Update Manifest
-            manifest.push({
-                ...docData,
-                createdAt: new Date().toISOString()
-            });
-            await fs.writeFile(MANIFEST_PATH, JSON.stringify(manifest, null, 2));
-
-            console.log(`   ✓ Saved Locally & B2: ${localFileName}`);
+            console.log(`   ✓ Saved to B2 & Firestore: ${originalKey}`);
             successCount++;
 
         } catch (err) {

@@ -106,37 +106,8 @@ export function ModelProvider({ children }) {
             return showcaseCacheRef.current[modelId];
         }
 
-        // 2. Try Local Manifest First
-        try {
-            console.log(`[Cache Miss] Fetching local showcase for ${modelId}`);
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
-            const response = await fetch(`/showcase/${modelId}/manifest.json`, { signal: controller.signal });
-            clearTimeout(timeoutId);
-            if (response.ok) {
-                const localData = await response.json();
-                console.log(`[Local Showcase] Found ${localData.length} items for ${modelId}`);
+        // 2. (Removed Local Manifest Check) - Always use Firestore
 
-                // Transform to match Firestore shape if needed, though they seem similar
-                // Optimize all URLs to use CDN
-                const images = localData.map((item, index) => ({
-                    id: `local_${modelId}_${index}`,
-                    imageUrl: getOptimizedImageUrl(item.url || item.imageUrl), // manifest uses 'url', optimize to CDN
-                    url: getOptimizedImageUrl(item.url || item.imageUrl), // Also set url for consistency
-                    ...item
-                }));
-
-                // Update Cache and Return
-                const newCache = { ...showcaseCacheRef.current, [modelId]: images };
-                showcaseCacheRef.current = newCache;
-                setShowcaseCache(newCache);
-
-                return images;
-            }
-        } catch (localErr) {
-            console.warn(`[Local Showcase] Failed to load manifest for ${modelId}`, localErr);
-            // Fallthrough to Firestore on error
-        }
 
         // 3. Fallback to Firestore
         try {
