@@ -241,6 +241,11 @@ export default function DiscoveryMobile() {
                                                 e.target.parentElement.style.filter = 'none';
                                                 e.target.parentElement.style.background = 'transparent';
                                             }}
+                                            onError={(e) => {
+                                                console.error(`[Discovery Mobile] Image failed to load: ${e.target.src}`);
+                                                e.target.parentElement.style.filter = 'none';
+                                                e.target.parentElement.style.background = 'rgba(255,255,255,0.05)';
+                                            }}
                                             loading={index < 4 ? "eager" : "lazy"}
                                             style={{
                                                 width: '100%',

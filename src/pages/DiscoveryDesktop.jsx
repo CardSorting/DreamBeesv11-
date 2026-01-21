@@ -445,6 +445,11 @@ export default function DiscoveryDesktop() {
                                                         e.target.parentElement.style.filter = 'none';
                                                         e.target.parentElement.style.background = 'transparent';
                                                     }}
+                                                    onError={(e) => {
+                                                        console.error(`[Discovery] Image failed to load: ${e.target.src}`);
+                                                        e.target.parentElement.style.filter = 'none';
+                                                        e.target.parentElement.style.background = 'rgba(255,255,255,0.05)';
+                                                    }}
                                                     style={{
                                                         width: '100%',
                                                         height: '100%',

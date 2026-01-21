@@ -61,13 +61,13 @@ export const getOptimizedImageUrl = (url) => {
         }
     }
 
-    // Return relative URLs as-is (for local showcase images)
-    if (url.startsWith('/')) {
-        return url;
+    // Ensure relative paths (like showcase/...) have a leading slash to work from nested routes
+    if (!url.startsWith('http') && !url.startsWith('/')) {
+        return `/${url}`;
     }
 
     return url;
-};
+}
 
 /**
  * Generates LCP-optimized attributes for an image based on its index
