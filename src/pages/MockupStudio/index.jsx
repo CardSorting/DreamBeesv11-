@@ -28,7 +28,7 @@ const MockupStudio = () => {
     const [gachaPrizes, setGachaPrizes] = useState([]);
     const [zipBlob, setZipBlob] = useState(null);
     const [spinProgress, setSpinProgress] = useState(null);
-    const [isTCGMode, setIsTCGMode] = useState(false);
+    const [mode, setMode] = useState('standard'); // 'standard', 'tcg', 'doll'
 
     const [error, setError] = useState(null);
     const fileInputRef = useRef(null);
@@ -98,7 +98,7 @@ const MockupStudio = () => {
                     const result = await apiFn({
                         action: 'gachaSpin',
                         image: base64Token,
-                        mode: isTCGMode ? 'tcg' : 'standard'
+                        mode: mode
                     });
 
                     if (result.data && result.data.success && result.data.prizes) {

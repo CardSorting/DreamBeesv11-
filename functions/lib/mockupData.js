@@ -414,3 +414,36 @@ export const TCG_ITEMS = [
     }
 ];
 
+export const DOLL_ITEMS = [
+    {
+        id: 'doll_mold_1',
+        label: 'Basic Mold A',
+        moldPath: 'doll1.png', // Relative to functions/assets/dolls/
+        subjectNoun: 'vinyl toy figure',
+        category: 'Doll'
+    },
+    {
+        id: 'doll_mold_2',
+        label: 'Basic Mold B',
+        moldPath: 'doll2.png',
+        subjectNoun: 'vinyl toy figure',
+        category: 'Doll'
+    },
+    {
+        id: 'doll_mold_3',
+        label: 'Basic Mold C',
+        moldPath: 'doll3.jpg',
+        subjectNoun: 'vinyl toy figure',
+        category: 'Doll'
+    }
+];
+
+export const DOLL_PRESETS = [
+    {
+        id: 'doll_studio',
+        label: 'Studio Finish',
+        prompt: 'A high-quality studio mockup of the painted vinyl toy, neutral background, soft product lighting, looks like a real blind-box collectible.',
+        category: 'DollStudio'
+    }
+];
+

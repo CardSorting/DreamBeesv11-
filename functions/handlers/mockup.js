@@ -1,8 +1,10 @@
 import { logger, getS3Client } from "../lib/utils.js";
+import * as fs from 'fs';
+import * as path from 'path';
 import { VertexAI } from "@google-cloud/vertexai";
 import { withVertexRateLimiting } from "../lib/rateLimiter.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
-import { MOCKUP_ITEMS, MOCKUP_PRESETS, TCG_ITEMS, TCG_PRESETS } from "../lib/mockupData.js";
+import { MOCKUP_ITEMS, MOCKUP_PRESETS, TCG_ITEMS, TCG_PRESETS, DOLL_ITEMS, DOLL_PRESETS } from "../lib/mockupData.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { retryOperation } from "../lib/utils.js";
 import { HarmCategory, HarmBlockThreshold } from "@google-cloud/vertexai";
@@ -85,28 +87,90 @@ const generateSingleMockup = async (imageBase64, item, preset, userUid) => {
       Output only the final product image.
     `;
 
-        const requestPayload = {
-            contents: [{
-                role: 'user',
-                parts: [
-                    { inlineData: { mimeType: 'image/png', data: imageBase64 } },
-                    { text: fullPrompt }
-                ]
-            }],
-            safetySettings: [
-                { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-                { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-                { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-                { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH }
-            ]
-        };
+        const safetySettings = [
+            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH }
+        ];
+
+        let requestPayload;
+
+        // ---------------------------------------------------------
+        // DOLL MODE LOGIC
+        // ---------------------------------------------------------
+        if (item.category === 'Doll' && item.moldPath) {
+            // Read the mold image
+            const moldFilePath = path.join(process.cwd(), 'assets', 'dolls', item.moldPath);
+
+            let moldBuffer;
+            try {
+                moldBuffer = fs.readFileSync(moldFilePath);
+            } catch (e) {
+                logger.error(`[Mockup] Failed to read mold file: ${moldFilePath} `, e);
+                throw new Error(`Mold asset missing: ${item.label} `);
+            }
+            const moldBase64 = moldBuffer.toString('base64');
+
+            const dollPrompt = `You are a vinyl designer toy colorist.
+
+You are given an image of a blank, unpainted vinyl toy.
+This blank is the final mold.
+
+            RULES(important):
+        - Do NOT change the shape, proportions, or pose.
+- Do NOT add or remove ears, limbs, or features.
+- Do NOT add clothing, accessories, patterns, symbols, or text.
+- Do NOT add facial features or expressions.
+- Do NOT redraw the toy.
+
+            TASK:
+Only apply color, finish, and surface treatment to the existing toy.
+
+You may use:
+        - Solid colors
+            - Gradients
+            - Subtle paint transitions
+                - Vinyl finishes(matte, gloss, pearl, soft - touch, translucent)
+                    - Very subtle speckle or marbling IF it looks manufacturable
+
+STYLE SEED:
+Apply the style, color palette, and texture from the provided User Image.
+
+            OUTPUT:
+${preset.prompt} `;
+
+            requestPayload = {
+                contents: [{
+                    role: 'user',
+                    parts: [
+                        { text: dollPrompt },
+                        { inlineData: { mimeType: 'image/png', data: moldBase64 } }, // The Mold
+                        { inlineData: { mimeType: 'image/png', data: imageBase64 } }  // The Style Reference
+                    ]
+                }],
+                safetySettings: safetySettings
+            };
+        } else {
+            // STANDARD / TCG LOGIC
+            requestPayload = {
+                contents: [{
+                    role: 'user',
+                    parts: [
+                        { inlineData: { mimeType: 'image/png', data: imageBase64 } },
+                        { text: fullPrompt }
+                    ]
+                }],
+                safetySettings: safetySettings
+            };
+        }
 
         // Generation
         logger.info(`[Mockup] Sending request to Vertex AI for ${item.label}...`);
         const response = await withVertexRateLimiting(async () => {
             const res = await generativeModel.generateContent(requestPayload);
             return res.response;
-        }, { context: `Mockup-${item.label}`, retries: 3 });
+        }, { context: `Mockup - ${item.label} `, retries: 3 });
         logger.info(`[Mockup] Vertex AI response received for ${item.label}`);
 
         // Extract Image
@@ -124,8 +188,8 @@ const generateSingleMockup = async (imageBase64, item, preset, userUid) => {
         if (!outputImageBase64) {
             const finishReason = candidate?.finishReason;
             const safetyRatings = candidate?.safetyRatings;
-            logger.error(`[Mockup] No image generated. Reason: ${finishReason}`, { safetyRatings });
-            throw new Error(`No image generated (Reason: ${finishReason})`);
+            logger.error(`[Mockup] No image generated.Reason: ${finishReason} `, { safetyRatings });
+            throw new Error(`No image generated(Reason: ${finishReason})`);
         }
 
         // Upload to B2 with Rewrite/Retry
@@ -133,7 +197,7 @@ const generateSingleMockup = async (imageBase64, item, preset, userUid) => {
         const timestamp = Date.now();
         const safeLabel = item.label.replace(/[^a-z0-9]/gi, '_').toLowerCase();
         const safePreset = preset.label.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        const key = `mockups/${userUid}/${timestamp}-${safeLabel}-${safePreset}.png`;
+        const key = `mockups / ${userUid}/${timestamp}-${safeLabel}-${safePreset}.png`;
         const buffer = Buffer.from(outputImageBase64, 'base64');
 
         logger.info(`[Mockup] Uploading to B2: ${key}`);
@@ -200,6 +264,10 @@ export const handleGachaSpin = async (request) => {
         sourceItems = TCG_ITEMS;
         sourcePresets = TCG_PRESETS;
         logger.info("[Gacha] Mode: TCG/CCG Active");
+    } else if (request.data.mode === 'doll') {
+        sourceItems = DOLL_ITEMS;
+        sourcePresets = DOLL_PRESETS;
+        logger.info("[Gacha] Mode: Doll Reskin Active");
     }
 
     // Select random unique items (currently just 1 for cost saving/speed as per user pref)
