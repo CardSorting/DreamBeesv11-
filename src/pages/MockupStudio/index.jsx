@@ -109,23 +109,40 @@ const MockupStudio = () => {
                         const savePromises = prizes.map(async (prize) => {
                             try {
                                 await addDoc(collection(db, 'generations'), {
+                                    // Core identification
                                     userId: currentUser.uid,
                                     userEmail: currentUser.email,
                                     userDisplayName: (userProfile?.displayPreference === 'username' && userProfile?.username)
                                         ? `@${userProfile.username}`
                                         : (currentUser.displayName || 'Anonymous'),
-                                    prompt: prize.prompt,
-                                    imageUrl: prize.url,
+
+                                    // Image URLs (multiple formats for compatibility)
                                     url: prize.url,
+                                    imageUrl: prize.url,
                                     thumbnailUrl: prize.url,
+
+                                    // Content metadata
+                                    prompt: prize.prompt,
                                     type: 'mockup',
-                                    isPublic: true,
-                                    createdAt: serverTimestamp(),
-                                    modelId: 'gemini-2.5-flash-image',
+                                    aspectRatio: '1/1',
+
+                                    // Mockup-specific fields
                                     mockupLabel: prize.label,
                                     presetLabel: prize.presetLabel,
+                                    mockupItemId: prize.mockupItemId,  // Enables "Remix" button in feed
+                                    presetId: prize.presetId,
+                                    filename: prize.filename,
+
+                                    // Model info
+                                    modelId: 'gemini-2.5-flash-image',
+
+                                    // Visibility & metrics
+                                    isPublic: true,
                                     likesCount: 0,
-                                    bookmarksCount: 0
+                                    bookmarksCount: 0,
+
+                                    // Timestamp
+                                    createdAt: serverTimestamp()
                                 });
                             } catch (fireError) {
                                 console.error("Failed to save to gallery:", fireError);
