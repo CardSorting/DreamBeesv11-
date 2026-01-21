@@ -334,11 +334,9 @@ const MockupStudio = () => {
                     </div>
 
                     {/* Right Panel: 3D Stage (Hide when showing prizes) */}
-                    {appState !== AppState.PRIZE && (
-                        <div className="gacha-3d-stage">
-                            <BeeCrateScene appState={appState} />
-                        </div>
-                    )}
+                    <div className="gacha-3d-stage" style={{ display: appState !== AppState.PRIZE ? 'block' : 'none' }}>
+                        <BeeCrateScene appState={appState} />
+                    </div>
 
                 </div>
             </main>

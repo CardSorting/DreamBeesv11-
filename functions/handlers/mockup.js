@@ -1,15 +1,18 @@
-import { logger, getS3Client } from "../lib/utils.js";
-import * as fs from 'fs';
-import * as path from 'path';
-import { VertexAI } from "@google-cloud/vertexai";
+import { logger, getS3Client, retryOperation } from "../lib/utils.js";
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { VertexAI, HarmCategory, HarmBlockThreshold } from "@google-cloud/vertexai";
 import { withVertexRateLimiting } from "../lib/rateLimiter.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
 import { MOCKUP_ITEMS, MOCKUP_PRESETS, TCG_ITEMS, TCG_PRESETS, DOLL_ITEMS, DOLL_PRESETS } from "../lib/mockupData.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { retryOperation } from "../lib/utils.js";
-import { HarmCategory, HarmBlockThreshold } from "@google-cloud/vertexai";
 import { db, FieldValue } from "../firebaseInit.js";
 import { HttpsError } from "firebase-functions/v2/https";
+
+// ESM __dirname fix
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Initialize Vertex AI
 const project = process.env.GCLOUD_PROJECT || "dreambees-alchemist";
@@ -101,7 +104,9 @@ const generateSingleMockup = async (imageBase64, item, preset, userUid) => {
         // ---------------------------------------------------------
         if (item.category === 'Doll' && item.moldPath) {
             // Read the mold image
-            const moldFilePath = path.join(process.cwd(), 'assets', 'dolls', item.moldPath);
+            // Resolve path using __dirname (handlers/) -> up one level -> assets/dolls
+            const functionsRoot = path.resolve(__dirname, '..');
+            const moldFilePath = path.join(functionsRoot, 'assets', 'dolls', item.moldPath);
 
             let moldBuffer;
             try {

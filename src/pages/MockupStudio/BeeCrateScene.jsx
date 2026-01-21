@@ -380,7 +380,7 @@ const SceneContent = ({ appState }) => {
 
             <pointLight position={[-10, 5, -5]} intensity={1} color="#FFAB00" />
 
-            <Stars radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={0.5} />
+            <Stars radius={100} depth={50} count={1500} factor={4} saturation={0} fade speed={0.5} />
 
             {/* Passive particles (Dust/Pollen) */}
             <Sparkles count={80} scale={10} size={2} speed={0.4} opacity={0.5} color="#FFD700" />
@@ -398,11 +398,11 @@ const SceneContent = ({ appState }) => {
             <ContactShadows
                 frames={1}
                 position={[0, -4.5, 0]}
-                opacity={0.5}
+                opacity={0.4}
                 scale={30}
-                blur={2}
+                blur={1.5}
                 far={20}
-                resolution={512}
+                resolution={256}
                 color="#E65100"
             />
         </>
