@@ -3,6 +3,7 @@ import SEO from '../components/SEO';
 import { useModel } from '../contexts/ModelContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { Sparkles, Loader2, CheckCircle2, Heart, Flag } from 'lucide-react';
+import Footer from '../components/Footer';
 import { getOptimizedImageUrl, getImageSrcSet } from '../utils';
 import { getBalancedRecommendations } from '../utils/relevance';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -801,13 +802,19 @@ export default function DiscoveryDesktop() {
                         )}
                     </AnimatePresence>
 
+                    {/* Footer - Integrated for seamless transition */}
+                    {!isInitialLoading && globalShowcaseCache.length > 0 && (
+                        <div style={{ marginTop: '40px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                            <Footer />
+                        </div>
+                    )}
                 </div>
-            </main >
+            </main>
             <SuggestedPanel
                 currentModel={activeModelId === 'all' ? null : availableModels.find(m => m.id === activeModelId)}
                 availableModels={availableModels}
                 setActiveFilter={() => { }}
             />
-        </div >
+        </div>
     );
 }

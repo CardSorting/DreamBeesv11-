@@ -3,6 +3,7 @@ import SEO from '../components/SEO';
 import { useModel } from '../contexts/ModelContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { Sparkles, Loader2, CheckCircle2, Heart, Flag } from 'lucide-react';
+import BottomNav from '../components/BottomNav';
 import { getOptimizedImageUrl, getImageSrcSet } from '../utils';
 import { useNavigate, useParams } from 'react-router-dom';
 import { slugify } from '../utils/urlHelpers';
@@ -292,7 +293,11 @@ export default function DiscoveryMobile() {
                         <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>End of feed</span>
                     )}
                 </div>
+                {/* Integrated BottomNav for seamless transition */}
+                <div style={{ position: 'sticky', bottom: 0, zIndex: 100, width: '100%' }}>
+                    <BottomNav />
+                </div>
             </div>
-        </div >
+        </div>
     );
 }

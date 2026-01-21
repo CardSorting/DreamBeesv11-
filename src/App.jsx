@@ -37,34 +37,13 @@ function Layout() {
       <main className="app-main">
         <AnimatedRoutes />
       </main>
-      <AnimatePresence>
-        {!isLanding && !isShowcaseDetail && pathname !== '/generate' && !(pathname.startsWith('/mockup-catalog') && isMobile) && (
-          <motion.div
-            key="footer"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="app-footer"
-          >
-            <Footer />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {!isLanding && !isShowcaseDetail && !pathname.startsWith('/discovery') && pathname !== '/generate' && !(pathname.startsWith('/mockup-catalog') && isMobile) && (
+        <div className="app-footer">
+          <Footer />
+        </div>
+      )}
 
-      <AnimatePresence>
-        {!isShowcaseDetail && pathname !== '/generate' && (
-          <motion.div
-            key="bottom-nav"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <BottomNav />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {!isShowcaseDetail && !pathname.startsWith('/discovery') && pathname !== '/generate' && <BottomNav />}
       <BackToTop />
     </div>
   );
