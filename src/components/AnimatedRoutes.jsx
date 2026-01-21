@@ -41,6 +41,7 @@ const MockupStudio = lazyRetry(() => import('../pages/MockupStudio'));
 const MockupFeed = lazyRetry(() => import('../pages/MockupFeed'));
 const MockupCatalog = lazyRetry(() => import('../pages/MockupCatalog'));
 const MockupProductPage = lazyRetry(() => import('../pages/MockupCatalog/MockupProductPage'));
+const MemeFormatter = lazyRetry(() => import('../pages/MemeFormatter'));
 
 import { Privacy, Terms, Cookies } from '../pages/Legal';
 import { Careers, Brand, Api, Showcase } from '../pages/Misc';
@@ -173,6 +174,10 @@ const AnimatedRoutes = () => {
                             } />
                             <Route path="/mockup-catalog/item/:itemId" element={
                                 <PrivateRoute><MockupProductPage /></PrivateRoute>
+                            } />
+
+                            <Route path="/meme-formatter" element={
+                                <PrivateRoute><MemeFormatter /></PrivateRoute>
                             } />
 
                             <Route path="/chat/:id" element={

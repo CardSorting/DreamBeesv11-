@@ -64,6 +64,17 @@ const AppsHub = () => {
                     isNew: true
                 };
 
+                const memeFormatterApp = {
+                    id: 'meme-formatter',
+                    title: 'Meme Formatter',
+                    description: 'Internet-Shaped Image Processor.',
+                    icon: Smile,
+                    tags: ['meme', 'fun', 'image', 'tool'],
+                    path: '/meme-formatter',
+                    previewImage: '/app-previews/meme_formatter.png', // Placeholder or use null
+                    isNew: true
+                };
+
                 const q = query(collection(db, "apps"), orderBy("order"));
                 const querySnapshot = await getDocs(q);
 
@@ -79,8 +90,8 @@ const AppsHub = () => {
                     });
                 }
 
-                // Prepend or Append Mockup Studio
-                setApps([mockupStudioApp, ...loadedApps]);
+                // Prepend or Append Mockup Studio & Meme Formatter
+                setApps([mockupStudioApp, memeFormatterApp, ...loadedApps]);
 
             } catch (error) {
                 console.error("Error fetching apps:", error);

@@ -306,3 +306,266 @@ export const transformImageWithGemini = async (imageUrl, styleName, instructions
         imageId: imageRef.id
     };
 };
+
+export const MEME_FORMATTER_SYSTEM_PROMPT = `Internet-Shaped Meme Formatter
+
+You are not a comedian.
+You are not creative.
+You do not invent jokes.
+
+You are a meme formatting engine.
+
+Your only job is to make user-provided images look like recognizable internet memes using established visual grammar.
+
+Core Rule
+
+Legibility > originality > creativity
+
+If forced to choose, always prioritize clarity and familiarity.
+
+What You Are Allowed To Do
+
+Apply canonical meme fonts (Impact, bold sans-serif, or user-specified)
+
+Place text using established meme layouts:
+
+top / bottom caption
+
+center proclamation
+
+left label / right label
+
+vs panels
+
+handshake / agreement format
+
+Adjust:
+
+text size
+
+stroke / outline
+
+contrast
+
+spacing
+
+Perform light visual restyling ONLY if requested (anime, sketch, posterized, etc.)
+
+What You Are NOT Allowed To Do
+
+❌ Invent jokes
+
+❌ Add extra text beyond what the user provides
+
+❌ Explain the meme
+
+❌ Reference AI, prompts, or creativity
+
+❌ Be clever, ironic, or self-aware
+
+If the user asks you to “make it funny,” respond by formatting the image more clearly, not by adding humor.
+
+Tone & Style Guidelines
+
+Assume the user already understands the meme
+
+Do not editorialize
+
+Do not overdesign
+
+Simplicity beats novelty
+
+Familiar beats impressive
+
+Default Assumptions (If Not Specified)
+
+Use high-contrast white text with black outline
+
+Place text where it does not obstruct faces
+
+Keep composition balanced and instantly readable at phone size
+
+One idea per image
+
+Example Behavior
+
+User Input:
+
+Image: two characters shaking hands
+Text: “My Brother In Tensor”
+
+Correct Output:
+
+Centered bold meme font
+
+Clear contrast
+
+No added commentary
+
+No extra words
+
+Incorrect Output:
+
+Adding dialogue
+
+Explaining the joke
+
+Rephrasing the text
+
+Making up new captions
+
+Failure Mode Handling
+
+If the input image does not match a known meme structure:
+
+Apply the simplest readable layout
+
+Do not attempt to invent context
+
+Do not embellish
+
+Final Instruction
+
+You are a typesetter, not a thinker.
+You are here to make images internet-shaped, not interesting.
+
+Obey the grammar of memes.`;
+
+// Helper for Meme Formatting (using Vertex AI)
+export const formatMemeWithGemini = async (imageUrl, text, userId = 'system') => {
+
+    // 1. Fetch Input Image & Convert to Base64
+    let inputBase64 = null;
+    let mimeType = "image/png";
+
+    try {
+        const imgRes = await fetchWithTimeout(imageUrl);
+        if (!imgRes.ok) throw new Error(`Failed to fetch source image: ${imgRes.statusText}`);
+        const arrayBuffer = await imgRes.arrayBuffer();
+        inputBase64 = Buffer.from(arrayBuffer).toString('base64');
+        const contentType = imgRes.headers.get('content-type');
+        if (contentType) mimeType = contentType;
+    } catch (e) {
+        console.error("[Meme] Failed to fetch source image:", e);
+        throw new Error("Could not retrieve source image for meme generation");
+    }
+
+    // 2. Initialize Vertex AI
+    const { VertexAI } = await import("@google-cloud/vertexai");
+    const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
+    const model = vertexAI.getGenerativeModel({
+        model: "gemini-2.5-flash-image",
+        systemInstruction: MEME_FORMATTER_SYSTEM_PROMPT
+    });
+
+    // 3. Construct Prompt
+    const prompt = `Format this image as a meme with the text: "${text}". Return only the image.`;
+
+    console.log(`[Meme] Calling Vertex AI with text: ${text}`);
+
+    const request = {
+        contents: [
+            {
+                role: 'user',
+                parts: [
+                    {
+                        inlineData: {
+                            mimeType: mimeType,
+                            data: inputBase64
+                        }
+                    },
+                    { text: prompt }
+                ]
+            }
+        ]
+    };
+
+    let generatedImageBase64 = null;
+
+    try {
+        const result = await model.generateContent(request);
+        const response = await result.response;
+
+        const candidate = response.candidates?.[0];
+        if (candidate?.finishReason === 'SAFETY') {
+            throw new Error("Blocked by Safety Filter");
+        }
+
+        // Check for inline data (image)
+        const firstPart = candidate?.content?.parts?.[0];
+        generatedImageBase64 = firstPart?.inlineData?.data || null;
+
+        if (!generatedImageBase64) {
+            throw new Error("No image data returned from Vertex AI");
+        }
+
+    } catch (error) {
+        console.error(`[Meme] Vertex AI API error:`, error);
+        throw new Error(`Vertex AI call failed: ${error.message}`);
+    }
+
+    // 4. Process Output (Base64 -> Buffer -> Sharp)
+    const { default: sharp } = await import("sharp");
+    const imageBuffer = Buffer.from(generatedImageBase64, 'base64');
+    const sharpImg = sharp(imageBuffer);
+    const webpBuffer = await sharpImg.webp({ quality: 90 }).toBuffer();
+
+    // Create Thumbnail
+    const thumbBuffer = await sharpImg
+        .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 80 })
+        .toBuffer();
+
+    // Create LQIP
+    const lqipBuffer = await sharpImg
+        .resize(20, 20, { fit: 'inside' })
+        .webp({ quality: 20 })
+        .toBuffer();
+    const lqip = `data:image/webp;base64,${lqipBuffer.toString('base64')}`;
+
+    // Upload to B2
+    const baseFolder = `generated/${userId}/meme_${Date.now()}`;
+    const originalFilename = `${baseFolder}.webp`;
+    const thumbFilename = `${baseFolder}_thumb.webp`;
+
+    const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+    const s3 = await getS3Client();
+
+    await Promise.all([
+        s3.send(new PutObjectCommand({
+            Bucket: B2_BUCKET,
+            Key: originalFilename,
+            Body: webpBuffer,
+            ContentType: "image/webp"
+        })),
+        s3.send(new PutObjectCommand({
+            Bucket: B2_BUCKET,
+            Key: thumbFilename,
+            Body: thumbBuffer,
+            ContentType: "image/webp"
+        }))
+    ]);
+
+    const finalImageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalFilename}`;
+    const finalThumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbFilename}`;
+
+    // Save to Firestore 'images' collection
+    const imageRef = await db.collection("images").add({
+        userId,
+        prompt: text, // Saving the meme text as the prompt
+        aspectRatio: "match_input_image",
+        modelId: "gemini-2.5-flash-image",
+        imageUrl: finalImageUrl,
+        thumbnailUrl: finalThumbnailUrl,
+        lqip,
+        createdAt: new Date(),
+        type: 'meme'
+    });
+
+    return {
+        imageUrl: finalImageUrl,
+        thumbnailUrl: finalThumbnailUrl,
+        lqip,
+        imageId: imageRef.id
+    };
+};
