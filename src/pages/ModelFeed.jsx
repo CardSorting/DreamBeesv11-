@@ -413,8 +413,9 @@ export default function ModelFeed() {
     return (
         <div className="feed-layout-wrapper">
             <SEO
-                title={`${model.name} Feed - DreamBees`}
-                description={`Instagram-style showcase feed for the ${model.name} AI model.`}
+                title={activeShowcaseImage ? `${activeShowcaseImage.prompt?.slice(0, 50)}...` : `${model.name} Feed - DreamBees`}
+                description={activeShowcaseImage ? activeShowcaseImage.prompt : `Instagram-style showcase feed for the ${model.name} AI model.`}
+                image={activeShowcaseImage ? (activeShowcaseImage.url || activeShowcaseImage.imageUrl) : model.image}
             />
 
             <Sidebar activeId={id ? `/models` : location.pathname} /> {/* Dynamic active ID */}

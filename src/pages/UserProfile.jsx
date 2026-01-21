@@ -189,7 +189,12 @@ export default function UserProfile() {
 
     return (
         <div className="dashboard-container">
-            <SEO title="My Studio - DreamBees" />
+            <SEO
+                title={selectedImage ? `${selectedImage.prompt?.slice(0, 50)}...` : "My Studio - DreamBees"}
+                description={selectedImage ? selectedImage.prompt : "Manage your personal collection of AI generations and discoveries."}
+                image={selectedImage ? (selectedImage.thumbnailUrl || selectedImage.url) : undefined}
+                noindex={true}
+            />
 
             {/* Header Section */}
             <div className="dashboard-header">

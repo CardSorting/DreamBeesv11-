@@ -209,8 +209,9 @@ export default function MockupFeed() {
             />
 
             <SEO
-                title={creatorFilter ? `${creatorFilter.value || creatorFilter.name} Mockups - DreamBees` : "Mockup Gallery - DreamBees"}
-                description="Explore community generated product mockups."
+                title={focusImage ? `${focusImage.prompt?.slice(0, 50)}...` : (creatorFilter ? `${creatorFilter.value || creatorFilter.name} Mockups - DreamBees` : "Mockup Gallery - DreamBees")}
+                description={focusImage ? focusImage.prompt : "Explore community generated product mockups."}
+                image={focusImage ? (focusImage.thumbnailUrl || focusImage.imageUrl) : undefined}
             />
 
             <Sidebar activeId="/mockups" />

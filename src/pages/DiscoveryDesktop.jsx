@@ -7,7 +7,7 @@ import { getOptimizedImageUrl, getImageSrcSet } from '../utils';
 import { getBalancedRecommendations } from '../utils/relevance';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import SuggestedPanel from '../components/SuggestedPanel';
 import './Discovery.css';
@@ -31,11 +31,30 @@ export default function DiscoveryDesktop() {
     // -- MODEL STATE --
     // Sync state with URL param, default to 'all'
     const [activeModelId, setActiveModelId] = useState(modelId || 'all');
+    const [searchParams, setSearchParams] = useSearchParams();
 
     // Update state when URL changes
     useEffect(() => {
         setActiveModelId(modelId || 'all');
     }, [modelId]);
+
+    // Deep Linking for Focused Image
+    useEffect(() => {
+        const viewId = searchParams.get('view');
+        if (viewId && !focusImage) {
+            // Find in current data source
+            const source = activeModelId === 'all'
+                ? globalShowcaseCache
+                : (showcaseCache[activeModelId] || []);
+
+            const found = source.find(img => img.id === viewId);
+            if (found) {
+                setFocusImage(found);
+            }
+        } else if (!viewId && focusImage) {
+            setFocusImage(null);
+        }
+    }, [searchParams, activeModelId, globalShowcaseCache, showcaseCache, focusImage]);
 
     // Scroll to top on model change
     const handleModelSelect = (newModelId) => {
@@ -210,18 +229,28 @@ export default function DiscoveryDesktop() {
 
     // Handle Image Click (Conditional Navigation)
     const handleImageClick = useCallback((imgItem) => {
-        // Since this is desktop component, we assume desktop behavior mostly, 
-        // but technically window resize could make it small. 
-        // But the parent switcher handles broad mobile/desktop switch.
-        // We will keep the logic just in case but default to setFocusImage.
         const isMobile = window.innerWidth < MOBILE_BREAKPOINT;
 
         if (isMobile) {
             navigate(`/discovery/${imgItem.id}`);
         } else {
             setFocusImage(imgItem);
+            setSearchParams(prev => {
+                const next = new URLSearchParams(prev);
+                next.set('view', imgItem.id);
+                return next;
+            }, { replace: true });
         }
-    }, [navigate]);
+    }, [navigate, setSearchParams]);
+
+    const handleCloseFocus = () => {
+        setFocusImage(null);
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            next.delete('view');
+            return next;
+        }, { replace: true });
+    };
 
     // Fetch Related Images when Focused
     useEffect(() => {
@@ -278,8 +307,9 @@ export default function DiscoveryDesktop() {
     return (
         <div className="feed-layout-wrapper">
             <SEO
-                title="Discover AI Art - Community Showcase"
-                description="Explore a curated feed of AI-generated artwork. Get inspired by unique styles, prompts, and creative techniques from the DreamBees community."
+                title={focusImage ? `${focusImage.prompt?.slice(0, 60)}...` : "Discover AI Art - Community Showcase"}
+                description={focusImage ? focusImage.prompt : "Explore a curated feed of AI-generated artwork. Get inspired by unique styles, prompts, and creative techniques from the DreamBees community."}
+                image={focusImage ? (focusImage.thumbnailUrl || focusImage.imageUrl) : undefined}
                 keywords="AI art gallery, AI generated images, explore AI artwork, community showcase, AI art inspiration, creative prompts"
                 structuredData={{
                     "@context": "https://schema.org",
@@ -515,7 +545,7 @@ export default function DiscoveryDesktop() {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                onClick={() => setFocusImage(null)}
+                                onClick={handleCloseFocus}
                                 style={{
                                     position: 'fixed',
                                     top: 0,
@@ -535,7 +565,7 @@ export default function DiscoveryDesktop() {
                                 {/* Close Button */}
                                 <button
                                     className="focus-close-btn"
-                                    onClick={(e) => { e.stopPropagation(); setFocusImage(null); }}
+                                    onClick={(e) => { e.stopPropagation(); handleCloseFocus(); }}
                                     style={{
                                         position: 'absolute',
                                         top: '30px',

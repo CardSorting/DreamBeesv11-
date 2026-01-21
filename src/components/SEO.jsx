@@ -2,10 +2,25 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
 
-const SEO = ({ title, description, keywords, image, type = 'website', structuredData, noindex = false }) => {
+const SEO = ({ title, description, keywords, image, type = 'website', structuredData, noindex = false, canonical }) => {
     const location = useLocation();
     const siteUrl = 'https://dreambeesai.com'; // Replace with actual domain
-    const currentUrl = `${siteUrl}${location.pathname}`;
+
+    // Improved URL handling: includes search params for canonical if they are important (like 'view')
+    const searchParams = new URLSearchParams(location.search);
+    const viewId = searchParams.get('view');
+
+    // Base canonical URL
+    let currentUrl = `${siteUrl}${location.pathname}`;
+
+    // If a specific canonical is provided, use it
+    if (canonical) {
+        currentUrl = canonical.startsWith('http') ? canonical : `${siteUrl}${canonical}`;
+    } else if (viewId) {
+        // Automatically include viewId in canonical if present
+        currentUrl = `${currentUrl}?view=${viewId}`;
+    }
+
     const defaultTitle = 'AI Image Generator - Text to Image Online (No Discord Required)';
     const defaultDescription = 'Generate high-quality AI art directly on the web. No Discord servers, no complex prompts. Fast, private, and simple text-to-image creation. Start for free.';
     const defaultKeywords = 'AI image generator, text to image without discord, simple ai art tool, ai art generator, stable diffusion online, flux ai';

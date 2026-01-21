@@ -207,9 +207,9 @@ export default function ModelDetail() {
     return (
         <main style={{ background: '#0a0a0a', minHeight: '100vh', color: '#e5e5e5', position: 'relative' }}>
             <SEO
-                title={`${model.name} (${sortBy === 'TOP_RATED' ? 'Top Rated' : 'Latest'}) - AI Model`}
-                description={model.description}
-                image={model.image}
+                title={activeShowcaseImage ? `${activeShowcaseImage.prompt?.slice(0, 50)}...` : `${model.name} (${sortBy === 'TOP_RATED' ? 'Top Rated' : 'Latest'}) - AI Model`}
+                description={activeShowcaseImage ? activeShowcaseImage.prompt : model.description}
+                image={activeShowcaseImage ? (activeShowcaseImage.url || activeShowcaseImage.imageUrl) : model.image}
             />
 
             {/* Global Noise Overlay */}
