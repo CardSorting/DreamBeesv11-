@@ -1,4 +1,5 @@
 import React, { Suspense } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { BrowserRouter as Router, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ModelProvider } from './contexts/ModelContext';
@@ -36,12 +37,34 @@ function Layout() {
       <main className="app-main">
         <AnimatedRoutes />
       </main>
-      {!isLanding && !isShowcaseDetail && pathname !== '/generate' && !(pathname.startsWith('/mockup-catalog') && isMobile) && (
-        <div className="app-footer">
-          <Footer />
-        </div>
-      )}
-      {!isShowcaseDetail && pathname !== '/generate' && <BottomNav />}
+      <AnimatePresence>
+        {!isLanding && !isShowcaseDetail && pathname !== '/generate' && !(pathname.startsWith('/mockup-catalog') && isMobile) && (
+          <motion.div
+            key="footer"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="app-footer"
+          >
+            <Footer />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {!isShowcaseDetail && pathname !== '/generate' && (
+          <motion.div
+            key="bottom-nav"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            <BottomNav />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <BackToTop />
     </div>
   );
