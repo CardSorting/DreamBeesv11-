@@ -175,30 +175,40 @@ const MockupStudio = () => {
     const renderModeToggle = () => (
         <div className="mode-toggle-container w-full flex flex-col items-center">
             {/* The wrapper gets data-mode attribute to drive CSS */}
-            <div className="premium-toggle-wrapper" data-mode={isTCGMode ? 'tcg' : 'standard'}>
+            <div className="premium-toggle-wrapper three-way" data-mode={mode}>
 
                 {/* Sliding Background (positioned by CSS based on data-mode) */}
                 <div className="premium-toggle-slider"></div>
 
                 {/* Standard Button */}
                 <button
-                    onClick={(e) => { e.stopPropagation(); setIsTCGMode(false); }}
-                    className={`premium-toggle-btn ${!isTCGMode ? 'active' : 'inactive'}`}
+                    onClick={(e) => { e.stopPropagation(); setMode('standard'); }}
+                    className={`premium-toggle-btn ${mode === 'standard' ? 'active' : 'inactive'}`}
                 >
                     <span className="text-lg">🍯</span> Standard
                 </button>
 
                 {/* TCG Button */}
                 <button
-                    onClick={(e) => { e.stopPropagation(); setIsTCGMode(true); }}
-                    className={`premium-toggle-btn ${isTCGMode ? 'active' : 'inactive'}`}
+                    onClick={(e) => { e.stopPropagation(); setMode('tcg'); }}
+                    className={`premium-toggle-btn ${mode === 'tcg' ? 'active' : 'inactive'}`}
                 >
-                    <span className="text-lg">🃏</span> TCG Mode
+                    <span className="text-lg">🃏</span> TCG
+                </button>
+
+                {/* Doll Button */}
+                <button
+                    onClick={(e) => { e.stopPropagation(); setMode('doll'); }}
+                    className={`premium-toggle-btn ${mode === 'doll' ? 'active' : 'inactive'}`}
+                >
+                    <span className="text-lg">🧸</span> Doll
                 </button>
             </div>
 
             <p className="premium-toggle-subtext">
-                {isTCGMode ? "Authentic Trading Card Mockups" : "Standard Hive Product Mockups"}
+                {mode === 'tcg' ? "Authentic Trading Card Mockups" :
+                    mode === 'doll' ? "Custom Doll Reskin" :
+                        "Standard Hive Product Mockups"}
             </p>
         </div>
     );
