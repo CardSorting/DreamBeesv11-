@@ -109,7 +109,10 @@ const ShowcaseDetail = () => {
                             }
                         }
                     } catch (err) {
-                        console.error(`Error fetching image for ID ${targetId}:`, err);
+                        // Only log non-permission errors (permission errors are expected for private/non-existent images)
+                        if (err.code !== 'permission-denied') {
+                            console.error(`Error fetching image for ID ${targetId}:`, err);
+                        }
                     }
                 }
             }

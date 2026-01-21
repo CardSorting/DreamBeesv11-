@@ -36,6 +36,7 @@ const Slideshow = lazyRetry(() => import('../pages/Slideshow'));
 const AppsHub = lazyRetry(() => import('../pages/AppsHub'));
 const PersonaChat = lazyRetry(() => import('../pages/PersonaChat'));
 const Discovery = lazyRetry(() => import('../pages/Discovery'));
+const DiscoveryDesktop = lazyRetry(() => import('../pages/DiscoveryDesktop'));
 const ShowcaseDetail = lazyRetry(() => import('../pages/ShowcaseDetail'));
 const MockupStudio = lazyRetry(() => import('../pages/MockupStudio'));
 const MockupFeed = lazyRetry(() => import('../pages/MockupFeed'));
@@ -102,7 +103,9 @@ const AnimatedRoutes = () => {
 
                             <Route path="/discovery" element={<Discovery />} />
                             <Route path="/discovery/model/:modelId" element={<Discovery />} />
-                            <Route path="/discovery/:id" element={<ShowcaseDetail />} />
+                            <Route path="/discovery/:id" element={
+                                isMobile ? <ShowcaseDetail /> : <DiscoveryDesktop />
+                            } />
                             <Route path="/mockups" element={<MockupFeed />} />
                             <Route path="/mockups/tag/:tag" element={<MockupFeed />} />
                             <Route path="/mockups/creator/:userId" element={<MockupFeed />} />

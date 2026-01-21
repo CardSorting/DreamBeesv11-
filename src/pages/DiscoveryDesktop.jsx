@@ -31,7 +31,7 @@ export default function DiscoveryDesktop() {
     const { isLiked, toggleLike, isHidden, hidePost } = useUserInteractions();
 
     // -- MODEL STATE --
-    const { modelId } = useParams();
+    const { modelId, id } = useParams();
     // -- MODEL STATE --
     // Sync state with URL param, default to 'all'
     const [activeModelId, setActiveModelId] = useState(modelId || 'all');
@@ -47,9 +47,17 @@ export default function DiscoveryDesktop() {
     const [relatedImages, setRelatedImages] = useState([]);
     const [isFocusLoading, setIsFocusLoading] = useState(false);
 
-    // Deep Linking for Focused Image
+    // Deep Linking for Focused Image - Enhanced to handle both :id route param and ?view query param
     useEffect(() => {
-        const viewId = searchParams.get('view');
+        // Extract ID from route (for /discovery/:id) or fall back to query param (for ?view=id)
+        // The :id may include slug prefix (e.g., "artwork-title--actual-id")
+        let viewId = id || searchParams.get('view');
+
+        // If we have a route ID with double hyphen separator, extract the actual ID
+        if (viewId && viewId.includes('--')) {
+            viewId = viewId.split('--').pop();
+        }
+
         if (!viewId) {
             if (focusImage) setFocusImage(null);
             return;
@@ -83,12 +91,15 @@ export default function DiscoveryDesktop() {
                         setFocusImage({ id: snapshot.id, ...snapshot.data() });
                     }
                 } catch (err) {
-                    console.error("Error fetching deep-linked image:", err);
+                    // Only log non-permission errors
+                    if (err.code !== 'permission-denied') {
+                        console.error("Error fetching deep-linked image:", err);
+                    }
                 }
             };
             fetchImage();
         }
-    }, [searchParams, activeModelId, globalShowcaseCache, showcaseCache, focusImage]);
+    }, [id, searchParams, activeModelId, globalShowcaseCache, showcaseCache, focusImage]);
 
     // Scroll to top on model change
     const handleModelSelect = (newModelId) => {
@@ -265,10 +276,12 @@ export default function DiscoveryDesktop() {
     }, [navigate]);
 
     const handleCloseFocus = () => {
-        // If we landed here via a slugified path, we might want to navigate back to discovery
-        if (location.pathname.startsWith('/discovery/')) {
+        // Navigate back to the appropriate discovery view
+        if (id) {
+            // If we got here via /discovery/:id route, navigate back to grid
             navigate(activeModelId === 'all' ? '/discovery' : `/discovery/model/${activeModelId}`);
         } else {
+            // If using query param (?view=id), just clear the param
             setFocusImage(null);
             setSearchParams(prev => {
                 const next = new URLSearchParams(prev);
