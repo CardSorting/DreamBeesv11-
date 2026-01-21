@@ -412,7 +412,12 @@ export default function DiscoveryDesktop() {
 
                     {/* MASONRY GRID */}
                     <section className="gallery-section" aria-label="Discovery Gallery" style={{ minHeight: '60vh' }}>
-                        <div className="masonry-grid">
+                        <motion.div
+                            className="masonry-grid"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.8, ease: "easeOut" }}
+                        >
                             {displayImages.map((imgItem, index) => {
                                 const ratios = ['1/1', '3/4', '1/1', '2/3', '4/3', '1/1', '3/5'];
                                 const ratio = imgItem.aspectRatio || ratios[index % ratios.length];
@@ -522,7 +527,7 @@ export default function DiscoveryDesktop() {
                                     </article>
                                 );
                             })}
-                        </div>
+                        </motion.div>
 
                         {/* Initial Loading State */}
                         {isInitialLoading && (

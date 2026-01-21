@@ -67,10 +67,10 @@ function PrivateRoute({ children }) {
 
 
 const pageTransition = {
-    initial: { opacity: 0, y: 10 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -10 },
-    transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] }
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0 },
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
 };
 
 const AnimatedRoutes = () => {
@@ -85,7 +85,7 @@ const AnimatedRoutes = () => {
                 animate="animate"
                 exit="exit"
                 variants={pageTransition}
-                style={{ width: '100%', height: '100%' }}
+                style={{ width: '100%', height: '100%', background: '#000' }}
             >
                 <RouteErrorBoundary>
                     <Suspense fallback={<PageLoader />}>

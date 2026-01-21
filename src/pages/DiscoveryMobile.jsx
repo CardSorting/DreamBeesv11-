@@ -213,7 +213,12 @@ export default function DiscoveryMobile() {
 
             {/* Content Container - Single Column */}
             <div className="discovery-container" style={{ padding: '0 12px' }}>
-                <div className="masonry-grid">
+                <motion.div
+                    className="masonry-grid"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                >
                     {displayImages.map((imgItem, index) => {
                         const ratio = imgItem.aspectRatio || '1/1';
                         const liked = isLiked(imgItem.id);
@@ -272,7 +277,7 @@ export default function DiscoveryMobile() {
                             </article>
                         );
                     })}
-                </div>
+                </motion.div>
 
                 {/* Loading States */}
                 {isInitialLoading && (
@@ -288,6 +293,6 @@ export default function DiscoveryMobile() {
                     )}
                 </div>
             </div>
-        </div>
+        </div >
     );
 }
