@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useRef, useCallback, useMemo } from 'react';
 import SEO from '../components/SEO';
 import { useModel } from '../contexts/ModelContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
@@ -40,6 +40,11 @@ export default function DiscoveryDesktop() {
     useEffect(() => {
         setActiveModelId(modelId || 'all');
     }, [modelId]);
+
+    // Focus View State
+    const [focusImage, setFocusImage] = useState(null);
+    const [relatedImages, setRelatedImages] = useState([]);
+    const [isFocusLoading, setIsFocusLoading] = useState(false);
 
     // Deep Linking for Focused Image
     useEffect(() => {
@@ -110,7 +115,7 @@ export default function DiscoveryDesktop() {
     }, [activeModelId, getShowcaseImages]);
 
     // COMPUTE FILTERED IMAGES
-    const displayImages = React.useMemo(() => {
+    const displayImages = useMemo(() => {
         const source = activeModelId === 'all'
             ? globalShowcaseCache
             : (showcaseCache[activeModelId] || []);
@@ -118,10 +123,6 @@ export default function DiscoveryDesktop() {
         return source.filter(img => !isHidden(img.id));
     }, [activeModelId, globalShowcaseCache, showcaseCache, isHidden]);
 
-    // Focus View State
-    const [focusImage, setFocusImage] = useState(null);
-    const [relatedImages, setRelatedImages] = useState([]);
-    const [isFocusLoading, setIsFocusLoading] = useState(false);
 
     // Removed activeShowcaseImage state as we navigate now
 

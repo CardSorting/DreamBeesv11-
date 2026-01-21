@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useRef, useCallback, useMemo } from 'react';
 import SEO from '../components/SEO';
 import { useModel } from '../contexts/ModelContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
@@ -52,7 +52,7 @@ export default function DiscoveryMobile() {
     }, [activeModelId, getShowcaseImages]);
 
     // COMPUTE FILTERED IMAGES
-    const displayImages = React.useMemo(() => {
+    const displayImages = useMemo(() => {
         const source = activeModelId === 'all'
             ? globalShowcaseCache
             : (showcaseCache[activeModelId] || []);

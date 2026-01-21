@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { slugify, unslugify } from '../utils/urlHelpers';
 import FeedPost from '../components/FeedPost';
+import { getOptimizedImageUrl } from '../utils';
 import './Discovery.css'; // Re-use discovery styles
 
 export default function MockupFeed() {
