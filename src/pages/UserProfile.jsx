@@ -45,6 +45,9 @@ export default function UserProfile() {
             setActiveFilter('all');
         }
     }, [tab]);
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [selectedModel, setSelectedModel] = useState(null);
+    const [usernameError, setUsernameError] = useState(null);
 
     // Deep Linking for Lightbox Modal
     useEffect(() => {
@@ -112,9 +115,6 @@ export default function UserProfile() {
             return newParams;
         });
     };
-    const [selectedImage, setSelectedImage] = useState(null);
-    const [selectedModel, setSelectedModel] = useState(null);
-    const [usernameError, setUsernameError] = useState(null);
 
     // Filter Logic
     const getFilteredItems = () => {
