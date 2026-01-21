@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import SEO from '../components/SEO';
 import { db } from '../firebase';
-import { collection, query, where, orderBy, limit, getDocs, startAfter } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, getDocs, startAfter, doc, getDoc } from 'firebase/firestore';
 import { Loader2, Heart, Palette, Flag } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import SuggestedPanel from '../components/SuggestedPanel';
@@ -52,14 +52,32 @@ export default function MockupFeed() {
     // Deep Linking for Focus Modal
     useEffect(() => {
         const viewId = searchParams.get('view');
-        if (viewId && !focusImage) {
-            // Look for image in loaded list or potentially fetch if single item view desired (advanced).
-            // For now, only finding in loaded list. 
-            // Ideally we'd fetch doc by ID if not found, but let's start with loaded.
-            const found = images.find(img => img.id === viewId);
-            if (found) setFocusImage(found);
-        } else if (!viewId && focusImage) {
-            setFocusImage(null);
+        if (!viewId) {
+            if (focusImage) setFocusImage(null);
+            return;
+        }
+
+        if (focusImage && focusImage.id === viewId) return;
+
+        // Try to find in current list
+        const found = images.find(img => img.id === viewId);
+        if (found) {
+            setFocusImage(found);
+        } else {
+            // Fetch directly from Firestore if not in cache
+            const fetchImage = async () => {
+                try {
+                    // Mockups are usually in generations collection
+                    const docRef = doc(db, 'generations', viewId);
+                    const snapshot = await getDoc(docRef);
+                    if (snapshot.exists()) {
+                        setFocusImage({ id: snapshot.id, ...snapshot.data() });
+                    }
+                } catch (err) {
+                    console.error("Error fetching mockup deep-linked image:", err);
+                }
+            };
+            fetchImage();
         }
     }, [searchParams, images, focusImage]);
 

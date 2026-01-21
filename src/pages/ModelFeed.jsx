@@ -3,7 +3,7 @@ import SEO from '../components/SEO';
 import { useParams, useNavigate, Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import AppCard from '../components/AppCard';
 import { ArrowLeft, Loader2, BadgeCheck, Zap, Settings, LayoutGrid, Music, Sparkles, Presentation, Hexagon, Home, ChevronDown, ChevronRight, LayoutTemplate, User, Film, Palette, Gamepad2, Star, Clock, Search, Heart, Smile } from 'lucide-react';
@@ -82,11 +82,38 @@ export default function ModelFeed() {
     // Deep Linking for Showcase Modal
     useEffect(() => {
         const viewId = searchParams.get('view');
-        if (viewId && !activeShowcaseImage) {
-            const found = feedItems.find(img => img.id === viewId);
-            if (found) setActiveShowcaseImage(found);
-        } else if (!viewId && activeShowcaseImage) {
-            setActiveShowcaseImage(null);
+        if (!viewId) {
+            if (activeShowcaseImage) setActiveShowcaseImage(null);
+            return;
+        }
+
+        if (activeShowcaseImage && activeShowcaseImage.id === viewId) return;
+
+        const found = feedItems.find(img => img.id === viewId);
+        if (found) {
+            setActiveShowcaseImage(found);
+        } else {
+            // Fetch directly from Firestore if not in cache (Crucial for deep link sharing)
+            const fetchImage = async () => {
+                try {
+                    // Try official showcase first
+                    let docRef = doc(db, 'model_showcase_images', viewId);
+                    let snapshot = await getDoc(docRef);
+
+                    if (!snapshot.exists()) {
+                        // Try user generations as fallback
+                        docRef = doc(db, 'generations', viewId);
+                        snapshot = await getDoc(docRef);
+                    }
+
+                    if (snapshot.exists()) {
+                        setActiveShowcaseImage({ id: snapshot.id, ...snapshot.data() });
+                    }
+                } catch (err) {
+                    console.error("Error fetching model feed deep-linked image:", err);
+                }
+            };
+            fetchImage();
         }
     }, [searchParams, feedItems, activeShowcaseImage]);
 

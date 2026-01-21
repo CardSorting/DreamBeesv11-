@@ -29,7 +29,12 @@ const SEO = ({ title, description, keywords, image, type = 'website', structured
     const metaTitle = title ? `${title} | DreamBeesAI` : defaultTitle;
     const metaDescription = description || defaultDescription;
     const metaKeywords = keywords || defaultKeywords;
-    const metaImage = image || defaultImage;
+
+    // Ensure image is absolute for OG/Twitter tags
+    let metaImage = image || defaultImage;
+    if (metaImage && !metaImage.startsWith('http')) {
+        metaImage = `${siteUrl}${metaImage.startsWith('/') ? '' : '/'}${metaImage}`;
+    }
 
     return (
         <Helmet>

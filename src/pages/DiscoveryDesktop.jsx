@@ -10,6 +10,8 @@ import { X } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import SuggestedPanel from '../components/SuggestedPanel';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import './Discovery.css';
 
 export default function DiscoveryDesktop() {
@@ -41,18 +43,43 @@ export default function DiscoveryDesktop() {
     // Deep Linking for Focused Image
     useEffect(() => {
         const viewId = searchParams.get('view');
-        if (viewId && !focusImage) {
-            // Find in current data source
-            const source = activeModelId === 'all'
-                ? globalShowcaseCache
-                : (showcaseCache[activeModelId] || []);
+        if (!viewId) {
+            if (focusImage) setFocusImage(null);
+            return;
+        }
 
-            const found = source.find(img => img.id === viewId);
-            if (found) {
-                setFocusImage(found);
-            }
-        } else if (!viewId && focusImage) {
-            setFocusImage(null);
+        if (focusImage && focusImage.id === viewId) return;
+
+        // 1. Try to find in current data source
+        const source = activeModelId === 'all'
+            ? globalShowcaseCache
+            : (showcaseCache[activeModelId] || []);
+
+        const found = source.find(img => img.id === viewId);
+        if (found) {
+            setFocusImage(found);
+        } else {
+            // 2. Fetch directly from Firestore if not in cache (Crucial for deep link sharing)
+            const fetchImage = async () => {
+                try {
+                    // Try official showcase first
+                    let docRef = doc(db, 'model_showcase_images', viewId);
+                    let snapshot = await getDoc(docRef);
+
+                    if (!snapshot.exists()) {
+                        // Try user generations as fallback
+                        docRef = doc(db, 'generations', viewId);
+                        snapshot = await getDoc(docRef);
+                    }
+
+                    if (snapshot.exists()) {
+                        setFocusImage({ id: snapshot.id, ...snapshot.data() });
+                    }
+                } catch (err) {
+                    console.error("Error fetching deep-linked image:", err);
+                }
+            };
+            fetchImage();
         }
     }, [searchParams, activeModelId, globalShowcaseCache, showcaseCache, focusImage]);
 

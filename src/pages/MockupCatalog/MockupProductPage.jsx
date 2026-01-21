@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import SEO from '../../components/SEO';
 import { doc, getDoc, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore'; // Updated imports
 import { db } from '../../firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -210,6 +211,36 @@ const MockupProductPage = () => {
 
     return (
         <div className="mpp-container animate-in">
+            <SEO
+                title={`${itemData.label} Mockup`}
+                description={`Generate high-quality ${itemData.label} mockups. ${itemData.formatSpec || ''}`}
+                image={itemData.thumbnailUrl || itemData.url}
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "Product",
+                            "name": `${itemData.label} AI Mockup Template`,
+                            "description": `Professional AI-powered mockup for ${itemData.label}.`,
+                            "image": itemData.thumbnailUrl || itemData.url,
+                            "offers": {
+                                "@type": "Offer",
+                                "price": "0.25",
+                                "priceCurrency": "ZAP",
+                                "availability": "https://schema.org/InStock"
+                            }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
+                                { "@type": "ListItem", "position": 2, "name": "Catalog", "item": "https://dreambeesai.com/mockup-catalog" },
+                                { "@type": "ListItem", "position": 3, "name": itemData.label, "item": `https://dreambeesai.com/mockup-catalog/item/${itemId}` }
+                            ]
+                        }
+                    ]
+                }}
+            />
             <button className="mpp-back-btn" onClick={() => navigate(-1)}>
                 <ArrowLeft size={20} /> Back to Catalog
             </button>

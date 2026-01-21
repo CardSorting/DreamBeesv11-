@@ -119,13 +119,44 @@ const handleSitemap = async (req, res) => {
         });
 
         // Blog posts
-        const blogPosts = [{ id: 'prompt-director-drift-evaluation', date: '2026-01-03' }];
-        blogPosts.forEach(post => {
+        const blogPostsData = [{ id: 'prompt-director-drift-evaluation', date: '2026-01-03' }];
+        blogPostsData.forEach(post => {
             urls.push({
                 loc: `${baseUrl}/blog/${post.id}`,
                 changefreq: 'monthly',
                 priority: '0.7',
                 lastmod: new Date(post.date).toISOString()
+            });
+        });
+
+        // 4. TOP SHOWCASE IMAGES (Official)
+        const showcaseSnapshot = await db.collection('model_showcase_images')
+            .orderBy('createdAt', 'desc')
+            .limit(200)
+            .get();
+
+        showcaseSnapshot.forEach(doc => {
+            urls.push({
+                loc: `${baseUrl}/discovery/${doc.id}`,
+                changefreq: 'monthly',
+                priority: '0.6',
+                lastmod: doc.data().createdAt?.toDate?.()?.toISOString() || now
+            });
+        });
+
+        // 5. RECENT PUBLIC GENERATIONS
+        const generationsSnapshot = await db.collection('generations')
+            .where('isPublic', '==', true)
+            .orderBy('createdAt', 'desc')
+            .limit(300)
+            .get();
+
+        generationsSnapshot.forEach(doc => {
+            urls.push({
+                loc: `${baseUrl}/discovery/${doc.id}`,
+                changefreq: 'monthly',
+                priority: '0.5',
+                lastmod: doc.data().createdAt?.toDate?.()?.toISOString() || now
             });
         });
 

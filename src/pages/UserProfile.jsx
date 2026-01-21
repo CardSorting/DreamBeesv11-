@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
 import { Loader2, Heart, Bookmark, AlertCircle, Zap, Layers, Search, Package, Lock } from 'lucide-react';
 import { db } from '../firebase';
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, doc, getDoc } from 'firebase/firestore';
 import { isValidUsername } from '../utils/usernameValidation';
 
 import ShowcaseModal from '../components/ShowcaseModal';
@@ -49,17 +49,47 @@ export default function UserProfile() {
     // Deep Linking for Lightbox Modal
     useEffect(() => {
         const viewId = searchParams.get('view');
-        if (viewId && !selectedImage) {
-            // Finding in loaded list
-            const allItems = [...mockups, ...bookmarks, ...likes];
-            const found = allItems.find(img => img.id === viewId);
-            if (found) {
-                setSelectedImage(found);
-                setSelectedModel(availableModels.find(m => m.id === found.modelId) || { name: 'Unknown Model', id: 'unknown' });
+        if (!viewId) {
+            if (selectedImage) {
+                setSelectedImage(null);
+                setSelectedModel(null);
             }
-        } else if (!viewId && selectedImage) {
-            setSelectedImage(null);
-            setSelectedModel(null);
+            return;
+        }
+
+        if (selectedImage && selectedImage.id === viewId) return;
+
+        // 1. Try to find in currently loaded lists
+        const allItems = [...mockups, ...bookmarks, ...likes];
+        const found = allItems.find(img => img.id === viewId);
+
+        if (found) {
+            setSelectedImage(found);
+            setSelectedModel(availableModels.find(m => m.id === found.modelId) || { name: 'Unknown Model', id: 'unknown' });
+        } else {
+            // 2. Fetch directly from Firestore (Crucial for deep link sharing)
+            const fetchImage = async () => {
+                try {
+                    // Start with official showcase
+                    let docRef = doc(db, 'model_showcase_images', viewId);
+                    let snapshot = await getDoc(docRef);
+
+                    if (!snapshot.exists()) {
+                        // Falling back to user generations
+                        docRef = doc(db, 'generations', viewId);
+                        snapshot = await getDoc(docRef);
+                    }
+
+                    if (snapshot.exists()) {
+                        const data = snapshot.data();
+                        setSelectedImage({ id: snapshot.id, ...data });
+                        setSelectedModel(availableModels.find(m => m.id === data.modelId) || { name: 'Unknown Model', id: 'unknown' });
+                    }
+                } catch (err) {
+                    console.error("Error fetching studio deep-linked image:", err);
+                }
+            };
+            fetchImage();
         }
     }, [searchParams, mockups, bookmarks, likes, selectedImage, availableModels]);
 

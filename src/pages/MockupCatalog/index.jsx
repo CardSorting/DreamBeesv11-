@@ -228,8 +228,18 @@ const MockupCatalog = () => {
     return (
         <div className="mockup-catalog-layout">
             <SEO
-                title={activeSubcategory || activeCategory || "Mockup Catalog"}
-                description={`Browse our professional ${activeSubcategory || activeCategory || ''} mockup library. Create premium products with your designs.`}
+                title={activeSubcategory ? `${activeSubcategory} Mockups` : (activeCategory ? `${activeCategory} Collection` : "Mockup Catalog - Professional Product Designs")}
+                description={`Browse our professional ${activeSubcategory || activeCategory || 'product'} mockup library. Create premium AI designs for apparel, home goods, and more.`}
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@type": "BreadcrumbList",
+                    "itemListElement": [
+                        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
+                        { "@type": "ListItem", "position": 2, "name": "Mockup Catalog", "item": "https://dreambeesai.com/mockup-catalog" },
+                        ...(activeCategory ? [{ "@type": "ListItem", "position": 3, "name": activeCategory, "item": `https://dreambeesai.com/mockup-catalog/${slugify(activeCategory)}` }] : []),
+                        ...(activeSubcategory ? [{ "@type": "ListItem", "position": 4, "name": activeSubcategory, "item": `https://dreambeesai.com/mockup-catalog/${slugify(activeCategory)}/${slugify(activeSubcategory)}` }] : [])
+                    ]
+                }}
             />
             <CatalogSidebar
                 activeParent={activeCategory}
