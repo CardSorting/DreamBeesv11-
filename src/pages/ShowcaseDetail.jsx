@@ -69,16 +69,30 @@ const ShowcaseDetail = () => {
 
             let startImage = visibleGlobalCache.find(img => img.id === id);
 
-            // If not in cache, fetch directly
+            // If not in cache, fetch directly (Check both official showcase and user generations)
             if (!startImage) {
                 try {
-                    const docRef = doc(db, 'model_showcase_images', id);
-                    const snapshot = await getDoc(docRef);
-                    if (snapshot.exists()) {
-                        startImage = { id: snapshot.id, ...snapshot.data() };
+                    // 1. Try official showcase
+                    const showcaseRef = doc(db, 'model_showcase_images', id);
+                    const showcaseSnap = await getDoc(showcaseRef);
+
+                    if (showcaseSnap.exists()) {
+                        startImage = { id: showcaseSnap.id, ...showcaseSnap.data() };
+                    } else {
+                        // 2. Try user generations (if public)
+                        const generationRef = doc(db, 'generations', id);
+                        const generationSnap = await getDoc(generationRef);
+
+                        if (generationSnap.exists()) {
+                            const data = generationSnap.data();
+                            // Only allow public generations to be viewed here for SEO safety
+                            if (data.isPublic) {
+                                startImage = { id: generationSnap.id, ...data };
+                            }
+                        }
                     }
                 } catch (err) {
-                    console.error("Error fetching start image:", err);
+                    console.error("Error fetching start image from collections:", err);
                 }
             }
 
@@ -330,9 +344,34 @@ const ShowcaseDetail = () => {
     return (
         <div className="showcase-detail-container vertical-feed-mode">
             <SEO
-                title={currentItem ? `${currentItem.prompt?.slice(0, 30)}...` : 'Showcase'}
-                description="Infinite AI Art Feed"
-                image={currentItem?.url}
+                title={currentItem ? `${currentItem.prompt?.slice(0, 50)}... | Discovery - DreamBees` : 'Showcase | Discovery - DreamBees'}
+                description={currentItem ? `AI-generated artwork: "${currentItem.prompt}". Explore more creative designs on DreamBees.` : "Infinite AI Art Feed - Explore community-generated masterpieces."}
+                image={currentItem ? (currentItem.url || currentItem.imageUrl) : undefined}
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "VisualArtwork",
+                            "name": currentItem ? (currentItem.prompt?.slice(0, 60) || "AI Artwork") : "AI Artwork",
+                            "description": currentItem?.prompt || "AI-generated artwork on DreamBees.",
+                            "image": currentItem ? (currentItem.url || currentItem.imageUrl) : undefined,
+                            "creator": {
+                                "@type": "Organization",
+                                "name": "DreamBeesAI"
+                            },
+                            "artworkSurface": "Digital",
+                            "artMedium": "AI Generated"
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
+                                { "@type": "ListItem", "position": 2, "name": "Discover", "item": "https://dreambeesai.com/discovery" },
+                                { "@type": "ListItem", "position": 3, "name": "Artwork", "item": `https://dreambeesai.com/discovery/${id}` }
+                            ]
+                        }
+                    ]
+                }}
             />
 
             {/* Fixed Nav Header (Transparent overlay) */}

@@ -210,6 +210,7 @@ export default function ModelDetail() {
                 title={activeShowcaseImage ? `${activeShowcaseImage.prompt?.slice(0, 50)}...` : `${model.name} (${sortBy === 'TOP_RATED' ? 'Top Rated' : 'Latest'}) - AI Model`}
                 description={activeShowcaseImage ? activeShowcaseImage.prompt : model.description}
                 image={activeShowcaseImage ? (activeShowcaseImage.url || activeShowcaseImage.imageUrl) : model.image}
+                canonical={activeShowcaseImage ? `/discovery/${activeShowcaseImage.id}` : undefined}
             />
 
             {/* Global Noise Overlay */}

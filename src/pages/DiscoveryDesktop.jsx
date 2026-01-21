@@ -310,6 +310,7 @@ export default function DiscoveryDesktop() {
                 title={focusImage ? `${focusImage.prompt?.slice(0, 60)}...` : "Discover AI Art - Community Showcase"}
                 description={focusImage ? focusImage.prompt : "Explore a curated feed of AI-generated artwork. Get inspired by unique styles, prompts, and creative techniques from the DreamBees community."}
                 image={focusImage ? (focusImage.thumbnailUrl || focusImage.imageUrl) : undefined}
+                canonical={focusImage ? `/discovery/${focusImage.id}` : undefined}
                 keywords="AI art gallery, AI generated images, explore AI artwork, community showcase, AI art inspiration, creative prompts"
                 structuredData={{
                     "@context": "https://schema.org",
@@ -317,7 +318,8 @@ export default function DiscoveryDesktop() {
                         {
                             "@type": "ImageGallery",
                             "name": "DreamBeesAI Discovery Feed",
-                            "description": "A curated showcase of AI-generated artwork from the DreamBees community."
+                            "description": "A curated showcase of AI-generated artwork from the DreamBees community.",
+                            "image": displayImages.slice(0, 5).map(img => img.thumbnailUrl || img.imageUrl)
                         },
                         {
                             "@type": "BreadcrumbList",
@@ -325,7 +327,15 @@ export default function DiscoveryDesktop() {
                                 { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
                                 { "@type": "ListItem", "position": 2, "name": "Discover", "item": "https://dreambeesai.com/discovery" }
                             ]
-                        }
+                        },
+                        ...(focusImage ? [{
+                            "@type": "VisualArtwork",
+                            "name": focusImage.prompt?.slice(0, 60) || "AI Artwork",
+                            "description": focusImage.prompt,
+                            "image": focusImage.url || focusImage.imageUrl,
+                            "artworkSurface": "Digital",
+                            "artMedium": "AI Generated"
+                        }] : [])
                     ]
                 }}
             />

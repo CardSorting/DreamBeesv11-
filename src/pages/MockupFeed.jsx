@@ -209,9 +209,37 @@ export default function MockupFeed() {
             />
 
             <SEO
-                title={focusImage ? `${focusImage.prompt?.slice(0, 50)}...` : (creatorFilter ? `${creatorFilter.value || creatorFilter.name} Mockups - DreamBees` : "Mockup Gallery - DreamBees")}
-                description={focusImage ? focusImage.prompt : "Explore community generated product mockups."}
+                title={focusImage ? `${focusImage.prompt?.slice(0, 50)}... | Mockups - DreamBees` : (creatorFilter ? `${creatorFilter.value || creatorFilter.name} Mockups - DreamBees` : "Mockup Gallery - Discovery Feed")}
+                description={focusImage ? focusImage.prompt : "Explore community generated product mockups. Discover unique designs for apparel, tech, and more."}
                 image={focusImage ? (focusImage.thumbnailUrl || focusImage.imageUrl) : undefined}
+                canonical={focusImage ? `/discovery/${focusImage.id}` : undefined}
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "ImageGallery",
+                            "name": creatorFilter ? `${creatorFilter.value || creatorFilter.name} Mockup Collection` : "DreamBees AI Mockup Showcase",
+                            "description": "A collection of AI-generated product mockups.",
+                            "image": images.slice(0, 5).map(img => img.thumbnailUrl || img.imageUrl)
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
+                                { "@type": "ListItem", "position": 2, "name": "Mockups", "item": "https://dreambeesai.com/mockups" },
+                                ...(creatorFilter ? [{ "@type": "ListItem", "position": 3, "name": creatorFilter.value || creatorFilter.name, "item": `https://dreambeesai.com/mockups/${creatorFilter.type}/${slugify(creatorFilter.value)}` }] : [])
+                            ]
+                        },
+                        ...(focusImage ? [{
+                            "@type": "VisualArtwork",
+                            "name": focusImage.prompt?.slice(0, 60) || "AI Mockup",
+                            "description": focusImage.prompt,
+                            "image": focusImage.url || focusImage.imageUrl,
+                            "artworkSurface": "Digital",
+                            "artMedium": "AI Generated Mockup"
+                        }] : [])
+                    ]
+                }}
             />
 
             <Sidebar activeId="/mockups" />

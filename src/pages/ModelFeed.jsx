@@ -416,6 +416,7 @@ export default function ModelFeed() {
                 title={activeShowcaseImage ? `${activeShowcaseImage.prompt?.slice(0, 50)}...` : `${model.name} Feed - DreamBees`}
                 description={activeShowcaseImage ? activeShowcaseImage.prompt : `Instagram-style showcase feed for the ${model.name} AI model.`}
                 image={activeShowcaseImage ? (activeShowcaseImage.url || activeShowcaseImage.imageUrl) : model.image}
+                canonical={activeShowcaseImage ? `/discovery/${activeShowcaseImage.id}` : undefined}
             />
 
             <Sidebar activeId={id ? `/models` : location.pathname} /> {/* Dynamic active ID */}
