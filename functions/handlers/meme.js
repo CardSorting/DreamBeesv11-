@@ -8,7 +8,8 @@ export const handleFormatMeme = async (request) => {
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
 
     const { image, imageUrl, text } = request.data;
-    if ((!image && !imageUrl) || !text) throw new HttpsError('invalid-argument', "Image and Text required");
+    if (!image && !imageUrl) throw new HttpsError('invalid-argument', "Image required");
+    // Text is optional now (auto-gen mode)
 
     const COST = 3;
 

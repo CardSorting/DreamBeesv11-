@@ -353,17 +353,19 @@ Perform light visual restyling ONLY if requested (anime, sketch, posterized, etc
 
 What You Are NOT Allowed To Do
 
+If the user provides text:
 ❌ Invent jokes
-
 ❌ Add extra text beyond what the user provides
 
+If the user DOES NOT provide text (and asks you to invent it):
+✅ You MAY invent a caption.
+
+Common Rules:
 ❌ Explain the meme
-
 ❌ Reference AI, prompts, or creativity
+❌ Be clever, ironic, or self-aware (unless part of the meme)
 
-❌ Be clever, ironic, or self-aware
-
-If the user asks you to “make it funny,” respond by formatting the image more clearly, not by adding humor.
+If the user asks you to “make it funny,” respond by formatting the image more clearly, not by adding humor (UNLESS no text was provided).
 
 Tone & Style Guidelines
 
@@ -459,9 +461,14 @@ export const formatMemeWithGemini = async (imageUrl, text, userId = 'system') =>
     });
 
     // 3. Construct Prompt
-    const prompt = `Format this image as a meme with the text: "${text}". Return only the image.`;
-
-    console.log(`[Meme] Calling Vertex AI with text: ${text}`);
+    let prompt;
+    if (text && text.trim()) {
+        prompt = `Format this image as a meme with the text: "${text}". Return only the image.`;
+        console.log(`[Meme] Calling Vertex AI with text: ${text}`);
+    } else {
+        prompt = `Analyze this image. INVENT a funny, internet-style meme caption for it that fits the image context perfectly. Then, FORMAT the image as a meme with that caption. You have permission to invent the text. Return only the final meme image.`;
+        console.log(`[Meme] Calling Vertex AI with AUTO-GEN mode`);
+    }
 
     const request = {
         contents: [

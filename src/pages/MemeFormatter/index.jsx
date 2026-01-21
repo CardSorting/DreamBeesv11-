@@ -5,7 +5,6 @@ import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../firebase'; // Adjust path if needed
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
-import './MemeFormatter.css'; // We will create this
 
 const MemeFormatter = () => {
     const { currentUser } = useAuth();
@@ -30,8 +29,8 @@ const MemeFormatter = () => {
     };
 
     const handleGenerate = async () => {
-        if (!selectedImage || !memeText.trim()) {
-            toast.error("Please provide both an image and text");
+        if (!selectedImage) {
+            toast.error("Please provide an image");
             return;
         }
 
@@ -137,7 +136,7 @@ const MemeFormatter = () => {
                             <textarea
                                 value={memeText}
                                 onChange={(e) => setMemeText(e.target.value)}
-                                placeholder="WHEN THE CODE DEPLOYS..."
+                                placeholder="WHEN THE CODE DEPLOYS... (Leave empty for Auto-Gen)"
                                 maxLength={200}
                             />
                         </div>
@@ -145,7 +144,7 @@ const MemeFormatter = () => {
                         <button
                             className={`generate-btn ${isGenerating ? 'loading' : ''}`}
                             onClick={handleGenerate}
-                            disabled={isGenerating || !selectedImage || !memeText}
+                            disabled={isGenerating || !selectedImage}
                         >
                             {isGenerating ? (
                                 <span className="loading-text"><RefreshCw className="spin" /> PROCESSING...</span>
