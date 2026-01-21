@@ -8,7 +8,7 @@ import SuggestedPanel from '../components/SuggestedPanel';
 import { useModel } from '../contexts/ModelContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import FeedPost from '../components/FeedPost';
 import './Discovery.css'; // Re-use discovery styles
 
@@ -25,17 +25,44 @@ export default function MockupFeed() {
     const observer = useRef();
     const lastImageElementRef = useRef();
     const [isTransitioning, setIsTransitioning] = useState(false);
-    const [creatorFilter, setCreatorFilter] = useState(null); // { id: '...', name: '...' }
+
+    // Routing Params
+    const { tag, userId } = useParams();
+
+    // Derived initial filter state
+    const getInitialFilter = () => {
+        if (tag) return { type: 'tag', value: tag };
+        if (userId) return { id: userId, name: 'Creator' }; // Name will be generic until loaded or passed
+        return null;
+    };
+
+    const [creatorFilter, setCreatorFilter] = useState(getInitialFilter());
+
+    // Sync with URL changes
+    useEffect(() => {
+        const newFilter = getInitialFilter();
+        // Only update if actually different to avoid cycles
+        if (JSON.stringify(newFilter) !== JSON.stringify(creatorFilter)) {
+            setCreatorFilter(newFilter);
+        }
+    }, [tag, userId]);
 
     const handleFilterChange = (newFilter) => {
         // If clicking the same filter, do nothing
-        if (creatorFilter?.id === newFilter?.id) return;
+        if (creatorFilter?.id === newFilter?.id && creatorFilter?.value === newFilter?.value) return;
 
         setIsTransitioning(true);
 
         // Wait for fade out (300ms)
         setTimeout(() => {
-            setCreatorFilter(newFilter);
+            // Navigate instead of setting state directly
+            if (!newFilter) {
+                navigate('/mockups');
+            } else if (newFilter.type === 'tag') {
+                navigate(`/mockups/tag/${newFilter.value}`);
+            } else if (newFilter.id) {
+                navigate(`/mockups/creator/${newFilter.id}`);
+            }
 
             // Instant scroll to top while hidden
             if (window.lenis) {

@@ -53,7 +53,7 @@ import SuggestedPanel from '../components/SuggestedPanel';
 const SuggestedPanelMemo = SuggestedPanel;
 
 export default function ModelFeed() {
-    const { id } = useParams();
+    const { id, filter } = useParams();
     const navigate = useNavigate();
     const { availableModels, getShowcaseImages, getGlobalShowcaseImages, rateShowcaseImage, getUserVideos, globalShowcaseCache, showcaseCache, hasGlobalFeedEnded } = useModel();
 
@@ -81,7 +81,18 @@ export default function ModelFeed() {
 
     const location = useLocation();
 
-    const [activeFilter, setActiveFilter] = useState('All');
+    // Use URL param for filter if present, otherwise default to 'All'
+    // This allows deep linking to filters (e.g. /filter/Videos)
+    const [activeFilter, setActiveFilter] = useState(filter || 'All');
+
+    // Sync state with URL param
+    useEffect(() => {
+        if (filter) {
+            setActiveFilter(filter);
+        } else {
+            setActiveFilter('All');
+        }
+    }, [filter]);
 
 
 
@@ -435,7 +446,13 @@ export default function ModelFeed() {
             <SuggestedPanelMemo
                 currentModel={model}
                 availableModels={availableModels}
-                setActiveFilter={setActiveFilter}
+                setActiveFilter={(newFilter) => {
+                    if (id) {
+                        navigate(`/model/${id}/feed/filter/${newFilter}`);
+                    } else {
+                        navigate(`/filter/${newFilter}`);
+                    }
+                }}
             />
 
             {activeShowcaseImage && (

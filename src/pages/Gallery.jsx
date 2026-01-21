@@ -3,7 +3,7 @@ import SEO from '../components/SEO';
 import { functions } from '../firebase';
 import { httpsCallable } from 'firebase/functions';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import { Loader2, Search, Download, Trash2, X, ExternalLink, Calendar, Info, Check, Plus, Film } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getOptimizedImageUrl, getLCPAttributes, getImageSrcSet, preloadImage } from '../utils';
@@ -15,7 +15,8 @@ export default function Gallery() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedIds, setSelectedIds] = useState([]);
     const [isSelectionMode, setIsSelectionMode] = useState(false);
-    const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'mockup', 'image', 'video'
+    const { filterMode } = useParams();
+    const [activeFilter, setActiveFilter] = useState(filterMode || 'all'); // 'all', 'mockup', 'image', 'video'
     const { currentUser } = useAuth();
 
     const [lastVisibleId, setLastVisibleId] = useState(null);
@@ -23,6 +24,15 @@ export default function Gallery() {
     const [hasMore, setHasMore] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
     const LIMIT = 24;
+
+    useEffect(() => {
+        // Sync filter from URL
+        if (filterMode) {
+            setActiveFilter(filterMode);
+        } else {
+            setActiveFilter('all');
+        }
+    }, [filterMode]);
 
     useEffect(() => {
         // Initial fetch
@@ -274,7 +284,10 @@ export default function Gallery() {
                         {['all', 'mockup', 'image'].map(f => (
                             <button
                                 key={f}
-                                onClick={() => setActiveFilter(f)}
+                                onClick={() => {
+                                    if (f === 'all') navigate('/gallery');
+                                    else navigate(`/gallery/filter/${f}`);
+                                }}
                                 style={{
                                     padding: '8px 16px',
                                     borderRadius: '100px',

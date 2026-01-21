@@ -91,6 +91,7 @@ const AnimatedRoutes = () => {
                     <Suspense fallback={<PageLoader />}>
                         <Routes location={location} key={location.pathname}>
                             <Route path="/" element={<ModelFeed />} />
+                            <Route path="/filter/:filter" element={<ModelFeed />} />
                             <Route path="/landing" element={<Landing />} />
                             <Route path="/auth" element={<Auth />} />
                             <Route path="/profile" element={
@@ -103,6 +104,8 @@ const AnimatedRoutes = () => {
                             <Route path="/discovery/model/:modelId" element={<Discovery />} />
                             <Route path="/discovery/:id" element={<ShowcaseDetail />} />
                             <Route path="/mockups" element={<MockupFeed />} />
+                            <Route path="/mockups/tag/:tag" element={<MockupFeed />} />
+                            <Route path="/mockups/creator/:userId" element={<MockupFeed />} />
 
 
                             {/* Admin Only Routes */}
@@ -112,6 +115,9 @@ const AnimatedRoutes = () => {
                                 </PrivateRoute>
                             } />
                             <Route path="/gallery" element={
+                                <PrivateRoute><Gallery /></PrivateRoute>
+                            } />
+                            <Route path="/gallery/filter/:filterMode" element={
                                 <PrivateRoute><Gallery /></PrivateRoute>
                             } />
                             <Route path="/gallery/:id" element={
@@ -124,6 +130,9 @@ const AnimatedRoutes = () => {
                                 <PrivateRoute><ModelDetail /></PrivateRoute>
                             } />
                             <Route path="/model/:id/feed" element={
+                                <PrivateRoute><ModelFeed /></PrivateRoute>
+                            } />
+                            <Route path="/model/:id/feed/filter/:filter" element={
                                 <PrivateRoute><ModelFeed /></PrivateRoute>
                             } />
 
