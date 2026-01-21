@@ -956,9 +956,11 @@ input[type=range]::-webkit-slider-runnable-track {
   }
 }
 
-/* Hide right sidebar on mobile/tablet */
+/* Hide sidebars on mobile/tablet */
 @media (max-width: 1024px) {
-  .feed-sidebar-right {
+
+  .feed-sidebar-right,
+  .feed-sidebar-left {
     display: none !important;
   }
 }
