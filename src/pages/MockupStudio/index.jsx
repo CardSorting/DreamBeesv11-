@@ -108,7 +108,7 @@ const MockupStudio = () => {
                         // Save Metadata to Firestore in parallel (Defensive)
                         const savePromises = prizes.map(async (prize) => {
                             try {
-                                await addDoc(collection(db, 'images'), {
+                                await addDoc(collection(db, 'generations'), {
                                     userId: currentUser.uid,
                                     userEmail: currentUser.email,
                                     userDisplayName: (userProfile?.displayPreference === 'username' && userProfile?.username)
@@ -116,6 +116,7 @@ const MockupStudio = () => {
                                         : (currentUser.displayName || 'Anonymous'),
                                     prompt: prize.prompt,
                                     imageUrl: prize.url,
+                                    url: prize.url,
                                     thumbnailUrl: prize.url,
                                     type: 'mockup',
                                     isPublic: true,

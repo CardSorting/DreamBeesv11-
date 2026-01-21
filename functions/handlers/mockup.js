@@ -19,7 +19,7 @@ const project = process.env.GCLOUD_PROJECT || "dreambees-alchemist";
 const location = "us-central1";
 const vertexAI = new VertexAI({ project, location });
 
-const MODEL_NAME = "gemini-3-pro-image-preview";
+const MODEL_NAME = "gemini-2.5-flash-image";
 
 /**
  * Checks config and deducts zaps.
