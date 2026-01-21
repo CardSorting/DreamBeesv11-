@@ -441,7 +441,10 @@ export default function DiscoveryDesktop() {
                                                     srcSet={getImageSrcSet(imgItem)}
                                                     sizes="(max-width: 500px) 50vw, (max-width: 1200px) 25vw, 20vw"
                                                     alt={`Showcase generation: ${imgItem.prompt ? imgItem.prompt.slice(0, 50) + "..." : "AI Artwork"}`}
-                                                    loading={index < 8 ? "eager" : "lazy"}
+                                                    onLoad={(e) => {
+                                                        e.target.parentElement.style.filter = 'none';
+                                                        e.target.parentElement.style.background = 'transparent';
+                                                    }}
                                                     style={{
                                                         width: '100%',
                                                         height: '100%',

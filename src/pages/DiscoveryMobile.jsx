@@ -229,11 +229,18 @@ export default function DiscoveryMobile() {
                                     <div className="image-wrapper" style={{
                                         aspectRatio: ratio,
                                         background: imgItem.lqip ? `url(${imgItem.lqip}) center/cover no-repeat` : 'rgba(255,255,255,0.02)',
+                                        filter: imgItem.lqip ? 'blur(10px)' : 'none',
+                                        transition: 'filter 0.5s ease',
+                                        overflow: 'hidden'
                                     }}>
                                         <img
                                             src={getOptimizedImageUrl(imgItem.thumbnailUrl || imgItem.url)}
                                             srcSet={getImageSrcSet(imgItem)}
                                             alt={imgItem.prompt}
+                                            onLoad={(e) => {
+                                                e.target.parentElement.style.filter = 'none';
+                                                e.target.parentElement.style.background = 'transparent';
+                                            }}
                                             loading={index < 4 ? "eager" : "lazy"}
                                             style={{
                                                 width: '100%',
