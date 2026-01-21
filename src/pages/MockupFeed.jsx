@@ -8,7 +8,8 @@ import SuggestedPanel from '../components/SuggestedPanel';
 import { useModel } from '../contexts/ModelContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { slugify, unslugify } from '../utils/urlHelpers';
 import FeedPost from '../components/FeedPost';
 import './Discovery.css'; // Re-use discovery styles
 
@@ -31,8 +32,8 @@ export default function MockupFeed() {
 
     // Derived initial filter state
     const getInitialFilter = () => {
-        if (tag) return { type: 'tag', value: tag };
-        if (userId) return { id: userId, name: 'Creator' }; // Name will be generic until loaded or passed
+        if (tag) return { type: 'tag', value: unslugify(tag), slug: tag };
+        if (userId) return { id: userId, name: 'Creator' };
         return null;
     };
 
@@ -59,7 +60,7 @@ export default function MockupFeed() {
             if (!newFilter) {
                 navigate('/mockups');
             } else if (newFilter.type === 'tag') {
-                navigate(`/mockups/tag/${newFilter.value}`);
+                navigate(`/mockups/tag/${slugify(newFilter.value)}`);
             } else if (newFilter.id) {
                 navigate(`/mockups/creator/${newFilter.id}`);
             }
@@ -95,7 +96,13 @@ export default function MockupFeed() {
             }
 
             if (creatorFilter) {
-                q = query(q, where('userId', '==', creatorFilter.id));
+                if (creatorFilter.type === 'tag') {
+                    // Check local tags array (case sensitive usually, but depends on DB)
+                    // Assuming DB has 'AI', 'DreamBees' etc.
+                    q = query(q, where('tags', 'array-contains', creatorFilter.value));
+                } else if (creatorFilter.id) {
+                    q = query(q, where('userId', '==', creatorFilter.id));
+                }
             }
 
             const snapshot = await getDocs(q);
@@ -169,7 +176,7 @@ export default function MockupFeed() {
             />
 
             <SEO
-                title="Mockup Gallery - DreamBees"
+                title={creatorFilter ? `${creatorFilter.value || creatorFilter.name} Mockups - DreamBees` : "Mockup Gallery - DreamBees"}
                 description="Explore community generated product mockups."
             />
 
@@ -203,27 +210,33 @@ export default function MockupFeed() {
                         justifyContent: 'center',
                         flexWrap: 'wrap'
                     }}>
-                        {['All', '#AI', '#DreamBees'].map(tag => (
-                            <button
-                                key={tag}
-                                onClick={() => handleFilterChange({ type: 'tag', value: tag })}
-                                style={{
-                                    padding: '8px 16px',
-                                    borderRadius: '20px',
-                                    background: (creatorFilter?.type === 'tag' && creatorFilter.value === tag) || (!creatorFilter && tag === 'All')
-                                        ? 'var(--primary)'
-                                        : 'rgba(255,255,255,0.05)',
-                                    border: '1px solid rgba(255,255,255,0.1)',
-                                    color: 'white',
-                                    fontSize: '0.9rem',
-                                    fontWeight: 500,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s ease'
-                                }}
-                            >
-                                {tag}
-                            </button>
-                        ))}
+                        {['All', 'AI', 'DreamBees'].map(tag => {
+                            const isSelected = (creatorFilter?.type === 'tag' && creatorFilter.value === tag)
+                                || (!creatorFilter && tag === 'All')
+                                || (creatorFilter?.type === 'tag' && slugify(tag) === creatorFilter.slug); // Handle slug match from URL
+
+                            return (
+                                <button
+                                    key={tag}
+                                    onClick={() => handleFilterChange(tag === 'All' ? null : { type: 'tag', value: tag })}
+                                    style={{
+                                        padding: '8px 16px',
+                                        borderRadius: '20px',
+                                        background: isSelected
+                                            ? 'var(--primary)'
+                                            : 'rgba(255,255,255,0.05)',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        color: 'white',
+                                        fontSize: '0.9rem',
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease'
+                                    }}
+                                >
+                                    {tag === 'All' ? 'All' : '#' + tag}
+                                </button>
+                            );
+                        })}
                     </div>
 
                     {/* Filter Indicator */}

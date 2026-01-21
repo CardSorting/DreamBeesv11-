@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, memo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Palette, Music, Sparkles, Presentation, Star, Clock, Search, ChevronRight, Gamepad2, LayoutGrid, Heart, Smile, Zap } from 'lucide-react';
 import './AppsHub.css';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
@@ -40,7 +40,9 @@ const ICON_MAP = {
 // Data to seed if not present
 
 const AppsHub = () => {
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const queryParam = searchParams.get('q') || '';
+    const [searchQuery, setSearchQuery] = useState(queryParam);
     const [apps, setApps] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const APPS_PER_PAGE = 6;
@@ -137,7 +139,12 @@ const AppsHub = () => {
                         className="search-input"
                         placeholder="Search apps, games, & inspiration"
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setSearchQuery(val);
+                            if (val) setSearchParams({ q: val });
+                            else setSearchParams({});
+                        }}
                     />
                 </div>
                 <div className="user-avatar">D</div>

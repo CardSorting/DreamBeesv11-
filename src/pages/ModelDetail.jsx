@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import SEO from '../components/SEO';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
 import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight, X, Copy, RefreshCw, ThumbsUp, ThumbsDown, Loader2, LayoutGrid, Square, Film, Heart, Share2, Bookmark, MoreHorizontal, BadgeCheck, Activity, Info } from 'lucide-react';
 
@@ -64,7 +64,21 @@ export default function ModelDetail() {
         loadShowcase();
     }, [model, getShowcaseImages]);
 
-    const [sortBy, setSortBy] = useState('TOP_RATED'); // 'TOP_RATED' | 'LATEST'
+
+    const [searchParams, setSearchParams] = useSearchParams();
+    const sortParam = searchParams.get('sort');
+    const [sortBy, setSortBy] = useState(sortParam || 'TOP_RATED'); // 'TOP_RATED' | 'LATEST'
+
+    useEffect(() => {
+        if (sortParam && ['TOP_RATED', 'LATEST'].includes(sortParam)) {
+            setSortBy(sortParam);
+        }
+    }, [sortParam]);
+
+    const handleSortChange = (newSort) => {
+        setSortBy(newSort);
+        setSearchParams({ sort: newSort });
+    };
 
     const isActive = selectedModel?.id === model?.id;
 
@@ -153,7 +167,7 @@ export default function ModelDetail() {
     return (
         <main style={{ background: '#0a0a0a', minHeight: '100vh', color: '#e5e5e5', position: 'relative' }}>
             <SEO
-                title={`${model.name} - AI Model`}
+                title={`${model.name} (${sortBy === 'TOP_RATED' ? 'Top Rated' : 'Latest'}) - AI Model`}
                 description={model.description}
                 image={model.image}
             />
@@ -356,7 +370,7 @@ export default function ModelDetail() {
                         gap: '24px'
                     }}>
                         <button
-                            onClick={() => setSortBy('TOP_RATED')}
+                            onClick={() => handleSortChange('TOP_RATED')}
                             style={{
                                 background: 'none',
                                 border: 'none',
@@ -375,7 +389,7 @@ export default function ModelDetail() {
                             )}
                         </button>
                         <button
-                            onClick={() => setSortBy('LATEST')}
+                            onClick={() => handleSortChange('LATEST')}
                             style={{
                                 background: 'none',
                                 border: 'none',

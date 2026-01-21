@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import SEO from '../components/SEO';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
@@ -28,7 +29,21 @@ export default function UserProfile() {
     const likes = ctxLikes || [];
     const bookmarks = ctxBookmarks || [];
     const mockups = ctxMockups || [];
-    const [activeFilter, setActiveFilter] = useState('all');
+
+    // Routing Params
+    const { tab } = useParams();
+    const navigate = useNavigate();
+
+    // Sync state with URL param
+    const [activeFilter, setActiveFilter] = useState(tab || 'all');
+
+    useEffect(() => {
+        if (tab) {
+            setActiveFilter(tab);
+        } else {
+            setActiveFilter('all');
+        }
+    }, [tab]);
     const [selectedImage, setSelectedImage] = useState(null);
     const [selectedModel, setSelectedModel] = useState(null);
     const [usernameError, setUsernameError] = useState(null);
@@ -322,7 +337,10 @@ export default function UserProfile() {
                     ].map(filter => (
                         <button
                             key={filter.id}
-                            onClick={() => setActiveFilter(filter.id)}
+                            onClick={() => {
+                                if (filter.id === 'all') navigate('/profile');
+                                else navigate(`/profile/${filter.id}`);
+                            }}
                             className={`filter-btn ${activeFilter === filter.id ? 'active' : ''}`}
                             style={{ position: 'relative' }}
                         >
