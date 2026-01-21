@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import './MockupCatalog.css';
 
 import Breadcrumbs from './components/Breadcrumbs';
@@ -25,7 +25,15 @@ const MockupCatalog = () => {
     const [loading, setLoading] = useState(true);
 
     // Pagination State
-    const [currentPage, setCurrentPage] = useState(1);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const pageParam = parseInt(searchParams.get('page')) || 1;
+    const [currentPage, setCurrentPage] = useState(pageParam);
+
+    // Sync effect for back button support
+    useEffect(() => {
+        const p = parseInt(searchParams.get('page')) || 1;
+        if (p !== currentPage) setCurrentPage(p);
+    }, [searchParams]);
 
     // Navigation State derived from URL Slugs
     const activeCategory = categorySlug ? unslugify(categorySlug, Object.keys(CATEGORY_MAPPING)) : null;
@@ -41,6 +49,12 @@ const MockupCatalog = () => {
     // Reset pagination on navigation change
     useEffect(() => {
         setCurrentPage(1);
+        // Clean URL param if switching categories
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            newParams.delete('page');
+            return newParams;
+        });
     }, [activeCategory, activeSubcategory]);
 
     useEffect(() => {
@@ -90,6 +104,12 @@ const MockupCatalog = () => {
 
     const handlePageChange = (newPage) => {
         setCurrentPage(newPage);
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            if (newPage > 1) newParams.set('page', newPage.toString());
+            else newParams.delete('page');
+            return newParams;
+        });
         // User requested to retain viewport on pagination, so no scrollTo
     };
 

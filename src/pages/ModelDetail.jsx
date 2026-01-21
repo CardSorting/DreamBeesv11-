@@ -3,13 +3,10 @@ import SEO from '../components/SEO';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
 import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight, X, Copy, RefreshCw, ThumbsUp, ThumbsDown, Loader2, LayoutGrid, Square, Film, Heart, Share2, Bookmark, MoreHorizontal, BadgeCheck, Activity, Info } from 'lucide-react';
-
 import ShowcaseModal from '../components/ShowcaseModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getOptimizedImageUrl, getLCPAttributes, getImageSrcSet, preloadImage } from '../utils';
 import { db } from '../firebase';
-
-
 
 export default function ModelDetail() {
     const { id } = useParams();
@@ -23,7 +20,9 @@ export default function ModelDetail() {
     const [showcaseImages, setShowcaseImages] = useState(() => {
         return (id && showcaseCache[id]) ? showcaseCache[id] : [];
     });
-    const [displayPage, setDisplayPage] = useState(2); // Start with 2 pages (24 images) for high-res coverage
+
+    // Ensure displayPage is sufficient for deep-linked items (not strictly necessary but helpful if we were scrolling)
+    const [displayPage, setDisplayPage] = useState(2);
 
     // Derive model from availableModels instead of using useState + useEffect
     const model = useMemo(() => {
@@ -77,7 +76,48 @@ export default function ModelDetail() {
 
     const handleSortChange = (newSort) => {
         setSortBy(newSort);
-        setSearchParams({ sort: newSort });
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            newParams.set('sort', newSort);
+            return newParams;
+        });
+    };
+
+    // Deep Linking for Modal
+    useEffect(() => {
+        const viewId = searchParams.get('view');
+        if (viewId && !activeShowcaseImage) {
+            // Try to find in loaded images first
+            const found = showcaseImages.find(img => img.id === viewId) ||
+                (model?.previewImages?.find(img => img.id === viewId || getOptimizedImageUrl(img) === viewId)); // Fallback logic
+
+            if (found) {
+                setActiveShowcaseImage(typeof found === 'string' ? { url: getOptimizedImageUrl(found), id: viewId } : found);
+            } else if (viewId.startsWith('http')) {
+                // Direct URL fallback if ID not found but it looks like a URL (legacy)
+                setActiveShowcaseImage({ url: viewId, id: viewId });
+            }
+        } else if (!viewId && activeShowcaseImage) {
+            setActiveShowcaseImage(null);
+        }
+    }, [searchParams, showcaseImages, model, activeShowcaseImage]);
+
+    const openShowcase = (img) => {
+        setActiveShowcaseImage(img);
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            if (img.id) newParams.set('view', img.id);
+            return newParams;
+        });
+    };
+
+    const closeShowcase = () => {
+        setActiveShowcaseImage(null);
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            newParams.delete('view');
+            return newParams;
+        });
     };
 
     const isActive = selectedModel?.id === model?.id;
@@ -425,7 +465,7 @@ export default function ModelDetail() {
                                     <article
                                         key={imgItem.id || index}
                                         className="masonry-item group"
-                                        onClick={() => setActiveShowcaseImage(imgItem)}
+                                        onClick={() => openShowcase(imgItem)}
                                         style={{
                                             animation: `fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) ${0.1 + ((index * 0.08) % 0.4)}s both`
                                         }}
@@ -508,7 +548,7 @@ export default function ModelDetail() {
                     <ShowcaseModal
                         image={activeShowcaseImage}
                         model={model}
-                        onClose={() => setActiveShowcaseImage(null)}
+                        onClose={closeShowcase}
                     />
                 )}
 

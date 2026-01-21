@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import SEO from '../components/SEO';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
@@ -33,6 +33,7 @@ export default function UserProfile() {
     // Routing Params
     const { tab } = useParams();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     // Sync state with URL param
     const [activeFilter, setActiveFilter] = useState(tab || 'all');
@@ -44,6 +45,43 @@ export default function UserProfile() {
             setActiveFilter('all');
         }
     }, [tab]);
+
+    // Deep Linking for Lightbox Modal
+    useEffect(() => {
+        const viewId = searchParams.get('view');
+        if (viewId && !selectedImage) {
+            // Finding in loaded list
+            const allItems = [...mockups, ...bookmarks, ...likes];
+            const found = allItems.find(img => img.id === viewId);
+            if (found) {
+                setSelectedImage(found);
+                setSelectedModel(availableModels.find(m => m.id === found.modelId) || { name: 'Unknown Model', id: 'unknown' });
+            }
+        } else if (!viewId && selectedImage) {
+            setSelectedImage(null);
+            setSelectedModel(null);
+        }
+    }, [searchParams, mockups, bookmarks, likes, selectedImage, availableModels]);
+
+    const openLightbox = (item) => {
+        setSelectedImage(item);
+        setSelectedModel(availableModels.find(m => m.id === item.modelId) || { name: 'Unknown Model', id: 'unknown' });
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            newParams.set('view', item.id);
+            return newParams;
+        });
+    };
+
+    const closeLightbox = () => {
+        setSelectedImage(null);
+        setSelectedModel(null);
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            newParams.delete('view');
+            return newParams;
+        });
+    };
     const [selectedImage, setSelectedImage] = useState(null);
     const [selectedModel, setSelectedModel] = useState(null);
     const [usernameError, setUsernameError] = useState(null);
@@ -82,10 +120,7 @@ export default function UserProfile() {
 
 
     const handleImageClick = (item) => {
-        setSelectedImage(item);
-        // Attempt to find model if possible, or pass item metadata
-        // For now pass item as is mostly sufficient for display
-        setSelectedModel(availableModels.find(m => m.id === item.modelId) || { name: 'Unknown Model', id: 'unknown' });
+        openLightbox(item);
     };
 
     // Load initial profile data
@@ -445,7 +480,7 @@ export default function UserProfile() {
                 <ShowcaseModal
                     image={selectedImage}
                     model={selectedModel}
-                    onClose={() => setSelectedImage(null)}
+                    onClose={closeLightbox}
                 />
             )}
 

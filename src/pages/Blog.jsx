@@ -1,12 +1,21 @@
 import React, { useState, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { blogPosts } from '../data/blogPosts';
 import { Search, ArrowRight, Calendar, User, Clock } from 'lucide-react';
 import SEO from '../components/SEO';
 
 export default function Blog() {
     const navigate = useNavigate();
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const query = searchParams.get('q') || '';
+    const [searchQuery, setSearchQuery] = useState(query);
+
+    // Sync URL when typing (debouncing omitted for simplicity, but acceptable here)
+    const handleSearch = (val) => {
+        setSearchQuery(val);
+        if (val) setSearchParams({ q: val });
+        else setSearchParams({});
+    };
 
     const filteredPosts = useMemo(() => {
         return blogPosts.filter(post =>
@@ -74,7 +83,7 @@ export default function Blog() {
                         type="text"
                         placeholder="Search articles..."
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => handleSearch(e.target.value)}
                         className="input-field"
                         style={{
                             paddingLeft: '50px',

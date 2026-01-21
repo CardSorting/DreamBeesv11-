@@ -29,6 +29,7 @@ export default function MockupFeed() {
 
     // Routing Params
     const { tag, userId } = useParams();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     // Derived initial filter state
     const getInitialFilter = () => {
@@ -47,6 +48,38 @@ export default function MockupFeed() {
             setCreatorFilter(newFilter);
         }
     }, [tag, userId]);
+
+    // Deep Linking for Focus Modal
+    useEffect(() => {
+        const viewId = searchParams.get('view');
+        if (viewId && !focusImage) {
+            // Look for image in loaded list or potentially fetch if single item view desired (advanced).
+            // For now, only finding in loaded list. 
+            // Ideally we'd fetch doc by ID if not found, but let's start with loaded.
+            const found = images.find(img => img.id === viewId);
+            if (found) setFocusImage(found);
+        } else if (!viewId && focusImage) {
+            setFocusImage(null);
+        }
+    }, [searchParams, images, focusImage]);
+
+    const openFocus = (img) => {
+        setFocusImage(img);
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            newParams.set('view', img.id);
+            return newParams;
+        });
+    };
+
+    const closeFocus = () => {
+        setFocusImage(null);
+        setSearchParams(prev => {
+            const newParams = new URLSearchParams(prev);
+            newParams.delete('view');
+            return newParams;
+        });
+    };
 
     const handleFilterChange = (newFilter) => {
         // If clicking the same filter, do nothing
@@ -293,7 +326,7 @@ export default function MockupFeed() {
                                     model={mockModel}
                                     getOptimizedImageUrl={getOptimizedImageUrl}
                                     navigate={navigate}
-                                    setActiveShowcaseImage={setFocusImage}
+                                    setActiveShowcaseImage={openFocus}
                                     headerTitle={creatorName}
                                     headerSubtitle="Mockup Studio"
                                     avatarImage="/dreambees_icon.png" // Use app icon as avatar for now
@@ -390,7 +423,7 @@ export default function MockupFeed() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={() => setFocusImage(null)}
+                        onClick={closeFocus}
                         style={{
                             position: 'fixed',
                             top: 0, left: 0, right: 0, bottom: 0,
