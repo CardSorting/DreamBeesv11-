@@ -9,12 +9,13 @@ const MODEL_NAME = "gemini-2.5-flash";
 
 // Initialize Vertex AI (Server-side)
 const vertexAI = new VertexAI({ project: PROJECT_ID, location: LOCATION });
-const model = vertexAI.getGenerativeModel({
-    model: MODEL_NAME,
-    generationConfig: {
-        responseMimeType: "application/json"
-    }
-});
+// Note: This model variable is available but we use strictModel in analyzeImage
+// const model = vertexAI.getGenerativeModel({
+//     model: MODEL_NAME,
+//     generationConfig: {
+//         responseMimeType: "application/json"
+//     }
+// });
 
 /**
  * Analyzes an image buffer using Gemini.
@@ -169,7 +170,7 @@ async function analyzeImage(imageBuffer, mimeType = "image/png") {
 
         try {
             return JSON.parse(text);
-        } catch (e) {
+        } catch {
             const cleanText = text.replace(/```json|```/g, "").trim();
             return JSON.parse(cleanText);
         }

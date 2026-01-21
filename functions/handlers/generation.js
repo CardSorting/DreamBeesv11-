@@ -22,8 +22,8 @@ export const handleCreateGenerationRequest = async (request) => {
 
     const validAspectRatios = ['1:1', '2:3', '3:2', '9:16', '16:9'];
     const safeAspectRatio = validAspectRatios.includes(aspectRatio) ? aspectRatio : '1:1';
-    let safeSteps = Math.min(Math.max(parseInt(steps) || 30, 10), 50);
-    let safeCfg = Math.min(Math.max(parseFloat(cfg) || 7.0, 1.0), 20.0);
+    const safeSteps = Math.min(Math.max(parseInt(steps) || 30, 10), 50);
+    const safeCfg = Math.min(Math.max(parseFloat(cfg) || 7.0, 1.0), 20.0);
 
     try {
         const userRef = db.collection('users').doc(uid);
@@ -43,7 +43,7 @@ export const handleCreateGenerationRequest = async (request) => {
             if (useTurbo || isPremiumModel) cost = 1.0;
             else if (!isSubscriber) cost = 0.5;
 
-            let effectiveZaps = (userData.zaps || 0);
+            const effectiveZaps = (userData.zaps || 0);
             if (effectiveZaps < cost && cost > 0) throw new HttpsError('resource-exhausted', `Insufficient Zaps.`);
 
             t.update(userRef, { zaps: effectiveZaps - cost, lastGenerationTime: new Date() });
@@ -90,7 +90,7 @@ export const handleCreateVideoGenerationRequest = async (request) => {
             const activeJobs = await t.get(db.collection('video_queue').where('userId', '==', uid).where('status', 'in', ['queued', 'processing', 'pending']).limit(1));
             if (!activeJobs.empty) throw new HttpsError('failed-precondition', "Video generation in progress.");
 
-            let reels = userDoc.data().reels || 0;
+            const reels = userDoc.data().reels || 0;
             if (reels < totalCost) throw new HttpsError('resource-exhausted', "Insufficient Reels.");
 
             t.update(userRef, { reels: FieldValue.increment(-totalCost) });

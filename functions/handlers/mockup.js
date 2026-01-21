@@ -202,7 +202,7 @@ ${preset.prompt} `;
         const timestamp = Date.now();
         const safeLabel = item.label.replace(/[^a-z0-9]/gi, '_').toLowerCase();
         const safePreset = preset.label.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-        const key = `mockups / ${userUid}/${timestamp}-${safeLabel}-${safePreset}.png`;
+        const key = `mockups/${userUid}/${timestamp}-${safeLabel}-${safePreset}.png`;
         const buffer = Buffer.from(outputImageBase64, 'base64');
 
         logger.info(`[Mockup] Uploading to B2: ${key}`);

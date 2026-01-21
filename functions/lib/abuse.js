@@ -226,7 +226,7 @@ export async function checkTokenBucket(key, cost, capacity, refillRate) {
         const data = doc.data() || {};
 
         let tokens = data.tokens !== undefined ? data.tokens : capacity;
-        let lastRefill = data.lastRefill || now;
+        const lastRefill = data.lastRefill || now;
 
         const delta = (now - lastRefill) / 1000;
         const tokensToAdd = delta * refillRate;

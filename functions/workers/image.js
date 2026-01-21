@@ -127,7 +127,7 @@ export const processImageTask = async (req) => {
                         if (errJson.status === 'failed') {
                             throw new Error(errJson.error || `Zit generation failed with status ${resultRes.status}`);
                         }
-                    } catch (e) {
+                    } catch {
                         // ignore json parse error, just throw status error
                     }
                     throw new Error(`Zit Polling Error (${resultRes.status}): ${await resultRes.text()}`);
@@ -302,7 +302,7 @@ export const processImageTask = async (req) => {
                         if (errJson.status === 'failed') {
                             throw new Error(errJson.error || `SDXL generation failed with status ${resultRes.status}`);
                         }
-                    } catch (e) {
+                    } catch {
                         // ignore
                     }
                     throw new Error(`SDXL Polling Error (${resultRes.status}): ${await resultRes.text()}`);
@@ -351,7 +351,7 @@ export const processImageTask = async (req) => {
                 } else if (contentType.includes("application/json") || (isLikelyJSON && !contentType.includes("image/"))) {
                     try {
                         const jsonData = await clonedResponse.json();
-                        let base64Image = jsonData.image || jsonData.data || jsonData.output || jsonData.result;
+                        const base64Image = jsonData.image || jsonData.data || jsonData.output || jsonData.result;
                         if (jsonData.image_bytes) {
                             imageBuffer = Buffer.from(jsonData.image_bytes, 'hex');
                             responseProcessed = true;
@@ -361,7 +361,7 @@ export const processImageTask = async (req) => {
                                 const matches = base64Image.match(/^data:image\/[^;]+;base64,(.+)$/);
                                 if (matches) imageBuffer = Buffer.from(matches[1], 'base64');
                             } else if (base64Image.length > 100) {
-                                try { imageBuffer = Buffer.from(base64Image, 'base64'); } catch { }
+                                try { imageBuffer = Buffer.from(base64Image, 'base64'); } catch { /* ignore decode error */ }
                             }
                             if (imageBuffer) responseProcessed = true;
                         }

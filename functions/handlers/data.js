@@ -130,7 +130,7 @@ export const handleGetUserImages = async (request) => {
         }
 
         // Slice to limit
-        const hasMore = items.length > l;
+        const _hasMore = items.length > l;
         items = items.slice(0, l);
 
         return {

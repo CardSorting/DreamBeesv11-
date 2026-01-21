@@ -100,7 +100,7 @@ const handleSitemap = async (req, res) => {
             { path: '/contact', priority: '0.5', changefreq: 'monthly' },
         ];
 
-        let urls = staticPages.map(page => ({
+        const urls = staticPages.map(page => ({
             loc: `${baseUrl}${page.path}`,
             changefreq: page.changefreq,
             priority: page.priority,
