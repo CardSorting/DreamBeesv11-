@@ -955,3 +955,10 @@ input[type=range]::-webkit-slider-runnable-track {
     display: none !important;
   }
 }
+
+/* Hide right sidebar on mobile/tablet */
+@media (max-width: 1024px) {
+  .feed-sidebar-right {
+    display: none !important;
+  }
+}

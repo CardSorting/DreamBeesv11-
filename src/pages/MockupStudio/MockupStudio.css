@@ -450,11 +450,9 @@
         /* 3D on top, UI below */
     }
 
-    /* Reorder: Stage First, UI Second on DOM (or use order) */
+    /* Hide 3D stage on mobile */
     .gacha-3d-stage {
-        order: -1;
-        /* Move visualize to top */
-        border-bottom: 4px solid #FF8F00;
+        display: none !important;
     }
 
     .gacha-ui-panel {
