@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import SEO from '../components/SEO';
-import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
@@ -77,6 +77,36 @@ export default function ModelFeed() {
 
     const [displayPage, setDisplayPage] = useState(2);
     const [activeShowcaseImage, setActiveShowcaseImage] = useState(null);
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // Deep Linking for Showcase Modal
+    useEffect(() => {
+        const viewId = searchParams.get('view');
+        if (viewId && !activeShowcaseImage) {
+            const found = feedItems.find(img => img.id === viewId);
+            if (found) setActiveShowcaseImage(found);
+        } else if (!viewId && activeShowcaseImage) {
+            setActiveShowcaseImage(null);
+        }
+    }, [searchParams, feedItems, activeShowcaseImage]);
+
+    const openShowcase = (img) => {
+        setActiveShowcaseImage(img);
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            next.set('view', img.id);
+            return next;
+        });
+    };
+
+    const closeShowcase = () => {
+        setActiveShowcaseImage(null);
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            next.delete('view');
+            return next;
+        });
+    };
     const imagesPerPage = 12;
 
     const location = useLocation();
@@ -414,7 +444,7 @@ export default function ModelFeed() {
                             getOptimizedImageUrl={getOptimizedImageUrl}
                             rateShowcaseImage={rateShowcaseImage}
                             navigate={navigate}
-                            setActiveShowcaseImage={setActiveShowcaseImage}
+                            setActiveShowcaseImage={openShowcase}
                         />
                     ))}
 
@@ -459,7 +489,7 @@ export default function ModelFeed() {
                 <ShowcaseModal
                     image={activeShowcaseImage}
                     model={model}
-                    onClose={() => setActiveShowcaseImage(null)}
+                    onClose={closeShowcase}
                 />
             )}
 

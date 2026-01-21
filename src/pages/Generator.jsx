@@ -33,8 +33,11 @@ export default function Generator() {
     const { selectedModel, setSelectedModel, availableModels, loading: modelLoading, getShowcaseImages, rateGeneration } = useModel();
 
     // 2. State Management (Inlined from useGeneratorState)
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const { userProfile } = useUserInteractions();
+
+    const modeParam = searchParams.get('mode') || 'image';
+    const tabParam = searchParams.get('tab') || 'simple';
 
     // UI State
     /**
@@ -42,7 +45,7 @@ export default function Generator() {
      */
     const [isModelModalOpen, setIsModelModalOpen] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [activeTab, setActiveTab] = useState('simple');
+    const [activeTab, setActiveTab] = useState(tabParam);
     const [showcaseImages, setShowcaseImages] = useState([]);
     const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
 
@@ -69,10 +72,48 @@ export default function Generator() {
     const [useTurbo, setUseTurbo] = useState(false);
 
     // Video & Advanced State
-    const [generationMode, setGenerationMode] = useState('image'); // 'image' | 'video'
+    const [generationMode, setGenerationMode] = useState(modeParam); // 'image' | 'video'
     const [videoDuration, setVideoDuration] = useState(5);
     const [videoResolution, setVideoResolution] = useState('large_landscape');
     const [currentJobType, setCurrentJobType] = useState('image');
+
+    // Sync with URL
+    useEffect(() => {
+        if (modeParam !== generationMode) setGenerationMode(modeParam);
+        if (tabParam !== activeTab) setActiveTab(tabParam);
+    }, [modeParam, tabParam]);
+
+    const handleModeChange = (newMode) => {
+        setGenerationMode(newMode);
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            if (newMode && newMode !== 'image') next.set('mode', newMode);
+            else next.delete('mode');
+            return next;
+        }, { replace: true });
+    };
+
+    const handleTabChange = (newTab) => {
+        setActiveTab(newTab);
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            if (newTab && newTab !== 'simple') next.set('tab', newTab);
+            else next.delete('tab');
+            return next;
+        }, { replace: true });
+    };
+
+    const updateParam = (key, val) => {
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            if (val !== undefined && val !== null && val !== '' && val !== -1) {
+                next.set(key, val);
+            } else {
+                next.delete(key);
+            }
+            return next;
+        }, { replace: true });
+    };
 
     // Reference Image
     const [referenceImage, setReferenceImage] = useState(null);
@@ -258,7 +299,7 @@ export default function Generator() {
                         {/* Mode Selector */}
                         <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '4px', marginBottom: '16px' }}>
                             <button
-                                onClick={() => setGenerationMode('image')}
+                                onClick={() => handleModeChange('image')}
                                 style={{
                                     flex: 1, padding: '10px', borderRadius: '8px',
                                     background: generationMode === 'image' ? 'var(--color-accent-primary)' : 'transparent',
@@ -272,7 +313,7 @@ export default function Generator() {
                                 Image Generation
                             </button>
                             <button
-                                onClick={() => setGenerationMode('video')}
+                                onClick={() => handleModeChange('video')}
                                 style={{
                                     flex: 1, padding: '10px', borderRadius: '8px',
                                     background: generationMode === 'video' ? 'var(--color-accent-primary)' : 'transparent',
@@ -322,21 +363,21 @@ export default function Generator() {
 
                 {/* 3. RIGHT SIDEBAR (Parameters) */}
                 <GeneratorSidebar
-                    activeTab={activeTab} setActiveTab={setActiveTab}
-                    generationMode={generationMode} setGenerationMode={setGenerationMode}
+                    activeTab={activeTab} setActiveTab={handleTabChange}
+                    generationMode={generationMode} setGenerationMode={handleModeChange}
                     selectedModel={selectedModel}
                     setIsModelModalOpen={setIsModelModalOpen}
-                    aspectRatio={aspectRatio} setAspectRatio={setAspectRatio}
+                    aspectRatio={aspectRatio} setAspectRatio={(val) => { setAspectRatio(val); updateParam('aspectRatio', val); }}
                     showcaseImages={showcaseImages} setPrompt={setPrompt} setGeneratedImage={setGeneratedImage}
                     // activeStyleId, styleIntensity removed
                     // Video
                     videoDuration={videoDuration} setVideoDuration={setVideoDuration}
                     videoResolution={videoResolution} setVideoResolution={setVideoResolution}
                     // Advanced
-                    seed={seed} setSeed={setSeed}
-                    steps={steps} setSteps={setSteps}
-                    cfg={cfg} setCfg={setCfg}
-                    negPrompt={negPrompt} setNegPrompt={setNegPrompt}
+                    seed={seed} setSeed={(val) => { setSeed(val); updateParam('seed', val); }}
+                    steps={steps} setSteps={(val) => { setSteps(val); updateParam('steps', val); }}
+                    cfg={cfg} setCfg={(val) => { setCfg(val); updateParam('cfg', val); }}
+                    negPrompt={negPrompt} setNegPrompt={(val) => { setNegPrompt(val); updateParam('negPrompt', val); }}
                     // Helpers
                     recentImages={recentImages}
                     referenceImage={referenceImage} clearReferenceImage={() => setReferenceImage(null)}

@@ -12,6 +12,7 @@ import Pagination from './components/Pagination';
 import { CATEGORY_MAPPING } from './categoryData';
 import { useAuth } from '../../contexts/AuthContext';
 import { slugify, unslugify } from './utils/slugs';
+import SEO from '../../components/SEO';
 
 const ITEMS_PER_PAGE = 6; // Limit updated to 6 as requested
 
@@ -226,6 +227,10 @@ const MockupCatalog = () => {
 
     return (
         <div className="mockup-catalog-layout">
+            <SEO
+                title={activeSubcategory || activeCategory || "Mockup Catalog"}
+                description={`Browse our professional ${activeSubcategory || activeCategory || ''} mockup library. Create premium products with your designs.`}
+            />
             <CatalogSidebar
                 activeParent={activeCategory}
                 activeChild={activeSubcategory}

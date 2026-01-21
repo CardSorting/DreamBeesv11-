@@ -9,6 +9,7 @@ import VisualizerCanvas from '../components/VisualizerCanvas';
 import { parseLrc, formatTime } from '../utils/lrcParser';
 import { generateLrcFromAudio } from '../services/geminiService';
 import './KaraokeGenie.css'; // Re-enabled custom CSS
+import SEO from '../components/SEO';
 
 const fileToBase64 = (file) => {
     return new Promise((resolve, reject) => {
@@ -516,6 +517,10 @@ const KaraokeGenie = () => {
 
     return (
         <>
+            <SEO
+                title="Karaoke Genie"
+                description="AI-powered lyric visualizer. Generate synchronized lyrics and export professional karaoke videos."
+            />
             <audio ref={audioRef} src={audioSrc || undefined} crossOrigin="anonymous" />
 
             {errorMsg && currentStep !== 'processing' && currentStep !== 'upload' && (

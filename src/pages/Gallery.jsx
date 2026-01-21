@@ -3,7 +3,7 @@ import SEO from '../components/SEO';
 import { functions } from '../firebase';
 import { httpsCallable } from 'firebase/functions';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, Link, useParams } from 'react-router-dom';
+import { useNavigate, Link, useParams, useSearchParams } from 'react-router-dom';
 import { Loader2, Search, Download, Trash2, X, ExternalLink, Calendar, Info, Check, Plus, Film } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getOptimizedImageUrl, getLCPAttributes, getImageSrcSet, preloadImage } from '../utils';
@@ -12,12 +12,31 @@ export default function Gallery() {
     const navigate = useNavigate();
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const queryParam = searchParams.get('q') || '';
+    const [searchQuery, setSearchQuery] = useState(queryParam);
     const [selectedIds, setSelectedIds] = useState([]);
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const { filterMode } = useParams();
     const [activeFilter, setActiveFilter] = useState(filterMode || 'all'); // 'all', 'mockup', 'image', 'video'
     const { currentUser } = useAuth();
+
+    // Sync search state with URL
+    useEffect(() => {
+        if (queryParam !== searchQuery) {
+            setSearchQuery(queryParam);
+        }
+    }, [queryParam]);
+
+    const handleSearchChange = (val) => {
+        setSearchQuery(val);
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            if (val) next.set('q', val);
+            else next.delete('q');
+            return next;
+        }, { replace: true });
+    };
 
     const [lastVisibleId, setLastVisibleId] = useState(null);
     const [lastVisibleType, setLastVisibleType] = useState(null);
@@ -313,7 +332,7 @@ export default function Gallery() {
                             placeholder="Filter by prompt..."
                             className="search-input"
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => handleSearchChange(e.target.value)}
                             style={{ paddingLeft: '32px', background: 'transparent', border: 'none', fontSize: '1rem', height: '100%' }}
                         />
                     </div>

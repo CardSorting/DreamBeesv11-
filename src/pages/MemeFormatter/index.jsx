@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Wand2, RefreshCw, Download, Share2, AlertCircle, Image as ImageIcon } from 'lucide-react';
 import { httpsCallable } from 'firebase/functions';
@@ -7,11 +8,29 @@ import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 const MemeFormatter = () => {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const textParam = searchParams.get('text') || '';
+
     const { currentUser } = useAuth();
     const [selectedImage, setSelectedImage] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
-    const [memeText, setMemeText] = useState('');
+    const [memeText, setMemeText] = useState(textParam);
     const [isGenerating, setIsGenerating] = useState(false);
+
+    // Sync text with URL
+    useEffect(() => {
+        if (textParam !== memeText) setMemeText(textParam);
+    }, [textParam]);
+
+    const handleTextChange = (val) => {
+        setMemeText(val);
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            if (val) next.set('text', val);
+            else next.delete('text');
+            return next;
+        }, { replace: true });
+    };
     const [generatedMeme, setGeneratedMeme] = useState(null);
     const fileInputRef = useRef(null);
 
@@ -135,7 +154,7 @@ const MemeFormatter = () => {
                             <label>CAPTION_INPUT</label>
                             <textarea
                                 value={memeText}
-                                onChange={(e) => setMemeText(e.target.value)}
+                                onChange={(e) => handleTextChange(e.target.value)}
                                 placeholder="WHEN THE CODE DEPLOYS... (Leave empty for Auto-Gen)"
                                 maxLength={200}
                             />

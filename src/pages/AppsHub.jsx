@@ -9,6 +9,7 @@ import { db } from '../firebase'; // Ensure this path is correct based on projec
 import AppCard from '../components/AppCard';
 import { useAuth } from '../contexts/AuthContext';
 import { useAppLikes } from '../hooks/useAppLikes';
+import SEO from '../components/SEO';
 
 const SectionHeader = ({ title }) => (
     <div className="section-header">
@@ -42,9 +43,11 @@ const ICON_MAP = {
 const AppsHub = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const queryParam = searchParams.get('q') || '';
+    const pageParam = parseInt(searchParams.get('page')) || 1;
+
     const [searchQuery, setSearchQuery] = useState(queryParam);
     const [apps, setApps] = useState([]);
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(pageParam);
     const APPS_PER_PAGE = 6;
 
     const { currentUser } = useAuth();
@@ -128,6 +131,10 @@ const AppsHub = () => {
 
     return (
         <div className="play-store-container">
+            <SEO
+                title="App Hub"
+                description="Explore our curated collection of AI apps, games, and creative tools. From Mockup Studio to Meme Formatter."
+            />
             {/* Background Glows Removed for Minimalist Flat Style */}
 
             {/* Top Bar with Search */}
@@ -142,8 +149,13 @@ const AppsHub = () => {
                         onChange={(e) => {
                             const val = e.target.value;
                             setSearchQuery(val);
-                            if (val) setSearchParams({ q: val });
-                            else setSearchParams({});
+                            setSearchParams(prev => {
+                                const next = new URLSearchParams(prev);
+                                if (val) next.set('q', val);
+                                else next.delete('q');
+                                next.delete('page'); // Reset page on search
+                                return next;
+                            }, { replace: true });
                         }}
                     />
                 </div>
@@ -217,7 +229,16 @@ const AppsHub = () => {
                         <button
                             className="page-nav-btn"
                             disabled={currentPage === 1}
-                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            onClick={() => {
+                                const next = currentPage - 1;
+                                setCurrentPage(next);
+                                setSearchParams(prev => {
+                                    const m = new URLSearchParams(prev);
+                                    if (next > 1) m.set('page', next);
+                                    else m.delete('page');
+                                    return m;
+                                });
+                            }}
                         >
                             <ChevronRight size={20} className="rotate-180" />
                         </button>
@@ -227,7 +248,15 @@ const AppsHub = () => {
                                 <button
                                     key={num}
                                     className={`page-num-btn ${currentPage === num ? 'active' : ''}`}
-                                    onClick={() => setCurrentPage(num)}
+                                    onClick={() => {
+                                        setCurrentPage(num);
+                                        setSearchParams(prev => {
+                                            const m = new URLSearchParams(prev);
+                                            if (num > 1) m.set('page', num);
+                                            else m.delete('page');
+                                            return m;
+                                        });
+                                    }}
                                 >
                                     {num}
                                 </button>
@@ -237,7 +266,15 @@ const AppsHub = () => {
                         <button
                             className="page-nav-btn"
                             disabled={currentPage === totalPages}
-                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                            onClick={() => {
+                                const next = currentPage + 1;
+                                setCurrentPage(next);
+                                setSearchParams(prev => {
+                                    const m = new URLSearchParams(prev);
+                                    m.set('page', next);
+                                    return m;
+                                });
+                            }}
                         >
                             <ChevronRight size={20} />
                         </button>

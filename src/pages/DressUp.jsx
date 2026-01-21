@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 // import { httpsCallable } from 'firebase/functions'; // Removed
 import { useApi } from '../hooks/useApi';
 import { functions, db } from '../firebase';
@@ -9,6 +10,7 @@ import { Upload, X, RotateCcw, Sparkles, Camera, ChevronLeft, ChevronRight } fro
 import toast from 'react-hot-toast';
 import { compressImage } from '../utils';
 import './DressUp.css';
+import SEO from '../components/SEO';
 
 const MAIN_CATEGORIES = {
     'Costumes 🦸': [], // Triggers drill-down
@@ -58,10 +60,70 @@ export default function DressUp() {
     const { currentUser } = useAuth();
     const { userProfile } = useUserInteractions(); // Centralized
     const [currentImage, setCurrentImage] = useState(null); // base64
-    const [viewMode, setViewMode] = useState('main'); // 'main' | 'fashion' | 'accessories' | 'costumes'
-    const [activeTab, setActiveTab] = useState('Roles 🕵️');
-    const [page, setPage] = useState(0);
+    const [searchParams, setSearchParams] = useSearchParams();
+    const viewParam = searchParams.get('view') || 'main';
+    const tabParam = searchParams.get('tab') || 'Roles 🕵️';
+    const pageParam = parseInt(searchParams.get('page')) || 0;
+
+    const [viewMode, setViewMode] = useState(viewParam); // 'main' | 'fashion' | 'accessories' | 'costumes'
+    const [activeTab, setActiveTab] = useState(tabParam);
+    const [page, setPage] = useState(pageParam);
     const [generating, setGenerating] = useState(false);
+
+    // Sync state with URL change
+    useEffect(() => {
+        if (viewParam !== viewMode) setViewMode(viewParam);
+        if (tabParam !== activeTab) setActiveTab(tabParam);
+        if (pageParam !== page) setPage(pageParam);
+    }, [viewParam, tabParam, pageParam]);
+
+    const updateUrl = (v, t, p) => {
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            if (v && v !== 'main') next.set('view', v);
+            else next.delete('view');
+
+            if (t && t !== 'Roles 🕵️') next.set('tab', t);
+            else next.delete('tab');
+
+            if (p > 0) next.set('page', p);
+            else next.delete('page');
+
+            return next;
+        }, { replace: true });
+    };
+
+    const handleTabClick = (tab) => {
+        let newView = viewMode;
+        let newTab = tab;
+        if (tab === 'Fashion 👗') {
+            newView = 'fashion';
+            newTab = Object.keys(FASHION_COLLECTION)[0];
+        } else if (tab === 'Accessories 🕶️') {
+            newView = 'accessories';
+            newTab = Object.keys(ACCESSORIES_COLLECTION)[0];
+        } else if (tab === 'Costumes 🦸') {
+            newView = 'costumes';
+            newTab = Object.keys(COSTUMES_COLLECTION)[0];
+        }
+
+        setViewMode(newView);
+        setActiveTab(newTab);
+        setPage(0);
+        updateUrl(newView, newTab, 0);
+    };
+
+    const handleBackToMain = () => {
+        setViewMode('main');
+        setActiveTab('Roles 🕵️');
+        setPage(0);
+        updateUrl('main', 'Roles 🕵️', 0);
+    };
+
+    const handlePageChange = (p) => {
+        setPage(p);
+        updateUrl(viewMode, activeTab, p);
+    };
 
     // Derived from Context
     const zaps = userProfile?.zaps || 0;
@@ -206,25 +268,9 @@ export default function DressUp() {
         }
     };
 
-    const handleTabClick = (tab) => {
-        if (tab === 'Fashion 👗') {
-            setViewMode('fashion');
-            setActiveTab(Object.keys(FASHION_COLLECTION)[0]); // Default to first subcategory
-        } else if (tab === 'Accessories 🕶️') {
-            setViewMode('accessories');
-            setActiveTab(Object.keys(ACCESSORIES_COLLECTION)[0]);
-        } else if (tab === 'Costumes 🦸') {
-            setViewMode('costumes');
-            setActiveTab(Object.keys(COSTUMES_COLLECTION)[0]);
-        } else {
-            setActiveTab(tab);
-        }
-    };
+    // Unified handleTabClick replaced inline logic below
 
-    const handleBackToMain = () => {
-        setViewMode('main');
-        setActiveTab('Roles 🕵️'); // Fallback to Roles
-    };
+    // handleBackToMain already defined above
 
     const getCurrentItems = () => {
         if (viewMode === 'fashion') return FASHION_COLLECTION[activeTab] || [];
@@ -333,7 +379,10 @@ export default function DressUp() {
 
     return (
         <div className="playroom-layout">
-
+            <SEO
+                title="Magic Dress Up"
+                description="AI-powered magic dress up for kids. Turn photos into fantasy characters, heroes, and more."
+            />
             {/* LEFT: THE STAGE */}
             <div className="playroom-stage">
 
@@ -512,7 +561,7 @@ export default function DressUp() {
                 <div className="pagination-controls">
                     <button
                         className="btn-arrow"
-                        onClick={() => setPage(p => Math.max(0, p - 1))}
+                        onClick={() => handlePageChange(Math.max(0, page - 1))}
                         disabled={page === 0}
                     >
                         <ChevronLeft size={32} />
@@ -526,7 +575,7 @@ export default function DressUp() {
 
                     <button
                         className="btn-arrow"
-                        onClick={() => setPage(p => Math.min(Math.ceil((getCurrentItems().length || 0) / 6) - 1, p + 1))}
+                        onClick={() => handlePageChange(Math.min(Math.ceil((getCurrentItems().length || 0) / 6) - 1, page + 1))}
                         disabled={page >= Math.ceil((getCurrentItems().length || 0) / 6) - 1}
                     >
                         <ChevronRight size={32} />

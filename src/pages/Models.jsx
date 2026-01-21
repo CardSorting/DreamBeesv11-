@@ -1,14 +1,46 @@
 import React, { useState, useMemo } from 'react';
 import SEO from '../components/SEO';
 import { useModel } from '../contexts/ModelContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Search, Sparkles, Check } from 'lucide-react';
 
 export default function Models() {
     const { selectedModel, setSelectedModel, availableModels, loading, error } = useModel();
     const navigate = useNavigate();
-    const [searchQuery, setSearchQuery] = useState('');
-    const [activeCategory, setActiveCategory] = useState('All');
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    // Initial state from URL
+    const queryParam = searchParams.get('q') || '';
+    const categoryParam = searchParams.get('category') || 'All';
+
+    const [searchQuery, setSearchQuery] = useState(queryParam);
+    const [activeCategory, setActiveCategory] = useState(categoryParam);
+
+    // Sync state with URL changes (back/forward nav)
+    React.useEffect(() => {
+        if (queryParam !== searchQuery) setSearchQuery(queryParam);
+        if (categoryParam !== activeCategory) setActiveCategory(categoryParam);
+    }, [queryParam, categoryParam]);
+
+    const handleSearchChange = (val) => {
+        setSearchQuery(val);
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            if (val) next.set('q', val);
+            else next.delete('q');
+            return next;
+        }, { replace: true });
+    };
+
+    const handleCategoryChange = (cat) => {
+        setActiveCategory(cat);
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            if (cat && cat !== 'All') next.set('category', cat);
+            else next.delete('category');
+            return next;
+        }, { replace: true });
+    };
 
     const categories = useMemo(() => {
         const tags = new Set(['All']);
@@ -140,7 +172,7 @@ export default function Models() {
                                 type="text"
                                 placeholder="Search models..."
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(e) => handleSearchChange(e.target.value)}
                                 style={{
                                     width: '100%',
                                     background: 'var(--color-bg-subtle)',
@@ -169,7 +201,7 @@ export default function Models() {
                             {categories.map(cat => (
                                 <button
                                     key={cat}
-                                    onClick={() => setActiveCategory(cat)}
+                                    onClick={() => handleCategoryChange(cat)}
                                     style={{
                                         padding: '8px 16px',
                                         borderRadius: '100px',
@@ -335,7 +367,7 @@ export default function Models() {
                         <Sparkles size={32} style={{ marginBottom: '16px', opacity: 0.5 }} />
                         <p>No models found matching your criteria.</p>
                         <button
-                            onClick={() => { setSearchQuery(''); setActiveCategory('All'); }}
+                            onClick={() => { handleSearchChange(''); handleCategoryChange('All'); }}
                             style={{
                                 marginTop: '16px',
                                 color: 'var(--color-accent-primary)',

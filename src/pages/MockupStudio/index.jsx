@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import './MockupStudio.css';
 
 import { Button } from './components/Button';
@@ -8,6 +9,7 @@ import { useUserInteractions } from '../../contexts/UserInteractionsContext';
 import BeeCrateScene from './BeeCrateScene';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
+import SEO from '../../components/SEO';
 
 const AppState = {
     IDLE: 'IDLE',          // Waiting for coin (image)
@@ -28,7 +30,27 @@ const MockupStudio = () => {
     const [gachaPrizes, setGachaPrizes] = useState([]);
     const [zipBlob, setZipBlob] = useState(null);
     const [spinProgress, setSpinProgress] = useState(null);
-    const [mode, setMode] = useState('standard'); // 'standard', 'tcg', 'doll'
+
+    const [searchParams, setSearchParams] = useSearchParams();
+    const modeParam = searchParams.get('mode') || 'standard';
+    const [mode, setMode] = useState(modeParam); // 'standard', 'tcg', 'doll'
+
+    // Sync mode with URL
+    useEffect(() => {
+        if (modeParam !== mode) {
+            setMode(modeParam);
+        }
+    }, [modeParam]);
+
+    const handleModeChange = (newMode) => {
+        setMode(newMode);
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            if (newMode && newMode !== 'standard') next.set('mode', newMode);
+            else next.delete('mode');
+            return next;
+        }, { replace: true });
+    };
 
     const [error, setError] = useState(null);
     const fileInputRef = useRef(null);
@@ -200,7 +222,7 @@ const MockupStudio = () => {
 
                 {/* Standard Button */}
                 <button
-                    onClick={(e) => { e.stopPropagation(); setMode('standard'); }}
+                    onClick={(e) => { e.stopPropagation(); handleModeChange('standard'); }}
                     className={`premium-toggle-btn ${mode === 'standard' ? 'active' : 'inactive'}`}
                 >
                     <span className="text-lg">🍯</span> Standard
@@ -208,7 +230,7 @@ const MockupStudio = () => {
 
                 {/* TCG Button */}
                 <button
-                    onClick={(e) => { e.stopPropagation(); setMode('tcg'); }}
+                    onClick={(e) => { e.stopPropagation(); handleModeChange('tcg'); }}
                     className={`premium-toggle-btn ${mode === 'tcg' ? 'active' : 'inactive'}`}
                 >
                     <span className="text-lg">🃏</span> TCG
@@ -216,7 +238,7 @@ const MockupStudio = () => {
 
                 {/* Doll Button */}
                 <button
-                    onClick={(e) => { e.stopPropagation(); setMode('doll'); }}
+                    onClick={(e) => { e.stopPropagation(); handleModeChange('doll'); }}
                     className={`premium-toggle-btn ${mode === 'doll' ? 'active' : 'inactive'}`}
                 >
                     <span className="text-lg">🧸</span> Doll
@@ -233,6 +255,10 @@ const MockupStudio = () => {
 
     return (
         <div className="gacha-page bee-theme">
+            <SEO
+                title={`${mode === 'doll' ? 'Doll Reskin' : mode === 'tcg' ? 'TCG Mockup' : 'Bee Crate'} Studio`}
+                description="Deposit your design and harvest surprise professional mockups. TCG, Doll, and Product modes available."
+            />
             <main className="gacha-main">
 
                 {/* Title */}
