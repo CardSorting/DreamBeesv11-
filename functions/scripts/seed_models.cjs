@@ -75,15 +75,7 @@ const MODELS = [
         order: 10,
         isActive: true
     },
-    {
-        id: 'qwen-image-2512',
-        name: 'Qwen Image 2.5 12B',
-        description: 'Advanced Qwen model for high-fidelity image generation.',
-        type: 'SDXL',
-        order: 11,
-        isActive: false,
-        image: '/showcase/qwen-image-2512/cover.png'
-    },
+
     {
         id: 'wai-illustrious',
         name: 'Wai Illustrious',

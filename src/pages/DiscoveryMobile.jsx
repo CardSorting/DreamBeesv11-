@@ -4,7 +4,7 @@ import { useModel } from '../contexts/ModelContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { Sparkles, Loader2, CheckCircle2, Heart, Flag } from 'lucide-react';
 import { getOptimizedImageUrl, getImageSrcSet } from '../utils';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import './Discovery.css';
 
 export default function DiscoveryMobile() {
@@ -21,12 +21,25 @@ export default function DiscoveryMobile() {
     const { isLiked, toggleLike, isHidden, hidePost } = useUserInteractions();
 
     // -- MODEL STATE --
-    const [activeModelId, setActiveModelId] = useState('all');
+    const { modelId } = useParams();
+    const [activeModelId, setActiveModelId] = useState(modelId || 'all');
+
+    // Update state when URL changes
+    useEffect(() => {
+        setActiveModelId(modelId || 'all');
+    }, [modelId]);
 
     // Scroll to top on model change
-    const handleModelSelect = (modelId) => {
-        if (activeModelId === modelId) return;
-        setActiveModelId(modelId);
+    const handleModelSelect = (newModelId) => {
+        if (activeModelId === newModelId) return;
+
+        // Navigate
+        if (newModelId === 'all') {
+            navigate('/discovery');
+        } else {
+            navigate(`/discovery/model/${newModelId}`);
+        }
+
         window.scrollTo(0, 0);
     };
 

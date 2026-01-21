@@ -97,7 +97,7 @@ export function useGenerationLogic({
                 return;
             }
 
-            const isPremiumModel = selectedModel?.id === 'zit-model' || selectedModel?.id === 'qwen-image-2512';
+            const isPremiumModel = selectedModel?.id === 'zit-model';
             const cost = (useTurbo || isPremiumModel) ? 1 : (subscriptionStatus === 'active' ? 0 : 0.5);
 
             if (zaps < cost) {

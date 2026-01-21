@@ -251,7 +251,7 @@ export default function MockupFeed() {
                                     imgItem={imgItem}
                                     index={index}
                                     model={mockModel}
-                                    getOptimizedImageUrl={(url) => url} // No optimization needed for now
+                                    getOptimizedImageUrl={getOptimizedImageUrl}
                                     navigate={navigate}
                                     setActiveShowcaseImage={setFocusImage}
                                     headerTitle={creatorName}

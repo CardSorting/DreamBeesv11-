@@ -39,7 +39,7 @@ export const handleCreateGenerationRequest = async (request) => {
             if (activeJobs.size >= 10) throw new HttpsError('resource-exhausted', "Too many pending generations.");
 
             let cost = 0;
-            const isPremiumModel = ['zit-model', 'qwen-image-2512'].includes(modelId);
+            const isPremiumModel = ['zit-model'].includes(modelId);
             if (useTurbo || isPremiumModel) cost = 1.0;
             else if (!isSubscriber) cost = 0.5;
 

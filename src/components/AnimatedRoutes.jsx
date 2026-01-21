@@ -100,6 +100,7 @@ const AnimatedRoutes = () => {
                             } />
 
                             <Route path="/discovery" element={<Discovery />} />
+                            <Route path="/discovery/model/:modelId" element={<Discovery />} />
                             <Route path="/discovery/:id" element={<ShowcaseDetail />} />
                             <Route path="/mockups" element={<MockupFeed />} />
 

@@ -79,16 +79,7 @@ const MODELS = [
         isActive: true,
         tags: ['Realistic', 'Fast', 'Photo']
     },
-    {
-        id: 'qwen-image-2512',
-        name: 'Qwen Image 2.5 12B',
-        description: 'Advanced Qwen model for high-fidelity image generation.',
-        type: 'SDXL',
-        order: 11,
-        isActive: true,
-        image: '/showcase/qwen-image-2512/cover.png',
-        tags: ['Realistic', 'Photo', 'High Fidelity']
-    },
+
     {
         id: 'wai-illustrious',
         name: 'Wai Illustrious',

@@ -7,7 +7,7 @@ import { getOptimizedImageUrl, getImageSrcSet } from '../utils';
 import { getBalancedRecommendations } from '../utils/relevance';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import SuggestedPanel from '../components/SuggestedPanel';
 import './Discovery.css';
@@ -27,21 +27,30 @@ export default function DiscoveryDesktop() {
     const { isLiked, toggleLike, isHidden, hidePost } = useUserInteractions();
 
     // -- MODEL STATE --
-    const [activeModelId, setActiveModelId] = useState('all');
+    const { modelId } = useParams();
+    // -- MODEL STATE --
+    // Sync state with URL param, default to 'all'
+    const [activeModelId, setActiveModelId] = useState(modelId || 'all');
+
+    // Update state when URL changes
+    useEffect(() => {
+        setActiveModelId(modelId || 'all');
+    }, [modelId]);
 
     // Scroll to top on model change
-    const handleModelSelect = (modelId) => {
-        if (activeModelId === modelId) return;
-        setActiveModelId(modelId);
+    const handleModelSelect = (newModelId) => {
+        if (activeModelId === newModelId) return;
 
-        // Reset specific filters when changing broad context if desired, or keep them
-        // setFilterState({ style: null, mood: null, subject: null }); 
+        // Navigate instead of setting state directly
+        if (newModelId === 'all') {
+            navigate('/discovery');
+        } else {
+            navigate(`/discovery/model/${newModelId}`);
+        }
 
         // Immediate scroll to top
         if (window.lenis) window.lenis.scrollTo(0, { immediate: true });
         else window.scrollTo(0, 0);
-
-
     };
 
 
