@@ -1,14 +1,15 @@
-
 // scripts/generate_zit_showcase.cjs
 const fs = require('fs');
 const path = require('path');
-// const fetch = require('node-fetch'); // Ensure fetch is available, utilizing global fetch in newer Node
+const { uploadToB2 } = require('./utils/b2_uploader.cjs');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 const TARGET_DIR = path.join(__dirname, '../public/showcase/zit-model');
 const MANIFEST_PATH = path.join(TARGET_DIR, 'manifest.json');
 const BASE_URL = "https://mariecoderinc--zit-h100-stable-fastapi-app.modal.run";
+const B2_PUBLIC_URL = process.env.VITE_B2_PUBLIC_URL || 'https://cdn.dreambeesai.com';
+const B2_BUCKET = process.env.VITE_B2_BUCKET || 'printeregg';
 
-// Extremely obsessively beautiful intoxicating women prompts demonstrating range
 const PROMPTS = [
     "hyper-realistic portrait of an obsessively handsome dark prince with silver hair and piercing violet eyes, wearing intricate obsidian armor, dramatic cinematic lighting, intoxicatingly beautiful, 8k resolution",
     "stunning fae lord with golden skin and mesmerizing amber eyes, long flowing white hair, wearing a robe of woven moonlight, ethereal and seductive, cinematic masterpiece",
@@ -209,7 +210,56 @@ const PROMPTS = [
     "obsessively handsome man with a deeply intimate and alluring expression, soft focus, rain-drenched ancient castle window, moody and seductive",
     "intoxicatingly handsome man with a seductive gaze, wearing a high-fashion cloak of black feathers, dramatic magical opera house lighting, dazzling",
     "stunningly alluring man with a gaze like a siren's call, wearing a suit of liquid starlight, cosmic nebula background, ethereal and captivating",
-    "hyper-realistic portrait of an immensely handsome shadow king with long obsidian hair and glowing amber eyes, wearing a cloak of feathers and silver, night-blooming garden, intoxicating"
+    "hyper-realistic portrait of an immensely handsome shadow king with long obsidian hair and glowing amber eyes, wearing a cloak of feathers and silver, night-blooming garden, intoxicating",
+    "stunningly handsome knight of the fallen star, silver hair with blue streaks, wearing shattered obsidian armor that glows with inner light, celestial and seductive",
+    "intoxicating portrait of a high-fashion necromancer with pale skin and glowing emerald eyes, wearing black silk and bones, dramatic studio lighting",
+    "obsessively handsome ethereal clockmaker with eyes like clockwork gears, long golden hair, surrounded by floating metallic butterflies, soft magical glow",
+    "immensely handsome void-born prince with skin like the night sky and white hair, wearing a suit of dark matter, cosmic background, seductive and mysterious",
+    "stunningly alluring crystal cave guardian with sapphire skin and eyes like diamonds, wearing nothing but draped translucent jewels, glowing bioluminescence",
+    "intoxicating beauty of a nomadic wind-walker with sun-kissed skin and sky-blue eyes, hair flowing like mist, wearing tattered white silk, desert at twilight",
+    "obsessively handsome celestial blacksmith with hair like molten silver and eyes of fire, wearing a leather apron over bronze skin, sparks flying in a dark forge",
+    "immensely handsome obsidian-winged angel with a sharp jawline and violet eyes, wearing silver chains, standing in a field of white roses, dramatic lighting",
+    "stunning portrait of a silver-haired oracle with a hauntingly beautiful gaze, glowing runes on his torso, wearing sheer white robes, ethereal and provocative",
+    "intoxicatingly handsome gothic architect with dark features and intense grey eyes, standing amidst towering stone arches at midnight, rain-slicked skin",
+    "obsessively handsome bioluminescent sea king with iridescent scales and glowing green eyes, floating in deep ocean trenches with light rays, mesmerizing",
+    "immensely handsome solar flare warrior with hair of orange light and gold-flecked eyes, wearing radiant solar armor, sun-drenched desert background",
+    "stunningly alluring mist-shrouded duelist with a sharp, dangerous gaze, silver hair, wearing high-fashion leather and lace, moonlit castle balcony",
+    "intoxicating beauty of an ancient dryad king with bark-patterned skin and amber eyes, crown of golden leaves, mossy forest lighting, seductive and earthy",
+    "obsessively handsome high-fashion hacker-mage with glowing digital tattoos, wearing a sleek black bodysuit, neon data streams flowing around him",
+    "immensely handsome celestial cartographer with eyes like galaxies, long stardust hair, surrounded by glowing astronomical charts, ethereal and alluring",
+    "stunning portrait of a shadow-weaving tailor with dark, elegant features, weaving cloth from literal smoke, soft moody lighting, seductive and mysterious",
+    "intoxicatingly handsome emerald-eyed serpent shifter with iridescent skin and a hypnotic gaze, lounging on velvet cushions, opulent palace setting",
+    "obsessively handsome frozen wasteland king with skin like ice and crystalline hair, wearing heavy fur and silver jewelry, aurora borealis background",
+    "immensely handsome golden-masked masquerade lord with a piercing gaze behind a filigree mask, wearing dark velvet and lace, candlelight and shadows",
+    "stunningly alluring ethereal silk merchant with silver-gold hair and violet eyes, draped in shimmering exotic fabrics, vibrant sunset marketplace",
+    "intoxicating beauty of a storm-chasing sorcerer with wild grey hair and crackling lightning eyes, wearing a tattered cloak, dramatic stormy sky",
+    "obsessively handsome moon-dusted traveler with silver skin and pearl-white hair, wearing nomadic gear made of celestial silk, starry night background",
+    "immensely handsome high-fashion dragon priest with bronze skin and vertical gold pupils, wearing ornate scale-embossed silk, ancient temple ruins",
+    "stunning portrait of a celestial judge with flaming eyes and long white hair, wearing robes of pure light, standing in a marble void, majestic and seductive",
+    "intoxicatingly handsome shadow-bound monk with a stoic but intense gaze, wearing tattered black robes, glowing purple energy around his hands",
+    "obsessively handsome silver-tongued diplomat with sharp elven features and emerald eyes, wearing a high-collared velvet suit, opulent ballroom",
+    "immensely handsome ethereal gardener with sun-kissed skin and eyes like poisonous flowers, surrounded by intoxicatingly beautiful toxic blooms",
+    "stunningly alluring icy-veined winter warlock with translucent skin and blue-white hair, wearing crystalline armor, snow-covered forest at dusk",
+    "intoxicating beauty of a star-gazing desert nomad with deep gold skin and eyes like honey, wearing elaborate silver jewelry and indigo silk",
+    "obsessively handsome bioluminescent deep-sea explorer with glowing markings on his chest and dark eyes, surrounded by glowing jellyfish, ethereal",
+    "immensely handsome high-fashion ritualist with long dark hair and intense red eyes, standing in a circle of salt and candles, dramatic noir lighting",
+    "stunning portrait of an intoxicatingly beautiful chimera shifter with heterochromia (one gold, one silver eye), wearing fur and bronze accessories",
+    "intoxicatingly handsome celestial weaver of fate with hair like liquid silver and eyes like diamonds, weaving threads of light, ethereal void background",
+    "obsessively handsome obsidian-skinned lava god with cracks of molten orange in his skin, glowing amber eyes, volcanic sunset background",
+    "immensely handsome silver-winged messenger with a youthful, dazzling gaze, wearing nothing but a white silk wrap, celestial clouds at noon",
+    "stunningly alluring ethereal protector of the lost library with ink-stained skin and wise blue eyes, surrounded by ancient glowing tomes",
+    "intoxicating beauty of a high-fashion elven archer with sharp features and emerald eyes, wearing structured green velvet and leather, forest sunlight",
+    "obsessively handsome shadow-cloaked spy with a mysterious gaze, silver-grey hair, wearing sleek black leather and neon accents, rainy rooftop",
+    "immensely handsome centaur lord with a muscular human torso and flowing white hair, sapphire eyes, roaming a golden meadow at sunset",
+    "stunning portrait of a celestial musician with skin like stardust, playing a harp made of light beams, ethereal heavenly lighting, mesmerizing",
+    "intoxicatingly handsome star-born fugitive with glowing blue tattoos and a rebellious gaze, wearing tattered futuristic gear, asteroid belt background",
+    "obsessively handsome high-fashion alchemist with liquid gold hair and intense green eyes, surrounded by glowing neon fluids, soft moody lighting",
+    "immensely handsome ethereal captain of a ghost ship with translucent skin and silver-grey hair, wearing a tattered velvet coat, misty ocean at night",
+    "stunningly alluring shadow-touched paladin with silver hair and glowing violet eyes, wearing heavy black armor with silver filigree, soft candlelight",
+    "intoxicating beauty of a master of illusions with hair like shifting smoke and eyes like opals, wearing a suit of iridescent silk, dreamy atmosphere",
+    "obsessively handsome celestial engineer with bronze skin and hair like light, surrounded by floating golden gears and blueprints of light",
+    "immensely handsome star-crossed lover with a melancholy but alluring gaze, stardust on his skin, wearing tattered silk, standing in a ruined palace",
+    "stunning portrait of a high-fashion dark elf rogue with lavender skin and silver hair, wearing sleek leather and onyx jewelry, moonlit forest"
 ];
 
 
@@ -272,14 +322,27 @@ async function generateAndSave(prompt, index) {
 
         if (!buffer) throw new Error("Generation timed out");
 
-        const filename = `${Date.now()}_${index}.png`;
-        const filePath = path.join(TARGET_DIR, filename);
+        // Save first image specifically as 'cover.png' for the preview mode usage if index is 0
+        const filename = index === 0 ? 'cover.png' : `${Date.now()}_${index}.png`;
+        const b2Key = `showcase/zit-model/${filename}`;
 
-        fs.writeFileSync(filePath, Buffer.from(buffer));
-        console.log(`  Saved to ${filename}`);
+        console.log(`  Uploading to B2: ${b2Key}...`);
+        await uploadToB2(Buffer.from(buffer), b2Key, 'image/png');
+
+        // Construct CDN URL (matching migrate_showcase_to_b2.cjs logic)
+        let publicUrl;
+        if (B2_PUBLIC_URL.includes('cdn.dreambeesai.com')) {
+            publicUrl = `${B2_PUBLIC_URL.replace(/\/$/, '')}/file/${B2_BUCKET}/${b2Key}`;
+        } else {
+            publicUrl = `${B2_PUBLIC_URL}/${b2Key}`;
+        }
+
+        console.log(`  ✓ Uploaded: ${publicUrl}`);
 
         return {
-            url: `/showcase/zit-model/${filename}`,
+            name: path.parse(filename).name,
+            url: publicUrl,
+            imageUrl: publicUrl,
             prompt: prompt,
             modelId: 'zit-model',
             creator: { user: 'Gemini 3 Pro', model: 'ZIT-model' } // metadata
