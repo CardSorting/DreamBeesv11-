@@ -163,6 +163,25 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "generations",
+      "queryScope": "COLLECTION",
+      "densityOverride": "SPARSE_ALL",
+      "fields": [
+        {
+          "fieldPath": "type",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [
