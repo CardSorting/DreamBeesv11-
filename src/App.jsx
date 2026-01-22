@@ -37,9 +37,6 @@ function Layout() {
     '/mockups',
     '/memes',
     '/filter',
-    '/gallery',
-    '/models',
-    '/apps',
     '/showcase',
     '/mockup-catalog'
   ];

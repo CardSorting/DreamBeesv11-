@@ -57,6 +57,7 @@ export default function Models() {
         });
     }, [availableModels, searchQuery, activeCategory]);
 
+
     function handleSelect(model) {
         setSelectedModel(model);
         navigate('/generate');
@@ -255,7 +256,7 @@ export default function Models() {
                                     className="model-card-image"
                                 >
                                     <img
-                                        src={model.image}
+                                        src={model.image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80'}
                                         alt={`${model.name} - AI Model Preview`}
                                         style={{
                                             width: '100%',

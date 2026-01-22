@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Hexagon, Home, Compass, Zap, Film, User, Plus, Image, ArrowLeft, LogOut } from 'lucide-react';
+import { Hexagon, Home, Compass, Zap, Film, User, Plus, Image, ArrowLeft, LogOut, LayoutGrid } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 
@@ -34,6 +34,7 @@ const MinimalHeader = () => {
         { path: '/discovery', label: 'Discovery', icon: Compass },
         { path: '/generate', label: 'Studio', icon: Zap, hideOnMobile: true },
         { path: '/gallery', label: 'Gallery', icon: Image },
+        { path: '/apps', label: 'Apps', icon: LayoutGrid },
         { path: '/profile', label: 'Profile', icon: User, hideOnMobile: true },
     ];
 
