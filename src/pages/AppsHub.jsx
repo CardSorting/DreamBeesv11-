@@ -65,7 +65,7 @@ const AppsHub = () => {
                     icon: Presentation, // Using Presentation icon
                     tags: ['design', 'mockup', 'product', '3d'],
                     path: '/mockup-studio',
-                    previewImage: 'https://cdn.dreambeesai.com/file/printeregg/app-previews/mockup-studio.png',
+                    previewImage: 'https://cdn.dreambeesai.com/file/printeregg/app-previews/bee-crate.png',
                     isNew: true
                 };
 
