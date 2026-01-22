@@ -30,11 +30,28 @@ function Layout() {
   // Check if we need to show onboarding
   const showOnboarding = currentUser && isProfileLoaded && !userProfile.username;
 
+  // Determine if we should hide the header based on the current route
+  const hideHeaderRoutes = [
+    '/',
+    '/discovery',
+    '/mockups',
+    '/memes',
+    '/filter',
+    '/gallery',
+    '/models',
+    '/apps',
+    '/showcase',
+    '/mockup-catalog'
+  ];
+
+  const shouldHideHeader = hideHeaderRoutes.some(route => pathname === route || pathname.startsWith(route + '/')) || pathname.startsWith('/model/');
+
   return (
     <div className="app-layout">
       {showOnboarding && <UsernameOnboarding />}
-      {!pathname.startsWith('/model/') && pathname !== '/' && <MinimalHeader />}
+      {!shouldHideHeader && <MinimalHeader />}
       <main className="app-main">
+
         <AnimatedRoutes />
       </main>
       {!isLanding && !isShowcaseDetail && !pathname.startsWith('/discovery') && pathname !== '/generate' && !(pathname.startsWith('/mockup-catalog') && isMobile) && (
