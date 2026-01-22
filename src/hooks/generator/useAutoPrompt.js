@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { functions, db } from '../../firebase';
+import { db } from '../../firebase';
 import { useApi } from '../../hooks/useApi';
 import { doc, onSnapshot } from 'firebase/firestore';
 import toast from 'react-hot-toast';

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { db, functions } from '../firebase';
+import { db } from '../firebase';
 // import { httpsCallable } from 'firebase/functions'; // Removed
 import { useApi } from '../hooks/useApi';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -55,7 +55,7 @@ export default function Slideshow() {
         setPreviewUrl(url);
     };
 
-    const handleClear = () => {
+    const _handleClear = () => {
         setSelectedFile(null);
         setPreviewUrl(null);
     };

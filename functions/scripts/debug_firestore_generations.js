@@ -1,10 +1,10 @@
 
-import { initializeApp, cert } from "firebase-admin/app";
+import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 
 try {
     initializeApp({ projectId: "dreambees-alchemist" });
-} catch (e) {
+} catch (_e) {
     // ignore
 }
 

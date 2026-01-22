@@ -7,11 +7,11 @@ import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
 import { Loader2, Heart, Bookmark, AlertCircle, Zap, Layers, Search, Package, Lock } from 'lucide-react';
 import { db } from '../firebase';
-import { collection, query, where, orderBy, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { isValidUsername } from '../utils/usernameValidation';
 
 import ShowcaseModal from '../components/ShowcaseModal';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 
 export default function UserProfile() {
     const { currentUser } = useAuth();
@@ -23,7 +23,7 @@ export default function UserProfile() {
     const [savingProfile, setSavingProfile] = useState(false);
     const { userProfile } = useUserInteractions();
 
-    const { likes: ctxLikes, bookmarks: ctxBookmarks, mockups: ctxMockups, loadUserInteractions } = useUserInteractions();
+    const { likes: ctxLikes, bookmarks: ctxBookmarks, mockups: ctxMockups } = useUserInteractions();
 
     // Defensive Fallbacks
     const likes = ctxLikes || [];

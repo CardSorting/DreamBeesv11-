@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { Loader2, Film, Image as ImageIcon, Maximize2, ThumbsUp, ThumbsDown, X, Download, Share2 } from 'lucide-react';
 import { getOptimizedImageUrl } from '../../utils';
 import { Link } from 'react-router-dom';
@@ -13,6 +13,10 @@ export default function ResultModal({
     onRate,
     downloadUrl
 }) {
+    const downloadFilename = useMemo(() => {
+        return `dream-bees-${Date.now()}.${generationMode === 'video' ? 'mp4' : 'png'}`;
+    }, [generationMode]);
+
     if (!isOpen) return null;
 
     return (
@@ -62,7 +66,7 @@ export default function ResultModal({
                 }}>
                     <a
                         href={downloadUrl || generatedImage}
-                        download={`dream-bees-${Date.now()}.${generationMode === 'video' ? 'mp4' : 'png'}`}
+                        download={downloadFilename}
                         className="btn-icon"
                         style={{
                             width: '40px', height: '40px', borderRadius: '50%',

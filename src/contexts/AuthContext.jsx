@@ -6,12 +6,11 @@ import {
     createUserWithEmailAndPassword,
     signOut,
     GoogleAuthProvider,
-    signInWithPopup,
-    getRedirectResult
+    signInWithPopup
 } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 // import { httpsCallable } from "firebase/functions"; // Removed
-import { functions, db } from "../firebase";
+import { db } from "../firebase";
 import LoadingScreen from "../components/LoadingScreen";
 import { useApi } from "../hooks/useApi";
 

@@ -5,6 +5,7 @@ import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { Sparkles, Loader2, CheckCircle2, Heart, Flag } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
 import { getOptimizedImageUrl, getImageSrcSet } from '../utils';
+// motion is used for motion.div components
 import { motion } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import { slugify } from '../utils/urlHelpers';

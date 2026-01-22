@@ -70,7 +70,7 @@ export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt
         };
 
         fetchHistory();
-    }, [currentUser?.uid]);
+    }, [currentUser?.uid, history]);
 
     const scroll = (direction) => {
         if (scrollContainerRef.current) {

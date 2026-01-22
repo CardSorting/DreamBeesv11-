@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { db } from '../firebase';
-import { collection, doc, setDoc, deleteDoc, onSnapshot, query, where, orderBy, runTransaction } from 'firebase/firestore';
+import { collection, doc, setDoc, onSnapshot, query, where, orderBy, runTransaction } from 'firebase/firestore';
 // import { httpsCallable } from 'firebase/functions'; // Removed, using useApi
 import { useAuth } from './AuthContext';
 import { useModel } from './ModelContext';

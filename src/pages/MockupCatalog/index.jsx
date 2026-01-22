@@ -17,7 +17,7 @@ import SEO from '../../components/SEO';
 const ITEMS_PER_PAGE = 6; // Limit updated to 6 as requested
 
 const MockupCatalog = () => {
-    const { currentUser } = useAuth();
+    const { currentUser: _currentUser } = useAuth();
     const navigate = useNavigate();
     const { categorySlug, subcategorySlug } = useParams();
 

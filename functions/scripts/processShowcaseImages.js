@@ -1,5 +1,5 @@
 
-import { initializeApp, cert } from "firebase-admin/app";
+import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { getFunctions } from "firebase-admin/functions";
 import fs from "fs/promises";
@@ -17,7 +17,7 @@ try {
         projectId: PROJECT_ID,
         serviceAccountId: `${PROJECT_ID}@appspot.gserviceaccount.com` // Required for Task Queue signing locally
     });
-} catch (e) {
+} catch (_e) {
     if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
         console.warn("Warning: standard firebase initialization failed and no GOOGLE_APPLICATION_CREDENTIALS found. Ensure you are authenticated.");
     }
@@ -87,7 +87,7 @@ async function processShowcase() {
             try {
                 const manifestContent = await fs.readFile(manifestPath, "utf-8");
                 manifest = JSON.parse(manifestContent);
-            } catch (e) {
+            } catch (_e) {
                 // Warning suppressed for cleaner output
             }
 

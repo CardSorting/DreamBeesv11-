@@ -10,7 +10,7 @@ export default function GeneratorCanvas({
     currentJobId,
     generatedImage,
     generationMode,
-    activeJob,
+    activeJob: _activeJob,
     onRate,
     onFullscreen,
     prompt

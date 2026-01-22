@@ -1,7 +1,6 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, MoreHorizontal, Bookmark, BadgeCheck, Aperture, Volume2, VolumeX, Flag } from 'lucide-react';
-import toast from 'react-hot-toast';
 
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -21,7 +20,7 @@ const FeedPost = ({
     onCreatorClick,
     onTagClick
 }) => {
-    const { currentUser } = useAuth();
+    const { _currentUser } = useAuth();
     const { isLiked, isBookmarked, toggleLike, toggleBookmark, hidePost, isHidden } = useUserInteractions();
 
 
@@ -35,7 +34,11 @@ const FeedPost = ({
     const liked = isLiked(imgItem.id);
     const bookmarked = isBookmarked(imgItem.id);
 
-    const handleDoubleTap = () => {
+    const handleLike = useCallback(() => {
+        toggleLike(imgItem, model);
+    }, [toggleLike, imgItem, model]);
+
+    const handleDoubleTap = useCallback(() => {
         const now = Date.now();
         if (now - lastTap < 300) {
             handleLike();
@@ -47,7 +50,7 @@ const FeedPost = ({
             }, 800);
         }
         setLastTap(now);
-    };
+    }, [lastTap, handleLike]);
 
     // Cleanup on unmount
     React.useEffect(() => {
@@ -58,9 +61,7 @@ const FeedPost = ({
 
 
 
-    const handleLike = () => {
-        toggleLike(imgItem, model);
-    };
+
 
     const handleSave = () => {
         toggleBookmark(imgItem, model);

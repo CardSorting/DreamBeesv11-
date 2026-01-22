@@ -5,7 +5,7 @@ import { Search, ArrowRight, Calendar, User, Clock } from 'lucide-react';
 import SEO from '../components/SEO';
 
 export default function Blog() {
-    const navigate = useNavigate();
+    const _navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const query = searchParams.get('q') || '';
     const [searchQuery, setSearchQuery] = useState(query);

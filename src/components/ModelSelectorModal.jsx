@@ -9,7 +9,8 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 2;
 
-    // Reset search and page when modal opens
+    // Reset search, errors, and page when modal opens/closes
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => {
         if (isOpen) {
             setSearchQuery('');

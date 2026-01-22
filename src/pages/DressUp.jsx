@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 // import { httpsCallable } from 'firebase/functions'; // Removed
 import { useApi } from '../hooks/useApi';
-import { functions, db } from '../firebase';
+import { db } from '../firebase';
 import { collection, query, where, orderBy, limit, onSnapshot, doc, getDocs } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';

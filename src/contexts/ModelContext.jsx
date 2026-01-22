@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { toast } from 'react-hot-toast';
-import { db, functions } from '../firebase';
+// toast removed - errors handled in apiCall
+import { db } from '../firebase';
 import { collection, getDocs, query, orderBy, where, limit, startAfter } from 'firebase/firestore';
 import { useApi } from '../hooks/useApi';
 import { getOptimizedImageUrl } from '../utils';

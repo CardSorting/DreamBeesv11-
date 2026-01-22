@@ -159,7 +159,7 @@ export const compressImage = async (dataUrl, maxWidth = 1024, quality = 0.7) => 
 
             resolve(canvas.toDataURL(...compressedParams));
         };
-        img.onerror = (error) => reject(new Error("Failed to load image for compression"));
+        img.onerror = () => reject(new Error("Failed to load image for compression"));
         img.src = dataUrl;
     });
 };

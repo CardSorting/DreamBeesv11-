@@ -10,7 +10,7 @@ export function useGenerationLogic({
     generationMode,
     negPrompt,
     aspectRatio, steps, cfg, seed, useTurbo,
-    zaps, reels, subscriptionStatus,
+    zaps, reels: _reels, subscriptionStatus,
     setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId, setActiveJob
 }) {
     // Track the current job listener

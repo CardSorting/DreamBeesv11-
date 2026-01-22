@@ -559,7 +559,7 @@ export default function Landing() {
     );
 }
 
-function BentoCard({ colSpan, title, icon: Icon, children }) {
+function BentoCard({ colSpan, title, icon: CardIcon, children }) {
     const cardRef = useRef(null);
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
@@ -592,7 +592,7 @@ function BentoCard({ colSpan, title, icon: Icon, children }) {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     color: 'white'
                 }}>
-                    <Icon size={20} />
+                    <CardIcon size={20} />
                 </div>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: '500' }}>{title}</h3>
             </div>

@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 
-export const useAppLikes = (userId) => {
+export const useAppLikes = (_userId) => {
     // We now ignore the passed 'userId' for the listener effectively, 
     // as the global text context handles the current user.
     // However, if the hook is called with a specific userId that DOESNT match the current user,

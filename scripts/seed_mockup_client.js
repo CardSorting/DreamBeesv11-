@@ -1,4 +1,4 @@
-
+/* global process */
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, writeBatch } from "firebase/firestore";
 import fs from 'fs';

@@ -13,6 +13,8 @@ const MinimalHeader = () => {
     const navigate = useNavigate();
     const [imageError, setImageError] = useState(false);
 
+    // Reset image error state when user photo URL changes
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => {
         setImageError(false);
     }, [currentUser?.photoURL]);

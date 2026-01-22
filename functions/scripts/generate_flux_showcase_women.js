@@ -1,12 +1,12 @@
 
-import { initializeApp, cert } from "firebase-admin/app";
+import { initializeApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
-import crypto from "crypto";
+
 
 // --- Configuration ---
 const PROJECT_ID = "dreambees-alchemist";
@@ -31,7 +31,7 @@ try {
             process.env[key.trim()] = value.trim();
         }
     });
-} catch (e) {
+} catch (_e) {
     console.warn("Could not read .env file, assuming env vars are set.");
 }
 
@@ -54,7 +54,7 @@ if (!B2_KEY_ID || !B2_APP_KEY) {
 // Init Firebase
 try {
     initializeApp({ projectId: PROJECT_ID });
-} catch (e) {
+} catch (_e) {
     if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
         // console.warn("Init warning (ignore if subsequent ops work):", e.message);
     }
@@ -241,7 +241,7 @@ async function fetchWithRetry(url, options, retries = 5) {
 
             if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
             return res;
-        } catch (e) {
+        } catch (_e) {
             if (i === retries - 1) throw e;
             const waitTime = 1000 * (i + 1);
             await sleep(waitTime);
@@ -261,7 +261,7 @@ async function main() {
     try {
         const manifestData = await fs.readFile(MANIFEST_PATH, "utf-8");
         manifest = JSON.parse(manifestData);
-    } catch (e) {
+    } catch (_e) {
         manifest = [];
     }
 
@@ -323,7 +323,7 @@ async function main() {
                         if (statusJson.status === 'failed') {
                             throw new Error(statusJson.error || 'Generation failed');
                         }
-                    } catch (e) { }
+                    } catch (_e) { }
                 }
             }
 

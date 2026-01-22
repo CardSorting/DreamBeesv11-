@@ -20,7 +20,7 @@ export default function MobileGenerator() {
     const [inputValue, setInputValue] = useState('');
     const inputRef = useRef(null);
     const messagesEndRef = useRef(null);
-    const lastScrollY = useRef(0);
+    const _lastScrollY = useRef(0);
 
     // UX State
     const [expandedImage, setExpandedImage] = useState(null);

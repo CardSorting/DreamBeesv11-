@@ -1,10 +1,10 @@
 
-import { initializeApp, cert } from "firebase-admin/app";
+import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 
 try {
     initializeApp({ projectId: "dreambees-alchemist" });
-} catch (e) {
+} catch (_e) {
     // ignore
 }
 
@@ -25,7 +25,7 @@ async function debugShowcase() {
             const first = snap1.docs[0].data();
             console.log(`Sample: ID=${snap1.docs[0].id}, Time=${first.createdAt ? first.createdAt._seconds : 'N/A'}, URL=${first.imageUrl || first.url}`);
         }
-    } catch (e) {
+    } catch (_e) {
         console.error("Global Feed Query FAILED:", e.message);
     }
 
@@ -42,7 +42,7 @@ async function debugShowcase() {
             const first = snap2.docs[0].data();
             console.log(`Sample: ID=${snap2.docs[0].id}`);
         }
-    } catch (e) {
+    } catch (_e) {
         console.error("Model Feed Query FAILED:", e.message);
         if (e.message.includes("indexes")) console.log("--> This suggests a MISSING INDEX.");
     }

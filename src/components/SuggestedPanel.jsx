@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useAppLikes } from '../hooks/useAppLikes';
@@ -27,9 +27,8 @@ const ICON_MAP = {
     Smile: Smile
 };
 
-const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
+const SuggestedPanel = ({ currentModel, availableModels }) => {
     const [featuredApps, setFeaturedApps] = useState([]);
-    const [featuredModel, setFeaturedModel] = useState(null);
     const { currentUser } = useAuth();
     const { isLiked, toggleLike } = useAppLikes(currentUser?.uid);
 
@@ -96,13 +95,13 @@ const SuggestedPanel = ({ currentModel, availableModels, setActiveFilter }) => {
         fetchApps();
     }, []);
 
-    useEffect(() => {
-        if (!availableModels || availableModels.length === 0) return;
+    const featuredModel = useMemo(() => {
+        if (!availableModels || availableModels.length === 0) return null;
 
         const filtered = availableModels.filter(m => m.id !== currentModel?.id);
         const shuffled = [...filtered].sort(() => 0.5 - Math.random());
 
-        setFeaturedModel(shuffled[0]);
+        return shuffled[0] || null;
     }, [availableModels, currentModel]);
 
     return (

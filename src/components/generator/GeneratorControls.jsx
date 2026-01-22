@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import {
     Wand2, Loader2, X, Mic, MicOff, Paperclip, Sparkles, Share2, Trash2, Zap
 } from 'lucide-react';
@@ -9,8 +9,8 @@ import { STYLE_REGISTRY } from '../../data/styles';
 export default function GeneratorControls({
     prompt, setPrompt,
     generationMode,
-    referenceImage, setReferenceImage, clearReferenceImage,
-    isListening, setIsListening,
+    referenceImage, setReferenceImage: _setReferenceImage, clearReferenceImage,
+    isListening, setIsListening: _setIsListening,
     toggleListening,
     setIsImagePickerOpen,
     isAutoPrompting,

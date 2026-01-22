@@ -7,6 +7,7 @@ import Sidebar from '../components/Sidebar';
 import SuggestedPanel from '../components/SuggestedPanel';
 import { useModel } from '../contexts/ModelContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
+// eslint-disable-next-line no-unused-vars -- motion.div is used as JSX element
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { slugify, unslugify } from '../utils/urlHelpers';

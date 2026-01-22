@@ -3,7 +3,7 @@
  * This tests the complete flow: API call -> Task Queue -> Inference -> B2 Upload
  */
 
-import { initializeApp, cert } from "firebase-admin/app";
+import { initializeApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getFunctions } from "firebase-admin/functions";
 import { createRequire } from "module";

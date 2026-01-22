@@ -6,7 +6,7 @@ const VisualizerCanvas = forwardRef(({
     currentTime,
     width,
     height,
-    isPlaying,
+    isPlaying: _isPlaying,
     analyser,
 }, ref) => {
     const canvasRef = useRef(null);

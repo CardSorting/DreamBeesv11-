@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 // import { httpsCallable } from 'firebase/functions'; // Removed
-import { functions, db } from '../../firebase';
+import { db } from '../../firebase';
 import { useApi } from '../../hooks/useApi';
 import { doc, onSnapshot, query, collection, where, orderBy, limit } from 'firebase/firestore';
 import toast from 'react-hot-toast';
@@ -18,7 +18,7 @@ export function useVideoGeneration({
     videoDuration,
     videoResolution,
     aspectRatio,
-    reels
+    reels: _reels
 }) {
     const [recentImages, setRecentImages] = useState([]);
 

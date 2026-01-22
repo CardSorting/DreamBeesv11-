@@ -4,15 +4,15 @@ import { getOptimizedImageUrl } from '../../utils';
 
 export default function GeneratorSidebar({
     activeTab, setActiveTab,
-    generationMode, setGenerationMode,
+    generationMode, setGenerationMode: _setGenerationMode,
     selectedModel,
     setIsModelModalOpen,
     aspectRatio, setAspectRatio,
-    showcaseImages, setPrompt, setGeneratedImage,
+    showcaseImages, setPrompt, setGeneratedImage: _setGeneratedImage,
     // Video Params
     videoDuration, setVideoDuration,
     videoResolution, setVideoResolution,
-    setVideoAspectRatio, // Optional if we want separate video aspect control
+    setVideoAspectRatio: _setVideoAspectRatio, // Optional if we want separate video aspect control
     // Advanced Params
     seed, setSeed,
     steps, setSteps,

@@ -6,7 +6,7 @@ import { useModel } from '../contexts/ModelContext';
 
 export default function Navbar() {
     const { currentUser, logout } = useAuth();
-    const { credits } = useModel();
+    useModel(); // Hook used for context subscription
     const navigate = useNavigate();
     const location = useLocation();
     const [isMenuOpen, setIsMenuOpen] = useState(false);

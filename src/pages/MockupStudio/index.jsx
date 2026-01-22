@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import './MockupStudio.css';
 
 import { Button } from './components/Button';
-import { bulkService } from './services/bulkService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUserInteractions } from '../../contexts/UserInteractionsContext';
 import BeeCrateScene from './BeeCrateScene';

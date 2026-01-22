@@ -82,7 +82,7 @@ async function generateBanana() {
                     const [key, value] = line.split("=");
                     if (key && value && !key.startsWith("#")) process.env[key.trim()] = value.trim();
                 });
-            } catch (e) { /* ignore */ }
+            } catch (_e) { /* ignore */ }
         }
 
         const s3Client = new S3Client({

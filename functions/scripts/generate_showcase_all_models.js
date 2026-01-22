@@ -11,7 +11,7 @@
  *   node scripts/generate_showcase_all_models.js --model all --count 10
  */
 
-import { initializeApp, cert } from "firebase-admin/app";
+import { initializeApp } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
@@ -32,7 +32,7 @@ try {
             process.env[key.trim()] = value.trim();
         }
     });
-} catch (e) {
+} catch (_e) {
     console.warn("Could not read .env file, assuming env vars are set.");
 }
 
@@ -52,7 +52,7 @@ if (!B2_KEY_ID || !B2_APP_KEY) {
 // --- Init Firebase ---
 try {
     initializeApp({ projectId: "dreambees-alchemist" });
-} catch (e) {
+} catch (_e) {
     // Already initialized
 }
 const db = getFirestore();
@@ -209,7 +209,7 @@ async function fetchWithRetry(url, options, retries = 3) {
             }
             if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
             return res;
-        } catch (e) {
+        } catch (_e) {
             if (i === retries - 1) throw e;
             await sleep(1000 * (i + 1));
         }

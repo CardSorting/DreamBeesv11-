@@ -5,7 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const BottomNav = () => {
     const { currentUser } = useAuth();
-    const isAdmin = currentUser?.uid === 'prT9j3royVTstWLDDcKMoUOU7aQ2';
+    const _isAdmin = currentUser?.uid === 'prT9j3royVTstWLDDcKMoUOU7aQ2';
 
     return (
         <nav className="bottom-nav visible-mobile">

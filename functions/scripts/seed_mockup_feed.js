@@ -33,7 +33,7 @@ try {
             process.env[key.trim()] = value.trim();
         }
     });
-} catch (e) {
+} catch (_e) {
     console.warn("Could not read .env file, assuming env vars are set.");
 }
 
@@ -69,7 +69,7 @@ if (!B2_KEY_ID || !B2_APP_KEY) {
 
 try {
     initializeApp({ projectId: CONFIG.PROJECT_ID });
-} catch (e) {
+} catch (_e) {
     // App may already be initialized
 }
 

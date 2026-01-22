@@ -1,9 +1,8 @@
 
 // Run this with: node scripts/seed_memes.js
 // Ensure GOOGLE_APPLICATION_CREDENTIALS is set or you are logged in via gcloud if running locally.
-import { initializeApp, cert } from "firebase-admin/app"; // Or applicationDefault if running in environment with credentials
+import { initializeApp } from "firebase-admin/app"; // Or applicationDefault if running in environment with credentials
 import { getFirestore } from "firebase-admin/firestore";
-import { readFile } from 'fs/promises';
 
 async function seed() {
     console.log("Initializing Firebase Admin...");

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Star, Heart } from 'lucide-react';
 import './AppCard.css';
 
-const AppCard = memo(({ title, description, icon: Icon, path, tags = [], color = "violet", rating = "4.9", isCompact = false, previewImage, isLiked, onToggleLike, likeCount = 0, rank }) => {
+const AppCard = memo(({ title, description, icon: AppIcon, path, tags = [], color = "violet", rating = "4.9", isCompact = false, previewImage, isLiked, onToggleLike, likeCount = 0, rank }) => {
     // Optimistic like count
     const [displayLikes, setDisplayLikes] = React.useState(likeCount);
 
@@ -68,7 +68,7 @@ const AppCard = memo(({ title, description, icon: Icon, path, tags = [], color =
             <div className="app-card-content">
                 <div className="app-icon-container">
                     <div className="app-icon-wrapper">
-                        <Icon size={isCompact ? 20 : 28} strokeWidth={2.5} />
+                        <AppIcon size={isCompact ? 20 : 28} strokeWidth={2.5} />
                     </div>
                 </div>
 

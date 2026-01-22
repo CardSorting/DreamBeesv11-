@@ -128,7 +128,7 @@ function tokenize(text) {
     if (!text || typeof text !== 'string') return new Set();
     return new Set(
         text.toLowerCase()
-            .split(/[\s,.\-_:;!?()\[\]{}]+/)
+            .split(/[\s,.\-_:;!?()[\]{}]+/)
             .filter(w => w.length > 2 && !STOP_WORDS.has(w))
     );
 }
@@ -483,7 +483,7 @@ function diversityAwareSelect(scoredItems, limit, diversityLimits = DIVERSITY_LI
     // Track used fingerprint combinations for uniqueness scoring
     const usedFingerprints = new Set();
 
-    for (const { item, score } of scoredItems) {
+    for (const { item, score: _score } of scoredItems) {
         if (selected.length >= limit) break;
 
         const fp = getDiversityFingerprint(item);
@@ -498,7 +498,7 @@ function diversityAwareSelect(scoredItems, limit, diversityLimits = DIVERSITY_LI
 
         // Create uniqueness signature
         const signature = `${fp.styleCluster}-${fp.moodCluster}-${fp.subjectCluster}`;
-        const isUnique = !usedFingerprints.has(signature);
+        const _isUnique = !usedFingerprints.has(signature);
 
         // Accept the item
         selected.push(item);
