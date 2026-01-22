@@ -21,7 +21,9 @@ export default function DiscoveryMobile() {
         availableModels,
         hasGlobalFeedEnded,
         getShowcaseImages,
-        showcaseCache
+        showcaseCache,
+        isModelShowcaseLoading,
+        hasShowcaseEnded
     } = useModel();
     const { _isLiked, _toggleLike, _isHidden, _hidePost: _hidePost } = useUserInteractions();
 
@@ -78,8 +80,8 @@ export default function DiscoveryMobile() {
 
     // Sync loading state to ref for stable callback access
     useEffect(() => {
-        isLoadingRef.current = isGlobalFeedLoading;
-    }, [isGlobalFeedLoading]);
+        isLoadingRef.current = activeModelId === 'all' ? isGlobalFeedLoading : isModelShowcaseLoading;
+    }, [isGlobalFeedLoading, isModelShowcaseLoading, activeModelId]);
 
     // 0. Scroll to top immediately on mount
     useLayoutEffect(() => {
@@ -109,18 +111,23 @@ export default function DiscoveryMobile() {
         const timeSinceLastFetch = now - lastFetchTimeRef.current;
 
         if (isLoadingRef.current) return;
-        if (activeModelId !== 'all') return;
-        if (hasReachedEndRef.current) return;
+
+        const isEnd = activeModelId === 'all' ? hasGlobalFeedEnded : hasShowcaseEnded(activeModelId);
+        if (isEnd) return;
+
         if (timeSinceLastFetch < DEBOUNCE_MS) return;
-        if (globalShowcaseCache.length === 0) return;
+
+        const currentImages = activeModelId === 'all' ? globalShowcaseCache : (showcaseCache[activeModelId] || []);
+        if (currentImages.length === 0) return;
 
         lastFetchTimeRef.current = now;
-        const result = await getGlobalShowcaseImages(true, 'discovery_mobile_scroll');
 
-        if (result && result.length === globalShowcaseCache.length) {
-            hasReachedEndRef.current = true;
+        if (activeModelId === 'all') {
+            await getGlobalShowcaseImages(true, 'discovery_mobile_scroll');
+        } else {
+            await getShowcaseImages(activeModelId, true);
         }
-    }, [getGlobalShowcaseImages, globalShowcaseCache.length, activeModelId]);
+    }, [getGlobalShowcaseImages, getShowcaseImages, activeModelId, globalShowcaseCache.length, showcaseCache, hasGlobalFeedEnded, hasShowcaseEnded]);
 
     // 3. Intersection Observer Setup
     useEffect(() => {
@@ -149,9 +156,10 @@ export default function DiscoveryMobile() {
     }, [handleLoadMore]);
 
     // Derived state for UI
-    const isInitialLoading = (isGlobalFeedLoading && globalShowcaseCache.length === 0 && activeModelId === 'all') || (activeModelId !== 'all' && !showcaseCache[activeModelId]);
-    const isLoadingMore = isGlobalFeedLoading && globalShowcaseCache.length > 0 && activeModelId === 'all';
-    const hasReachedEnd = hasGlobalFeedEnded;
+    const isInitialLoading = (activeModelId === 'all' && isGlobalFeedLoading && globalShowcaseCache.length === 0) ||
+        (activeModelId !== 'all' && isModelShowcaseLoading && (!showcaseCache[activeModelId] || showcaseCache[activeModelId].length === 0));
+    const isLoadingMore = (activeModelId === 'all' ? isGlobalFeedLoading && globalShowcaseCache.length > 0 : isModelShowcaseLoading && showcaseCache[activeModelId]?.length > 0);
+    const hasReachedEnd = activeModelId === 'all' ? hasGlobalFeedEnded : hasShowcaseEnded(activeModelId);
 
     // Helper for Like Toggle to prevent bubble up
     const handleToggleLike = (e, imgItem) => {

@@ -100,53 +100,92 @@ export function ModelProvider({ children }) {
 
 
     // Fetch and cache showcase images for a model
-    const getShowcaseImages = useCallback(async (modelId) => {
-        // 1. Check cache (Ref first for stability)
-        if (showcaseCacheRef.current[modelId]) {
-            return showcaseCacheRef.current[modelId];
+    const [isModelShowcaseLoading, setIsModelShowcaseLoading] = useState(false);
+    const lastShowcaseDocRef = useRef({}); // { modelId: lastDoc }
+    const hasShowcaseEndedRef = useRef({}); // { modelId: boolean }
+
+    const getShowcaseImages = useCallback(async (modelId, loadMore = false) => {
+        // 1. Check cache and guards
+        const currentImages = showcaseCacheRef.current[modelId] || [];
+
+        if (!loadMore && currentImages.length > 0) {
+            return currentImages;
         }
 
-        // 2. (Removed Local Manifest Check) - Always use Firestore
+        if (loadMore && hasShowcaseEndedRef.current[modelId]) {
+            return currentImages;
+        }
 
-
-        // 3. Fallback to Firestore
+        // 3. Fetch from Firestore
         try {
-            console.log(`[Firestore Fallback] Fetching showcase for ${modelId}`);
-            const q = query(
+            console.log(`[Firestore] Fetching showcase for ${modelId} (Load More: ${loadMore})`);
+            setIsModelShowcaseLoading(true);
+
+            const pageSize = 50;
+            let q = query(
                 collection(db, 'model_showcase_images'),
                 where('modelId', '==', modelId),
                 orderBy('createdAt', 'desc'),
-                limit(50)
+                limit(pageSize)
             );
-            const snapshot = await getDocs(q);
 
-            let images = [];
-            if (!snapshot.empty) {
-                images = snapshot.docs.map(doc => {
-                    const data = doc.data();
-                    // Optimize image URLs to use CDN
-                    const optimizedUrl = getOptimizedImageUrl(data.imageUrl || data.url);
-                    return {
-                        id: doc.id,
-                        modelId: modelId, // Explicitly inject modelId to ensure linkage
-                        ...data,
-                        imageUrl: optimizedUrl,
-                        url: optimizedUrl, // Ensure both fields are set
-                        likesCount: data.likesCount || 0, // Ensure likesCount is available
-                        bookmarksCount: data.bookmarksCount || 0, // Ensure bookmarksCount is available
-                        rating: data.rating || 0 // Legacy support
-                    };
-                });
+            if (loadMore && lastShowcaseDocRef.current[modelId]) {
+                q = query(
+                    collection(db, 'model_showcase_images'),
+                    where('modelId', '==', modelId),
+                    orderBy('createdAt', 'desc'),
+                    startAfter(lastShowcaseDocRef.current[modelId]),
+                    limit(pageSize)
+                );
             }
 
-            // 4. Update Cache
-            const newCache = { ...showcaseCacheRef.current, [modelId]: images };
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) {
+                console.log(`[Firestore] End of showcase reached for ${modelId}`);
+                hasShowcaseEndedRef.current = { ...hasShowcaseEndedRef.current, [modelId]: true };
+                setIsModelShowcaseLoading(false);
+                return currentImages;
+            }
+
+            const newLastDoc = snapshot.docs[snapshot.docs.length - 1];
+            lastShowcaseDocRef.current = { ...lastShowcaseDocRef.current, [modelId]: newLastDoc };
+
+            const fetchedImages = snapshot.docs.map(doc => {
+                const data = doc.data();
+                const optimizedUrl = getOptimizedImageUrl(data.imageUrl || data.url);
+                return {
+                    id: doc.id,
+                    modelId: modelId,
+                    ...data,
+                    imageUrl: optimizedUrl,
+                    url: optimizedUrl,
+                    likesCount: data.likesCount || 0,
+                    bookmarksCount: data.bookmarksCount || 0,
+                    rating: data.rating || 0
+                };
+            });
+
+            // Update Cache
+            let updatedImages;
+            if (loadMore) {
+                // Deduplicate
+                const existingIds = new Set(currentImages.map(i => i.id));
+                const uniqueNew = fetchedImages.filter(i => !existingIds.has(i.id));
+                updatedImages = [...currentImages, ...uniqueNew];
+            } else {
+                updatedImages = fetchedImages;
+            }
+
+            const newCache = { ...showcaseCacheRef.current, [modelId]: updatedImages };
             showcaseCacheRef.current = newCache;
             setShowcaseCache(newCache);
-            return images;
+            setIsModelShowcaseLoading(false);
+            return updatedImages;
         } catch (err) {
             console.error("Error fetching showcase images:", err);
-            return [];
+            setIsModelShowcaseLoading(false);
+            return currentImages;
         }
     }, []);
 
@@ -451,6 +490,8 @@ export function ModelProvider({ children }) {
         isGlobalFeedLoading, // EXPORTED reactive loading state
         hasGlobalFeedEnded, // EXPORTED - true when no more content to load
         hasMoreGlobal: !hasGlobalFeedEnded && globalShowcaseCache.length > 0, // Helper boolean
+        isModelShowcaseLoading, // EXPORTED
+        hasShowcaseEnded: (modelId) => !!hasShowcaseEndedRef.current[modelId], // EXPORTED helper
         rateGeneration,    // EXPORTED
         rateShowcaseImage, // EXPORTED
         getUserVideos,     // EXPORTED

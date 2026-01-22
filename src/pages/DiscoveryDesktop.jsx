@@ -27,7 +27,9 @@ export default function DiscoveryDesktop() {
         availableModels,
         hasGlobalFeedEnded,
         getShowcaseImages,
-        showcaseCache
+        showcaseCache,
+        isModelShowcaseLoading,
+        hasShowcaseEnded
     } = useModel();
     const { isLiked, toggleLike, isHidden, hidePost } = useUserInteractions();
 
@@ -156,8 +158,8 @@ export default function DiscoveryDesktop() {
 
     // Sync loading state to ref for stable callback access
     useEffect(() => {
-        isLoadingRef.current = isGlobalFeedLoading;
-    }, [isGlobalFeedLoading]);
+        isLoadingRef.current = activeModelId === 'all' ? isGlobalFeedLoading : isModelShowcaseLoading;
+    }, [isGlobalFeedLoading, isModelShowcaseLoading, activeModelId]);
 
     // 0. Scroll to top immediately on mount
     useLayoutEffect(() => {
@@ -192,38 +194,38 @@ export default function DiscoveryDesktop() {
             console.log('[Discovery] ⏳ Already loading, skipping...');
             return;
         }
-        // Only infinite scroll on 'all' feed for now
-        if (activeModelId !== 'all') {
-            return;
-        }
-        if (hasReachedEndRef.current) {
+
+        // Check if we've reached the end for the current view
+        const isEnd = activeModelId === 'all' ? hasGlobalFeedEnded : hasShowcaseEnded(activeModelId);
+        if (isEnd) {
             console.log('[Discovery] ✅ Already at end of feed');
             return;
         }
+
         if (timeSinceLastFetch < DEBOUNCE_MS) {
             console.log(`[Discovery] ⏱ Debounce active (${timeSinceLastFetch}ms < ${DEBOUNCE_MS}ms)`);
             return;
         }
-        if (globalShowcaseCache.length === 0) {
+
+        const currentImages = activeModelId === 'all' ? globalShowcaseCache : (showcaseCache[activeModelId] || []);
+        if (currentImages.length === 0) {
             console.log('[Discovery] 📭 No initial content yet, skipping load more');
             return;
         }
 
         // All guards passed - fetch more
-        console.log(`[Discovery] 📥 Loading more... (current: ${globalShowcaseCache.length} items)`);
+        console.log(`[Discovery] 📥 Loading more for ${activeModelId}... (current: ${currentImages.length} items)`);
         lastFetchTimeRef.current = now;
 
-        const result = await getGlobalShowcaseImages(true, 'discovery_scroll');
-
-        // Check if component is still mounted before using refs or state
-        if (!hasInitializedRef.current) return;
-
-        // Check if we've reached the end (no new items loaded)
-        if (result && result.length === globalShowcaseCache.length) {
-            console.log('[Discovery] 🏁 End of feed reached');
-            hasReachedEndRef.current = true;
+        if (activeModelId === 'all') {
+            await getGlobalShowcaseImages(true, 'discovery_scroll');
+        } else {
+            await getShowcaseImages(activeModelId, true);
         }
-    }, [getGlobalShowcaseImages, globalShowcaseCache.length]);
+
+        // Result handling is now integrated into getGlobalShowcaseImages and getShowcaseImages
+        // which update the central state in ModelContext.
+    }, [getGlobalShowcaseImages, getShowcaseImages, activeModelId, globalShowcaseCache.length, showcaseCache, hasGlobalFeedEnded, hasShowcaseEnded]);
 
     // 3. Intersection Observer Setup - Stable, no recreation on cache changes
     useEffect(() => {
@@ -259,9 +261,10 @@ export default function DiscoveryDesktop() {
     }, [handleLoadMore]); // Only recreate when handler changes
 
     // Derived state for UI
-    const isInitialLoading = (isGlobalFeedLoading && globalShowcaseCache.length === 0 && activeModelId === 'all') || (activeModelId !== 'all' && !showcaseCache[activeModelId]);
-    const isLoadingMore = isGlobalFeedLoading && globalShowcaseCache.length > 0 && activeModelId === 'all';
-    const hasReachedEnd = hasReachedEndRef.current || hasGlobalFeedEnded;
+    const isInitialLoading = (activeModelId === 'all' && isGlobalFeedLoading && globalShowcaseCache.length === 0) ||
+        (activeModelId !== 'all' && isModelShowcaseLoading && (!showcaseCache[activeModelId] || showcaseCache[activeModelId].length === 0));
+    const isLoadingMore = (activeModelId === 'all' ? isGlobalFeedLoading && globalShowcaseCache.length > 0 : isModelShowcaseLoading && showcaseCache[activeModelId]?.length > 0);
+    const hasReachedEnd = activeModelId === 'all' ? hasGlobalFeedEnded : hasShowcaseEnded(activeModelId);
 
     // Helper for Like Toggle to prevent bubble up
     const handleToggleLike = (e, imgItem) => {
