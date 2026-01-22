@@ -82,20 +82,20 @@ class LoadBalancer {
             };
         }
 
-        // Circuit breaker with exponential backoff
+        // Circuit breaker - TUNED for responsiveness
         this.circuitBreaker = {
             failureThreshold: 3,
-            successThreshold: 2,
-            minOpenDuration: 15000,
-            maxOpenDuration: 300000,         // 5 min max
-            backoffMultiplier: 2,
-            jitterFactor: 0.2                // ±20% jitter
+            successThreshold: 1,             // Faster recovery (was 2)
+            minOpenDuration: 10000,          // 10s min (was 15s)
+            maxOpenDuration: 120000,         // 2 min max (was 5 min)
+            backoffMultiplier: 1.5,          // Slower backoff growth (was 2)
+            jitterFactor: 0.15               // Less jitter (was 0.2)
         };
 
-        // Cold start detection
+        // Cold start detection - LESS AGGRESSIVE
         this.coldStart = {
-            idleThreshold: 300000,           // 5 min = likely cold
-            warmUpPenalty: 10000
+            idleThreshold: 600000,           // 10 min = likely cold (was 5 min)
+            warmUpPenalty: 5000              // Lower penalty (was 10000)
         };
 
         // Latency tracking
@@ -112,58 +112,82 @@ class LoadBalancer {
         return value + (Math.random() * 2 - 1) * jitter;
     }
 
-    // Get request spread delay to prevent thundering herd on Modal endpoints
-    // Returns a delay in ms that should be applied before making the request
+    // Get request spread delay - OPTIMIZED for responsiveness
+    // Fast path: 0ms delay for healthy, low-load endpoints
+    // Adaptive: scales up only when needed
     getRequestSpreadDelay(endpointKey) {
         const endpoint = this.endpoints[endpointKey];
         const health = this.healthMetrics[endpointKey];
         const currentLoad = this.activeJobs.get(endpointKey) || 0;
         const loadRatio = currentLoad / endpoint.maxConcurrency;
 
-        // Base delay grows with load (0ms at 0%, up to 2s at 100%)
-        let baseDelay = loadRatio * 2000;
+        // Fast path: No delay for healthy endpoints under 50% load
+        if (health.circuitState === 'closed' &&
+            health.consecutiveFailures === 0 &&
+            loadRatio < 0.5) {
+            return 0;
+        }
 
-        // If we've had recent failures, add extra delay to let endpoint recover
+        // Light spreading for moderate load (50-80%): 50-200ms jitter
+        if (loadRatio >= 0.5 && loadRatio < 0.8 && health.consecutiveFailures === 0) {
+            return Math.random() * 150 + 50; // 50-200ms random
+        }
+
+        // Heavier spreading for high load or issues
+        let baseDelay = 0;
+
+        // Scale with load above 80%
+        if (loadRatio >= 0.8) {
+            baseDelay = (loadRatio - 0.8) * 5000; // 0-1000ms at 80-100%
+        }
+
+        // Add recovery delay for failures (200ms per failure, not 500ms)
         if (health.consecutiveFailures > 0) {
-            baseDelay += health.consecutiveFailures * 500;
+            baseDelay += health.consecutiveFailures * 200;
         }
 
-        // If circuit is half-open, use longer delay for probing
+        // Half-open probing delay (500ms, not 1000ms)
         if (health.circuitState === 'half-open') {
-            baseDelay += 1000;
+            baseDelay += 500;
         }
 
-        // Add jitter (±30%) to spread requests
-        const jitter = baseDelay * 0.3;
+        // Light jitter (±20%)
+        const jitter = baseDelay * 0.2;
         const delay = Math.max(0, baseDelay + (Math.random() * 2 - 1) * jitter);
 
-        // Cap at 5 seconds max delay
-        return Math.min(delay, 5000);
+        // Cap at 2 seconds (was 5s - too slow)
+        return Math.min(delay, 2000);
     }
 
-    // Check if we should throttle requests to an endpoint
+    // Check if we should throttle - LESS AGGRESSIVE
     shouldThrottle(endpointKey) {
         const endpoint = this.endpoints[endpointKey];
         const health = this.healthMetrics[endpointKey];
         const currentLoad = this.activeJobs.get(endpointKey) || 0;
 
-        // Throttle if circuit is open
-        if (health.circuitState === 'open') return true;
+        // Only hard throttle if circuit is fully open
+        if (health.circuitState === 'open') {
+            const elapsed = Date.now() - health.circuitOpenedAt;
+            // Allow through if backoff period has passed (will transition to half-open)
+            if (elapsed >= health.circuitBackoffMs) return false;
+            return true;
+        }
 
-        // Throttle if at or over capacity
-        if (currentLoad >= endpoint.maxConcurrency) return true;
+        // Only throttle if significantly over capacity (not at capacity)
+        if (currentLoad >= endpoint.maxConcurrency + 2) return true;
 
-        // Throttle if we've had many recent failures
-        if (health.consecutiveFailures >= 2) return true;
+        // Only throttle on 3+ failures (was 2)
+        if (health.consecutiveFailures >= 3) return true;
 
         return false;
     }
 
-    // Apply rate limiting sleep before request (call this before making endpoint requests)
+    // Apply rate limiting - RESPONSIVE version
     async applyRequestSpread(endpointKey) {
         const delay = this.getRequestSpreadDelay(endpointKey);
-        if (delay > 100) {
-            logger.info(`[LoadBalancer] Spreading request to ${endpointKey} by ${Math.round(delay)}ms`);
+        if (delay > 50) { // Lower threshold - only log if notable
+            logger.debug?.(`[LoadBalancer] Spread ${endpointKey}: ${Math.round(delay)}ms`) ||
+                (delay > 200 && logger.info(`[LoadBalancer] Spreading ${endpointKey} by ${Math.round(delay)}ms`));
             await new Promise(r => setTimeout(r, delay));
         }
         return delay;
@@ -186,7 +210,7 @@ class LoadBalancer {
         return 'transient'; // Default to transient
     }
 
-    // Get the current score for an endpoint (lower is better) - ENHANCED
+    // Get the current score for an endpoint (lower is better) - RESPONSIVE
     _calculateScore(endpointKey, jobComplexity = 1.0, options = {}) {
         const endpoint = this.endpoints[endpointKey];
         const health = this.healthMetrics[endpointKey];
@@ -205,53 +229,52 @@ class LoadBalancer {
             logger.info(`[LoadBalancer] ${endpointKey} entering half-open after ${Math.round(elapsed / 1000)}s`);
         }
 
-        // Base score from P95 latency (more pessimistic than average)
-        const latency = health.p95Latency || health.avgLatency || endpoint.baseLatency;
+        // Base score from average latency (P95 was too pessimistic for responsiveness)
+        const latency = health.avgLatency || endpoint.baseLatency;
         let score = latency;
 
-        // Cold start detection: penalize idle endpoints
+        // Cold start detection: only penalize truly idle endpoints
         const timeSinceLastRequest = health.lastRequest ? (Date.now() - health.lastRequest) : Infinity;
         if (timeSinceLastRequest > this.coldStart.idleThreshold) {
             score += this.coldStart.warmUpPenalty;
-            score = Math.max(score, endpoint.coldStartLatency * 0.5);
         }
 
-        // Current load with saturation awareness
+        // Current load - LIGHTER penalties for normal operation
         const currentLoad = this.activeJobs.get(endpointKey) || 0;
         const loadRatio = currentLoad / endpoint.maxConcurrency;
 
-        if (loadRatio > 0.8) {
-            score += 15000 + (loadRatio * 10000); // Near saturation
-        } else if (loadRatio > 0.5) {
-            score += loadRatio * 5000;
+        if (loadRatio > 0.9) {
+            score += 8000 + (loadRatio * 5000); // Near saturation (was 15000)
+        } else if (loadRatio > 0.7) {
+            score += loadRatio * 3000; // Moderate load (was 5000)
         } else {
-            score += currentLoad * 1500;
+            score += currentLoad * 800; // Low load (was 1500)
         }
 
-        // Failure penalties
-        score += health.consecutiveFailures * 5000;
+        // Failure penalties - reduced
+        score += health.consecutiveFailures * 3000; // Was 5000
 
-        // Permanent errors get extra penalty
+        // Permanent errors penalty - reduced
         if (health.permanentErrors > health.transientErrors && health.permanentErrors > 0) {
-            score += 8000;
+            score += 5000; // Was 8000
         }
 
-        // Success bonuses
-        score -= Math.min(health.consecutiveSuccesses, 5) * 400;
+        // Success bonuses - INCREASED for faster recovery
+        score -= Math.min(health.consecutiveSuccesses, 10) * 500; // Was 5 * 400
 
-        // Low error rate bonus
-        if (health.totalRequests > 10 && (health.totalFailures / health.totalRequests) < 0.05) {
-            score -= 1000;
+        // Low error rate bonus - easier to achieve
+        if (health.totalRequests > 5 && (health.totalFailures / health.totalRequests) < 0.1) {
+            score -= 1500; // Was 1000
         }
 
         // Cost factor for non-priority simple jobs
-        if (!priorityJob && jobComplexity < 0.5) {
+        if (!priorityJob && jobComplexity < 0.4) {
             score *= endpoint.costFactor;
         }
 
-        // Half-open penalty
+        // Half-open penalty - reduced for faster recovery attempts
         if (health.circuitState === 'half-open') {
-            score += 5000;
+            score += 2000; // Was 5000
         }
 
         // Saturation history penalty
