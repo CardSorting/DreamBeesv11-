@@ -1,10 +1,10 @@
 
 const admin = require('firebase-admin');
-// serviceAccountKey.json is in the root, so from functions/ it is ../serviceAccountKey.json
-const serviceAccount = require('../dreambees-app-gen-v1-firebase-adminsdk-fbsvc-195fd20c32.json');
 
+// Use Application Default Credentials (gcloud auth application-default login)
 admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
+    credential: admin.credential.applicationDefault(),
+    projectId: 'dreambees-alchemist'
 });
 
 const db = admin.firestore();
@@ -73,7 +73,8 @@ const MODELS = [
         description: 'Ultra-fast generation model optimized for low latency.',
         type: 'SDXL', // Kept as SDXL for UI compatibility for now, or use 'ZIT' if UI handles it. Using SDXL to ensure it shows up in default filters.
         order: 10,
-        isActive: true
+        isActive: true,
+        image: 'https://cdn.dreambeesai.com/file/printeregg/showcase/zit-model/1769040774566_0.webp'
     },
 
     {
@@ -108,7 +109,8 @@ const MODELS = [
         description: 'Google\'s fastest multimodal model, optimized for speed and visual quality.',
         type: 'Gemini',
         order: 15,
-        isActive: true
+        isActive: true,
+        image: 'https://cdn.dreambeesai.com/file/printeregg/showcase/gemini-2.5-flash-image/1769040312885_0.webp'
     }
 ];
 

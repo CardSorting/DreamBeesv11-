@@ -777,7 +777,7 @@ export default function DiscoveryDesktop() {
                                             exit={{ opacity: 0, scale: 0.5 }}
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                setFocusImage(img);
+                                                handleImageClick(img); // Use navigation to update URL
                                             }}
                                             style={{
                                                 position: 'absolute',
