@@ -128,6 +128,12 @@ service cloud.firestore {
       allow update: if request.auth != null && request.resource.data.userId == request.auth.uid;
     }
 
+    // Memes: Users can read their own memes
+    match /memes/{memeId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
     // Apps: Publicly readable, writeable by admins only (or no public writes)
     match /apps/{appId} {
       allow read: if true;

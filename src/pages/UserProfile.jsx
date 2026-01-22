@@ -5,7 +5,7 @@ import SEO from '../components/SEO';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
-import { Loader2, Heart, Bookmark, AlertCircle, Zap, Layers, Search, Package, Lock } from 'lucide-react';
+import { Loader2, Heart, Bookmark, AlertCircle, Zap, Layers, Search, Package, Lock, Image as ImageIcon } from 'lucide-react';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { isValidUsername } from '../utils/usernameValidation';
@@ -23,12 +23,13 @@ export default function UserProfile() {
     const [savingProfile, setSavingProfile] = useState(false);
     const { userProfile } = useUserInteractions();
 
-    const { likes: ctxLikes, bookmarks: ctxBookmarks, mockups: ctxMockups } = useUserInteractions();
+    const { likes: ctxLikes, bookmarks: ctxBookmarks, mockups: ctxMockups, memes: ctxMemes } = useUserInteractions();
 
     // Defensive Fallbacks
     const likes = React.useMemo(() => ctxLikes || [], [ctxLikes]);
     const bookmarks = React.useMemo(() => ctxBookmarks || [], [ctxBookmarks]);
     const mockups = React.useMemo(() => ctxMockups || [], [ctxMockups]);
+    const memes = React.useMemo(() => ctxMemes || [], [ctxMemes]);
 
 
     // Routing Params
@@ -64,7 +65,7 @@ export default function UserProfile() {
         if (selectedImage && selectedImage.id === viewId) return;
 
         // 1. Try to find in currently loaded lists
-        const allItems = [...mockups, ...bookmarks, ...likes];
+        const allItems = [...mockups, ...bookmarks, ...likes, ...memes];
         const found = allItems.find(img => img.id === viewId);
 
         if (found) {
@@ -84,6 +85,12 @@ export default function UserProfile() {
                         snapshot = await getDoc(docRef);
                     }
 
+                    if (!snapshot.exists()) {
+                        // Falling back to memes collection
+                        docRef = doc(db, 'memes', viewId);
+                        snapshot = await getDoc(docRef);
+                    }
+
                     if (snapshot.exists()) {
                         const data = snapshot.data();
                         setSelectedImage({ id: snapshot.id, ...data });
@@ -95,7 +102,7 @@ export default function UserProfile() {
             };
             fetchImage();
         }
-    }, [searchParams, mockups, bookmarks, likes, selectedImage, availableModels]);
+    }, [searchParams, mockups, bookmarks, likes, memes, selectedImage, availableModels]);
 
     const openLightbox = (item) => {
         setSelectedImage(item);
@@ -123,14 +130,12 @@ export default function UserProfile() {
             case 'liked': return likes;
             case 'saved': return bookmarks;
             case 'mockups': return mockups;
+            case 'memes': return memes;
             default:
                 // Combine relevant valid items for "All" view
-                // This logic might need refinement based on exact product requirements usually
-                // For now, let's just show mockups + maybe likes that are yours? 
-                // Or simplified: Just showing mockups and saved items
-                return [...mockups, ...bookmarks].sort((a, b) => {
-                    const dateA = a.createdAt?.seconds || 0;
-                    const dateB = b.createdAt?.seconds || 0;
+                return [...mockups, ...bookmarks, ...memes].sort((a, b) => {
+                    const dateA = a.createdAt?.seconds || (a.createdAt?.toMillis ? a.createdAt.toMillis() / 1000 : 0);
+                    const dateB = b.createdAt?.seconds || (b.createdAt?.toMillis ? b.createdAt.toMillis() / 1000 : 0);
                     return dateB - dateA;
                 });
         }
@@ -144,7 +149,8 @@ export default function UserProfile() {
         all: { title: "Your Studio is Empty", subtitle: "Start creating to fill your personal gallery." },
         liked: { title: "No Favorites Yet", subtitle: "Tap the heart on images you love to save them here." },
         saved: { title: "No Saved Items", subtitle: "Bookmark generations to access them later." },
-        mockups: { title: "No Mockups Created", subtitle: "Head to the Mockup Studio to create your first product mockup." }
+        mockups: { title: "No Mockups Created", subtitle: "Head to the Mockup Studio to create your first product mockup." },
+        memes: { title: "No Memes Created", subtitle: "Head to the Meme Formatter to create your first meme." }
     };
 
     const emptyState = emptyStates[activeFilter] || emptyStates.all;
@@ -395,6 +401,16 @@ export default function UserProfile() {
                             <div className="stat-label">Mockups</div>
                         </div>
                     </div>
+
+                    <div className="stat-card">
+                        <div className="stat-icon bg-green-500/10 text-green-400">
+                            <ImageIcon size={24} />
+                        </div>
+                        <div>
+                            <div className="stat-value">{memes.length}</div>
+                            <div className="stat-label">Memes</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -406,6 +422,7 @@ export default function UserProfile() {
                         { id: 'liked', label: 'Liked', icon: Heart },
                         { id: 'saved', label: 'Saved', icon: Bookmark },
                         { id: 'mockups', label: 'Mockups', icon: Package },
+                        { id: 'memes', label: 'Memes', icon: ImageIcon },
                     ].map(filter => (
                         <button
                             key={filter.id}

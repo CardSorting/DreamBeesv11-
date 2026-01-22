@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { Upload, Wand2, RefreshCw, Download, Share2, AlertCircle, Image as ImageIcon } from 'lucide-react';
+import { Upload, Wand2, RefreshCw, Image as ImageIcon } from 'lucide-react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../firebase'; // Adjust path if needed
 import { useAuth } from '../../contexts/AuthContext';
@@ -181,11 +181,6 @@ const MemeFormatter = () => {
                         {generatedMeme ? (
                             <div className="result-display">
                                 <img src={generatedMeme} alt="Generated Meme" />
-                                <div className="result-actions">
-                                    <a href={generatedMeme} download="meme.webp" target="_blank" rel="noopener noreferrer" className="action-btn">
-                                        <Download size={20} />
-                                    </a>
-                                </div>
                             </div>
                         ) : (
                             <div className="result-placeholder">
@@ -419,25 +414,6 @@ const MemeFormatter = () => {
                     max-width: 100%;
                     max-height: 600px;
                     box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-                }
-
-                .result-actions {
-                    margin-top: 1rem;
-                    display: flex;
-                    justify-content: center;
-                }
-
-                .action-btn {
-                    background: rgba(255, 255, 255, 0.1);
-                    color: white;
-                    padding: 10px;
-                    border-radius: 50%;
-                    transition: background 0.2s;
-                }
-
-                .action-btn:hover {
-                    background: var(--meme-accent);
-                    color: black;
                 }
             `}</style>
         </div>

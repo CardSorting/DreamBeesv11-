@@ -32,6 +32,7 @@ export function UserInteractionsProvider({ children }) {
     const [bookmarks, setBookmarks] = useState([]);
     const [hidden, setHidden] = useState([]);
     const [mockups, setMockups] = useState([]);
+    const [memes, setMemes] = useState([]);
 
     // User Profile Data (Centralized Sync)
     const [userProfile, setUserProfile] = useState({
@@ -60,6 +61,8 @@ export function UserInteractionsProvider({ children }) {
             setHidden([]);
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setMockups([]);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setMemes([]);
             setIsProfileLoaded(false);
             return;
         }
@@ -111,6 +114,19 @@ export function UserInteractionsProvider({ children }) {
             console.warn("Global mockups listener failed:", error);
         });
 
+        // Listener for Memes
+        const memesQuery = query(
+            collection(db, 'memes'),
+            where('userId', '==', uid),
+            orderBy('createdAt', 'desc')
+        );
+        const unsubMemes = onSnapshot(memesQuery, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setMemes(data);
+        }, (error) => {
+            console.warn("Global memes listener failed:", error);
+        });
+
         // Listener for User Profile (Zaps, Credits, Subscription)
         const userDocRef = doc(db, 'users', uid);
         const unsubProfile = onSnapshot(userDocRef, (docSnap) => {
@@ -136,6 +152,7 @@ export function UserInteractionsProvider({ children }) {
             unsubBookmarks();
             unsubHidden();
             unsubMockups();
+            unsubMemes();
             unsubProfile();
         };
     }, [currentUser?.uid]);
@@ -380,6 +397,7 @@ export function UserInteractionsProvider({ children }) {
         likes,
         bookmarks,
         mockups,
+        memes,
         isLiked,
         isBookmarked,
         hidePost,
