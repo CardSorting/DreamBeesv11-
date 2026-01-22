@@ -137,6 +137,36 @@ export async function fetchWithRetry(resource, options = {}) {
     }, { retries, backoff, context: `fetch ${resource}` });
 }
 
+/**
+ * Tries multiple URLs in order, falling back to the next one if the current one is busy (429) or fails (5xx).
+ * Returns the successful response and the URL that succeeded.
+ */
+export async function fetchWithFallback(urls, options = {}) {
+    if (!urls || !urls.length) throw new Error("No URLs provided for fallback");
+
+    const { retries = 3, ...fetchOptions } = options;
+    let lastErr;
+
+    for (let i = 0; i < urls.length; i++) {
+        try {
+            // For all but the last URL, try once (with retries=1) to fail over quickly
+            const tryRetries = (i === urls.length - 1) ? retries : 1;
+            const response = await fetchWithRetry(urls[i], { ...fetchOptions, retries: tryRetries });
+            return { response, url: urls[i] };
+        } catch (err) {
+            lastErr = err;
+            const isTransient = err.message.includes("429") || err.message.includes("5xx") || err.message.includes("status 5") || err.message.includes("timeout") || err.message.includes("Request failed");
+
+            if (isTransient && i < urls.length - 1) {
+                logger.warn(`Fallback: URL ${urls[i]} failed or busy. Trying next endpoint.`, { error: err.message });
+                continue;
+            }
+            throw err;
+        }
+    }
+    throw lastErr;
+}
+
 export async function verifyB2FilesExist(originalFilename, thumbFilename) {
     const result = { imageUrl: null, thumbnailUrl: null };
     try {

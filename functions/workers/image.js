@@ -1,6 +1,6 @@
 
 import { db, FieldValue } from "../firebaseInit.js";
-import { getS3Client, fetchWithTimeout, fetchWithRetry, readFirstBytes, detectImageFormat, logger, retryOperation } from "../lib/utils.js";
+import { getS3Client, fetchWithTimeout, fetchWithRetry, fetchWithFallback, readFirstBytes, detectImageFormat, logger, retryOperation } from "../lib/utils.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
 import { withVertexRateLimiting } from "../lib/rateLimiter.js";
 
@@ -40,66 +40,74 @@ export const processImageTask = async (req) => {
 
     const activeCount = activeJobsSnapshot.docs.filter(d => d.id !== requestId).length;
     const userData = userSnap.data() || {};
-    const isSubscriber = userData.subscriptionStatus === 'active';
     const useTurbo = req.data.useTurbo;
     const isPremiumModel = ['zit-model', 'qwen-image-2512'].includes(modelId);
 
-    let allowedConcurrency = 3;
-    if (useTurbo || isPremiumModel) allowedConcurrency = 5;
-    else if (isSubscriber) allowedConcurrency = 3;
-    else allowedConcurrency = 3;
+    // 1. Resolve Resolution Early for Load Balancing
+    const resolutionMap = {
+        '1:1': { width: 1024, height: 1024 },
+        '2:3': { width: 832, height: 1216 },
+        '3:2': { width: 1216, height: 832 },
+        '9:16': { width: 768, height: 1344 },
+        '16:9': { width: 1344, height: 768 }
+    };
+    const resolution = resolutionMap[aspectRatio] || resolutionMap['1:1'];
+    const totalPixels = resolution.width * resolution.height;
+    const jobSteps = steps || 30;
+
+    // 2. Determine Load Balancing Strategy (H100 vs A10G)
+    // H100 if: Specifically requested, High Complexity (1MP+ or 32+ steps), or User already has active jobs
+    const isHighComplexity = (totalPixels >= 1024 * 1024) || (jobSteps > 32);
+    const isUserBusy = activeCount > 0;
+    const shouldPreferH100 = useTurbo || isHighComplexity || isUserBusy || isPremiumModel;
+
+    // 3. Dynamic Concurrency Limits
+    // If we're offloading to H100, we allow a much larger concurrent flow (up to 10)
+    // A10G is kept strictly limited to avoid saturation of small nodes.
+    const allowedConcurrency = shouldPreferH100 ? 10 : 3;
 
     if (activeCount >= allowedConcurrency) {
-        logger.warn(`[Throttling] User ${userId} busy. Active: ${activeCount}/${allowedConcurrency}. Re-queuing task ${requestId}.`, { userId, activeCount, allowedConcurrency });
-        throw new Error(`Throttling: Concurrency Limit (${allowedConcurrency}) Reached. Retrying...`);
+        logger.warn(`[Throttling] User ${userId} busy. Active: ${activeCount}/${allowedConcurrency}. Re-queuing task ${requestId}.`, { userId, activeCount, allowedConcurrency, shouldPreferH100 });
+        throw new Error(`Throttling: User Busy (${activeCount}/${allowedConcurrency}). Use Turbo for higher limits.`);
     }
 
     try {
         await docRef.update({ status: "processing" });
 
-        const resolutionMap = {
-            '1:1': { width: 1024, height: 1024 },
-            '2:3': { width: 832, height: 1216 },
-            '3:2': { width: 1216, height: 832 },
-            '9:16': { width: 768, height: 1344 },
-            '16:9': { width: 1344, height: 768 }
-        };
-        const resolution = resolutionMap[aspectRatio] || resolutionMap['1:1'];
-
         let response;
         if (modelId === 'zit-model') {
             const ZIT_A10G_BASE = "https://mariecoderinc--zit-a10g-fastapi-app.modal.run";
             const ZIT_H100_BASE = "https://mariecoderinc--zit-h100-stable-fastapi-app.modal.run";
-            const baseUrl = useTurbo ? ZIT_H100_BASE : ZIT_A10G_BASE;
 
+            const bases = shouldPreferH100 ? [ZIT_H100_BASE, ZIT_A10G_BASE] : [ZIT_A10G_BASE, ZIT_H100_BASE];
             const zBody = { prompt, steps, width: resolution.width, height: resolution.height };
 
             if (useTurbo && ['1:1', '16:9', '9:16', '4:3', '3:4', '21:9', '9:21'].includes(aspectRatio)) {
                 delete zBody.width; delete zBody.height; zBody.aspect_ratio = aspectRatio;
             }
 
-            const submitUrl = `${baseUrl}/generate`;
-            logger.info(`[${requestId}] Submitting zit-model job to ${useTurbo ? 'H100' : 'A10G'}: ${submitUrl}`);
+            const primaryFrame = shouldPreferH100 ? 'H100' : 'A10G';
+            const reason = useTurbo ? 'Turbo' : (isHighComplexity ? 'Complexity' : (isUserBusy ? 'Multi-job' : (isPremiumModel ? 'Premium' : 'Default')));
+            logger.info(`[${requestId}] Submitting zit-model. Target: ${primaryFrame} (${reason}) | ${resolution.width}x${resolution.height} @ ${jobSteps} steps | Concurrency: ${activeCount}/${allowedConcurrency}`);
 
             let submitResponse;
+            let baseUrl;
             try {
-                submitResponse = await fetchWithRetry(submitUrl, {
+                const result = await fetchWithFallback(bases.map(b => `${b}/generate`), {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(zBody),
                     timeout: 45000,
                     retries: 3
                 });
+                submitResponse = result.response;
+                baseUrl = result.url.replace('/generate', '');
             } catch (err) {
                 if (err.message.includes("429")) {
-                    logger.warn(`[Throttling] Zit API rate limited (429). Re-queuing task ${requestId}.`);
+                    logger.warn(`[Throttling] All Zit endpoints rate limited (429). Re-queuing task ${requestId}.`);
                     throw new Error(`Throttling: Zit API Busy (429). Retrying...`);
                 }
                 throw err;
-            }
-
-            if (!submitResponse.ok) {
-                throw new Error(`Zit Submission Failed (${submitResponse.status}): ${await submitResponse.text()}`);
             }
 
             const submitJson = await submitResponse.json();
@@ -247,11 +255,8 @@ export const processImageTask = async (req) => {
             const SDXL_A10G_ASYNC_BASE = "https://mariecoderinc--sdxl-multi-model-a10g-model-web-app.modal.run";
             const SDXL_H100_ASYNC_BASE = "https://mariecoderinc--sdxl-multi-model-h100-model-web.modal.run";
 
-            // Select Base URL based on Turbo flag
-            const baseUrl = req.data.useTurbo ? SDXL_H100_ASYNC_BASE : SDXL_A10G_ASYNC_BASE;
+            const bases = shouldPreferH100 ? [SDXL_H100_ASYNC_BASE, SDXL_A10G_ASYNC_BASE] : [SDXL_A10G_ASYNC_BASE, SDXL_H100_ASYNC_BASE];
 
-            // Use Async Job Pattern for both
-            const submitUrl = `${baseUrl}/generate`;
             const sBody = {
                 prompt,
                 model: modelId || "wai-illustrious",
@@ -262,17 +267,22 @@ export const processImageTask = async (req) => {
                 scheduler: scheduler || 'DPM++ 2M Karras'
             };
 
-            logger.info(`[${requestId}] Submitting SDXL job to ${req.data.useTurbo ? 'H100' : 'A10G'} (${submitUrl})`);
+            const primaryFrame = shouldPreferH100 ? 'H100' : 'A10G';
+            const reason = useTurbo ? 'Turbo' : (isHighComplexity ? 'Complexity' : (isUserBusy ? 'Multi-job' : 'Default'));
+            logger.info(`[${requestId}] Submitting SDXL. Target: ${primaryFrame} (${reason}) | ${resolution.width}x${resolution.height} @ ${jobSteps} steps | Concurrency: ${activeCount}/${allowedConcurrency}`);
 
             let submitResponse;
+            let baseUrl;
             try {
-                submitResponse = await fetchWithRetry(submitUrl, {
+                const result = await fetchWithFallback(bases.map(b => `${b}/generate`), {
                     method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(sBody), timeout: 45000, retries: 3
                 });
+                submitResponse = result.response;
+                baseUrl = result.url.replace('/generate', '');
             } catch (err) {
                 if (err.message.includes("429")) {
-                    logger.warn(`[Throttling] SDXL API rate limited (429). Re-queuing task ${requestId}.`);
+                    logger.warn(`[Throttling] All SDXL endpoints rate limited (429). Re-queuing task ${requestId}.`);
                     throw new Error(`Throttling: SDXL API Busy (429). Retrying...`);
                 }
                 throw err;
