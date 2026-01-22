@@ -30,7 +30,7 @@ export function UserInteractionsProvider({ children }) {
     const [hiddenIds, setHiddenIds] = useState(new Set());
     const [likes, setLikes] = useState([]);
     const [bookmarks, setBookmarks] = useState([]);
-    const [_hidden, _setHidden] = useState([]);
+    const [hidden, setHidden] = useState([]);
     const [mockups, setMockups] = useState([]);
 
     // User Profile Data (Centralized Sync)
@@ -57,7 +57,7 @@ export function UserInteractionsProvider({ children }) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setBookmarks([]);
             // eslint-disable-next-line react-hooks/set-state-in-effect
-            _setHidden([]);
+            setHidden([]);
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setMockups([]);
             setIsProfileLoaded(false);
@@ -392,7 +392,13 @@ export function UserInteractionsProvider({ children }) {
         likedAppIds,
         isAppLiked,
         toggleAppLike,
-        isProfileLoaded
+        isProfileLoaded,
+        // Aligned/Legacy underscores
+        _isLiked: isLiked,
+        _toggleLike: toggleLike,
+        _hidePost: hidePost,
+        _isHidden: isHidden,
+        hidden
     };
 
     return (

@@ -29,9 +29,9 @@ export default function DiscoveryDesktop() {
         getShowcaseImages,
         showcaseCache
     } = useModel();
-    const { isLiked, toggleLike, _isHidden, hidePost } = useUserInteractions();
-   
-   
+    const { isLiked, toggleLike, isHidden, hidePost } = useUserInteractions();
+
+
 
     // -- MODEL STATE --
     const { modelId, id } = useParams();
