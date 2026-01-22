@@ -112,6 +112,63 @@ class LoadBalancer {
         return value + (Math.random() * 2 - 1) * jitter;
     }
 
+    // Get request spread delay to prevent thundering herd on Modal endpoints
+    // Returns a delay in ms that should be applied before making the request
+    getRequestSpreadDelay(endpointKey) {
+        const endpoint = this.endpoints[endpointKey];
+        const health = this.healthMetrics[endpointKey];
+        const currentLoad = this.activeJobs.get(endpointKey) || 0;
+        const loadRatio = currentLoad / endpoint.maxConcurrency;
+
+        // Base delay grows with load (0ms at 0%, up to 2s at 100%)
+        let baseDelay = loadRatio * 2000;
+
+        // If we've had recent failures, add extra delay to let endpoint recover
+        if (health.consecutiveFailures > 0) {
+            baseDelay += health.consecutiveFailures * 500;
+        }
+
+        // If circuit is half-open, use longer delay for probing
+        if (health.circuitState === 'half-open') {
+            baseDelay += 1000;
+        }
+
+        // Add jitter (±30%) to spread requests
+        const jitter = baseDelay * 0.3;
+        const delay = Math.max(0, baseDelay + (Math.random() * 2 - 1) * jitter);
+
+        // Cap at 5 seconds max delay
+        return Math.min(delay, 5000);
+    }
+
+    // Check if we should throttle requests to an endpoint
+    shouldThrottle(endpointKey) {
+        const endpoint = this.endpoints[endpointKey];
+        const health = this.healthMetrics[endpointKey];
+        const currentLoad = this.activeJobs.get(endpointKey) || 0;
+
+        // Throttle if circuit is open
+        if (health.circuitState === 'open') return true;
+
+        // Throttle if at or over capacity
+        if (currentLoad >= endpoint.maxConcurrency) return true;
+
+        // Throttle if we've had many recent failures
+        if (health.consecutiveFailures >= 2) return true;
+
+        return false;
+    }
+
+    // Apply rate limiting sleep before request (call this before making endpoint requests)
+    async applyRequestSpread(endpointKey) {
+        const delay = this.getRequestSpreadDelay(endpointKey);
+        if (delay > 100) {
+            logger.info(`[LoadBalancer] Spreading request to ${endpointKey} by ${Math.round(delay)}ms`);
+            await new Promise(r => setTimeout(r, delay));
+        }
+        return delay;
+    }
+
     // Calculate latency percentile
     _percentile(sortedArray, p) {
         if (sortedArray.length === 0) return null;
@@ -615,8 +672,17 @@ export const processImageTask = async (req) => {
             // Try endpoints in order based on LoadBalancer scoring
             for (const endpoint of zitEndpoints) {
                 try {
+                    // Check if we should throttle this endpoint
+                    if (loadBalancer.shouldThrottle(endpoint.key)) {
+                        logger.warn(`[LoadBalancer] ${endpoint.key} throttled, trying next`);
+                        continue;
+                    }
+
                     usedEndpointKey = endpoint.key;
                     jobStartTime = loadBalancer.recordJobStart(endpoint.key);
+
+                    // Apply request spread delay to prevent thundering herd
+                    await loadBalancer.applyRequestSpread(endpoint.key);
 
                     const result = await fetchWithRetry(`${endpoint.url}/generate`, {
                         method: "POST",
@@ -728,7 +794,18 @@ export const processImageTask = async (req) => {
 
             // 1. Submit job
             let submitResponse;
+
+            // Check if endpoint is throttled
+            if (loadBalancer.shouldThrottle(fluxEndpointKey)) {
+                logger.warn(`[LoadBalancer] Flux endpoint throttled. Re-queuing task ${requestId}.`);
+                throw new Error(`Throttling: Flux endpoint temporarily unavailable. Retrying...`);
+            }
+
             const jobStartTime = loadBalancer.recordJobStart(fluxEndpointKey);
+
+            // Apply request spread delay to prevent thundering herd
+            await loadBalancer.applyRequestSpread(fluxEndpointKey);
+
             try {
                 submitResponse = await fetchWithRetry(`${FLUX_ENDPOINT}/generate`, {
                     method: "POST", headers: { "Content-Type": "application/json" },
@@ -853,8 +930,17 @@ export const processImageTask = async (req) => {
             // Try endpoints in order based on LoadBalancer scoring
             for (const endpoint of sdxlEndpoints) {
                 try {
+                    // Check if we should throttle this endpoint
+                    if (loadBalancer.shouldThrottle(endpoint.key)) {
+                        logger.warn(`[LoadBalancer] ${endpoint.key} throttled, trying next`);
+                        continue;
+                    }
+
                     usedEndpointKey = endpoint.key;
                     jobStartTime = loadBalancer.recordJobStart(endpoint.key);
+
+                    // Apply request spread delay to prevent thundering herd
+                    await loadBalancer.applyRequestSpread(endpoint.key);
 
                     const result = await fetchWithRetry(`${endpoint.url}/generate`, {
                         method: "POST",
