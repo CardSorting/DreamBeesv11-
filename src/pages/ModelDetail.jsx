@@ -26,7 +26,7 @@ export default function ModelDetail() {
 
     // Derive model from availableModels instead of using useState + useEffect
     const model = useMemo(() => {
-        if (availableModels.length > 0) {
+        if (availableModels?.length > 0) {
             return availableModels.find(m => m.id === id) || null;
         }
         return null;
@@ -93,7 +93,7 @@ export default function ModelDetail() {
 
             if (found) {
                 setActiveShowcaseImage(typeof found === 'string' ? { url: getOptimizedImageUrl(found), id: viewId } : found);
-            } else if (viewId.startsWith('http')) {
+            } else if (viewId?.startsWith('http')) {
                 // Direct URL fallback if ID not found but it looks like a URL (legacy)
                 setActiveShowcaseImage({ url: viewId, id: viewId });
             }

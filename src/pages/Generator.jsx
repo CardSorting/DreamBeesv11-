@@ -229,7 +229,7 @@ export default function Generator() {
         setReferenceImage(null);
         setActiveJob(item);
         if (item.modelId) {
-            const model = availableModels.find(m => m.id === item.modelId);
+            const model = availableModels?.find(m => m.id === item.modelId);
             if (model) setSelectedModel(model);
         }
         if (item.aspect_ratio) setAspectRatio(item.aspect_ratio);

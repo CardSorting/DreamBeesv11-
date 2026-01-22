@@ -154,7 +154,7 @@ export default function DiscoveryMobile() {
     // Helper for Like Toggle to prevent bubble up
     const handleToggleLike = (e, imgItem) => {
         e.stopPropagation();
-        const model = availableModels.find(m => m.id === imgItem.modelId);
+        const model = availableModels?.find(m => m.id === imgItem.modelId);
         toggleLike(imgItem, model);
     };
 
@@ -166,14 +166,14 @@ export default function DiscoveryMobile() {
     return (
         <div className="mobile-discovery-wrapper" style={{ paddingBottom: '80px', background: '#000', minHeight: '100vh' }}>
             <SEO
-                title={modelId ? `${availableModels.find(m => m.id === modelId)?.name || 'Model'} Showcase - DreamBees` : "Discover AI Art - DreamBees"}
-                description={modelId ? `Explore the best AI-generated artwork created with the ${availableModels.find(m => m.id === modelId)?.name} model.` : "Explore a curated feed of AI-generated artwork. Get inspired by unique styles and prompts from the DreamBees community."}
+                title={modelId ? `${availableModels?.find(m => m.id === modelId)?.name || 'Model'} Showcase - DreamBees` : "Discover AI Art - DreamBees"}
+                description={modelId ? `Explore the best AI-generated artwork created with the ${availableModels?.find(m => m.id === modelId)?.name || 'selected'} model.` : "Explore a curated feed of AI-generated artwork. Get inspired by unique styles and prompts from the DreamBees community."}
                 structuredData={{
                     "@context": "https://schema.org",
                     "@graph": [
                         {
                             "@type": "ImageGallery",
-                            "name": modelId ? `${availableModels.find(m => m.id === modelId)?.name} AI Art Gallery` : "DreamBees AI Art Discovery",
+                            "name": modelId ? `${availableModels?.find(m => m.id === modelId)?.name || 'AI'} Art Gallery` : "DreamBees AI Art Discovery",
                             "description": "A curated showcase of AI-generated artwork.",
                             "image": displayImages.slice(0, 5).map(img => img.thumbnailUrl || img.url)
                         },
@@ -182,7 +182,7 @@ export default function DiscoveryMobile() {
                             "itemListElement": [
                                 { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
                                 { "@type": "ListItem", "position": 2, "name": "Discover", "item": "https://dreambeesai.com/discovery" },
-                                ...(modelId ? [{ "@type": "ListItem", "position": 3, "name": availableModels.find(m => m.id === modelId)?.name || 'Model', "item": `https://dreambeesai.com/discovery/model/${modelId}` }] : [])
+                                ...(modelId ? [{ "@type": "ListItem", "position": 3, "name": availableModels?.find(m => m.id === modelId)?.name || 'Model', "item": `https://dreambeesai.com/discovery/model/${modelId}` }] : [])
                             ]
                         }
                     ]

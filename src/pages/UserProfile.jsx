@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
 import { Loader2, Heart, Bookmark, AlertCircle, Zap, Layers, Search, Package, Lock } from 'lucide-react';
 import { db } from '../firebase';
-import { collection, query, where, orderBy, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
 import { isValidUsername } from '../utils/usernameValidation';
 
 import ShowcaseModal from '../components/ShowcaseModal';
@@ -68,7 +68,7 @@ export default function UserProfile() {
 
         if (found) {
             setSelectedImage(found);
-            setSelectedModel(availableModels.find(m => m.id === found.modelId) || { name: 'Unknown Model', id: 'unknown' });
+            setSelectedModel(availableModels?.find(m => m.id === found.modelId) || { name: 'Unknown Model', id: 'unknown' });
         } else {
             // 2. Fetch directly from Firestore (Crucial for deep link sharing)
             const fetchImage = async () => {
@@ -86,7 +86,7 @@ export default function UserProfile() {
                     if (snapshot.exists()) {
                         const data = snapshot.data();
                         setSelectedImage({ id: snapshot.id, ...data });
-                        setSelectedModel(availableModels.find(m => m.id === data.modelId) || { name: 'Unknown Model', id: 'unknown' });
+                        setSelectedModel(availableModels?.find(m => m.id === data.modelId) || { name: 'Unknown Model', id: 'unknown' });
                     }
                 } catch (err) {
                     console.error("Error fetching studio deep-linked image:", err);
@@ -98,7 +98,7 @@ export default function UserProfile() {
 
     const openLightbox = (item) => {
         setSelectedImage(item);
-        setSelectedModel(availableModels.find(m => m.id === item.modelId) || { name: 'Unknown Model', id: 'unknown' });
+        setSelectedModel(availableModels?.find(m => m.id === item.modelId) || { name: 'Unknown Model', id: 'unknown' });
         setSearchParams(prev => {
             const newParams = new URLSearchParams(prev);
             newParams.set('view', item.id);

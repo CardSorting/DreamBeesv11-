@@ -328,7 +328,7 @@ export default function ModelFeed() {
             .map(img => {
                 // Attach model if missing (essential for filtering by tag)
                 if (!id && img.modelId) {
-                    const sourceModel = availableModels.find(m => m.id === img.modelId);
+                    const sourceModel = availableModels?.find(m => m.id === img.modelId);
                     if (sourceModel) {
                         return { ...img, _model: sourceModel };
                     }
@@ -469,7 +469,7 @@ export default function ModelFeed() {
                             key={imgItem.id || index}
                             imgItem={imgItem}
                             index={index}
-                            model={model.name === "Global" ? (imgItem._model || availableModels.find(m => m.id === imgItem.modelId) || model) : model}
+                            model={model.name === "Global" ? (imgItem._model || availableModels?.find(m => m.id === imgItem.modelId) || model) : model}
                             getOptimizedImageUrl={getOptimizedImageUrl}
                             rateShowcaseImage={rateShowcaseImage}
                             navigate={navigate}

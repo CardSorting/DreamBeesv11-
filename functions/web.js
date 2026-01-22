@@ -272,13 +272,35 @@ const handleApp = async (req, res) => {
   ${structuredData ? `<script type="application/ld+json">${JSON.stringify(structuredData)}</script>` : ''}
 `;
 
-        // Hardcoded basic frame that loads the JS/CSS from the real index.html 
-        // We could also redirect bots uniquely, but serving the full HTML with meta is best.
-        // For now, we will just return a redirect or a simple frame if we can't find index.html.
-        // BEST APPROACH: Just return a redirect for social crawlers or serve a raw response.
+        // Check if we are already in SSR mode to avoid infinite redirect loops
+        const isSSR = req.query?.ssr === '1';
 
-        // Actually, let's just use string replacement on a cached version of index.html if possible.
-        // For this task, I will provide the placeholder-based replacement logic.
+        if (isSSR) {
+            res.status(200).send(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    ${metaTags}
+</head>
+<body>
+    <div id="root"></div>
+    <p style="text-align:center; margin-top: 50vh; color: #666; font-family: sans-serif;">Loading DreamBeesAI...</p>
+    <script type="module" src="/src/main.jsx"></script>
+    <script>
+        // Clean up the URL by removing ssr=1 from history after load
+        window.addEventListener('load', () => {
+            const url = new URL(window.location);
+            url.searchParams.delete('ssr');
+            window.history.replaceState({}, '', url);
+        });
+    </script>
+</body>
+</html>
+            `);
+            return;
+        }
 
         res.status(200).send(`
 <!DOCTYPE html>

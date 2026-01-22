@@ -23,7 +23,7 @@ export default function ImageDetail() {
     const [activeSlideIndex, setActiveSlideIndex] = useState(0);
 
     const { availableModels } = useModel();
-    const modelName = image ? (availableModels.find(m => m.id === image.modelId)?.name || 'SDXL Model') : 'Loading...';
+    const modelName = image ? (availableModels?.find(m => m.id === image.modelId)?.name || 'SDXL Model') : 'Loading...';
 
     useEffect(() => {
         // If we already have the image from navigation state, we don't need to fetch

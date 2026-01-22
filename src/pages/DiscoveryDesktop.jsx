@@ -264,7 +264,7 @@ export default function DiscoveryDesktop() {
     const handleToggleLike = (e, imgItem) => {
         e.stopPropagation();
         // find model for this item
-        const model = availableModels.find(m => m.id === imgItem.modelId);
+        const model = availableModels?.find(m => m.id === imgItem.modelId);
         toggleLike(imgItem, model);
     };
 
@@ -396,12 +396,12 @@ export default function DiscoveryDesktop() {
                         gap: '12px'
                     }}>
                         <h1 className="page-title" style={{ fontSize: '3rem', margin: 0 }}>
-                            {activeModelId === 'all' ? 'DISCOVERY' : availableModels.find(m => m.id === activeModelId)?.name || 'MODEL SHOWCASE'}
+                            {activeModelId === 'all' ? 'DISCOVERY' : (availableModels?.find(m => m.id === activeModelId)?.name || 'MODEL SHOWCASE')}
                         </h1>
                         <p className="page-subtitle" style={{ maxWidth: '400px', margin: '0 auto 20px auto', fontSize: '0.9rem' }}>
                             {activeModelId === 'all'
                                 ? "Explore the hive mind's latest creations."
-                                : `Curated showcase generated with ${availableModels.find(m => m.id === activeModelId)?.name}.`}
+                                : `Curated showcase generated with ${availableModels?.find(m => m.id === activeModelId)?.name || 'AI'}.`}
                         </p>
                     </div>
 

@@ -1,12 +1,21 @@
 // scripts/generate_zit_showcase.cjs
 const fs = require('fs');
 const path = require('path');
+const admin = require('firebase-admin');
 const { uploadToB2 } = require('./utils/b2_uploader.cjs');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
+// --- Firebase Initialization ---
+if (!admin.apps.length) {
+    admin.initializeApp({
+        projectId: 'dreambees-alchemist'
+    });
+}
+const db = admin.firestore();
+
 const TARGET_DIR = path.join(__dirname, '../public/showcase/zit-model');
 const MANIFEST_PATH = path.join(TARGET_DIR, 'manifest.json');
-const BASE_URL = "https://mariecoderinc--zit-h100-stable-fastapi-app.modal.run";
+const BASE_URL = "https://mariecoderinc--zit-a10g-fastapi-app.modal.run";
 const B2_PUBLIC_URL = process.env.VITE_B2_PUBLIC_URL || 'https://cdn.dreambeesai.com';
 const B2_BUCKET = process.env.VITE_B2_BUCKET || 'printeregg';
 
@@ -339,7 +348,7 @@ async function generateAndSave(prompt, index) {
 
         console.log(`  ✓ Uploaded: ${publicUrl}`);
 
-        return {
+        const manifestEntry = {
             name: path.parse(filename).name,
             url: publicUrl,
             imageUrl: publicUrl,
@@ -347,6 +356,17 @@ async function generateAndSave(prompt, index) {
             modelId: 'zit-model',
             creator: { user: 'Gemini 3 Pro', model: 'ZIT-model' } // metadata
         };
+
+        // 3. Save to Firestore for real-time discovery
+        console.log(`  Writing to Firestore...`);
+        await db.collection('model_showcase_images').add({
+            ...manifestEntry,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            likesCount: Math.floor(Math.random() * 50) + 10,
+            bookmarksCount: Math.floor(Math.random() * 10)
+        });
+
+        return manifestEntry;
     } catch (err) {
         console.error(`  Failed: ${err.message}`);
         return null;
