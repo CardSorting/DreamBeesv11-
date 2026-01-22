@@ -11,7 +11,7 @@ export const handleFormatMeme = async (request) => {
     if (!image && !imageUrl) throw new HttpsError('invalid-argument', "Image required");
     // Text is optional now (auto-gen mode)
 
-    const COST = 3;
+    const COST = 0.25;
 
     try {
         // 1. Deduct Zaps
