@@ -69,6 +69,17 @@ const AppsHub = () => {
                     isNew: true
                 };
 
+                const quickMockupsApp = {
+                    id: 'quick-mockups',
+                    title: 'Mockup Maker',
+                    description: 'Fast, premium, individually flavored mockup pages.',
+                    icon: LayoutGrid, // Using LayoutGrid for variety
+                    tags: ['design', 'mockup', 'fast', 'premium'],
+                    path: '/quick-mockups',
+                    previewImage: null, // We can add one later
+                    isNew: true
+                };
+
                 const memeFormatterApp = {
                     id: 'meme-formatter',
                     title: 'Meme Formatter',
@@ -95,8 +106,8 @@ const AppsHub = () => {
                     });
                 }
 
-                // Prepend or Append Mockup Studio & Meme Formatter
-                setApps([mockupStudioApp, memeFormatterApp, ...loadedApps]);
+                // Prepend Quick Mockups, Mockup Studio & Meme Formatter
+                setApps([quickMockupsApp, mockupStudioApp, memeFormatterApp, ...loadedApps]);
 
             } catch (error) {
                 console.error("Error fetching apps:", error);

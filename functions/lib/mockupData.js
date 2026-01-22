@@ -447,3 +447,31 @@ export const DOLL_PRESETS = [
     }
 ];
 
+export const RESKIN_ITEMS = [
+    {
+        id: 'reskin_credit_card',
+        label: 'Credit Card',
+        moldPath: 'creditcard.png', // Relative to functions/assets/reskins/
+        subjectNoun: 'premium credit card',
+        category: 'Reskin',
+        formatSpec: 'high-end titanium credit card with a textured metallic finish and sharp precision edges'
+    },
+    {
+        id: 'reskin_blank_toy',
+        label: 'Designer Toy',
+        moldPath: 'doll1.png', // Reusing doll1 as a reskin mold
+        subjectNoun: 'vinyl designer toy',
+        category: 'Reskin',
+        formatSpec: 'smooth, blank vinyl designer toy figure with a clean matte finish'
+    }
+];
+
+export const RESKIN_PRESETS = [
+    {
+        id: 'reskin_studio',
+        label: 'Premium Studio',
+        prompt: 'A high-end product shot of a luxury credit card. The card is floating elegantly over a dark, reflective obsidian surface. Professional studio lighting with subtle rim lights highlighting the metallic edges. Background is a deep, moody grey with a soft gradient.',
+        category: 'ReskinStudio'
+    }
+];
+

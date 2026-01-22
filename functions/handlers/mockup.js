@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import { VertexAI, HarmCategory, HarmBlockThreshold } from "@google-cloud/vertexai";
 import { withVertexRateLimiting } from "../lib/rateLimiter.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
-import { MOCKUP_ITEMS, MOCKUP_PRESETS, TCG_ITEMS, TCG_PRESETS, DOLL_ITEMS, DOLL_PRESETS } from "../lib/mockupData.js";
+import { MOCKUP_ITEMS, MOCKUP_PRESETS, TCG_ITEMS, TCG_PRESETS, DOLL_ITEMS, DOLL_PRESETS, RESKIN_ITEMS, RESKIN_PRESETS } from "../lib/mockupData.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { db, FieldValue } from "../firebaseInit.js";
 import { HttpsError } from "firebase-functions/v2/https";
@@ -156,6 +156,60 @@ ${preset.prompt} `;
                 }],
                 safetySettings: safetySettings
             };
+        } else if (item.category === 'Reskin' && item.moldPath) {
+            // ---------------------------------------------------------
+            // RESKIN MODE LOGIC (Credit Cards, etc)
+            // ---------------------------------------------------------
+            const functionsRoot = path.resolve(__dirname, '..');
+            const moldFilePath = path.join(functionsRoot, 'assets', 'reskins', item.moldPath);
+
+            let moldBuffer;
+            try {
+                moldBuffer = fs.readFileSync(moldFilePath);
+            } catch (e) {
+                logger.error(`[Mockup] Failed to read Reskin mold file: ${moldFilePath}`, e);
+                throw new Error(`Reskin mold asset missing: ${item.label}`);
+            }
+            const moldBase64 = moldBuffer.toString('base64');
+
+            const reskinPrompt = `You are a world-class industrial designer and material specialist.
+            
+            INPUTS:
+            1. THE MOLD: The provided image of a blank/basic physical product.
+            2. THE DESIGN: The Style Reference image containing the pattern, color, and aesthetic to be applied.
+            
+            TASK:
+            "Reskin" the MOLD by applying the aesthetic from the DESIGN onto its surfaces.
+            
+            CORE PRINCIPLES:
+            - GEOMETRIC FIDELITY: Maintain the EXACT shape, proportions, and physical details of the MOLD. Do not add or remove physical components.
+            - MATERIAL REALISM: The final product must look like a high-end physical object made of the material described in the item specification (${item.formatSpec}). 
+              - If the mold is metallic: Use complex reflections, brushed or polished textures, and realistic specular highlights.
+              - If the mold is vinyl/plastic: Use appropriate surface sheen (matte or gloss) and respect manufacturing seams or mold lines.
+            - SURFACE INTEGRATION: The DESIGN must look like it is part of the object (printed, engraved, embossed, or woven), not like a flat digital overlay. It should follow every curve and indentation of the mold.
+            
+            DESIGN PLACEMENT LOGIC:
+            - If the DESIGN is a repeating pattern: Apply it as a full-bleed wrap across the surface of the mold.
+            - If the DESIGN is a standalone graphic or logo: Place it prominently and artistically on the primary focal area of the mold (e.g., the face of a card, the chest of a toy).
+            - COMPLEMENTARY COLORING: If the design doesn't cover the whole mold, use a balanced secondary color from the design's palette for the remaining surfaces.
+            
+            CRITICAL:
+            Ensure all functional parts of the mold remain recognizable (e.g., the chip on a credit card, the eyes/sculpt of a toy) but styled to match the new aesthetic.
+            
+            OUTPUT:
+            ${preset.prompt}`;
+
+            requestPayload = {
+                contents: [{
+                    role: 'user',
+                    parts: [
+                        { text: reskinPrompt },
+                        { inlineData: { mimeType: 'image/png', data: moldBase64 } }, // The Mold
+                        { inlineData: { mimeType: 'image/png', data: imageBase64 } }  // The Style Reference
+                    ]
+                }],
+                safetySettings: safetySettings
+            };
         } else {
             // STANDARD / TCG LOGIC
             requestPayload = {
@@ -273,6 +327,10 @@ export const handleGachaSpin = async (request) => {
         sourceItems = DOLL_ITEMS;
         sourcePresets = DOLL_PRESETS;
         logger.info("[Gacha] Mode: Doll Reskin Active");
+    } else if (request.data.mode === 'reskin') {
+        sourceItems = RESKIN_ITEMS;
+        sourcePresets = RESKIN_PRESETS;
+        logger.info("[Gacha] Mode: General Reskin Active");
     }
 
     // Select random unique items (currently just 1 for cost saving/speed as per user pref)
@@ -485,7 +543,11 @@ export const handleGenerateMockupItem = async (request) => {
     }
 
     // 1. Look up Item and Preset from code config
-    const item = MOCKUP_ITEMS.find(i => i.id === itemId);
+    const item = MOCKUP_ITEMS.find(i => i.id === itemId) ||
+        TCG_ITEMS.find(i => i.id === itemId) ||
+        DOLL_ITEMS.find(i => i.id === itemId) ||
+        RESKIN_ITEMS.find(i => i.id === itemId);
+
     if (!item) {
         throw new HttpsError('not-found', `Mockup Item '${itemId}' not found in backend config.`);
     }
@@ -493,7 +555,10 @@ export const handleGenerateMockupItem = async (request) => {
     // Default to 'clean studio' if no preset provided
     let preset = null;
     if (presetId) {
-        preset = MOCKUP_PRESETS.find(p => p.id === presetId);
+        preset = MOCKUP_PRESETS.find(p => p.id === presetId) ||
+            TCG_PRESETS.find(p => p.id === presetId) ||
+            DOLL_PRESETS.find(p => p.id === presetId) ||
+            RESKIN_PRESETS.find(p => p.id === presetId);
     }
     if (!preset) {
         preset = MOCKUP_PRESETS.find(p => p.id === 'studio') || MOCKUP_PRESETS[0];
