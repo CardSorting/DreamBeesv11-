@@ -91,12 +91,39 @@ const MODELS = [
         tags: ['Art', 'Illustration', 'Anime']
     },
     {
+        id: 'hassaku-xl',
+        name: 'Hassaku XL',
+        description: 'Excellent for character consistency and detailed anime styles.',
+        type: 'SDXL',
+        order: 13,
+        isActive: true,
+        tags: ['Anime', 'Character', 'Stable']
+    },
+    {
+        id: 'rin-anime-blend',
+        name: 'Rin Anime Blend',
+        description: 'A smooth blend of popular anime models for high-quality results.',
+        type: 'SDXL',
+        order: 14,
+        isActive: true,
+        tags: ['Anime', 'Blend', 'Soft']
+    },
+    {
+        id: 'rin-anime-popcute',
+        name: 'Rin Anime Popcute',
+        description: 'Bright, vibrant, and cute anime style with popping colors.',
+        type: 'SDXL',
+        order: 15,
+        isActive: true,
+        tags: ['Anime', 'Cute', 'Vibrant']
+    },
+    {
         id: 'lightricks-ltx-2-pro',
         name: 'LTX 2 Pro',
         description: 'High-quality video generation model by Lightricks.',
         type: 'Video',
         category: 'reels',
-        order: 13,
+        order: 16,
         isActive: true,
         tags: ['Video', 'Realistic', 'Motion']
     },
@@ -105,7 +132,7 @@ const MODELS = [
         name: 'Flux 4B (Klein)',
         description: 'Fast and efficient FLUX model variant (4B parameters).',
         type: 'Flux',
-        order: 14,
+        order: 17,
         isActive: true,
         tags: ['Fast', 'Efficient', 'Flux']
     },
@@ -114,7 +141,7 @@ const MODELS = [
         name: 'Gemini 2.5 Flash (Image)',
         description: 'Google\'s fastest multimodal model, optimized for speed and visual quality.',
         type: 'Gemini',
-        order: 15,
+        order: 18,
         isActive: true,
         tags: ['Fast', 'Google', 'Multimodal']
     }

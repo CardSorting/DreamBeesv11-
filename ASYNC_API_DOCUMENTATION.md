@@ -1,36 +1,56 @@
 # Async Image Generation API (A10G & H100)
 
-This API provides high-throughput, fault-tolerant text-to-image generation using an **Asynchronous Job Pattern**. It supports two hardware tiers with identical API signatures.
+This API provides high-throughput, fault-tolerant text-to-image generation using an **Asynchronous Job Pattern**. It supports two hardware tiers:
+- **A10G (Standard)**: Cost-effective, suitable for most workloads.
+- **H100 (High-Performance)**: Lowest latency, maximum throughput for bursts.
 
 ## Base URLs
 
-| Tier | Description | Base URL |
+| Tier | Application | Base URL |
 |------|-------------|----------|
-| **A10G** | Standard, Cost-Effective | `https://mariecoderinc--sdxl-multi-model-a10g-model-web.modal.run` |
-| **H100** | High Performance, Low Latency | `https://mariecoderinc--sdxl-multi-model-h100-model-web.modal.run` |
+| **A10G** | `modal_sdxl_a10g.py` | `https://mariecoderinc--sdxl-multi-model-a10g-model-web-app.modal.run` |
+| **H100** | `modal_sdxl_h100.py` | `https://mariecoderinc--sdxl-multi-model-h100-model-web.modal.run` |
+
+---
+
+## Available Models
+
+| Model ID | Description / Filename |
+|----------|------------------------|
+| `nova-furry-xl` | `novaFurryXL_ilV140.safetensors` |
+| `perfect-illustrious` | `perfectrsbmixIllustrious_definitivelambda.safetensors` |
+| `gray-color` | `graycolor_v17.safetensors` |
+| `scyrax-pastel` | `scyraxPastelCore_v121.safetensors` |
+| `ani-detox` | `aniDetox_sketchsmith.safetensors` |
+| `animij-v7` | `animij_v7.safetensors` |
+| `swijtspot-no1` | `swijtspot_no1.safetensors` |
+| `wai-illustrious` | `waiIllustriousSDXL_v160.safetensors` (Default) |
+| `hassaku-xl` | `hassakuXLIllustrious_v34.safetensors` |
+| `rin-anime-blend` | `rinAnimeBlendArblend_v30.safetensors` |
+| `rin-anime-popcute` | `rinAnimepopcute_v30.safetensors` |
 
 ---
 
 ## 1. Submit Generation Job
-**Endpoint:** `POST {BASE_URL}/generate`
+**Endpoint:** `POST /generate`
 
 Spawns a background task on the GPU. Returns immediately with a `job_id`.
 
 ### Request Body
 ```json
 {
-  "prompt": "Distal surrealism, neon amber lights, 8k resolution",
-  "model": "wai-illustrious",
+  "prompt": "1girl, solo, anime style, colorful",
+  "model": "wai-illustrious", // Options: "nova-furry-xl", "perfect-illustrious", "gray-color", "scyrax-pastel", "ani-detox", "animij-v7", "swijtspot-no1", "wai-illustrious", "hassaku-xl", "rin-anime-blend", "rin-anime-popcute"
   "steps": 30,              // Default: 30
   "width": 1024,            // Default: 1024
   "height": 1024,           // Default: 1024
-  "aspect_ratio": "16:9",   // Optional: Overrides width/height. Values: "1:1", "16:9", "9:16", "21:9", "9:21", "3:2", "2:3", "4:5", "5:4"
+  "aspect_ratio": "16:9",   // Optional: Overrides width/height
   "seed": 12345,            // Optional
   "webhook_url": "https://your-api.com/hooks/image-done" // Optional
 }
 ```
 
-### Response
+### Response (202 Accepted)
 ```json
 {
   "job_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -41,7 +61,7 @@ Spawns a background task on the GPU. Returns immediately with a `job_id`.
 ---
 
 ## 2. Poll Status / Get Result
-**Endpoint:** `GET {BASE_URL}/result/{job_id}`
+**Endpoint:** `GET /result/{job_id}` (Alias: `GET /jobs/{job_id}`)
 
 Check the status of a job or retrieve the final image.
 
@@ -50,7 +70,6 @@ Returned when status is `queued`, `generating`, or `failed`.
 ```json
 {
   "status": "generating",
-  "job_id": "550e8400-e29b-41d4-a716-446655440000",
   "updated_at": 1705512345.123
 }
 ```
@@ -58,7 +77,6 @@ OR
 ```json
 {
   "status": "failed",
-  "job_id": "550e8400-e29b-41d4-a716-446655440000",
   "error": "Resolution 2048x2048 exceeds maximum allowed pixels.",
   "updated_at": 1705512345.999
 }
@@ -68,7 +86,6 @@ OR
 Returned when status is `completed`.
 - **Content-Type**: `image/png`
 - **Body**: Raw PNG bytes.
-- **Note**: If the file is missing but the job is marked completed, it falls back to a JSON status response.
 
 ---
 
@@ -95,9 +112,15 @@ If `webhook_url` is provided, the API will send a POST request upon completion o
 ---
 
 ## 4. Health Check
-**Endpoint:** `GET {BASE_URL}/`
+**Endpoint:** `GET /health`
 
-Returns a simple HTML status page indicating the service is online.
+Use this for load balancers or keep-alive checks.
+```json
+{
+  "status": "healthy",
+  "service": "zit-a10g-async" // or zit-h100-async
+}
+```
 
 ---
 
@@ -107,25 +130,20 @@ Returns a simple HTML status page indicating the service is online.
 import requests
 import time
 
-# Choose your tier
-BASE_URL = "https://mariecoderinc--sdxl-multi-model-h100-model-web.modal.run"
-# BASE_URL = "https://mariecoderinc--sdxl-multi-model-a10g-model-web.modal.run"
+# Choose endpoint
+API_URL = "https://mariecoderinc--zit-a10g-fastapi-app.modal.run"
+# API_URL = "https://mariecoderinc--zit-h100-stable-fastapi-app.modal.run"
 
 def generate_image(prompt):
     # 1. Submit
-    resp = requests.post(f"{BASE_URL}/generate", json={
-        "prompt": prompt,
-        "model": "wai-illustrious",
-        "aspect_ratio": "16:9"
-    })
+    resp = requests.post(f"{API_URL}/generate", json={"prompt": prompt})
     resp.raise_for_status()
-    data = resp.json()
-    job_id = data["job_id"]
+    job_id = resp.json()["job_id"]
     print(f"Job submitted: {job_id}")
 
     # 2. Poll
     while True:
-        status_resp = requests.get(f"{BASE_URL}/result/{job_id}")
+        status_resp = requests.get(f"{API_URL}/result/{job_id}")
         
         # If we get an image directly (Completion)
         if status_resp.headers.get("content-type") == "image/png":

@@ -244,7 +244,7 @@ export const processImageTask = async (req) => {
         } else {
 
             // SDXL Handling
-            const SDXL_A10G_ASYNC_BASE = "https://mariecoderinc--sdxl-multi-model-a10g-model-web.modal.run";
+            const SDXL_A10G_ASYNC_BASE = "https://mariecoderinc--sdxl-multi-model-a10g-model-web-app.modal.run";
             const SDXL_H100_ASYNC_BASE = "https://mariecoderinc--sdxl-multi-model-h100-model-web.modal.run";
 
             // Select Base URL based on Turbo flag
@@ -292,7 +292,12 @@ export const processImageTask = async (req) => {
             let imageBuffer = null;
             for (let poll = 0; poll < 90; poll++) {
                 await sleep(2000);
-                const resultRes = await fetch(`${baseUrl}/result/${jobId}`); // Note: Updated from /jobs/ to /result/ based on A10G docs usually, but verifying path consistency. Docs said /result/{jobid} in ASYNC_API_DOCUMENTATION.md
+
+                // Try /result/ first, then fallback to /jobs/ if 404
+                let resultRes = await fetch(`${baseUrl}/result/${jobId}`);
+                if (resultRes.status === 404) {
+                    resultRes = await fetch(`${baseUrl}/jobs/${jobId}`);
+                }
 
                 if (resultRes.status === 202) continue; // Still processing (Queued/Generating)
 
