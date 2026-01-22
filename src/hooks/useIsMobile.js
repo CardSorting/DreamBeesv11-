@@ -1,14 +1,20 @@
 import { useState, useEffect } from 'react';
 
 export function useIsMobile(breakpoint = 768) {
-    const [isMobile, setIsMobile] = useState(false);
+    // Initialize with synchronous check to prevent hydration mismatch
+    const [isMobile, setIsMobile] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.innerWidth < breakpoint;
+        }
+        return false;
+    });
 
     useEffect(() => {
         const checkMobile = () => {
             setIsMobile(window.innerWidth < breakpoint);
         };
 
-        // Check initially
+        // Check initially (in case window resized before effect ran)
         checkMobile();
 
         // Add listener
