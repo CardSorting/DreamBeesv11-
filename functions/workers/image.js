@@ -11,6 +11,499 @@ const looksLikeJSON = (buffer) => {
     return firstChar === '{' || firstChar === '[' || firstChar === '"';
 };
 
+// ============================================================================
+// ADVANCED LOAD BALANCER v2.0
+// Production-grade intelligent routing with:
+// - Cold start detection & warm-up routing
+// - Exponential backoff for circuit recovery  
+// - P95/P99 latency tracking
+// - Error classification (transient vs permanent)
+// - Capacity tracking & saturation detection
+// - Jitter for thundering herd prevention
+// ============================================================================
+
+class LoadBalancer {
+    constructor() {
+        // Endpoint configuration with performance characteristics
+        this.endpoints = {
+            // Zit endpoints
+            'zit-h100': {
+                url: 'https://mariecoderinc--zit-h100-stable-fastapi-app.modal.run',
+                tier: 'premium', costFactor: 1.5, baseLatency: 8000,
+                coldStartLatency: 45000, maxConcurrency: 10
+            },
+            'zit-a10g': {
+                url: 'https://mariecoderinc--zit-a10g-fastapi-app.modal.run',
+                tier: 'standard', costFactor: 1.0, baseLatency: 15000,
+                coldStartLatency: 60000, maxConcurrency: 5
+            },
+            // SDXL endpoints
+            'sdxl-h100': {
+                url: 'https://mariecoderinc--sdxl-multi-model-h100-model-web.modal.run',
+                tier: 'premium', costFactor: 1.5, baseLatency: 8000,
+                coldStartLatency: 45000, maxConcurrency: 10
+            },
+            'sdxl-a10g': {
+                url: 'https://mariecoderinc--sdxl-multi-model-a10g-model-web-app.modal.run',
+                tier: 'standard', costFactor: 1.0, baseLatency: 12000,
+                coldStartLatency: 50000, maxConcurrency: 5
+            },
+            // Flux endpoint
+            'flux': {
+                url: 'https://mariecoderinc--flux-klein-4b-flux-fastapi-app.modal.run',
+                tier: 'standard', costFactor: 1.0, baseLatency: 10000,
+                coldStartLatency: 55000, maxConcurrency: 5
+            }
+        };
+
+        // Health metrics per endpoint (enhanced with P95, cold start, error classification)
+        this.healthMetrics = {};
+        for (const key of Object.keys(this.endpoints)) {
+            this.healthMetrics[key] = {
+                consecutiveFailures: 0,
+                consecutiveSuccesses: 0,
+                recentLatencies: [],
+                avgLatency: null,
+                p95Latency: null,
+                p99Latency: null,
+                lastSuccess: null,
+                lastFailure: null,
+                lastRequest: null,           // For cold start detection
+                circuitState: 'closed',
+                circuitOpenedAt: null,
+                circuitBackoffMs: 15000,     // Exponential backoff starts at 15s
+                circuitRecoveryAttempts: 0,
+                totalRequests: 0,
+                totalFailures: 0,
+                transientErrors: 0,          // 429, 503, timeouts
+                permanentErrors: 0,          // 400, 500, validation
+                saturationEvents: 0,
+                maxObservedConcurrent: 0
+            };
+        }
+
+        // Circuit breaker with exponential backoff
+        this.circuitBreaker = {
+            failureThreshold: 3,
+            successThreshold: 2,
+            minOpenDuration: 15000,
+            maxOpenDuration: 300000,         // 5 min max
+            backoffMultiplier: 2,
+            jitterFactor: 0.2                // ±20% jitter
+        };
+
+        // Cold start detection
+        this.coldStart = {
+            idleThreshold: 300000,           // 5 min = likely cold
+            warmUpPenalty: 10000
+        };
+
+        // Latency tracking
+        this.latencyWindowSize = 20;
+        this.saturationLatencyMultiplier = 2.0;
+
+        // Global load tracking
+        this.activeJobs = new Map();
+    }
+
+    // Add jitter to prevent thundering herd
+    _addJitter(value) {
+        const jitter = value * this.circuitBreaker.jitterFactor;
+        return value + (Math.random() * 2 - 1) * jitter;
+    }
+
+    // Calculate latency percentile
+    _percentile(sortedArray, p) {
+        if (sortedArray.length === 0) return null;
+        const index = Math.ceil((p / 100) * sortedArray.length) - 1;
+        return sortedArray[Math.max(0, index)];
+    }
+
+    // Classify error type
+    _classifyError(error) {
+        const msg = error?.message?.toLowerCase() || '';
+        const transient = ['429', '503', 'timeout', 'econnreset', 'etimedout', 'busy', 'throttl'];
+        const permanent = ['400', '401', '403', '500', 'invalid', 'blocked', 'safety'];
+        for (const p of transient) if (msg.includes(p)) return 'transient';
+        for (const p of permanent) if (msg.includes(p)) return 'permanent';
+        return 'transient'; // Default to transient
+    }
+
+    // Get the current score for an endpoint (lower is better) - ENHANCED
+    _calculateScore(endpointKey, jobComplexity = 1.0, options = {}) {
+        const endpoint = this.endpoints[endpointKey];
+        const health = this.healthMetrics[endpointKey];
+        const { priorityJob = false } = options;
+
+        // Circuit breaker check with exponential backoff
+        if (health.circuitState === 'open') {
+            const elapsed = Date.now() - health.circuitOpenedAt;
+            const backoffWithJitter = this._addJitter(health.circuitBackoffMs);
+
+            if (elapsed < backoffWithJitter) {
+                return Infinity; // Still in cooldown
+            }
+            // Transition to half-open for probe
+            health.circuitState = 'half-open';
+            logger.info(`[LoadBalancer] ${endpointKey} entering half-open after ${Math.round(elapsed / 1000)}s`);
+        }
+
+        // Base score from P95 latency (more pessimistic than average)
+        const latency = health.p95Latency || health.avgLatency || endpoint.baseLatency;
+        let score = latency;
+
+        // Cold start detection: penalize idle endpoints
+        const timeSinceLastRequest = health.lastRequest ? (Date.now() - health.lastRequest) : Infinity;
+        if (timeSinceLastRequest > this.coldStart.idleThreshold) {
+            score += this.coldStart.warmUpPenalty;
+            score = Math.max(score, endpoint.coldStartLatency * 0.5);
+        }
+
+        // Current load with saturation awareness
+        const currentLoad = this.activeJobs.get(endpointKey) || 0;
+        const loadRatio = currentLoad / endpoint.maxConcurrency;
+
+        if (loadRatio > 0.8) {
+            score += 15000 + (loadRatio * 10000); // Near saturation
+        } else if (loadRatio > 0.5) {
+            score += loadRatio * 5000;
+        } else {
+            score += currentLoad * 1500;
+        }
+
+        // Failure penalties
+        score += health.consecutiveFailures * 5000;
+
+        // Permanent errors get extra penalty
+        if (health.permanentErrors > health.transientErrors && health.permanentErrors > 0) {
+            score += 8000;
+        }
+
+        // Success bonuses
+        score -= Math.min(health.consecutiveSuccesses, 5) * 400;
+
+        // Low error rate bonus
+        if (health.totalRequests > 10 && (health.totalFailures / health.totalRequests) < 0.05) {
+            score -= 1000;
+        }
+
+        // Cost factor for non-priority simple jobs
+        if (!priorityJob && jobComplexity < 0.5) {
+            score *= endpoint.costFactor;
+        }
+
+        // Half-open penalty
+        if (health.circuitState === 'half-open') {
+            score += 5000;
+        }
+
+        // Saturation history penalty
+        if (health.saturationEvents > 3) {
+            score += 2000;
+        }
+
+        return score;
+    }
+
+    // Calculate job complexity score based on resolution and steps (0.0 - 1.0)
+    calculateJobComplexity(width, height, steps) {
+        const pixels = width * height;
+        const pixelScore = Math.min(pixels / (1536 * 1536), 1.0); // Normalize to max common resolution
+        const stepScore = Math.min(steps / 50, 1.0);             // Normalize to max common steps
+        return (pixelScore * 0.6 + stepScore * 0.4);             // Weight pixels more
+    }
+
+    // Select optimal endpoint(s) for a model type with fallback ordering
+    selectEndpoints(modelType, options = {}) {
+        const {
+            useTurbo = false,
+            jobComplexity = 0.5,
+            preferPremium = false
+        } = options;
+
+        let candidates = [];
+        if (modelType === 'zit') {
+            candidates = ['zit-h100', 'zit-a10g'];
+        } else if (modelType === 'sdxl') {
+            candidates = ['sdxl-h100', 'sdxl-a10g'];
+        } else if (modelType === 'flux') {
+            candidates = ['flux'];
+        } else {
+            return [];
+        }
+
+        const priorityJob = useTurbo || preferPremium;
+
+        // Score all candidates with priority awareness
+        const scored = candidates.map(key => ({
+            key,
+            endpoint: this.endpoints[key],
+            score: this._calculateScore(key, jobComplexity, { priorityJob }),
+            health: this.healthMetrics[key]
+        }));
+
+        // Filter out endpoints with Infinity score (circuit open) unless all are open
+        const available = scored.filter(s => s.score !== Infinity);
+        const ordered = available.length > 0 ? available : scored;
+
+        // If turbo or preferPremium, heavily prefer premium tier
+        if (useTurbo || preferPremium) {
+            ordered.forEach(s => {
+                if (s.endpoint.tier === 'premium') {
+                    s.score -= 10000; // Strong preference for premium
+                }
+            });
+        }
+
+        // Sort by score (lower is better)
+        ordered.sort((a, b) => a.score - b.score);
+
+        logger.info(`[LoadBalancer] ${modelType} selection:`, {
+            complexity: jobComplexity.toFixed(2),
+            priority: priorityJob,
+            candidates: ordered.map(s => ({
+                key: s.key,
+                score: Math.round(s.score),
+                circuit: s.health.circuitState,
+                p95: s.health.p95Latency ? Math.round(s.health.p95Latency) : null,
+                load: `${this.activeJobs.get(s.key) || 0}/${s.endpoint.maxConcurrency}`,
+                cold: s.health.lastRequest && (Date.now() - s.health.lastRequest > this.coldStart.idleThreshold) ? '⚠️' : '✓'
+            }))
+        });
+
+        return ordered.map(s => ({ key: s.key, url: s.endpoint.url }));
+    }
+
+    // Record the start of a job - ENHANCED
+    recordJobStart(endpointKey) {
+        const current = this.activeJobs.get(endpointKey) || 0;
+        const newCount = current + 1;
+        this.activeJobs.set(endpointKey, newCount);
+
+        const health = this.healthMetrics[endpointKey];
+        health.lastRequest = Date.now();
+
+        // Track max observed concurrency
+        if (newCount > health.maxObservedConcurrent) {
+            health.maxObservedConcurrent = newCount;
+        }
+
+        return Date.now();
+    }
+
+    // Record successful job completion - ENHANCED
+    recordSuccess(endpointKey, startTime) {
+        const latency = Date.now() - startTime;
+        const health = this.healthMetrics[endpointKey];
+        const endpoint = this.endpoints[endpointKey];
+
+        // Decrement active jobs
+        const current = this.activeJobs.get(endpointKey) || 1;
+        this.activeJobs.set(endpointKey, Math.max(0, current - 1));
+
+        // Update health metrics
+        health.consecutiveFailures = 0;
+        health.consecutiveSuccesses++;
+        health.lastSuccess = Date.now();
+        health.totalRequests++;
+
+        // Update latency tracking with percentiles
+        health.recentLatencies.push(latency);
+        if (health.recentLatencies.length > this.latencyWindowSize) {
+            health.recentLatencies.shift();
+        }
+        const sorted = [...health.recentLatencies].sort((a, b) => a - b);
+        health.avgLatency = sorted.reduce((a, b) => a + b, 0) / sorted.length;
+        health.p95Latency = this._percentile(sorted, 95);
+        health.p99Latency = this._percentile(sorted, 99);
+
+        // Detect saturation
+        if (latency > endpoint.baseLatency * this.saturationLatencyMultiplier) {
+            health.saturationEvents++;
+        }
+
+        // Circuit breaker recovery with backoff reset
+        if (health.circuitState === 'half-open' &&
+            health.consecutiveSuccesses >= this.circuitBreaker.successThreshold) {
+            health.circuitState = 'closed';
+            health.circuitBackoffMs = this.circuitBreaker.minOpenDuration; // Reset backoff
+            health.circuitRecoveryAttempts = 0;
+            logger.info(`[LoadBalancer] Circuit CLOSED for ${endpointKey} after recovery`);
+        }
+
+        // Decay saturation events on good performance
+        if (health.saturationEvents > 0 && health.consecutiveSuccesses > 10) {
+            health.saturationEvents = Math.max(0, health.saturationEvents - 1);
+        }
+
+        logger.info(`[LoadBalancer] ${endpointKey} ✓`, {
+            latency: Math.round(latency),
+            p95: health.p95Latency ? Math.round(health.p95Latency) : null,
+            streak: health.consecutiveSuccesses,
+            circuit: health.circuitState
+        });
+    }
+
+    // Record job failure - ENHANCED
+    recordFailure(endpointKey, startTime, error) {
+        const health = this.healthMetrics[endpointKey];
+
+        // Decrement active jobs
+        const current = this.activeJobs.get(endpointKey) || 1;
+        this.activeJobs.set(endpointKey, Math.max(0, current - 1));
+
+        // Update health metrics
+        health.consecutiveSuccesses = 0;
+        health.consecutiveFailures++;
+        health.lastFailure = Date.now();
+        health.totalRequests++;
+        health.totalFailures++;
+
+        // Classify error
+        const errorType = this._classifyError(error);
+        if (errorType === 'transient') {
+            health.transientErrors++;
+        } else if (errorType === 'permanent') {
+            health.permanentErrors++;
+        }
+
+        // Check for rate limiting (429)
+        const is429 = error?.message?.includes('429');
+        const shouldOpen = is429 || health.consecutiveFailures >= this.circuitBreaker.failureThreshold;
+
+        if (shouldOpen && health.circuitState !== 'open') {
+            health.circuitState = 'open';
+            health.circuitOpenedAt = Date.now();
+            health.circuitRecoveryAttempts++;
+
+            // Exponential backoff
+            health.circuitBackoffMs = Math.min(
+                health.circuitBackoffMs * this.circuitBreaker.backoffMultiplier,
+                this.circuitBreaker.maxOpenDuration
+            );
+
+            logger.warn(`[LoadBalancer] Circuit OPENED for ${endpointKey}`, {
+                failures: health.consecutiveFailures,
+                is429,
+                errorType,
+                backoffMs: health.circuitBackoffMs,
+                attempts: health.circuitRecoveryAttempts
+            });
+        } else if (health.circuitState === 'half-open') {
+            // Failed during probe, increase backoff
+            health.circuitState = 'open';
+            health.circuitOpenedAt = Date.now();
+            health.circuitRecoveryAttempts++;
+            health.circuitBackoffMs = Math.min(
+                health.circuitBackoffMs * this.circuitBreaker.backoffMultiplier,
+                this.circuitBreaker.maxOpenDuration
+            );
+            logger.warn(`[LoadBalancer] Half-open probe FAILED for ${endpointKey}, backoff: ${health.circuitBackoffMs}ms`);
+        }
+
+        logger.warn(`[LoadBalancer] ${endpointKey} ✗`, {
+            failures: health.consecutiveFailures,
+            errorType,
+            circuit: health.circuitState,
+            error: error?.message?.substring(0, 80)
+        });
+    }
+
+    // Get dynamic concurrency limits - ENHANCED
+    getDynamicConcurrencyLimit(endpointKey, baseLimit = 3) {
+        const health = this.healthMetrics[endpointKey];
+        const endpoint = this.endpoints[endpointKey];
+        const maxLimit = endpoint.maxConcurrency;
+
+        // Reduce limit if endpoint is struggling
+        if (health.consecutiveFailures > 0) {
+            return Math.max(1, Math.min(baseLimit - health.consecutiveFailures, maxLimit));
+        }
+
+        // Reduce if we've seen saturation
+        if (health.saturationEvents > 2) {
+            return Math.max(1, Math.min(baseLimit - 1, maxLimit));
+        }
+
+        // Increase limit if endpoint is performing well
+        if (health.consecutiveSuccesses > 5 && health.p95Latency &&
+            health.p95Latency < endpoint.baseLatency * 0.8) {
+            return Math.min(baseLimit + 2, maxLimit);
+        }
+
+        return Math.min(baseLimit, maxLimit);
+    }
+
+    // Get health summary - ENHANCED
+    getHealthSummary() {
+        const summary = {};
+        for (const [key, health] of Object.entries(this.healthMetrics)) {
+            const endpoint = this.endpoints[key];
+            const currentLoad = this.activeJobs.get(key) || 0;
+            const timeSinceLast = health.lastRequest ? Math.round((Date.now() - health.lastRequest) / 1000) : null;
+
+            summary[key] = {
+                circuit: health.circuitState,
+                load: `${currentLoad}/${endpoint.maxConcurrency}`,
+                p95: health.p95Latency ? Math.round(health.p95Latency) : null,
+                successRate: health.totalRequests > 0
+                    ? `${Math.round((1 - health.totalFailures / health.totalRequests) * 100)}%`
+                    : null,
+                errors: { t: health.transientErrors, p: health.permanentErrors },
+                saturation: health.saturationEvents,
+                lastActive: timeSinceLast !== null ? `${timeSinceLast}s` : 'never',
+                cold: timeSinceLast !== null && timeSinceLast > 300 ? '⚠️' : '✓'
+            };
+        }
+        return summary;
+    }
+
+    // Export detailed metrics for monitoring
+    exportMetrics() {
+        const metrics = [];
+        for (const [key, health] of Object.entries(this.healthMetrics)) {
+            const endpoint = this.endpoints[key];
+            metrics.push({
+                endpoint: key,
+                tier: endpoint.tier,
+                timestamp: Date.now(),
+                activeJobs: this.activeJobs.get(key) || 0,
+                maxConcurrency: endpoint.maxConcurrency,
+                circuitState: health.circuitState,
+                avgLatencyMs: health.avgLatency,
+                p95LatencyMs: health.p95Latency,
+                p99LatencyMs: health.p99Latency,
+                totalRequests: health.totalRequests,
+                successRate: health.totalRequests > 0 ? (1 - health.totalFailures / health.totalRequests) : 1,
+                transientErrors: health.transientErrors,
+                permanentErrors: health.permanentErrors,
+                saturationEvents: health.saturationEvents,
+                circuitBackoffMs: health.circuitBackoffMs
+            });
+        }
+        return metrics;
+    }
+
+    // Reset endpoint metrics (for manual intervention)
+    resetEndpointMetrics(endpointKey) {
+        const health = this.healthMetrics[endpointKey];
+        if (!health) return false;
+        health.consecutiveFailures = 0;
+        health.consecutiveSuccesses = 0;
+        health.circuitState = 'closed';
+        health.circuitBackoffMs = this.circuitBreaker.minOpenDuration;
+        health.circuitRecoveryAttempts = 0;
+        health.saturationEvents = 0;
+        health.transientErrors = 0;
+        health.permanentErrors = 0;
+        logger.info(`[LoadBalancer] Reset metrics for ${endpointKey}`);
+        return true;
+    }
+}
+
+// Singleton instance of the load balancer
+const loadBalancer = new LoadBalancer();
+
 export const processImageTask = async (req) => {
     const { requestId, userId, modelId, negative_prompt, steps = 30, cfg = 7, aspectRatio = '1:1', scheduler, promptHash, promptMetadata } = req.data;
     let prompt = req.data.prompt;
@@ -52,22 +545,39 @@ export const processImageTask = async (req) => {
         '16:9': { width: 1344, height: 768 }
     };
     const resolution = resolutionMap[aspectRatio] || resolutionMap['1:1'];
-    const totalPixels = resolution.width * resolution.height;
     const jobSteps = steps || 30;
 
-    // 2. Determine Load Balancing Strategy (H100 vs A10G)
-    // H100 if: Specifically requested, High Complexity (1MP+ or 32+ steps), or User already has active jobs
-    const isHighComplexity = (totalPixels >= 1024 * 1024) || (jobSteps > 32);
-    const isUserBusy = activeCount > 0;
-    const shouldPreferH100 = useTurbo || isHighComplexity || isUserBusy || isPremiumModel;
+    // 2. Calculate Job Complexity for Smart Routing
+    const jobComplexity = loadBalancer.calculateJobComplexity(
+        resolution.width,
+        resolution.height,
+        jobSteps
+    );
 
-    // 3. Dynamic Concurrency Limits
-    // If we're offloading to H100, we allow a much larger concurrent flow (up to 10)
-    // A10G is kept strictly limited to avoid saturation of small nodes.
-    const allowedConcurrency = shouldPreferH100 ? 10 : 3;
+    // 3. Determine Model Type for Load Balancer
+    let modelType = 'sdxl'; // default
+    if (modelId === 'zit-model') modelType = 'zit';
+    else if (modelId === 'flux-klein-4b') modelType = 'flux';
+
+    // 4. Get Dynamic Concurrency Limit Based on Endpoint Health
+    // Use the primary endpoint for the model type to determine limit
+    const selectedEndpoints = loadBalancer.selectEndpoints(modelType, {
+        useTurbo,
+        jobComplexity,
+        preferPremium: isPremiumModel || useTurbo
+    });
+    const primaryEndpoint = selectedEndpoints[0]?.key || 'sdxl-a10g';
+    const allowedConcurrency = loadBalancer.getDynamicConcurrencyLimit(
+        primaryEndpoint,
+        useTurbo ? 10 : 3
+    );
 
     if (activeCount >= allowedConcurrency) {
-        logger.warn(`[Throttling] User ${userId} busy. Active: ${activeCount}/${allowedConcurrency}. Re-queuing task ${requestId}.`, { userId, activeCount, allowedConcurrency, shouldPreferH100 });
+        logger.warn(`[Throttling] User ${userId} busy. Active: ${activeCount}/${allowedConcurrency}. Re-queuing task ${requestId}.`, {
+            userId, activeCount, allowedConcurrency,
+            primaryEndpoint,
+            healthSummary: loadBalancer.getHealthSummary()
+        });
         throw new Error(`Throttling: User Busy (${activeCount}/${allowedConcurrency}). Use Turbo for higher limits.`);
     }
 
@@ -76,44 +586,73 @@ export const processImageTask = async (req) => {
 
         let response;
         if (modelId === 'zit-model') {
-            const ZIT_A10G_BASE = "https://mariecoderinc--zit-a10g-fastapi-app.modal.run";
-            const ZIT_H100_BASE = "https://mariecoderinc--zit-h100-stable-fastapi-app.modal.run";
+            // Use LoadBalancer for intelligent endpoint selection
+            const zitEndpoints = loadBalancer.selectEndpoints('zit', {
+                useTurbo,
+                jobComplexity,
+                preferPremium: isPremiumModel
+            });
 
-            const bases = shouldPreferH100 ? [ZIT_H100_BASE, ZIT_A10G_BASE] : [ZIT_A10G_BASE, ZIT_H100_BASE];
             const zBody = { prompt, steps, width: resolution.width, height: resolution.height };
 
             if (useTurbo && ['1:1', '16:9', '9:16', '4:3', '3:4', '21:9', '9:21'].includes(aspectRatio)) {
                 delete zBody.width; delete zBody.height; zBody.aspect_ratio = aspectRatio;
             }
 
-            const primaryFrame = shouldPreferH100 ? 'H100' : 'A10G';
-            const reason = useTurbo ? 'Turbo' : (isHighComplexity ? 'Complexity' : (isUserBusy ? 'Multi-job' : (isPremiumModel ? 'Premium' : 'Default')));
-            logger.info(`[${requestId}] Submitting zit-model. Target: ${primaryFrame} (${reason}) | ${resolution.width}x${resolution.height} @ ${jobSteps} steps | Concurrency: ${activeCount}/${allowedConcurrency}`);
+            logger.info(`[${requestId}] Submitting zit-model via LoadBalancer`, {
+                endpoints: zitEndpoints.map(e => e.key),
+                jobComplexity: jobComplexity.toFixed(2),
+                resolution: `${resolution.width}x${resolution.height}`,
+                steps: jobSteps,
+                concurrency: `${activeCount}/${allowedConcurrency}`
+            });
 
             let submitResponse;
             let baseUrl;
-            try {
-                const result = await fetchWithFallback(bases.map(b => `${b}/generate`), {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(zBody),
-                    timeout: 45000,
-                    retries: 3
-                });
-                submitResponse = result.response;
-                baseUrl = result.url.replace('/generate', '');
-            } catch (err) {
-                if (err.message.includes("429")) {
-                    logger.warn(`[Throttling] All Zit endpoints rate limited (429). Re-queuing task ${requestId}.`);
-                    throw new Error(`Throttling: Zit API Busy (429). Retrying...`);
+            let usedEndpointKey = null;
+            let jobStartTime = null;
+
+            // Try endpoints in order based on LoadBalancer scoring
+            for (const endpoint of zitEndpoints) {
+                try {
+                    usedEndpointKey = endpoint.key;
+                    jobStartTime = loadBalancer.recordJobStart(endpoint.key);
+
+                    const result = await fetchWithRetry(`${endpoint.url}/generate`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(zBody),
+                        timeout: 45000,
+                        retries: 2
+                    });
+                    submitResponse = result;
+                    baseUrl = endpoint.url;
+                    break; // Success, exit the loop
+                } catch (err) {
+                    loadBalancer.recordFailure(endpoint.key, jobStartTime, err);
+
+                    if (err.message.includes("429")) {
+                        logger.warn(`[LoadBalancer] ${endpoint.key} rate limited (429), trying next endpoint`);
+                        continue; // Try next endpoint
+                    }
+
+                    // For other errors, continue to next endpoint
+                    logger.warn(`[LoadBalancer] ${endpoint.key} failed: ${err.message}, trying next endpoint`);
                 }
-                throw err;
+            }
+
+            if (!submitResponse) {
+                logger.warn(`[Throttling] All Zit endpoints exhausted for task ${requestId}.`);
+                throw new Error(`Throttling: Zit API Busy. All endpoints failed. Retrying...`);
             }
 
             const submitJson = await submitResponse.json();
-            if (!submitJson.job_id) throw new Error("No job_id from Zit API");
+            if (!submitJson.job_id) {
+                loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error("No job_id returned"));
+                throw new Error("No job_id from Zit API");
+            }
             const jobId = submitJson.job_id;
-            logger.info(`[${requestId}] Zit job submitted: ${jobId}`);
+            logger.info(`[${requestId}] Zit job submitted to ${usedEndpointKey}: ${jobId}`);
 
             // Poll for result (max 180 seconds)
             const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -133,29 +672,38 @@ export const processImageTask = async (req) => {
                     try {
                         const errJson = await resultRes.json();
                         if (errJson.status === 'failed') {
+                            loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error(errJson.error));
                             throw new Error(errJson.error || `Zit generation failed with status ${resultRes.status}`);
                         }
                     } catch {
                         // ignore json parse error, just throw status error
                     }
+                    loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error(`Status ${resultRes.status}`));
                     throw new Error(`Zit Polling Error (${resultRes.status}): ${await resultRes.text()}`);
                 }
 
                 const ct = resultRes.headers.get('content-type') || '';
                 if (ct.includes('image/')) {
                     imageBuffer = Buffer.from(await resultRes.arrayBuffer());
+                    loadBalancer.recordSuccess(usedEndpointKey, jobStartTime);
                     break;
                 }
 
                 const statusJson = await resultRes.json();
-                if (statusJson.status === 'failed') throw new Error(statusJson.error || 'Zit generation failed');
+                if (statusJson.status === 'failed') {
+                    loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error(statusJson.error));
+                    throw new Error(statusJson.error || 'Zit generation failed');
+                }
                 if (statusJson.status === 'completed' && !imageBuffer) {
                     // Should have been binary if completed, but handle edge case if it returns json with url
-                    // (Though docs say binary)
+                    loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error('Completed but no binary'));
                     throw new Error('Zit reported completed but returned JSON instead of binary image.');
                 }
             }
-            if (!imageBuffer) throw new Error("Zit generation timed out");
+            if (!imageBuffer) {
+                loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error('Timeout'));
+                throw new Error("Zit generation timed out");
+            }
 
             // Skip standard response processing
             response = { ok: true, _fluxImageBuffer: imageBuffer }; // reusing _fluxImageBuffer hack for now as it handles raw buffer bypass
@@ -166,10 +714,21 @@ export const processImageTask = async (req) => {
             });
         } else if (modelId === 'flux-klein-4b') {
             // Flux uses async job pattern: submit, then poll for result
-            const FLUX_ENDPOINT = "https://mariecoderinc--flux-klein-4b-flux-fastapi-app.modal.run";
+            // Use LoadBalancer for health tracking even though there's only one endpoint
+            const fluxEndpoints = loadBalancer.selectEndpoints('flux', { jobComplexity });
+            const fluxEndpoint = fluxEndpoints[0];
+            const FLUX_ENDPOINT = fluxEndpoint?.url || "https://mariecoderinc--flux-klein-4b-flux-fastapi-app.modal.run";
+            const fluxEndpointKey = fluxEndpoint?.key || 'flux';
+
+            logger.info(`[${requestId}] Submitting flux-klein-4b via LoadBalancer`, {
+                endpoint: fluxEndpointKey,
+                jobComplexity: jobComplexity.toFixed(2),
+                resolution: `${resolution.width}x${resolution.height}`
+            });
 
             // 1. Submit job
             let submitResponse;
+            const jobStartTime = loadBalancer.recordJobStart(fluxEndpointKey);
             try {
                 submitResponse = await fetchWithRetry(`${FLUX_ENDPOINT}/generate`, {
                     method: "POST", headers: { "Content-Type": "application/json" },
@@ -180,6 +739,7 @@ export const processImageTask = async (req) => {
                     }), timeout: 45000, retries: 3
                 });
             } catch (err) {
+                loadBalancer.recordFailure(fluxEndpointKey, jobStartTime, err);
                 if (err.message.includes("429")) {
                     logger.warn(`[Throttling] Flux API rate limited (429). Re-queuing task ${requestId}.`);
                     throw new Error(`Throttling: Flux API Busy (429). Retrying...`);
@@ -188,9 +748,12 @@ export const processImageTask = async (req) => {
             }
 
             const submitJson = await submitResponse.json();
-            if (!submitJson.job_id) throw new Error("No job_id from Flux API");
+            if (!submitJson.job_id) {
+                loadBalancer.recordFailure(fluxEndpointKey, jobStartTime, new Error("No job_id returned"));
+                throw new Error("No job_id from Flux API");
+            }
             const jobId = submitJson.job_id;
-            logger.info(`[${requestId}] Flux job submitted: ${jobId}`);
+            logger.info(`[${requestId}] Flux job submitted to ${fluxEndpointKey}: ${jobId}`);
 
             // 2. Poll for result (max 120 seconds)
             const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -201,12 +764,19 @@ export const processImageTask = async (req) => {
                 const ct = resultRes.headers.get('content-type') || '';
                 if (ct.includes('image/')) {
                     imageBuffer = Buffer.from(await resultRes.arrayBuffer());
+                    loadBalancer.recordSuccess(fluxEndpointKey, jobStartTime);
                     break;
                 }
                 const statusJson = await resultRes.json();
-                if (statusJson.status === 'failed') throw new Error(statusJson.error || 'Flux generation failed');
+                if (statusJson.status === 'failed') {
+                    loadBalancer.recordFailure(fluxEndpointKey, jobStartTime, new Error(statusJson.error));
+                    throw new Error(statusJson.error || 'Flux generation failed');
+                }
             }
-            if (!imageBuffer) throw new Error("Flux generation timed out");
+            if (!imageBuffer) {
+                loadBalancer.recordFailure(fluxEndpointKey, jobStartTime, new Error('Timeout'));
+                throw new Error("Flux generation timed out");
+            }
 
             // Skip the normal response parsing; we already have imageBuffer
             // Jump directly to image processing (after the main if/else block handles response)
@@ -250,12 +820,12 @@ export const processImageTask = async (req) => {
             const imageBuffer = Buffer.from(base64Data, 'base64');
             response = { ok: true, _fluxImageBuffer: imageBuffer };
         } else {
-
-            // SDXL Handling
-            const SDXL_A10G_ASYNC_BASE = "https://mariecoderinc--sdxl-multi-model-a10g-model-web-app.modal.run";
-            const SDXL_H100_ASYNC_BASE = "https://mariecoderinc--sdxl-multi-model-h100-model-web.modal.run";
-
-            const bases = shouldPreferH100 ? [SDXL_H100_ASYNC_BASE, SDXL_A10G_ASYNC_BASE] : [SDXL_A10G_ASYNC_BASE, SDXL_H100_ASYNC_BASE];
+            // SDXL Handling - Use LoadBalancer for intelligent endpoint selection
+            const sdxlEndpoints = loadBalancer.selectEndpoints('sdxl', {
+                useTurbo,
+                jobComplexity,
+                preferPremium: useTurbo
+            });
 
             const sBody = {
                 prompt,
@@ -267,35 +837,65 @@ export const processImageTask = async (req) => {
                 scheduler: scheduler || 'DPM++ 2M Karras'
             };
 
-            const primaryFrame = shouldPreferH100 ? 'H100' : 'A10G';
-            const reason = useTurbo ? 'Turbo' : (isHighComplexity ? 'Complexity' : (isUserBusy ? 'Multi-job' : 'Default'));
-            logger.info(`[${requestId}] Submitting SDXL. Target: ${primaryFrame} (${reason}) | ${resolution.width}x${resolution.height} @ ${jobSteps} steps | Concurrency: ${activeCount}/${allowedConcurrency}`);
+            logger.info(`[${requestId}] Submitting SDXL via LoadBalancer`, {
+                endpoints: sdxlEndpoints.map(e => e.key),
+                jobComplexity: jobComplexity.toFixed(2),
+                resolution: `${resolution.width}x${resolution.height}`,
+                steps: jobSteps,
+                concurrency: `${activeCount}/${allowedConcurrency}`
+            });
 
             let submitResponse;
             let baseUrl;
-            try {
-                const result = await fetchWithFallback(bases.map(b => `${b}/generate`), {
-                    method: "POST", headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(sBody), timeout: 45000, retries: 3
-                });
-                submitResponse = result.response;
-                baseUrl = result.url.replace('/generate', '');
-            } catch (err) {
-                if (err.message.includes("429")) {
-                    logger.warn(`[Throttling] All SDXL endpoints rate limited (429). Re-queuing task ${requestId}.`);
-                    throw new Error(`Throttling: SDXL API Busy (429). Retrying...`);
+            let usedEndpointKey = null;
+            let jobStartTime = null;
+
+            // Try endpoints in order based on LoadBalancer scoring
+            for (const endpoint of sdxlEndpoints) {
+                try {
+                    usedEndpointKey = endpoint.key;
+                    jobStartTime = loadBalancer.recordJobStart(endpoint.key);
+
+                    const result = await fetchWithRetry(`${endpoint.url}/generate`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(sBody),
+                        timeout: 45000,
+                        retries: 2
+                    });
+
+                    if (!result.ok) {
+                        throw new Error(`SDXL Submission Failed (${result.status})`);
+                    }
+
+                    submitResponse = result;
+                    baseUrl = endpoint.url;
+                    break; // Success, exit the loop
+                } catch (err) {
+                    loadBalancer.recordFailure(endpoint.key, jobStartTime, err);
+
+                    if (err.message.includes("429")) {
+                        logger.warn(`[LoadBalancer] ${endpoint.key} rate limited (429), trying next endpoint`);
+                        continue; // Try next endpoint
+                    }
+
+                    // For other errors, continue to next endpoint
+                    logger.warn(`[LoadBalancer] ${endpoint.key} failed: ${err.message}, trying next endpoint`);
                 }
-                throw err;
             }
 
-            if (!submitResponse.ok) {
-                throw new Error(`SDXL Submission Failed (${submitResponse.status}): ${await submitResponse.text()}`);
+            if (!submitResponse) {
+                logger.warn(`[Throttling] All SDXL endpoints exhausted for task ${requestId}.`);
+                throw new Error(`Throttling: SDXL API Busy. All endpoints failed. Retrying...`);
             }
 
             const submitJson = await submitResponse.json();
-            if (!submitJson.job_id) throw new Error("No job_id from SDXL API");
+            if (!submitJson.job_id) {
+                loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error("No job_id returned"));
+                throw new Error("No job_id from SDXL API");
+            }
             const jobId = submitJson.job_id;
-            logger.info(`[${requestId}] SDXL job submitted: ${jobId}`);
+            logger.info(`[${requestId}] SDXL job submitted to ${usedEndpointKey}: ${jobId}`);
 
             // Poll for result (max 180 seconds)
             const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -315,27 +915,36 @@ export const processImageTask = async (req) => {
                     try {
                         const errJson = await resultRes.json();
                         if (errJson.status === 'failed') {
+                            loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error(errJson.error));
                             throw new Error(errJson.error || `SDXL generation failed with status ${resultRes.status}`);
                         }
                     } catch {
-                        // ignore
+                        // ignore parse error
                     }
+                    loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error(`Status ${resultRes.status}`));
                     throw new Error(`SDXL Polling Error (${resultRes.status}): ${await resultRes.text()}`);
                 }
 
                 const ct = resultRes.headers.get('content-type') || '';
                 if (ct.includes('image/')) {
                     imageBuffer = Buffer.from(await resultRes.arrayBuffer());
+                    loadBalancer.recordSuccess(usedEndpointKey, jobStartTime);
                     break;
                 }
 
                 const statusJson = await resultRes.json();
-                if (statusJson.status === 'failed') throw new Error(statusJson.error || 'SDXL generation failed');
+                if (statusJson.status === 'failed') {
+                    loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error(statusJson.error));
+                    throw new Error(statusJson.error || 'SDXL generation failed');
+                }
 
                 if (['queued', 'generating', 'processing'].includes(statusJson.status)) continue;
             }
 
-            if (!imageBuffer) throw new Error("SDXL generation timed out");
+            if (!imageBuffer) {
+                loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error('Timeout'));
+                throw new Error("SDXL generation timed out");
+            }
             response = { ok: true, _fluxImageBuffer: imageBuffer }; // reusing _fluxImageBuffer hack
         }
 
