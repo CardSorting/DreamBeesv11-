@@ -12,6 +12,8 @@ import sharp from "sharp";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
+import { LoadBalancer } from "../workers/image.js";
+const loadBalancer = new LoadBalancer();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -61,7 +63,7 @@ const s3Client = new S3Client({
     },
 });
 
-const MODAL_ENDPOINT = "https://mariecoderinc--sdxl-multi-model-a10g-model-web-app.modal.run";
+const CONCURRENCY = 4; // Scale testing concurrency
 
 // ========================================
 // ELITE ANIME PROMPTS - Ultra High Quality
@@ -78,7 +80,7 @@ const PROMPTS_PER_MODEL = {
         "All Might in his prime form, United States of Smash pose, golden hair flowing, muscles bulging, American flag cape torn and flowing, Detroit city skyline, heroic golden hour lighting, My Hero Academia",
         "Madara Uchiha with Rinnegan and Sharingan, Susanoo forming behind him, Gunbai war fan in hand, meteorites falling from the sky, Tengai Shinsei, apocalyptic battlefield, god-tier power display",
         "Zoro with all three swords, Asura Nine-Sword Style form, demonic aura with three heads and six arms visible, black bandana, flowing green haramaki, One Piece Wano arc style, sakura petals falling",
-        
+
         // COMPLEX CHARACTER STUDIES
         "Makima from Chainsaw Man, sitting in an office chair, control devil eyes piercing the viewer, suit and tie pristine, chains subtly visible in shadows, unsettling smile, psychological horror aesthetic, flat color cinematic",
         "Yor Forger in Thorn Princess assassin mode, elegant black evening dress with high slit, hidden stiletto needles, blood splatter frozen mid-air, ballroom setting with chandeliers, deadly grace, Spy x Family",
@@ -86,16 +88,16 @@ const PROMPTS_PER_MODEL = {
         "Ken Kaneki Tokyo Ghoul, half white hair half black, one kakuja eye glowing red, centipede kagune emerging from back, finger cracking pose, I am a ghoul quote atmosphere, dark industrial setting, tragic antihero",
         "Alucard from Hellsing Ultimate, level zero release, millions of souls emerging as shadow familiars, crimson vampire eyes, twin pistols Jackal and Joshua, Victorian gothic London burning, ultimate vampire horror masterpiece",
         "Griffith from Berserk as Femto, hawk of darkness form, elegant yet terrifying, eclipse moon behind him, God Hand apostles in shadow, beautiful nightmare aesthetic, tragic villain, detailed wings",
-        
+
         // MECHA & SCI-FI
         "Shinji Ikari inside EVA Unit-01 entry plug, LCL fluid, holographic tactical displays reflecting in haunted eyes, umbilical cable visible through entry plug, Tokyo-3 at night, psychological mecha drama",
         "Char Aznable in Zaku II cockpit, red comet legend, Zeon uniform, targeting display showing Federation mobile suits, Side 3 colony in background, UC Gundam military precision, ace pilot aura",
         "Major Motoko Kusanagi diving from skyscraper, thermoptic camouflage flickering, cybernetic body detail, futuristic Hong Kong inspired city, rain and neon, Ghost in the Shell cyberpunk masterpiece",
-        
+
         // LEGENDARY BATTLES
         "Goku Ultra Instinct vs Jiren, Tournament of Power arena crumbling, silver autonomous aura, divine speed afterimages, World of Void background, ki explosion shockwaves, Dragon Ball Super climax",
         "Naruto Sage Mode Rasenshuriken clash with Sasuke Kirin, Valley of the End statues in background, orange sage cloak vs purple lightning, epic rivalry, destiny battle, wind and thunder elemental collision",
-        
+
         // ========================================
         // NEW WORLD-CLASS PROMPTS BATCH 2
         // ========================================
@@ -172,7 +174,7 @@ const PROMPTS_PER_MODEL = {
         "Nausicaa flying on her glider Mehve, sweeping view of the toxic jungle, ohmu glowing blue eyes in the distance, Valley of the Wind windmills, post-apocalyptic beauty, environmental masterpiece",
         "Kiki flying on her broomstick with Jiji, bakery delivery, coastal European town panorama, seagulls, warm summer afternoon light, Kiki's Delivery Service nostalgia, coming of age warmth",
         "Ashitaka riding Yakul through the misty mountains, cursed arm wrapped, morning fog in valleys, ancient Japan wilderness, epic journey beginning, Princess Mononoke landscape art",
-        
+
         // EMOTIONAL MASTERPIECES
         "5 Centimeters Per Second cherry blossom scene, train crossing, Takaki reaching out, thousands of sakura petals suspended in time, melancholy golden hour, Makoto Shinkai lighting, beautiful loneliness",
         "Your Name Kimi no Na wa, Taki and Mitsuha twilight meeting on the mountain, comet Tiamat splitting the sky, red kumihimo cord connecting them, magical realism, tears and starlight, destiny moment",
@@ -180,7 +182,7 @@ const PROMPTS_PER_MODEL = {
         "Violet Evergarden writing a letter by candlelight, prosthetic hands detail, emerald brooch glowing, autumn leaves outside the window, bittersweet emotions, Kyoto Animation masterpiece, tears forming",
         "Clannad After Story field of illusionary world, father and daughter silhouettes, golden wheat field, blue sky with fluffy clouds, bittersweet family love, Key visual novel aesthetic, emotional climax",
         "Grave of the Fireflies Seita and Setsuko watching fireflies in the shelter, wartime Japan, innocent tragedy, soft candlelight, tin of sakuma drops, historical ghibli tearjerker, beautiful and heartbreaking",
-        
+
         // ATMOSPHERIC & SCENIC
         "Ancient Magus Bride, Chise wearing Elias's coat in the English countryside, standing stones, magical creatures in morning mist, celtic fantasy, ethereal golden hour, master and apprentice bond",
         "Mushishi Ginko walking alone on a mountain path, white smoke from pipe, invisible mushi spirits floating as light particles, traditional edo japan, peaceful solitude, supernatural naturalism",
@@ -188,25 +190,25 @@ const PROMPTS_PER_MODEL = {
         "Made in Abyss sunrise over the abyss edge, Riko looking down into the netherworld layers, Orth town lighthouse, sense of wonder and danger, magnificent worldbuilding, adventure calling",
         "Weathering With You Hina praying on Tokyo rooftop, rain parting around her, sunlight breaking through clouds, urban magical realism, hope and sacrifice, Makoto Shinkai atmospheric beauty",
         "Wolf Children Hana with wolf pups in countryside, traditional japanese farmhouse, mountain backdrop, seasons changing, motherhood journey, slice of life magic, heartwarming and bittersweet",
-        
+
         // ========================================
         // NEW WORLD-CLASS PROMPTS BATCH 2
         // ========================================
-        
+
         // ETHEREAL DREAMSCAPES
         "Paprika dream parade sequence, circus elephants flying through Tokyo skyline, reality bending carnival surrealism, Satoshi Kon visual poetry, impossible architecture, dreamscape masterpiece, psychological wonder",
         "Serial Experiments Lain in the Wired, holographic data streams surrounding her, lonely bedroom with glowing monitors, existential isolation, 90s cyberpunk aesthetic, identity dissolution, hauntingly beautiful",
         "Angel's Egg girl carrying oversized egg through gothic cathedral ruins, Mamoru Oshii atmosphere, endless rain and shadows, biblical symbolism, surreal melancholy, art film anime masterpiece",
         "Haibane Renmei Rakka with grey wings in Old Home, autumn light through windows, peaceful existential contemplation, afterlife serenity, feathers falling, quiet beauty, liminal space warmth",
         "Millennium Actress Chiyoko running through her film roles, time periods blending seamlessly, cherry blossoms and snow mixing, pursuit of love across decades, Satoshi Kon magic, cinematic memory lane",
-        
+
         // POETIC LANDSCAPES
         "Garden of Words Takao and Yukari in the rainy park pavilion, lush green garden, raindrops creating ripples in pond, shoes and poetry, forbidden feelings, Shinkai rain perfection, intimate atmosphere",
         "Aria the Animation Neo-Venezia canals at sunset, Akari rowing her gondola, undine trainee serenity, nostalgic future mars city, healing anime paradise, golden hour reflections, peaceful utopia",
         "Yokohama Kaidashi Kikou Alpha alone at her countryside cafe, post-apocalyptic pastoral, rusted robots overgrown with flowers, melancholy acceptance, end of humanity beauty, quiet robot girl",
         "Mushoku Tensei Sylphiette and Rudeus under the great tree, wind magic rustling leaves, first love innocence, isekai fantasy romance, emotional growth, dappled sunlight, peaceful moment",
         "Frieren at the Funeral journey through endless meadows, elf mage walking alone, centuries of memories, flowers and gravestones, passage of time, beautiful solitude, fantasy wanderlust",
-        
+
         // TWILIGHT EMOTIONS
         "Anohana summer fireworks at the mountain shrine, Menma ghost in white dress, childhood friends reunion, tears and laughter, letting go, hanabi festival bittersweet, emotional healing",
         "March Comes in Like a Lion Rei crossing the bridge alone, shogi piece metaphor overlaid, depression and found family, river reflections, lonely genius, Shaft artistic style, inner struggle beauty",
@@ -254,19 +256,19 @@ const PROMPTS_PER_MODEL = {
         "Marin Kitagawa My Dress-Up Darling cosplay pose, gyaru makeup perfect, colorful wigs in background, energetic peace sign, Gojo blushing in corner, romance comedy pop vibes, fashionista queen",
         "Chika Fujiwara Love is War, chaotic dance pose, pink hair bouncing, love detective magnifying glass, heart explosions background, comedy queen energy, maximum kawaii chaos",
         "Kaguya-sama O kawaii koto smug pose, moon hairpin, fan covering lower face, sparkle and rose petals, tsundere elegance, romantic comedy royalty, beautiful and terrifying",
-        
+
         // CLASSIC MAGICAL GIRLS
         "Sailor Moon eternal form, silver crystal shining, all sailor scouts silhouettes behind her, moon kingdom rising, 90s anime aesthetic with modern polish, magical girl supreme, starry cosmic background",
         "Cardcaptor Sakura Star Card transformation, pink frilly dress with wings, Star Wand raised high, Sakura Cards orbiting, Tomoyo filming in background, CLAMP magical girl masterpiece",
         "Madoka Magica ultimate form Madokami, pink goddess ascending, magical girl silhouettes, cosmic abstract background, hope and despair balance, beautiful and tragic, Shaft studio style",
         "Puella Magi Homura with shield, time stop aesthetic, purple and black diamond motifs, guns floating frozen, determination and love, Rebellion movie style, cool beauty magical girl",
-        
+
         // HIGH ENERGY ACTION
         "Ryuko Matoi Kill la Kill, Senketsu synchronized, scissor blade over shoulder, life fiber red accents, dynamic speed lines, punk rock rebel energy, Trigger studio explosive style",
         "Megumin Konosuba, explosion pose with staff Chomusuke, crimson demon clan eye patch, massive explosion mushroom cloud, chuunibyou maximum, comedy fantasy pop, Kazuma face-palming distance",
         "Aqua Konosuba useless goddess energy, party trick pose, blue water effects, crying face hidden behind smile, comedy perfection, Steve Blum voice energy, fantasy pop aesthetic",
         "Zero Two Darling in the Franxx, red pilot suit, dinosaur horns, pink hair flowing, sitting in Strelizia cockpit, darling catchphrase vibe, romantic mecha pop, honeypop colors",
-        
+
         // GAMING & INTERNET CULTURE
         "Shiro No Game No Life, rainbow hair galaxy brain mode, chess pieces floating, neon purple and pink, Sora in background, genius NEET aesthetic, game world pop art, unbeatable",
         "Emilia Re:Zero, silver half-elf beauty, Puck on shoulder, ice crystal magic, gothic lolita dress detail, blue and purple fantasy romance, isekai heroine perfection",
@@ -320,7 +322,17 @@ async function fetchWithRetry(url, options, retries = 3) {
     }
 }
 
-async function generateWithModal(modelId, prompt) {
+async function generateWithLoadBalancer(modelId, prompt) {
+    const modelType = modelId.includes('zit') ? 'zit' : 'sdxl';
+
+    // 1. Select endpoints
+    const candidates = loadBalancer.selectEndpoints(modelType, {
+        useTurbo: true, // For scale testing, prioritize performance
+        jobComplexity: 0.6
+    });
+
+    if (candidates.length === 0) throw new Error(`No endpoints available for ${modelType}`);
+
     const body = {
         prompt,
         model: modelId,
@@ -329,44 +341,63 @@ async function generateWithModal(modelId, prompt) {
         height: 1024
     };
 
-    console.log(`   Submitting job for ${modelId}...`);
-    const submitResponse = await fetchWithRetry(`${MODAL_ENDPOINT}/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-    });
+    let resultBuffer = null;
+    let lastError = null;
 
-    const submitJson = await submitResponse.json();
-    if (!submitJson.job_id) throw new Error(submitJson.detail || "No job_id in response");
-    const jobId = submitJson.job_id;
-    console.log(`   Job submitted: ${jobId}`);
+    // Try candidates in order
+    for (const endpoint of candidates) {
+        let startTime = null;
+        try {
+            if (loadBalancer.shouldThrottle(endpoint.key)) {
+                console.warn(`   [LoadBalancer] ${endpoint.key} throttled, trying next...`);
+                continue;
+            }
 
-    // Poll for result
-    for (let poll = 0; poll < 90; poll++) {
-        await sleep(2000);
-        
-        let resultRes = await fetch(`${MODAL_ENDPOINT}/result/${jobId}`);
-        if (resultRes.status === 404) {
-            resultRes = await fetch(`${MODAL_ENDPOINT}/jobs/${jobId}`);
-        }
+            startTime = loadBalancer.recordJobStart(endpoint.key);
+            console.log(`   [LoadBalancer] Using ${endpoint.key} for ${modelId}...`);
 
-        if (resultRes.status === 202) {
-            process.stdout.write(".");
-            continue;
-        }
-        process.stdout.write("\n");
+            // Poll for result
+            const pollUrl = `${endpoint.url}`;
 
-        const ct = resultRes.headers.get("content-type") || "";
-        if (ct.includes("image/")) {
-            return Buffer.from(await resultRes.arrayBuffer());
-        }
+            const submitResponse = await fetchWithRetry(`${pollUrl}/generate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            });
 
-        if (!resultRes.ok) {
-            const errJson = await resultRes.json().catch(() => ({}));
-            if (errJson.status === "failed") throw new Error(errJson.error || "Generation failed");
+            const submitJson = await submitResponse.json();
+            if (!submitJson.job_id) throw new Error(submitJson.detail || "No job_id");
+            const jobId = submitJson.job_id;
+
+            for (let poll = 0; poll < 90; poll++) {
+                await sleep(2000);
+                let resultRes = await fetch(`${pollUrl}/result/${jobId}`);
+                if (resultRes.status === 404) resultRes = await fetch(`${pollUrl}/jobs/${jobId}`);
+
+                if (resultRes.status === 202) continue;
+
+                if (resultRes.ok) {
+                    const ct = resultRes.headers.get("content-type") || "";
+                    if (ct.includes("image/")) {
+                        resultBuffer = Buffer.from(await resultRes.arrayBuffer());
+                        loadBalancer.recordSuccess(endpoint.key, startTime);
+                        return resultBuffer;
+                    }
+                }
+
+                const errJson = await resultRes.json().catch(() => ({}));
+                if (errJson.status === "failed") throw new Error(errJson.error || "Generation failed");
+            }
+            throw new Error("Timeout");
+
+        } catch (err) {
+            if (startTime) loadBalancer.recordFailure(endpoint.key, startTime, err);
+            lastError = err;
+            console.warn(`   [LoadBalancer] ${endpoint.key} failed: ${err.message}`);
         }
     }
-    throw new Error("Generation timed out");
+
+    throw lastError || new Error("All endpoints failed");
 }
 
 async function processAndUpload(imageBuffer, modelId, index, prompt) {
@@ -408,32 +439,40 @@ async function processAndUpload(imageBuffer, modelId, index, prompt) {
 
 async function main() {
     const models = Object.keys(PROMPTS_PER_MODEL);
-    
+
     console.log("=== ELITE ANIME SHOWCASE GENERATOR ===");
     console.log(`Models: ${models.join(", ")}`);
     console.log(`Total Prompts: ${models.reduce((sum, m) => sum + PROMPTS_PER_MODEL[m].length, 0)}\n`);
-    
+
     for (const modelId of models) {
         const prompts = PROMPTS_PER_MODEL[modelId];
         console.log(`\n========================================`);
         console.log(`MODEL: ${modelId.toUpperCase()} (${prompts.length} prompts)`);
         console.log(`========================================`);
-        
-        for (let i = 0; i < prompts.length; i++) {
-            const prompt = prompts[i];
-            console.log(`[${i + 1}/${prompts.length}] ${prompt.substring(0, 70)}...`);
-            
-            try {
-                const imageBuffer = await generateWithModal(modelId, prompt);
-                const url = await processAndUpload(imageBuffer, modelId, i, prompt);
-                console.log(`   ✓ ${url}`);
-            } catch (err) {
-                console.error(`   ✗ ${err.message}`);
-            }
-            await sleep(1000);
+
+        // Process in concurrent batches for scale testing
+        for (let i = 0; i < prompts.length; i += CONCURRENCY) {
+            const batch = prompts.slice(i, i + CONCURRENCY);
+            console.log(`Processing batch ${Math.floor(i / CONCURRENCY) + 1} (${batch.length} items)...`);
+
+            await Promise.all(batch.map(async (prompt, idx) => {
+                const globalIdx = i + idx;
+                try {
+                    const imageBuffer = await generateWithLoadBalancer(modelId, prompt);
+                    const url = await processAndUpload(imageBuffer, modelId, globalIdx, prompt);
+                    console.log(`   [${globalIdx + 1}] ✓ ${url}`);
+                } catch (err) {
+                    console.error(`   [${globalIdx + 1}] ✗ ${err.message}`);
+                }
+            }));
+
+            console.log(`\n--- Load Balancer Stats ---`);
+            console.table(loadBalancer.getHealthSummary());
+
+            await sleep(2000);
         }
     }
-    
+
     console.log("\n=== SHOWCASE COMPLETE ===");
 }
 
