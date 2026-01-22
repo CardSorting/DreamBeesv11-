@@ -578,13 +578,13 @@ export const handleGenerateMockupItem = async (request) => {
             throw new Error(result.error);
         }
 
-        // 4. Save to Firestore (reuse 'generations' collection like MockupFeed)
+        // 4. Save to Firestore (Dedicated 'mockups' collection)
         try {
             const userRef = db.collection('users').doc(uid);
             const userDoc = await userRef.get();
             const userData = userDoc.exists ? userDoc.data() : {};
 
-            await db.collection('generations').doc(result.id).set({
+            await db.collection('mockups').doc(result.id).set({
                 id: result.id,
                 userId: uid,
                 userDisplayName: userData.displayName || 'Anonymous',
@@ -594,17 +594,16 @@ export const handleGenerateMockupItem = async (request) => {
                 thumbnailUrl: result.url, // Same for now
                 prompt: result.prompt,
                 label: item.label,
-                mockupItemId: item.id, // Important for "Items created with..." query
+                mockupItemId: item.id,
                 presetId: preset.id,
                 createdAt: FieldValue.serverTimestamp(),
-                isPublic: true, // Default to true for feed
+                isPublic: true,
                 likes: 0,
                 views: 0
             });
-            logger.info(`[Mockup] Saved metadata to generations/${result.id}`);
+            logger.info(`[Mockup] Saved metadata to mockups/${result.id}`);
         } catch (dbError) {
             logger.error(`[Mockup] Failed to save metadata to Firestore:`, dbError);
-            // Don't fail the request, just log it. The user still got their image.
         }
 
         return result;

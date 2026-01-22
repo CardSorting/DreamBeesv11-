@@ -76,7 +76,7 @@ const AppsHub = () => {
                     icon: LayoutGrid, // Using LayoutGrid for variety
                     tags: ['design', 'mockup', 'fast', 'premium'],
                     path: '/quick-mockups',
-                    previewImage: null, // We can add one later
+                    previewImage: '/app-previews/mockup_maker.png',
                     isNew: true
                 };
 

@@ -102,9 +102,8 @@ export function UserInteractionsProvider({ children }) {
 
         // Listener for Mockups
         const mockupsQuery = query(
-            collection(db, 'generations'),
+            collection(db, 'mockups'),
             where('userId', '==', uid),
-            where('type', '==', 'mockup'),
             orderBy('createdAt', 'desc')
         );
         const unsubMockups = onSnapshot(mockupsQuery, (snapshot) => {
