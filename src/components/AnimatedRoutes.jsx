@@ -43,6 +43,7 @@ const MockupFeed = lazyRetry(() => import('../pages/MockupFeed'));
 const MockupCatalog = lazyRetry(() => import('../pages/MockupCatalog'));
 const MockupProductPage = lazyRetry(() => import('../pages/MockupCatalog/MockupProductPage'));
 const MemeFormatter = lazyRetry(() => import('../pages/MemeFormatter'));
+const MemeFeed = lazyRetry(() => import('../pages/MemeFeed'));
 
 import { Privacy, Terms, Cookies } from '../pages/Legal';
 import { Careers, Brand, Api, Showcase } from '../pages/Misc';
@@ -110,6 +111,8 @@ const AnimatedRoutes = () => {
                             <Route path="/mockups/tag/:tag" element={<MockupFeed />} />
                             <Route path="/mockups/creator/:userId" element={<MockupFeed />} />
 
+                            <Route path="/memes" element={<MemeFeed />} />
+                            <Route path="/memes/creator/:userId" element={<MemeFeed />} />
 
                             {/* Admin Only Routes */}
                             <Route path="/generate" element={

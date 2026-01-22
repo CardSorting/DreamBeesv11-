@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
     Home, User, LayoutTemplate, Zap, Film, LayoutGrid, Settings, Hexagon,
     ChevronDown, ChevronRight, Compass,
-    Package, Images // Imported for Mockup features
+    Package, Images, Smile // Imported for Mockup and Meme features
 } from 'lucide-react';
 
 const CollapsibleGroup = ({ title, children, defaultOpen = true }) => {
@@ -47,10 +47,8 @@ const Sidebar = ({ activeId }) => {
             title: "DISCOVER",
             items: [
                 { path: '/discovery', label: 'Discovery', icon: Compass },
-
-
                 { path: '/mockups', label: 'Mockups', icon: Images },
-
+                { path: '/memes', label: 'Memes', icon: Smile },
             ]
         },
         {
@@ -67,6 +65,7 @@ const Sidebar = ({ activeId }) => {
             // Public items for everyone
             if (item.path === '/discovery') return true;
             if (item.path === '/mockups') return true;
+            if (item.path === '/memes') return true;
 
 
             // Logged in users

@@ -33,7 +33,7 @@ function Layout() {
   return (
     <div className="app-layout">
       {showOnboarding && <UsernameOnboarding />}
-      {!pathname.startsWith('/discovery') && !pathname.startsWith('/model/') && !pathname.startsWith('/mockups') && pathname !== '/' && <MinimalHeader />}
+      {!pathname.startsWith('/model/') && pathname !== '/' && <MinimalHeader />}
       <main className="app-main">
         <AnimatedRoutes />
       </main>

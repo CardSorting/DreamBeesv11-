@@ -4,6 +4,7 @@ import { useModel } from '../contexts/ModelContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { Sparkles, Loader2, CheckCircle2, Heart, Flag } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
+import FeedSwitcher from '../components/FeedSwitcher';
 import { getOptimizedImageUrl, getImageSrcSet } from '../utils';
 // motion is used for motion.div components
 // eslint-disable-next-line no-unused-vars
@@ -199,10 +200,8 @@ export default function DiscoveryMobile() {
                 }}
             />
 
-            {/* Mobile Header */}
-            <header className="mobile-feed-header">
-                <h1 className="page-title" style={{ fontSize: '1.5rem', margin: 0 }}>DISCOVERY</h1>
-            </header>
+
+            <FeedSwitcher />
 
             {/* Model Selection Pills */}
             <div className="models-header-bar" style={{ padding: '0 16px 16px 16px', margin: '16px 0' }}>

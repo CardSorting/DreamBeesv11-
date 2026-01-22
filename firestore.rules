@@ -128,10 +128,22 @@ service cloud.firestore {
       allow update: if request.auth != null && request.resource.data.userId == request.auth.uid;
     }
 
-    // Memes: Users can read their own memes
+    // Memes: Public memes are readable by all, private memes only by owner
     match /memes/{memeId} {
+      // Public read: only if explicitly marked public
+      allow read: if resource.data.isPublic == true;
+      
+      // Owner read: authenticated user can always read their own
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // Create: authenticated user, must own the document
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      
+      // Update: owner only, restricted to specific fields
+      allow update: if request.auth != null
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['isPublic', 'likes', 'hidden']);
     }
 
     // Apps: Publicly readable, writeable by admins only (or no public writes)

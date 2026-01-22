@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
+import FeedSwitcher from '../components/FeedSwitcher';
 import SuggestedPanel from '../components/SuggestedPanel';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -392,24 +393,8 @@ export default function DiscoveryDesktop() {
 
                 <div className="discovery-container">
 
-                    {/* HERO / HEADER */}
-                    <div style={{
-                        padding: '40px 0 20px 0',
-                        textAlign: 'center',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        gap: '12px'
-                    }}>
-                        <h1 className="page-title" style={{ fontSize: '3rem', margin: 0 }}>
-                            {activeModelId === 'all' ? 'DISCOVERY' : (availableModels?.find(m => m.id === activeModelId)?.name || 'MODEL SHOWCASE')}
-                        </h1>
-                        <p className="page-subtitle" style={{ maxWidth: '400px', margin: '0 auto 20px auto', fontSize: '0.9rem' }}>
-                            {activeModelId === 'all'
-                                ? "Explore the hive mind's latest creations."
-                                : `Curated showcase generated with ${availableModels?.find(m => m.id === activeModelId)?.name || 'AI'}.`}
-                        </p>
-                    </div>
+
+                    <FeedSwitcher />
 
                     {/* MODEL SELECTION PILLS - NEW */}
                     <div className="models-header-bar">

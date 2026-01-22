@@ -566,7 +566,8 @@ export const formatMemeWithGemini = async (imageUrl, text, userId = 'system') =>
         thumbnailUrl: finalThumbnailUrl,
         lqip,
         createdAt: new Date(),
-        type: 'meme'
+        type: 'meme',
+        isPublic: true // Memes are public by default for feed visibility
     });
 
     return {

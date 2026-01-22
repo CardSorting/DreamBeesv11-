@@ -1,25 +1,22 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import SEO from '../components/SEO';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, limit, getDocs, startAfter, doc, getDoc } from 'firebase/firestore';
-import { Loader2, Heart, Palette, Flag } from 'lucide-react';
+import { Loader2, Smile } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import FeedSwitcher from '../components/FeedSwitcher';
 import SuggestedPanel from '../components/SuggestedPanel';
 import { useModel } from '../contexts/ModelContext';
-import { useUserInteractions } from '../contexts/UserInteractionsContext';
 // eslint-disable-next-line no-unused-vars -- motion.div is used as JSX element
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { slugify, unslugify } from '../utils/urlHelpers';
 import FeedPost from '../components/FeedPost';
 import { getOptimizedImageUrl } from '../utils';
 import './Discovery.css'; // Re-use discovery styles
 
-export default function MockupFeed() {
+export default function MemeFeed() {
     const navigate = useNavigate();
     const { availableModels } = useModel();
-    const { isLiked, toggleLike, isHidden, hidePost } = useUserInteractions();
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [lastDoc, setLastDoc] = useState(null);
@@ -31,17 +28,19 @@ export default function MockupFeed() {
     const [isTransitioning, setIsTransitioning] = useState(false);
 
     // Routing Params
-    const { tag, userId } = useParams();
+    const { userId } = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
 
     // Derived initial filter state
-    const getInitialFilter = () => {
-        if (tag) return { type: 'tag', value: unslugify(tag), slug: tag };
+    const getInitialFilter = useCallback(() => {
         if (userId) return { id: userId, name: 'Creator' };
         return null;
-    };
+    }, [userId]);
 
-    const [creatorFilter, setCreatorFilter] = useState(getInitialFilter());
+    const [creatorFilter, setCreatorFilter] = useState(() => {
+        if (userId) return { id: userId, name: 'Creator' };
+        return null;
+    });
 
     // Sync with URL changes
     useEffect(() => {
@@ -50,7 +49,7 @@ export default function MockupFeed() {
         if (JSON.stringify(newFilter) !== JSON.stringify(creatorFilter)) {
             setCreatorFilter(newFilter);
         }
-    }, [tag, userId]);
+    }, [userId, getInitialFilter, creatorFilter]);
 
     // Deep Linking for Focus Modal
     useEffect(() => {
@@ -70,14 +69,14 @@ export default function MockupFeed() {
             // Fetch directly from Firestore if not in cache
             const fetchImage = async () => {
                 try {
-                    // Mockups are usually in generations collection
-                    const docRef = doc(db, 'generations', viewId);
+                    // Memes are in memes collection
+                    const docRef = doc(db, 'memes', viewId);
                     const snapshot = await getDoc(docRef);
                     if (snapshot.exists()) {
                         setFocusImage({ id: snapshot.id, ...snapshot.data() });
                     }
                 } catch (err) {
-                    console.error("Error fetching mockup deep-linked image:", err);
+                    console.error("Error fetching meme deep-linked image:", err);
                 }
             };
             fetchImage();
@@ -104,7 +103,7 @@ export default function MockupFeed() {
 
     const handleFilterChange = (newFilter) => {
         // If clicking the same filter, do nothing
-        if (creatorFilter?.id === newFilter?.id && creatorFilter?.value === newFilter?.value) return;
+        if (creatorFilter?.id === newFilter?.id) return;
 
         setIsTransitioning(true);
 
@@ -112,11 +111,9 @@ export default function MockupFeed() {
         setTimeout(() => {
             // Navigate instead of setting state directly
             if (!newFilter) {
-                navigate('/mockups');
-            } else if (newFilter.type === 'tag') {
-                navigate(`/mockups/tag/${slugify(newFilter.value)}`);
+                navigate('/memes');
             } else if (newFilter.id) {
-                navigate(`/mockups/creator/${newFilter.id}`);
+                navigate(`/memes/creator/${newFilter.id}`);
             }
 
             // Instant scroll to top while hidden
@@ -133,13 +130,12 @@ export default function MockupFeed() {
         }, 300);
     };
 
-    const fetchMockups = async (isLoadMore = false) => {
+    const fetchMemes = useCallback(async (isLoadMore = false) => {
         try {
             if (!isLoadMore) setLoading(true);
 
             let q = query(
-                collection(db, 'generations'),
-                where('type', '==', 'mockup'),
+                collection(db, 'memes'),
                 where('isPublic', '==', true),
                 orderBy('createdAt', 'desc'),
                 limit(20)
@@ -149,14 +145,8 @@ export default function MockupFeed() {
                 q = query(q, startAfter(lastDoc));
             }
 
-            if (creatorFilter) {
-                if (creatorFilter.type === 'tag') {
-                    // Check local tags array (case sensitive usually, but depends on DB)
-                    // Assuming DB has 'AI', 'DreamBees' etc.
-                    q = query(q, where('tags', 'array-contains', creatorFilter.value));
-                } else if (creatorFilter.id) {
-                    q = query(q, where('userId', '==', creatorFilter.id));
-                }
+            if (creatorFilter && creatorFilter.id) {
+                q = query(q, where('userId', '==', creatorFilter.id));
             }
 
             const snapshot = await getDocs(q);
@@ -180,19 +170,19 @@ export default function MockupFeed() {
                 setImages(newImages);
             }
         } catch (error) {
-            console.error("Error fetching mockups:", error);
+            console.error("Error fetching memes:", error);
         } finally {
             setLoading(false);
         }
-    };
+    }, [creatorFilter, lastDoc]);
 
     useEffect(() => {
         setImages([]); // Clear images when filter changes
         setLastDoc(null); // Reset lastDoc for new query
         setHasMore(true); // Assume more data for new query
-        fetchMockups();
+        fetchMemes();
         // Scroll logic moved to handleFilterChange
-    }, [creatorFilter]);
+    }, [creatorFilter, fetchMemes]);
 
     // Intersection Observer for Infinite Scroll
     useEffect(() => {
@@ -201,7 +191,7 @@ export default function MockupFeed() {
 
         observer.current = new IntersectionObserver(entries => {
             if (entries[0].isIntersecting && hasMore) {
-                fetchMockups(true);
+                fetchMemes(true);
             }
         });
 
@@ -212,7 +202,7 @@ export default function MockupFeed() {
         return () => {
             if (observer.current) observer.current.disconnect();
         };
-    }, [loading, hasMore]);
+    }, [loading, hasMore, fetchMemes]);
 
     return (
         <div className="feed-layout-wrapper">
@@ -230,86 +220,48 @@ export default function MockupFeed() {
             />
 
             <SEO
-                title={focusImage ? `${focusImage.prompt?.slice(0, 50)}... | Mockups - DreamBees` : (creatorFilter ? `${creatorFilter.value || creatorFilter.name} Mockups - DreamBees` : "Mockup Gallery - Discovery Feed")}
-                description={focusImage ? focusImage.prompt : "Explore community generated product mockups. Discover unique designs for apparel, tech, and more."}
+                title={focusImage ? `${focusImage.prompt?.slice(0, 50)}... | Memes - DreamBees` : (creatorFilter ? `${creatorFilter.name} Memes - DreamBees` : "Meme Feed - DreamBees")}
+                description={focusImage ? focusImage.prompt : "Explore community generated memes. Discover funny, creative, and internet-shaped image creations."}
                 image={focusImage ? (focusImage.thumbnailUrl || focusImage.imageUrl) : undefined}
-                canonical={focusImage ? `/discovery/${focusImage.id}` : undefined}
+                canonical={focusImage ? `/memes/${focusImage.id}` : undefined}
                 structuredData={{
                     "@context": "https://schema.org",
                     "@graph": [
                         {
                             "@type": "ImageGallery",
-                            "name": creatorFilter ? `${creatorFilter.value || creatorFilter.name} Mockup Collection` : "DreamBees AI Mockup Showcase",
-                            "description": "A collection of AI-generated product mockups.",
+                            "name": creatorFilter ? `${creatorFilter.name} Meme Collection` : "DreamBees AI Meme Showcase",
+                            "description": "A collection of AI-generated memes.",
                             "image": images.slice(0, 5).map(img => img.thumbnailUrl || img.imageUrl)
                         },
                         {
                             "@type": "BreadcrumbList",
                             "itemListElement": [
                                 { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
-                                { "@type": "ListItem", "position": 2, "name": "Mockups", "item": "https://dreambeesai.com/mockups" },
-                                ...(creatorFilter ? [{ "@type": "ListItem", "position": 3, "name": creatorFilter.value || creatorFilter.name, "item": `https://dreambeesai.com/mockups/${creatorFilter.type}/${slugify(creatorFilter.value)}` }] : [])
+                                { "@type": "ListItem", "position": 2, "name": "Memes", "item": "https://dreambeesai.com/memes" },
+                                ...(creatorFilter ? [{ "@type": "ListItem", "position": 3, "name": creatorFilter.name, "item": `https://dreambeesai.com/memes/creator/${creatorFilter.id}` }] : [])
                             ]
                         },
                         ...(focusImage ? [{
                             "@type": "VisualArtwork",
-                            "name": focusImage.prompt?.slice(0, 60) || "AI Mockup",
+                            "name": focusImage.prompt?.slice(0, 60) || "AI Meme",
                             "description": focusImage.prompt,
-                            "image": focusImage.url || focusImage.imageUrl,
+                            "image": focusImage.imageUrl || focusImage.url,
                             "artworkSurface": "Digital",
-                            "artMedium": "AI Generated Mockup"
+                            "artMedium": "AI Generated Meme"
                         }] : [])
                     ]
                 }}
             />
 
-            <Sidebar activeId="/mockups" />
+            <Sidebar activeId="/memes" />
 
             <main className="feed-main-content">
                 <div className="discovery-container">
 
                     <FeedSwitcher />
 
-                    {/* Tag Filters */}
-                    <div style={{
-                        maxWidth: '600px',
-                        margin: '0 auto 20px',
-                        display: 'flex',
-                        gap: '10px',
-                        justifyContent: 'center',
-                        flexWrap: 'wrap'
-                    }}>
-                        {['All', 'AI', 'DreamBees'].map(tag => {
-                            const isSelected = (creatorFilter?.type === 'tag' && creatorFilter.value === tag)
-                                || (!creatorFilter && tag === 'All')
-                                || (creatorFilter?.type === 'tag' && slugify(tag) === creatorFilter.slug); // Handle slug match from URL
-
-                            return (
-                                <button
-                                    key={tag}
-                                    onClick={() => handleFilterChange(tag === 'All' ? null : { type: 'tag', value: tag })}
-                                    style={{
-                                        padding: '8px 16px',
-                                        borderRadius: '20px',
-                                        background: isSelected
-                                            ? 'var(--primary)'
-                                            : 'rgba(255,255,255,0.05)',
-                                        border: '1px solid rgba(255,255,255,0.1)',
-                                        color: 'white',
-                                        fontSize: '0.9rem',
-                                        fontWeight: 500,
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                >
-                                    {tag === 'All' ? 'All' : '#' + tag}
-                                </button>
-                            );
-                        })}
-                    </div>
-
                     {/* Filter Indicator */}
-                    {creatorFilter && creatorFilter.type !== 'tag' && (
+                    {creatorFilter && (
                         <div style={{
                             maxWidth: '600px',
                             margin: '0 auto 20px',
@@ -348,7 +300,7 @@ export default function MockupFeed() {
                         {images.map((imgItem, index) => {
                             // Mock Model Data for the FeedPost
                             const mockModel = {
-                                name: "Studio",
+                                name: "Meme Formatter",
                                 image: "/dreambees_icon.png" // Fallback or global icon
                             };
 
@@ -364,7 +316,7 @@ export default function MockupFeed() {
                                     navigate={navigate}
                                     setActiveShowcaseImage={openFocus}
                                     headerTitle={creatorName}
-                                    headerSubtitle="Mockup Studio"
+                                    headerSubtitle="Meme Formatter"
                                     avatarImage="/dreambees_icon.png" // Use app icon as avatar for now
                                     onCreatorClick={() => {
                                         if (imgItem.userId) {
@@ -374,7 +326,6 @@ export default function MockupFeed() {
                                             });
                                         }
                                     }}
-                                    onTagClick={(tag) => handleFilterChange({ type: 'tag', value: tag })}
                                 />
                             );
                         })}
@@ -415,18 +366,18 @@ export default function MockupFeed() {
                                     justifyContent: 'center',
                                     marginBottom: '10px'
                                 }}>
-                                    <Palette size={40} style={{ opacity: 0.8 }} />
+                                    <Smile size={40} style={{ opacity: 0.8 }} />
                                 </div>
                                 <div>
                                     <h3 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'white', marginBottom: '8px' }}>
-                                        No mockups yet
+                                        No memes yet
                                     </h3>
                                     <p style={{ maxWidth: '300px', margin: '0 auto' }}>
-                                        Be the first to share your designs with the community.
+                                        Be the first to share your memes with the community.
                                     </p>
                                 </div>
                                 <button
-                                    onClick={() => navigate('/mockup-studio')}
+                                    onClick={() => navigate('/meme-formatter')}
                                     style={{
                                         marginTop: '10px',
                                         padding: '12px 24px',
@@ -443,7 +394,7 @@ export default function MockupFeed() {
                                     onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
                                     onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                                 >
-                                    Create Mockup
+                                    Create Meme
                                 </button>
                             </div>
                         )}
@@ -484,7 +435,7 @@ export default function MockupFeed() {
                             onClick={(e) => e.stopPropagation()}
                         >
                             <img
-                                src={focusImage.url}
+                                src={focusImage.imageUrl || focusImage.url}
                                 alt={focusImage.prompt}
                                 style={{
                                     maxHeight: '85vh',

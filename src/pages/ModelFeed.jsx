@@ -48,6 +48,7 @@ const CollapsibleGroup = ({ title, children, defaultOpen = true }) => {
 };
 
 import Sidebar from '../components/Sidebar';
+import FeedSwitcher from '../components/FeedSwitcher';
 
 import SuggestedPanel from '../components/SuggestedPanel';
 const SuggestedPanelMemo = SuggestedPanel;
@@ -449,16 +450,8 @@ export default function ModelFeed() {
             <Sidebar activeId={id ? `/models` : location.pathname} /> {/* Dynamic active ID */}
 
             <main className="feed-main-content">
-                {/* Mobile Header */}
-                <header className="mobile-feed-header">
-                    <button onClick={() => navigate(`/model/${id}`)} className="back-btn">
-                        <ArrowLeft size={20} />
-                    </button>
-                    <div className="header-title">
-                        <span>{id ? `${model?.name} Feed` : 'THE HIVE'}</span>
-                        <BadgeCheck size={16} className="text-blue-500 fill-blue-500" />
-                    </div>
-                </header>
+
+                <FeedSwitcher />
 
 
 
