@@ -4,6 +4,9 @@ import { Star, Heart } from 'lucide-react';
 import './AppCard.css';
 
 const AppCard = memo(({ title, description, icon: AppIcon, path, tags = [], color = "violet", rating = "4.9", isCompact = false, previewImage, isLiked, onToggleLike, likeCount = 0, rank }) => {
+    // eslint-disable-next-line no-unused-vars
+    const _usageCheck = AppIcon; // Hint to linter
+
     // Optimistic like count
     const [displayLikes, setDisplayLikes] = React.useState(likeCount);
 

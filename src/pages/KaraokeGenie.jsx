@@ -540,10 +540,10 @@ const KaraokeGenie = () => {
 };
 
 // Sub-component for Processing UI
-const StatusRow = ({ icon: StatusIcon, label, status }) => (
+const StatusRow = ({ icon: StatusIconComponent, label, status }) => (
     <div className="kg-status-row">
         <div className="kg-status-label">
-            <StatusIcon className="kg-icon kg-icon-primary" />
+            <StatusIconComponent className="kg-icon kg-icon-primary" />
             <span>{label}</span>
         </div>
         {status === 'loading' && <Loader2 className="kg-icon kg-icon-primary" style={{ animation: 'kg-spin 1s linear infinite' }} />}

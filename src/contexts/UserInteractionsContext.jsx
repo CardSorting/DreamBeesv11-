@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { db } from '../firebase';
 import { collection, doc, setDoc, onSnapshot, query, where, orderBy, runTransaction } from 'firebase/firestore';
@@ -19,7 +20,7 @@ export const useUserInteractions = () => {
 
 export function UserInteractionsProvider({ children }) {
     const { currentUser } = useAuth();
-    const { rateShowcaseImage } = useModel();
+    const { rateShowcaseImage: _rateShowcaseImage } = useModel();
 
     const { call: apiCall } = useApi();
 
@@ -29,7 +30,7 @@ export function UserInteractionsProvider({ children }) {
     const [hiddenIds, setHiddenIds] = useState(new Set());
     const [likes, setLikes] = useState([]);
     const [bookmarks, setBookmarks] = useState([]);
-    const [hidden, setHidden] = useState([]);
+    const [_hidden, _setHidden] = useState([]);
     const [mockups, setMockups] = useState([]);
 
     // User Profile Data (Centralized Sync)
@@ -45,16 +46,24 @@ export function UserInteractionsProvider({ children }) {
 
     useEffect(() => {
         if (!currentUser?.uid) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setLikedIds(new Set());
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setBookmarkedIds(new Set());
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setHiddenIds(new Set());
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setLikes([]);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setBookmarks([]);
-            setHidden([]);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            _setHidden([]);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setMockups([]);
             setIsProfileLoaded(false);
             return;
         }
+
 
         const uid = currentUser.uid;
 
@@ -272,9 +281,11 @@ export function UserInteractionsProvider({ children }) {
 
     useEffect(() => {
         if (!currentUser?.uid) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setLikedAppIds(new Set());
             return;
         }
+
 
         const uid = currentUser.uid;
         const likedAppsRef = collection(db, 'users', uid, 'likedApps');

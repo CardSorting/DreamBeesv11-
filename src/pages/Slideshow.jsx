@@ -201,7 +201,8 @@ export default function Slideshow() {
         });
 
         return () => unsubscribe();
-    }, [requestId, mode, currentStep]);
+    }, [requestId, mode, currentStep, results]);
+
 
     // Zeno's Progress Simulation
     useEffect(() => {

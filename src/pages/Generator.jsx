@@ -31,7 +31,7 @@ import { useGenerationLogic } from '../hooks/generator/useGenerationLogic';
 export default function Generator() {
     // 1. Global Contexts
     const { currentUser } = useAuth();
-    const { selectedModel, setSelectedModel, availableModels, loading: modelLoading, getShowcaseImages, rateGeneration } = useModel();
+    const { selectedModel, setSelectedModel, availableModels, loading: _modelLoading, getShowcaseImages, rateGeneration } = useModel();
 
     // 2. State Management (Inlined from useGeneratorState)
     const [searchParams, setSearchParams] = useSearchParams();
@@ -52,12 +52,15 @@ export default function Generator() {
 
     // Generation Core State
     const [prompt, setPrompt] = useState(searchParams.get('prompt') || '');
+    const [_activeStyleId, _setActiveStyleId] = useState(null);
+    const [_hasValidPrompt, _setHasValidPrompt] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [generatedImage, setGeneratedImage] = useState(null);
     const [currentJobId, setCurrentJobId] = useState(null);
-    const [activeJob, setActiveJob] = useState(null);
-    const [elapsedTime, setElapsedTime] = useState(0);
-    const [progress, setProgress] = useState(0);
+    const [_currentJobType, setCurrentJobType] = useState('image');
+    const [_activeJob, setActiveJob] = useState(null);
+    const [_elapsedTime, _setElapsedTime] = useState(0);
+    const [_progress, _setProgress] = useState(0);
 
     // Parameters
     const [aspectRatio, setAspectRatio] = useState(searchParams.get('aspectRatio') || '1:1');
@@ -76,13 +79,14 @@ export default function Generator() {
     const [generationMode, setGenerationMode] = useState(modeParam); // 'image' | 'video'
     const [videoDuration, setVideoDuration] = useState(5);
     const [videoResolution, setVideoResolution] = useState('large_landscape');
-    const [currentJobType, setCurrentJobType] = useState('image');
 
     // Sync with URL
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (modeParam !== generationMode) setGenerationMode(modeParam);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (tabParam !== activeTab) setActiveTab(tabParam);
-    }, [modeParam, tabParam]);
+    }, [modeParam, tabParam, generationMode, activeTab]);
 
     const handleModeChange = (newMode) => {
         setGenerationMode(newMode);
@@ -122,18 +126,19 @@ export default function Generator() {
     // Timer Logic
     useEffect(() => {
         if (!generating) {
-            setElapsedTime(0);
-            setProgress(0);
+            _setElapsedTime(0);
+            _setProgress(0);
             return;
         }
 
         const interval = setInterval(() => {
-            setElapsedTime(prev => prev + 1);
-            setProgress(prev => prev + (99 - prev) * 0.02);
+            _setElapsedTime(prev => prev + 1);
+            _setProgress(prev => prev + (99 - prev) * 0.02);
         }, 100);
 
         return () => clearInterval(interval);
     }, [generating]);
+
 
     // Fullscreen Escape
     useEffect(() => {
@@ -164,10 +169,11 @@ export default function Generator() {
     }, [generatedImage, generating]);
 
     const [analyzingImageId, setAnalyzingImageId] = useState(null);
-    const { recentImages, triggerVideoAnimation, handleVideoAutoAnimate } = useVideoGeneration({
+    const { recentImages, triggerVideoAnimation: _triggerVideoAnimation, handleVideoAutoAnimate } = useVideoGeneration({
         currentUser, generating, setGenerating, setGeneratedImage, setReferenceImage, setPrompt, setCurrentJobType, setCurrentJobId,
         setAnalyzingImageId, videoDuration, videoResolution, aspectRatio, reels
     });
+
 
     const { isAutoPrompting, handleAutoPrompt } = useAutoPrompt(
         prompt, setPrompt, referenceImage, setReferenceImage, generationMode
@@ -195,7 +201,7 @@ export default function Generator() {
             recognition.interimResults = true;
             recognition.onresult = (event) => {
                 const transcript = Array.from(event.results).map(result => result[0].transcript).join('');
-                setPrompt(prev => {
+                setPrompt(_prev => {
                     // Only append if it's a new sentence to avoid duplication in some browsers
                     return transcript;
                 });

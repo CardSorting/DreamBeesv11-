@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-// import { getFunctions, httpsCallable } from 'firebase/functions'; // Removed
-import { functions } from '../firebase';
+import { functions as _firebaseFunctions } from '../firebase';
 import { useApi } from '../hooks/useApi';
 import { Check, Film, Image, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -78,7 +77,6 @@ export default function Pricing() {
     const { currentUser } = useAuth();
     const [loading, setLoading] = useState(false);
     const [currencyType, setCurrencyType] = useState('membership'); // 'membership', 'zaps', 'reels'
-    const functions = getFunctions();
 
     let packs = [];
     if (currencyType === 'membership') packs = SUBSCRIPTION_PLANS;
@@ -94,7 +92,6 @@ export default function Pricing() {
         }
         setLoading(true);
         try {
-            // const api = httpsCallable(functions, 'api');
             const result = await apiCall('api', {
                 action: 'createStripeCheckout',
                 priceId: priceId,
@@ -102,6 +99,7 @@ export default function Pricing() {
                 cancelUrl: window.location.origin + '/pricing?canceled=true',
                 mode: currencyType === 'membership' ? 'subscription' : 'payment'
             });
+            // eslint-disable-next-line
             window.location.href = result.data.url;
         } catch (error) {
             console.error("Error creating checkout session:", error);

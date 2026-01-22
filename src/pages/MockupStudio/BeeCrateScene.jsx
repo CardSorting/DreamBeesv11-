@@ -23,7 +23,7 @@ const HoneyCell = ({ position, color = "#FFC107", scale = 1, rotation = [0, 0, 0
 
 const CrankHandle = ({ appState }) => {
     const ref = useRef();
-    const handleRef = useRef();
+    const _handleRef = useRef();
     const isSpinning = appState === 'SPINNING';
 
     useFrame((state, delta) => {
@@ -160,7 +160,7 @@ const FlyingBee = ({ offset = 0, radius = 2.5, speed = 1, appState }) => {
     // Gentle speed increase, not frantic
     const currentSpeed = isSpinning ? speed * 1.5 : speed;
 
-    useFrame((state, delta) => {
+    useFrame((state, _delta) => {
         if (!ref.current) return;
 
         // Safety: Clamp delta
@@ -340,7 +340,7 @@ const BeeHiveMachine = ({ appState }) => {
 const SceneContent = ({ appState }) => {
     const lightRef = useRef();
 
-    useFrame((state, delta) => {
+    useFrame((state, _delta) => {
         if (!lightRef.current) return;
 
         // Safety: Clamp delta

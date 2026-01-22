@@ -32,7 +32,7 @@ try {
             process.env[key.trim()] = value.trim();
         }
     });
-} catch (_e) {
+} catch {
     console.warn("Could not read .env file, assuming env vars are set.");
 }
 
@@ -52,7 +52,7 @@ if (!B2_KEY_ID || !B2_APP_KEY) {
 // --- Init Firebase ---
 try {
     initializeApp({ projectId: "dreambees-alchemist" });
-} catch (_e) {
+} catch {
     // Already initialized
 }
 const db = getFirestore();
@@ -209,7 +209,7 @@ async function fetchWithRetry(url, options, retries = 3) {
             }
             if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
             return res;
-        } catch (_e) {
+        } catch {
             if (i === retries - 1) throw e;
             await sleep(1000 * (i + 1));
         }

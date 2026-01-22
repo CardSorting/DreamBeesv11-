@@ -19,6 +19,7 @@ const getTimeAgo = (timestamp) => {
     const days = Math.floor(hours / 24);
     return `${days}d ago`;
 };
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt, onRestyle }) {
@@ -70,7 +71,7 @@ export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt
         };
 
         fetchHistory();
-    }, [currentUser?.uid, history]);
+    }, [currentUser, history]);
 
     const scroll = (direction) => {
         if (scrollContainerRef.current) {

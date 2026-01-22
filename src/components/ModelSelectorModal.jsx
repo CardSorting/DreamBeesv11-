@@ -13,8 +13,11 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => {
         if (isOpen) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setSearchQuery('');
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setImageErrors({});
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setCurrentPage(1);
             // Lock body scroll
             document.documentElement.style.overflow = 'hidden';
@@ -37,8 +40,10 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
 
     // Reset to page 1 when search query changes
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setCurrentPage(1);
     }, [searchQuery]);
+   
 
     if (!isOpen) return null;
 

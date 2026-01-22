@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Upload, Image as ImageIcon, Loader2, Check } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
@@ -13,19 +13,15 @@ export default function ImagePickerModal({ isOpen, onClose, onSelect }) {
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef(null);
 
-    useEffect(() => {
-        if (isOpen && activeTab === 'gallery' && currentUser) {
-            fetchGalleryImages();
-        }
-    }, [isOpen, activeTab, currentUser]);
-
-    const fetchGalleryImages = async () => {
+    const fetchGalleryImages = useCallback(async () => {
+        if (!currentUser) return;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setLoading(true);
         try {
             const q = query(
-                collection(db, 'generation_queue'), // Fetch from generation history
+                collection(db, 'generation_queue'),
                 where('userId', '==', currentUser.uid),
-                where('status', '==', 'completed'), // Only completed generations
+                where('status', '==', 'completed'),
                 orderBy('createdAt', 'desc'),
                 limit(50)
             );
@@ -40,7 +36,13 @@ export default function ImagePickerModal({ isOpen, onClose, onSelect }) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentUser]);
+
+    useEffect(() => {
+        if (isOpen && activeTab === 'gallery' && currentUser) {
+            fetchGalleryImages();
+        }
+    }, [isOpen, activeTab, currentUser, fetchGalleryImages]);
 
     const handleFileUpload = (e) => {
         const file = e.target.files[0];

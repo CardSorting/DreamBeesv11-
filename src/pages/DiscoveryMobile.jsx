@@ -6,6 +6,7 @@ import { Sparkles, Loader2, CheckCircle2, Heart, Flag } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
 import { getOptimizedImageUrl, getImageSrcSet } from '../utils';
 // motion is used for motion.div components
+// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import { slugify } from '../utils/urlHelpers';
@@ -22,7 +23,7 @@ export default function DiscoveryMobile() {
         getShowcaseImages,
         showcaseCache
     } = useModel();
-    const { isLiked, toggleLike, isHidden, hidePost } = useUserInteractions();
+    const { _isLiked, _toggleLike, _isHidden, _hidePost: _hidePost } = useUserInteractions();
 
     // -- MODEL STATE --
     const { modelId } = useParams();
@@ -60,8 +61,8 @@ export default function DiscoveryMobile() {
             ? globalShowcaseCache
             : (showcaseCache[activeModelId] || []);
 
-        return source.filter(img => !isHidden(img.id));
-    }, [activeModelId, globalShowcaseCache, showcaseCache, isHidden]);
+        return source.filter(img => !_isHidden(img.id));
+    }, [activeModelId, globalShowcaseCache, showcaseCache, _isHidden]);
 
     // Track initialization and scroll states with refs for stability
     const hasInitializedRef = useRef(false);
@@ -150,13 +151,13 @@ export default function DiscoveryMobile() {
     // Derived state for UI
     const isInitialLoading = (isGlobalFeedLoading && globalShowcaseCache.length === 0 && activeModelId === 'all') || (activeModelId !== 'all' && !showcaseCache[activeModelId]);
     const isLoadingMore = isGlobalFeedLoading && globalShowcaseCache.length > 0 && activeModelId === 'all';
-    const hasReachedEnd = hasReachedEndRef.current || hasGlobalFeedEnded;
+    const hasReachedEnd = hasGlobalFeedEnded;
 
     // Helper for Like Toggle to prevent bubble up
     const handleToggleLike = (e, imgItem) => {
         e.stopPropagation();
         const model = availableModels?.find(m => m.id === imgItem.modelId);
-        toggleLike(imgItem, model);
+        _toggleLike(imgItem, model);
     };
 
     const handleImageClick = useCallback((imgItem) => {
@@ -224,7 +225,7 @@ export default function DiscoveryMobile() {
                 >
                     {displayImages.map((imgItem, index) => {
                         const ratio = imgItem.aspectRatio || '1/1';
-                        const liked = isLiked(imgItem.id);
+                        const liked = _isLiked(imgItem.id);
 
                         return (
                             <article

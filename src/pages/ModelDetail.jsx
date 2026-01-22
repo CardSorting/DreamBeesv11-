@@ -12,7 +12,7 @@ import { db } from '../firebase';
 export default function ModelDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { availableModels, setSelectedModel, selectedModel, rateShowcaseImage } = useModel();
+    const { availableModels, setSelectedModel, selectedModel, rateShowcaseImage: _rateShowcaseImage } = useModel();
     const [activeShowcaseImage, setActiveShowcaseImage] = useState(null);
     const imagesPerPage = 12;
 

@@ -10,6 +10,7 @@ import html2canvas from 'html2canvas';
 
 export default function MobileGenerator() {
     const { currentUser } = useAuth();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     const { selectedModel, availableModels, setSelectedModel } = useModel();
 
     // Remote state
@@ -22,15 +23,16 @@ export default function MobileGenerator() {
     const messagesEndRef = useRef(null);
     const _lastScrollY = useRef(0);
 
+    const { isLiked: _isLiked, toggleLike: _toggleLike, isHidden: _isHidden, hidePost: _hidePost } = useUserInteractions();
     // UX State
     const [expandedImage, setExpandedImage] = useState(null);
     const [showModelSelector, setShowModelSelector] = useState(false);
 
     // Generation state
     const [generating, setGenerating] = useState(false);
-    const [generatedImage, setGeneratedImage] = useState(null);
-    const [currentJobId, setCurrentJobId] = useState(null);
-    const [activeJob, setActiveJob] = useState(null);
+    const [_generatedImage, setGeneratedImage] = useState(null);
+    const [_currentJobId, setCurrentJobId] = useState(null);
+    const [_activeJob, setActiveJob] = useState(null);
 
     // Progressive Status
     const [loadingStatus, setLoadingStatus] = useState("Dreaming...");

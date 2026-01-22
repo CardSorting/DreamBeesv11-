@@ -224,7 +224,7 @@ export default function DressUp() {
             try {
                 const compressed = await compressImage(base64, 1024, 0.8);
                 setCurrentImage(compressed);
-            } catch (err) {
+            } catch (_err) {
                 toast.error('Oops! Could not open that picture.');
             }
         };

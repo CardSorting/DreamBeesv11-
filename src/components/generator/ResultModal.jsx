@@ -1,8 +1,7 @@
 import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { Loader2, Film, Image as ImageIcon, Maximize2, ThumbsUp, ThumbsDown, X, Download, Share2 } from 'lucide-react';
-import { getOptimizedImageUrl } from '../../utils';
-import { Link } from 'react-router-dom';
+import { // eslint-disable-next-line no-unused-vars
+    motion, AnimatePresence } from 'framer-motion';
+import { X, ExternalLink, Download, Share2, Star, Zap } from 'lucide-react';
 
 export default function ResultModal({
     isOpen,
@@ -14,146 +13,119 @@ export default function ResultModal({
     downloadUrl
 }) {
     const downloadFilename = useMemo(() => {
-        return `dream-bees-${Date.now()}.${generationMode === 'video' ? 'mp4' : 'png'}`;
+        // Removed impure Date.now()
+        return `dream-bees-gen.${generationMode === 'video' ? 'mp4' : 'png'}`;
     }, [generationMode]);
 
     if (!isOpen) return null;
 
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            style={{
-                position: 'fixed',
-                inset: 0,
-                zIndex: 9999,
-                background: 'rgba(0,0,0,0.85)',
-                backdropFilter: 'blur(10px)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '20px'
-            }}
-            onClick={onClose}
-        >
-            <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                style={{
-                    maxWidth: '90vw',
-                    maxHeight: '90vh',
-                    position: 'relative',
-                    borderRadius: '16px',
-                    overflow: 'hidden',
-                    background: '#111',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-                    display: 'flex',
-                    flexDirection: 'column'
-                }}
-                onClick={(e) => e.stopPropagation()}
-            >
-                {/* Header Actions */}
-                <div style={{
-                    position: 'absolute',
-                    top: '16px',
-                    right: '16px',
-                    display: 'flex',
-                    gap: '8px',
-                    zIndex: 10
-                }}>
-                    <a
-                        href={downloadUrl || generatedImage}
-                        download={downloadFilename}
-                        className="btn-icon"
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        zIndex: 9999,
+                        background: 'rgba(0,0,0,0.85)',
+                        backdropFilter: 'blur(10px)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '24px'
+                    }}
+                >
+                    <motion.div
+                        initial={{ scale: 0.9, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.9, opacity: 0 }}
                         style={{
-                            width: '40px', height: '40px', borderRadius: '50%',
-                            background: 'rgba(0,0,0,0.6)', color: 'white',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                            backdropFilter: 'blur(4px)'
+                            background: 'var(--color-bg-primary)',
+                            borderRadius: '24px',
+                            maxWidth: '900px',
+                            width: '100%',
+                            maxHeight: '90vh',
+                            overflow: 'hidden',
+                            position: 'relative',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            border: '1px solid var(--color-border-primary)',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
                         }}
-                        title="Download"
-                        onClick={(e) => e.stopPropagation()}
                     >
-                        <Download size={20} />
-                    </a>
-                    <button
-                        onClick={onClose}
-                        className="btn-icon"
-                        style={{
-                            width: '40px', height: '40px', borderRadius: '50%',
-                            background: 'rgba(0,0,0,0.6)', color: 'white',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                            backdropFilter: 'blur(4px)'
-                        }}
-                        title="Close"
-                    >
-                        <X size={20} />
-                    </button>
-                </div>
-
-                {/* Content */}
-                <div style={{ flex: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '400px', minHeight: '400px', background: `url(${getOptimizedImageUrl(generatedImage)}) center/cover blur(20px)` }}>
-                    <div style={{ width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', position: 'absolute' }} />
-                    {generatedImage ? (
-                        /\.(mp4|webm|mov|mkv)($|\?)/i.test(generatedImage) ? (
-                            <video
-                                src={generatedImage}
-                                controls
-                                autoPlay
-                                loop
-                                style={{ maxWidth: '100%', maxHeight: '85vh', objectFit: 'contain', position: 'relative', zIndex: 1 }}
-                            />
-                        ) : (
-                            <img
-                                src={getOptimizedImageUrl(generatedImage)}
-                                alt={`Generated artwork for prompt: ${prompt}`}
-                                style={{ maxWidth: '100%', maxHeight: '85vh', objectFit: 'contain', position: 'relative', zIndex: 1 }}
-                            />
-                        )
-                    ) : (
-                        <div style={{ padding: '40px' }}><Loader2 className="animate-spin" size={32} /></div>
-                    )}
-                </div>
-
-                {/* Footer / Actions */}
-                <div style={{
-                    padding: '16px 24px',
-                    background: 'rgba(20,20,20,0.95)',
-                    borderTop: '1px solid rgba(255,255,255,0.1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '16px'
-                }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1, overflow: 'hidden' }}>
-                        <div style={{ fontSize: '0.9rem', color: 'white', fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {prompt || "Generated Artwork"}
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                            {generationMode === 'video' ? 'Video Generation' : 'Image Generation'}
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', gap: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '4px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                            <button onClick={() => onRate(1)} className="btn-icon-hover" style={{ padding: '8px', borderRadius: '6px', color: 'white', cursor: 'pointer', background: 'transparent', border: 'none' }} title="I like this">
-                                <ThumbsUp size={18} />
-                            </button>
-                            <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '4px 0' }} />
-                            <button onClick={() => onRate(-1)} className="btn-icon-hover" style={{ padding: '8px', borderRadius: '6px', color: '#ef4444', cursor: 'pointer', background: 'transparent', border: 'none' }} title="I dislike this">
-                                <ThumbsDown size={18} />
+                        {/* Header */}
+                        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--color-border-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ background: 'var(--color-bg-tertiary)', padding: '8px', borderRadius: '12px' }}>
+                                    <Zap size={20} color="var(--color-accent-primary)" />
+                                </div>
+                                <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>Generation Complete</h2>
+                            </div>
+                            <button onClick={onClose} style={{ background: 'var(--color-bg-tertiary)', border: 'none', padding: '8px', borderRadius: '50%', cursor: 'pointer', display: 'flex' }}>
+                                <X size={20} />
                             </button>
                         </div>
-                        <Link to="/gallery" className="btn btn-outline" style={{ padding: '0 20px', height: '40px', fontSize: '0.9rem', display: 'flex', alignItems: 'center' }}>Gallery</Link>
-                    </div>
-                </div>
 
-            </motion.div>
-        </motion.div>
+                        {/* Content */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '2px', background: 'var(--color-border-primary)', overflow: 'hidden' }}>
+                            {/* Media Area */}
+                            <div style={{ background: 'var(--color-bg-secondary)', padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
+                                {generationMode === 'video' ? (
+                                    <video src={generatedImage} controls autoPlay loop style={{ maxWidth: '100%', maxHeight: '60vh', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }} />
+                                ) : (
+                                    <img src={generatedImage} alt="Generated" style={{ maxWidth: '100%', maxHeight: '60vh', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }} />
+                                )}
+                            </div>
+
+                            {/* Sidebar Area */}
+                            <div style={{ background: 'var(--color-bg-primary)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                <div>
+                                    <h3 style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Prompt</h3>
+                                    <p style={{ fontSize: '0.95rem', lineHeight: '1.6', color: 'var(--color-text-primary)' }}>{prompt}</p>
+                                </div>
+
+                                <div>
+                                    <h3 style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rate this result</h3>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <button
+                                                key={star}
+                                                onClick={() => onRate && onRate(star)}
+                                                style={{ background: 'var(--color-bg-tertiary)', border: 'none', padding: '10px', borderRadius: '10px', cursor: 'pointer', transition: 'all 0.2s' }}
+                                                onMouseOver={(e) => e.currentTarget.style.background = 'var(--color-bg-hover)'}
+                                                onMouseOut={(e) => e.currentTarget.style.background = 'var(--color-bg-tertiary)'}
+                                            >
+                                                <Star size={18} fill="transparent" stroke="var(--color-text-secondary)" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    <a href={downloadUrl} download={downloadFilename} style={{ textDecoration: 'none' }}>
+                                        <button style={{ width: '100%', background: 'var(--color-accent-primary)', color: 'white', border: 'none', padding: '14px', borderRadius: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                            <Download size={18} />
+                                            Download
+                                        </button>
+                                    </a>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button style={{ flex: 1, background: 'var(--color-bg-tertiary)', border: 'none', padding: '12px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                            <Share2 size={16} />
+                                            Share
+                                        </button>
+                                        <button style={{ padding: '12px', background: 'var(--color-bg-tertiary)', border: 'none', borderRadius: '12px', cursor: 'pointer' }}>
+                                            <ExternalLink size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 }

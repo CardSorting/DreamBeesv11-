@@ -4,7 +4,7 @@ import { getFirestore } from "firebase-admin/firestore";
 
 try {
     initializeApp({ projectId: "dreambees-alchemist" });
-} catch (_e) {
+} catch {
     // ignore
 }
 

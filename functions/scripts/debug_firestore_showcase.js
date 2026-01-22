@@ -4,7 +4,7 @@ import { getFirestore } from "firebase-admin/firestore";
 
 try {
     initializeApp({ projectId: "dreambees-alchemist" });
-} catch (_e) {
+} catch {
     // ignore
 }
 
@@ -25,9 +25,10 @@ async function debugShowcase() {
             const first = snap1.docs[0].data();
             console.log(`Sample: ID=${snap1.docs[0].id}, Time=${first.createdAt ? first.createdAt._seconds : 'N/A'}, URL=${first.imageUrl || first.url}`);
         }
-    } catch (_e) {
-        console.error("Global Feed Query FAILED:", e.message);
+    } catch (err) {
+        console.error("Global Feed Query FAILED:", err.message);
     }
+
 
     // 2. Model Specific Query
     console.log("\n[Test] Model Specific Query (where modelId == 'flux-klein-4b')");
@@ -39,13 +40,14 @@ async function debugShowcase() {
         const snap2 = await q2.get();
         console.log(`Model Feed returned ${snap2.size} docs.`);
         if (!snap2.empty) {
-            const first = snap2.docs[0].data();
             console.log(`Sample: ID=${snap2.docs[0].id}`);
         }
-    } catch (_e) {
-        console.error("Model Feed Query FAILED:", e.message);
-        if (e.message.includes("indexes")) console.log("--> This suggests a MISSING INDEX.");
+
+    } catch (err) {
+        console.error("Model Feed Query FAILED:", err.message);
+        if (err.message.includes("indexes")) console.log("--> This suggests a MISSING INDEX.");
     }
+
 }
 
 debugShowcase();

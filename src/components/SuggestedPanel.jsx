@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useAppLikes } from '../hooks/useAppLikes';
@@ -95,14 +95,20 @@ const SuggestedPanel = ({ currentModel, availableModels }) => {
         fetchApps();
     }, []);
 
-    const featuredModel = useMemo(() => {
-        if (!availableModels || availableModels.length === 0) return null;
+    const [featuredModel, setFeaturedModel] = useState(null);
+
+    useEffect(() => {
+        if (!availableModels || availableModels.length === 0) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setFeaturedModel(null);
+            return;
+        }
 
         const filtered = availableModels.filter(m => m.id !== currentModel?.id);
         const shuffled = [...filtered].sort(() => 0.5 - Math.random());
-
-        return shuffled[0] || null;
+        setFeaturedModel(shuffled[0] || null);
     }, [availableModels, currentModel]);
+
 
     return (
         <aside className="feed-sidebar-right">

@@ -559,7 +559,7 @@ export default function Landing() {
     );
 }
 
-function BentoCard({ colSpan, title, icon: CardIcon, children }) {
+function BentoCard({ colSpan, title, icon: CardIconComponent, children }) {
     const cardRef = useRef(null);
     const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
@@ -592,7 +592,7 @@ function BentoCard({ colSpan, title, icon: CardIcon, children }) {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     color: 'white'
                 }}>
-                    <CardIcon size={20} />
+                    <CardIconComponent size={20} />
                 </div>
                 <h3 style={{ fontSize: '1.25rem', fontWeight: '500' }}>{title}</h3>
             </div>
@@ -855,7 +855,7 @@ function InteractiveDemo() {
                             fontFamily: 'monospace', fontSize: '0.8rem', color: 'var(--color-accent-primary)',
                             background: 'rgba(0,0,0,0.6)', padding: '4px 8px', borderRadius: '4px'
                         }}>
-                            Diffusing Reality... {(Math.random() * 100).toFixed(0)}%
+                            Diffusing Reality... 88%
                         </div>
                     )}
                 </div>

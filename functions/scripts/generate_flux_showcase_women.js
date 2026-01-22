@@ -31,7 +31,7 @@ try {
             process.env[key.trim()] = value.trim();
         }
     });
-} catch (_e) {
+} catch {
     console.warn("Could not read .env file, assuming env vars are set.");
 }
 
@@ -54,7 +54,7 @@ if (!B2_KEY_ID || !B2_APP_KEY) {
 // Init Firebase
 try {
     initializeApp({ projectId: PROJECT_ID });
-} catch (_e) {
+} catch {
     if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
         // console.warn("Init warning (ignore if subsequent ops work):", e.message);
     }
@@ -241,7 +241,7 @@ async function fetchWithRetry(url, options, retries = 5) {
 
             if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
             return res;
-        } catch (_e) {
+        } catch {
             if (i === retries - 1) throw e;
             const waitTime = 1000 * (i + 1);
             await sleep(waitTime);
@@ -257,13 +257,13 @@ async function main() {
     let failCount = 0;
 
     // Load or init manifest
-    let manifest = [];
     try {
-        const manifestData = await fs.readFile(MANIFEST_PATH, "utf-8");
-        manifest = JSON.parse(manifestData);
-    } catch (_e) {
-        manifest = [];
+        await fs.readFile(MANIFEST_PATH, "utf-8");
+        // manifest variable removed as it was unused
+    } catch {
+        // ignore
     }
+
 
     for (let i = 0; i < TOTAL_IMAGES; i++) {
         const gender = 'women';
@@ -323,7 +323,7 @@ async function main() {
                         if (statusJson.status === 'failed') {
                             throw new Error(statusJson.error || 'Generation failed');
                         }
-                    } catch (_e) { }
+                    } catch { }
                 }
             }
 

@@ -16,7 +16,7 @@ import { AnimatePresence } from 'framer-motion';
 export default function UserProfile() {
     const { currentUser } = useAuth();
     const { availableModels: contextModels } = useModel();
-    const availableModels = contextModels || []; // Defensive fallback
+    const availableModels = React.useMemo(() => contextModels || [], [contextModels]);
 
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState({ username: '', displayPreference: 'name' }); // 'name' or 'username'
@@ -26,9 +26,10 @@ export default function UserProfile() {
     const { likes: ctxLikes, bookmarks: ctxBookmarks, mockups: ctxMockups } = useUserInteractions();
 
     // Defensive Fallbacks
-    const likes = ctxLikes || [];
-    const bookmarks = ctxBookmarks || [];
-    const mockups = ctxMockups || [];
+    const likes = React.useMemo(() => ctxLikes || [], [ctxLikes]);
+    const bookmarks = React.useMemo(() => ctxBookmarks || [], [ctxBookmarks]);
+    const mockups = React.useMemo(() => ctxMockups || [], [ctxMockups]);
+
 
     // Routing Params
     const { tab } = useParams();

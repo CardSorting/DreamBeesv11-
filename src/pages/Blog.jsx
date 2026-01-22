@@ -102,7 +102,7 @@ export default function Blog() {
                 gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))',
                 gap: '40px'
             }}>
-                {filteredPosts.map((post, i) => (
+                {filteredPosts.map((post, _i) => (
                     <Link
                         to={`/blog/${post.slug || post.id}`}
                         key={post.id}

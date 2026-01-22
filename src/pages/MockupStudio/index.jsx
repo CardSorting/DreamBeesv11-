@@ -27,7 +27,6 @@ const MockupStudio = () => {
 
     // Gacha Results
     const [gachaPrizes, setGachaPrizes] = useState([]);
-    const [zipBlob, setZipBlob] = useState(null);
     const [spinProgress, setSpinProgress] = useState(null);
 
     const [searchParams, setSearchParams] = useSearchParams();

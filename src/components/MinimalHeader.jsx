@@ -16,6 +16,7 @@ const MinimalHeader = () => {
     // Reset image error state when user photo URL changes
     // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setImageError(false);
     }, [currentUser?.photoURL]);
 

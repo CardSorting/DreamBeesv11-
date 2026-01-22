@@ -33,7 +33,7 @@ try {
             process.env[key.trim()] = value.trim();
         }
     });
-} catch (_e) {
+} catch {
     console.warn("Could not read .env file, assuming env vars are set.");
 }
 
@@ -69,7 +69,7 @@ if (!B2_KEY_ID || !B2_APP_KEY) {
 
 try {
     initializeApp({ projectId: CONFIG.PROJECT_ID });
-} catch (_e) {
+} catch {
     // App may already be initialized
 }
 
@@ -263,7 +263,8 @@ const main = async () => {
 
         try {
             const imageBase64 = await generateMockup(design.description, item, preset);
-            const { docId, url } = await uploadAndSave(imageBase64, item, preset, design.description);
+            const { docId } = await uploadAndSave(imageBase64, item, preset, design.description);
+
 
             console.log(`   ✅ Success: ${docId}`);
             successCount++;

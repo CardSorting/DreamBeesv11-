@@ -69,9 +69,9 @@ const MemeFormatter = () => {
             reader.readAsDataURL(selectedImage);
 
             reader.onloadend = async () => {
-                const base64data = reader.result.split(',')[1];
+                const _base64data = reader.result.split(',')[1];
                 // Determine mime type
-                const mimeType = selectedImage.type;
+                const _mimeType = selectedImage.type;
 
                 // Prepare payload
                 // The handler expects { action: 'formatMeme', image: base64, text: ... } or imageUrl

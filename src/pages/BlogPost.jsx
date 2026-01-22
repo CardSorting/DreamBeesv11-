@@ -29,7 +29,7 @@ export default function BlogPost() {
             const walk = document.createTreeWalker(contentRef.current, NodeFilter.SHOW_TEXT, null, false);
             let node;
             let offset = 0;
-            while (node = walk.nextNode()) {
+            while ((node = walk.nextNode())) {
                 const length = node.textContent.length;
                 nodes.push({ node, start: offset, end: offset + length });
                 offset += length;

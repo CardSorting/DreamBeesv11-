@@ -63,7 +63,7 @@ export default function PersonaChat() {
     const { id } = useParams(); // imageId
     const navigate = useNavigate();
     const location = useLocation();
-    const { currentUser } = useAuth();
+    const { currentUser: _currentUser } = useAuth();
 
     const [imageItem, setImageItem] = useState(location.state?.imageItem || null);
     const [persona, setPersona] = useState(null);
@@ -71,7 +71,7 @@ export default function PersonaChat() {
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSending, setIsSending] = useState(false);
-    const [creationStep, setCreationStep] = useState('Initializing...');
+    const [_creationStep, _setCreationStep] = useState('Initializing...');
     const [error, setError] = useState(null);
 
     const scrollRef = useRef(null);
@@ -127,8 +127,6 @@ export default function PersonaChat() {
     }, [id, imageItem]);
 
     useEffect(() => {
-        let mounted = true;
-
         const initPersona = async () => {
             if (!id || !imageItem || persona) return;
 

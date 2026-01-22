@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Share2, Sparkles, Heart, RefreshCw, MoreHorizontal, Shuffle, Flag } from 'lucide-react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { useModel } from '../contexts/ModelContext';
@@ -59,8 +60,6 @@ const ShowcaseDetail = () => {
     const isInitialMount = useRef(true);
     const currentImageRef = useRef(null);
 
-    // Keep track of the current source image for recommendations
-    const sourceImage = useMemo(() => images[currentIndex], [images, currentIndex]);
 
     // Helper to show toast notifications
     const showToast = useCallback((message, icon = 'shuffle') => {
@@ -72,6 +71,7 @@ const ShowcaseDetail = () => {
     useEffect(() => {
         const initFeed = async () => {
             if (!isInitialMount.current && images.length > 0) return;
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setLoading(true);
 
             // Ensure we have some global cache
@@ -140,7 +140,37 @@ const ShowcaseDetail = () => {
         };
 
         initFeed();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id, globalShowcaseCache, hasMoreGlobal, getGlobalShowcaseImages]);
+
+
+    // 3. Load More Strategy - Now with history awareness
+    const loadMoreImages = useCallback(() => {
+        if (!currentImageRef.current) return;
+
+        // Get seen IDs array (capped to avoid memory issues)
+        const seenArray = Array.from(seenIdsRef.current).slice(-HISTORY_CAP);
+
+        // Use history-aware recommendations for truly fresh content
+        const freshRecs = getRecommendationsWithHistory(
+            currentImageRef.current,
+            visibleGlobalCache,
+            seenArray,
+            SHOWCASE_PAGE_SIZE
+        );
+
+        if (freshRecs.length === 0 && hasMoreGlobal) {
+            console.log("[Feed] Cache exhausted, fetching more...");
+            getGlobalShowcaseImages(true, 'feed_scroll_replenish');
+            return;
+        }
+
+        if (freshRecs.length > 0) {
+            // Mark new batch as seen
+            freshRecs.forEach(r => seenIdsRef.current.add(r.id));
+            setImages(prev => [...prev, ...freshRecs]);
+        }
+    }, [visibleGlobalCache, hasMoreGlobal, getGlobalShowcaseImages]);
 
 
     // 2. Intersection Observer for Current Index & URL Update
@@ -187,43 +217,6 @@ const ShowcaseDetail = () => {
     }, [images, id, navigate, hasMoreGlobal]);
 
 
-    // 3. Load More Strategy - Now with history awareness
-    const loadMoreImages = useCallback(() => {
-        if (!currentImageRef.current) return;
-
-        // Get seen IDs array (capped to avoid memory issues)
-        const seenArray = Array.from(seenIdsRef.current).slice(-HISTORY_CAP);
-
-        // Use history-aware recommendations for truly fresh content
-        const freshRecs = getRecommendationsWithHistory(
-            currentImageRef.current,
-            visibleGlobalCache,
-            seenArray,
-            SHOWCASE_PAGE_SIZE
-        );
-
-        if (freshRecs.length === 0 && hasMoreGlobal) {
-            console.log("[Feed] Cache exhausted, fetching more...");
-            getGlobalShowcaseImages(true, 'feed_scroll_replenish');
-            return;
-        }
-
-        if (freshRecs.length > 0) {
-            // Track new items as seen
-            freshRecs.forEach(r => seenIdsRef.current.add(r.id));
-
-            // Filter to ensure no duplicates in current feed
-            const currentIds = new Set(images.map(i => i.id));
-            const trulyNew = freshRecs.filter(r => !currentIds.has(r.id));
-
-            if (trulyNew.length > 0) {
-                setImages(prev => [...prev, ...trulyNew]);
-            } else if (hasMoreGlobal) {
-                // All recs are duplicates, need more from backend
-                getGlobalShowcaseImages(true, 'feed_unique_fetch');
-            }
-        }
-    }, [images, globalShowcaseCache, hasMoreGlobal, getGlobalShowcaseImages]);
 
 
     // 4. Shuffle Action - Complete feed refresh with exploration mode
@@ -270,7 +263,6 @@ const ShowcaseDetail = () => {
     const handleMoreLikeThis = useCallback(() => {
         if (!currentImageRef.current || globalShowcaseCache.length === 0) return;
 
-        const seenArray = Array.from(seenIdsRef.current);
         const unseen = visibleGlobalCache.filter(c => !seenIdsRef.current.has(c.id));
 
         // Use balanced recommendations with stricter similarity
@@ -487,7 +479,7 @@ const FeedItem = React.memo(({ image, index, isActive, isLiked, onToggleLike, on
     const lastTap = useRef(0);
     const [showHeartAnim, setShowHeartAnim] = useState(false);
 
-    const handleImageClick = (e) => {
+    const handleImageClick = () => {
         const now = Date.now();
         if (now - lastTap.current < 300) {
             // Double tap detected
