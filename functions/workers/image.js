@@ -581,8 +581,10 @@ class LoadBalancer {
     }
 }
 
-// Singleton instance of the load balancer
 const loadBalancer = new LoadBalancer();
+
+// Export for testing
+export { loadBalancer, LoadBalancer };
 
 export const processImageTask = async (req) => {
     const { requestId, userId, modelId, negative_prompt, steps = 30, cfg = 7, aspectRatio = '1:1', scheduler, promptHash, promptMetadata } = req.data;
