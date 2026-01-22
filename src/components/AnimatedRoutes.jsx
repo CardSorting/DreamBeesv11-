@@ -46,6 +46,10 @@ const MemeFormatter = lazyRetry(() => import('../pages/MemeFormatter'));
 const MemeFeed = lazyRetry(() => import('../pages/MemeFeed'));
 const QuickMockups = lazyRetry(() => import('../pages/QuickMockups'));
 const QuickMockupCreator = lazyRetry(() => import('../pages/QuickMockups/MockupCreator'));
+const NotFound = lazyRetry(() => import('../pages/NotFound'));
+const Maintenance = lazyRetry(() => import('../pages/Maintenance'));
+const AccessDenied = lazyRetry(() => import('../pages/AccessDenied'));
+const Offline = lazyRetry(() => import('../pages/Offline'));
 
 import { Privacy, Terms, Cookies } from '../pages/Legal';
 import { Careers, Brand, Api, Showcase } from '../pages/Misc';
@@ -131,12 +135,8 @@ const AnimatedRoutes = () => {
                             <Route path="/gallery/:id" element={
                                 <PrivateRoute><ImageDetail /></PrivateRoute>
                             } />
-                            <Route path="/models" element={
-                                <PrivateRoute><Models /></PrivateRoute>
-                            } />
-                            <Route path="/model/:id" element={
-                                <PrivateRoute><ModelDetail /></PrivateRoute>
-                            } />
+                            <Route path="/models" element={<Models />} />
+                            <Route path="/model/:id" element={<ModelDetail />} />
                             <Route path="/model/:id/feed" element={
                                 <PrivateRoute><ModelFeed /></PrivateRoute>
                             } />
@@ -208,6 +208,12 @@ const AnimatedRoutes = () => {
                             <Route path="/chat/:id" element={
                                 <PrivateRoute><PersonaChat /></PrivateRoute>
                             } />
+
+                            <Route path="/maintenance" element={<Maintenance />} />
+                            <Route path="/forbidden" element={<AccessDenied />} />
+                            <Route path="/offline" element={<Offline />} />
+
+                            <Route path="*" element={<NotFound />} />
                         </Routes>
                     </Suspense>
                 </RouteErrorBoundary>

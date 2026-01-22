@@ -37,103 +37,94 @@ class RouteErrorBoundary extends React.Component {
         if (this.state.hasError) {
             return (
                 <div style={{
-                    padding: '40px',
+                    padding: '60px 24px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    minHeight: '50vh', // Takes up space but not full screen
+                    minHeight: '60vh',
                     textAlign: 'center',
-                    color: '#e4e4e7',
-                    animation: 'fadeIn 0.5s ease-out'
+                    color: 'var(--color-text-main)',
+                    animation: 'fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+                    position: 'relative',
+                    zIndex: 10
                 }}>
                     <div style={{
-                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        padding: '24px',
+                        backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                        padding: '32px',
                         borderRadius: '50%',
-                        marginBottom: '24px',
-                        boxShadow: '0 0 20px rgba(239, 68, 68, 0.2)'
+                        marginBottom: '32px',
+                        border: '1px solid rgba(239, 68, 68, 0.1)',
+                        boxShadow: '0 0 40px rgba(239, 68, 68, 0.1), inset 0 0 20px rgba(239, 68, 68, 0.05)'
                     }}>
-                        <AlertTriangle size={48} color="#ef4444" />
+                        <AlertTriangle size={56} color="#ef4444" strokeWidth={1.5} />
                     </div>
 
-                    <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '12px' }}>
-                        This part of the hive is buzzing...
+                    <h2 style={{
+                        fontSize: '2rem',
+                        fontWeight: '700',
+                        marginBottom: '16px',
+                        letterSpacing: '-0.02em',
+                        fontFamily: 'var(--font-display)'
+                    }}>
+                        Something stung the code...
                     </h2>
 
-                    <p style={{ color: '#a1a1aa', maxWidth: '400px', marginBottom: '32px', lineHeight: '1.6' }}>
-                        We encountered a glitch in this specific area. The rest of the application is still safe to explore.
+                    <p style={{
+                        color: 'var(--color-zinc-400)',
+                        maxWidth: '460px',
+                        marginBottom: '40px',
+                        lineHeight: '1.7',
+                        fontSize: '1.05rem'
+                    }}>
+                        We've hit an unexpected turbulence in this section. Don't worry, the rest of the hive is functioning perfectly.
                     </p>
 
-                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', justifyContent: 'center' }}>
                         <button
                             onClick={this.handleReset}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                padding: '12px 24px',
-                                backgroundColor: 'rgb(79, 70, 229)', // Indigo-600
-                                color: 'white',
-                                borderRadius: '12px',
-                                fontWeight: '600',
-                                border: 'none',
-                                cursor: 'pointer',
-                                fontSize: '15px',
-                                transition: 'background-color 0.2s'
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgb(67, 56, 202)'}
-                            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'rgb(79, 70, 229)'}
+                            className="btn btn-primary"
+                            style={{ gap: '10px', padding: '0 32px' }}
                         >
                             <RefreshCw size={18} />
-                            Try Again
+                            Try Recovery
                         </button>
 
                         <button
                             onClick={this.handleReload}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                padding: '12px 24px',
-                                backgroundColor: 'rgba(255,255,255,0.05)',
-                                color: '#fff',
-                                borderRadius: '12px',
-                                fontWeight: '600',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                cursor: 'pointer',
-                                fontSize: '15px',
-                                transition: 'background-color 0.2s'
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
-                            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'}
+                            className="btn btn-outline"
+                            style={{ gap: '10px', padding: '0 32px' }}
                         >
                             <RefreshCw size={18} />
-                            Reload Page
+                            Hard Reload
                         </button>
 
                         <button
                             onClick={() => window.location.href = '/'}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                padding: '12px 24px',
-                                backgroundColor: 'transparent',
-                                color: '#a1a1aa',
-                                borderRadius: '12px',
-                                fontWeight: '600',
-                                border: '1px solid transparent',
-                                cursor: 'pointer',
-                                fontSize: '15px',
-                                transition: 'color 0.2s'
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.color = 'white'}
-                            onMouseLeave={e => e.currentTarget.style.color = '#a1a1aa'}
+                            className="btn btn-ghost"
+                            style={{ padding: '0 24px' }}
                         >
-                            Or go Home
+                            Return Home
                         </button>
                     </div>
+
+                    {process.env.NODE_ENV === 'development' && (
+                        <div style={{
+                            marginTop: '48px',
+                            padding: '16px',
+                            background: 'rgba(0,0,0,0.3)',
+                            borderRadius: '12px',
+                            border: '1px solid rgba(255,255,255,0.05)',
+                            fontSize: '12px',
+                            fontFamily: 'monospace',
+                            color: '#ef4444',
+                            maxWidth: '100%',
+                            overflowX: 'auto',
+                            textAlign: 'left'
+                        }}>
+                            <strong>Error Context:</strong> {this.state.error?.message}
+                        </div>
+                    )}
                 </div>
             );
         }
