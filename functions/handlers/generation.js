@@ -3,6 +3,7 @@ import { db, FieldValue, getFunctions } from "../firebaseInit.js";
 import { handleError, logger, getPromptHash, getPromptMetadata } from "../lib/utils.js";
 import { generateVisionPrompt, SLIDESHOW_MASTER_PROMPT } from "../lib/ai.js";
 import { VALID_MODELS } from "../lib/constants.js";
+import { randomUUID } from 'crypto';
 
 export const handleCreateGenerationRequest = async (request) => {
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) logger.warn("App Check verification failed (Warn Mode)");
@@ -11,7 +12,7 @@ export const handleCreateGenerationRequest = async (request) => {
 
     // Allow unauthenticated GalMix requests
     if (!uid && modelId === 'galmix') {
-        uid = 'anonymous-galmix';
+        uid = `anonymous-galmix-${randomUUID()}`;
     }
 
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
@@ -34,7 +35,7 @@ export const handleCreateGenerationRequest = async (request) => {
 
         const queueRef = db.collection('generation_queue').doc();
 
-        if (uid === 'anonymous-galmix') {
+        if (uid.startsWith('anonymous-galmix')) {
             // Anonymous Path: No Zap deduction, no user doc optimization
             await queueRef.set({
                 userId: uid, prompt: cleanPrompt, negative_prompt: negative_prompt || "", modelId: modelId || "galmix",

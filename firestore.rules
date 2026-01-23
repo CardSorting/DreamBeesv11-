@@ -77,7 +77,7 @@ service cloud.firestore {
     // Generation Queue: Users can create requests for themselves.
     match /generation_queue/{requestId} {
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow read: if (request.auth != null && resource.data.userId == request.auth.uid) || resource.data.userId.matches('^anonymous-galmix-.*');
       // Allow users to update rating/hidden on their own requests
       allow update: if request.auth != null 
                     && resource.data.userId == request.auth.uid
