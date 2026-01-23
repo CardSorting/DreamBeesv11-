@@ -22,7 +22,7 @@ const FeedPost = ({
     onTagClick
 }) => {
     const { _currentUser } = useAuth();
-    const { isLiked, isBookmarked, toggleLike, toggleBookmark, hidePost, reportPost, isHidden } = useUserInteractions();
+    const { isLiked, isBookmarked, toggleLike, toggleBookmark, hidePost, unhidePost, reportPost, appealPost, isHidden } = useUserInteractions();
 
 
     const [showLargeHeart, setShowLargeHeart] = useState(false);
@@ -120,12 +120,84 @@ const FeedPost = ({
         return null;
     }
 
-    // Hide if marked
-    if (isHidden(imgItem.id)) return null;
+    // --- Moderation State ---
+    const [showReportMenu, setShowReportMenu] = useState(false);
+    const [dismissed, setDismissed] = useState(false); // If true, completely remove from DOM (final state)
+
+    // Derived state: Is this post effectively hidden for the user?
+    const isPostHidden = isHidden(imgItem.id);
+
+    // If dismissed (user clicked 'X' on the hidden overlay), don't render anything
+    if (dismissed) return null;
+
+    // If hidden (reported/hidden), render the "Hidden Overlay" state instead of the post
+    if (isPostHidden) {
+        return (
+            <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                style={{
+                    maxWidth: isMasonry ? '100%' : '600px',
+                    width: '100%',
+                    margin: isMasonry ? '0 0 16px 0' : '0 auto 16px',
+                    background: 'rgba(255,255,255,0.02)',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    borderRadius: '8px',
+                    padding: '24px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '12px',
+                    textAlign: 'center'
+                }}
+            >
+                <div style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+                    Content Hidden
+                </div>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                    <button
+                        onClick={() => unhidePost(imgItem)}
+                        style={{
+                            padding: '8px 16px',
+                            borderRadius: '20px',
+                            background: 'rgba(255,255,255,0.1)',
+                            border: 'none',
+                            color: 'white',
+                            fontSize: '0.85rem',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Undo
+                    </button>
+                    <button
+                        onClick={() => setDismissed(true)}
+                        style={{
+                            padding: '8px 16px',
+                            borderRadius: '20px',
+                            background: 'transparent',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            color: 'rgba(255,255,255,0.5)',
+                            fontSize: '0.85rem',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Dismiss
+                    </button>
+                </div>
+            </motion.div>
+        );
+    }
+
+    /* --- Report Menu Handlers --- */
+    const handleReportClick = (reason) => {
+        reportPost(imgItem, reason);
+        setShowReportMenu(false);
+    };
 
     return (
         <article
-            key={imgItem.id || index}
             className={`feed-post ${isMasonry ? 'masonry-item' : ''}`}
             style={{
                 background: 'rgba(255,255,255,0.02)',
@@ -139,9 +211,75 @@ const FeedPost = ({
                 margin: isMasonry ? '0 0 16px 0' : '0 auto',
                 boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
                 breakInside: 'avoid', // Crucial for CSS columns
-                marginBottom: isMasonry ? '16px' : '40px'
+                marginBottom: isMasonry ? '16px' : '40px',
+                position: 'relative' // For absolute positioning of report menu
             }}
         >
+            {/* Report Reason Selection Menu */}
+            <AnimatePresence>
+                {showReportMenu && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                        style={{
+                            position: 'absolute',
+                            bottom: '60px',
+                            right: '20px',
+                            zIndex: 100,
+                            background: '#1a1a1a',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: '12px',
+                            padding: '8px',
+                            boxShadow: '0 10px 40px rgba(0,0,0,0.5)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            minWidth: '180px'
+                        }}
+                    >
+                        <div style={{ padding: '8px', fontSize: '0.75rem', color: '#888', fontWeight: 600, textTransform: 'uppercase' }}>Report Reason</div>
+                        {['NSFW / Inappropriate', 'Spam / Bot', 'Low Quality', 'Other'].map(reason => (
+                            <button
+                                key={reason}
+                                onClick={() => handleReportClick(reason)}
+                                style={{
+                                    padding: '10px',
+                                    textAlign: 'left',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: 'white',
+                                    fontSize: '0.9rem',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    transition: 'background 0.2s',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                            >
+                                {reason}
+                            </button>
+                        ))}
+                        <button
+                            onClick={() => setShowReportMenu(false)}
+                            style={{
+                                marginTop: '8px',
+                                padding: '8px',
+                                textAlign: 'center',
+                                background: 'rgba(255,255,255,0.05)',
+                                border: 'none',
+                                color: '#ccc',
+                                fontSize: '0.8rem',
+                                borderRadius: '6px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Cancel
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Post Header */}
             <div style={{
                 padding: '16px 20px',
@@ -429,14 +567,13 @@ const FeedPost = ({
                             whileTap={{ scale: 0.8 }}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                if (window.confirm("Flag this content as inappropriate? It will be hidden for you immediately.")) {
-                                    reportPost ? reportPost(imgItem) : hidePost(imgItem);
-                                }
+                                // Open the new interactive report menu
+                                setShowReportMenu(prev => !prev);
                             }}
-                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
+                            style={{ background: 'none', border: 'none', color: showReportMenu ? '#ef4444' : 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
                             title="Report / Flag Content"
                         >
-                            <Flag size={28} strokeWidth={1.5} className="hover:text-red-500 transition-colors" />
+                            <Flag size={28} strokeWidth={1.5} className={(showReportMenu ? "text-red-500 fill-red-500/20" : "") + " hover:text-red-500 transition-colors"} />
                         </motion.button>
                     </div>
                 </div>

@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { db } from '../firebase';
-import { collection, doc, setDoc, onSnapshot, query, where, orderBy, runTransaction } from 'firebase/firestore';
+import { collection, doc, setDoc, deleteDoc, onSnapshot, query, where, orderBy, runTransaction } from 'firebase/firestore';
 // import { httpsCallable } from 'firebase/functions'; // Removed, using useApi
 import { useAuth } from './AuthContext';
 import { useModel } from './ModelContext';
@@ -336,6 +336,86 @@ export function UserInteractionsProvider({ children }) {
         }
     };
 
+    const unhidePost = async (imgItem) => {
+        if (!currentUser) return false;
+        const id = imgItem.id;
+
+        // Optimistic update
+        setHiddenIds(prev => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+        });
+
+        try {
+            await deleteDoc(doc(db, `users/${currentUser.uid}/hidden`, id));
+            toast.success("Post unhidden");
+        } catch (error) {
+            console.error("Unhide post failed:", error);
+            // Revert
+            setHiddenIds(prev => new Set(prev).add(id));
+            toast.error("Failed to unhide post");
+        }
+    };
+
+    const voteOnSafety = async (imgItem, verdict) => {
+        if (!currentUser) {
+            toast.error("Please log in to vote");
+            return;
+        }
+
+        try {
+            await apiCall('api', {
+                action: 'moderationVote',
+                jobId: imgItem.id,
+                verdict: verdict
+            }, { toastErrors: true });
+
+            if (verdict === 'unsafe') {
+                toast.success("Voted to remove", { icon: '🗑️' });
+                // Also hide locally? Yes ideally
+                setHiddenIds(prev => new Set(prev).add(imgItem.id));
+            } else {
+                toast.success("Voted to keep", { icon: '🛡️' });
+                // Unhide locally if it was hidden?
+                if (hiddenIds.has(imgItem.id)) {
+                    unhidePost(imgItem);
+                }
+            }
+        } catch (error) {
+            console.error("Safety vote failed:", error);
+        }
+    };
+
+    const appealPost = async (imgItem) => {
+        if (!currentUser) return;
+        const id = imgItem.id;
+
+        // Optimistic unhide locally
+        setHiddenIds(prev => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+        });
+
+        try {
+            // Also ensure we remove from local hidden persistence if present
+            try {
+                await deleteDoc(doc(db, `users/${currentUser.uid}/hidden`, id));
+            } catch (e) { /* ignore */ }
+
+            await apiCall('api', {
+                action: 'appealGeneration',
+                jobId: id
+            }, { toastErrors: true });
+
+            toast.success("Appeal submitted", { icon: '⚖️' });
+        } catch (error) {
+            console.error("Appeal failed:", error);
+            toast.error("Appeal failed");
+        }
+    };
+
     // --- App Likes Logic (Moved from useAppLikes) ---
     const [likedAppIds, setLikedAppIds] = useState(new Set());
 
@@ -444,7 +524,10 @@ export function UserInteractionsProvider({ children }) {
         isLiked,
         isBookmarked,
         hidePost,
+        unhidePost,
         reportPost,
+        appealPost,
+        voteOnSafety,
         hiddenIds,
         isHidden,
         toggleLike,

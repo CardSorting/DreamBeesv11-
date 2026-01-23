@@ -206,6 +206,52 @@ export const handleReportGeneration = async (request) => {
     }
 };
 
+export const handleAppealGeneration = async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', "Auth required");
+    const { jobId } = request.data;
+
+    try {
+        const jobRef = db.collection('generation_queue').doc(jobId);
+
+        await db.runTransaction(async (t) => {
+            const jobDoc = await t.get(jobRef);
+            if (!jobDoc.exists) throw new HttpsError('not-found', "Job not found");
+
+            if (jobDoc.data().userId !== uid) {
+                throw new HttpsError('permission-denied', "Only the owner can appeal");
+            }
+
+            // Limit appeals? Maybe once per job.
+            if (jobDoc.data().isAppeal) {
+                // throw new HttpsError('failed-precondition', "Already appealed");
+                // For now, allow re-appeal or just succeed idempotently
+                return;
+            }
+
+            const updateData = {
+                moderationScore: 0,       // Reset score
+                reportCount: 0,           // Reset legacy count
+                hidden: false,            // Unhide
+                isAppeal: true,           // Mark as appeal for high priority review
+                lastAppealedAt: FieldValue.serverTimestamp()
+            };
+
+            t.update(jobRef, updateData);
+
+            if (jobDoc.data().resultImageId) {
+                t.update(db.collection('images').doc(jobDoc.data().resultImageId), {
+                    hidden: false
+                });
+            }
+        });
+
+        return { success: true };
+    } catch (e) {
+        throw handleError(e, { uid });
+    }
+};
+
 export const handleRateShowcaseImage = async (request) => {
     if (!request.auth?.uid) throw new HttpsError('unauthenticated', "Auth required");
     try {
