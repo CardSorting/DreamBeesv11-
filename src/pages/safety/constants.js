@@ -42,10 +42,30 @@ export const scoreToPercent = (score) => {
     return ((normalized - HIDE_THRESHOLD) / (SAFE_THRESHOLD - HIDE_THRESHOLD)) * 100;
 };
 
+// Creator Tiers (Anonymized)
+export const CREATOR_TIERS = {
+    new: { label: 'New Creator', color: 'text-blue-400', bg: 'bg-blue-500/10' },
+    established: { label: 'Active Creator', color: 'text-purple-400', bg: 'bg-purple-500/10' },
+    top: { label: 'Top Creator', color: 'text-yellow-400', bg: 'bg-yellow-500/10' }
+};
+
+export const getCreatorTier = (generationCount = 0) => {
+    if (generationCount >= 100) return CREATOR_TIERS.top;
+    if (generationCount >= 10) return CREATOR_TIERS.established;
+    return CREATOR_TIERS.new;
+};
+
+// Urgency Thresholds
+export const URGENCY_LEVELS = {
+    hot: { label: '🔥 Hot', color: 'text-red-400', bg: 'bg-red-500/10' },
+    aging: { label: '⏰ Aging', color: 'text-amber-400', bg: 'bg-amber-500/10' },
+    critical: { label: '🚨 Critical', color: 'text-red-600', bg: 'bg-red-600/10' }
+};
+
 // Time ago helper
 export const timeAgo = (timestamp) => {
     if (!timestamp) return 'Unknown';
-    const seconds = Math.floor((Date.now() - timestamp.seconds * 1000) / 1000);
+    const seconds = Math.floor((Date.now() - (timestamp.seconds * 1000 || timestamp)) / 1000);
     if (seconds < 60) return 'Just now';
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;

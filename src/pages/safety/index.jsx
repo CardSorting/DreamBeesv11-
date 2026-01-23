@@ -11,6 +11,7 @@ import { getOptimizedImageUrl } from '../../utils';
 import { useVoting } from './hooks/useVoting';
 import { useSafetyQueue } from './hooks/useSafetyQueue';
 import { useSafetyStats } from './hooks/useSafetyStats';
+import { useLeaderboard } from './hooks/useLeaderboard';
 
 // Components
 import StatsHUD from './components/StatsHUD';
@@ -18,23 +19,28 @@ import ScoreBar from './components/ScoreBar';
 import VoteButtons from './components/VoteButtons';
 import OnboardingModal from './components/OnboardingModal';
 import KarmaToast from './components/KarmaToast';
+import LeaderboardPanel from './components/LeaderboardPanel';
+import SessionSummary from './components/SessionSummary';
 
 // Constants
-import { getReasonInfo, timeAgo } from './constants';
+import { getReasonInfo, timeAgo, getCreatorTier, URGENCY_LEVELS } from './constants';
 
 export default function CommunitySafety() {
+    // ... (rest of the component imports/logic remains the same)
     const { userProfile } = useUserInteractions();
 
     // Hooks
     const queue = useSafetyQueue();
     const stats = useSafetyStats(queue.queueLength);
     const voting = useVoting();
+    const leaderboard = useLeaderboard();
 
     // UI State
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [expandedDetails, setExpandedDetails] = useState(false);
     const [hoveredButton, setHoveredButton] = useState(null);
     const [showShortcuts, setShowShortcuts] = useState(false);
+    const [showSummary, setShowSummary] = useState(false);
 
     // Onboarding check
     useEffect(() => {
@@ -117,7 +123,7 @@ export default function CommunitySafety() {
                             animate={{ opacity: 0 }}
                             transition={{ duration: 0.5 }}
                             className={`fixed inset-0 pointer-events-none z-30 ${voting.lastVoteFlash === 'safe' ? 'bg-green-500/20' :
-                                    voting.lastVoteFlash === 'unsafe' ? 'bg-red-500/20' : 'bg-zinc-500/20'
+                                voting.lastVoteFlash === 'unsafe' ? 'bg-red-500/20' : 'bg-zinc-500/20'
                                 }`}
                         />
                     )}
@@ -152,6 +158,47 @@ export default function CommunitySafety() {
                     )}
                 </AnimatePresence>
 
+                {/* Community Consensus Meter */}
+                <AnimatePresence>
+                    {voting.consensusData && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                            className="fixed bottom-32 right-8 z-40 bg-zinc-900/90 backdrop-blur-md border border-white/10 p-4 rounded-2xl shadow-xl w-48"
+                        >
+                            <div className="text-[10px] text-zinc-500 uppercase font-bold mb-2 text-center">Community Pulse</div>
+                            <div className="flex gap-1 h-3 rounded-full overflow-hidden mb-2">
+                                <div className="bg-green-500 transition-all duration-1000" style={{ width: `${voting.consensusData.safe}%` }} />
+                                <div className="bg-red-500 transition-all duration-1000" style={{ width: `${voting.consensusData.unsafe}%` }} />
+                            </div>
+                            <div className="flex justify-between text-[10px] font-bold">
+                                <span className="text-green-400">{voting.consensusData.safe}% KEEP</span>
+                                <span className="text-red-400">{voting.consensusData.unsafe}% REMOVE</span>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Pattern Bias Alert */}
+                <AnimatePresence>
+                    {voting.patternAlert && (
+                        <motion.div
+                            initial={{ opacity: 0, x: -100 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="fixed left-8 bottom-32 z-40 max-w-[240px]"
+                        >
+                            <div className="bg-orange-500/10 border border-orange-500/30 p-3 rounded-xl backdrop-blur-md flex gap-3 items-start">
+                                <AlertTriangle size={18} className="text-orange-400 shrink-0 mt-0.5" />
+                                <div className="text-[11px] text-orange-200 leading-tight">
+                                    <span className="font-bold block mb-1">Voting Pattern Warning</span>
+                                    {voting.patternAlert}
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
                 {/* Stats HUD */}
                 <StatsHUD
                     votePower={voting.votePower}
@@ -177,105 +224,154 @@ export default function CommunitySafety() {
                         <p className="text-zinc-500 mt-4 text-sm">Loading review queue...</p>
                     </div>
                 ) : !currentCard ? (
-                    <div className="text-center py-20 max-w-md mx-auto">
-                        <div className="w-24 h-24 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500">
-                            <Inbox size={48} />
-                        </div>
-                        <h2 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-600 bg-clip-text text-transparent mb-4">
-                            Queue Cleared!
-                        </h2>
-                        <p className="text-zinc-500 mb-6">
-                            Amazing! You reviewed {stats.dailyCount} posts today.
-                        </p>
-                    </div>
-                ) : (
-                    <div className="relative w-full max-w-md h-[60vh]" {...swipeHandlers}>
-                        <AnimatePresence mode="popLayout">
-                            <motion.div
-                                key={currentCard.id}
-                                initial={{ scale: 0.9, opacity: 0, y: 50 }}
-                                animate={{ scale: 1, opacity: 1, y: 0 }}
-                                exit={{ scale: 0.9, opacity: 0, x: 200 }}
-                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                className="absolute inset-0 bg-zinc-900 rounded-3xl overflow-hidden border border-white/10 shadow-2xl cursor-grab active:cursor-grabbing select-none"
+                    <>
+                        <div className="text-center py-20 max-w-md mx-auto">
+                            <div className="w-24 h-24 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-6 text-green-500">
+                                <Inbox size={48} />
+                            </div>
+                            <h2 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-600 bg-clip-text text-transparent mb-4">
+                                Queue Cleared!
+                            </h2>
+                            <p className="text-zinc-500 mb-6">
+                                Amazing! You reviewed {stats.dailyCount} posts today.
+                            </p>
+                            <button
+                                onClick={() => setShowSummary(true)}
+                                className="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-purple-500/20"
                             >
-                                {/* Image */}
-                                <div className="absolute inset-0">
-                                    <img
-                                        src={getOptimizedImageUrl(currentCard.imageUrl || currentCard.url)}
-                                        alt="Content to review"
-                                        className="w-full h-full object-cover"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/95" />
-                                </div>
+                                View Session Impact
+                            </button>
+                        </div>
+                        {showSummary && (
+                            <SessionSummary
+                                sessionCount={voting.sessionCount}
+                                karmaEarned={voting.sessionCount * 5} // Mock calc
+                                consensusMatches={Math.floor(voting.sessionCount * 0.8)} // Mock calc
+                                onShare={() => voting.triggerConfetti('big')}
+                                onClose={() => setShowSummary(false)}
+                            />
+                        )}
+                    </>
+                ) : (
+                    <div className="w-full max-w-6xl flex flex-col lg:flex-row gap-8 items-start justify-center">
+                        {/* Leaderboard - Side on Desktop */}
+                        <div className="hidden lg:block w-64 shrink-0 mt-20">
+                            <LeaderboardPanel {...leaderboard} />
+                        </div>
 
-                                {/* Content */}
-                                <div className="absolute inset-x-0 bottom-0 p-5 flex flex-col z-10">
-                                    {/* Tags */}
-                                    <div className="flex flex-wrap gap-2 mb-3">
-                                        {currentCard.isAppeal && (
-                                            <div className="px-3 py-1 bg-blue-500 text-white rounded-full text-xs font-bold flex items-center gap-1.5 animate-pulse">
-                                                <Gavel size={12} /> Appeal
-                                            </div>
-                                        )}
-                                        {(() => {
-                                            const reason = getReasonInfo(currentCard.lastReason);
-                                            return (
-                                                <div className={`px-3 py-1 bg-zinc-700/50 ${reason.color} rounded-full text-xs font-bold flex items-center gap-1.5`}>
-                                                    <span>{reason.icon}</span> {reason.label}
+                        {/* Card Stack */}
+                        <div className="relative w-full max-w-md h-[60vh] flex-1" {...swipeHandlers}>
+                            <AnimatePresence mode="popLayout">
+                                <motion.div
+                                    key={currentCard.id}
+                                    initial={{ scale: 0.9, opacity: 0, y: 50 }}
+                                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                                    exit={{ scale: 0.9, opacity: 0, x: 200 }}
+                                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                    className="absolute inset-0 bg-zinc-900 rounded-3xl overflow-hidden border border-white/10 shadow-2xl cursor-grab active:cursor-grabbing select-none"
+                                >
+                                    {/* Image */}
+                                    <div className="absolute inset-0">
+                                        <img
+                                            src={getOptimizedImageUrl(currentCard.imageUrl || currentCard.url)}
+                                            alt="Content to review"
+                                            className="w-full h-full object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/95" />
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="absolute inset-x-0 bottom-0 p-5 flex flex-col z-10">
+                                        {/* Tags */}
+                                        <div className="flex flex-wrap gap-2 mb-3">
+                                            {currentCard.isAppeal && (
+                                                <div className="px-3 py-1 bg-blue-500 text-white rounded-full text-xs font-bold flex items-center gap-1.5 animate-pulse">
+                                                    <Gavel size={12} /> Appeal
                                                 </div>
-                                            );
-                                        })()}
-                                        <div className="px-2 py-1 bg-zinc-800/50 text-zinc-400 rounded-full text-[10px] flex items-center gap-1">
-                                            <Clock size={10} />
-                                            {timeAgo(currentCard.lastReportedAt || currentCard.createdAt)}
+                                            )}
+                                            {/* Urgency Badge */}
+                                            {(() => {
+                                                const reportCount = currentCard.reportCount || 0;
+                                                const ageHours = (Date.now() - (currentCard.lastReportedAt?.seconds * 1000 || Date.now())) / 3600000;
+                                                let urgency = null;
+                                                if (reportCount >= 10) urgency = URGENCY_LEVELS.hot;
+                                                else if (ageHours >= 24) urgency = URGENCY_LEVELS.aging;
+
+                                                if (!urgency) return null;
+                                                return (
+                                                    <div className={`px-3 py-1 ${urgency.bg} ${urgency.color} rounded-full text-xs font-bold flex items-center gap-1.5 border border-white/5`}>
+                                                        {urgency.label}
+                                                    </div>
+                                                );
+                                            })()}
+                                            {/* Creator Context */}
+                                            {(() => {
+                                                const tier = getCreatorTier(currentCard.creatorGenerationCount || 0);
+                                                return (
+                                                    <div className={`px-3 py-1 ${tier.bg} ${tier.color} rounded-full text-xs font-bold flex items-center gap-1.5 border border-white/5`}>
+                                                        <Users size={12} /> {tier.label}
+                                                    </div>
+                                                );
+                                            })()}
+                                            {(() => {
+                                                const reason = getReasonInfo(currentCard.lastReason);
+                                                return (
+                                                    <div className={`px-3 py-1 bg-zinc-700/50 ${reason.color} rounded-full text-xs font-bold flex items-center gap-1.5`}>
+                                                        <span>{reason.icon}</span> {reason.label}
+                                                    </div>
+                                                );
+                                            })()}
+                                            <div className="px-2 py-1 bg-zinc-800/50 text-zinc-400 rounded-full text-[10px] flex items-center gap-1">
+                                                <Clock size={10} />
+                                                {timeAgo(currentCard.lastReportedAt || currentCard.createdAt)}
+                                            </div>
+                                        </div>
+
+                                        {/* Score Bar */}
+                                        <ScoreBar score={currentScore} votePower={voting.votePower} hoveredButton={hoveredButton} />
+
+                                        {/* Details Toggle */}
+                                        <button
+                                            onClick={() => setExpandedDetails(!expandedDetails)}
+                                            className="flex items-center gap-2 text-zinc-400 hover:text-white mb-3 text-xs"
+                                        >
+                                            <Info size={12} /> Why flagged?
+                                            {expandedDetails ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                                        </button>
+
+                                        <AnimatePresence>
+                                            {expandedDetails && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    className="bg-black/40 rounded-xl p-3 mb-3 text-xs space-y-2"
+                                                >
+                                                    <div className="flex justify-between"><span className="text-zinc-500">Reports:</span><span className="text-white font-bold">{currentCard.reportCount || 1}</span></div>
+                                                    <div className="flex justify-between"><span className="text-zinc-500">Score:</span><span className={`font-bold ${currentScore < 0 ? 'text-red-400' : 'text-green-400'}`}>{currentScore}</span></div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+
+                                        {/* Prompt */}
+                                        {currentCard.prompt && (
+                                            <p className="text-white/80 text-sm line-clamp-2 italic mb-4">"{currentCard.prompt}"</p>
+                                        )}
+
+                                        {/* Vote Buttons */}
+                                        <VoteButtons
+                                            onVote={onVote}
+                                            disabled={!!voting.pendingVote && !voting.quickVoteMode}
+                                            onHover={setHoveredButton}
+                                        />
+
+                                        <div className="flex justify-between text-[10px] text-zinc-500 px-2 mt-2 font-mono opacity-60">
+                                            <span>← KEEP</span><span>SPACE</span><span>REMOVE →</span>
                                         </div>
                                     </div>
-
-                                    {/* Score Bar */}
-                                    <ScoreBar score={currentScore} votePower={voting.votePower} hoveredButton={hoveredButton} />
-
-                                    {/* Details Toggle */}
-                                    <button
-                                        onClick={() => setExpandedDetails(!expandedDetails)}
-                                        className="flex items-center gap-2 text-zinc-400 hover:text-white mb-3 text-xs"
-                                    >
-                                        <Info size={12} /> Why flagged?
-                                        {expandedDetails ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                                    </button>
-
-                                    <AnimatePresence>
-                                        {expandedDetails && (
-                                            <motion.div
-                                                initial={{ height: 0, opacity: 0 }}
-                                                animate={{ height: 'auto', opacity: 1 }}
-                                                exit={{ height: 0, opacity: 0 }}
-                                                className="bg-black/40 rounded-xl p-3 mb-3 text-xs space-y-2"
-                                            >
-                                                <div className="flex justify-between"><span className="text-zinc-500">Reports:</span><span className="text-white font-bold">{currentCard.reportCount || 1}</span></div>
-                                                <div className="flex justify-between"><span className="text-zinc-500">Score:</span><span className={`font-bold ${currentScore < 0 ? 'text-red-400' : 'text-green-400'}`}>{currentScore}</span></div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-
-                                    {/* Prompt */}
-                                    {currentCard.prompt && (
-                                        <p className="text-white/80 text-sm line-clamp-2 italic mb-4">"{currentCard.prompt}"</p>
-                                    )}
-
-                                    {/* Vote Buttons */}
-                                    <VoteButtons
-                                        onVote={onVote}
-                                        disabled={!!voting.pendingVote && !voting.quickVoteMode}
-                                        onHover={setHoveredButton}
-                                    />
-
-                                    <div className="flex justify-between text-[10px] text-zinc-500 px-2 mt-2 font-mono opacity-60">
-                                        <span>← KEEP</span><span>SPACE</span><span>REMOVE →</span>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        </AnimatePresence>
+                                </motion.div>
+                            </AnimatePresence>
+                        </div>
                     </div>
                 )}
             </main>

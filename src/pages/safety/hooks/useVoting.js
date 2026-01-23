@@ -16,6 +16,24 @@ export function useVoting() {
     const [lastVoteResult, setLastVoteResult] = useState(null);
     const [lastMilestone, setLastMilestone] = useState(0);
     const [sessionCount, setSessionCount] = useState(0);
+    const [consensusData, setConsensusData] = useState(null);
+    const [patternAlert, setPatternAlert] = useState(null);
+
+    // Pattern Tracking
+    const [voteStats, setVoteStats] = useState(() => {
+        const saved = JSON.parse(localStorage.getItem('safetyPatterns') || '{"safe": 0, "unsafe": 0, "total": 0}');
+        return saved;
+    });
+
+    useEffect(() => {
+        localStorage.setItem('safetyPatterns', JSON.stringify(voteStats));
+        if (voteStats.total >= 10) {
+            const keepRatio = voteStats.safe / voteStats.total;
+            if (keepRatio > 0.85) setPatternAlert("Bias detected: High KEEP rate (85%+). Review carefully!");
+            else if (keepRatio < 0.15) setPatternAlert("Bias detected: High REMOVE rate (85%+). Review carefully!");
+            else setPatternAlert(null);
+        }
+    }, [voteStats]);
 
     // Vote Power Calculation
     const votePower = useMemo(() =>
@@ -62,6 +80,23 @@ export function useVoting() {
             const result = await voteOnSafety(post, verdict);
 
             if (result && !result.alreadyVoted && verdict !== 'skip') {
+                // Update consensus meter
+                const safeVotes = result.safeVotes || 0;
+                const unsafeVotes = result.unsafeVotes || 0;
+                const total = safeVotes + unsafeVotes || 1;
+                setConsensusData({
+                    safe: Math.round((safeVotes / total) * 100),
+                    unsafe: Math.round((unsafeVotes / total) * 100)
+                });
+                setTimeout(() => setConsensusData(null), 4000);
+
+                // Update pattern stats
+                setVoteStats(prev => ({
+                    ...prev,
+                    [verdict === 'safe' ? 'safe' : 'unsafe']: prev[verdict === 'safe' ? 'safe' : 'unsafe'] + 1,
+                    total: prev.total + 1
+                }));
+
                 setKarmaToast({
                     karma: result.karmaAwarded || 1,
                     streak: result.streakBonus || 0,
@@ -130,6 +165,8 @@ export function useVoting() {
         lastVoteFlash,
         lastVoteResult,
         sessionCount,
+        consensusData,
+        patternAlert,
         handleVote,
         handleUndo,
         toggleQuickVote,
