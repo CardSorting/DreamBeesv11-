@@ -31,36 +31,49 @@ export const handleCreateGenerationRequest = async (request) => {
     const safeCfg = Math.min(Math.max(parseFloat(cfg) || 7.0, 1.0), 20.0);
 
     try {
-        const userRef = db.collection('users').doc(uid);
+
         const queueRef = db.collection('generation_queue').doc();
 
-        await db.runTransaction(async (t) => {
-            const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
-            const userData = userDoc.data();
-            const isSubscriber = userData.subscriptionStatus === 'active';
-
-            const activeJobs = await t.get(db.collection('generation_queue').where('userId', '==', uid).where('status', 'in', ['queued', 'processing']).limit(11));
-            if (activeJobs.size >= 10) throw new HttpsError('resource-exhausted', "Too many pending generations.");
-
-            let cost = 0;
-            const isPremiumModel = ['zit-model'].includes(modelId);
-            const isFreeModel = ['galmix'].includes(modelId);
-
-            if (isFreeModel) cost = 0;
-            else if (useTurbo || isPremiumModel) cost = 1.0;
-            else if (!isSubscriber) cost = 0.5;
-
-            const effectiveZaps = (userData.zaps || 0);
-            if (effectiveZaps < cost && cost > 0) throw new HttpsError('resource-exhausted', `Insufficient Zaps.`);
-
-            t.update(userRef, { zaps: effectiveZaps - cost, lastGenerationTime: new Date() });
-            t.set(queueRef, {
-                userId: uid, prompt: cleanPrompt, negative_prompt: negative_prompt || "", modelId: modelId || "wai-illustrious",
+        if (uid === 'anonymous-galmix') {
+            // Anonymous Path: No Zap deduction, no user doc optimization
+            await queueRef.set({
+                userId: uid, prompt: cleanPrompt, negative_prompt: negative_prompt || "", modelId: modelId || "galmix",
                 status: 'queued', aspectRatio: safeAspectRatio, steps: safeSteps, cfg: safeCfg, seed: seed || -1,
                 scheduler: scheduler || 'DPM++ 2M Karras', promptHash, promptMetadata, createdAt: FieldValue.serverTimestamp()
             });
-        });
+        } else {
+            // Authenticated Path: Transaction for Zaps
+            const userRef = db.collection('users').doc(uid);
+
+            await db.runTransaction(async (t) => {
+                const userDoc = await t.get(userRef);
+                if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+                const userData = userDoc.data();
+                const isSubscriber = userData.subscriptionStatus === 'active';
+
+                const activeJobs = await t.get(db.collection('generation_queue').where('userId', '==', uid).where('status', 'in', ['queued', 'processing']).limit(11));
+                if (activeJobs.size >= 10) throw new HttpsError('resource-exhausted', "Too many pending generations.");
+
+                let cost = 0;
+                const isPremiumModel = ['zit-model'].includes(modelId);
+                const isFreeModel = ['galmix'].includes(modelId);
+
+                if (isFreeModel) cost = 0;
+                else if (useTurbo || isPremiumModel) cost = 1.0;
+                else if (!isSubscriber) cost = 0.5;
+
+                const effectiveZaps = (userData.zaps || 0);
+                if (effectiveZaps < cost && cost > 0) throw new HttpsError('resource-exhausted', `Insufficient Zaps.`);
+
+                if (cost > 0) t.update(userRef, { zaps: effectiveZaps - cost, lastGenerationTime: new Date() });
+
+                t.set(queueRef, {
+                    userId: uid, prompt: cleanPrompt, negative_prompt: negative_prompt || "", modelId: modelId || "wai-illustrious",
+                    status: 'queued', aspectRatio: safeAspectRatio, steps: safeSteps, cfg: safeCfg, seed: seed || -1,
+                    scheduler: scheduler || 'DPM++ 2M Karras', promptHash, promptMetadata, createdAt: FieldValue.serverTimestamp()
+                });
+            });
+        }
 
         const LOCATION = "us-central1";
         const queue = getFunctions().taskQueue(`locations/${LOCATION}/functions/urgentWorker`);
