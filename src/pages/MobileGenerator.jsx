@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
+import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useGenerationLogic } from '../hooks/generator/useGenerationLogic';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
@@ -343,7 +344,7 @@ export default function MobileGenerator() {
                         <div style={{ padding: '8px 12px', fontSize: '0.85rem', fontWeight: '600', color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                             Select Model
                         </div>
-                        {(availableModels || []).filter(m => m.isActive !== false).map(model => (
+                        {(availableModels || []).filter(m => m.isActive !== false).filter(m => currentUser ? true : m.id === 'galmix').map(model => (
                             <button
                                 key={model.id}
                                 onClick={() => {

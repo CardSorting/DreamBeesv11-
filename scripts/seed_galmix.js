@@ -23,7 +23,7 @@ async function seedGalmix() {
     isFree: true,
     order: -1, // Make it appear at the top
     tags: ['Fast', 'Free', 'Universal'],
-    image: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=1000&auto=format&fit=crop', // Temporary placeholder image
+    image: '/models/galmix.png', // Local preview image
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     updatedAt: admin.firestore.FieldValue.serverTimestamp()
   };
