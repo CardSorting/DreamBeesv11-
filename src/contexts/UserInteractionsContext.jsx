@@ -292,6 +292,50 @@ export function UserInteractionsProvider({ children }) {
         }
     };
 
+    const reportPost = async (imgItem, reason = "user_flagged") => {
+        if (!currentUser) {
+            toast.error("Please log in to report content");
+            return false;
+        }
+
+        const id = imgItem.id;
+        if (hiddenIds.has(id)) {
+            toast('Content already hidden', { icon: 'check' });
+            return;
+        }
+
+        // 1. Immediate Personal Hide (Optimistic)
+        setHiddenIds(prev => new Set(prev).add(id));
+
+        try {
+            // 2. Persist Personal Hide
+            const hidePromise = setDoc(doc(db, `users/${currentUser.uid}/hidden`, id), {
+                imageId: id,
+                createdAt: new Date().toISOString(),
+                reason: reason,
+                type: 'report',
+                prompt: imgItem.prompt || "",
+                url: imgItem.url || imgItem.imageUrl || ""
+            });
+
+            // 3. Send Global Report
+            const reportPromise = apiCall('api', {
+                action: 'reportGeneration',
+                jobId: id, // Assuming imgItem.id IS the jobId for generations
+                reason: reason
+            }, { toastErrors: false });
+
+            await Promise.all([hidePromise, reportPromise]);
+
+            toast.success("Content flagged and hidden", { icon: '🚩' });
+        } catch (error) {
+            console.error("Report failed:", error);
+            // Don't revert the hide, assuming user wants it gone regardless of backend success
+            // But maybe show error toast
+            toast.error("Verified report failed, but hidden locally.");
+        }
+    };
+
     // --- App Likes Logic (Moved from useAppLikes) ---
     const [likedAppIds, setLikedAppIds] = useState(new Set());
 
@@ -400,6 +444,7 @@ export function UserInteractionsProvider({ children }) {
         isLiked,
         isBookmarked,
         hidePost,
+        reportPost,
         hiddenIds,
         isHidden,
         toggleLike,
@@ -414,6 +459,7 @@ export function UserInteractionsProvider({ children }) {
         _isLiked: isLiked,
         _toggleLike: toggleLike,
         _hidePost: hidePost,
+        _reportPost: reportPost,
         _isHidden: isHidden,
         hidden
     };

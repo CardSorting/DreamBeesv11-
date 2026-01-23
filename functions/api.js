@@ -179,6 +179,7 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
             case 'getImageDetail': return Data.handleGetImageDetail(request);
             case 'getUserImages': return Data.handleGetUserImages(request);
             case 'rateGeneration': return Data.handleRateGeneration(request);
+            case 'reportGeneration': return Data.handleReportGeneration(request);
             case 'rateShowcaseImage': return Data.handleRateShowcaseImage(request);
             case 'deleteImage': return Data.handleDeleteImage(request);
             case 'deleteImagesBatch': return Data.handleDeleteImagesBatch(request);

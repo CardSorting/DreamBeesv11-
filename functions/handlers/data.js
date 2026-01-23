@@ -157,6 +157,55 @@ export const handleRateGeneration = async (request) => {
     } catch (e) { throw handleError(e, { uid }); }
 };
 
+export const handleReportGeneration = async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', "Auth required");
+    const { jobId, reason } = request.data;
+    const REPORT_THRESHOLD = 3;
+
+    try {
+        const jobRef = db.collection('generation_queue').doc(jobId);
+        const reportsRef = jobRef.collection('reporters').doc(uid);
+
+        await db.runTransaction(async (t) => {
+            const reportDoc = await t.get(reportsRef);
+            if (reportDoc.exists) {
+                // User already reported this. Be idempotent.
+                return;
+            }
+
+            const jobDoc = await t.get(jobRef);
+            if (!jobDoc.exists) throw new HttpsError('not-found', "Job not found");
+
+            const currentReports = (jobDoc.data().reportCount || 0) + 1;
+            const shouldHide = currentReports >= REPORT_THRESHOLD;
+
+            t.set(reportsRef, {
+                uid,
+                reason: reason || 'unspecified',
+                createdAt: FieldValue.serverTimestamp()
+            });
+
+            t.update(jobRef, {
+                reportCount: currentReports,
+                hidden: shouldHide, // Globally hide if threshold reached
+                lastReportedAt: FieldValue.serverTimestamp()
+            });
+
+            // If linked to an image result, hide that too if threshold reached
+            if (shouldHide && jobDoc.data().resultImageId) {
+                t.update(db.collection('images').doc(jobDoc.data().resultImageId), {
+                    hidden: true
+                });
+            }
+        });
+
+        return { success: true };
+    } catch (e) {
+        throw handleError(e, { uid });
+    }
+};
+
 export const handleRateShowcaseImage = async (request) => {
     if (!request.auth?.uid) throw new HttpsError('unauthenticated', "Auth required");
     try {

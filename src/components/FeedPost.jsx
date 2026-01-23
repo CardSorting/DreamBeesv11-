@@ -22,7 +22,7 @@ const FeedPost = ({
     onTagClick
 }) => {
     const { _currentUser } = useAuth();
-    const { isLiked, isBookmarked, toggleLike, toggleBookmark, hidePost, isHidden } = useUserInteractions();
+    const { isLiked, isBookmarked, toggleLike, toggleBookmark, hidePost, reportPost, isHidden } = useUserInteractions();
 
 
     const [showLargeHeart, setShowLargeHeart] = useState(false);
@@ -429,12 +429,14 @@ const FeedPost = ({
                             whileTap={{ scale: 0.8 }}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                hidePost(imgItem);
+                                if (window.confirm("Flag this content as inappropriate? It will be hidden for you immediately.")) {
+                                    reportPost ? reportPost(imgItem) : hidePost(imgItem);
+                                }
                             }}
                             style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 0 }}
-                            title="Hide Post"
+                            title="Report / Flag Content"
                         >
-                            <Flag size={28} strokeWidth={1.5} />
+                            <Flag size={28} strokeWidth={1.5} className="hover:text-red-500 transition-colors" />
                         </motion.button>
                     </div>
                 </div>
