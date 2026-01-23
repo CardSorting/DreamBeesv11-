@@ -8,6 +8,7 @@ import { collection, query, where, orderBy, limit, getDocs } from 'firebase/fire
 import { Send, Sparkles, Bot, User as UserIcon, Image as ImageIcon, Download, RefreshCw, Copy, X, ChevronDown, Check } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import html2canvas from 'html2canvas';
+import LoadingOrb from '../components/generator/LoadingOrb';
 
 export default function MobileGenerator() {
     const { currentUser } = useAuth();
@@ -128,7 +129,7 @@ export default function MobileGenerator() {
     };
 
     // Logic Hook
-    const { handleGenerate } = useGenerationLogic({
+    const { handleGenerate, cancelGeneration } = useGenerationLogic({
         prompt: inputValue,
         selectedModel: selectedModel || availableModels?.[0],
         generationMode: 'image',
@@ -608,27 +609,51 @@ export default function MobileGenerator() {
                             <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#a1a1aa' }}>DreamBees</span>
                         </div>
                         <div style={{
-                            padding: '14px 18px',
+                            padding: '16px',
                             borderRadius: '4px 24px 24px 24px',
-                            background: 'rgba(24, 24, 27, 0.8)',
-                            backdropFilter: 'blur(10px)',
+                            background: 'rgba(24, 24, 27, 0.95)',
                             color: '#fff',
                             fontSize: '0.95rem',
                             border: '1px solid rgba(139, 92, 246, 0.2)',
-                            display: 'flex', alignItems: 'center', gap: '12px',
-                            boxShadow: '0 4px 15px rgba(139, 92, 246, 0.1)'
+                            display: 'flex', flexDirection: 'column', gap: '12px',
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                            minWidth: '220px'
                         }}>
-                            <div className="typing-indicator">
-                                <span></span><span></span><span></span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ transform: 'scale(0.8)', transformOrigin: 'left center' }}>
+                                    <LoadingOrb size="small" />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                    <span style={{
+                                        color: '#e4e4e7',
+                                        fontWeight: '500',
+                                        fontSize: '0.95rem',
+                                        background: 'linear-gradient(90deg, #fff, #a1a1aa)',
+                                        WebkitBackgroundClip: 'text',
+                                        WebkitTextFillColor: 'transparent'
+                                    }}>
+                                        {loadingStatus}
+                                    </span>
+                                </div>
                             </div>
-                            <span style={{
-                                color: '#e4e4e7',
-                                fontSize: '0.95rem',
-                                fontWeight: '500',
-                                background: 'linear-gradient(90deg, #fff, #a1a1aa)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent'
-                            }}>{loadingStatus}</span>
+
+                            <button
+                                onClick={cancelGeneration}
+                                style={{
+                                    alignSelf: 'flex-start',
+                                    background: 'rgba(239, 68, 68, 0.1)',
+                                    color: '#ef4444',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    padding: '6px 12px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: '500',
+                                    cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: '6px'
+                                }}
+                            >
+                                <X size={14} /> Stop
+                            </button>
                         </div>
                     </div>
                 )}

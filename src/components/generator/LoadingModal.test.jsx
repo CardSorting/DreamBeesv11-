@@ -1,10 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act, cleanup } from '@testing-library/react';
+import { render, screen, act, cleanup, fireEvent } from '@testing-library/react';
 import LoadingModal from './LoadingModal';
+
+// Mock LoadingOrb
+vi.mock('./LoadingOrb', () => ({
+    default: () => <div data-testid="loading-orb">LoadingOrb</div>
+}));
 
 // Mock Lucide icons
 vi.mock('lucide-react', () => ({
-    Sparkles: () => <div data-testid="sparkles-icon">Sparkles</div>,
+    X: () => <div data-testid="close-icon">X</div>,
     Zap: () => <div data-testid="zap-icon">Zap</div>
 }));
 
@@ -31,12 +36,24 @@ describe('LoadingModal', () => {
         render(<LoadingModal useTurbo={false} />);
         expect(screen.getByText('Creating')).toBeTruthy();
         expect(screen.getByText('Dreaming up your vision...')).toBeTruthy();
+        expect(screen.getByTestId('loading-orb')).toBeTruthy();
         expect(screen.queryByText('TURBO MODE ACTIVE')).toBeNull();
     });
 
     it('shows turbo badge when useTurbo is true', () => {
         render(<LoadingModal useTurbo={true} />);
         expect(screen.getByText('TURBO MODE ACTIVE')).toBeTruthy();
+    });
+
+    it('shows stop button and calls onCancel', () => {
+        const onCancel = vi.fn();
+        render(<LoadingModal onCancel={onCancel} />);
+
+        const stopButton = screen.getByText('Stop Generating');
+        expect(stopButton).toBeTruthy();
+
+        fireEvent.click(stopButton);
+        expect(onCancel).toHaveBeenCalledTimes(1);
     });
 
     it('cycles through loading messages', () => {
@@ -68,14 +85,12 @@ describe('LoadingModal', () => {
         });
 
         // Should show one of the grace messages
-        // Since it picks random, we just check if the message changed to one of the possible grace messages
         const graceMessages = [
             "This is taking a bit longer than usual...",
             "Complex prompts need a little more time...",
             "Our GPUs are crunching hard for you..."
         ];
 
-        // Get the current text
         const currentText = screen.getByText((content) => {
             return graceMessages.includes(content);
         });

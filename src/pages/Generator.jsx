@@ -153,7 +153,7 @@ export default function Generator() {
     }, [isFullscreen]);
 
     // 3. Logic Hooks
-    const { handleGenerate } = useGenerationLogic({
+    const { handleGenerate, cancelGeneration } = useGenerationLogic({
         prompt, selectedModel, generationMode,
         negPrompt, aspectRatio, steps, cfg, seed, useTurbo,
         zaps: selectedModel?.id === 'galmix' ? 999 : zaps, // bypass local check
@@ -442,7 +442,7 @@ export default function Generator() {
                         )}
                     </motion.div>
                 )}
-                {generating && <LoadingModal prompt={prompt} useTurbo={useTurbo} />}
+                {generating && <LoadingModal prompt={prompt} useTurbo={useTurbo} onCancel={cancelGeneration} />}
             </AnimatePresence>
 
             {/* Global CSS for this page's specific needs not covered by Tailwind/global styles */}

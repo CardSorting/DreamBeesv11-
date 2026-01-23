@@ -189,5 +189,15 @@ export function useGenerationLogic({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    return { handleGenerate };
+    const cancelGeneration = () => {
+        if (unsubscribeRef.current) {
+            unsubscribeRef.current();
+            unsubscribeRef.current = null;
+        }
+        setGenerating(false);
+        localStorage.removeItem('activeGenerationJob');
+        toast('Generation stopped', { icon: '🛑', id: 'gen-image' });
+    };
+
+    return { handleGenerate, cancelGeneration };
 }
