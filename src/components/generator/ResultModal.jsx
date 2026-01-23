@@ -1,6 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
+import html2canvas from 'html2canvas';
 import { // eslint-disable-next-line no-unused-vars
-    motion, AnimatePresence } from 'framer-motion';
+    motion, AnimatePresence
+} from 'framer-motion';
 import { X, ExternalLink, Download, Share2, Star, Zap } from 'lucide-react';
 
 export default function ResultModal({
@@ -12,10 +14,47 @@ export default function ResultModal({
     onRate,
     downloadUrl
 }) {
+    const imageRef = useRef(null);
     const downloadFilename = useMemo(() => {
         // Removed impure Date.now()
         return `dream-bees-gen.${generationMode === 'video' ? 'mp4' : 'png'}`;
     }, [generationMode]);
+
+    const handleDownload = async () => {
+        if (generationMode === 'video') {
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = downloadFilename;
+            a.target = "_blank";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            return;
+        }
+
+        if (imageRef.current) {
+            try {
+                const canvas = await html2canvas(imageRef.current, {
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: null
+                });
+                const data = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.href = data;
+                link.download = downloadFilename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (error) {
+                console.error("HTML2Canvas download failed", error);
+                // Fallback
+                window.open(downloadUrl, '_blank');
+            }
+        } else {
+            window.open(downloadUrl, '_blank');
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -76,7 +115,7 @@ export default function ResultModal({
                                 {generationMode === 'video' ? (
                                     <video src={generatedImage} controls autoPlay loop style={{ maxWidth: '100%', maxHeight: '60vh', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }} />
                                 ) : (
-                                    <img src={generatedImage} alt="Generated" style={{ maxWidth: '100%', maxHeight: '60vh', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }} />
+                                    <img ref={imageRef} src={generatedImage} crossOrigin="anonymous" alt="Generated" style={{ maxWidth: '100%', maxHeight: '60vh', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }} />
                                 )}
                             </div>
 
@@ -105,12 +144,10 @@ export default function ResultModal({
                                 </div>
 
                                 <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                    <a href={downloadUrl} download={downloadFilename} style={{ textDecoration: 'none' }}>
-                                        <button style={{ width: '100%', background: 'var(--color-accent-primary)', color: 'white', border: 'none', padding: '14px', borderRadius: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                                            <Download size={18} />
-                                            Download
-                                        </button>
-                                    </a>
+                                    <button onClick={handleDownload} style={{ width: '100%', background: 'var(--color-accent-primary)', color: 'white', border: 'none', padding: '14px', borderRadius: '12px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                        <Download size={18} />
+                                        Download
+                                    </button>
                                     <div style={{ display: 'flex', gap: '8px' }}>
                                         <button style={{ flex: 1, background: 'var(--color-bg-tertiary)', border: 'none', padding: '12px', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                                             <Share2 size={16} />
