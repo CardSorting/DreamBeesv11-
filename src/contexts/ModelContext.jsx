@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { collection, getDocs, query, orderBy, where, limit, startAfter } from 'firebase/firestore';
 import { useApi } from '../hooks/useApi';
 import { getOptimizedImageUrl } from '../utils';
+import { useAuth } from './AuthContext';
 
 const ModelContext = createContext();
 
@@ -17,6 +18,7 @@ export function useModel() {
 }
 
 export function ModelProvider({ children }) {
+    const { currentUser } = useAuth();
     const [availableModels, setAvailableModels] = useState([]); // Models should always be an array
     const [selectedModel, setSelectedModel] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -51,7 +53,16 @@ export function ModelProvider({ children }) {
                 if (models.length > 0) {
                     let targetModel = null;
 
-                    if (savedModelId) {
+                    // CHECK AUTH STATUS: Unauthenticated users MUST start with galmix
+                    if (!currentUser) {
+                        targetModel = models.find(m => m.id === 'galmix');
+                        if (targetModel) {
+                            console.log(`[ModelContext] Unauthenticated user. Enforcing default: ${targetModel.id}`);
+                        }
+                    }
+
+                    // If authenticated (or galmix not found for some reason), try saved model
+                    if (!targetModel && savedModelId) {
                         targetModel = models.find(m => m.id === savedModelId);
                     }
 
@@ -80,7 +91,19 @@ export function ModelProvider({ children }) {
 
         fetchModels();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Intentionally empty - only run on mount
+    }, []); // Intentionally empty - only run on mount (currentUser is captured as initial value, which is fine due to AuthProvider blocking)
+
+
+    // Enforce Galmix for unauthenticated users (e.g. on logout)
+    useEffect(() => {
+        if (!loading && !currentUser && selectedModel && selectedModel.id !== 'galmix') {
+            const galmix = availableModels.find(m => m.id === 'galmix');
+            if (galmix) {
+                console.log("[ModelContext] User unauthenticated and on restricted model. Switching to galmix.");
+                setSelectedModel(galmix);
+            }
+        }
+    }, [currentUser, selectedModel, availableModels, loading]);
 
     // Persist selection
     useEffect(() => {
