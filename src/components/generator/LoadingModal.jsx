@@ -78,8 +78,13 @@ export default function LoadingModal({ prompt, useTurbo, onCancel }) {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 1, width: '100%' }}>
-                    <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', letterSpacing: '-0.02em' }}>
+                    <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                         Creating
+                        <span style={{ display: 'inline-flex' }}>
+                            <motion.span animate={{ opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0 }}>.</motion.span>
+                            <motion.span animate={{ opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}>.</motion.span>
+                            <motion.span animate={{ opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}>.</motion.span>
+                        </span>
                     </h3>
                     <div style={{ height: '24px', position: 'relative', width: '100%' }}>
                         <motion.p
@@ -105,6 +110,36 @@ export default function LoadingModal({ prompt, useTurbo, onCancel }) {
                         </motion.p>
                     </div>
                 </div>
+
+                {/* Progress Bar */}
+                <div style={{ width: '100%', maxWidth: '200px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden', marginTop: '8px', position: 'relative' }}>
+                    <motion.div
+                        initial={{ width: '0%' }}
+                        animate={{ width: '95%' }}
+                        transition={{ duration: 12, ease: "linear" }}
+                        style={{
+                            height: '100%',
+                            background: useTurbo ? '#fbbf24' : '#8b5cf6',
+                            borderRadius: '2px',
+                            position: 'relative',
+                            overflow: 'hidden'
+                        }}
+                    >
+                        {/* Shimmer Effect */}
+                        <div style={{
+                            position: 'absolute',
+                            top: 0, left: 0, bottom: 0, width: '100%',
+                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
+                            transform: 'translateX(-100%)',
+                            animation: 'shimmer 1.5s infinite',
+                        }} />
+                    </motion.div>
+                </div>
+                <style>{`
+                    @keyframes shimmer {
+                        100% { transform: translateX(100%); }
+                    }
+                `}</style>
 
                 {useTurbo && (
                     <div style={{
