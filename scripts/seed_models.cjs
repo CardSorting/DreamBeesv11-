@@ -143,6 +143,7 @@ const MODELS = [
         type: 'SDXL',
         order: 19,
         isActive: true,
+        image: '/showcase/crystal-cuteness/cover.png',
         tags: ['Cute', 'Sparkling', 'Art']
     },
     {
@@ -152,6 +153,7 @@ const MODELS = [
         type: 'SDXL',
         order: 20,
         isActive: true,
+        image: '/showcase/veretoon-v10/cover.png',
         tags: ['Toon', 'Anime', 'Vibrant']
     }
 ];

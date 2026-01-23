@@ -73,137 +73,147 @@ const PROMPTS_PER_MODEL = {
     // RIN-ANIME-BLEND: Best for scenic, atmospheric, emotional, Ghibli-esque works
     "rin-anime-blend": [
         // STUDIO GHIBLI INSPIRED
-        "Howl and Sophie flying through golden sunset clouds, Howl's black feather cloak transforming, Sophie's silver hair flowing, Wizard Howl's Moving Castle in the distant mountains, romantic ghibli magic, soft pastel lighting",
-        "Chihiro standing at the entrance of the spirit bathhouse, red bridge, paper lanterns glowing, mysterious spirits walking past, Spirited Away night atmosphere, nostalgic and magical, Yubaba's building towering",
-        "Totoro and Satsuki waiting at the bus stop in the rain, bamboo forest, magical night scene, Catbus approaching with glowing eyes, oversized leaf umbrellas, My Neighbor Totoro iconic scene, gentle rain",
-        "Princess Mononoke San riding her white wolf Moro, ancient forest with kodama spirits glowing, mask removed, wild determination, shishigami forest at twilight, nature vs industry theme, epic and serene",
-        "Nausicaa flying on her glider Mehve, sweeping view of the toxic jungle, ohmu glowing blue eyes in the distance, Valley of the Wind windmills, post-apocalyptic beauty, environmental masterpiece",
-        "Kiki flying on her broomstick with Jiji, bakery delivery, coastal European town panorama, seagulls, warm summer afternoon light, Kiki's Delivery Service nostalgia, coming of age warmth",
-        "Ashitaka riding Yakul through the misty mountains, cursed arm wrapped, morning fog in valleys, ancient Japan wilderness, epic journey beginning, Princess Mononoke landscape art",
+        "Anime masterpiece, Howl and Sophie soaring through dreamlike golden sunset clouds, Howl's black feather cloak in mid-transformation, Sophie's shimmering silver hair flowing in the wind, a magnificent moving castle silhouetted against distant misty mountains, romantic Ghibli-inspired magic, ethereal pastel lighting, soft cinematic glow, emotional atmosphere, high resolution",
+        "Anime masterpiece, Chihiro standing at the ornate entrance of the spirit bathhouse, iconic red bridge, glowing paper lanterns, mysterious spirits drifting past, Spirited Away night atmosphere, nostalgic and magical, towering architecture, intricate Japanese woodwork, soft moonlit reflections, emotional resonance, high quality art",
+        "Anime masterpiece, Totoro and Satsuki waiting at a rural bus stop in the gentle rain, lush bamboo forest, magical night scene, Catbus approaching with brilliant glowing eyes, oversized leaf umbrellas, My Neighbor Totoro iconic mood, soft rain droplets, mystical forest glow, cozy and heartwarming, 4k resolution",
+        "Anime masterpiece, Princess Mononoke San riding her massive white wolf Moro, ancient mystical forest with glowing kodama spirits, mask removed showing wild determination, Shishigami forest at twilight, nature vs industry theme, epic and serene composition, detailed fur and foliage, cinematic lighting, Studio Ghibli inspired",
+        "Anime masterpiece, Nausicaa soaring on her glider Mehve, panoramic view of the toxic jungle below, giant Ohmu with glowing blue eyes in the distance, Valley of the Wind windmills, post-apocalyptic ethereal beauty, environmental storytelling, soft wind-blown hair, masterful aerial perspective, cinematic sky",
+        "Anime masterpiece, Kiki flying on her broomstick with Jiji the black cat, bakery delivery basket, sprawling coastal European town panorama, circling seagulls, warm summer afternoon Mediterranean light, Kiki's Delivery Service nostalgia, vibrant and warm colors, detailed town architecture, blue ocean horizon",
+        "Anime masterpiece, Ashitaka riding Yakul through misty primeval mountains, cursed arm detail, dense morning fog in deep valleys, ancient Japan wilderness, epic journey beginning, Princess Mononoke landscape art, atmospheric depth, realistic foliage texture, somber lighting",
 
         // EMOTIONAL MASTERPIECES
-        "5 Centimeters Per Second cherry blossom scene, train crossing, Takaki reaching out, thousands of sakura petals suspended in time, melancholy golden hour, Makoto Shinkai lighting, beautiful loneliness",
-        "Your Name Kimi no Na wa, Taki and Mitsuha twilight meeting on the mountain, comet Tiamat splitting the sky, red kumihimo cord connecting them, magical realism, tears and starlight, destiny moment",
-        "A Silent Voice Shouko and Shoya at the bridge, sign language, koi fish swimming below, redemption and forgiveness theme, soft watercolor aesthetic, emotional healing, Kyoto Animation beauty",
-        "Violet Evergarden writing a letter by candlelight, prosthetic hands detail, emerald brooch glowing, autumn leaves outside the window, bittersweet emotions, Kyoto Animation masterpiece, tears forming",
-        "Clannad After Story field of illusionary world, father and daughter silhouettes, golden wheat field, blue sky with fluffy clouds, bittersweet family love, Key visual novel aesthetic, emotional climax",
-        "Grave of the Fireflies Seita and Setsuko watching fireflies in the shelter, wartime Japan, innocent tragedy, soft candlelight, tin of sakuma drops, historical ghibli tearjerker, beautiful and heartbreaking",
+        "Anime masterpiece, 5 Centimeters Per Second cherry blossom scene, urban train crossing, Takaki reaching out in yearning, thousands of sakura petals suspended in time, melancholy golden hour glow, Makoto Shinkai lighting style, hyper-detailed environment, beautiful loneliness, emotional sky",
+        "Anime masterpiece, Your Name (Kimi no Na wa) Taki and Mitsuha twilight meeting on the mountain crater, comet Tiamat splitting the vibrant sky, red kumihimo cord connecting them, magical realism, tears and starlight, destiny moment, incredible sky detail, cinematic lens flare",
+        "Anime masterpiece, A Silent Voice Shouko and Shoya standing on the bridge, intimate sign language communication, colorful koi fish swimming below, redemption and forgiveness theme, soft watercolor aesthetic, emotional healing, Kyoto Animation style, gentle afternoon sun",
+        "Anime masterpiece, Violet Evergarden writing a heartfelt letter by warm candlelight, intricate prosthetic hands detail, glowing emerald brooch, autumn leaves falling outside the window, bittersweet emotions, Kyoto Animation masterpiece quality, shimmering tears, masterpiece lighting",
+        "Anime masterpiece, Clannad After Story field in the illusionary world, father and daughter silhouettes, endless golden wheat field, brilliant blue sky with fluffy white clouds, bittersweet family love, Key visual novel aesthetic, emotional climax, vibrant colors",
+        "Anime masterpiece, Grave of the Fireflies Seita and Setsuko watching fireflies dance in the shelter, wartime Japan tragedy, innocent expressions, soft candlelight, tin of sakuma drops, historical Studio Ghibli style, beautiful and heartbreaking, soft focus",
 
         // ATMOSPHERIC & SCENIC
-        "Ancient Magus Bride, Chise wearing Elias's coat in the English countryside, standing stones, magical creatures in morning mist, celtic fantasy, ethereal golden hour, master and apprentice bond",
-        "Mushishi Ginko walking alone on a mountain path, white smoke from pipe, invisible mushi spirits floating as light particles, traditional edo japan, peaceful solitude, supernatural naturalism",
-        "Natsume Yuujinchou returning a youkai's name, paper flying in wind, Madara Nyanko-sensei watching, sunset shrine, gentle supernatural, Book of Friends pages, warm nostalgia and acceptance",
-        "Made in Abyss sunrise over the abyss edge, Riko looking down into the netherworld layers, Orth town lighthouse, sense of wonder and danger, magnificent worldbuilding, adventure calling",
-        "Weathering With You Hina praying on Tokyo rooftop, rain parting around her, sunlight breaking through clouds, urban magical realism, hope and sacrifice, Makoto Shinkai atmospheric beauty",
-        "Wolf Children Hana with wolf pups in countryside, traditional japanese farmhouse, mountain backdrop, seasons changing, motherhood journey, slice of life magic, heartwarming and bittersweet",
+        "Anime masterpiece, Ancient Magus Bride, Chise wearing Elias's heavy coat in the lush English countryside, ancient standing stones, magical creatures drifting in morning mist, Celtic fantasy aesthetic, ethereal golden hour, master and apprentice bond, detailed nature",
+        "Anime masterpiece, Mushishi Ginko walking alone on a winding mountain path, white smoke curling from pipe, invisible mushi spirits floating as light particles, traditional Edo Japan, peaceful solitude, supernatural naturalism, muted earthy tones, atmospheric fog",
+        "Anime masterpiece, Natsume Yuujinchou returning a youkai's name, paper scraps flying in the wind, Madara Nyanko-sensei watching, sunset over a rural shrine, gentle supernatural mood, Book of Friends pages, warm nostalgia and acceptance, soft sunset",
+        "Anime masterpiece, Made in Abyss sunrise over the terrifying abyss edge, Riko looking down into the infinite netherworld layers, Orth town lighthouse, sense of wonder and danger, magnificent worldbuilding, adventure calling, epic scale, high detail",
+        "Anime masterpiece, Weathering With You Hina praying on a rainy Tokyo rooftop, rain parting around her in a circle, sunlight breaking through dark clouds, urban magical realism, hope and sacrifice, Makoto Shinkai atmospheric beauty, hyper-detailed raindrops",
+        "Anime masterpiece, Wolf Children Hana with wolf pups in the countryside, traditional Japanese farmhouse, majestic mountain backdrop, seasons changing collage, motherhood journey, slice of life magic, heartwarming and bittersweet, high resolution",
 
         // ========================================
         // NEW WORLD-CLASS PROMPTS BATCH 2
         // ========================================
 
         // ETHEREAL DREAMSCAPES
-        "Paprika dream parade sequence, circus elephants flying through Tokyo skyline, reality bending carnival surrealism, Satoshi Kon visual poetry, impossible architecture, dreamscape masterpiece, psychological wonder",
-        "Serial Experiments Lain in the Wired, holographic data streams surrounding her, lonely bedroom with glowing monitors, existential isolation, 90s cyberpunk aesthetic, identity dissolution, hauntingly beautiful",
-        "Angel's Egg girl carrying oversized egg through gothic cathedral ruins, Mamoru Oshii atmosphere, endless rain and shadows, biblical symbolism, surreal melancholy, art film anime masterpiece",
-        "Haibane Renmei Rakka with grey wings in Old Home, autumn light through windows, peaceful existential contemplation, afterlife serenity, feathers falling, quiet beauty, liminal space warmth",
-        "Millennium Actress Chiyoko running through her film roles, time periods blending seamlessly, cherry blossoms and snow mixing, pursuit of love across decades, Satoshi Kon magic, cinematic memory lane",
+        "Anime masterpiece, Paprika dream parade sequence, circus elephants flying through the Tokyo skyline, reality bending carnival surrealism, Satoshi Kon visual poetry, impossible architecture, dreamscape masterpiece, psychological wonder, chaotic vibrant colors, cinematic depth",
+        "Anime masterpiece, Serial Experiments Lain in the Wired, holographic data streams and cables surrounding her, lonely bedroom with glowing monitors, existential isolation, 90s cyberpunk aesthetic, identity dissolution, hauntingly beautiful, cool blue and green lighting",
+        "Anime masterpiece, Angel's Egg girl carrying an oversized egg through gothic cathedral ruins, Mamoru Oshii atmosphere, endless rain and deep shadows, biblical symbolism, surreal melancholy, art film anime masterpiece, monochromatic tones with subtle highlights",
+        "Anime masterpiece, Haibane Renmei Rakka with grey wings in Old Home, warm autumn light through tall windows, peaceful existential contemplation, afterlife serenity, feathers falling gently, quiet beauty, liminal space warmth, soft sepia tones",
+        "Anime masterpiece, Millennium Actress Chiyoko running through her film roles, time periods blending seamlessly, cherry blossoms and snow mixing in the air, pursuit of love across decades, Satoshi Kon magic, cinematic memory lane, dynamic perspective",
 
         // POETIC LANDSCAPES
-        "Garden of Words Takao and Yukari in the rainy park pavilion, lush green garden, raindrops creating ripples in pond, shoes and poetry, forbidden feelings, Shinkai rain perfection, intimate atmosphere",
-        "Aria the Animation Neo-Venezia canals at sunset, Akari rowing her gondola, undine trainee serenity, nostalgic future mars city, healing anime paradise, golden hour reflections, peaceful utopia",
-        "Yokohama Kaidashi Kikou Alpha alone at her countryside cafe, post-apocalyptic pastoral, rusted robots overgrown with flowers, melancholy acceptance, end of humanity beauty, quiet robot girl",
-        "Mushoku Tensei Sylphiette and Rudeus under the great tree, wind magic rustling leaves, first love innocence, isekai fantasy romance, emotional growth, dappled sunlight, peaceful moment",
-        "Frieren at the Funeral journey through endless meadows, elf mage walking alone, centuries of memories, flowers and gravestones, passage of time, beautiful solitude, fantasy wanderlust",
+        "Anime masterpiece, Garden of Words Takao and Yukari in the rainy park pavilion, lush verdant garden, raindrops creating ripples in the pond, detailed shoes and poetry, forbidden feelings, Shinkai rain perfection, intimate atmosphere, hyper-detailed greenery",
+        "Anime masterpiece, Aria the Animation Neo-Venezia canals at sunset, Akari rowing her gondola gracefully, Undine trainee serenity, nostalgic future Martian city, healing anime paradise, golden hour reflections on water, peaceful utopia, soft blue and gold palette",
+        "Anime masterpiece, Yokohama Kaidashi Kikou Alpha alone at her countryside cafe, post-apocalyptic pastoral, rusted robots overgrown with wildflowers, melancholy acceptance, end of humanity beauty, quiet robot girl, expansive sky, soft wind",
+        "Anime masterpiece, Mushoku Tensei Sylphiette and Rudeus under a massive ancient tree, wind magic rustling leaves, first love innocence, isekai fantasy romance, emotional growth, dappled sunlight, peaceful moment, vibrant fantasy colors",
+        "Anime masterpiece, Frieren: Beyond Journey's End journeying through endless flower meadows, elf mage walking alone, centuries of memories, field of blue flowers and ancient gravestones, passage of time, beautiful solitude, fantasy wanderlust, detailed sky",
 
         // TWILIGHT EMOTIONS
-        "Anohana summer fireworks at the mountain shrine, Menma ghost in white dress, childhood friends reunion, tears and laughter, letting go, hanabi festival bittersweet, emotional healing",
-        "March Comes in Like a Lion Rei crossing the bridge alone, shogi piece metaphor overlaid, depression and found family, river reflections, lonely genius, Shaft artistic style, inner struggle beauty",
-        "Erased Satoru at the frozen lake, Kayo in red coat, snow falling gently, butterfly time travel effect, childhood nostalgia, winter tragedy prevention, desperate hope, saving the past",
-        "Fruits Basket final moment, Tohru embracing Kyo, curse broken celebration, rice ball metaphor, zodiac spirits ascending, found family completion, emotional payoff, healing tears",
-        "To Your Eternity Fushi first snow with the boy, primitive world isolation, immortal beginning, learning emotions, beautiful tragedy, quiet winter, existence awakening, poignant first chapter",
-        "Land of the Lustrous Phosphophyllite at the night beach, gem body reflecting moonlight, existential crystal beauty, post-human melancholy, shattered and reformed, quiet philosophical anguish",
-        "The Girl Who Leapt Through Time Makoto frozen mid-leap, riverbank summer sunset, time stopping baseball moment, nostalgic teenage freedom, bittersweet possibilities, golden youth ending",
-
-        // ========================================
-        // NEW WORLD-CLASS PROMPTS BATCH 3 (15 NEW PROMPTS)
-        // ========================================
+        "Anime masterpiece, Anohana summer fireworks at the mountain shrine, Menma ghost in white dress, childhood friends reunion, tears and laughter, letting go, hanabi festival bittersweet, emotional healing, vibrant firework reflections, summer night",
+        "Anime masterpiece, March Comes in Like a Lion Rei crossing the bridge alone, shogi piece metaphors overlaid in the night sky, river reflections, lonely genius, Shaft artistic style, inner struggle beauty, dramatic lighting and framing",
+        "Anime masterpiece, Erased Satoru at the frozen lake, Kayo in her iconic red coat, snow falling gently, blue butterfly time travel effect, childhood nostalgia, winter tragedy prevention, desperate hope, saving the past, cool winter light",
+        "Anime masterpiece, Fruits Basket final moment, Tohru embracing Kyo, zodiac curse broken celebration, rice ball metaphor, spirits ascending, found family completion, emotional payoff, healing tears, warm sunset glow",
+        "Anime masterpiece, To Your Eternity Fushi's first snow with the boy, primitive world isolation, immortal beginning, learning raw emotions, beautiful tragedy, quiet winter landscape, existence awakening, poignant atmosphere, soft white focus",
+        "Anime masterpiece, Land of the Lustrous Phosphophyllite at the night beach, gem body reflecting brilliant moonlight, existential crystal beauty, post-human melancholy, shattered and reformed, quiet philosophical anguish, iridescent textures, starry night",
+        "Anime masterpiece, The Girl Who Leapt Through Time Makoto frozen mid-leap over a riverbank, summer sunset, time-stopping baseball moment, nostalgic teenage freedom, bittersweet possibilities, golden youth ending, cinematic orange sky",
 
         // MYSTERIOUS ATMOSPHERES
-        "Steins Gate Okabe time travel laboratory, broken microwave phone, @channel messages floating, World War III divergence meter, mad scientist determination, chaos theory visualization, time paradox tension",
-        "Monster Dr Kenzo Tenma operating theater, red operating light, surgical precision vs moral dilemma, classical music playing, hospital corridor shadows, ethical nightmare, surgical horror beauty",
-        "Psycho-Pass Akane Tsunemiya dominator raised, blue summer uniform, justice versus system, Sibyl System holographic displays, latent criminal awakening, philosophical police drama",
-        "Death Parade black and white arena, arbiters judging humanity, Chiyuki and his childhood friend, life review memories floating, existential courtroom, beautiful despair, life evaluation drama",
-        "Another cursed classroom, red string noose swinging, Non-Myth incident, Mei Misaki crimson left eye, cursed videotape aesthetic, 90s horror nostalgia, supernatural classroom terror",
+        "Anime masterpiece, Steins;Gate Okabe in the time travel laboratory, broken microwave phone, @channel messages floating in air, World War III divergence meter glowing, mad scientist determination, chaos theory visualization, time paradox tension, green digital glow",
+        "Anime masterpiece, Monster Dr. Kenzo Tenma in the operating theater, harsh red operating light, surgical precision vs moral dilemma, classical music aesthetic, hospital corridor shadows, ethical nightmare, surgical horror beauty, dramatic chiaroscuro",
+        "Anime masterpiece, Psycho-Pass Akane Tsunemiya with Dominator raised, futuristic blue summer uniform, justice versus the system, Sibyl System holographic displays, latent criminal awakening, philosophical police drama, cyberpunk cityscape background",
+        "Anime masterpiece, Death Parade Quindecim bar, arbiters judging humanity, Chiyuki and her childhood memories floating, existential courtroom, beautiful despair, life evaluation drama, refined gothic aesthetic, glowing blue threads",
+        "Anime masterpiece, Another cursed classroom, red string noose swinging, Mei Misaki with crimson eye patch, cursed videotape aesthetic, 90s horror nostalgia, supernatural classroom terror, eerie red and black atmosphere",
 
         // SERENE LANDSCAPES & SEASONS
-        "Sweet Blue Flowers childhood summer, Fumi and Akira bicycle ride, rural Japan countryside, first love awakening, gentle breeze through rice fields, nostalgic adolescence, tender coming of age",
-        "Bloom Into You Yuu and Nanami confession under cherry blossoms, heart pounding moment, literary club rooftop, romantic tension release, soft pink petals falling, lesbian romance tenderness",
-        "Citrus stepsister romance, Yuzu and Mei autumn park bench, forbidden attraction, orange and yellow leaves, bittersweet family complications, elegant emotional drama, aristocratic tension",
-        "Revolutionary Girl Utena dueling arena rose petals, sword of Dios, prince and princess metaphor, revolutionary girl pose, Victorian gothic academy, feminist allegory, romantic destiny",
-        "Adachi and Shimamura student council room after hours, budding lesbian romance, rain against windows, quiet conversation intimacy, high school girl love, gentle emotional development",
+        "Anime masterpiece, Sweet Blue Flowers childhood summer, Fumi and Akira on a bicycle ride, rural Japan countryside, first love awakening, gentle breeze through golden rice fields, nostalgic adolescence, tender coming of age, soft watercolor palette",
+        "Anime masterpiece, Bloom Into You Yuu and Nanami confession under cherry blossoms, heart-pounding moment, literary club rooftop, romantic tension release, soft pink petals falling, lesbian romance tenderness, cinematic bloom effect",
+        "Anime masterpiece, Citrus stepsister romance, Yuzu and Mei on an autumn park bench, forbidden attraction, vibrant orange and yellow leaves, bittersweet family complications, elegant emotional drama, aristocratic tension, detailed fashion",
+        "Anime masterpiece, Revolutionary Girl Utena dueling arena, swirling rose petals, sword of Dios, prince and princess symbolism, revolutionary girl pose, Victorian gothic academy, feminist allegory, dramatic theatrical lighting",
+        "Anime masterpiece, Adachi and Shimamura student council room after hours, budding romance, rain against dark windows, quiet conversation intimacy, high school girl love, gentle emotional development, cozy indoor lighting",
 
         // SUPERNATURAL SERENITY
-        "Spirited Away bathhouse workers union, Lin and Chihiro friendship, spirit world bureaucracy, golden hour steam rising, magical realism workplace, coming of age wonder, nostalgic bathhouse warmth",
-        "My Neighbor the Witch Hinata discovering magic, broomstick flight lessons, magical girl academy, autumn maple leaves, friendship and discovery, wholesome fantasy, gentle witch training",
-        "Aoi Hana Fumi Manjoume art club solitude, watercolor brushes and paper, creative introspection, spring light through windows, artistic girl melancholy, creative expression beauty",
-        "Liz and the Blue Bird Mizore and Nozomi flute duet, sharp and flat key personalities, music room golden hour, Kyoto Animation precision, emotional musical harmony, friendship depth",
-        "Tamayomi baseball girls determination, Kanata Hishishishita pitching form, sunset stadium, sports anime passion, girl power athleticism, competitive spirit, sunset victory moment",
+        "Anime masterpiece, Spirited Away bathhouse workers, Lin and Chihiro friendship, spirit world bureaucracy, golden hour steam rising from baths, magical realism workplace, coming of age wonder, nostalgic bathhouse warmth, intricate background",
+        "Anime masterpiece, My Neighbor the Witch Hinata discovering magic, broomstick flight lessons, magical girl academy, autumn maple leaves, friendship and discovery, wholesome fantasy, gentle witch training, whimsical atmosphere",
+        "Anime masterpiece, Aoi Hana Fumi Manjoume in art club solitude, watercolor brushes and paper, creative introspection, spring light through tall library windows, artistic girl melancholy, creative expression beauty, soft textures",
+        "Anime masterpiece, Liz and the Blue Bird Mizore and Nozomi flute duet, sharp and flat key personalities, music room golden hour, Kyoto Animation precision, emotional musical harmony, friendship depth, focus on instruments",
+        "Anime masterpiece, Tamayomi baseball girls determination, Kanata Hishishishita pitching form, sunset stadium, sports anime passion, girl power athleticism, competitive spirit, sunset victory moment, dynamic pose",
 
         // TEMPORAL REFLECTIONS
-        "Puella Magi Madoka Magica final monologue, pink goddess form dissolving, cosmic despair and hope, witch transformation averted, ultimate sacrifice beauty, emotional philosophical climax, magical girl transcendence"
+        "Anime masterpiece, Puella Magi Madoka Magica final monologue, pink goddess Madokami form dissolving into light, cosmic despair and hope, ultimate sacrifice beauty, emotional philosophical climax, magical girl transcendence, galaxy background"
     ],
 
     // RIN-ANIME-POPCUTE: Best for vibrant, energetic, cute, modern pop-style anime
     "rin-anime-popcute": [
         // MODERN IDOL & POP ICONS
-        "Anya Forger from Spy x Family, heh smug face, star pupils sparkling, peanuts floating around, pink pastel background with chibi Loid and Yor, adorable chaos, kawaii pop style, manga panel effects",
-        "Bocchi the Rock guitar solo moment, Hitori Gotoh going pink and glitchy, abstract rock music visualization, neon pink and cyan, social anxiety turned into rock god energy, chaotic cute",
-        "Ai Hoshino from Oshi no Ko, B-Komachi idol costume, star eyes maximum sparkle, concert stage with thousands of glowsticks, tragic idol persona, bright pop aesthetic, love and lies theme",
-        "Marin Kitagawa My Dress-Up Darling cosplay pose, gyaru makeup perfect, colorful wigs in background, energetic peace sign, Gojo blushing in corner, romance comedy pop vibes, fashionista queen",
-        "Chika Fujiwara Love is War, chaotic dance pose, pink hair bouncing, love detective magnifying glass, heart explosions background, comedy queen energy, maximum kawaii chaos",
-        "Kaguya-sama O kawaii koto smug pose, moon hairpin, fan covering lower face, sparkle and rose petals, tsundere elegance, romantic comedy royalty, beautiful and terrifying",
+        "Vibrant anime art, Anya Forger from Spy x Family, iconic 'heh' smug face, star pupils sparkling, peanuts floating in a colorful background, chibi Loid and Yor in the distance, adorable chaos, kawaii pop style, manga panel accents, bright pastel colors, high energy",
+        "Vibrant anime art, Bocchi the Rock guitar solo, Hitori Gotoh in full glitch mode, abstract psychedelic rock music visualization, neon pink and cyan electric sparks, social anxiety turned into legendary rock god energy, chaotic cute, dynamic jagged lines",
+        "Vibrant anime art, Ai Hoshino from Oshi no Ko, B-Komachi idol costume, star eyes maximum sparkle, concert stage with thousands of glowing lightsticks, tragic idol persona, bright pop aesthetic, love and lies theme, cinematic idol lighting, masterpiece",
+        "Vibrant anime art, Marin Kitagawa My Dress-Up Darling cosplay pose, gyaru makeup perfection, colorful wigs and fabrics in background, energetic peace sign, Gojo blushing, romance comedy pop vibes, fashionista queen, clean lineart, bright colors",
+        "Vibrant anime art, Chika Fujiwara Love is War, chaotic dance pose, pink hair bouncing, love detective magnifying glass, heart explosions in background, comedy queen energy, maximum kawaii chaos, festive atmosphere, pastel palette",
+        "Vibrant anime art, Kaguya-sama 'O kawaii koto' smug pose, crescent moon hairpin, folding fan covering face, sparkle effects and red rose petals, tsundere elegance, romantic comedy royalty, beautiful and terrifying, sophisticated composition",
 
         // CLASSIC MAGICAL GIRLS
-        "Sailor Moon eternal form, silver crystal shining, all sailor scouts silhouettes behind her, moon kingdom rising, 90s anime aesthetic with modern polish, magical girl supreme, starry cosmic background",
-        "Cardcaptor Sakura Star Card transformation, pink frilly dress with wings, Star Wand raised high, Sakura Cards orbiting, Tomoyo filming in background, CLAMP magical girl masterpiece",
-        "Madoka Magica ultimate form Madokami, pink goddess ascending, magical girl silhouettes, cosmic abstract background, hope and despair balance, beautiful and tragic, Shaft studio style",
-        "Puella Magi Homura with shield, time stop aesthetic, purple and black diamond motifs, guns floating frozen, determination and love, Rebellion movie style, cool beauty magical girl",
+        "Vibrant anime art, Sailor Moon Eternal form, Silver Crystal shining with immense power, all sailor scouts silhouettes in a cosmic background, Moon Kingdom rising, 90s anime nostalgia with modern high-end polish, starry galaxy, magical girl supreme",
+        "Vibrant anime art, Cardcaptor Sakura Star Card transformation, pink frilly dress with intricate wings, Star Wand raised high, Sakura Cards orbiting in a magical circle, Tomoyo filming, CLAMP style, petals and stars, magical girl masterpiece",
+        "Vibrant anime art, Madoka Magica ultimate form Madokami, pink goddess ascending, magical girl silhouettes in the cosmic void, abstract ethereal background, hope and despair balance, beautiful and tragic, Shaft studio aesthetic, stellar light",
+        "Vibrant anime art, Puella Magi Homura with time-shield, time stop aesthetic, purple and black diamond motifs, floating guns frozen in time, determination and love, rebellion movie style, cool beauty, sharp edges, dramatic lighting",
 
         // HIGH ENERGY ACTION
-        "Ryuko Matoi Kill la Kill, Senketsu synchronized, scissor blade over shoulder, life fiber red accents, dynamic speed lines, punk rock rebel energy, Trigger studio explosive style",
-        "Megumin Konosuba, explosion pose with staff Chomusuke, crimson demon clan eye patch, massive explosion mushroom cloud, chuunibyou maximum, comedy fantasy pop, Kazuma face-palming distance",
-        "Aqua Konosuba useless goddess energy, party trick pose, blue water effects, crying face hidden behind smile, comedy perfection, Steve Blum voice energy, fantasy pop aesthetic",
-        "Zero Two Darling in the Franxx, red pilot suit, dinosaur horns, pink hair flowing, sitting in Strelizia cockpit, darling catchphrase vibe, romantic mecha pop, honeypop colors",
+        "Vibrant anime art, Ryuko Matoi Kill la Kill, Senketsu synchronized transformation, scissor blade over shoulder, life fiber red accents swirling, dynamic speed lines, punk rock rebel energy, Trigger studio explosive style, bold outlines, high contrast",
+        "Vibrant anime art, Megumin Konosuba, explosion pose with staff, Chomusuke sitting on hat, crimson demon clan eye patch, massive fiery explosion mushroom cloud background, chuunibyou maximum energy, comedy fantasy pop, vibrant red and orange",
+        "Vibrant anime art, Aqua Konosuba useless goddess energy, party trick 'Nature's Beauty' pose, magical blue water fans, crying face, comedy perfection, fantasy pop aesthetic, bright blue palette, sparkling water effects",
+        "Vibrant anime art, Zero Two Darling in the Franxx, red pilot suit, dinosaur horns, long pink hair flowing, sitting in Strelizia cockpit, 'Darling' catchphrase vibe, romantic mecha pop, honey and cherry blossom colors, futuristic UI",
 
         // GAMING & INTERNET CULTURE
-        "Shiro No Game No Life, rainbow hair galaxy brain mode, chess pieces floating, neon purple and pink, Sora in background, genius NEET aesthetic, game world pop art, unbeatable",
-        "Emilia Re:Zero, silver half-elf beauty, Puck on shoulder, ice crystal magic, gothic lolita dress detail, blue and purple fantasy romance, isekai heroine perfection",
-        "Ram and Rem Re:Zero twins mirror pose, pink and blue symmetry, maid outfits detailed, morning star and wind magic, devoted love, twin maid pop aesthetic, cute and deadly",
-        "Nezuko Kamado chibi running, bamboo muzzle, demon form cute version, pink butterfly effects, Tanjiro chibi chasing, Demon Slayer kawaii interpretation, family love pop style",
-        "Ochako Uravity My Hero Academia, zero gravity pose floating, UA uniform, pink cheek blush, heroic determination, cute but powerful, shounen romance target, modern hero aesthetic",
-
-        // ========================================
-        // NEW WORLD-CLASS PROMPTS BATCH 3 (10 NEW PROMPTS)
-        // ========================================
+        "Vibrant anime art, Shiro No Game No Life, rainbow hair galaxy brain mode, floating chess pieces and digital cards, neon purple and pink palette, Sora silhouette, genius NEET aesthetic, game world pop art, unbeatable aura, intricate detail",
+        "Vibrant anime art, Emilia Re:Zero, silver half-elf beauty, Puck on her shoulder, swirling ice crystal magic, intricate white and purple gothic lolita dress, fantasy romance, isekai heroine perfection, soft magical glow",
+        "Vibrant anime art, Ram and Rem Re:Zero twins mirror pose, pink and blue symmetry, detailed maid outfits, morning star and wind magic effects, devoted love, twin maid pop aesthetic, cute and deadly, vibrant color split",
+        "Vibrant anime art, Nezuko Kamado chibi running through a forest, bamboo muzzle, demon form cute version, pink butterfly effects, Tanjiro chibi chasing in background, Demon Slayer kawaii interpretation, family love, soft cel shading",
+        "Vibrant anime art, Ochako Uravity My Hero Academia, zero gravity pose floating, UA hero uniform, pink cheek blush, heroic determination, cute but powerful, shounen romance target, modern hero aesthetic, bubbles and floaty objects",
 
         // MODERN IDOL REVOLUTION
-        "Ruby Rose from RWBY, rose petal transformation, red hooded cape flowing, scythe Crescent Rose spinning, huntress determination, Remnant world adventure, energetic action girl, volume 1 nostalgia",
-        "Asuka Langley Soryu Langley plugsuit pose, confident smirk, orange hair ponytail, Eva pilot attitude, German precision, tsundere energy maximum, mecha pilot diva, red interface headset",
-        "Cattleya from Queen's Blade, amazon warrior pose, green hair flowing, sword raised, arena crowd cheering, tournament fighter, muscular beauty, fantasy battle royale, victory declaration",
-        "Hancock Boa, empress of Amazon Lily, snake hair accessories, slave arrow brand, Kuja pirate captain, One Piece empress beauty, haki conqueror, love sickness immunity, royal dignity",
+        "Vibrant anime art, Ruby Rose from RWBY, rose petal transformation, red hooded cape flowing, scythe Crescent Rose spinning, huntress determination, Remnant world adventure, energetic action girl, volume 1 nostalgia, stylized cel shading",
+        "Vibrant anime art, Asuka Langley Soryu plugsuit pose, confident smirk, orange hair ponytails, Eva pilot attitude, German precision, tsundere energy maximum, mecha pilot diva, red interface headset, cinematic mecha cockpit lighting",
+        "Vibrant anime art, Cattleya from Queen's Blade, amazon warrior pose, green hair flowing, massive sword raised, arena crowd cheering, tournament fighter, muscular beauty, fantasy battle royale, victory declaration, bold fantasy style",
+        "Vibrant anime art, Boa Hancock, empress of Amazon Lily, snake hair accessories, Kuja pirate captain, One Piece empress beauty, Haki conqueror aura, love-sickness immunity, royal dignity, elegant posing, vibrant sky",
 
         // GAMING ANIME FUSION
-        "Kirito dual wielding in Aincrad, black swordsman coat flowing, Elucidator and Dark Repulser, Sword Art Online pioneer, nerve gear interface, virtual reality legend, solo player determination",
-        "Yennefer of Vengerberg chaos energy swirling, violet eyes glowing, silver hair wild, Witcher 3 sorceress, magic portals opening, monster hunter elegance, powerful feminist magic user",
-        "Tifa Lockhart final fantasy victory pose, leather suspenders, fists glowing with ki, Avalanche leader, Midgar skyline, bar hostess to revolutionary, strong female fighter, materia magic",
+        "Vibrant anime art, Kirito dual wielding in Aincrad, black swordsman coat flowing, Elucidator and Dark Repulser swords, Sword Art Online pioneer, nerve gear interface, virtual reality legend, solo player determination, blue digital particles",
+        "Vibrant anime art, Yennefer of Vengerberg chaos energy swirling, violet eyes glowing, silver hair wild, Witcher 3 sorceress in anime style, magic portals opening, monster hunter elegance, powerful magic effects, dark amethyst palette",
+        "Vibrant anime art, Tifa Lockhart final fantasy victory pose, leather suspenders, fists glowing with ki, Avalanche leader, Midgar cityscape skyline, bar hostess to revolutionary, strong female fighter, materia magic sparks",
 
         // POP CULTURE ICONS
-        "Momo Yaoyorozu My Hero Academia, creation quirk activation, utility belt materializing, student council president, strategic genius, supportive heroine, rescue hero training, creation mastery",
-        "Tsuyu Asui frog girl hero, tongue extended, U.A. uniform with goggles, Rainy Season Hero Froppy, rescue operations, stealth reconnaissance, amphibian abilities, cheerful determination",
-        "Toru Hagakure invisible girl mystery, floating gloves and boots, invisible quirk effects, U.A. support hero, cheerleader personality, supportive friend, class 1-A invisible menace",
+        "Vibrant anime art, Momo Yaoyorozu My Hero Academia, creation quirk activation, utility belt materializing from skin, student council president, strategic genius, supportive heroine, class 1-A elegance, intricate creation effects",
+        "Vibrant anime art, Tsuyu Asui frog girl hero, tongue extended, U.A. uniform with green goggles, Rainy Season Hero Froppy, rescue operations in water, stealth reconnaissance, amphibian abilities, cheerful determination, water ripples",
+        "Vibrant anime art, Toru Hagakure invisible girl mystery, floating U.A. gloves and boots, invisible quirk effects, cheerful personality, supportive friend, class 1-A invisible menace, cute floating accessories",
 
         // ENERGETIC MAGICAL GIRLS
-        "Flame Haze Shana wielding Nietono no Shanoa, red hair burning, Rinne mark glowing, Denizen destroyer, Shakugan no Shana crimson realm, flame of destruction, crimson god warrior, eternal flame"
+        "Vibrant anime art, Flame Haze Shana wielding Nietono no Shana, red hair burning with sparks, Rinne marks, Denizen destroyer, Shakugan no Shana crimson realm, flame of destruction, crimson god warrior, eternal flame, dramatic fire lighting"
+    ]
+    ,
+
+    "crystal-cuteness": [
+        "Masterpiece, premium quality art, 1girl as the princess of the crystal kingdom, hair adorned with sparkling iridescent gemstones, dress made of translucent shimmering silk, standing in a vast field of glass flowers, rainbow light reflections in every petal, ethereal lighting, kawaii and precious aesthetic, 8k resolution, shimmering atmosphere, intricate detail",
+        "Masterpiece, premium quality art, small adorable chibi dragon made of opalescent crystalline shards, sitting protectively over a hoard of glowing magical gems, deep moonlit cave with sparkling air, large expressive eyes, heartwarming aura, vibrant crystalline textures, sharp focus",
+        "Masterpiece, premium quality art, magical crystalline forest interior at twilight, trees with leaves like clear diamonds, tiny crystal fairy resting on a glowing neon mushroom, soft pastel pink and purple palette, iridescent wings fluttering, dreamlike and serene, ultra high quality illustration",
+        "Masterpiece, premium quality art, cosmic crystal girl floating in a nebula of purple stardust, body reflecting distant galaxies, eyes like swirling nebulae, flowing hair made of liquid light and gems, cinematic space fantasy, sparkling and beautiful, vibrant cosmic colors, deep space depth",
+        "Masterpiece, premium quality art, kawaii crystal animal companions: glass bunny and gemstone fox playing in a sparkling river, water splashing like liquid diamonds, sunbeams creating prisms through crystal trees, happy and whimsical, bright and clear art style, high contrast"
+    ],
+
+    // VERETOON-V10: Vibrant toon-style illustrations, clean outlines
+    "veretoon-v10": [
+        "Masterpiece, epic vibrant toon style, 1boy superhero in a dynamic mid-air action pose, bright red cape billowing with speed, futuristic toon metropolis background, flying vehicles, thick clean professional outlines, bold primary colors, 2D animation masterclass, determined expression, high energy action, cel shaded",
+        "Masterpiece, epic vibrant toon style, colorful cartoon scene with a squad of animal explorers, courageous parrot captain and nerdy tortoise engineer, ancient jungle ruins, hidden golden treasures, playful slapstick aesthetic, crisp clean linework, vibrant and fun colors, expressive character design",
+        "Masterpiece, epic vibrant toon style, futuristic toon city park at sunset, neon-lit digital trees, cool toon girl performing an impossible skateboard trick, fountain of blue soda, fish-eye lens perspective, dynamic and stylish, 2D pop-culture aesthetic, bright oranges and purples, motion blur",
+        "Masterpiece, epic vibrant toon style, cozy interior of a vibrant magical workshop, potions bubbling in colorful glass jars, mischievous toon imp causing magical chaos, floating tools and sparking energy, highly expressive and detailed toon art, warm whimsical lighting",
+        "Masterpiece, epic vibrant toon style, majestic landscape with a floating island and giant colorful waterfall, toon-style clouds with happy faces, brave adventurer looking at the horizon, vibrant lush greens and sapphire blues, clean and inviting animation style, high resolution"
     ]
 };
 
