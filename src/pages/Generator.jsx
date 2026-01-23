@@ -22,6 +22,7 @@ import ResultModal from '../components/generator/ResultModal';
 import GeneratorControls from '../components/generator/GeneratorControls';
 import GeneratorSidebar from '../components/generator/GeneratorSidebar';
 import VideoGallery from '../components/generator/VideoGallery';
+import LoadingModal from '../components/generator/LoadingModal';
 
 // Custom Hooks
 import { useVideoGeneration } from '../hooks/generator/useVideoGeneration';
@@ -441,6 +442,7 @@ export default function Generator() {
                         )}
                     </motion.div>
                 )}
+                {generating && <LoadingModal prompt={prompt} useTurbo={useTurbo} />}
             </AnimatePresence>
 
             {/* Global CSS for this page's specific needs not covered by Tailwind/global styles */}

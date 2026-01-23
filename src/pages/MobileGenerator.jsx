@@ -41,13 +41,32 @@ export default function MobileGenerator() {
     useEffect(() => {
         if (!generating) return;
 
-        const statuses = ["Dreaming...", "Sketching...", "Painting...", "Adding details...", "Polishing..."];
+        const messages = [
+            "Dreaming up your vision...",
+            "Mixing pixels and imagination...",
+            "Applying artistic styles...",
+            "Refining details and lighting...",
+            "Polishing your masterpiece..."
+        ];
+
+        const graceMessages = [
+            "Taking a bit longer for perfection...",
+            "Complex prompts need more time...",
+            "Almost there..."
+        ];
+
         let i = 0;
+        setLoadingStatus(messages[0]);
 
         const interval = setInterval(() => {
-            i = (i + 1) % statuses.length;
-            setLoadingStatus(statuses[i]);
-        }, 1500);
+            i++;
+            if (i < messages.length) {
+                setLoadingStatus(messages[i]);
+            } else {
+                const graceIndex = (i - messages.length) % graceMessages.length;
+                setLoadingStatus(graceMessages[graceIndex]);
+            }
+        }, 3000);
 
         return () => clearInterval(interval);
     }, [generating]);
@@ -591,17 +610,25 @@ export default function MobileGenerator() {
                         <div style={{
                             padding: '14px 18px',
                             borderRadius: '4px 24px 24px 24px',
-                            background: '#18181b',
+                            background: 'rgba(24, 24, 27, 0.8)',
+                            backdropFilter: 'blur(10px)',
                             color: '#fff',
-                            fontSize: '1rem',
-                            border: '1px solid rgba(255,255,255,0.1)',
+                            fontSize: '0.95rem',
+                            border: '1px solid rgba(139, 92, 246, 0.2)',
                             display: 'flex', alignItems: 'center', gap: '12px',
-                            boxShadow: '0 0 15px rgba(139, 92, 246, 0.15)'
+                            boxShadow: '0 4px 15px rgba(139, 92, 246, 0.1)'
                         }}>
                             <div className="typing-indicator">
                                 <span></span><span></span><span></span>
                             </div>
-                            <span style={{ color: '#e4e4e7', fontSize: '0.9rem', fontWeight: '500' }}>{loadingStatus}</span>
+                            <span style={{
+                                color: '#e4e4e7',
+                                fontSize: '0.95rem',
+                                fontWeight: '500',
+                                background: 'linear-gradient(90deg, #fff, #a1a1aa)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent'
+                            }}>{loadingStatus}</span>
                         </div>
                     </div>
                 )}
