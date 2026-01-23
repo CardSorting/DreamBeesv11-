@@ -6,10 +6,15 @@ import { VALID_MODELS } from "../lib/constants.js";
 
 export const handleCreateGenerationRequest = async (request) => {
     if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) logger.warn("App Check verification failed (Warn Mode)");
-    const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
-
+    let uid = request.auth?.uid;
     const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler, useTurbo } = request.data;
+
+    // Allow unauthenticated GalMix requests
+    if (!uid && modelId === 'galmix') {
+        uid = 'anonymous-galmix';
+    }
+
+    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
 
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 5) throw new HttpsError('invalid-argument', "Prompt is required");
     if (modelId && !VALID_MODELS.includes(modelId)) throw new HttpsError('invalid-argument', `Invalid model ID.`);
@@ -40,7 +45,10 @@ export const handleCreateGenerationRequest = async (request) => {
 
             let cost = 0;
             const isPremiumModel = ['zit-model'].includes(modelId);
-            if (useTurbo || isPremiumModel) cost = 1.0;
+            const isFreeModel = ['galmix'].includes(modelId);
+
+            if (isFreeModel) cost = 0;
+            else if (useTurbo || isPremiumModel) cost = 1.0;
             else if (!isSubscriber) cost = 0.5;
 
             const effectiveZaps = (userData.zaps || 0);

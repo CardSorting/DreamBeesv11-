@@ -3,6 +3,9 @@ import { db, FieldValue } from "../firebaseInit.js";
 import { getS3Client, fetchWithTimeout, fetchWithRetry, fetchWithFallback, readFirstBytes, detectImageFormat, logger, retryOperation } from "../lib/utils.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
 import { withVertexRateLimiting } from "../lib/rateLimiter.js";
+import { GalmixClient } from "../lib/GalmixClient.js";
+
+const galmixClient = new GalmixClient();
 
 // Local helper
 const looksLikeJSON = (buffer) => {
@@ -610,7 +613,7 @@ export const processImageTask = async (req) => {
 
     const [activeJobsSnapshot, userSnap] = await Promise.all([
         db.collection('generation_queue').where('userId', '==', userId).where('status', '==', 'processing').get(),
-        db.collection('users').doc(userId).get()
+        userId === 'anonymous-galmix' ? Promise.resolve({ data: () => ({}) }) : db.collection('users').doc(userId).get()
     ]);
 
     const activeCount = activeJobsSnapshot.docs.filter(d => d.id !== requestId).length;
@@ -804,6 +807,14 @@ export const processImageTask = async (req) => {
 
             // Skip standard response processing
             response = { ok: true, _fluxImageBuffer: imageBuffer }; // reusing _fluxImageBuffer hack for now as it handles raw buffer bypass
+        } else if (modelId === 'galmix') {
+            logger.info(`[${requestId}] Submitting GalMix generation`);
+            const galmixResult = await galmixClient.generateImage(prompt, {
+                negative_prompt,
+                steps: steps || 30
+            });
+            const imageBuffer = Buffer.from(galmixResult.result, 'base64');
+            response = { ok: true, _fluxImageBuffer: imageBuffer };
         } else if (modelId === 'qwen-image-2512') {
             response = await fetchWithRetry("https://mariecoderinc--qwen-image-2512-qwenimage-api-generate.modal.run", {
                 method: "POST", headers: { "Content-Type": "application/json" },
@@ -1176,8 +1187,10 @@ export const processImageTask = async (req) => {
         }
 
         if (!recoverySucceeded) {
-            await retryOperation(() => db.collection('users').doc(userId).update({ zaps: FieldValue.increment(1) }), { context: 'Refund Image Task' })
-                .catch(e => logger.error("Refund Error", e, { userId }));
+            if (userId !== 'anonymous-galmix') {
+                await retryOperation(() => db.collection('users').doc(userId).update({ zaps: FieldValue.increment(1) }), { context: 'Refund Image Task' })
+                    .catch(e => logger.error("Refund Error", e, { userId }));
+            }
             await docRef.update({ status: "failed", error: error.message });
         }
     }

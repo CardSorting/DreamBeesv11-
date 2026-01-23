@@ -18,7 +18,8 @@ export default function GeneratorControls({
     useTurbo, setUseTurbo,
     generating,
     handleGenerate,
-    seed, aspectRatio, steps, cfg, negPrompt
+    seed, aspectRatio, steps, cfg, negPrompt,
+    selectedModel
 }) {
     const handleShare = () => {
         const url = new URL(window.location);
@@ -73,7 +74,7 @@ export default function GeneratorControls({
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
-                    <div style={{ display: 'flex', gap: '4px' }}>
+                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                         <button
                             onClick={toggleListening}
                             className={`btn-ghost ${isListening ? 'listening-pulse' : ''}`}
@@ -98,7 +99,12 @@ export default function GeneratorControls({
                             </button>
                         )}
 
-                        <button onClick={handleShare} className="btn-ghost" title="Share Configuration" style={{ padding: '8px', borderRadius: '8px', color: 'var(--color-text-muted)', transition: 'all 0.2s' }}>
+                        <button
+                            onClick={handleShare}
+                            className="btn-ghost"
+                            title="Share Configuration"
+                            style={{ padding: '8px', borderRadius: '8px', color: 'var(--color-text-muted)', transition: 'all 0.2s' }}
+                        >
                             <Share2 size={16} />
                         </button>
                         <button onClick={() => setPrompt('')} className="btn-ghost" title="Clear Prompt" style={{ padding: '8px', borderRadius: '8px', color: 'var(--color-text-muted)', transition: 'all 0.2s' }}>
@@ -107,6 +113,18 @@ export default function GeneratorControls({
                     </div>
 
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        {selectedModel?.id === 'galmix' && (
+                            <div className="pulse-glow" style={{
+                                display: 'flex', alignItems: 'center', gap: '6px',
+                                padding: '6px 12px', borderRadius: '20px',
+                                background: 'rgba(16, 185, 129, 0.15)',
+                                color: '#10b981', fontSize: '0.75rem', fontWeight: '700'
+                            }}>
+                                <Sparkles size={12} fill="currentColor" />
+                                <span>FREE GENERATION</span>
+                            </div>
+                        )}
+
                         <button
                             onClick={() => setUseTurbo(!useTurbo)}
                             className="btn-ghost"
@@ -129,25 +147,22 @@ export default function GeneratorControls({
                         <button
                             onClick={() => {
                                 console.log('[GeneratorControls] Generate button CLICKED!');
-                                console.log('[GeneratorControls] generating:', generating);
-                                console.log('[GeneratorControls] prompt:', prompt);
-                                console.log('[GeneratorControls] typeof handleGenerate:', typeof handleGenerate);
                                 handleGenerate();
                             }}
                             disabled={generating || (!prompt && !referenceImage)}
                             className="btn-primary"
                             style={{
                                 padding: '10px 24px', fontSize: '1rem', fontWeight: '600',
-                                background: generating ? 'var(--color-surface-hover)' : 'var(--color-accent-primary)',
+                                background: generating ? 'var(--color-surface-hover)' : (selectedModel?.id === 'galmix' ? '#10b981' : 'var(--color-accent-primary)'),
                                 border: 'none', borderRadius: '10px', color: 'white',
                                 cursor: generating || (!prompt && !referenceImage) ? 'not-allowed' : 'pointer',
                                 opacity: generating || (!prompt && !referenceImage) ? 0.7 : 1,
-                                boxShadow: '0 0 20px rgba(var(--color-accent-rgb), 0.3)',
+                                boxShadow: selectedModel?.id === 'galmix' ? '0 0 20px rgba(16, 185, 129, 0.4)' : '0 0 20px rgba(var(--color-accent-rgb), 0.3)',
                                 display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.3s'
                             }}
                         >
                             {generating ? <Loader2 className="animate-spin" size={18} /> : (
-                                <> <Sparkles size={18} style={{ fill: 'currentColor' }} /> Generate </>
+                                <> <Sparkles size={18} style={{ fill: 'currentColor' }} /> {selectedModel?.id === 'galmix' ? 'Generate Free' : 'Generate'} </>
                             )}
                         </button>
                     </div>

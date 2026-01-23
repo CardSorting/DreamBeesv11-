@@ -97,10 +97,11 @@ export function useGenerationLogic({
                 return;
             }
 
+            const isFreeModel = selectedModel?.id === 'galmix';
             const isPremiumModel = selectedModel?.id === 'zit-model';
-            const cost = (useTurbo || isPremiumModel) ? 1 : (subscriptionStatus === 'active' ? 0 : 0.5);
+            const cost = isFreeModel ? 0 : ((useTurbo || isPremiumModel) ? 1 : (subscriptionStatus === 'active' ? 0 : 0.5));
 
-            if (zaps < cost) {
+            if (zaps < cost && cost > 0) {
                 toast.error(`Insufficient Zaps ⚡ (Need ${cost}, have ${zaps.toFixed(1)})`);
                 return;
             }

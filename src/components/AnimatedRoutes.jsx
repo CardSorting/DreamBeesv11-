@@ -122,9 +122,7 @@ const AnimatedRoutes = () => {
 
                             {/* Admin Only Routes */}
                             <Route path="/generate" element={
-                                <PrivateRoute>
-                                    {isMobile ? <MobileGenerator /> : <Generator />}
-                                </PrivateRoute>
+                                isMobile ? <MobileGenerator /> : <Generator />
                             } />
                             <Route path="/gallery" element={
                                 <PrivateRoute><Gallery /></PrivateRoute>

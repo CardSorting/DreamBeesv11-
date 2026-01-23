@@ -3,7 +3,8 @@ export const VALID_MODELS = [
     'gray-color', 'scyrax-pastel', 'ani-detox', 'animij-v7', 'swijtspot-no1',
     'zit-model', 'wai-illustrious', 'flux-klein-4b',
     'rin-anime-blend', 'rin-anime-popcute',
-    'crystal-cuteness', 'veretoon-v10'
+    'crystal-cuteness', 'veretoon-v10',
+    'galmix'
 ];
 
 export const B2_ENDPOINT = process.env.B2_ENDPOINT;

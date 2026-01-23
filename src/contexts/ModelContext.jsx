@@ -44,6 +44,7 @@ export function ModelProvider({ children }) {
                     });
                 });
 
+                console.log(`[ModelContext] Fetched ${models.length} models from Firestore.`);
                 setAvailableModels(models);
 
                 // Prioritize saved model, then current selection (if any), then ZIT-model, then first available
@@ -57,8 +58,9 @@ export function ModelProvider({ children }) {
                     // Only set default if no saved model and no current selection
                     // Use a ref to check current state without causing dependency issues
                     if (!targetModel && !selectedModel) {
-                        // Default to wai-illustrious if not saved
-                        targetModel = models.find(m => m.id === 'wai-illustrious') || models[0];
+                        // Default to galmix if not saved, fallback to wai-illustrious
+                        targetModel = models.find(m => m.id === 'galmix') || models.find(m => m.id === 'wai-illustrious') || models[0];
+                        console.log(`[ModelContext] Defaulting to: ${targetModel?.id}`);
                     }
 
                     if (targetModel && (!selectedModel || selectedModel.id !== targetModel.id)) {

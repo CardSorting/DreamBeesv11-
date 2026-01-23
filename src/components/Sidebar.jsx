@@ -68,6 +68,7 @@ const Sidebar = ({ activeId }) => {
             if (item.path === '/mockups') return true;
             if (item.path === '/memes') return true;
             if (item.path === '/models') return true;
+            if (item.path === '/generate') return true;
 
 
             // Logged in users

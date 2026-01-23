@@ -155,7 +155,8 @@ export default function Generator() {
     const { handleGenerate } = useGenerationLogic({
         prompt, selectedModel, generationMode,
         negPrompt, aspectRatio, steps, cfg, seed, useTurbo,
-        zaps, reels, subscriptionStatus,
+        zaps: selectedModel?.id === 'galmix' ? 999 : zaps, // bypass local check
+        reels, subscriptionStatus,
         setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId, setActiveJob
     });
 
@@ -354,6 +355,7 @@ export default function Generator() {
                                 useTurbo={useTurbo} setUseTurbo={setUseTurbo}
                                 generating={generating} handleGenerate={() => handleGenerate()}
                                 seed={seed} aspectRatio={aspectRatio} steps={steps} cfg={cfg} negPrompt={negPrompt}
+                                selectedModel={selectedModel}
                             />
                         )}
 
@@ -373,6 +375,8 @@ export default function Generator() {
                     activeTab={activeTab} setActiveTab={handleTabChange}
                     generationMode={generationMode} setGenerationMode={handleModeChange}
                     selectedModel={selectedModel}
+                    setSelectedModel={setSelectedModel}
+                    availableModels={availableModels}
                     setIsModelModalOpen={setIsModelModalOpen}
                     aspectRatio={aspectRatio} setAspectRatio={(val) => { setAspectRatio(val); updateParam('aspectRatio', val); }}
                     showcaseImages={showcaseImages} setPrompt={setPrompt} setGeneratedImage={setGeneratedImage}

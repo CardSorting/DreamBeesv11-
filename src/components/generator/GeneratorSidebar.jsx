@@ -6,7 +6,9 @@ export default function GeneratorSidebar({
     activeTab, setActiveTab,
     generationMode, setGenerationMode: _setGenerationMode,
     selectedModel,
+    setSelectedModel,
     setIsModelModalOpen,
+    availableModels,
     aspectRatio, setAspectRatio,
     showcaseImages, setPrompt, setGeneratedImage: _setGeneratedImage,
     // Video Params
@@ -57,8 +59,24 @@ export default function GeneratorSidebar({
                     {/* Model Selector */}
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <label className="setting-label" style={{ marginBottom: 0 }}>MODEL ENGINE</label>
+                                {availableModels?.find(m => m.id === 'galmix') && selectedModel?.id !== 'galmix' && (
+                                    <button
+                                        onClick={() => {
+                                            const m = availableModels.find(mod => mod.id === 'galmix');
+                                            if (m) setSelectedModel(m);
+                                        }}
+                                        className="pulse-glow"
+                                        style={{
+                                            padding: '2px 8px', borderRadius: '20px', background: '#10b981', color: 'white',
+                                            fontSize: '0.6rem', fontWeight: '800', border: 'none', cursor: 'pointer',
+                                            letterSpacing: '0.02em', boxShadow: '0 0 10px rgba(16, 185, 129, 0.3)'
+                                        }}
+                                    >
+                                        TRY FREE
+                                    </button>
+                                )}
                                 <div className="tooltip-container" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                                     <HelpCircle size={12} color="var(--color-text-muted)" style={{ cursor: 'help' }} />
                                     <div className="tooltip-content">The Model Engine determines the artistic style and capability of your generation.</div>

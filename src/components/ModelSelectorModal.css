@@ -308,6 +308,28 @@
     z-index: 10;
 }
 
+/* Free Badge */
+.model-card-free-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    padding: 4px 10px;
+    background: #10b981; /* Emerald-500 */
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 800;
+    border-radius: 6px;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    letter-spacing: 0.05em;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 @keyframes checkPop {
     from {
         transform: scale(0);

@@ -43,7 +43,7 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setCurrentPage(1);
     }, [searchQuery]);
-   
+
 
     if (!isOpen) return null;
 
@@ -139,6 +139,9 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
                                 >
                                     {/* Large Image */}
                                     <div className="model-card-image">
+                                        {model.isFree && (
+                                            <div className="model-card-free-badge">FREE</div>
+                                        )}
                                         {imageUrl && !hasImageError ? (
                                             <>
                                                 {/* Blurred Background Layer */}
