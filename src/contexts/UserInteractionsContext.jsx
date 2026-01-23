@@ -139,7 +139,7 @@ export function UserInteractionsProvider({ children }) {
                     username: data.username || '',
                     username: data.username || '',
                     displayPreference: data.displayPreference || 'name',
-                    karma: data.karma !== undefined ? data.karma : 100
+                    karma: data.karma !== undefined ? data.karma : 0
                 });
             }
             setIsProfileLoaded(true);
@@ -366,26 +366,47 @@ export function UserInteractionsProvider({ children }) {
             return;
         }
 
+        // Optimistic UI Removal happen in the component usually, 
+        // but here we just handle the API and global state sync.
+
         try {
-            await apiCall('api', {
+            const result = await apiCall('api', {
                 action: 'moderationVote',
                 jobId: imgItem.id,
                 verdict: verdict
             }, { toastErrors: true });
 
+            if (result.alreadyVoted) {
+                toast("Already voted on this card", { icon: '⚠️' });
+                return;
+            }
+
+            // Feedback based on result
+            if (verdict === 'skip') {
+                toast("Skipped", { icon: '⏭️' });
+                return result;
+            }
+
+            const karma = result.karmaAwarded || 0;
+            if (karma > 0) {
+                // We could show a custom toast or let the component do it
+                // toast.success(`Voted! +${karma} karma`);
+            }
+
             if (verdict === 'unsafe') {
-                toast.success("Voted to remove", { icon: '🗑️' });
-                // Also hide locally? Yes ideally
+                // If we voted unsafe, user probably expects it to be hidden from THEM at least
                 setHiddenIds(prev => new Set(prev).add(imgItem.id));
-            } else {
-                toast.success("Voted to keep", { icon: '🛡️' });
-                // Unhide locally if it was hidden?
+            } else if (verdict === 'safe') {
+                // If it was locally hidden, maybe unhide?
                 if (hiddenIds.has(imgItem.id)) {
                     unhidePost(imgItem);
                 }
             }
+
+            return result;
         } catch (error) {
             console.error("Safety vote failed:", error);
+            throw error;
         }
     };
 

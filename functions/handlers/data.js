@@ -252,6 +252,191 @@ export const handleAppealGeneration = async (request) => {
     }
 };
 
+export const handleModerationVote = async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', "Auth required");
+    const { jobId, verdict, confidence = 1 } = request.data; // verdict: 'safe' | 'unsafe' | 'skip', confidence: 1-3
+
+    if (!['safe', 'unsafe', 'skip'].includes(verdict)) {
+        throw new HttpsError('invalid-argument', "Invalid verdict");
+    }
+
+    // Clamp confidence to valid range
+    const validConfidence = Math.min(3, Math.max(1, Math.floor(confidence)));
+    const confidenceMultiplier = 1 + (validConfidence - 1) * 0.25; // 1x, 1.25x, 1.5x
+
+    const HIDE_THRESHOLD = -5; // Score below this hides content
+    const SAFE_THRESHOLD = 5;  // Score above this clears flags
+
+    try {
+        const jobRef = db.collection('generation_queue').doc(jobId);
+        const userRef = db.collection('users').doc(uid);
+        const voteRef = jobRef.collection('votes').doc(uid);
+
+        let result = { consensus: 'pending', userPower: 1, karmaAwarded: 0, streakBonus: 0 };
+
+        await db.runTransaction(async (t) => {
+            const voteDoc = await t.get(voteRef);
+            if (voteDoc.exists) {
+                throw new HttpsError('already-exists', "Already voted");
+            }
+
+            const userDoc = await t.get(userRef);
+            const jobDoc = await t.get(jobRef);
+
+            if (!jobDoc.exists) throw new HttpsError('not-found', "Job not found");
+
+            // 1. Calculate Voting Power
+            const karma = userDoc.data()?.karma || 0;
+            // Logarithmic scale: 0->1, 100->3, 1000->4 (approx)
+            // Using slightly steeper curve: 1 + floor(sqrt(karma)/2)
+            // 0 -> 1
+            // 10 -> 2
+            // 100 -> 6
+            // 400 -> 11
+            const baseVotePower = 1 + Math.floor(Math.sqrt(Math.max(0, karma)) / 2);
+            const votePower = Math.round(baseVotePower * confidenceMultiplier);
+
+            // Calculate streak bonus
+            const userData = userDoc.data() || {};
+            const today = new Date().toDateString();
+            const lastReviewDate = userData.lastReviewDate || '';
+            let currentStreak = userData.reviewStreak || 0;
+            let streakBonus = 0;
+
+            if (lastReviewDate !== today) {
+                const yesterday = new Date(Date.now() - 86400000).toDateString();
+                if (lastReviewDate === yesterday) {
+                    currentStreak += 1;
+                    streakBonus = Math.min(5, Math.floor(currentStreak / 3)); // +1 karma per 3 days of streak, max +5
+                } else if (lastReviewDate) {
+                    currentStreak = 1; // Reset streak
+                } else {
+                    currentStreak = 1; // First day
+                }
+            }
+
+            if (verdict === 'skip') {
+                // Skips don't affect score but record to avoid re-serving
+                t.set(voteRef, {
+                    uid,
+                    verdict,
+                    power: 0,
+                    confidence: validConfidence,
+                    createdAt: FieldValue.serverTimestamp()
+                });
+                // Still update streak for skips
+                t.update(userRef, {
+                    lastReviewDate: today,
+                    reviewStreak: currentStreak
+                });
+                result.streakBonus = 0;
+                return;
+            }
+
+            // 2. Update Score
+            const currentScore = jobDoc.data().moderationScore || 0;
+            const scoreChange = verdict === 'safe' ? votePower : -votePower;
+            const newScore = currentScore + scoreChange;
+
+            // 3. Determine Outcome
+            let updates = {
+                moderationScore: newScore,
+                lastModeratedAt: FieldValue.serverTimestamp()
+            };
+
+            // Consensus Logic
+            let consensusReached = false;
+            let consensusVerdict = null;
+
+            if (newScore <= HIDE_THRESHOLD) {
+                updates.hidden = true;
+                consensusReached = true;
+                consensusVerdict = 'unsafe';
+            } else if (newScore >= SAFE_THRESHOLD) {
+                updates.hidden = false;
+                updates.reportCount = 0;
+                if (jobDoc.data().isAppeal) {
+                    updates.isAppeal = false;
+                    updates.appealGranted = true;
+                }
+                consensusReached = true;
+                consensusVerdict = 'safe';
+            }
+
+            // Sync to result image if exists
+            const resultImageId = jobDoc.data().resultImageId;
+            if (resultImageId) {
+                const imgUpdates = {};
+                if (updates.hidden !== undefined) imgUpdates.hidden = updates.hidden;
+                if (Object.keys(imgUpdates).length > 0) {
+                    t.update(db.collection('images').doc(resultImageId), imgUpdates);
+                }
+            }
+
+            t.update(jobRef, updates);
+
+            // 4. Record Vote with enhanced data
+            t.set(voteRef, {
+                uid,
+                verdict,
+                power: votePower,
+                confidence: validConfidence,
+                createdAt: FieldValue.serverTimestamp()
+            });
+
+            // 5. Reward User (Karma) - Participation + Streak
+            let karmaAward = 1 + streakBonus;
+
+            // 6. Retroactive Consensus Rewards (Self-Regulation)
+            if (consensusReached && consensusVerdict) {
+                try {
+                    // Start Background Task for Retroactive Payouts
+                    const queue = getFunctions().taskQueue('locations/us-central1/functions/backgroundWorker');
+                    queue.enqueue({
+                        taskType: 'process-consensus',
+                        jobId,
+                        verdict: consensusVerdict
+                    }).catch(console.error);
+
+                    // Instant Bonus for the closer
+                    if (verdict === consensusVerdict) {
+                        karmaAward += 5; // Closer Bonus
+                    }
+                } catch (e) { console.error("Failed to enqueue consensus task", e); }
+            }
+
+            // High confidence bonus (x1.5 karma if confident and matches consensus later)
+            if (validConfidence === 3) {
+                karmaAward = Math.ceil(karmaAward * 1.25);
+            }
+
+            t.update(userRef, {
+                karma: FieldValue.increment(karmaAward),
+                totalReviews: FieldValue.increment(1),
+                lastReviewDate: today,
+                reviewStreak: currentStreak
+            });
+
+            result.userPower = votePower;
+            result.karmaAwarded = karmaAward;
+            result.streakBonus = streakBonus;
+            result.currentStreak = currentStreak;
+            result.consensus = consensusReached ? consensusVerdict : 'pending';
+            result.newScore = newScore;
+        });
+
+        return result;
+
+    } catch (e) {
+        // If "Already voted", just return existing status or success=false
+        if (e.code === 'already-exists') {
+            return { alreadyVoted: true };
+        }
+        throw handleError(e, { uid });
+    }
+};
+
 export const handleRateShowcaseImage = async (request) => {
     if (!request.auth?.uid) throw new HttpsError('unauthenticated', "Auth required");
     try {

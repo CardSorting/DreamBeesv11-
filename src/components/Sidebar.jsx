@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
     Home, User, LayoutTemplate, Zap, Film, LayoutGrid, Settings, Hexagon,
     ChevronDown, ChevronRight, Compass,
-    Package, Images, Smile, Sparkles, Shield // Imported for Mockup and Meme features
+    Package, Images, Smile, Sparkles, Shield, Trophy // Imported for Mockup and Meme features
 } from 'lucide-react';
 
 const CollapsibleGroup = ({ title, children, defaultOpen = true }) => {
@@ -58,17 +58,6 @@ const Sidebar = ({ activeId }) => {
             items: [
                 { path: '/safety', label: 'Safety Center', icon: Shield },
                 { path: '/pricing', label: 'Get Credits', icon: Hexagon },
-            ]
-        },
-        {
-            title: "REPUTATION",
-            items: [
-                {
-                    label: `Karma: ${_currentUser?.karma !== undefined ? _currentUser.karma : 100}`,
-                    icon: Trophy,
-                    path: '/safety', // Link to safety rules?
-                    highlight: true
-                }
             ]
         }
     ];
