@@ -45,7 +45,7 @@ const MockupProductPage = lazyRetry(() => import('../pages/MockupCatalog/MockupP
 const MemeFormatter = lazyRetry(() => import('../pages/MemeFormatter'));
 const MemeFeed = lazyRetry(() => import('../pages/MemeFeed'));
 const PublicGenerationsFeed = lazyRetry(() => import('../pages/PublicGenerationsFeed'));
-const CommunitySafety = lazyRetry(() => import('../pages/CommunitySafety'));
+const CommunitySafety = lazyRetry(() => import('../pages/safety'));
 const QuickMockups = lazyRetry(() => import('../pages/QuickMockups'));
 const QuickMockupCreator = lazyRetry(() => import('../pages/QuickMockups/MockupCreator'));
 const NotFound = lazyRetry(() => import('../pages/NotFound'));
