@@ -91,15 +91,6 @@ const MODELS = [
         tags: ['Art', 'Illustration', 'Anime']
     },
     {
-        id: 'hassaku-xl',
-        name: 'Hassaku XL',
-        description: 'Excellent for character consistency and detailed anime styles.',
-        type: 'SDXL',
-        order: 13,
-        isActive: true,
-        tags: ['Anime', 'Character', 'Stable']
-    },
-    {
         id: 'rin-anime-blend',
         name: 'Rin Anime Blend',
         description: 'A smooth blend of popular anime models for high-quality results.',
@@ -144,6 +135,24 @@ const MODELS = [
         order: 18,
         isActive: true,
         tags: ['Fast', 'Google', 'Multimodal']
+    },
+    {
+        id: 'crystal-cuteness',
+        name: 'Crystal Cuteness',
+        description: 'Adorable and sparkling aesthetics for high-quality cute art.',
+        type: 'SDXL',
+        order: 19,
+        isActive: true,
+        tags: ['Cute', 'Sparkling', 'Art']
+    },
+    {
+        id: 'veretoon-v10',
+        name: 'Veretoon V1.0',
+        description: 'Vibrant toon-style illustrations with clean outlines.',
+        type: 'SDXL',
+        order: 20,
+        isActive: true,
+        tags: ['Toon', 'Anime', 'Vibrant']
     }
 ];
 

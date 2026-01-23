@@ -44,7 +44,7 @@ class LoadBalancer {
                 coldStartLatency: 45000, maxConcurrency: 10
             },
             'sdxl-a10g': {
-                url: 'https://mariecoderinc--sdxl-multi-model-a10g-model-web-app.modal.run',
+                url: 'https://mariecoderinc--sdxl-multi-model-a10g-model-web.modal.run',
                 tier: 'standard', costFactor: 1.0, baseLatency: 12000,
                 coldStartLatency: 50000, maxConcurrency: 5
             },
@@ -624,7 +624,13 @@ export const processImageTask = async (req) => {
         '2:3': { width: 832, height: 1216 },
         '3:2': { width: 1216, height: 832 },
         '9:16': { width: 768, height: 1344 },
-        '16:9': { width: 1344, height: 768 }
+        '16:9': { width: 1344, height: 768 },
+        '21:9': { width: 1536, height: 640 },
+        '9:21': { width: 640, height: 1536 },
+        '4:3': { width: 1152, height: 864 },
+        '3:4': { width: 864, height: 1152 },
+        '4:5': { width: 896, height: 1120 },
+        '5:4': { width: 1120, height: 896 }
     };
     const resolution = resolutionMap[aspectRatio] || resolutionMap['1:1'];
     const jobSteps = steps || 30;

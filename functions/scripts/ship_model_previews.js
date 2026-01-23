@@ -41,7 +41,6 @@ const SHOWCASE_LOCAL_DIR = path.resolve(__dirname, '../../public/showcase');
 
 const modelsToUpdate = [
     'flux-klein-4b',
-    'hassaku-xl',
     'lightricks-ltx-2-pro',
     'rin-anime-blend',
     'rin-anime-popcute',
