@@ -44,6 +44,7 @@ const MockupCatalog = lazyRetry(() => import('../pages/MockupCatalog'));
 const MockupProductPage = lazyRetry(() => import('../pages/MockupCatalog/MockupProductPage'));
 const MemeFormatter = lazyRetry(() => import('../pages/MemeFormatter'));
 const MemeFeed = lazyRetry(() => import('../pages/MemeFeed'));
+const PublicGenerationsFeed = lazyRetry(() => import('../pages/PublicGenerationsFeed'));
 const QuickMockups = lazyRetry(() => import('../pages/QuickMockups'));
 const QuickMockupCreator = lazyRetry(() => import('../pages/QuickMockups/MockupCreator'));
 const NotFound = lazyRetry(() => import('../pages/NotFound'));
@@ -119,6 +120,8 @@ const AnimatedRoutes = () => {
 
                             <Route path="/memes" element={<MemeFeed />} />
                             <Route path="/memes/creator/:userId" element={<MemeFeed />} />
+                            <Route path="/generations" element={<PublicGenerationsFeed />} />
+                            <Route path="/generations/view" element={<PublicGenerationsFeed />} />
 
                             {/* Admin Only Routes */}
                             <Route path="/generate" element={

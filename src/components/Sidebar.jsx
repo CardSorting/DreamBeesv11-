@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
     Home, User, LayoutTemplate, Zap, Film, LayoutGrid, Settings, Hexagon,
     ChevronDown, ChevronRight, Compass,
-    Package, Images, Smile // Imported for Mockup and Meme features
+    Package, Images, Smile, Sparkles // Imported for Mockup and Meme features
 } from 'lucide-react';
 
 const CollapsibleGroup = ({ title, children, defaultOpen = true }) => {
@@ -48,6 +48,7 @@ const Sidebar = ({ activeId }) => {
             title: "DISCOVER",
             items: [
                 { path: '/discovery', label: 'Discovery', icon: Compass },
+                { path: '/generations', label: 'Feed', icon: Sparkles },
                 { path: '/mockups', label: 'Mockups', icon: Images },
                 { path: '/memes', label: 'Memes', icon: Smile },
             ]
@@ -68,6 +69,7 @@ const Sidebar = ({ activeId }) => {
             if (item.path === '/mockups') return true;
             if (item.path === '/memes') return true;
             if (item.path === '/models') return true;
+            if (item.path === '/generations') return true;
             if (item.path === '/generate') return true;
 
 
