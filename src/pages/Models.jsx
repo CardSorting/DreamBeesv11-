@@ -3,7 +3,6 @@ import SEO from '../components/SEO';
 import { useModel } from '../contexts/ModelContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Search, Sparkles, Check } from 'lucide-react';
-import Sidebar from '../components/Sidebar';
 import { useLocation } from 'react-router-dom';
 
 export default function Models() {
@@ -104,7 +103,6 @@ export default function Models() {
             minHeight: '100vh',
             display: 'flex',
         }}>
-            <Sidebar activeId="/models" />
             <div style={{ flex: 1, paddingBottom: '120px', paddingTop: '100px', overflowY: 'auto' }}>
                 <SEO
                     title="AI Models"

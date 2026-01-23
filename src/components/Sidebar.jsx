@@ -40,6 +40,7 @@ const Sidebar = ({ activeId }) => {
             items: [
 
                 { path: '/generate', label: 'Studio', icon: Zap },
+                { path: '/models', label: 'Models', icon: LayoutGrid },
                 { path: '/mockup-studio', label: 'Bee Crate', icon: Package },
             ]
         },
@@ -66,6 +67,7 @@ const Sidebar = ({ activeId }) => {
             if (item.path === '/discovery') return true;
             if (item.path === '/mockups') return true;
             if (item.path === '/memes') return true;
+            if (item.path === '/models') return true;
 
 
             // Logged in users
