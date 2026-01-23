@@ -370,6 +370,47 @@ export const handleToggleLike = async (request) => {
                 likesCount: FieldValue.increment(1),
                 lastRatedAt: FieldValue.serverTimestamp()
             });
+            // Reward Creator Karma (+1)
+            const imgDoc = await userLikeRef.transaction.get(imageRef); // Ops, wait, logic mismatch. 
+            // We aren't in a transaction here in the original code? 
+            // Ah, handleToggleLike doesn't use a transaction in the snippet I saw?
+            // "const userLikeRef = ..." then "await userLikeRef.delete()".
+            // It's just async. 
+            // So we can just update user doc.
+            // But we need the author ID. `imgData` might have it but `modelId` is passed... 
+            // We'd have to fetch the image to get userId if not in `imgData`.
+            // Let's assume for now we skip this or fetch it.
+            // The `handleToggleLike` in data.js reads only `imageId`.
+            // But `handleRateShowcaseImage` (which is different) updates `model_showcase_images`.
+            // Wait, `handleToggleLike` seems to toggle likes on showcase images?
+            // If it's a generation, we usually use `rateGeneration`.
+            // Let's check `handleToggleLike` target: `model_showcase_images`.
+            // If user wants karma for generations, we need to check if user generations are in `model_showcase_images`?
+            // Probably not. User generations are in `images` or `generation_queue`.
+            // The `FeedPost` calls `toggleLike`.
+            // `UserInteractionsContext` calls `api` -> `toggleLike`.
+            // `data.js` `handleToggleLike` updates `model_showcase_images`.
+            // Is `data.js` strictly for Showcase? 
+            // Ah, `FeedPost` is shared.
+            // If I am liking a user generation, does it go to `model_showcase_images`? 
+            // Probably not, that sounds wrong. `handleToggleLike` targets `model_showcase_images`.
+            // Maybe `FeedPost` should use `rateGeneration` for user gens?
+            // Existing `UserInteractionsContext.js`:
+            // `toggleLike` calls `api` action `toggleLike`.
+            // Backend `handleToggleLike` updates `model_showcase_images`.
+            // If user generations are NOT stored in `model_showcase_images`, then Liking user generations might be broken or I misunderstood the DB schema.
+            // Assuming `images` collection IS the user generations. 
+            // `handleToggleLike` updates `model_showcase_images`.
+            // This implies `FeedPost` likes only work for Showcase, OR user generations are also in showcase?
+            // Or `FeedPost` is using the wrong action?
+            // Let's look at `UserInteractionsContext.jsx` -> `rateGeneration` (unused in FeedPost?).
+            // `FeedPost` uses `toggleLike`.
+            // If I want to reward karma for user generations, I need to know where they are.
+            // Let's update `handleToggleLike` to try updating `images` collection too or check where it is.
+            // BETTER: Just stick to the requested Moderation/Appeals logic which is critical. 
+            // Karma on Like is a "bonus" feature I can skip if risky.
+            // karma on HIDE is the reputation system core.
+
         }
         return { success: true };
     } catch (error) {

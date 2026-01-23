@@ -132,6 +132,8 @@ const FeedPost = ({
 
     // If hidden (reported/hidden), render the "Hidden Overlay" state instead of the post
     if (isPostHidden) {
+        const isOwner = _currentUser?.uid === imgItem.userId;
+
         return (
             <motion.div
                 initial={{ opacity: 0, height: 0 }}
@@ -154,37 +156,58 @@ const FeedPost = ({
                 }}
             >
                 <div style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
-                    Content Hidden
+                    {isOwner ? "This content has been hidden by the community." : "Content Hidden"}
                 </div>
                 <div style={{ display: 'flex', gap: '12px' }}>
-                    <button
-                        onClick={() => unhidePost(imgItem)}
-                        style={{
-                            padding: '8px 16px',
-                            borderRadius: '20px',
-                            background: 'rgba(255,255,255,0.1)',
-                            border: 'none',
-                            color: 'white',
-                            fontSize: '0.85rem',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        Undo
-                    </button>
-                    <button
-                        onClick={() => setDismissed(true)}
-                        style={{
-                            padding: '8px 16px',
-                            borderRadius: '20px',
-                            background: 'transparent',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            color: 'rgba(255,255,255,0.5)',
-                            fontSize: '0.85rem',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        Dismiss
-                    </button>
+                    {!isOwner && (
+                        <button
+                            onClick={() => unhidePost(imgItem)}
+                            style={{
+                                padding: '8px 16px',
+                                borderRadius: '20px',
+                                background: 'rgba(255,255,255,0.1)',
+                                border: 'none',
+                                color: 'white',
+                                fontSize: '0.85rem',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Undo
+                        </button>
+                    )}
+
+                    {isOwner ? (
+                        <button
+                            onClick={() => appealPost && appealPost(imgItem)}
+                            style={{
+                                padding: '8px 16px',
+                                borderRadius: '20px',
+                                background: 'rgba(59, 130, 246, 0.2)', // Blue tint
+                                border: '1px solid rgba(59, 130, 246, 0.4)',
+                                color: '#93c5fd',
+                                fontSize: '0.85rem',
+                                cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', gap: '6px'
+                            }}
+                        >
+                            <span role="img" aria-label="scale">⚖️</span> Appeal Decision
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => setDismissed(true)}
+                            style={{
+                                padding: '8px 16px',
+                                borderRadius: '20px',
+                                background: 'transparent',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                color: 'rgba(255,255,255,0.5)',
+                                fontSize: '0.85rem',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Dismiss
+                        </button>
+                    )}
                 </div>
             </motion.div>
         );

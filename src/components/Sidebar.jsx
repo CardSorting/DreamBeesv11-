@@ -59,6 +59,17 @@ const Sidebar = ({ activeId }) => {
                 { path: '/safety', label: 'Safety Center', icon: Shield },
                 { path: '/pricing', label: 'Get Credits', icon: Hexagon },
             ]
+        },
+        {
+            title: "REPUTATION",
+            items: [
+                {
+                    label: `Karma: ${_currentUser?.karma !== undefined ? _currentUser.karma : 100}`,
+                    icon: Trophy,
+                    path: '/safety', // Link to safety rules?
+                    highlight: true
+                }
+            ]
         }
     ];
 

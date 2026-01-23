@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import SEO from '../components/SEO';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { Loader2, Shield, CheckCircle, XCircle, AlertTriangle, Keyboard, Trophy, Inbox } from 'lucide-react';
+import { Loader2, Shield, CheckCircle, XCircle, AlertTriangle, Keyboard, Trophy, Inbox, Gavel } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { getOptimizedImageUrl } from '../utils';
@@ -114,6 +114,14 @@ export default function CommunitySafety() {
                             <span className="font-mono font-bold text-white">{sessionCount} reviewed</span>
                         </div>
                     )}
+
+                    {/* Voting Power Badge */}
+                    {userProfile.karma >= 200 && (
+                        <div className="absolute top-4 right-4 md:static md:ml-4 flex items-center gap-1.5 px-3 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-full">
+                            <Shield size={14} className="text-yellow-500" />
+                            <span className="text-xs font-bold text-yellow-500 uppercase tracking-widest">Power: 2x</span>
+                        </div>
+                    )}
                 </div>
 
                 {loading ? (
@@ -154,13 +162,29 @@ export default function CommunitySafety() {
 
                         {/* Card Content Overlay */}
                         <div className="absolute inset-x-0 bottom-0 p-6 flex flex-col text-left">
-                            {/* Reason Context Badge */}
-                            {currentCard.lastReason && (
-                                <div className="self-start mb-3 px-3 py-1 bg-red-500/20 text-red-200 border border-red-500/30 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-1.5">
-                                    <AlertTriangle size={12} />
-                                    Reported for: {currentCard.lastReason}
-                                </div>
-                            )}
+                            {/* Badges */}
+                            <div className="flex flex-wrap gap-2 mb-3 self-start">
+                                {/* Appeal Badge */}
+                                {currentCard.isAppeal && (
+                                    <div className="px-3 py-1 bg-blue-500 text-white border border-blue-400 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-1.5 shadow-[0_0_15px_rgba(59,130,246,0.5)] animate-pulse">
+                                        <Gavel size={12} />
+                                        Appeal Request
+                                    </div>
+                                )}
+
+                                {/* Reason Context Badge */}
+                                {currentCard.lastReason ? (
+                                    <div className="px-3 py-1 bg-red-500/20 text-red-200 border border-red-500/30 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-1.5">
+                                        <AlertTriangle size={12} />
+                                        Reported: {currentCard.lastReason}
+                                    </div>
+                                ) : !currentCard.isAppeal && (
+                                    <div className="px-3 py-1 bg-zinc-700/50 text-zinc-300 border border-white/10 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-1.5">
+                                        <AlertTriangle size={12} />
+                                        Flagged Content
+                                    </div>
+                                )}
+                            </div>
 
                             <div className="mb-6">
                                 <p className="text-white/90 text-sm line-clamp-3 leading-relaxed font-light italic">
