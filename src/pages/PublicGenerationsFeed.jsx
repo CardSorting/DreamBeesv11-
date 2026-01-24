@@ -3,7 +3,7 @@ import SEO from '../components/SEO';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, limit, getDocs, startAfter, doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, Zap, ShieldAlert } from 'lucide-react';
+import { Loader2, Zap, ShieldAlert, HelpCircle } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import SuggestedPanel from '../components/SuggestedPanel';
 import { useModel } from '../contexts/ModelContext';
@@ -13,6 +13,7 @@ import FeedPost from '../components/FeedPost';
 import { getOptimizedImageUrl } from '../utils';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { isOver18 } from '../utils/age';
+import CommunityConsentModal from '../components/CommunityConsentModal';
 import './Discovery.css';
 
 export default function PublicGenerationsFeed() {
@@ -166,13 +167,31 @@ export default function PublicGenerationsFeed() {
 
             <Sidebar activeId="/generations" />
 
+            <CommunityConsentModal />
+
             <main className="feed-main-content">
                 <div className="discovery-container">
 
                     {/* Header specific to this feed */}
-                    <div style={{ maxWidth: '600px', margin: '0 auto 20px', padding: '0 20px' }}>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '4px' }}>Community Feed</h1>
-                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Live stream of creations from all users.</p>
+                    <div style={{ maxWidth: '600px', margin: '0 auto 10px', padding: '0 20px' }}>
+                        <div className="flex items-center gap-2 mb-1">
+                            <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0 }}>Community Feed</h1>
+                            <div className="group relative">
+                                <HelpCircle size={14} className="text-zinc-600 cursor-help hover:text-zinc-400 transition-colors" />
+                                <div className="absolute left-6 top-1/2 -translate-y-1/2 w-64 p-3 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl opacity-0 translate-x-4 pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all z-50 text-[11px] leading-relaxed text-zinc-300">
+                                    <div className="font-bold text-white mb-1">About this experiment</div>
+                                    This feed explores community annotation and context, not algorithmic ranking. Content is provided "as is" by users.
+                                </div>
+                            </div>
+                        </div>
+                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '8px' }}>Live stream of creations from all users.</p>
+
+                        <div className="flex items-center gap-2 py-1 px-3 bg-zinc-800/30 border border-white/5 rounded-full w-fit">
+                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-tight">
+                                Community-Moderated Feed · Experimental
+                            </span>
+                        </div>
                     </div>
 
                     {/* Age Restriction Check */}
