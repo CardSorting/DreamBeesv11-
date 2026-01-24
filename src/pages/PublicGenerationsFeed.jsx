@@ -16,6 +16,19 @@ import { isOver18 } from '../utils/age';
 import CommunityConsentModal from '../components/CommunityConsentModal';
 import './Discovery.css';
 
+const FeedSkeleton = () => (
+    <div className="animate-pulse space-y-4 mb-8">
+        <div className="h-[400px] w-full bg-zinc-900/50 rounded-2xl border border-white/5" />
+        <div className="flex items-center gap-3 px-2">
+            <div className="w-10 h-10 bg-zinc-900/50 rounded-full" />
+            <div className="space-y-2">
+                <div className="h-4 w-32 bg-zinc-900/50 rounded" />
+                <div className="h-3 w-24 bg-zinc-900/50 rounded" />
+            </div>
+        </div>
+    </div>
+);
+
 export default function PublicGenerationsFeed() {
     const navigate = useNavigate();
     const { availableModels } = useModel();
@@ -27,11 +40,34 @@ export default function PublicGenerationsFeed() {
     const [hasMore, setHasMore] = useState(true);
     const [focusImage, setFocusImage] = useState(null);
 
-    const observer = useRef();
-    const lastImageElementRef = useRef();
+    // Filter Cache for instantaneous switching
+    const [filterCache, setFilterCache] = useState({});
 
     // Routing Params
     const [searchParams, setSearchParams] = useSearchParams();
+    const activeFilter = searchParams.get('filter') || 'all';
+
+    const setActiveFilter = (newFilter) => {
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            if (newFilter === 'all') next.delete('filter');
+            else next.set('filter', newFilter);
+            return next;
+        }, { replace: true });
+        // Scroll to top of feed container when filter changes
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const FILTERS = [
+        { id: 'all', label: 'All', icon: '✨' },
+        { id: 'video', label: 'Videos', icon: '🎬' },
+        { id: 'slideshow', label: 'Slideshows', icon: '📽️' },
+        { id: 'meowacc', label: 'MeowAcc', icon: '🐱' },
+        { id: 'dress-up', label: 'Dress Up', icon: '👗' },
+    ];
+
+    const observer = useRef();
+    const lastImageElementRef = useRef();
 
     // Deep Linking for Focus Modal
     useEffect(() => {
@@ -89,10 +125,22 @@ export default function PublicGenerationsFeed() {
             // Query generation_queue for completed jobs
             let q = query(
                 collection(db, 'generation_queue'),
-                where('status', '==', 'completed'),
-                orderBy('createdAt', 'desc'),
-                limit(20)
+                where('status', '==', 'completed')
             );
+
+            // Apply filter
+            if (activeFilter === 'video') {
+                q = query(q, where('type', '==', 'video'));
+            } else if (activeFilter === 'slideshow') {
+                q = query(q, where('type', '==', 'slideshow'));
+            } else if (activeFilter === 'dress-up') {
+                q = query(q, where('type', '==', 'dress-up'));
+            } else if (activeFilter === 'meowacc') {
+                q = query(q, where('modelId', '==', 'meowacc'));
+            }
+
+            // Final order and pagination
+            q = query(q, orderBy('createdAt', 'desc'), limit(20));
 
             if (isLoadMore && lastDoc) {
                 q = query(q, startAfter(lastDoc));
@@ -117,23 +165,51 @@ export default function PublicGenerationsFeed() {
             setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
 
             if (isLoadMore) {
-                setImages(prev => [...prev, ...validImages]);
+                const updatedImages = [...images, ...validImages];
+                setImages(updatedImages);
+                // Update cache
+                setFilterCache(prev => ({
+                    ...prev,
+                    [activeFilter]: {
+                        images: updatedImages,
+                        lastDoc: snapshot.docs[snapshot.docs.length - 1],
+                        hasMore: snapshot.docs.length === 20
+                    }
+                }));
             } else {
                 setImages(validImages);
+                // Set cache
+                setFilterCache(prev => ({
+                    ...prev,
+                    [activeFilter]: {
+                        images: validImages,
+                        lastDoc: snapshot.docs[snapshot.docs.length - 1],
+                        hasMore: snapshot.docs.length === 20
+                    }
+                }));
             }
         } catch (error) {
             console.error("Error fetching generations:", error);
         } finally {
             setLoading(false);
         }
-    }, [lastDoc]);
+    }, [lastDoc, activeFilter]);
 
     useEffect(() => {
-        setImages([]);
-        setLastDoc(null);
-        setHasMore(true);
-        fetchGenerations();
-    }, []); // Only run once on mount
+        // Hydrate from cache if available
+        if (filterCache[activeFilter]) {
+            setImages(filterCache[activeFilter].images);
+            setLastDoc(filterCache[activeFilter].lastDoc);
+            setHasMore(filterCache[activeFilter].hasMore);
+            setLoading(false);
+            // Optionally: Could trigger a background update here
+        } else {
+            setImages([]);
+            setLastDoc(null);
+            setHasMore(true);
+            fetchGenerations();
+        }
+    }, [activeFilter]); // Run on mount and filter change
 
     // Intersection Observer for Infinite Scroll
     useEffect(() => {
@@ -158,8 +234,8 @@ export default function PublicGenerationsFeed() {
     return (
         <div className="feed-layout-wrapper">
             <SEO
-                title={focusImage ? `${focusImage.prompt?.slice(0, 50)}... | Generations - DreamBees` : "Recent Generations - DreamBees"}
-                description={focusImage ? focusImage.prompt : "Explore the latest AI generations from the DreamBees community."}
+                title={focusImage ? `${focusImage.prompt?.slice(0, 50)}... | Generations - DreamBees` : `${FILTERS.find(f => f.id === activeFilter)?.label || 'Recent'} Generations - DreamBees`}
+                description={focusImage ? focusImage.prompt : `Explore the latest ${activeFilter !== 'all' ? activeFilter : ''} AI generations from the DreamBees community.`}
                 image={focusImage ? (focusImage.thumbnailUrl || focusImage.imageUrl) : undefined}
                 canonical={focusImage ? `/generations?view=${focusImage.id}` : undefined}
                 structuredData={{ /* ... reusable structured data ... */ }}
@@ -194,6 +270,28 @@ export default function PublicGenerationsFeed() {
                         </div>
                     </div>
 
+                    {/* Filter Slider */}
+                    <div className="models-header-bar" style={{ maxWidth: '600px', padding: '0 20px 16px', margin: '0 auto 10px', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            {FILTERS.map(f => (
+                                <button
+                                    key={f.id}
+                                    className={`model-pill ${activeFilter === f.id ? 'active' : ''}`}
+                                    onClick={() => setActiveFilter(f.id)}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        whiteSpace: 'nowrap'
+                                    }}
+                                >
+                                    <span>{f.icon}</span>
+                                    <span>{f.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* Age Restriction Check */}
                     {isProfileLoaded && currentUser && !isOver18(userProfile.birthday) ? (
                         <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
@@ -212,30 +310,53 @@ export default function PublicGenerationsFeed() {
                             </button>
                         </div>
                     ) : (
-                        <section className="feed-posts-container" style={{ maxWidth: '600px', margin: '0 auto', paddingBottom: '60px' }}>
-                            {images.map((imgItem, index) => {
-                                const itemModel = availableModels.find(m => m.id === imgItem.modelId) || { name: 'Unknown Model', image: '/dreambees_icon.png' };
-                                const creatorName = imgItem.userDisplayName || "DreamBees User";
+                        <section className="feed-posts-container" style={{ maxWidth: '600px', margin: '0 auto', paddingBottom: '60px', minHeight: '80vh' }}>
+                            <AnimatePresence mode="popLayout">
+                                {loading && images.length === 0 ? (
+                                    <motion.div
+                                        key="skeletons"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                    >
+                                        <FeedSkeleton />
+                                        <FeedSkeleton />
+                                        <FeedSkeleton />
+                                    </motion.div>
+                                ) : (
+                                    <motion.div
+                                        key={activeFilter}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                                    >
+                                        {images.map((imgItem, index) => {
+                                            const itemModel = availableModels.find(m => m.id === imgItem.modelId) || { name: 'Unknown Model', image: '/dreambees_icon.png' };
+                                            const creatorName = imgItem.userDisplayName || "DreamBees User";
 
-                                return (
-                                    <FeedPost
-                                        key={imgItem.id}
-                                        imgItem={imgItem}
-                                        index={index}
-                                        model={itemModel}
-                                        getOptimizedImageUrl={getOptimizedImageUrl}
-                                        navigate={navigate}
-                                        setActiveShowcaseImage={openFocus}
-                                        headerTitle={creatorName}
-                                        headerSubtitle={itemModel.name}
-                                        avatarImage="/dreambees_icon.png"
-                                    />
-                                );
-                            })}
+                                            return (
+                                                <FeedPost
+                                                    key={imgItem.id}
+                                                    imgItem={imgItem}
+                                                    index={index}
+                                                    model={itemModel}
+                                                    getOptimizedImageUrl={getOptimizedImageUrl}
+                                                    navigate={navigate}
+                                                    setActiveShowcaseImage={openFocus}
+                                                    headerTitle={creatorName}
+                                                    headerSubtitle={itemModel.name}
+                                                    avatarImage="/dreambees_icon.png"
+                                                />
+                                            );
+                                        })}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
                             {/* Sentinel */}
                             <div ref={lastImageElementRef} style={{ height: '20px', margin: '20px 0' }}>
-                                {loading && hasMore && (
+                                {loading && hasMore && images.length > 0 && (
                                     <div className="flex justify-center p-4">
                                         <Loader2 size={32} className="animate-spin text-purple-500" />
                                     </div>
