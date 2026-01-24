@@ -2,6 +2,7 @@ import { db, FieldValue } from "../firebaseInit.js";
 import { getS3Client, logger, retryOperation } from "../lib/utils.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
 import { SLIDESHOW_MASTER_PROMPT, getSlidePrompts } from "../lib/ai.js";
+import { vertexFlow } from "../lib/vertexFlow.js"; // [NEW]
 
 export const processSlideshowTask = async (req) => {
     const { requestId, userId, image, mode, language, cost } = req.data;
@@ -50,21 +51,19 @@ export const processSlideshowTask = async (req) => {
 
             const prompt = prompts[i];
             let generatedImageBase64 = null;
-            let attempts = 0;
-            let slideError = null;
+            // [MODIFIED] Use VertexFlowProcessor (removes manual retry loop)
+            try {
+                const request = { contents: [{ role: 'user', parts: [{ inlineData: { mimeType: "image/png", data: cleanBase64 } }, { text: prompt }] }] };
 
-            while (attempts < 3 && !generatedImageBase64) {
-                try {
-                    const request = { contents: [{ role: 'user', parts: [{ inlineData: { mimeType: "image/png", data: cleanBase64 } }, { text: prompt }] }] };
-                    const result = await model.generateContent(request);
-                    generatedImageBase64 = (await result.response).candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || null;
-                    if (!generatedImageBase64) throw new Error("No image data");
-                } catch (genError) {
-                    attempts++;
-                    slideError = genError.message;
-                    if (genError.message.includes("Safety")) break;
-                    await new Promise(r => setTimeout(r, 2000 * attempts));
-                }
+                const result = await vertexFlow.execute('SLIDESHOW_SLIDE', async () => {
+                    return await model.generateContent(request);
+                }, vertexFlow.constructor.PRIORITY.LOW);
+
+                generatedImageBase64 = (await result.response).candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || null;
+                if (!generatedImageBase64) throw new Error("No image data");
+            } catch (genError) {
+                slideError = genError.message;
+                // If safety block or permanent error, we just leave generatedImageBase64 as null and it will be handled below
             }
 
             if (!generatedImageBase64) {

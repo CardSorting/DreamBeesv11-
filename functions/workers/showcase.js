@@ -1,6 +1,7 @@
 import { db, FieldValue } from "../firebaseInit.js";
 import { fetchWithRetry, logger } from "../lib/utils.js";
 import { VertexAI, SchemaType } from "@google-cloud/vertexai";
+import { vertexFlow } from "../lib/vertexFlow.js"; // [NEW]
 
 // --- Configuration ---
 const PROJECT_ID = "dreambees-alchemist";
@@ -164,7 +165,11 @@ async function analyzeImage(imageBuffer, mimeType = "image/png") {
     };
 
     try {
-        const result = await strictModel.generateContent(request);
+        // [MODIFIED] Use VertexFlowProcessor
+        const result = await vertexFlow.execute('SHOWCASE_ANALYSIS', async () => {
+            return await strictModel.generateContent(request);
+        }, vertexFlow.constructor.PRIORITY.LOW);
+
         const response = await result.response;
         const text = response.candidates[0].content.parts[0].text;
 
@@ -246,28 +251,13 @@ export const processShowcaseTask = async (req) => {
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        // 2. Analyze with automatic retry for 429 warnings
+        // 2. Analyze with automatic retry (handled by VertexFlowProcessor)
         let aiData = null;
-        let attempts = 0;
-        const maxAttempts = 3;
 
-        while (attempts < maxAttempts) {
-            try {
-                aiData = await analyzeImage(buffer, "image/png");
-                if (aiData) break;
-            } catch (err) {
-                // Check for quota/rate limit error strings
-                if (err.message.includes("429") || err.message.includes("Resource exhausted") || err.message.includes("503")) {
-                    attempts++;
-                    if (attempts >= maxAttempts) throw err;
-
-                    const waitTime = 2000 * Math.pow(2, attempts); // 4s, 8s...
-                    logger.warn(`[ShowcaseWorker] Hit rate limit (429). Retrying in ${waitTime / 1000}s...`);
-                    await new Promise(resolve => setTimeout(resolve, waitTime));
-                } else {
-                    throw err;
-                }
-            }
+        try {
+            aiData = await analyzeImage(buffer, "image/png");
+        } catch (err) {
+            throw err; // Let it bubble up if VertexFlowProcessor permanent fail
         }
 
         if (!aiData) {

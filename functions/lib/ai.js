@@ -2,6 +2,7 @@ import { HttpsError } from "firebase-functions/v2/https";
 import { db, FieldValue } from "../firebaseInit.js";
 import { getS3Client, fetchWithTimeout } from "./utils.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "./constants.js";
+import { vertexFlow } from "./vertexFlow.js"; // [NEW] Import central flow processor
 
 // Move Constants
 export const SLIDESHOW_STYLE_INSTRUCTION = `
@@ -85,7 +86,7 @@ export const getSlidePrompts = (language) => [
 ];
 
 // Helper for Vision Prompt Generation
-export async function generateVisionPrompt(imageUrl) {
+export async function generateVisionPrompt(imageUrl, priority = vertexFlow.constructor.PRIORITY.NORMAL) {
     const { VertexAI } = await import("@google-cloud/vertexai");
     const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
     const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -136,7 +137,11 @@ export async function generateVisionPrompt(imageUrl) {
         ]
     };
 
-    const result = await model.generateContent(request);
+    // [MODIFIED] Use VertexFlowProcessor
+    const result = await vertexFlow.execute('VISION_PROMPT', async () => {
+        return await model.generateContent(request);
+    }, priority);
+
     const response = await result.response;
     const candidate = response.candidates?.[0];
     const textOutput = candidate?.content?.parts?.[0]?.text || "";
@@ -145,7 +150,7 @@ export async function generateVisionPrompt(imageUrl) {
 }
 
 // Helper for Gemini Prompt Enhancement
-export const enhancePromptWithGemini = async (prompt) => {
+export const enhancePromptWithGemini = async (prompt, priority = vertexFlow.constructor.PRIORITY.NORMAL) => {
     const { VertexAI } = await import("@google-cloud/vertexai");
     const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
     const model = vertexAI.getGenerativeModel({
@@ -164,7 +169,11 @@ export const enhancePromptWithGemini = async (prompt) => {
         ]
     };
 
-    const result = await model.generateContent(request);
+    // [MODIFIED] Use VertexFlowProcessor
+    const result = await vertexFlow.execute('PROMPT_ENHANCE', async () => {
+        return await model.generateContent(request);
+    }, priority);
+
     const response = await result.response;
     const textOutput = response.candidates?.[0]?.content?.parts?.[0]?.text;
 
@@ -172,7 +181,8 @@ export const enhancePromptWithGemini = async (prompt) => {
 };
 
 // Helper for Vision-based Style Transformation (using Vertex AI)
-export const transformImageWithGemini = async (imageUrl, styleName, instructions, intensity = 'medium', userId = 'system') => {
+export const transformImageWithGemini = async (imageUrl, styleName, instructions, intensity = 'medium', userId = 'system', priority = vertexFlow.constructor.PRIORITY.NORMAL) => {
+
 
     // 1. Fetch Input Image & Convert to Base64
     let inputBase64 = null;
@@ -220,7 +230,12 @@ export const transformImageWithGemini = async (imageUrl, styleName, instructions
     let generatedImageBase64 = null;
 
     try {
-        const result = await model.generateContent(request);
+        // [MODIFIED] Use VertexFlowProcessor
+        const result = await vertexFlow.execute('TRANSFORM_IMAGE', async () => {
+            console.log(`[Transform] Executing Vertex AI call for ${styleName}...`);
+            return await model.generateContent(request);
+        }, priority);
+
         const response = await result.response;
 
         const candidate = response.candidates?.[0];
@@ -434,7 +449,7 @@ You are here to make images internet-shaped, not interesting.
 Obey the grammar of memes.`;
 
 // Helper for Meme Formatting (using Vertex AI)
-export const formatMemeWithGemini = async (imageUrl, text, userId = 'system') => {
+export const formatMemeWithGemini = async (imageUrl, text, userId = 'system', priority = vertexFlow.constructor.PRIORITY.NORMAL) => {
 
     // 1. Fetch Input Image & Convert to Base64
     let inputBase64 = null;
@@ -490,7 +505,11 @@ export const formatMemeWithGemini = async (imageUrl, text, userId = 'system') =>
     let generatedImageBase64 = null;
 
     try {
-        const result = await model.generateContent(request);
+        // [MODIFIED] Use VertexFlowProcessor
+        const result = await vertexFlow.execute('MEME_FORMAT', async () => {
+            return await model.generateContent(request);
+        }, priority);
+
         const response = await result.response;
 
         const candidate = response.candidates?.[0];

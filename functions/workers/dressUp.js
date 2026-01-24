@@ -2,6 +2,7 @@
 import { db, FieldValue } from "../firebaseInit.js";
 import { getS3Client, logger, retryOperation } from "../lib/utils.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
+import { vertexFlow } from "../lib/vertexFlow.js"; // [NEW]
 
 export const processDressUpTask = async (req) => {
     const { requestId, userId, image, prompt, cost } = req.data;
@@ -32,7 +33,12 @@ export const processDressUpTask = async (req) => {
         const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
 
         const request = { contents: [{ role: 'user', parts: [{ inlineData: { mimeType: "image/png", data: cleanBase64 } }, { text: prompt }] }] };
-        const result = await model.generateContent(request);
+
+        // [MODIFIED] Use VertexFlowProcessor
+        const result = await vertexFlow.execute('DRESS_UP', async () => {
+            return await model.generateContent(request);
+        }, vertexFlow.constructor.PRIORITY.LOW);
+
         const response = await result.response;
         const generatedImageBase64 = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || null;
 
