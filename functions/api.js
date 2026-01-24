@@ -187,7 +187,7 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
 
             // Avatar Forge
             case 'generateAvatarCollection': return Avatar.handleGenerateAvatarCollection(request);
-            case 'mintCollection': return Avatar.handleMintCollection(request);
+            case 'mintRandomAvatar': return Avatar.handleMintRandomAvatar(request);
 
             // Data & Ratings
             case 'getGenerationHistory': return Data.handleGetGenerationHistory(request);

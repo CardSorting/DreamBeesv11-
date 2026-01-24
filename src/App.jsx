@@ -12,7 +12,7 @@ import ScrollToTop from './components/ScrollToTop';
 import BackToTop from './components/BackToTop';
 // Imports for Animations
 import AnimatedRoutes from './components/AnimatedRoutes';
-import PublicGenerationsFeed from './pages/PublicGenerationsFeed';
+// import PublicGenerationsFeed from './pages/PublicGenerationsFeed';
 import SmoothScroll from './components/SmoothScroll';
 import NetworkStatus from './components/NetworkStatus';
 import UsernameOnboarding from './components/UsernameOnboarding';

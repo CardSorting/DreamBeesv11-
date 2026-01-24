@@ -195,54 +195,100 @@ export const handleGenerateAvatarCollection = async (request) => {
             };
         }));
 
-        const collectionRef = db.collection('avatar_collections').doc();
-        await collectionRef.set({
-            userId: uid, userDisplayName, name: theme,
-            images: processedImages, minted: false,
-            identity: idData.identity, syllablePool,
-            createdAt: FieldValue.serverTimestamp(),
-            stats: { floorPrice: (Math.random() * 2).toFixed(2), items: processedImages.length }
+        const collectionRef = db.collection('community_avatar_pool').doc();
+        const batch = db.batch();
+
+        processedImages.forEach((img, idx) => {
+            const imgRef = db.collection('community_avatar_pool').doc();
+            batch.set(imgRef, {
+                ...img,
+                requestedBy: uid,
+                userDisplayName,
+                theme,
+                style,
+                minted: false,
+                random: Math.random(),
+                createdAt: FieldValue.serverTimestamp()
+            });
         });
 
-        return { collectionId: collectionRef.id };
+        await batch.commit();
+
+        return { success: true, count: processedImages.length };
 
     } catch (error) {
         throw handleError(error, { uid });
     }
 };
 
-export const handleMintCollection = async (request) => {
+export const handleMintRandomAvatar = async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
 
-    const { collectionId } = request.data;
-    const CLAIM_COST = 5;
+    const MINT_COST = 2; // User didn't specify, but let's set a small cost for gachapon
 
     try {
-        const collectionRef = db.collection('avatar_collections').doc(collectionId);
         const userRef = db.collection('users').doc(uid);
+        const poolRef = db.collection('community_avatar_pool');
 
         return await db.runTransaction(async (t) => {
-            const [collDoc, userDoc] = await Promise.all([t.get(collectionRef), t.get(userRef)]);
-            if (!collDoc.exists) throw new HttpsError('not-found', "Drop not found");
-            const collData = collDoc.data();
-            if (collData.userId !== uid) throw new HttpsError('permission-denied', "Not your drop");
-            if (collData.minted) throw new HttpsError('failed-precondition', "Already claimed");
+            const userDoc = await t.get(userRef);
+            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+            if ((userDoc.data()?.zaps || 0) < MINT_COST) throw new HttpsError('resource-exhausted', "Insufficient Zaps");
 
-            if ((userDoc.data()?.zaps || 0) < CLAIM_COST) throw new HttpsError('resource-exhausted', "Insufficient Zaps");
+            // Efficient random selection: Pick a random float and find the first doc >= it
+            const randomVal = Math.random();
+            const q = poolRef.where('minted', '==', false).where('random', '>=', randomVal).limit(1);
+            let poolSnap = await t.get(q);
 
-            t.update(userRef, { zaps: FieldValue.increment(-CLAIM_COST) });
-            t.update(collectionRef, { minted: true, 'stats.owners': FieldValue.increment(1) });
+            // Fallback if no doc >= random (loop around)
+            if (poolSnap.empty) {
+                const qFallback = poolRef.where('minted', '==', false).where('random', '<', randomVal).limit(1);
+                poolSnap = await t.get(qFallback);
+            }
 
-            collData.images.forEach(img => {
-                t.set(db.collection('images').doc(), {
-                    userId: uid, imageUrl: img.url, thumbnailUrl: img.thumbnailUrl,
-                    createdAt: FieldValue.serverTimestamp(), type: 'avatar', collectionId, minted: true,
-                    rarity: img.rarity, syllables: img.syllables, unique_deviation: img.unique_deviation
-                });
+            if (poolSnap.empty) {
+                throw new HttpsError('failed-precondition', "No available avatars in the community pool. Forge some first!");
+            }
+
+            const avatarDoc = poolSnap.docs[0];
+            const avatarData = avatarDoc.data();
+
+            // 1. Update pool doc
+            t.update(avatarDoc.ref, {
+                minted: true,
+                ownerId: uid,
+                mintedAt: FieldValue.serverTimestamp()
             });
 
-            return { success: true };
+            // 2. Add to user's personal images collection
+            const userImageRef = db.collection('images').doc();
+            t.set(userImageRef, {
+                userId: uid,
+                imageUrl: avatarData.url,
+                thumbnailUrl: avatarData.thumbnailUrl,
+                type: 'avatar',
+                rarity: avatarData.rarity,
+                syllables: avatarData.syllables,
+                collectionName: avatarData.theme, // Back-compat or display
+                minted: true,
+                createdAt: FieldValue.serverTimestamp()
+            });
+
+            // 3. Deduct Zaps
+            t.update(userRef, { zaps: FieldValue.increment(-MINT_COST) });
+
+            return {
+                success: true,
+                prize: {
+                    url: avatarData.url,
+                    thumbnailUrl: avatarData.thumbnailUrl,
+                    theme: avatarData.theme,
+                    rarity: avatarData.rarity
+                }
+            };
         });
-    } catch (error) { throw handleError(error, { uid, collectionId }); }
+    } catch (error) {
+        throw handleError(error, { uid });
+    }
 };

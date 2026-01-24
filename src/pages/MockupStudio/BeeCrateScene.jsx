@@ -397,13 +397,13 @@ const SceneContent = ({ appState }) => {
             {/* Shadow fixes: frames={1} forces continuous update to prevent temporal flickering */}
             <ContactShadows
                 frames={1}
-                position={[0, -4.5, 0]}
-                opacity={0.4}
-                scale={30}
-                blur={1.5}
-                far={20}
+                position={[0, -2.85, 0]}
+                opacity={0.6}
+                scale={20}
+                blur={2}
+                far={10}
                 resolution={256}
-                color="#E65100"
+                color="#000"
             />
         </>
     );

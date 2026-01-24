@@ -120,7 +120,7 @@ const AppsHub = () => {
                     description: 'Forge premium curated PFP collections with NFT-style aesthetics.',
                     icon: Zap,
                     tags: ['avatar', 'pfp', 'collection', 'nft'],
-                    path: '/avatar-forge',
+                    path: '/avatar',
                     previewImage: '/app-previews/avatar_forge.png',
                     isNew: true
                 };

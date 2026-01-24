@@ -55,7 +55,10 @@ const Offline = lazyRetry(() => import('../pages/Offline'));
 const AutoCSV = lazyRetry(() => import('../pages/AutoCSV/AutoCSV'));
 const MeowAccTransformer = lazyRetry(() => import('../pages/MeowAccTransformer/MeowAccTransformer'));
 const ColorCraft = lazyRetry(() => import('../apps/color-craft/ColorCraft'));
-const AvatarForge = lazyRetry(() => import('../pages/AvatarForge/AvatarForge'));
+const AvatarForgeLayout = lazyRetry(() => import('../pages/AvatarForge/AvatarForgeLayout'));
+const AvatarForgeRequest = lazyRetry(() => import('../pages/AvatarForge/AvatarForgeRequest'));
+const AvatarForgeMint = lazyRetry(() => import('../pages/AvatarForge/AvatarForgeMint'));
+const AvatarForgeFloor = lazyRetry(() => import('../pages/AvatarForge/AvatarForgeFloor'));
 
 import { Privacy, Terms, Cookies } from '../pages/Legal';
 import { Careers, Brand, Api, Showcase } from '../pages/Misc';
@@ -226,9 +229,14 @@ const AnimatedRoutes = () => {
                                 <PrivateRoute><ColorCraft /></PrivateRoute>
                             } />
 
-                            <Route path="/avatar-forge" element={
-                                <PrivateRoute><AvatarForge /></PrivateRoute>
-                            } />
+                            <Route path="/avatar" element={
+                                <PrivateRoute><AvatarForgeLayout /></PrivateRoute>
+                            }>
+                                <Route index element={<Navigate to="forge" replace />} />
+                                <Route path="forge" element={<AvatarForgeRequest />} />
+                                <Route path="mint" element={<AvatarForgeMint />} />
+                                <Route path="floor" element={<AvatarForgeFloor />} />
+                            </Route>
 
                             <Route path="/maintenance" element={<Maintenance />} />
                             <Route path="/forbidden" element={<AccessDenied />} />
