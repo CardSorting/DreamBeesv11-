@@ -63,13 +63,14 @@ const ColorCraft = () => {
 
         try {
             // Step 1: Generate Concepts
-            const concepts = await generateBookConcepts(theme, style);
+            const { pages: concepts, bookId } = await generateBookConcepts(theme, style);
 
             // Step 2: Convert to Pending Images
             const newImages = concepts.map(prompt => ({
                 id: crypto.randomUUID(),
                 prompt: prompt,
                 style: style,
+                bookId: bookId, // Attach Book ID
                 createdAt: Date.now(),
                 status: 'pending'
             }));

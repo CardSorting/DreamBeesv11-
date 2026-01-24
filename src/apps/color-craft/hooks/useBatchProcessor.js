@@ -112,7 +112,7 @@ export const useBatchProcessor = ({
             else if (normalizedStyle.includes('mandala')) styleToUse = ArtStyle.MANDALA;
             else if (normalizedStyle.includes('anime')) styleToUse = ArtStyle.ANIME;
 
-            const url = await generateColoringPage(currentItem.prompt, styleToUse);
+            const url = await generateColoringPage(currentItem.prompt, styleToUse, currentItem.bookId);
 
             // 3. Buffer & Delay
             const generationTime = Date.now() - startTime;

@@ -15,6 +15,8 @@ import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { isOver18 } from '../utils/age';
 import CommunityConsentModal from '../components/CommunityConsentModal';
 import './Discovery.css';
+import BookCard from '../components/BookCard';
+import BookReaderModal from '../components/BookReaderModal';
 
 const FeedSkeleton = () => (
     <div className="animate-pulse space-y-4 mb-8">
@@ -62,6 +64,7 @@ export default function PublicGenerationsFeed() {
     const [lastDoc, setLastDoc] = useState(null);
     const [hasMore, setHasMore] = useState(true);
     const [focusImage, setFocusImage] = useState(null);
+    const [activeBook, setActiveBook] = useState(null);
 
     // Filter Cache for instantaneous switching
     const [filterCache, setFilterCache] = useState({});
@@ -83,6 +86,7 @@ export default function PublicGenerationsFeed() {
 
     const FILTERS = [
         { id: 'all', label: 'All', icon: '✨' },
+        { id: 'coloring-books', label: 'Coloring Books', icon: '🎨' },
         { id: 'video', label: 'Videos', icon: '🎬' },
         { id: 'slideshow', label: 'Slideshows', icon: '📽️' },
         { id: 'meowacc', label: 'MeowAcc', icon: '🐱' },
@@ -157,25 +161,36 @@ export default function PublicGenerationsFeed() {
                 setError(null);
             }
 
-            // Query generation_queue for completed jobs
-            let q = query(
-                collection(db, 'generation_queue'),
-                where('status', '==', 'completed')
-            );
+            let q;
 
-            // Apply filter
-            if (activeFilter === 'video') {
-                q = query(q, where('type', '==', 'video'));
-            } else if (activeFilter === 'slideshow') {
-                q = query(q, where('type', '==', 'slideshow'));
-            } else if (activeFilter === 'dress-up') {
-                q = query(q, where('type', '==', 'dress-up'));
-            } else if (activeFilter === 'meowacc') {
-                q = query(q, where('modelId', '==', 'meowacc'));
+            if (activeFilter === 'coloring-books') {
+                q = query(
+                    collection(db, 'coloring_books'),
+                    where('status', '==', 'completed'),
+                    orderBy('createdAt', 'desc'),
+                    limit(20)
+                );
+            } else {
+                // Query generation_queue for completed jobs
+                q = query(
+                    collection(db, 'generation_queue'),
+                    where('status', '==', 'completed')
+                );
+
+                // Apply filter
+                if (activeFilter === 'video') {
+                    q = query(q, where('type', '==', 'video'));
+                } else if (activeFilter === 'slideshow') {
+                    q = query(q, where('type', '==', 'slideshow'));
+                } else if (activeFilter === 'dress-up') {
+                    q = query(q, where('type', '==', 'dress-up'));
+                } else if (activeFilter === 'meowacc') {
+                    q = query(q, where('modelId', '==', 'meowacc'));
+                }
+
+                // Final order and pagination
+                q = query(q, orderBy('createdAt', 'desc'), limit(20));
             }
-
-            // Final order and pagination
-            q = query(q, orderBy('createdAt', 'desc'), limit(20));
 
             if (isLoadMore && lastDoc) {
                 q = query(q, startAfter(lastDoc));
@@ -198,7 +213,7 @@ export default function PublicGenerationsFeed() {
             }));
 
             // Filter out any hidden or potentially invalid images just in case
-            const validImages = newImages.filter(img => !img.hidden && (img.imageUrl || img.url));
+            const validImages = newImages.filter(img => !img.hidden && (img.imageUrl || img.url || img.coverUrl));
 
             setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
 
@@ -282,6 +297,7 @@ export default function PublicGenerationsFeed() {
 
     return (
         <div className="feed-layout-wrapper">
+            <BookReaderModal book={activeBook} onClose={() => setActiveBook(null)} />
             <SEO
                 title={focusImage ? `${focusImage.prompt?.slice(0, 50)}... | Generations - DreamBees` : `${FILTERS.find(f => f.id === activeFilter)?.label || 'Recent'} Generations - DreamBees`}
                 description={focusImage ? focusImage.prompt : `Explore the latest ${activeFilter !== 'all' ? activeFilter : ''} AI generations from the DreamBees community.`}
@@ -394,26 +410,39 @@ export default function PublicGenerationsFeed() {
                                             exit={{ opacity: 0, y: -10 }}
                                             transition={{ duration: 0.3, ease: 'easeOut' }}
                                         >
-                                            {images.map((imgItem, index) => {
-                                                const itemModel = availableModels.find(m => m.id === imgItem.modelId) || { name: 'Unknown Model', image: '/dreambees_icon.png' };
-                                                const creatorName = imgItem.userDisplayName || "DreamBees User";
-
-                                                return (
-                                                    <FeedItemErrorBoundary key={imgItem.id}>
-                                                        <FeedPost
-                                                            imgItem={imgItem}
+                                            {activeFilter === 'coloring-books' ? (
+                                                <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 px-4">
+                                                    {images.map((book, index) => (
+                                                        <BookCard
+                                                            key={book.id}
+                                                            book={book}
                                                             index={index}
-                                                            model={itemModel}
-                                                            getOptimizedImageUrl={getOptimizedImageUrl}
-                                                            navigate={navigate}
-                                                            setActiveShowcaseImage={openFocus}
-                                                            headerTitle={creatorName}
-                                                            headerSubtitle={itemModel.name}
-                                                            avatarImage="/dreambees_icon.png"
+                                                            onClick={setActiveBook}
                                                         />
-                                                    </FeedItemErrorBoundary>
-                                                );
-                                            })}
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                images.map((imgItem, index) => {
+                                                    const itemModel = availableModels.find(m => m.id === imgItem.modelId) || { name: 'Unknown Model', image: '/dreambees_icon.png' };
+                                                    const creatorName = imgItem.userDisplayName || "DreamBees User";
+
+                                                    return (
+                                                        <FeedItemErrorBoundary key={imgItem.id}>
+                                                            <FeedPost
+                                                                imgItem={imgItem}
+                                                                index={index}
+                                                                model={itemModel}
+                                                                getOptimizedImageUrl={getOptimizedImageUrl}
+                                                                navigate={navigate}
+                                                                setActiveShowcaseImage={openFocus}
+                                                                headerTitle={creatorName}
+                                                                headerSubtitle={itemModel.name}
+                                                                avatarImage="/dreambees_icon.png"
+                                                            />
+                                                        </FeedItemErrorBoundary>
+                                                    );
+                                                })
+                                            )}
                                         </motion.div>
                                     )}
                                 </AnimatePresence>

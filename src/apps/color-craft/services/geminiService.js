@@ -9,7 +9,7 @@ const api = httpsCallable(functions, 'api');
 export const generateBookConcepts = async (theme, style) => {
     try {
         const result = await api({ action: 'createBookConcepts', theme, style });
-        return result.data.pages; // Expecting { pages: [...] } from backend
+        return { pages: result.data.pages, bookId: result.data.bookId };
     } catch (error) {
         console.error("Concept Generation Error:", error);
         throw new Error(error.message || "Failed to brainstorm book concepts.");
@@ -19,9 +19,9 @@ export const generateBookConcepts = async (theme, style) => {
 /**
  * Generates a coloring book page based on the theme and style.
  */
-export const generateColoringPage = async (prompt, style) => {
+export const generateColoringPage = async (prompt, style, bookId) => {
     try {
-        const result = await api({ action: 'createColoringPage', prompt, style });
+        const result = await api({ action: 'createColoringPage', prompt, style, bookId });
         // Backend returns object with imageUrl, thumbnailUrl.
         // If frontend expects base64, we might need to adjust, but URL is better.
         // The original app used base64 for immediate display.

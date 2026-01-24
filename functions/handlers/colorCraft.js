@@ -62,7 +62,26 @@ export const handleCreateBookConcepts = async (request) => {
         const parsed = JSON.parse(responseText);
         if (!parsed.pages || !Array.isArray(parsed.pages)) throw new Error("Invalid JSON structure");
 
-        return { pages: parsed.pages.slice(0, 30) };
+        // --- Create Book Document ---
+        const userRef = db.collection('users').doc(uid);
+        const userDoc = await userRef.get();
+        const userDisplayName = userDoc.data()?.displayName || "ColorCraft Artist";
+
+        const bookRef = await db.collection('coloring_books').add({
+            userId: uid,
+            userDisplayName,
+            theme,
+            style,
+            status: 'generating',
+            coverUrl: null, // Will be set by first completed page
+            pageCount: 0,
+            totalExpected: 30,
+            pages: [], // Will contain { url, prompt, createdAt }
+            createdAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp()
+        });
+
+        return { pages: parsed.pages.slice(0, 30), bookId: bookRef.id };
 
     } catch (error) {
         // Refund
@@ -184,6 +203,43 @@ export const handleCreateColoringPage = async (request) => {
             type: 'colorcraft',
             style: style
         });
+
+        // --- Update Book Document ---
+        const { bookId } = request.data;
+        if (bookId) {
+            const bookRef = db.collection('coloring_books').doc(bookId);
+
+            await db.runTransaction(async (tBook) => {
+                const bookDoc = await tBook.get(bookRef);
+                if (!bookDoc.exists) return; // Should not happen, but safe to ignore
+
+                const updates = {
+                    pages: FieldValue.arrayUnion({
+                        imageUrl,
+                        thumbnailUrl,
+                        prompt: `[COLORCRAFT] ${prompt}`,
+                        createdAt: new Date().toISOString()
+                    }),
+                    pageCount: FieldValue.increment(1),
+                    updatedAt: FieldValue.serverTimestamp()
+                };
+
+                // Set cover if it's the first page or explictly cover
+                const currentData = bookDoc.data();
+                if (!currentData.coverUrl || (currentData.pages && currentData.pages.length === 0)) {
+                    updates.coverUrl = thumbnailUrl;
+                }
+
+                if ((currentData.pageCount || 0) + 1 >= (currentData.totalExpected || 30)) {
+                    updates.status = 'completed';
+                }
+
+                tBook.update(bookRef, updates);
+            });
+        }
+
+        // We skip adding to generation_queue to avoid flooding the feed with single pages
+        // The Book Feed will query the 'coloring_books' collection instead.
 
         // Return exact format frontend expects (plus URL for persistence)
         return {
