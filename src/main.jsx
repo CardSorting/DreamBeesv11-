@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HelmetProvider } from 'react-helmet-async'
 import './index.css'
+import './tailwind.css'
 import App from './App.jsx'
 
 import GlobalErrorBoundary from './components/GlobalErrorBoundary.jsx'
