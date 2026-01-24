@@ -16,6 +16,7 @@ import PublicGenerationsFeed from './pages/PublicGenerationsFeed';
 import SmoothScroll from './components/SmoothScroll';
 import NetworkStatus from './components/NetworkStatus';
 import UsernameOnboarding from './components/UsernameOnboarding';
+import AgeVerificationModal from './components/AgeVerificationModal';
 import { useIsMobile } from './hooks/useIsMobile';
 
 function Layout() {
@@ -46,6 +47,7 @@ function Layout() {
 
   return (
     <div className="app-layout">
+      <AgeVerificationModal />
       {showOnboarding && <UsernameOnboarding />}
       {!shouldHideHeader && <MinimalHeader />}
       <main className="app-main">

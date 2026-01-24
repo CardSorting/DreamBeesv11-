@@ -58,6 +58,7 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
                         email: request.auth.token.email || "",
                         displayName: request.auth.token.name || "",
                         photoURL: request.auth.token.picture || "",
+                        birthday: request.data.birthday || null,
                         createdAt: new Date(),
                         zaps: 10,
                         reels: 0,

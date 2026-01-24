@@ -9,6 +9,7 @@ export default function Auth() {
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [birthday, setBirthday] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -30,7 +31,12 @@ export default function Auth() {
             if (isLogin) {
                 await login(email, password);
             } else {
-                await signup(email, password);
+                if (!birthday) {
+                    setError('Birth date is required.');
+                    setLoading(false);
+                    return;
+                }
+                await signup(email, password, birthday);
             }
             navigate('/generate');
         } catch (err) {
@@ -159,7 +165,21 @@ export default function Auth() {
                                 className="input-field auth-input"
                             />
                         </div>
-
+                        {!isLogin && (
+                            <div>
+                                <label style={{ display: 'block', fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px', marginLeft: '12px' }}>
+                                    Birth Date
+                                </label>
+                                <input
+                                    type="date"
+                                    required
+                                    value={birthday}
+                                    onChange={(e) => setBirthday(e.target.value)}
+                                    className="input-field auth-input"
+                                    max={new Date().toISOString().split("T")[0]}
+                                />
+                            </div>
+                        )}
                         <button
                             disabled={loading}
                             className="btn btn-primary auth-submit-btn"

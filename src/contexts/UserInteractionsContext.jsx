@@ -138,8 +138,10 @@ export function UserInteractionsProvider({ children }) {
                     subscriptionStatus: data.subscriptionStatus || 'inactive',
                     username: data.username || '',
                     username: data.username || '',
+                    username: data.username || '',
                     displayPreference: data.displayPreference || 'name',
-                    karma: data.karma !== undefined ? data.karma : 0
+                    karma: data.karma !== undefined ? data.karma : 0,
+                    birthday: data.birthday || null
                 });
             }
             setIsProfileLoaded(true);

@@ -24,8 +24,10 @@ export function useAuth() {
 export function AuthProvider({ children }) {
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [pendingBirthday, setPendingBirthday] = useState(null);
 
-    function signup(email, password) {
+    function signup(email, password, birthday = null) {
+        if (birthday) setPendingBirthday(birthday);
         return createUserWithEmailAndPassword(auth, email, password);
     }
 
@@ -62,13 +64,15 @@ export function AuthProvider({ children }) {
 
             // 2. Retry Logic for Creation (Handled by useApi)
             await apiCall('api', {
-                action: 'initializeUser'
+                action: 'initializeUser',
+                birthday: pendingBirthday
             }, {
                 retries: 3,
                 timeout: 30000,
                 toastErrors: false // Don't spam user during auto-init, we catch globally if needed
             });
 
+            setPendingBirthday(null);
             console.log("User initialization successful via useApi");
 
         } catch (error) {
