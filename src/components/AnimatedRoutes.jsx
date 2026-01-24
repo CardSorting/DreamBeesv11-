@@ -54,6 +54,7 @@ const AccessDenied = lazyRetry(() => import('../pages/AccessDenied'));
 const Offline = lazyRetry(() => import('../pages/Offline'));
 const AutoCSV = lazyRetry(() => import('../pages/AutoCSV/AutoCSV'));
 const MeowAccTransformer = lazyRetry(() => import('../pages/MeowAccTransformer/MeowAccTransformer'));
+const ColorCraft = lazyRetry(() => import('../apps/color-craft/ColorCraft'));
 
 import { Privacy, Terms, Cookies } from '../pages/Legal';
 import { Careers, Brand, Api, Showcase } from '../pages/Misc';
@@ -218,6 +219,10 @@ const AnimatedRoutes = () => {
 
                             <Route path="/meowacc" element={
                                 <PrivateRoute><MeowAccTransformer /></PrivateRoute>
+                            } />
+
+                            <Route path="/color-craft" element={
+                                <PrivateRoute><ColorCraft /></PrivateRoute>
                             } />
 
                             <Route path="/maintenance" element={<Maintenance />} />

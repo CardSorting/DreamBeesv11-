@@ -20,6 +20,7 @@ import * as Persona from "./handlers/persona.js";
 import * as Mockup from "./handlers/mockup.js";
 import * as Meme from "./handlers/meme.js";
 import * as Ecommerce from "./handlers/ecommerce.js";
+import * as ColorCraft from "./handlers/colorCraft.js";
 
 // ============================================================================
 // Main API Dispatcher
@@ -179,6 +180,10 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
 
             // Ecommerce / AutoCSV
             case 'analyzeProductImage': return Ecommerce.handleAnalyzeProductImage(request);
+
+            // ColorCraft
+            case 'createBookConcepts': return ColorCraft.handleCreateBookConcepts(request);
+            case 'createColoringPage': return ColorCraft.handleCreateColoringPage(request);
 
             // Data & Ratings
             case 'getGenerationHistory': return Data.handleGetGenerationHistory(request);
