@@ -33,108 +33,92 @@ export const handleGenerateAvatarCollection = async (request) => {
         const textModel = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         const imageModel = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
 
-        // --- STAGE 1: Visual Grammar & Grammar DNA ---
-        const dnaPrompt = `
-            You are a lead NFT Art Director defining a "Visual Grammar" for a 30-item PFP collection.
+        // --- STAGE 1: Character Identity Sheet ---
+        const identityPrompt = `
+            Define a strict, non-negotiable "Character Identity Sheet" for a 30-item PFP collection.
             Theme: "${theme}"
             Style: "${style}"
             
-            1. Define Collection DNA: Palette (5 hex), "Forbidden Material" (Legendary only), and "Visual Signature" (e.g., 45-degree harsh shadows, holographic grain).
-            2. Define "Visual Grammar Rules": 
-               - Silhouette constraints (e.g., "tall headgear," "compact collars").
-               - Material Affinities (e.g., "Liquid" traits must always pair with "Glow" effects).
-
-            Return a strict JSON:
-            {
-                "grammar": { "palette": [], "forbidden_material": "string", "signature": "string", "rules": [] },
-                "material_affinities": { "materialA": ["trait_type1", "trait_type2"], "materialB": [] }
-            }
-        `;
-
-        const dnaResult = await vertexFlow.execute('GRAMMAR_DNA_COMPILER', async () => {
-            return await textModel.generateContent({
-                contents: [{ role: 'user', parts: [{ text: dnaPrompt }] }],
-                generationConfig: { responseMimeType: "application/json" }
-            });
-        }, vertexFlow.constructor.PRIORITY.HIGH);
-
-        const grammarDNA = JSON.parse((await dnaResult.response).candidates[0].content.parts[0].text);
-
-        // --- STAGE 2: 2D Diversity Vector Mapping ---
-        const manifestPrompt = `
-            Using this Visual Grammar: ${JSON.stringify(grammarDNA)}
-            Generate a Manifest for exactly 30 items.
-            
-            DIVERSITY VECTOR MAPPING:
-            Map all items on a 2D plane: X (Chaotic to Structured), Y (Organic to Synthetic). 
-            Space them evenly. No two items can share the same vector quadrant AND more than 1 trait.
-
-            JSON Structure per item:
-            {
-                "id": index,
-                "vector": { "x": -1 to 1, "y": -1 to 1 },
-                "rarity": "Legendary|Rare|Common",
-                "traits": { 
-                    "background": "description", 
-                    "clothing": "description tied to material affinity",
-                    "accessories": "description",
-                    "unique_hook": "one-of-a-kind visual deviation"
-                }
-            }
-            Legendary item MUST use the "Forbidden Material" from the DNA.
-        `;
-
-        const manifestResult = await vertexFlow.execute('DIVERSITY_MANIFEST_COMPILER', async () => {
-            return await textModel.generateContent({
-                contents: [{ role: 'user', parts: [{ text: manifestPrompt }] }],
-                generationConfig: { responseMimeType: "application/json" }
-            });
-        }, vertexFlow.constructor.PRIORITY.HIGH);
-
-        let manifest = JSON.parse((await manifestResult.response).candidates[0].content.parts[0].text);
-
-        // --- STAGE 3: Semantic Critique & Mutation ---
-        const critiquePrompt = `
-            Review this Diversity Manifest for "Semantic Clustering" (items that feel too similar in mood):
-            ${JSON.stringify(manifest)}
-
-            Identify items within 0.2 units of each other on the Diversity Vector Map that share more than 1 semantic descriptor.
             Return a JSON object:
             {
-                "mutations": [
-                    { "id": index, "mutation_instruction": "Force new X/Y position and reset all traits" }
-                ]
+                "identity": {
+                    "face_geometry": "e.g., high cheekbones, sharp jawline",
+                    "eye_logic": "e.g., wide spacing, specific iris pattern",
+                    "skin_signature": "e.g., porcelain matte with micro-etched circuits",
+                    "personality_mood": "e.g., stoic, melancholic, ethereal"
+                },
+                "dna": { "palette": ["hex"], "signature_lighting": "string" }
             }
         `;
 
-        const critiqueResult = await vertexFlow.execute('DIVERSITY_CRITIQUE', async () => {
+        const idResult = await vertexFlow.execute('IDENTITY_COMPILER', async () => {
             return await textModel.generateContent({
-                contents: [{ role: 'user', parts: [{ text: critiquePrompt }] }],
+                contents: [{ role: 'user', parts: [{ text: identityPrompt }] }],
                 generationConfig: { responseMimeType: "application/json" }
             });
         }, vertexFlow.constructor.PRIORITY.HIGH);
 
-        const critiqueData = JSON.parse((await critiqueResult.response).candidates[0].content.parts[0].text);
+        const idData = JSON.parse((await idResult.response).candidates[0].content.parts[0].text);
 
-        // Handle mutations (simplified for this call)
-        if (critiqueData.mutations) {
-            // Note: In production we'd re-call textModel for the mutated rows, here we trust the critique logic.
-            critiqueData.mutations.forEach(mut => {
-                const idx = manifest.findIndex(m => m.id === mut.id);
-                if (idx !== -1) manifest[idx].mutated = true;
+        // --- STAGE 2: Atomic Syllable Pool ---
+        const syllablePrompt = `
+            Using this Identity: ${JSON.stringify(idData)}
+            Generate an "Atomic Syllable Pool" for trait generation.
+            Break traits into Syllables: [Base Shape] + [Material] + [Finish] + [Detail].
+            
+            Return a JSON object with pools for:
+            - Clothing_Syllables: { shapes: [], materials: [], finishes: [], details: [] }
+            - Headgear_Syllables: { shapes: [], materials: [], finishes: [], details: [] }
+            - Background_Syllables: { environments: [], atmospheres: [] }
+        `;
+
+        const syllableResult = await vertexFlow.execute('SYLLABLE_POOL_COMPILER', async () => {
+            return await textModel.generateContent({
+                contents: [{ role: 'user', parts: [{ text: syllablePrompt }] }],
+                generationConfig: { responseMimeType: "application/json" }
             });
-        }
+        }, vertexFlow.constructor.PRIORITY.HIGH);
 
-        // --- STAGE 4: Image Generation Flow (Master + 29 Evolutions) ---
+        const syllablePool = JSON.parse((await syllableResult.response).candidates[0].content.parts[0].text);
+
+        // --- STAGE 3: Combinatorial Manifest Matrix ---
+        const matrixPrompt = `
+            Using the Syllable Pool: ${JSON.stringify(syllablePool)}
+            And the Identity: ${JSON.stringify(idData.identity)}
+            Generate a Manifest for exactly 30 unique items.
+            Ensuring NO two items share more than one complete Syllable combination.
+            Include 1 Legendary, 5 Rare, 24 Common items.
+
+            Return a JSON array of 30 "Atomic Manifest" items:
+            {
+                "id": index,
+                "rarity": "string",
+                "syllables": { 
+                    "clothing": "Shape + Material + Finish + Detail",
+                    "headgear": "Shape + Material + Finish + Detail",
+                    "background": "Env + Atmosphere"
+                },
+                "unique_deviation": "one-at-a-time special trait"
+            }
+        `;
+
+        const matrixResult = await vertexFlow.execute('MATRIX_COMPILER', async () => {
+            return await textModel.generateContent({
+                contents: [{ role: 'user', parts: [{ text: matrixPrompt }] }],
+                generationConfig: { responseMimeType: "application/json" }
+            });
+        }, vertexFlow.constructor.PRIORITY.HIGH);
+
+        const manifest = JSON.parse((await matrixResult.response).candidates[0].content.parts[0].text);
+
+        // --- STAGE 4: Image Generation Flow ---
         const masterDef = manifest[0];
         const masterPrompt = `
-            ULTIMATE Masterpiece PFP. Chest up. ${theme} Theme. ${style} Style.
-            DNA: Silhouette: ${grammarDNA.grammar.signature}. Palette: ${grammarDNA.grammar.palette.join(', ')}.
-            Vector Position: X=${masterDef.vector.x} (Chaos/Structure), Y=${masterDef.vector.y} (Organic/Synthetic).
-            Traits: ${masterDef.traits.background}, ${masterDef.traits.clothing}, ${masterDef.traits.accessories}.
-            Unique Hook: ${masterDef.traits.unique_hook}.
-            Rarity: ${masterDef.rarity}.
-            Consistency Anchor: Hyper-detailed character face, 8k resolution, cinematic focus.
+            Subject: PFP chest-up. ${theme} Theme. ${style} Style.
+            IDENTITY ANCHOR (STRICT): Face=${idData.identity.face_geometry}. Eyes=${idData.identity.eye_logic}. Skin=${idData.identity.skin_signature}. Mood=${idData.identity.personality_mood}.
+            TRAITS: Clothing=${masterDef.syllables.clothing}. Headgear=${masterDef.syllables.headgear}. BG=${masterDef.syllables.background}.
+            UNIQUE HOOK: ${masterDef.unique_deviation}.
+            Ultra-detailed, cinematic masterpiece. Consistency is mandatory.
         `;
 
         const masterParts = [{ text: masterPrompt }];
@@ -159,15 +143,14 @@ export const handleGenerateAvatarCollection = async (request) => {
             await new Promise(r => setTimeout(r, RATE_LIMIT_DELAY));
 
             const evolutionPrompt = `
-                DIVERSITY EVOLUTION SEQUENCE:
-                REFERENCE: Strictly maintain this character face, quality, and art style.
-                NEW SEMANTIC VECTOR: X=${def.vector.x}, Y=${def.vector.y}.
-                NEW FEATURES (${def.rarity}):
-                - Hook: ${def.traits.unique_hook}
-                - Outfit/Base: ${def.traits.clothing}
-                - BG: ${def.traits.background}
-                - Details: ${def.traits.accessories}
-                Ensure the visual entropy is high compared to the reference, but character remains identical.
+                IDENTITY-ANCHORED EVOLUTION:
+                REFERENCE: Lock onto this character's IDENTICAL FACE and STYLE.
+                STRICT IDENTITY: ${JSON.stringify(idData.identity)}
+                NEW ATOMIC TRAITS: 
+                - Outfit: ${def.syllables.clothing}
+                - Environment: ${def.syllables.background}
+                - Special: ${def.unique_deviation}
+                Maintain the persona perfectly while changing the setup.
             `;
 
             try {
@@ -185,7 +168,7 @@ export const handleGenerateAvatarCollection = async (request) => {
             } catch (err) { logger.error(`Evo ${i} failed`, err); }
         }
 
-        // --- STAGE 5: Storage & Persistence ---
+        // --- STAGE 5: Persistence ---
         const { default: sharp } = await import("sharp");
         const { PutObjectCommand } = await import("@aws-sdk/client-s3");
         const { getS3Client } = await import("../lib/utils.js");
@@ -207,8 +190,8 @@ export const handleGenerateAvatarCollection = async (request) => {
                 url: `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${key}.webp`,
                 thumbnailUrl: `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${key}_t.webp`,
                 rarity: img.definition.rarity,
-                vector: img.definition.vector,
-                traits: img.definition.traits
+                syllables: img.definition.syllables,
+                unique_deviation: img.definition.unique_deviation
             };
         }));
 
@@ -216,9 +199,9 @@ export const handleGenerateAvatarCollection = async (request) => {
         await collectionRef.set({
             userId: uid, userDisplayName, name: theme,
             images: processedImages, minted: false,
-            grammarDNA,
+            identity: idData.identity, syllablePool,
             createdAt: FieldValue.serverTimestamp(),
-            stats: { floorPrice: (Math.random() * 2).toFixed(2), totalVolume: 0, owners: 0, items: processedImages.length }
+            stats: { floorPrice: (Math.random() * 2).toFixed(2), items: processedImages.length }
         });
 
         return { collectionId: collectionRef.id };
@@ -255,7 +238,7 @@ export const handleMintCollection = async (request) => {
                 t.set(db.collection('images').doc(), {
                     userId: uid, imageUrl: img.url, thumbnailUrl: img.thumbnailUrl,
                     createdAt: FieldValue.serverTimestamp(), type: 'avatar', collectionId, minted: true,
-                    rarity: img.rarity, vector: img.vector, traits: img.traits
+                    rarity: img.rarity, syllables: img.syllables, unique_deviation: img.unique_deviation
                 });
             });
 
