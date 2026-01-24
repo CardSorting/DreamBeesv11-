@@ -35,8 +35,8 @@ export const processSlideshowTask = async (req) => {
         if (results.length === 0) {
             results = prompts.map((p, idx) => ({ slideIndex: idx, prompt: p, status: 'pending', imageUrl: null, thumbnailUrl: null }));
             const slideshowRef = await db.collection("images").add({
-                userId, prompt: prompts[0], modelId: "gemini-2.5-flash-image",
-                imageUrl: null, thumbnailUrl: null, lqip: null, createdAt: new Date(),
+                userId, prompt: prompts[0], modelId: "nekomimi",
+                imageUrl: null, thumbnailUrl: null, lqip: null, createdAt: FieldValue.serverTimestamp(),
                 originalRequestId: requestId, type: 'slideshow', slides: results, slideCount: results.length, status: 'processing'
             });
             resultImageId = slideshowRef.id;
@@ -110,7 +110,7 @@ export const processSlideshowTask = async (req) => {
             if (i < prompts.length - 1) await new Promise(resolve => setTimeout(resolve, 3000));
         }
 
-        await docRef.update({ status: "completed", results: results, completedAt: new Date() });
+        await docRef.update({ status: "completed", results: results, completedAt: FieldValue.serverTimestamp() });
 
     } catch (error) {
         logger.error(`[processSlideshowTask] Failed`, error);

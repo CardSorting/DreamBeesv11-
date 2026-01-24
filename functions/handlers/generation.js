@@ -182,17 +182,42 @@ export const handleCreateSlideshowGeneration = async (request) => {
     const uid = request.auth.uid;
     if (!uid) throw new HttpsError('unauthenticated', "Auth required");
     const safeMode = mode || 'poster';
-    const COST = safeMode === 'slideshow' ? 15 : 5;
+    const COST = safeMode === 'slideshow' ? 3 : 0.5;
     try {
         const queueRef = db.collection('generation_queue').doc();
         await db.runTransaction(async (t) => {
             const userRef = db.collection('users').doc(uid);
             const userDoc = await t.get(userRef);
-            if ((userDoc.data().zaps || 0) < COST) throw new HttpsError('resource-exhausted', "Insufficient Zaps");
+            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+
+            const userData = userDoc.data();
+            const userDisplayName = userData.displayName || "Explorer";
+
+            if ((userData.zaps || 0) < COST) throw new HttpsError('resource-exhausted', "Insufficient Zaps");
+
             t.update(userRef, { zaps: FieldValue.increment(-COST) });
-            t.set(queueRef, { userId: uid, status: 'queued', type: 'slideshow', mode: safeMode, language: language || 'English', cost: COST, createdAt: new Date() });
+            t.set(queueRef, {
+                userId: uid,
+                userDisplayName,
+                status: 'queued',
+                type: 'slideshow',
+                modelId: 'nekomimi',
+                mode: safeMode,
+                language: language || 'English',
+                cost: COST,
+                hidden: false,
+                createdAt: FieldValue.serverTimestamp()
+            });
         });
-        await getFunctions().taskQueue('locations/us-central1/functions/urgentWorker').enqueue({ taskType: 'slideshow', requestId: queueRef.id, userId: uid, image, mode: safeMode, language, cost: COST });
+        await getFunctions().taskQueue('locations/us-central1/functions/urgentWorker').enqueue({
+            taskType: 'slideshow',
+            requestId: queueRef.id,
+            userId: uid,
+            image,
+            mode: safeMode,
+            language,
+            cost: COST
+        });
         return { requestId: queueRef.id };
     } catch (e) { throw handleError(e, { uid }); }
 };

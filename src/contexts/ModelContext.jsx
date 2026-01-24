@@ -73,6 +73,19 @@ export function ModelProvider({ children }) {
                     });
                 }
 
+                if (!models.find(m => m.id === 'nekomimi')) {
+                    models.push({
+                        id: 'nekomimi',
+                        name: 'Nekomimi Academy',
+                        description: 'Turn ideas into Kawaii children\'s educational art.',
+                        type: 'Generator',
+                        order: 102,
+                        isActive: true,
+                        image: '/app-previews/slides.png',
+                        tags: ['education', 'kawaii', 'slideshow', 'poster']
+                    });
+                }
+
                 console.log(`[ModelContext] Fetched ${models.length} models. Checked MeowAcc.`);
                 setAvailableModels(models);
 

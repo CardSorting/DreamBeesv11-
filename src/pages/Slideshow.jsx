@@ -344,7 +344,7 @@ export default function Slideshow() {
                                     className="w-full"
                                     icon={Wand2}
                                 >
-                                    {mode === 'poster' ? 'Transform with Magic (5 Credits)' : 'Generate Slideshow (15 Credits)'}
+                                    {mode === 'poster' ? 'Transform with Magic (0.5 Credits)' : 'Generate Slideshow (3 Credits)'}
                                 </Button>
                             </div>
                         </div>

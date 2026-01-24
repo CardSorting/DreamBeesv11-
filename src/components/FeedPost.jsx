@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, MoreHorizontal, Bookmark, BadgeCheck, Aperture, Volume2, VolumeX, Flag } from 'lucide-react';
+import { Heart, MoreHorizontal, Bookmark, BadgeCheck, Aperture, Volume2, VolumeX, Flag, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,6 +23,7 @@ const FeedPost = ({
 }) => {
     const { _currentUser } = useAuth();
     const { isLiked, isBookmarked, toggleLike, toggleBookmark, hidePost, unhidePost, reportPost, appealPost, isHidden } = useUserInteractions();
+    const [activeSlide, setActiveSlide] = useState(0);
 
 
     const [showLargeHeart, setShowLargeHeart] = useState(false);
@@ -392,7 +393,58 @@ const FeedPost = ({
                     transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                     style={{ width: '100%', height: '100%' }}
                 >
-                    {imgItem.type === 'video' ? (
+                    {imgItem.type === 'slideshow' && imgItem.results?.length > 0 ? (
+                        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                            <SafeImage
+                                src={getOptimizedImageUrl(imgItem.results[activeSlide].imageUrl || imgItem.results[activeSlide].url)}
+                                alt={`Slide ${activeSlide + 1}`}
+                                className="feed-post-image"
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    display: 'block',
+                                    aspectRatio: imgItem.aspectRatio || '1/1'
+                                }}
+                            />
+                            {imgItem.results.length > 1 && (
+                                <>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setActiveSlide(prev => Math.max(0, prev - 1)); }}
+                                        style={{
+                                            position: 'absolute', top: '50%', left: '10px', transform: 'translateY(-50%)',
+                                            background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', padding: '8px', color: 'white',
+                                            cursor: 'pointer', zIndex: 10, display: activeSlide === 0 ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center'
+                                        }}
+                                    >
+                                        <ChevronLeft size={20} />
+                                    </button>
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); setActiveSlide(prev => Math.min(imgItem.results.length - 1, prev + 1)); }}
+                                        style={{
+                                            position: 'absolute', top: '50%', right: '10px', transform: 'translateY(-50%)',
+                                            background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', padding: '8px', color: 'white',
+                                            cursor: 'pointer', zIndex: 10, display: activeSlide === imgItem.results.length - 1 ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center'
+                                        }}
+                                    >
+                                        <ChevronRight size={20} />
+                                    </button>
+                                    <div style={{
+                                        position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)',
+                                        display: 'flex', gap: '6px', zIndex: 10
+                                    }}>
+                                        {imgItem.results.map((_, i) => (
+                                            <div key={i} style={{
+                                                width: '6px', height: '6px', borderRadius: '50%',
+                                                background: i === activeSlide ? 'white' : 'rgba(255,255,255,0.4)',
+                                                transition: 'all 0.3s ease'
+                                            }} />
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    ) : imgItem.type === 'video' ? (
                         <>
                             <video
                                 ref={videoRef}
