@@ -170,9 +170,7 @@ const AnimatedRoutes = () => {
                             <Route path="/api" element={<Api />} />
                             <Route path="/showcase" element={<Showcase />} />
 
-                            <Route path="/apps" element={
-                                <PrivateRoute><AppsHub /></PrivateRoute>
-                            } />
+                            <Route path="/apps" element={<AppsHub />} />
                             <Route path="/karaoke" element={
                                 <PrivateRoute><KaraokeGenie /></PrivateRoute>
                             } />

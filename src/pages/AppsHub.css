@@ -253,7 +253,7 @@
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    opacity: 0.6;
+    opacity: 0.8;
     z-index: 0;
     transition: transform 0.3s ease;
 }

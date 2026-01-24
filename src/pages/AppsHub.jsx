@@ -99,7 +99,7 @@ const AppsHub = () => {
                     icon: ShoppingBag,
                     tags: ['ecommerce', 'csv', 'automation', 'seo'],
                     path: '/autocsv',
-                    previewImage: null, // No preview image provided yet
+                    previewImage: '/app-previews/autocsv.png',
                     isNew: true
                 };
 
@@ -192,7 +192,7 @@ const AppsHub = () => {
                 <div className="hero-section">
                     <div className="hero-banner">
                         {/* More organic/warm gradient */}
-                        <div className="hero-image" style={{ backgroundImage: 'url(/feature_hero_bg.png)' }}></div>
+                        <div className="hero-image" style={{ backgroundImage: 'url(/dreambees_creative_hero.png)' }}></div>
                         <div className="hero-content">
                             <div className="hero-tag">FEATURED UPDATE</div>
                             <h1 className="hero-title">DreamBees Creative</h1>
