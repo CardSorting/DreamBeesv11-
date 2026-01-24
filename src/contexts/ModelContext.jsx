@@ -46,7 +46,21 @@ export function ModelProvider({ children }) {
                     });
                 });
 
-                console.log(`[ModelContext] Fetched ${models.length} models from Firestore.`);
+                // Ensure MeowAcc is present for feed visibility even if not in Firestore
+                if (!models.find(m => m.id === 'meowacc')) {
+                    models.push({
+                        id: 'meowacc',
+                        name: 'MeowAcc Transformer',
+                        description: 'Transform your photos into the cozy, playful, and pastel Y2K MEOWACC aesthetic.',
+                        type: 'Transformer',
+                        order: 100,
+                        isActive: true,
+                        image: '/app-previews/meowacc.png',
+                        tags: ['cat', 'aesthetic', 'transformer', 'fun']
+                    });
+                }
+
+                console.log(`[ModelContext] Fetched ${models.length} models. Checked MeowAcc.`);
                 setAvailableModels(models);
 
                 // Prioritize saved model, then current selection (if any), then ZIT-model, then first available

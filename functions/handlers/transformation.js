@@ -155,13 +155,18 @@ export const handleMeowaccTransform = async (request) => {
     const COST = 0.5; // Standard transformation cost
 
     try {
+        const userRef = db.collection('users').doc(uid);
+        let userDisplayName = "DreamBees User";
+
         await db.runTransaction(async (t) => {
-            const userRef = db.collection('users').doc(uid);
             const userDoc = await t.get(userRef);
             if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
 
-            const zaps = userDoc.data().zaps || 0;
+            const userData = userDoc.data();
+            const zaps = userData.zaps || 0;
             if (zaps < COST) throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`);
+
+            userDisplayName = userData.displayName || userData.username || "DreamBees User";
 
             t.update(userRef, { zaps: FieldValue.increment(-COST) });
         });
@@ -214,7 +219,67 @@ export const handleMeowaccTransform = async (request) => {
         const generatedImageBase64 = response?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
         if (!generatedImageBase64) throw new Error("No image data returned from AI");
 
-        return { imageBase64: generatedImageBase64 };
+        // --- Post-Processing & Feed Integration ---
+        const { default: sharp } = await import("sharp");
+        const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+        const { getS3Client } = await import("../lib/utils.js");
+        const { B2_BUCKET, B2_PUBLIC_URL } = await import("../lib/constants.js");
+
+        const imageBuffer = Buffer.from(generatedImageBase64, 'base64');
+        const sharpImg = sharp(imageBuffer);
+
+        // 1. Generate versions
+        const [webpBuffer, thumbBuffer, lqipBuffer] = await Promise.all([
+            sharpImg.webp({ quality: 90 }).toBuffer(),
+            sharpImg.resize(512, 512, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 80 }).toBuffer(),
+            sharpImg.resize(20, 20, { fit: 'inside' }).webp({ quality: 20 }).toBuffer()
+        ]);
+        const lqip = `data:image/webp;base64,${lqipBuffer.toString('base64')}`;
+
+        // 2. Upload to B2
+        const timestamp = Date.now();
+        const baseFolder = `generated/${uid}/meowacc_${timestamp}`;
+        const originalFilename = `${baseFolder}.webp`;
+        const thumbFilename = `${baseFolder}_thumb.webp`;
+
+        const s3 = await getS3Client();
+        await Promise.all([
+            s3.send(new PutObjectCommand({ Bucket: B2_BUCKET, Key: originalFilename, Body: webpBuffer, ContentType: "image/webp" })),
+            s3.send(new PutObjectCommand({ Bucket: B2_BUCKET, Key: thumbFilename, Body: thumbBuffer, ContentType: "image/webp" }))
+        ]);
+
+        const imageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalFilename}`;
+        const thumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbFilename}`;
+
+        // 3. Save to Public Feed (generation_queue)
+        const docRef = db.collection('generation_queue').doc();
+        await docRef.set({
+            userId: uid,
+            userDisplayName,
+            prompt: `[MEOWACC: ${mode}] ${selectedPrompt.substring(0, 100)}...`,
+            modelId: 'meowacc',
+            status: 'completed',
+            imageUrl,
+            thumbnailUrl,
+            lqip,
+            createdAt: FieldValue.serverTimestamp(),
+            completedAt: FieldValue.serverTimestamp(),
+            hidden: false
+        });
+
+        // 4. Also save to user's images for private collection consistency
+        await db.collection("images").add({
+            userId: uid,
+            prompt: `[MEOWACC: ${mode}]`,
+            modelId: 'meowacc',
+            imageUrl,
+            thumbnailUrl,
+            lqip,
+            createdAt: FieldValue.serverTimestamp(),
+            type: 'meowacc'
+        });
+
+        return { imageBase64: generatedImageBase64, imageUrl, thumbnailUrl };
 
     } catch (error) {
         // Refund on failure

@@ -61,7 +61,8 @@ const MeowAccTransformer = () => {
             if (response.data.imageBase64) {
                 setSingleResult({
                     originalUrl,
-                    generatedUrl: `data:image/png;base64,${response.data.imageBase64}`,
+                    generatedUrl: response.data.imageUrl || `data:image/png;base64,${response.data.imageBase64}`,
+                    imageBase64: response.data.imageBase64,
                     timestamp: Date.now()
                 });
                 setAppState(AppState.SUCCESS);
@@ -188,8 +189,8 @@ const MeowAccTransformer = () => {
                                     key={m.id}
                                     onClick={() => setMode(m.id)}
                                     className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-bold transition-all duration-300 whitespace-nowrap ${mode === m.id
-                                            ? `bg-gradient-to-r ${m.color} text-white shadow-md`
-                                            : 'text-meow-text/60 hover:bg-white/50 hover:text-meow-text'
+                                        ? `bg-gradient-to-r ${m.color} text-white shadow-md`
+                                        : 'text-meow-text/60 hover:bg-white/50 hover:text-meow-text'
                                         }`}
                                 >
                                     <m.icon size={18} />

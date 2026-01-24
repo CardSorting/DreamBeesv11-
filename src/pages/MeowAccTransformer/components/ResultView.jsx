@@ -5,7 +5,7 @@ import { Download, RefreshCw, ArrowRight } from 'lucide-react';
 export const ResultView = ({ result, onReset }) => {
     const handleDownload = () => {
         const link = document.createElement('a');
-        link.href = result.generatedUrl;
+        link.href = result.imageBase64 ? `data:image/png;base64,${result.imageBase64}` : result.generatedUrl;
         link.download = `meowacc-creation-${Date.now()}.png`;
         document.body.appendChild(link);
         link.click();
