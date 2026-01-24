@@ -52,6 +52,7 @@ const NotFound = lazyRetry(() => import('../pages/NotFound'));
 const Maintenance = lazyRetry(() => import('../pages/Maintenance'));
 const AccessDenied = lazyRetry(() => import('../pages/AccessDenied'));
 const Offline = lazyRetry(() => import('../pages/Offline'));
+const AutoCSV = lazyRetry(() => import('../pages/AutoCSV/AutoCSV'));
 
 import { Privacy, Terms, Cookies } from '../pages/Legal';
 import { Careers, Brand, Api, Showcase } from '../pages/Misc';
@@ -210,6 +211,10 @@ const AnimatedRoutes = () => {
 
                             <Route path="/chat/:id" element={
                                 <PrivateRoute><PersonaChat /></PrivateRoute>
+                            } />
+
+                            <Route path="/autocsv" element={
+                                <PrivateRoute><AutoCSV /></PrivateRoute>
                             } />
 
                             <Route path="/maintenance" element={<Maintenance />} />

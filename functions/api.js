@@ -19,6 +19,7 @@ import * as Billing from "./handlers/billing.js";
 import * as Persona from "./handlers/persona.js";
 import * as Mockup from "./handlers/mockup.js";
 import * as Meme from "./handlers/meme.js";
+import * as Ecommerce from "./handlers/ecommerce.js";
 
 // ============================================================================
 // Main API Dispatcher
@@ -174,6 +175,9 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
 
             // Meme Formatter
             case 'formatMeme': return Meme.handleFormatMeme(request);
+
+            // Ecommerce / AutoCSV
+            case 'analyzeProductImage': return Ecommerce.handleAnalyzeProductImage(request);
 
             // Data & Ratings
             case 'getGenerationHistory': return Data.handleGetGenerationHistory(request);

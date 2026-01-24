@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, memo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Palette, Music, Sparkles, Presentation, Star, Clock, Search, ChevronRight, Gamepad2, LayoutGrid, Heart, Smile, Zap } from 'lucide-react';
+import { Palette, Music, Sparkles, Presentation, Star, Clock, Search, ChevronRight, Gamepad2, LayoutGrid, Heart, Smile, Zap, ShoppingBag } from 'lucide-react';
 import './AppsHub.css';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase'; // Ensure this path is correct based on project structure
@@ -35,7 +35,8 @@ const ICON_MAP = {
     Search: Search,
     ChevronRight: ChevronRight,
     Heart: Heart,
-    Smile: Smile
+    Smile: Smile,
+    ShoppingBag: ShoppingBag
 };
 
 // Data to seed if not present
@@ -91,6 +92,17 @@ const AppsHub = () => {
                     isNew: true
                 };
 
+                const autoCsvApp = {
+                    id: 'auto-csv',
+                    title: 'AutoCSV',
+                    description: 'Analyze product photos and generate e-commerce CSVs instantly.',
+                    icon: ShoppingBag,
+                    tags: ['ecommerce', 'csv', 'automation', 'seo'],
+                    path: '/autocsv',
+                    previewImage: null, // No preview image provided yet
+                    isNew: true
+                };
+
                 const q = query(collection(db, "apps"), orderBy("order"));
                 const querySnapshot = await getDocs(q);
 
@@ -106,8 +118,8 @@ const AppsHub = () => {
                     });
                 }
 
-                // Prepend Quick Mockups, Mockup Studio & Meme Formatter
-                setApps([quickMockupsApp, mockupStudioApp, memeFormatterApp, ...loadedApps]);
+                // Prepend Quick Mockups, Mockup Studio, Meme Formatter, & AutoCSV
+                setApps([quickMockupsApp, mockupStudioApp, memeFormatterApp, autoCsvApp, ...loadedApps]);
 
             } catch (error) {
                 console.error("Error fetching apps:", error);
