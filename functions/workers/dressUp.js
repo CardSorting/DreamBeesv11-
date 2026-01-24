@@ -18,9 +18,9 @@ export const processDressUpTask = async (req) => {
         const cleanBase64 = image.includes('base64,') ? image.split('base64,')[1] : image;
 
         const imageRef = await db.collection("images").add({
-            userId, prompt, modelId: "gemini-2.5-flash-image",
+            userId, prompt, modelId: "dressup",
             imageUrl: null, thumbnailUrl: null, lqip: null,
-            createdAt: new Date(), originalRequestId: requestId,
+            createdAt: FieldValue.serverTimestamp(), originalRequestId: requestId,
             type: 'dress-up', status: 'processing'
         });
         await docRef.update({ resultImageId: imageRef.id, status: 'processing' });
@@ -61,8 +61,8 @@ export const processDressUpTask = async (req) => {
         const imageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalFilename}`;
         const thumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbFilename}`;
 
-        await imageRef.update({ imageUrl, thumbnailUrl, lqip, status: 'completed', completedAt: new Date() });
-        await docRef.update({ status: "completed", imageUrl, thumbnailUrl, lqip, completedAt: new Date(), resultImageId: imageRef.id });
+        await imageRef.update({ imageUrl, thumbnailUrl, lqip, status: 'completed', completedAt: FieldValue.serverTimestamp() });
+        await docRef.update({ status: "completed", imageUrl, thumbnailUrl, lqip, completedAt: FieldValue.serverTimestamp(), resultImageId: imageRef.id });
 
     } catch (error) {
         logger.error(`[processDressUpTask] Failed`, error);

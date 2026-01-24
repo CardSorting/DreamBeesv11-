@@ -46,7 +46,7 @@ export function ModelProvider({ children }) {
                     });
                 });
 
-                // Ensure MeowAcc is present for feed visibility even if not in Firestore
+                // Ensure MeowAcc/DressUp are present for feed visibility even if not in Firestore
                 if (!models.find(m => m.id === 'meowacc')) {
                     models.push({
                         id: 'meowacc',
@@ -57,6 +57,19 @@ export function ModelProvider({ children }) {
                         isActive: true,
                         image: '/app-previews/meowacc.png',
                         tags: ['cat', 'aesthetic', 'transformer', 'fun']
+                    });
+                }
+
+                if (!models.find(m => m.id === 'dressup')) {
+                    models.push({
+                        id: 'dressup',
+                        name: 'Magic Wardrobe',
+                        description: 'Try on digital outfits instantly. Your style, reimagined.',
+                        type: 'Transformer',
+                        order: 101,
+                        isActive: true,
+                        image: '/app-previews/wardrobe.png',
+                        tags: ['fashion', 'lifestyle', 'magic', 'transformer']
                     });
                 }
 

@@ -4,7 +4,7 @@ export const VALID_MODELS = [
     'zit-model', 'wai-illustrious', 'flux-klein-4b',
     'rin-anime-blend', 'rin-anime-popcute',
     'crystal-cuteness', 'veretoon-v10',
-    'galmix'
+    'galmix', 'meowacc', 'dressup'
 ];
 
 export const B2_ENDPOINT = process.env.B2_ENDPOINT;
