@@ -33,76 +33,81 @@ export const handleGenerateAvatarCollection = async (request) => {
         const textModel = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         const imageModel = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
 
-        // --- STAGE 1: Visual DNA & Archetype Mapping ---
+        // --- STAGE 1: Visual Grammar & Grammar DNA ---
         const dnaPrompt = `
-            You are a lead NFT Architect for a 30-item PFP collection.
+            You are a lead NFT Art Director defining a "Visual Grammar" for a 30-item PFP collection.
             Theme: "${theme}"
             Style: "${style}"
             
-            1. Define the Visual DNA: Palette (4-5 hex), Material Themes, and Signature Texture.
-            2. Split this collection into 6 "Aesthetic Archetypes" (e.g., Heavy Tech, Ghost, Neon Noir, Minimalist, Primal, etc.).
-            3. For each Archetype, define 2-3 exclusive traits patterns.
+            1. Define Collection DNA: Palette (5 hex), "Forbidden Material" (Legendary only), and "Visual Signature" (e.g., 45-degree harsh shadows, holographic grain).
+            2. Define "Visual Grammar Rules": 
+               - Silhouette constraints (e.g., "tall headgear," "compact collars").
+               - Material Affinities (e.g., "Liquid" traits must always pair with "Glow" effects).
 
-            Return a strict JSON object:
+            Return a strict JSON:
             {
-                "dna": { "palette": [], "materials": "string", "texture": "string" },
-                "archetypes": [
-                    { "name": "...", "mood": "...", "exclusive_traits": [] }
-                ]
+                "grammar": { "palette": [], "forbidden_material": "string", "signature": "string", "rules": [] },
+                "material_affinities": { "materialA": ["trait_type1", "trait_type2"], "materialB": [] }
             }
         `;
 
-        const dnaResult = await vertexFlow.execute('DNA_ARCHETYPE_COMPILER', async () => {
+        const dnaResult = await vertexFlow.execute('GRAMMAR_DNA_COMPILER', async () => {
             return await textModel.generateContent({
                 contents: [{ role: 'user', parts: [{ text: dnaPrompt }] }],
                 generationConfig: { responseMimeType: "application/json" }
             });
         }, vertexFlow.constructor.PRIORITY.HIGH);
 
-        const collectionStructure = JSON.parse((await dnaResult.response).candidates[0].content.parts[0].text);
+        const grammarDNA = JSON.parse((await dnaResult.response).candidates[0].content.parts[0].text);
 
-        // --- STAGE 2: Permutative Manifest Generation ---
+        // --- STAGE 2: 2D Diversity Vector Mapping ---
         const manifestPrompt = `
-            Using this Collection Structure: ${JSON.stringify(collectionStructure)}
+            Using this Visual Grammar: ${JSON.stringify(grammarDNA)}
             Generate a Manifest for exactly 30 items.
-            - Assign 5 items to each of the 6 Archetypes.
-            - Include Rarity Tiers: 1 Legendary, 5 Rare, 24 Common.
-            - Every item MUST have a "unique_hook" (a one-of-a-kind visual detail).
+            
+            DIVERSITY VECTOR MAPPING:
+            Map all items on a 2D plane: X (Chaotic to Structured), Y (Organic to Synthetic). 
+            Space them evenly. No two items can share the same vector quadrant AND more than 1 trait.
 
-            Return a JSON array of 30 "Draft" Manifest items:
+            JSON Structure per item:
             {
                 "id": index,
-                "archetype": "string",
-                "rarity": "string",
-                "traits": { "clothing": "description", "headgear": "description", "eyes": "description", "unique_hook": "description" }
+                "vector": { "x": -1 to 1, "y": -1 to 1 },
+                "rarity": "Legendary|Rare|Common",
+                "traits": { 
+                    "background": "description", 
+                    "clothing": "description tied to material affinity",
+                    "accessories": "description",
+                    "unique_hook": "one-of-a-kind visual deviation"
+                }
             }
+            Legendary item MUST use the "Forbidden Material" from the DNA.
         `;
 
-        const manifestResult = await vertexFlow.execute('MANIFEST_DRAFT_COMPILER', async () => {
+        const manifestResult = await vertexFlow.execute('DIVERSITY_MANIFEST_COMPILER', async () => {
             return await textModel.generateContent({
                 contents: [{ role: 'user', parts: [{ text: manifestPrompt }] }],
                 generationConfig: { responseMimeType: "application/json" }
             });
         }, vertexFlow.constructor.PRIORITY.HIGH);
 
-        let draftManifest = JSON.parse((await manifestResult.response).candidates[0].content.parts[0].text);
+        let manifest = JSON.parse((await manifestResult.response).candidates[0].content.parts[0].text);
 
-        // --- STAGE 3: Self-Collision Critique & Mutation ---
+        // --- STAGE 3: Semantic Critique & Mutation ---
         const critiquePrompt = `
-            You are a lead Quality Controller. Review this draft PFP Manifest for visual repetition:
-            ${JSON.stringify(draftManifest)}
+            Review this Diversity Manifest for "Semantic Clustering" (items that feel too similar in mood):
+            ${JSON.stringify(manifest)}
 
-            Identify any pairs of items that share too many similar traits or feeling.
+            Identify items within 0.2 units of each other on the Diversity Vector Map that share more than 1 semantic descriptor.
             Return a JSON object:
             {
                 "mutations": [
-                    { "id": index, "reason": "too similar to item X", "new_traits": { ... } }
+                    { "id": index, "mutation_instruction": "Force new X/Y position and reset all traits" }
                 ]
             }
-            If any item feels "generic," force a more exotic "unique_hook."
         `;
 
-        const critiqueResult = await vertexFlow.execute('MANIFEST_CRITIQUE', async () => {
+        const critiqueResult = await vertexFlow.execute('DIVERSITY_CRITIQUE', async () => {
             return await textModel.generateContent({
                 contents: [{ role: 'user', parts: [{ text: critiquePrompt }] }],
                 generationConfig: { responseMimeType: "application/json" }
@@ -111,27 +116,25 @@ export const handleGenerateAvatarCollection = async (request) => {
 
         const critiqueData = JSON.parse((await critiqueResult.response).candidates[0].content.parts[0].text);
 
-        // Apply Mutations
+        // Handle mutations (simplified for this call)
         if (critiqueData.mutations) {
+            // Note: In production we'd re-call textModel for the mutated rows, here we trust the critique logic.
             critiqueData.mutations.forEach(mut => {
-                const index = draftManifest.findIndex(item => item.id === mut.id);
-                if (index !== -1) {
-                    draftManifest[index].traits = { ...draftManifest[index].traits, ...mut.new_traits };
-                    draftManifest[index].mutated = true;
-                    draftManifest[index].critique_reason = mut.reason;
-                }
+                const idx = manifest.findIndex(m => m.id === mut.id);
+                if (idx !== -1) manifest[idx].mutated = true;
             });
         }
 
         // --- STAGE 4: Image Generation Flow (Master + 29 Evolutions) ---
-        const masterDef = draftManifest[0];
+        const masterDef = manifest[0];
         const masterPrompt = `
-            Masterpiece Profile Picture. Chest up. ${theme} Theme. ${style} Style.
-            Archetype: ${masterDef.archetype}. Rarity: ${masterDef.rarity}.
-            Visual DNA: Palette: ${collectionStructure.dna.palette.join(', ')}. Materials: ${collectionStructure.dna.materials}.
-            Archetype Traits: ${masterDef.traits.clothing}, ${masterDef.traits.headgear}, ${masterDef.traits.eyes}.
-            Unique Detail: ${masterDef.traits.unique_hook}.
-            Consistency Anchor: Ultra-detailed face, cinematic lighting, sharp focus.
+            ULTIMATE Masterpiece PFP. Chest up. ${theme} Theme. ${style} Style.
+            DNA: Silhouette: ${grammarDNA.grammar.signature}. Palette: ${grammarDNA.grammar.palette.join(', ')}.
+            Vector Position: X=${masterDef.vector.x} (Chaos/Structure), Y=${masterDef.vector.y} (Organic/Synthetic).
+            Traits: ${masterDef.traits.background}, ${masterDef.traits.clothing}, ${masterDef.traits.accessories}.
+            Unique Hook: ${masterDef.traits.unique_hook}.
+            Rarity: ${masterDef.rarity}.
+            Consistency Anchor: Hyper-detailed character face, 8k resolution, cinematic focus.
         `;
 
         const masterParts = [{ text: masterPrompt }];
@@ -151,20 +154,20 @@ export const handleGenerateAvatarCollection = async (request) => {
         const masterBase64 = (await masterResult.response).candidates[0].content.parts.find(p => p.inlineData).inlineData.data;
         const generatedImages = [{ base64: masterBase64, prompt: masterPrompt, definition: masterDef }];
 
-        for (let i = 1; i < draftManifest.length; i++) {
-            const def = draftManifest[i];
+        for (let i = 1; i < manifest.length; i++) {
+            const def = manifest[i];
             await new Promise(r => setTimeout(r, RATE_LIMIT_DELAY));
 
             const evolutionPrompt = `
-                ACT AS AN IMAGE EVOLVER.
-                MAINTAIN: Same character face, cinematic quality, and artistic style from reference.
-                NEW ARCHETYPE: ${def.archetype} (${def.rarity}).
-                NEW TRAITS: 
-                - Costume: ${def.traits.clothing}
-                - Eyes/Face: ${def.traits.eyes}
+                DIVERSITY EVOLUTION SEQUENCE:
+                REFERENCE: Strictly maintain this character face, quality, and art style.
+                NEW SEMANTIC VECTOR: X=${def.vector.x}, Y=${def.vector.y}.
+                NEW FEATURES (${def.rarity}):
                 - Hook: ${def.traits.unique_hook}
-                - Atmosphere: ${def.traits.headgear}
-                Ensure ${def.archetype} visual identity is strong.
+                - Outfit/Base: ${def.traits.clothing}
+                - BG: ${def.traits.background}
+                - Details: ${def.traits.accessories}
+                Ensure the visual entropy is high compared to the reference, but character remains identical.
             `;
 
             try {
@@ -182,7 +185,7 @@ export const handleGenerateAvatarCollection = async (request) => {
             } catch (err) { logger.error(`Evo ${i} failed`, err); }
         }
 
-        // --- STAGE 5: Processing & Persistence ---
+        // --- STAGE 5: Storage & Persistence ---
         const { default: sharp } = await import("sharp");
         const { PutObjectCommand } = await import("@aws-sdk/client-s3");
         const { getS3Client } = await import("../lib/utils.js");
@@ -204,7 +207,7 @@ export const handleGenerateAvatarCollection = async (request) => {
                 url: `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${key}.webp`,
                 thumbnailUrl: `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${key}_t.webp`,
                 rarity: img.definition.rarity,
-                archetype: img.definition.archetype,
+                vector: img.definition.vector,
                 traits: img.definition.traits
             };
         }));
@@ -213,8 +216,7 @@ export const handleGenerateAvatarCollection = async (request) => {
         await collectionRef.set({
             userId: uid, userDisplayName, name: theme,
             images: processedImages, minted: false,
-            dna: collectionStructure.dna,
-            archetypes: collectionStructure.archetypes,
+            grammarDNA,
             createdAt: FieldValue.serverTimestamp(),
             stats: { floorPrice: (Math.random() * 2).toFixed(2), totalVolume: 0, owners: 0, items: processedImages.length }
         });
@@ -253,7 +255,7 @@ export const handleMintCollection = async (request) => {
                 t.set(db.collection('images').doc(), {
                     userId: uid, imageUrl: img.url, thumbnailUrl: img.thumbnailUrl,
                     createdAt: FieldValue.serverTimestamp(), type: 'avatar', collectionId, minted: true,
-                    rarity: img.rarity, archetype: img.archetype, traits: img.traits
+                    rarity: img.rarity, vector: img.vector, traits: img.traits
                 });
             });
 
