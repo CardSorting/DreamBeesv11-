@@ -1,4 +1,5 @@
 import { HttpsError } from "firebase-functions/v2/https";
+import { db, FieldValue } from "../firebaseInit.js";
 import { logger } from "../lib/utils.js";
 
 const SYSTEM_INSTRUCTION = `
@@ -44,15 +45,28 @@ export const handleAnalyzeProductImage = async (request) => {
     const { imageBase64, mimeType } = request.data;
     const uid = request.auth?.uid;
 
+    if (!uid) throw new HttpsError('unauthenticated', 'User must be authenticated.');
     if (!imageBase64 || !mimeType) {
         throw new HttpsError('invalid-argument', 'imageBase64 and mimeType are required.');
     }
 
+    const COST = 0.25;
+
     try {
+        // Deduct Zaps
+        await db.runTransaction(async (t) => {
+            const userRef = db.collection('users').doc(uid);
+            const userDoc = await t.get(userRef);
+            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+            const zaps = userDoc.data().zaps || 0;
+            if (zaps < COST) throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`);
+            t.update(userRef, { zaps: FieldValue.increment(-COST), lastGenerationTime: FieldValue.serverTimestamp() });
+        });
+
         const { VertexAI } = await import("@google-cloud/vertexai");
         const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
         const model = vertexAI.getGenerativeModel({
-            model: "gemini-2.5-flash", // Upgraded to 2.5 Flash
+            model: "gemini-2.5-flash",
             systemInstruction: {
                 parts: [{ text: SYSTEM_INSTRUCTION }]
             },
@@ -64,40 +78,48 @@ export const handleAnalyzeProductImage = async (request) => {
 
         logger.info(`[AutoCSV] Analyzing image for uid=${uid}`);
 
-        const result = await model.generateContent({
-            contents: [
-                {
-                    role: 'user',
-                    parts: [
-                        { text: "Analyze this product image and generate e-commerce data." },
-                        {
-                            inlineData: {
-                                mimeType: mimeType,
-                                data: imageBase64
+        let textOutput;
+        try {
+            const result = await model.generateContent({
+                contents: [
+                    {
+                        role: 'user',
+                        parts: [
+                            { text: "Analyze this product image and generate e-commerce data." },
+                            {
+                                inlineData: {
+                                    mimeType: mimeType,
+                                    data: imageBase64
+                                }
                             }
-                        }
-                    ]
-                }
-            ]
-        });
+                        ]
+                    }
+                ]
+            });
 
-        const response = await result.response;
-        const candidate = response.candidates?.[0];
+            const response = await result.response;
+            const candidate = response.candidates?.[0];
 
-        if (candidate?.finishReason === 'SAFETY') {
-            throw new HttpsError('permission-denied', 'Blocked by Safety Filter');
-        }
+            if (candidate?.finishReason === 'SAFETY') {
+                throw new HttpsError('permission-denied', 'Blocked by Safety Filter');
+            }
 
-        const textOutput = candidate?.content?.parts?.[0]?.text;
+            textOutput = candidate?.content?.parts?.[0]?.text;
 
-        if (!textOutput) {
-            throw new HttpsError('internal', 'No data returned from Vertex AI');
+            if (!textOutput) {
+                throw new HttpsError('internal', 'No data returned from Vertex AI');
+            }
+        } catch (aiError) {
+            // Refund Zaps on AI failure
+            logger.info(`[AutoCSV] Refunding Zap for uid=${uid} due to AI failure.`);
+            await db.collection('users').doc(uid).update({ zaps: FieldValue.increment(COST) }).catch(err => logger.error("Refund failed", err));
+            throw aiError;
         }
 
         return JSON.parse(textOutput);
 
     } catch (error) {
-        logger.error(`[AutoCSV] Vertex AI error:`, error);
+        logger.error(`[AutoCSV] Error:`, error);
         if (error instanceof HttpsError) throw error;
         throw new HttpsError('internal', `Failed to analyze product image: ${error.message}`);
     }

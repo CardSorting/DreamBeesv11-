@@ -3,6 +3,7 @@ import JSZip from 'jszip';
 import { ImageUploader } from './components/ImageUploader';
 import { ProductCard } from './components/ProductCard';
 import { analyzeProductImage } from '../../services/ecommerceService';
+import { useUserInteractions } from '../../contexts/UserInteractionsContext';
 import { WOOCOMMERCE_HEADERS, WOOCOMMERCE_HEADER_STRING, SHOPIFY_HEADERS, SHOPIFY_HEADER_STRING } from './constants';
 import { processImageForGemini } from './utils/imageUtils';
 import { FileDown, Sparkles, AlertCircle, Loader2, Trash2, Layers, Package, Settings, Info, Globe, ShoppingBag, Store } from 'lucide-react';
@@ -27,6 +28,12 @@ export default function AutoCSV() {
   const [queue, setQueue] = useState([]);
   const processingRef = useRef(false);
 
+  const { userProfile } = useUserInteractions();
+  const COST_PER_IMAGE = 0.25;
+  const totalBatchCost = queue.length * COST_PER_IMAGE;
+  const hasEnoughZaps = userProfile.zaps >= COST_PER_IMAGE; // Basic check for next item
+  const hasEnoughZapsForBatch = userProfile.zaps >= totalBatchCost;
+
   // Queue Processor
   useEffect(() => {
     const processNextItem = async () => {
@@ -48,6 +55,16 @@ export default function AutoCSV() {
 
       processingRef.current = true;
       const file = queue[0];
+
+      // Improved Buffer Strategy: Prevent rate-limiting and ensure server stability
+      if (processingState.current > 0) {
+        const baseDelay = 1000; // 1 second base
+        const jitter = Math.random() * 500; // Up to 500ms jitter
+        // Optional: Progressive increase for very large batches
+        const batchModifier = Math.floor(processingState.current / 20) * 200;
+
+        await new Promise(resolve => setTimeout(resolve, baseDelay + jitter + batchModifier));
+      }
 
       try {
         // Create a local preview URL for the UI immediately
@@ -462,9 +479,16 @@ export default function AutoCSV() {
                 <Loader2 className="animate-spin" size={16} />
                 {queue.length > 0 ? 'Analyzing with Vertex AI...' : 'Finalizing...'}
               </span>
-              <span className="text-sm font-medium text-indigo-600 font-inter">
-                {processingState.current} / {processingState.total}
-              </span>
+              <div className="text-right">
+                <span className="text-sm font-medium text-indigo-600 font-inter">
+                  {processingState.current} / {processingState.total}
+                </span>
+                {totalBatchCost > 0 && (
+                  <div className="text-[10px] text-gray-400 font-inter">
+                    Remaining Batch Cost: {queue.length * COST_PER_IMAGE} Zaps
+                  </div>
+                )}
+              </div>
             </div>
             <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
               <div
@@ -472,6 +496,12 @@ export default function AutoCSV() {
                 style={{ width: `${(processingState.current / processingState.total) * 100}%` }}
               />
             </div>
+            {!hasEnoughZaps && queue.length > 0 && (
+              <div className="mt-3 p-2 bg-red-50 border border-red-100 rounded-md flex items-center gap-2 text-red-600 text-xs font-inter animate-pulse">
+                <AlertCircle size={14} />
+                Insufficient Zaps to process remaining images.
+              </div>
+            )}
             <div className="flex justify-between items-center mt-2">
               <p className="text-xs text-gray-400 font-inter">
                 Generating titles, prices, and SEO descriptions.
@@ -483,6 +513,27 @@ export default function AutoCSV() {
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Batch Info (When idle but queue has items or just uploaded) */}
+        {queue.length > 0 && processingState.status === 'idle' && (
+          <div className="max-w-xl mx-auto bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex items-center justify-between animate-fadeIn">
+            <div className="flex items-center gap-3">
+              <div className="bg-indigo-600 text-white p-2 rounded-lg">
+                <Zap size={18} />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-indigo-900 font-inter">Ready to process {queue.length} images</p>
+                <p className="text-xs text-indigo-600 font-inter">Total Cost: {totalBatchCost} Zaps ({userProfile?.zaps || 0} available)</p>
+              </div>
+            </div>
+            {!hasEnoughZapsForBatch && (
+              <div className="flex items-center gap-1 text-red-600 text-xs font-bold bg-white px-2 py-1 rounded-md border border-red-100">
+                <AlertCircle size={14} />
+                Low Zaps
+              </div>
+            )}
           </div>
         )}
 

@@ -135,6 +135,7 @@ export function getActionLimits(action, isPremium) {
 
         case 'transformImage':
         case 'dressUp':
+        case 'analyzeProductImage':
             limits.limit = isPremium ? 12 : 5;
             limits.window = 60;
             break;
@@ -167,7 +168,7 @@ export async function checkUserQuota(uid, action) {
 
     // Default Quotas (Daily)
     let dailyLimit = 100; // Default generous limit
-    const isHighCost = ['createVideoGenerationRequest', 'createSlideshowGeneration', 'dressUp'].includes(action);
+    const isHighCost = ['createVideoGenerationRequest', 'createSlideshowGeneration', 'dressUp', 'analyzeProductImage'].includes(action);
 
     if (isHighCost) {
         dailyLimit = 20; // Stricter for expensive ops
