@@ -53,6 +53,7 @@ const Maintenance = lazyRetry(() => import('../pages/Maintenance'));
 const AccessDenied = lazyRetry(() => import('../pages/AccessDenied'));
 const Offline = lazyRetry(() => import('../pages/Offline'));
 const AutoCSV = lazyRetry(() => import('../pages/AutoCSV/AutoCSV'));
+const MeowAccTransformer = lazyRetry(() => import('../pages/MeowAccTransformer/MeowAccTransformer'));
 
 import { Privacy, Terms, Cookies } from '../pages/Legal';
 import { Careers, Brand, Api, Showcase } from '../pages/Misc';
@@ -213,6 +214,10 @@ const AnimatedRoutes = () => {
 
                             <Route path="/autocsv" element={
                                 <PrivateRoute><AutoCSV /></PrivateRoute>
+                            } />
+
+                            <Route path="/meowacc" element={
+                                <PrivateRoute><MeowAccTransformer /></PrivateRoute>
                             } />
 
                             <Route path="/maintenance" element={<Maintenance />} />

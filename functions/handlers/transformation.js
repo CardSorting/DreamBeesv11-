@@ -144,3 +144,84 @@ export const handleGenerateLyrics = async (request) => {
         throw handleError(error, { uid });
     }
 };
+
+export const handleMeowaccTransform = async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', "Auth required");
+
+    const { imageBase64, mimeType, mode, extraData } = request.data;
+    if (!imageBase64) throw new HttpsError('invalid-argument', "Image data required");
+
+    const COST = 0.5; // Standard transformation cost
+
+    try {
+        await db.runTransaction(async (t) => {
+            const userRef = db.collection('users').doc(uid);
+            const userDoc = await t.get(userRef);
+            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+
+            const zaps = userDoc.data().zaps || 0;
+            if (zaps < COST) throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`);
+
+            t.update(userRef, { zaps: FieldValue.increment(-COST) });
+        });
+
+        // Use the consolidated prompts
+        const {
+            MEOWACC_PROMPT,
+            MEOWACC_CARD_PROMPT,
+            MEOWACC_SPORTS_PROMPT,
+            MEOWACC_SPORTS_PRO_PROMPT,
+            MEOWACC_FIFA_PROMPT,
+            MEOWACC_POSTER_PROMPT,
+            MEOWACC_ENSEMBLE_PROMPT,
+            MEOWACC_COMIC_PROMPT,
+            MEOWACC_TAROT_PROMPT,
+            MEOWACC_MEOWD_PROMPT,
+            generatePokerPrompt
+        } = await import("../lib/meowaccPrompts.js");
+
+        let selectedPrompt = MEOWACC_PROMPT;
+        if (mode === 'card') selectedPrompt = MEOWACC_CARD_PROMPT;
+        else if (mode === 'sports') selectedPrompt = MEOWACC_SPORTS_PROMPT;
+        else if (mode === 'sports_pro') selectedPrompt = MEOWACC_SPORTS_PRO_PROMPT;
+        else if (mode === 'fifa') selectedPrompt = MEOWACC_FIFA_PROMPT;
+        else if (mode === 'poster') selectedPrompt = MEOWACC_POSTER_PROMPT;
+        else if (mode === 'ensemble') selectedPrompt = MEOWACC_ENSEMBLE_PROMPT;
+        else if (mode === 'comic') selectedPrompt = MEOWACC_COMIC_PROMPT;
+        else if (mode === 'tarot') selectedPrompt = MEOWACC_TAROT_PROMPT(extraData);
+        else if (mode === 'meowd') selectedPrompt = MEOWACC_MEOWD_PROMPT;
+        else if (mode === 'poker_single') selectedPrompt = generatePokerPrompt(extraData);
+
+        // Call Vertex AI Gemeni 2.5 Flash Image via existing lib/ai.js or implement here
+        const { VertexAI } = await import("@google-cloud/vertexai");
+        const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
+        const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
+
+        const result = await model.generateContent({
+            contents: [{
+                role: 'user',
+                parts: [
+                    { text: selectedPrompt },
+                    { inlineData: { data: imageBase64, mimeType: mimeType || 'image/jpeg' } }
+                ]
+            }]
+        });
+
+        const response = (await result.response).candidates?.[0];
+        if (response?.finishReason === 'SAFETY') throw new HttpsError('failed-precondition', "Blocked by safety filter.");
+
+        const generatedImageBase64 = response?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+        if (!generatedImageBase64) throw new Error("No image data returned from AI");
+
+        return { imageBase64: generatedImageBase64 };
+
+    } catch (error) {
+        // Refund on failure
+        if (error.code !== 'resource-exhausted') {
+            await retryOperation(() => db.collection('users').doc(uid).update({ zaps: FieldValue.increment(COST) }), { context: 'Refund MeowAcc' })
+                .catch(e => logger.error("Refund failed", e, { uid }));
+        }
+        throw handleError(error, { uid });
+    }
+};

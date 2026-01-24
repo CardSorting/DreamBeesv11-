@@ -103,6 +103,17 @@ const AppsHub = () => {
                     isNew: true
                 };
 
+                const meowaccApp = {
+                    id: 'meowacc',
+                    title: 'MeowAcc',
+                    description: 'Transform your photos into the cozy, playful, and pastel Y2K MEOWACC aesthetic.',
+                    icon: Sparkles,
+                    tags: ['cat', 'aesthetic', 'transformer', 'fun'],
+                    path: '/meowacc',
+                    previewImage: '/app-previews/meowacc.png',
+                    isNew: true
+                };
+
                 const q = query(collection(db, "apps"), orderBy("order"));
                 const querySnapshot = await getDocs(q);
 
@@ -118,8 +129,8 @@ const AppsHub = () => {
                     });
                 }
 
-                // Prepend Quick Mockups, Mockup Studio, Meme Formatter, & AutoCSV
-                setApps([quickMockupsApp, mockupStudioApp, memeFormatterApp, autoCsvApp, ...loadedApps]);
+                // Prepend Quick Mockups, Mockup Studio, Meme Formatter, AutoCSV, & MeowAcc
+                setApps([quickMockupsApp, mockupStudioApp, memeFormatterApp, autoCsvApp, meowaccApp, ...loadedApps]);
 
             } catch (error) {
                 console.error("Error fetching apps:", error);
