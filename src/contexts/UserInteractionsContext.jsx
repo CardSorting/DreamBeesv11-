@@ -137,8 +137,6 @@ export function UserInteractionsProvider({ children }) {
                     reels: data.reels || 0,
                     subscriptionStatus: data.subscriptionStatus || 'inactive',
                     username: data.username || '',
-                    username: data.username || '',
-                    username: data.username || '',
                     displayPreference: data.displayPreference || 'name',
                     karma: data.karma !== undefined ? data.karma : 0,
                     birthday: data.birthday || null
