@@ -596,3 +596,92 @@ export const formatMemeWithGemini = async (imageUrl, text, userId = 'system', pr
         imageId: imageRef.id
     };
 };
+
+// Helper for ColorCraft Concepts (using Vertex AI)
+export const generateColoringBookConcepts = async (theme, style, priority = vertexFlow.constructor.PRIORITY.NORMAL) => {
+    const { VertexAI } = await import("@google-cloud/vertexai");
+    const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
+    const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const prompt = `
+        You are a professional children's book illustrator.
+        Generate a list of exactly 30 distinct, creative, and sequential coloring book page descriptions based on the theme: "${theme}".
+        The art style is: "${style}".
+        
+        Requirements:
+        - Each description must be a visual prompt suitable for generating an image.
+        - Vary the subjects (close-ups, wide shots, characters, objects).
+        - Maintain a cohesive narrative or thematic flow across the 30 pages.
+        - Keep descriptions concise (10-20 words).
+        - Do NOT include page numbers in the strings themselves.
+        - Return ONLY a valid JSON object with a "pages" property containing the array of strings.
+        `;
+
+    // [MODIFIED] Use VertexFlowProcessor
+    const result = await vertexFlow.execute('COLORCRAFT_CONCEPTS', async () => {
+        return await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+        });
+    }, priority);
+
+    const responseText = (await result.response).candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!responseText) throw new Error("No text returned from AI");
+
+    const parsed = JSON.parse(responseText);
+    if (!parsed.pages || !Array.isArray(parsed.pages)) throw new Error("Invalid JSON structure");
+
+    return parsed.pages.slice(0, 30);
+};
+
+// Helper for ColorCraft Image Generation (using Vertex AI)
+export const generateColoringPageImage = async (prompt, style, priority = vertexFlow.constructor.PRIORITY.NORMAL) => {
+    // Construct Prompts
+    const basePrompt = `
+        Create a black and white coloring book page image.
+        Subject: ${prompt}.
+        Style: ${style}.
+        
+        Strict Guidelines:
+        - OUTPUT AN IMAGE, NOT TEXT.
+        - Pure black lines on white background.
+        - No colors, no shading, no grayscale.
+        - High contrast line art.
+        - Center the subject.
+        - White background is mandatory.
+    `;
+
+    let styleNuance = "";
+    switch (style) {
+        case 'Simple': styleNuance = "Bold, thick outlines. Simple geometry. Minimal detail. Cute. Easy to color."; break;
+        case 'Detailed': styleNuance = "Fine, intricate lines. High detail. Realistic textures. Complex."; break;
+        case 'Mandala': styleNuance = "Symmetrical, geometric patterns. Mandala style. Meditative."; break;
+        case 'Anime': styleNuance = "Anime manga style line art. Clean ink. Expressive."; break;
+        default: styleNuance = "Clean line art.";
+    }
+
+    const finalPrompt = `${basePrompt} ${styleNuance}`;
+
+    const { VertexAI } = await import("@google-cloud/vertexai");
+    const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
+    const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
+
+    // [MODIFIED] Use VertexFlowProcessor
+    const result = await vertexFlow.execute('COLORCRAFT_IMAGE', async () => {
+        return await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
+            generationConfig: {
+                maxOutputTokens: 8192,
+                temperature: 0.4
+            }
+        });
+    }, priority);
+
+    const response = (await result.response).candidates?.[0];
+    if (response?.finishReason === 'SAFETY') throw new Error("Blocked by safety filter.");
+
+    const generatedImageBase64 = response?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+    if (!generatedImageBase64) throw new Error("No image data returned from AI");
+
+    return generatedImageBase64;
+};
