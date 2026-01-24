@@ -22,13 +22,17 @@ export default defineConfig(({ mode }) => {
       }
     },
     build: {
+      chunkSizeWarningLimit: 1000,
       rollupOptions: {
         output: {
           manualChunks: {
             'react-vendor': ['react', 'react-dom', 'react-router-dom', 'react-helmet-async'],
             'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage', 'firebase/functions'],
-            'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
-            'ui-vendor': ['framer-motion', 'lucide-react', 'react-hot-toast', 'lenis'],
+            'three-core': ['three'],
+            'three-vendor': ['@react-three/fiber', '@react-three/drei'],
+            'motion-vendor': ['framer-motion'],
+            'lucide-vendor': ['lucide-react'],
+            'ui-vendor': ['react-hot-toast', 'lenis'],
             'utils-vendor': ['@aws-sdk/client-s3', '@google/genai', '@openrouter/sdk']
           }
         }
