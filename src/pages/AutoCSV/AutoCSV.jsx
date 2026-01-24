@@ -6,7 +6,7 @@ import { analyzeProductImage } from '../../services/ecommerceService';
 import { useUserInteractions } from '../../contexts/UserInteractionsContext';
 import { WOOCOMMERCE_HEADERS, WOOCOMMERCE_HEADER_STRING, SHOPIFY_HEADERS, SHOPIFY_HEADER_STRING } from './constants';
 import { processImageForGemini } from './utils/imageUtils';
-import { FileDown, Sparkles, AlertCircle, Loader2, Trash2, Layers, Package, Settings, Info, Globe, ShoppingBag, Store } from 'lucide-react';
+import { FileDown, Sparkles, AlertCircle, Loader2, Trash2, Layers, Package, Settings, Info, Globe, ShoppingBag, Store, Clock, Zap } from 'lucide-react';
 
 export default function AutoCSV() {
   const [products, setProducts] = useState([]);
@@ -14,6 +14,7 @@ export default function AutoCSV() {
     total: 0,
     current: 0,
     status: 'idle',
+    isCooling: false,
   });
 
   // Platform selection state
@@ -56,14 +57,26 @@ export default function AutoCSV() {
       processingRef.current = true;
       const file = queue[0];
 
-      // Improved Buffer Strategy: Prevent rate-limiting and ensure server stability
+      // High-Reliability Buffer Strategy: Prevent rate-limiting and ensure server stability
       if (processingState.current > 0) {
-        const baseDelay = 1000; // 1 second base
-        const jitter = Math.random() * 500; // Up to 500ms jitter
-        // Optional: Progressive increase for very large batches
-        const batchModifier = Math.floor(processingState.current / 20) * 200;
+        const baseDelay = 1200; // 1.2s base
+        const jitter = Math.random() * 800; // 0-800ms jitter
 
-        await new Promise(resolve => setTimeout(resolve, baseDelay + jitter + batchModifier));
+        // Burst Protection: Pause every 5 images
+        const isBurstBreak = processingState.current % 5 === 0;
+        const burstDelay = isBurstBreak ? 1500 : 0;
+
+        // Scaling Cooldown: Add 500ms for every 15 images processed
+        const scalingCooldown = Math.floor(processingState.current / 15) * 500;
+
+        const totalDelay = baseDelay + jitter + burstDelay + scalingCooldown;
+
+        if (totalDelay > 2000) {
+          setProcessingState(prev => ({ ...prev, isCooling: true }));
+        }
+
+        await new Promise(resolve => setTimeout(resolve, totalDelay));
+        setProcessingState(prev => ({ ...prev, isCooling: false }));
       }
 
       try {
@@ -476,8 +489,10 @@ export default function AutoCSV() {
           <div className="max-w-xl mx-auto bg-white rounded-xl p-6 shadow-sm border border-indigo-100 animate-fadeIn">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-indigo-900 flex items-center gap-2 font-inter">
-                <Loader2 className="animate-spin" size={16} />
-                {queue.length > 0 ? 'Analyzing with Vertex AI...' : 'Finalizing...'}
+                {processingState.isCooling ? <Clock className="animate-pulse text-indigo-400" size={16} /> : <Loader2 className="animate-spin" size={16} />}
+                {processingState.isCooling
+                  ? 'Cooling down...'
+                  : (queue.length > 0 ? 'Analyzing with Vertex AI...' : 'Finalizing...')}
               </span>
               <div className="text-right">
                 <span className="text-sm font-medium text-indigo-600 font-inter">
