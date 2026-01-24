@@ -55,6 +55,7 @@ const Offline = lazyRetry(() => import('../pages/Offline'));
 const AutoCSV = lazyRetry(() => import('../pages/AutoCSV/AutoCSV'));
 const MeowAccTransformer = lazyRetry(() => import('../pages/MeowAccTransformer/MeowAccTransformer'));
 const ColorCraft = lazyRetry(() => import('../apps/color-craft/ColorCraft'));
+const AvatarForge = lazyRetry(() => import('../pages/AvatarForge/AvatarForge'));
 
 import { Privacy, Terms, Cookies } from '../pages/Legal';
 import { Careers, Brand, Api, Showcase } from '../pages/Misc';
@@ -223,6 +224,10 @@ const AnimatedRoutes = () => {
 
                             <Route path="/color-craft" element={
                                 <PrivateRoute><ColorCraft /></PrivateRoute>
+                            } />
+
+                            <Route path="/avatar-forge" element={
+                                <PrivateRoute><AvatarForge /></PrivateRoute>
                             } />
 
                             <Route path="/maintenance" element={<Maintenance />} />

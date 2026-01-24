@@ -114,6 +114,17 @@ const AppsHub = () => {
                     isNew: true
                 };
 
+                const avatarForgeApp = {
+                    id: 'avatar-forge',
+                    title: 'Avatar Forge',
+                    description: 'Forge premium curated PFP collections with NFT-style aesthetics.',
+                    icon: Zap,
+                    tags: ['avatar', 'pfp', 'collection', 'nft'],
+                    path: '/avatar-forge',
+                    previewImage: '/app-previews/avatar_forge.png',
+                    isNew: true
+                };
+
                 const q = query(collection(db, "apps"), orderBy("order"));
                 const querySnapshot = await getDocs(q);
 
@@ -129,8 +140,8 @@ const AppsHub = () => {
                     });
                 }
 
-                // Prepend Quick Mockups, Mockup Studio, Meme Formatter, AutoCSV, & MeowAcc
-                setApps([quickMockupsApp, mockupStudioApp, memeFormatterApp, autoCsvApp, meowaccApp, ...loadedApps]);
+                // Prepend Quick Mockups, Mockup Studio, Meme Formatter, AutoCSV, MeowAcc & Avatar Forge
+                setApps([quickMockupsApp, mockupStudioApp, memeFormatterApp, autoCsvApp, meowaccApp, avatarForgeApp, ...loadedApps]);
 
             } catch (error) {
                 console.error("Error fetching apps:", error);
