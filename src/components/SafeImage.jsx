@@ -25,7 +25,7 @@ export default function SafeImage({ src, alt, className, style, fallback, ...pro
         setIsLoading(false);
     };
 
-    if (hasError) {
+    if (hasError || !src) {
         if (fallback) return fallback;
 
         // Default fallback UI

@@ -21,6 +21,12 @@ const FeedPost = ({
     onCreatorClick,
     onTagClick
 }) => {
+    // Resilience Guard: Prevent crash if critical data is missing
+    if (!imgItem || !imgItem.id) {
+        console.warn('FeedPost: Received invalid item', imgItem);
+        return null;
+    }
+
     const { _currentUser } = useAuth();
     const { isLiked, isBookmarked, toggleLike, toggleBookmark, hidePost, unhidePost, reportPost, appealPost, isHidden } = useUserInteractions();
     const [activeSlide, setActiveSlide] = useState(0);
@@ -396,8 +402,8 @@ const FeedPost = ({
                     {imgItem.type === 'slideshow' && imgItem.results?.length > 0 ? (
                         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
                             <SafeImage
-                                src={getOptimizedImageUrl(imgItem.results[activeSlide].imageUrl || imgItem.results[activeSlide].url)}
-                                alt={`Slide ${activeSlide + 1}`}
+                                src={getOptimizedImageUrl(imgItem.results?.[activeSlide]?.imageUrl || imgItem.results?.[activeSlide]?.url)}
+                                alt={`Slide ${(activeSlide || 0) + 1}`}
                                 className="feed-post-image"
                                 style={{
                                     width: '100%',

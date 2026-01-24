@@ -29,6 +29,29 @@ const FeedSkeleton = () => (
     </div>
 );
 
+class FeedItemErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false };
+    }
+
+    static getDerivedStateFromError(error) {
+        return { hasError: true };
+    }
+
+    componentDidCatch(error, errorInfo) {
+        console.error("Feed Item Corrupted:", error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            // Render nothing, effectively hiding the corrupted item
+            return null;
+        }
+        return this.props.children;
+    }
+}
+
 export default function PublicGenerationsFeed() {
     const navigate = useNavigate();
     const { availableModels } = useModel();
@@ -118,9 +141,21 @@ export default function PublicGenerationsFeed() {
         });
     };
 
+    const [error, setError] = useState(null);
+    const activeFilterRef = useRef(activeFilter);
+
+    useEffect(() => {
+        activeFilterRef.current = activeFilter;
+    }, [activeFilter]);
+
     const fetchGenerations = useCallback(async (isLoadMore = false) => {
+        const currentFilter = activeFilter; // Capture filter at start of request
+
         try {
-            if (!isLoadMore) setLoading(true);
+            if (!isLoadMore) {
+                setLoading(true);
+                setError(null);
+            }
 
             // Query generation_queue for completed jobs
             let q = query(
@@ -148,6 +183,9 @@ export default function PublicGenerationsFeed() {
 
             const snapshot = await getDocs(q);
 
+            // Race Condition Check: If filter changed while fetching, discard results
+            if (currentFilter !== activeFilterRef.current) return;
+
             if (snapshot.empty) {
                 setHasMore(false);
                 if (!isLoadMore) setLoading(false);
@@ -166,19 +204,24 @@ export default function PublicGenerationsFeed() {
 
             if (isLoadMore) {
                 const updatedImages = [...images, ...validImages];
-                setImages(updatedImages);
-                // Update cache
-                setFilterCache(prev => ({
-                    ...prev,
-                    [activeFilter]: {
-                        images: updatedImages,
-                        lastDoc: snapshot.docs[snapshot.docs.length - 1],
-                        hasMore: snapshot.docs.length === 20
-                    }
-                }));
+
+                // Memory Safety: Limit individual feed-length in cache
+                if (updatedImages.length > 500) {
+                    // If feed gets too long, stop caching to prevent memory overflow
+                    setImages(updatedImages);
+                } else {
+                    setImages(updatedImages);
+                    setFilterCache(prev => ({
+                        ...prev,
+                        [activeFilter]: {
+                            images: updatedImages,
+                            lastDoc: snapshot.docs[snapshot.docs.length - 1],
+                            hasMore: snapshot.docs.length === 20
+                        }
+                    }));
+                }
             } else {
                 setImages(validImages);
-                // Set cache
                 setFilterCache(prev => ({
                     ...prev,
                     [activeFilter]: {
@@ -190,10 +233,16 @@ export default function PublicGenerationsFeed() {
             }
         } catch (error) {
             console.error("Error fetching generations:", error);
+            // Only set error if we are on the same filter
+            if (currentFilter === activeFilterRef.current) {
+                setError("Failed to load feed. Please try again.");
+            }
         } finally {
-            setLoading(false);
+            if (currentFilter === activeFilterRef.current) {
+                setLoading(false);
+            }
         }
-    }, [lastDoc, activeFilter]);
+    }, [lastDoc, activeFilter, images]);
 
     useEffect(() => {
         // Hydrate from cache if available
@@ -311,65 +360,81 @@ export default function PublicGenerationsFeed() {
                         </div>
                     ) : (
                         <section className="feed-posts-container" style={{ maxWidth: '600px', margin: '0 auto', paddingBottom: '60px', minHeight: '80vh' }}>
-                            <AnimatePresence mode="popLayout">
-                                {loading && images.length === 0 ? (
-                                    <motion.div
-                                        key="skeletons"
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        exit={{ opacity: 0 }}
+                            {error && (
+                                <div className="flex flex-col items-center justify-center py-10 text-center">
+                                    <ShieldAlert className="text-red-400 mb-2" size={32} />
+                                    <p className="text-white mb-4">{error}</p>
+                                    <button
+                                        onClick={() => fetchGenerations(false)}
+                                        className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-medium transition-colors"
                                     >
-                                        <FeedSkeleton />
-                                        <FeedSkeleton />
-                                        <FeedSkeleton />
-                                    </motion.div>
-                                ) : (
-                                    <motion.div
-                                        key={activeFilter}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: -10 }}
-                                        transition={{ duration: 0.3, ease: 'easeOut' }}
-                                    >
-                                        {images.map((imgItem, index) => {
-                                            const itemModel = availableModels.find(m => m.id === imgItem.modelId) || { name: 'Unknown Model', image: '/dreambees_icon.png' };
-                                            const creatorName = imgItem.userDisplayName || "DreamBees User";
+                                        Try Again
+                                    </button>
+                                </div>
+                            )}
 
-                                            return (
-                                                <FeedPost
-                                                    key={imgItem.id}
-                                                    imgItem={imgItem}
-                                                    index={index}
-                                                    model={itemModel}
-                                                    getOptimizedImageUrl={getOptimizedImageUrl}
-                                                    navigate={navigate}
-                                                    setActiveShowcaseImage={openFocus}
-                                                    headerTitle={creatorName}
-                                                    headerSubtitle={itemModel.name}
-                                                    avatarImage="/dreambees_icon.png"
-                                                />
-                                            );
-                                        })}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                            {!error && (
+                                <AnimatePresence mode="popLayout">
+                                    {loading && images.length === 0 ? (
+                                        <motion.div
+                                            key="skeletons"
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            exit={{ opacity: 0 }}
+                                        >
+                                            <FeedSkeleton />
+                                            <FeedSkeleton />
+                                            <FeedSkeleton />
+                                        </motion.div>
+                                    ) : (
+                                        <motion.div
+                                            key={activeFilter}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            transition={{ duration: 0.3, ease: 'easeOut' }}
+                                        >
+                                            {images.map((imgItem, index) => {
+                                                const itemModel = availableModels.find(m => m.id === imgItem.modelId) || { name: 'Unknown Model', image: '/dreambees_icon.png' };
+                                                const creatorName = imgItem.userDisplayName || "DreamBees User";
+
+                                                return (
+                                                    <FeedItemErrorBoundary key={imgItem.id}>
+                                                        <FeedPost
+                                                            imgItem={imgItem}
+                                                            index={index}
+                                                            model={itemModel}
+                                                            getOptimizedImageUrl={getOptimizedImageUrl}
+                                                            navigate={navigate}
+                                                            setActiveShowcaseImage={openFocus}
+                                                            headerTitle={creatorName}
+                                                            headerSubtitle={itemModel.name}
+                                                            avatarImage="/dreambees_icon.png"
+                                                        />
+                                                    </FeedItemErrorBoundary>
+                                                );
+                                            })}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            )}
 
                             {/* Sentinel */}
                             <div ref={lastImageElementRef} style={{ height: '20px', margin: '20px 0' }}>
-                                {loading && hasMore && images.length > 0 && (
+                                {loading && hasMore && images.length > 0 && !error && (
                                     <div className="flex justify-center p-4">
                                         <Loader2 size={32} className="animate-spin text-purple-500" />
                                     </div>
                                 )}
                             </div>
 
-                            {!hasMore && images.length > 0 && (
+                            {!hasMore && images.length > 0 && !error && (
                                 <div className="text-center text-zinc-500 py-8">
                                     That's all for now!
                                 </div>
                             )}
 
-                            {!loading && images.length === 0 && (
+                            {!loading && !error && images.length === 0 && (
                                 <div style={{
                                     display: 'flex',
                                     flexDirection: 'column',
