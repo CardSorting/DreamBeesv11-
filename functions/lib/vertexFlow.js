@@ -29,7 +29,8 @@ class VertexFlowProcessor {
         };
 
         // Configuration
-        this.MAX_RETRIES = 3;
+        // [MODIFIED] Phase 4: Reliability & Cost
+        this.MAX_RETRIES = 1; // "Don't spam retry" -> Cost saver
         this.BASE_DELAY_MS = 1000;
         this.MAX_DELAY_MS = 15000;
 
@@ -44,6 +45,13 @@ class VertexFlowProcessor {
         this.activeCount = 0;
         this.queue = []; // Array of { resolver, rejecter, priority, timestamp }
         this.QUEUE_TIMEOUT_MS = 60000; // Shed load if queued > 60s
+
+        // Start Healer Loop
+        // This ensures that if the queue has items but no new traffic comes in,
+        // we still check the circuit and process the queue.
+        if (typeof setInterval !== 'undefined') {
+            setInterval(() => this._healerTick(), 1000);
+        }
     }
 
     // Priority Constants
@@ -63,16 +71,21 @@ class VertexFlowProcessor {
      * @returns {Promise<any>} - The result of the operation
      */
     async execute(context, operation, priority = VertexFlowProcessor.PRIORITY.NORMAL) {
-        this._checkCircuit();
-
-        this._checkCircuit();
+        // [MODIFIED] Phase 4: Patient Queuing
+        // If circuit is OPEN, we don't fail fast anymore. We treat it as "High Congestion"
+        // and force the request into the queue to wait for a slot/recovery.
+        const isCircuitOpen = (this.circuit.state === 'OPEN');
 
         // [MODIFIED] Phase 3: Dynamic Check
         // Use floor because limit can be fractional (e.g. 5.2)
         const currentLimit = Math.floor(this.currentConcurrencyLimit);
 
-        if (this.activeCount >= currentLimit) {
-            logger.info(`[VertexFlow] ${context} Queued (Active: ${this.activeCount}/${currentLimit}) Priority: ${priority}`);
+        // Queue if:
+        // 1. Circuit is OPEN (Wait patiently for recovery)
+        // 2. OR Active count exceeds limit (Bulkhead)
+        if (isCircuitOpen || this.activeCount >= currentLimit) {
+            const reason = isCircuitOpen ? "Circuit OPEN" : `Active: ${this.activeCount}/${currentLimit}`;
+            logger.info(`[VertexFlow] ${context} Queued (${reason}) Priority: ${priority}`);
             await this._enqueue(priority);
         }
 
@@ -112,7 +125,16 @@ class VertexFlowProcessor {
 
     _processQueue() {
         const currentLimit = Math.floor(this.currentConcurrencyLimit);
-        if (this.activeCount < currentLimit && this.queue.length > 0) {
+
+        // Check circuit state first. If OPEN, we can't process queue unless probing.
+        // Actually execute() calls _checkCircuit() which might transition to HALF_OPEN.
+        // But _processQueue isn't executing. It's dequeuing.
+
+        // Fix: Force a check here
+        this._checkCircuit();
+        const canExecute = (this.circuit.state !== 'OPEN') && (this.activeCount < currentLimit);
+
+        if (canExecute && this.queue.length > 0) {
             const item = this.queue.shift(); // Get highest priority (front of array)
 
             // Check timeout (Load Shedding)
@@ -128,6 +150,12 @@ class VertexFlowProcessor {
         }
     }
 
+    _healerTick() {
+        if (this.queue.length > 0) {
+            this._processQueue();
+        }
+    }
+
     async _executeWithRetries(context, operation) {
         let attempt = 0;
         let lastError = null;
@@ -140,8 +168,12 @@ class VertexFlowProcessor {
                     await new Promise(resolve => setTimeout(resolve, delay));
                 }
 
-                // If circuit failed during wait, re-check
-                this._checkCircuit();
+                // If circuit failed during wait, we used to re-check here.
+                // But now we want to be patient. If it's open, proceed anyway?
+                // Actually, if we are here, we are "Active".
+                // If the circuit TRIPS while we are waiting, we might want to fail the retry?
+                // But the user said "Don't throw errors".
+                // So let's try anyway. If it fails again, it fails.
 
                 this.metrics.totalRequests++;
                 const result = await operation();
@@ -194,12 +226,12 @@ class VertexFlowProcessor {
     }
 
     _checkCircuit() {
+        // [MODIFIED] Phase 4: Removed Throws
+        // We no longer throw here. The check is moved to execute() to trigger queuing.
         if (this.circuit.state === 'OPEN') {
             if (Date.now() > this.circuit.nextTryTime) {
                 this.circuit.state = 'HALF_OPEN';
                 logger.info("[VertexFlow] Circuit transitioning to HALF_OPEN (Probing)");
-            } else {
-                throw new Error(`Vertex AI Circuit Breaker is OPEN. Fail-fast active. Retry after ${new Date(this.circuit.nextTryTime).toISOString()}`);
             }
         }
     }

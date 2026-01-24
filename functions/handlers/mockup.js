@@ -3,7 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { VertexAI, HarmCategory, HarmBlockThreshold } from "@google-cloud/vertexai";
-import { withVertexRateLimiting } from "../lib/rateLimiter.js";
+// import { withVertexRateLimiting } from "../lib/rateLimiter.js"; // [REMOVED]
+import { vertexFlow } from "../lib/vertexFlow.js"; // [NEW]
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
 import { MOCKUP_ITEMS, MOCKUP_PRESETS, TCG_ITEMS, TCG_PRESETS, DOLL_ITEMS, DOLL_PRESETS, RESKIN_ITEMS, RESKIN_PRESETS } from "../lib/mockupData.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
@@ -226,10 +227,13 @@ ${preset.prompt} `;
 
         // Generation
         logger.info(`[Mockup] Sending request to Vertex AI for ${item.label}...`);
-        const response = await withVertexRateLimiting(async () => {
+
+        // [MODIFIED] Use VertexFlow (High Priority)
+        const response = await vertexFlow.execute(`MOCKUP_${item.label}`, async () => {
             const res = await generativeModel.generateContent(requestPayload);
             return res.response;
-        }, { context: `Mockup - ${item.label} `, retries: 3 });
+        }, vertexFlow.constructor.PRIORITY.HIGH);
+
         logger.info(`[Mockup] Vertex AI response received for ${item.label}`);
 
         // Extract Image
@@ -451,11 +455,11 @@ export const handleGenerateMockup = async (request) => {
             }],
         };
 
-        // Wrap Vertex AI call with rate limiting
-        const response = await withVertexRateLimiting(async () => {
+        // Wrap Vertex AI call with [MODIFIED] VertexFlow
+        const response = await vertexFlow.execute('MOCKUP_GEN', async () => {
             const result = await generativeModel.generateContent(requestPayload);
             return result.response;
-        }, { context: 'Mockup Generation', retries: 3 });
+        }, vertexFlow.constructor.PRIORITY.HIGH);
 
         // Extract the First Candidate
         const candidates = response.candidates;

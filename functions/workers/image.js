@@ -2,7 +2,8 @@
 import { db, FieldValue } from "../firebaseInit.js";
 import { getS3Client, fetchWithTimeout, fetchWithRetry, fetchWithFallback, readFirstBytes, detectImageFormat, logger, retryOperation } from "../lib/utils.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
-import { withVertexRateLimiting } from "../lib/rateLimiter.js";
+// import { withVertexRateLimiting } from "../lib/rateLimiter.js"; // [REMOVED]
+import { vertexFlow } from "../lib/vertexFlow.js"; // [NEW]
 import { GalmixClient } from "../lib/GalmixClient.js";
 
 const galmixClient = new GalmixClient();
@@ -918,11 +919,11 @@ export const processImageTask = async (req) => {
 
             logger.info(`[${requestId}] Calling Vertex AI for gemini-2.5-flash-image generation`);
 
-            // Wrap with rate limiting for 429 errors
-            const geminiResponse = await withVertexRateLimiting(async () => {
+            // [MODIFIED] Use VertexFlow (Low Priority for Background Worker)
+            const geminiResponse = await vertexFlow.execute('WORKER_GEMINI_IMAGE', async () => {
                 const result = await model.generateContent(request);
                 return result.response;
-            }, { context: `Image Generation ${requestId}`, retries: 3 });
+            }, vertexFlow.constructor.PRIORITY.LOW); // Low Priority for background jobs
 
             const candidate = geminiResponse.candidates?.[0];
             if (candidate?.finishReason === 'SAFETY') {

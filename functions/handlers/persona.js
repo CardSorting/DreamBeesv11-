@@ -2,6 +2,7 @@ import { HttpsError } from "firebase-functions/v2/https";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { VertexAI } from "@google-cloud/vertexai";
 import { fetchWithRetry, logger } from "../lib/utils.js";
+import { vertexFlow } from "../lib/vertexFlow.js"; // [NEW]
 
 // Initialize Vertex AI
 const vertexAI = new VertexAI({ project: process.env.GCLOUD_PROJECT, location: "us-central1" });
@@ -83,8 +84,12 @@ async function generatePersonaFromImage(imageBuffer, mimeType) {
         ],
     };
 
-    const result = await model.generateContent(request);
-    const text = result.response.candidates[0].content.parts[0].text;
+    // [MODIFIED] Use VertexFlow (High Priority for interactive persona creation)
+    const result = await vertexFlow.execute('PERSONA_CREATE', async () => {
+        return await model.generateContent(request);
+    }, vertexFlow.constructor.PRIORITY.HIGH);
+
+    const text = (await result.response).candidates[0].content.parts[0].text;
 
     // Clean up markdown if present
     const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -254,12 +259,15 @@ export const handleChatPersona = async (request) => {
     });
 
     try {
-        const result = await model.generateContent({
-            contents,
-            systemInstruction: { parts: [{ text: systemInstruction }] }
-        });
+        // [MODIFIED] Use VertexFlow (High Priority for Chat)
+        const result = await vertexFlow.execute('PERSONA_CHAT', async () => {
+            return await model.generateContent({
+                contents,
+                systemInstruction: { parts: [{ text: systemInstruction }] }
+            });
+        }, vertexFlow.constructor.PRIORITY.HIGH);
 
-        const responseText = result.response.candidates[0].content.parts[0].text;
+        const responseText = (await result.response).candidates[0].content.parts[0].text;
 
         // --- Logging ---
         try {
