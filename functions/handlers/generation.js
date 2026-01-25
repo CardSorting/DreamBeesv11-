@@ -35,6 +35,25 @@ export const handleCreateGenerationRequest = async (request) => {
 
         const queueRef = db.collection('generation_queue').doc();
 
+        // --- Cloudflare Cost Control ---
+        if (modelId === 'flux-2-dev') {
+            const estimatedCost = calculateFluxCost(safeAspectRatio, safeSteps);
+            const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+            // 1. Global Limit Check ($50.00/day)
+            await checkCumulativeLimit(`cf_global_cost:${today}`, estimatedCost, 50.00, 86400);
+
+            // 2. User Limit Check ($2.00/day)
+            // Only for authenticated users to start, but anonymous abuse is also a concern.
+            // Galmix anon logic uses randomUUID, so they'd just reset. 
+            // We should enforce login for Flux usually, but if anon is allowed, track by IP?
+            // For now, let's track by UID (authenticated or anon session).
+            await checkCumulativeLimit(`cf_user_cost:${uid}:${today}`, estimatedCost, 2.00, 86400);
+
+            logger.info(`[CostControl] Flux Estimate: $${estimatedCost.toFixed(4)}`, { uid, modelId });
+        }
+        // -------------------------------
+
         if (uid.startsWith('anonymous-galmix')) {
             // Anonymous Path: No Zap deduction, no user doc optimization
             await queueRef.set({
@@ -89,6 +108,32 @@ export const handleCreateGenerationRequest = async (request) => {
         throw handleError(error, { uid, modelId });
     }
 };
+
+// Helper: Calculate Flux Cost
+function calculateFluxCost(aspectRatio, steps) {
+    // Unit Pricing: $0.00021 per input 512x512 tile/step, $0.00041 per output 512x512 tile/step
+    // Simplified approximation: 
+    // Average resolution ~1MP (1024x1024) = 4 tiles (512x512)
+    // Input cost ~0 (negligible for text)
+    // Output cost = 4 tiles * step_count * $0.00041
+
+    const tileMap = {
+        '1:1': 4, // 1024x1024
+        '2:3': 4, // 832x1216 ~4
+        '3:2': 4,
+        '9:16': 4,
+        '16:9': 4
+    };
+
+    const tiles = tileMap[aspectRatio] || 4;
+    const s = steps || 20;
+
+    // $0.00041 per tile per step
+    return tiles * s * 0.00041;
+}
+
+import { checkCumulativeLimit } from "../lib/abuse.js";
+
 
 export const handleCreateVideoGenerationRequest = async (request) => {
     const uid = request.auth?.uid;

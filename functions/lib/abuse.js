@@ -260,3 +260,36 @@ export async function recordViolation(uid, type) {
         timestamp: FieldValue.serverTimestamp()
     });
 }
+
+/**
+ * Checks and increments a cumulative limit (e.g. for cost tracking).
+ * @param {string} key - Unique identifier (e.g., "cost:global:2023-10-27")
+ * @param {number} increment - Amount to add (e.g., 0.05)
+ * @param {number} limit - Max allowed value
+ * @param {number} windowSeconds - Duration for the bucket (used for expiry)
+ */
+export async function checkCumulativeLimit(key, increment, limit, windowSeconds) {
+    const db = getFirestore();
+    const docId = `cumulative_${key.replace(/[:.]/g, '_')}`;
+    const docRef = db.collection('rate_limits').doc(docId);
+
+    // We use a transaction to ensure atomic read-modify-write
+    await db.runTransaction(async (t) => {
+        const doc = await t.get(docRef);
+        const data = doc.data() || {};
+
+        const currentTotal = data.total || 0;
+
+        if (currentTotal + increment > limit) {
+            throw new HttpsError('resource-exhausted', `Daily limit reached for ${key}. Limit: $${limit.toFixed(2)}`);
+        }
+
+        const now = Date.now();
+        t.set(docRef, {
+            total: currentTotal + increment,
+            lastUpdated: FieldValue.serverTimestamp(),
+            expireAt: new Date(now + windowSeconds * 1000)
+        }, { merge: true });
+    });
+}
+

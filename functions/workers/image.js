@@ -1,7 +1,7 @@
 
 import { db, FieldValue } from "../firebaseInit.js";
 import { getS3Client, fetchWithTimeout, fetchWithRetry, fetchWithFallback, readFirstBytes, detectImageFormat, logger, retryOperation } from "../lib/utils.js";
-import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
+import { B2_BUCKET, B2_PUBLIC_URL, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN } from "../lib/constants.js";
 // import { withVertexRateLimiting } from "../lib/rateLimiter.js"; // [REMOVED]
 import { vertexFlow } from "../lib/vertexFlow.js"; // [NEW]
 import { GalmixClient } from "../lib/GalmixClient.js";
@@ -650,19 +650,25 @@ export const processImageTask = async (req) => {
     let modelType = 'sdxl'; // default
     if (modelId === 'zit-model') modelType = 'zit';
     else if (modelId === 'flux-klein-4b') modelType = 'flux';
+    else if (modelId === 'flux-2-dev') modelType = 'cf-flux';
 
     // 4. Get Dynamic Concurrency Limit Based on Endpoint Health
-    // Use the primary endpoint for the model type to determine limit
-    const selectedEndpoints = loadBalancer.selectEndpoints(modelType, {
-        useTurbo,
-        jobComplexity,
-        preferPremium: isPremiumModel || useTurbo
-    });
-    const primaryEndpoint = selectedEndpoints[0]?.key || 'sdxl-a10g';
-    const allowedConcurrency = loadBalancer.getDynamicConcurrencyLimit(
-        primaryEndpoint,
-        useTurbo ? 10 : 3
-    );
+    let allowedConcurrency;
+    if (modelType === 'cf-flux') {
+        allowedConcurrency = 50; // Cloudflare concurrency
+    } else {
+        // Use the primary endpoint for the model type to determine limit
+        const selectedEndpoints = loadBalancer.selectEndpoints(modelType, {
+            useTurbo,
+            jobComplexity,
+            preferPremium: isPremiumModel || useTurbo
+        });
+        const primaryEndpoint = selectedEndpoints[0]?.key || 'sdxl-a10g';
+        allowedConcurrency = loadBalancer.getDynamicConcurrencyLimit(
+            primaryEndpoint,
+            useTurbo ? 10 : 3
+        );
+    }
 
     if (activeCount >= allowedConcurrency) {
         logger.warn(`[Throttling] User ${userId} busy. Active: ${activeCount}/${allowedConcurrency}. Re-queuing task ${requestId}.`, {
@@ -938,6 +944,48 @@ export const processImageTask = async (req) => {
             }
 
             const imageBuffer = Buffer.from(base64Data, 'base64');
+            response = { ok: true, _fluxImageBuffer: imageBuffer };
+        } else if (modelId === 'flux-2-dev') {
+            if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_API_TOKEN) {
+                throw new Error("Cloudflare credentials not configured");
+            }
+
+            logger.info(`[${requestId}] Calling Cloudflare for flux-2-dev generation`);
+
+            const formData = new FormData();
+            formData.append('prompt', prompt);
+            formData.append('num_steps', (steps || 20).toString());
+            formData.append('guidance', (cfg || 3.5).toString());
+
+            const cfResponse = await fetch(`https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/black-forest-labs/flux-2-dev`, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${CLOUDFLARE_API_TOKEN}`
+                },
+                body: formData
+            });
+
+            if (!cfResponse.ok) {
+                const errText = await cfResponse.text();
+                throw new Error(`Cloudflare Flux-2 Error (${cfResponse.status}): ${errText}`);
+            }
+
+            // Cloudflare usually returns JSON with "result": { "image": "base64..." } or just "result": "base64..."
+            // The user request says "Generated image as Base64 string".
+            const cfJson = await cfResponse.json();
+
+            let base64Img = null;
+            if (cfJson.result && cfJson.result.image) {
+                base64Img = cfJson.result.image;
+            } else if (typeof cfJson.result === 'string') {
+                base64Img = cfJson.result; // sometimes it's direct
+            }
+
+            if (!base64Img) {
+                throw new Error("No image data found in Cloudflare response");
+            }
+
+            const imageBuffer = Buffer.from(base64Img, 'base64');
             response = { ok: true, _fluxImageBuffer: imageBuffer };
         } else {
             // SDXL Handling - Use LoadBalancer for intelligent endpoint selection
