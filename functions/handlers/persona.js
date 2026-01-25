@@ -283,11 +283,22 @@ export const handleChatPersona = async (request) => {
         const result = await vertexFlow.execute('PERSONA_CHAT', async () => {
             return await model.generateContent({
                 contents,
-                systemInstruction: { parts: [{ text: systemInstruction }] }
+                systemInstruction: { parts: [{ text: systemInstruction + "\n\nCRITICAL: Occasionally include a line starting with 'TITLE:' followed by a new creative stream title based on this chat if the topic has shifted significantly." }] }
             });
         }, vertexFlow.constructor.PRIORITY.HIGH);
 
-        const responseText = (await result.response).candidates[0].content.parts[0].text;
+        let responseText = (await result.response).candidates[0].content.parts[0].text;
+
+        // Extract Title if present
+        if (responseText.includes('TITLE:')) {
+            const parts = responseText.split('TITLE:');
+            responseText = parts[0].trim();
+            const newTitle = parts[1].split('\n')[0].trim().replace(/["']/g, '');
+
+            if (newTitle) {
+                await db.collection('personas').doc(imageId).update({ streamTitle: newTitle }).catch(e => logger.error("Title Update Error", e));
+            }
+        }
 
         // --- Shared History Persistence ---
         try {

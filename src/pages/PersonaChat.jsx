@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ArrowLeft, Send, Sparkles, Loader2, Info, MessageCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -136,6 +136,23 @@ const PersonaChat = () => {
                 setViewerCount(prev => Math.max(1, prev - 1));
             });
 
+            channel.bind('celebration', (data) => {
+                if (isMounted.current) {
+                    const newAlert = {
+                        id: Date.now(),
+                        text: data.message,
+                        type: 'celebration'
+                    };
+                    setAlerts(prev => [...prev, newAlert]);
+                    setTimeout(() => {
+                        setAlerts(prev => prev.filter(a => a.id !== newAlert.id));
+                    }, 8000);
+
+                    // Trigger "Celebration" confetti if we want (Mocked as alert for now)
+                    toast.success(data.message, { icon: '🎁', duration: 5000 });
+                }
+            });
+
             channel.bind('new-message', (data) => {
                 if (isMounted.current) {
                     setMessages(prev => {
@@ -206,6 +223,16 @@ const PersonaChat = () => {
 
         fetchImage();
     }, [id, imageItem]);
+
+    useEffect(() => {
+        if (!id) return;
+        const unsub = onSnapshot(doc(db, 'personas', id), (snapshot) => {
+            if (snapshot.exists()) {
+                setPersona(prev => ({ ...prev, ...snapshot.data() }));
+            }
+        });
+        return () => unsub();
+    }, [id]);
 
     useEffect(() => {
         const initPersona = async () => {
@@ -333,6 +360,23 @@ const PersonaChat = () => {
         }
     };
 
+    const handleGift = async (amount = 10) => {
+        if (isSending) return;
+        try {
+            const apiFn = httpsCallable(functions, 'api');
+            await apiFn({
+                action: 'giftPersona',
+                imageId: id,
+                amount: amount,
+                type: 'bits'
+            });
+            toast.success(`You gifted ${amount} Bits!`);
+        } catch (error) {
+            console.error("Gift Error:", error);
+            toast.error(error.message || "Failed to send gift.");
+        }
+    };
+
     const handleReset = () => {
         if (persona?.greeting) {
             setMessages([{
@@ -441,7 +485,7 @@ const PersonaChat = () => {
                                 <div className="live-badge-avatar">LIVE</div>
                             </div>
                             <div className="streamer-details">
-                                <h1 className="stream-title">{persona ? `Chillin with ${persona.name}` : 'Initializing...'}</h1>
+                                <h1 className="stream-title">{persona?.streamTitle || (persona ? `Chillin with ${persona.name}` : 'Initializing...')}</h1>
                                 <p className="streamer-name-purple">{persona?.name || 'Character'}</p>
                                 <div className="stream-tags">
                                     <span className="twitch-tag">AI</span>
@@ -550,7 +594,7 @@ const PersonaChat = () => {
                                     <span>0.25 Zaps</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '8px' }}>
-                                    <button className="bits-btn">Bits</button>
+                                    <button className="bits-btn" onClick={() => handleGift(100)}>Bits</button>
                                     <button
                                         onClick={handleSend}
                                         disabled={!inputValue.trim() || isLoading || isSending}
