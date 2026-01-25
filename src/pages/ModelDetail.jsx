@@ -481,7 +481,7 @@ export default function ModelDetail() {
                                                 overflow: 'hidden'
                                             }}>
                                                 <img
-                                                    src={getOptimizedImageUrl(imgItem.thumbnailUrl || imgItem.url || imgItem.imageUrl || (typeof imgItem === 'string' ? imgItem : ''))}
+                                                    src={getOptimizedImageUrl(imgItem.url || imgItem.imageUrl || imgItem.thumbnailUrl || (typeof imgItem === 'string' ? imgItem : ''))}
                                                     srcSet={getImageSrcSet(imgItem)}
                                                     sizes="(max-width: 500px) 50vw, (max-width: 1200px) 25vw, 20vw"
                                                     alt={`Showcase generation: ${imgItem.prompt ? imgItem.prompt.slice(0, 50) + "..." : "AI Artwork"}`}

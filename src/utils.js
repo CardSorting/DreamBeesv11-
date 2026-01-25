@@ -87,9 +87,12 @@ export const getLCPAttributes = (index, threshold = 4) => {
  * Generates a srcset string for an image if a thumbnail is available
  */
 export const getImageSrcSet = (img) => {
-    if (!img || !img.imageUrl) return undefined;
+    if (!img) return undefined;
+    const fullUrl = img.imageUrl || img.url;
+    if (!fullUrl) return undefined;
+
     if (img.thumbnailUrl) {
-        return `${getOptimizedImageUrl(img.thumbnailUrl)} 512w, ${getOptimizedImageUrl(img.imageUrl)} 1024w`;
+        return `${getOptimizedImageUrl(img.thumbnailUrl)} 512w, ${getOptimizedImageUrl(fullUrl)} 1024w`;
     }
     return undefined;
 };
