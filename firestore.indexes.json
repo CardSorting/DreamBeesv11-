@@ -228,6 +228,21 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "mockups",
+      "queryScope": "COLLECTION",
+      "densityOverride": "SPARSE_ALL",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [
