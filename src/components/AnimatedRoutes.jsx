@@ -60,6 +60,12 @@ const AvatarForgeRequest = lazyRetry(() => import('../pages/AvatarForge/AvatarFo
 const AvatarForgeMint = lazyRetry(() => import('../pages/AvatarForge/AvatarForgeMint'));
 const AvatarForgeFloor = lazyRetry(() => import('../pages/AvatarForge/AvatarForgeFloor'));
 
+// Twitch Platform Components
+const TwitchLayout = lazyRetry(() => import('../pages/TwitchLayout'));
+const BrowsePage = lazyRetry(() => import('../pages/BrowsePage'));
+const FollowingPage = lazyRetry(() => import('../pages/FollowingPage'));
+const CategoryDirectory = lazyRetry(() => import('../pages/CategoryDirectory'));
+
 import { Privacy, Terms, Cookies } from '../pages/Legal';
 import { Careers, Brand, Api, Showcase } from '../pages/Misc';
 
@@ -213,9 +219,13 @@ const AnimatedRoutes = () => {
                                 <PrivateRoute><QuickMockupCreator /></PrivateRoute>
                             } />
 
-                            <Route path="/chat/:id" element={
-                                <PrivateRoute><PersonaChat /></PrivateRoute>
-                            } />
+                            {/* Twitch Platform Routes */}
+                            <Route element={<TwitchLayout />}>
+                                <Route path="/browse" element={<BrowsePage />} />
+                                <Route path="/directory" element={<CategoryDirectory />} />
+                                <Route path="/following" element={<PrivateRoute><FollowingPage /></PrivateRoute>} />
+                                <Route path="/channel/:id" element={<PrivateRoute><PersonaChat /></PrivateRoute>} />
+                            </Route>
 
                             <Route path="/autocsv" element={
                                 <PrivateRoute><AutoCSV /></PrivateRoute>

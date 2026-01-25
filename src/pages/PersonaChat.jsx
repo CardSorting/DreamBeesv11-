@@ -60,7 +60,7 @@ const Typewriter = ({ text, onUpdate }) => {
     );
 };
 
-export default function PersonaChat() {
+const PersonaChat = () => {
     const { id } = useParams(); // imageId
     const navigate = useNavigate();
     const location = useLocation();
@@ -72,7 +72,12 @@ export default function PersonaChat() {
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSending, setIsSending] = useState(false);
-    const [_creationStep, _setCreationStep] = useState('Initializing...');
+    const [viewerCount, setViewerCount] = useState(1);
+    const [suggestedPersonas, setSuggestedPersonas] = useState([]);
+    const [followedPersonas, setFollowedPersonas] = useState([]);
+    const [activeTab, setActiveTab] = useState('Home');
+    const [alerts, setAlerts] = useState([]);
+    const [showEmotes, setShowEmotes] = useState(false);
     const [error, setError] = useState(null);
 
     const scrollRef = useRef(null);
@@ -107,19 +112,41 @@ export default function PersonaChat() {
                 }
             });
 
-            const channelName = `private-chat-${id}-${_currentUser.uid}`;
+            const channelName = `presence-chat-${id}`;
             const channel = pusher.subscribe(channelName);
+
+            channel.bind('pusher:subscription_succeeded', (members) => {
+                setViewerCount(members.count);
+            });
+
+            channel.bind('pusher:member_added', (member) => {
+                setViewerCount(prev => prev + 1);
+                const newAlert = {
+                    id: Date.now(),
+                    text: `${member.info?.displayName || 'A new viewer'} has joined!`,
+                    type: 'join'
+                };
+                setAlerts(prev => [...prev, newAlert]);
+                setTimeout(() => {
+                    setAlerts(prev => prev.filter(a => a.id !== newAlert.id));
+                }, 5000);
+            });
+
+            channel.bind('pusher:member_removed', () => {
+                setViewerCount(prev => Math.max(1, prev - 1));
+            });
 
             channel.bind('new-message', (data) => {
                 if (isMounted.current) {
                     setMessages(prev => {
                         const isDuplicate = prev.some(m =>
-                            m.role === data.role &&
                             m.text === data.text &&
-                            (Date.now() - m.timestamp < 10000)
+                            m.uid === data.uid &&
+                            (Math.abs(Date.now() - (data.timestamp || Date.now())) < 5000)
                         );
 
-                        if (isDuplicate) return prev;
+                        if (isDuplicate && data.role === 'user' && data.uid === _currentUser.uid) return prev;
+
                         return [...prev, { ...data, id: data.id || Date.now().toString() }];
                     });
                 }
@@ -185,9 +212,6 @@ export default function PersonaChat() {
             if (!id || !imageItem || persona) return;
 
             try {
-                // If we recently fetched the image, set loading true again just to be safe visually
-                // but actually we handle this with isLoading state generally.
-                // Reset loading ensures we show the "Analyzing" step if we just got the image.
                 if (isMounted.current && !persona) setIsLoading(true);
 
                 const apiFn = httpsCallable(functions, 'api');
@@ -197,14 +221,41 @@ export default function PersonaChat() {
                 if (data.success && isMounted.current) {
                     setPersona(data.persona);
 
-                    if (data.persona.greeting) {
+                    // Fetch Global History from shared_messages subcollection
+                    const { collection, query, orderBy, limit, getDocs } = await import("firebase/firestore");
+                    const historyQuery = query(
+                        collection(db, 'personas', id, 'shared_messages'),
+                        orderBy('timestamp', 'desc'),
+                        limit(50)
+                    );
+                    const historySnap = await getDocs(historyQuery);
+                    const historicalMessages = historySnap.docs
+                        .map(doc => ({ id: doc.id, ...doc.data() }))
+                        .sort((a, b) => (a.timestamp?.toMillis() || 0) - (b.timestamp?.toMillis() || 0));
+
+                    if (historicalMessages.length > 0) {
+                        setMessages(historicalMessages);
+                    } else if (data.persona.greeting) {
                         setMessages([{
                             id: 'greeting-' + Date.now(),
                             role: 'model',
                             text: data.persona.greeting,
+                            displayName: data.persona.name,
                             timestamp: Date.now()
                         }]);
                     }
+
+                    // Fetch Suggested Personas
+                    const suggestedQuery = query(
+                        collection(db, 'personas'),
+                        orderBy('createdAt', 'desc'),
+                        limit(12)
+                    );
+                    const suggestedSnap = await getDocs(suggestedQuery);
+                    const allPersonas = suggestedSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                    setSuggestedPersonas(allPersonas.filter(p => p.id !== id).slice(0, 6));
+                    setFollowedPersonas(allPersonas.filter(p => p.id !== id).sort(() => 0.5 - Math.random()).slice(0, 3));
                 }
             } catch (error) {
                 console.error("Persona Init Error:", error);
@@ -258,34 +309,17 @@ export default function PersonaChat() {
 
         try {
             const apiFn = httpsCallable(functions, 'api');
-            const history = messages.slice(-10).map(m => ({ role: m.role, text: m.text }));
 
-            const result = await apiFn({
+            // We don't need to manually push to messages here because Pusher will echo it back to us
+            // but for instant feedback, we can push a "sending" state message if we want.
+            // However, Pusher handles the shared experience better.
+
+            await apiFn({
                 action: 'chatPersona',
                 imageId: id,
                 message: userText,
-                chatHistory: history
+                chatHistory: messages.slice(-10).map(m => ({ role: m.role, text: m.text }))
             });
-
-            const replyMsg = {
-                id: (Date.now() + 1).toString(),
-                role: 'model',
-                text: result.data.reply,
-                timestamp: Date.now()
-            };
-
-            if (isMounted.current) {
-                setMessages(prev => {
-                    // Check if Pusher already added this message
-                    const isDuplicate = prev.some(m =>
-                        m.role === replyMsg.role &&
-                        m.text === replyMsg.text &&
-                        (Date.now() - m.timestamp < 10000)
-                    );
-                    if (isDuplicate) return prev;
-                    return [...prev, replyMsg];
-                });
-            }
 
         } catch (error) {
             console.error("Chat Error:", error);
@@ -320,6 +354,22 @@ export default function PersonaChat() {
         }
     };
 
+    const ChannelTabs = () => (
+        <div className="channel-tabs-bar">
+            {['Home', 'About', 'Schedule', 'Videos'].map(tab => (
+                <button
+                    key={tab}
+                    className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
+                    onClick={() => setActiveTab(tab)}
+                >
+                    {tab}
+                </button>
+            ))}
+        </div>
+    );
+
+    const emotes = ['🐝', '🔥', '✨', '💜', '🎮', '🤖', '👑', '🙌', '👀', '🚀'];
+
     if (error) {
         return (
             <div className="error-screen">
@@ -339,167 +389,183 @@ export default function PersonaChat() {
 
 
     return (
-        <div className="persona-chat-page">
-            <SEO title={persona ? `Chat with ${persona.name}` : 'Awakening Character...'} />
+        <div className="channel-page-content">
+            <SEO title={persona ? `Live: ${persona.name}` : 'Awakening Character...'} />
 
-            <div className="chat-layout">
-                <div className="visual-panel">
-                    {imageItem && (
-                        <img
-                            src={getOptimizedImageUrl(imageItem.imageUrl)}
-                            alt="Character"
-                            className="character-image"
-                        />
-                    )}
-                    <div className="visual-overlay"></div>
-
-                    <button onClick={() => navigate(-1)} className="back-btn-floating" aria-label="Go back">
-                        <ArrowLeft size={24} color="white" />
-                    </button>
-                </div>
-
-                <div className="chat-panel">
-                    <div className="chat-content-scroll" ref={scrollRef}>
-                        <header className="chat-header">
-                            {isLoading ? (
-                                <div className="loading-header">
-                                    <div className="skeleton-avatar-header"></div>
-                                    <div className="skeleton-text-header"></div>
-                                </div>
-                            ) : (
-                                <div className="persona-info">
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <div className="header-avatar-mobile">
-                                            <img src={getOptimizedImageUrl(imageItem?.imageUrl)} alt={persona?.name || "Character avatar"} />
-                                        </div>
-                                        <div>
-                                            <h1 className="persona-name">{persona?.name}</h1>
-                                            <div className="persona-badges">
-                                                <span className="badge">AI Persona</span>
-                                                {persona?.personality?.split(',')[0] && (
-                                                    <span className="badge-outline">{persona.personality.split(',')[0].trim()}</span>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                <button
-                                    className="info-btn"
-                                    title="Reset Session"
-                                    onClick={handleReset}
-                                    aria-label="Reset session"
-                                >
-                                    <RefreshCw size={18} />
-                                </button>
-                                <button
-                                    className="info-btn"
-                                    title="Character Backstory"
-                                    onClick={() => persona?.backstory && toast(persona.backstory, {
-                                        icon: '📖',
-                                        style: { background: '#222', color: '#fff' },
-                                        duration: 5000
-                                    })}
-                                    aria-label="View character backstory"
-                                >
-                                    <Info size={20} />
-                                </button>
+            <div className="twitch-stream-split">
+                {/* Main Video Section */}
+                <div className="video-section">
+                    <div className="video-player-mock">
+                        {imageItem && (
+                            <img
+                                src={getOptimizedImageUrl(imageItem.imageUrl)}
+                                alt="Character"
+                                className="stream-video"
+                            />
+                        )}
+                        <div className="stream-ui-overlay">
+                            <div className="live-badge">LIVE</div>
+                            <div className="viewer-count">
+                                <span className="view-dot"></span> {viewerCount} viewers
                             </div>
-                        </header>
 
-                        <div className="messages-area">
-                            {isLoading && messages.length === 0 && (
-                                <div className="skeleton-loader-container">
-                                    <div className="message-row model-row">
-                                        <div className="skeleton-avatar"></div>
-                                        <div className="skeleton-bubble short"></div>
+                            {/* Stream Alerts Overlay */}
+                            <div className="alerts-container-twitch">
+                                {alerts.map(alert => (
+                                    <div key={alert.id} className="twitch-alert-bubble">
+                                        <Sparkles size={14} /> {alert.text}
                                     </div>
-                                    <div className="message-row model-row">
-                                        <div className="skeleton-avatar"></div>
-                                        <div className="skeleton-bubble medium"></div>
-                                    </div>
-                                </div>
-                            )}
+                                ))}
+                            </div>
+                        </div>
 
-                            {messages.length === 0 && !isLoading && (
-                                <div className="empty-chat-hint">
-                                    <MessageCircle size={32} style={{ opacity: 0.3, marginBottom: 12 }} />
-                                    <p>Say hello to start the conversation.</p>
-                                </div>
-                            )}
+                        <div className="video-controls-overlay">
+                            <div className="left-controls">
+                                <Send size={18} fill="white" />
+                                <RefreshCw size={18} />
+                            </div>
+                            <div className="right-controls">
+                                <Info size={18} />
+                            </div>
+                        </div>
 
-                            {messages.map((msg, idx) => (
-                                <div key={msg.id || idx} className={`message-row ${msg.role === 'user' ? 'user-row' : 'model-row'}`}>
-                                    {msg.role === 'model' && (
-                                        <div className="message-avatar">
-                                            <img src={imageItem?.imageUrl} alt="Avatar" />
-                                        </div>
+                        <button onClick={() => navigate(-1)} className="twitch-back-btn" aria-label="Go back">
+                            <ArrowLeft size={20} />
+                        </button>
+                    </div>
+
+                    <div className="video-info-bar">
+                        <div className="streamer-info">
+                            <div className="streamer-avatar-large">
+                                <img src={imageItem?.imageUrl} alt="" />
+                                <div className="live-badge-avatar">LIVE</div>
+                            </div>
+                            <div className="streamer-details">
+                                <h1 className="stream-title">{persona ? `Chillin with ${persona.name}` : 'Initializing...'}</h1>
+                                <p className="streamer-name-purple">{persona?.name || 'Character'}</p>
+                                <div className="stream-tags">
+                                    <span className="twitch-tag">AI</span>
+                                    <span className="twitch-tag">Interactive</span>
+                                    {persona?.personality?.split(',')[0] && (
+                                        <span className="twitch-tag">{persona.personality.split(',')[0].trim()}</span>
                                     )}
-                                    <div className={`message-bubble ${msg.role === 'user' ? 'user-bubble' : 'model-bubble'}`}>
-                                        {msg.role === 'model' && idx === messages.length - 1 ? (
-                                            <Typewriter text={msg.text} onUpdate={scrollToBottom} />
-                                        ) : (
-                                            msg.text
-                                        )}
-                                    </div>
                                 </div>
-                            ))}
-
-                            {isSending && (
-                                <div className="message-row model-row">
-                                    <div className="message-avatar">
-                                        <img src={imageItem?.imageUrl} alt="Avatar" />
-                                    </div>
-                                    <div className="typing-bubble">
-                                        <span className="dot"></span>
-                                        <span className="dot"></span>
-                                        <span className="dot"></span>
-                                    </div>
-                                </div>
-                            )}
+                            </div>
+                        </div>
+                        <div className="stream-actions">
+                            <button className="follow-btn-glitch">Follow</button>
+                            <button className="subscribe-btn-glitch">
+                                <Sparkles size={16} /> Subscribe
+                            </button>
                         </div>
                     </div>
 
-                    <div className="input-area">
-                        <div className="input-wrapper">
-                            <textarea
-                                ref={(el) => {
-                                    if (el) {
-                                        el.style.height = 'auto';
-                                        el.style.height = el.scrollHeight + 'px';
-                                    }
-                                }}
-                                value={inputValue}
-                                onChange={(e) => {
-                                    setInputValue(e.target.value);
-                                    e.target.style.height = 'auto';
-                                    e.target.style.height = e.target.scrollHeight + 'px';
-                                }}
-                                onKeyDown={handleKeyDown}
-                                placeholder={isLoading ? "Waking up character..." : `Message ${persona?.name || 'character'}...`}
-                                disabled={isLoading || isSending}
-                                rows={1}
-                                style={{ maxHeight: '150px', overflowY: 'auto' }}
-                                aria-label={`Message ${persona?.name || 'character'}`}
-                            />
-                            <button
-                                onClick={handleSend}
-                                disabled={!inputValue.trim() || isLoading || isSending}
-                                className={`send-btn ${isSending ? 'sending' : ''}`}
-                                aria-label="Send message"
-                            >
-                                {isSending ? (
-                                    <span className="sending-dot"></span>
-                                ) : (
-                                    <Send size={20} strokeWidth={2.5} />
+                    <ChannelTabs />
+
+                    <div className="video-content-area">
+                        {activeTab === 'Home' && (
+                            <div className="video-description">
+                                <h3>Welcome to the stream!</h3>
+                                <p>I am {persona?.name}, an AI-powered host. Feel free to chat with me in the sidebar! Zaps are used to power my responses.</p>
+                                <div className="about-stats">
+                                    <div className="stat"><span className="val">2.3M</span> followers</div>
+                                    <div className="stat"><span className="val">AI</span> Genre</div>
+                                </div>
+                            </div>
+                        )}
+                        {activeTab === 'About' && (
+                            <div className="video-description">
+                                <h3>About {persona?.name}</h3>
+                                <p>{persona?.backstory}</p>
+                                <h3>Vibes</h3>
+                                <p>{persona?.personality}</p>
+                            </div>
+                        )}
+                        {activeTab !== 'Home' && activeTab !== 'About' && (
+                            <div className="empty-tab-msg">
+                                <Loader2 className="animate-spin" size={32} />
+                                <p>Checking {activeTab}...</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Sidebar Chat Section */}
+                <div className="chat-sidebar">
+                    <div className="chat-header-twitch">
+                        STREAM CHAT
+                    </div>
+
+                    <div className="chat-messages-twitch" ref={scrollRef}>
+                        <div className="chat-welcome-msg">
+                            Welcome to the chat room!
+                        </div>
+                        {messages.map((msg, idx) => (
+                            <div key={msg.id || idx} className="twitch-message">
+                                {msg.role === 'model' && (
+                                    <span className="chat-badge broadcaster-badge" title="Broadcaster">
+                                        <div className="badge-icon">🎥</div>
+                                    </span>
                                 )}
-                            </button>
+                                <span className={`message-author ${msg.role === 'model' ? 'ai-author' : ''}`}>
+                                    {msg.displayName || (msg.role === 'model' ? persona?.name : 'User')}:
+                                </span>
+                                <span className="message-text">
+                                    {msg.text}
+                                </span>
+                            </div>
+                        ))}
+                        {isSending && (
+                            <div className="twitch-message typing-indicator">
+                                <span className="message-author">AI Persona:</span>
+                                <span className="message-text">typing...</span>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="chat-input-twitch">
+                        {showEmotes && (
+                            <div className="emotes-picker">
+                                {emotes.map(e => (
+                                    <button key={e} onClick={() => { setInputValue(prev => prev + e); setShowEmotes(false); }}>{e}</button>
+                                ))}
+                            </div>
+                        )}
+                        <div className="twitch-input-wrapper">
+                            <div className="input-row">
+                                <textarea
+                                    value={inputValue}
+                                    onChange={(e) => setInputValue(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    placeholder="Send a message"
+                                    disabled={isLoading || isSending}
+                                />
+                                <button className="emote-btn" onClick={() => setShowEmotes(!showEmotes)}>
+                                    😀
+                                </button>
+                            </div>
+                            <div className="twitch-input-footer">
+                                <div className="zaps-info">
+                                    <Sparkles size={12} color="#8b5cf6" />
+                                    <span>0.25 Zaps</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button className="bits-btn">Bits</button>
+                                    <button
+                                        onClick={handleSend}
+                                        disabled={!inputValue.trim() || isLoading || isSending}
+                                        className="twitch-chat-btn"
+                                    >
+                                        Chat
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
         </div>
     );
-}
+};
+
+export default PersonaChat;

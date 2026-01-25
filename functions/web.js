@@ -130,7 +130,13 @@ const handlePusherAuth = async (req, res) => {
             useTLS: process.env.SOKETI_USE_TLS === 'true',
         });
 
-        const auth = pusher.authenticate(socketId, channelName);
+        const auth = pusher.authenticate(socketId, channelName, {
+            user_id: uid,
+            user_info: {
+                displayName: decodedToken.name || 'Anonymous',
+                photoURL: decodedToken.picture || ''
+            }
+        });
         res.json(auth);
     } catch (error) {
         logger.error("[PusherAuth] Auth failed:", error);

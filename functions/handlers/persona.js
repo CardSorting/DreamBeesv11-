@@ -288,13 +288,54 @@ export const handleChatPersona = async (request) => {
 
         const responseText = (await result.response).candidates[0].content.parts[0].text;
 
-        // Broadcast via Soketi
+        // --- Shared History Persistence ---
+        try {
+            const chatLog = {
+                uid: userId,
+                displayName: request.auth.token.name || 'Anonymous',
+                photoURL: request.auth.token.picture || '',
+                text: responseText,
+                role: 'model',
+                timestamp: FieldValue.serverTimestamp()
+            };
+
+            // Add user message to shared history
+            await db.collection('personas').doc(imageId).collection('shared_messages').add({
+                uid: userId,
+                displayName: request.auth.token.name || 'Anonymous',
+                photoURL: request.auth.token.picture || '',
+                text: message,
+                role: 'user',
+                timestamp: FieldValue.serverTimestamp()
+            });
+
+            // Add model reply to shared history
+            await db.collection('personas').doc(imageId).collection('shared_messages').add(chatLog);
+        } catch (logError) {
+            logger.error("Failed to log shared persona chat interaction", logError);
+        }
+
+        // Broadcast via Soketi to SHARED Presence channel
         if (pusher) {
-            pusher.trigger(`private-chat-${imageId}-${userId}`, "new-message", {
+            const sharedChannel = `presence-chat-${imageId}`;
+
+            pusher.trigger(sharedChannel, "new-message", {
                 role: 'model',
                 text: responseText,
+                uid: 'ai-persona',
+                displayName: persona.name,
                 timestamp: Date.now()
             }).catch(e => logger.error("Soketi Broadcast Error", e));
+
+            // Also echo the user message to others in the shared channel
+            pusher.trigger(sharedChannel, "new-message", {
+                role: 'user',
+                text: message,
+                uid: userId,
+                displayName: request.auth.token.name || 'Anonymous',
+                photoURL: request.auth.token.picture || '',
+                timestamp: Date.now()
+            }).catch(e => logger.error("Soketi User Echo Error", e));
         }
 
         // --- Logging ---

@@ -66,6 +66,8 @@ function Layout() {
   );
 }
 
+import { TwitchProvider } from './contexts/TwitchContext';
+
 function App() {
   return (
     <Router>
@@ -75,33 +77,35 @@ function App() {
       <AuthProvider>
         <ModelProvider>
           <UserInteractionsProvider>
-            <Toaster
-              position="top-right"
-              toastOptions={{
-                duration: 4000,
-                style: {
-                  background: '#18181b',
-                  color: '#fff',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '12px',
-                  backdropFilter: 'blur(10px)',
-                  boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-                },
-                success: {
-                  iconTheme: {
-                    primary: '#8b5cf6',
-                    secondary: '#fff',
+            <TwitchProvider>
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    background: '#18181b',
+                    color: '#fff',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '12px',
+                    backdropFilter: 'blur(10px)',
+                    boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
                   },
-                },
-                error: {
-                  iconTheme: {
-                    primary: '#ef4444',
-                    secondary: '#fff',
+                  success: {
+                    iconTheme: {
+                      primary: '#8b5cf6',
+                      secondary: '#fff',
+                    },
                   },
-                },
-              }}
-            />
-            <Layout />
+                  error: {
+                    iconTheme: {
+                      primary: '#ef4444',
+                      secondary: '#fff',
+                    },
+                  },
+                }}
+              />
+              <Layout />
+            </TwitchProvider>
           </UserInteractionsProvider>
         </ModelProvider>
       </AuthProvider>
