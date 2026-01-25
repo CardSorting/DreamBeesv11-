@@ -63,33 +63,33 @@ const PromptInput = ({ onCreateBook, isGeneratingConcepts, error }) => {
     // --- Step Content Renderers ---
 
     const renderStep1 = () => (
-        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-            <div className="text-center space-y-2">
-                <h3 className="text-xl font-bold text-slate-800">1. Choose a Theme</h3>
-                <p className="text-slate-500 text-sm">What should your coloring book be about?</p>
+        <div className="space-y-6" style={{ animation: 'cc-slide-in-top 0.3s ease-out' }}>
+            <div className="cc-hero-text-center space-y-2">
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1e293b' }}>1. Choose a Theme</h3>
+                <p style={{ color: '#64748b', fontSize: '0.875rem' }}>What should your coloring book be about?</p>
             </div>
             <div className="relative">
                 <textarea
                     value={theme}
                     onChange={(e) => setTheme(e.target.value)}
                     placeholder="e.g., A magical forest adventure with cute animals, mushrooms, and fairies..."
-                    className="w-full h-32 p-4 rounded-xl border-2 border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none resize-none text-lg text-slate-800 placeholder:text-slate-400"
+                    className="cc-textarea"
                     autoFocus
                 />
-                <div className="absolute bottom-3 right-3">
-                    <BookOpen className="w-5 h-5 text-slate-300" />
+                <div style={{ position: 'absolute', bottom: '0.75rem', right: '0.75rem' }}>
+                    <BookOpen style={{ width: '1.25rem', height: '1.25rem', color: '#cbd5e1' }} />
                 </div>
             </div>
         </div>
     );
 
     const renderStep2 = () => (
-        <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-            <div className="text-center space-y-2">
-                <h3 className="text-xl font-bold text-slate-800">2. Pick an Art Style</h3>
-                <p className="text-slate-500 text-sm">Consistent style for all 30 pages.</p>
+        <div className="space-y-6" style={{ animation: 'cc-slide-in-top 0.3s ease-out' }}>
+            <div className="cc-hero-text-center space-y-2">
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1e293b' }}>2. Pick an Art Style</h3>
+                <p style={{ color: '#64748b', fontSize: '0.875rem' }}>Consistent style for all 30 pages.</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="cc-gallery-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
                 {STYLE_OPTIONS.map((option) => {
                     const Icon = option.icon;
                     const isSelected = style === option.id;
@@ -97,28 +97,35 @@ const PromptInput = ({ onCreateBook, isGeneratingConcepts, error }) => {
                         <button
                             key={option.id}
                             onClick={() => setStyle(option.id)}
-                            className={`relative p-4 rounded-xl border-2 text-left transition-all duration-200 group
-                ${isSelected
-                                    ? 'border-indigo-600 bg-indigo-50 shadow-md ring-2 ring-indigo-600/20'
-                                    : 'border-slate-200 bg-white hover:border-indigo-300 hover:bg-slate-50'
-                                }`}
+                            className="relative p-4 rounded-xl border-2 text-left transition-all duration-200 group"
+                            style={{
+                                borderColor: isSelected ? '#4f46e5' : '#e2e8f0',
+                                backgroundColor: isSelected ? '#eef2ff' : 'white',
+                                boxShadow: isSelected ? '0 4px 6px -1px rgba(0, 0, 0, 0.1)' : 'none',
+                                ring: isSelected ? '2px solid rgba(79, 70, 229, 0.2)' : 'none'
+                            }}
                         >
                             <div className="flex items-start gap-3">
-                                <div className={`p-2 rounded-lg ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 group-hover:text-indigo-600'}`}>
-                                    <Icon className="w-5 h-5" />
+                                <div style={{
+                                    padding: '0.5rem',
+                                    borderRadius: '0.5rem',
+                                    backgroundColor: isSelected ? '#4f46e5' : '#f1f5f9',
+                                    color: isSelected ? 'white' : '#64748b'
+                                }}>
+                                    <Icon style={{ width: '1.25rem', height: '1.25rem' }} />
                                 </div>
                                 <div>
-                                    <div className={`font-semibold ${isSelected ? 'text-indigo-900' : 'text-slate-900'}`}>
+                                    <div style={{ fontWeight: '600', color: isSelected ? '#312e81' : '#0f172a' }}>
                                         {option.label}
                                     </div>
-                                    <div className={`text-xs mt-1 ${isSelected ? 'text-indigo-700' : 'text-slate-500'}`}>
+                                    <div style={{ fontSize: '0.75rem', marginTop: '0.25rem', color: isSelected ? '#4338ca' : '#64748b' }}>
                                         {option.description}
                                     </div>
                                 </div>
                             </div>
                             {isSelected && (
-                                <div className="absolute top-4 right-4 text-indigo-600">
-                                    <CheckCircle className="w-5 h-5 fill-indigo-600 text-white" />
+                                <div style={{ position: 'absolute', top: '1rem', right: '1rem', color: '#4f46e5' }}>
+                                    <CheckCircle style={{ width: '1.25rem', height: '1.25rem', fill: '#4f46e5', color: 'white' }} />
                                 </div>
                             )}
                         </button>
@@ -129,42 +136,51 @@ const PromptInput = ({ onCreateBook, isGeneratingConcepts, error }) => {
     );
 
     const renderStep3 = () => (
-        <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300 text-center py-4">
+        <div className="cc-hero-text-center" style={{ animation: 'cc-slide-in-top 0.3s ease-out', padding: '1rem 0' }}>
             <div className="space-y-2">
-                <h3 className="text-2xl font-bold text-slate-800">Ready to Create?</h3>
-                <p className="text-slate-500">We will brainstorm 30 unique pages and start generating them.</p>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e293b' }}>Ready to Create?</h3>
+                <p style={{ color: '#64748b' }}>We will brainstorm 30 unique pages and start generating them.</p>
             </div>
 
-            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200 text-left max-w-sm mx-auto space-y-4 shadow-sm">
+            <div style={{
+                backgroundColor: '#f8fafc',
+                padding: '1.5rem',
+                borderRadius: '1rem',
+                border: '1px solid #e2e8f0',
+                textAlign: 'left',
+                maxWidth: '24rem',
+                margin: '2rem auto',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+            }} className="space-y-4">
                 <div>
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Book Theme</span>
-                    <p className="font-medium text-slate-800 mt-1 line-clamp-3">{theme}</p>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Book Theme</span>
+                    <p style={{ fontWeight: '500', color: '#1e293b', marginTop: '0.25rem' }}>{theme}</p>
                 </div>
-                <div className="flex items-center gap-3 pt-4 border-t border-slate-200">
-                    <div className="p-2 bg-white border border-slate-200 rounded-lg">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+                    <div style={{ padding: '0.5rem', backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '0.5rem' }}>
                         {(() => {
                             const opt = STYLE_OPTIONS.find(o => o.id === style);
                             const Icon = opt?.icon || Smile;
-                            return <Icon className="w-5 h-5 text-indigo-600" />;
+                            return <Icon style={{ width: '1.25rem', height: '1.25rem', color: '#4f46e5' }} />;
                         })()}
                     </div>
                     <div>
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Art Style</span>
-                        <p className="font-medium text-slate-800">
+                        <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Art Style</span>
+                        <p style={{ fontWeight: '500', color: '#1e293b' }}>
                             {STYLE_OPTIONS.find(o => o.id === style)?.label}
                         </p>
                     </div>
                 </div>
-                <div className="pt-2">
-                    <div className="bg-indigo-100 text-indigo-800 text-xs font-bold px-2 py-1 rounded inline-block">
+                <div style={{ paddingTop: '0.5rem' }}>
+                    <div style={{ backgroundColor: '#e0e7ff', color: '#3730a3', fontSize: '0.75rem', fontWeight: 'bold', padding: '0.25rem 0.5rem', borderRadius: '0.25rem', display: 'inline-block' }}>
                         30 Pages Total
                     </div>
                 </div>
             </div>
 
             {error && (
-                <div className="bg-red-50 text-red-700 p-4 rounded-xl text-sm flex items-center justify-center gap-2">
-                    <AlertCircle className="w-4 h-4" />
+                <div style={{ backgroundColor: '#fef2f2', color: '#b91c1c', padding: '1rem', borderRadius: '0.75rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                    <AlertCircle style={{ width: '1rem', height: '1rem' }} />
                     {error}
                 </div>
             )}
@@ -172,67 +188,78 @@ const PromptInput = ({ onCreateBook, isGeneratingConcepts, error }) => {
     );
 
     return (
-        <div className="w-full bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden relative">
+        <div className="cc-card">
 
             {/* Loading Overlay for Step 2 (Concept Generation) */}
             {isGeneratingConcepts && (
-                <div className="absolute inset-0 z-50 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-500">
-                    <div className="relative">
-                        <div className="w-20 h-20 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <Wand2 className="w-8 h-8 text-indigo-600 animate-pulse" />
+                <div style={{ position: 'absolute', inset: 0, zIndex: 50, backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(4px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ position: 'relative' }}>
+                        <div className="cc-animate-spin" style={{ width: '5rem', height: '5rem', border: '4px solid #e0e7ff', borderTopColor: '#4f46e5', borderRadius: '50%' }}></div>
+                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyCenter: 'center' }}>
+                            <Wand2 className="animate-pulse" style={{ width: '2rem', height: '2rem', color: '#4f46e5' }} />
                         </div>
                     </div>
-                    <h3 className="mt-6 text-xl font-bold text-slate-800">Dreaming up ideas...</h3>
-                    <p className="text-slate-500 mt-2">Brainstorming 30 unique page concepts for your book.</p>
+                    <h3 style={{ marginTop: '1.5rem', fontSize: '1.25rem', fontWeight: 'bold', color: '#1e293b' }}>Dreaming up ideas...</h3>
+                    <p style={{ color: '#64748b', marginTop: '0.5rem' }}>Brainstorming 30 unique page concepts for your book.</p>
                 </div>
             )}
 
             {/* Step Progress Indicator */}
-            <div className="bg-slate-50 px-6 py-4 border-b border-slate-100">
-                <div className="flex items-center justify-between max-w-xs mx-auto relative">
+            <div className="cc-card-header">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', maxWidth: '20rem', margin: '0 auto', position: 'relative' }}>
                     {/* Connecting Line */}
-                    <div className="absolute top-1/2 left-0 w-full h-0.5 bg-slate-200 -z-0"></div>
+                    <div style={{ position: 'absolute', top: '50%', left: 0, width: '100%', height: '2px', backgroundColor: '#e2e8f0', zIndex: 0 }}></div>
 
                     {[1, 2, 3].map((s) => (
                         <div
                             key={s}
-                            className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300
-                ${step >= s
-                                    ? 'bg-indigo-600 text-white ring-4 ring-white'
-                                    : 'bg-white border-2 border-slate-200 text-slate-400'
-                                }
-                ${step === s ? 'scale-110 shadow-lg shadow-indigo-500/30' : ''}
-                `}
+                            style={{
+                                position: 'relative',
+                                zIndex: 10,
+                                width: '2rem',
+                                height: '2rem',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.75rem',
+                                fontWeight: 'bold',
+                                transition: 'all 0.3s',
+                                backgroundColor: step >= s ? '#4f46e5' : 'white',
+                                color: step >= s ? 'white' : '#94a3b8',
+                                border: step >= s ? 'none' : '2px solid #e2e8f0',
+                                transform: step === s ? 'scale(1.1)' : 'scale(1)',
+                                boxShadow: step === s ? '0 10px 15px -3px rgba(79, 70, 229, 0.3)' : 'none'
+                            }}
                         >
                             {s}
                         </div>
                     ))}
                 </div>
-                <div className="flex justify-between max-w-xs mx-auto mt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                    <span className={step >= 1 ? 'text-indigo-600' : ''}>Theme</span>
-                    <span className={step >= 2 ? 'text-indigo-600' : ''}>Style</span>
-                    <span className={step >= 3 ? 'text-indigo-600' : ''}>Create</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', maxWidth: '20rem', margin: '0.5rem auto 0', fontSize: '10px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8' }}>
+                    <span style={{ color: step >= 1 ? '#4f46e5' : '' }}>Theme</span>
+                    <span style={{ color: step >= 2 ? '#4f46e5' : '' }}>Style</span>
+                    <span style={{ color: step >= 3 ? '#4f46e5' : '' }}>Create</span>
                 </div>
             </div>
 
             {/* Content Area */}
-            <div className="p-6 md:p-10 min-h-[350px] flex flex-col">
-                <div className="flex-grow flex flex-col justify-center">
+            <div className="cc-card-body">
+                <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     {step === 1 && renderStep1()}
                     {step === 2 && renderStep2()}
                     {step === 3 && renderStep3()}
                 </div>
 
                 {/* Footer Navigation */}
-                <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-50">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #f8fafc' }}>
                     {step > 1 ? (
                         <button
                             onClick={handleBack}
-                            className="flex items-center gap-2 text-slate-500 font-medium hover:text-slate-800 px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors"
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#64748b', fontWeight: '500', padding: '0.5rem 1rem', borderRadius: '0.5rem', transition: 'color 0.2s' }}
                             disabled={isGeneratingConcepts}
                         >
-                            <ChevronLeft className="w-4 h-4" />
+                            <ChevronLeft style={{ width: '1rem', height: '1rem' }} />
                             Back
                         </button>
                     ) : (
@@ -243,33 +270,42 @@ const PromptInput = ({ onCreateBook, isGeneratingConcepts, error }) => {
                         <button
                             onClick={handleNext}
                             disabled={!theme.trim()}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-white transition-all
-                ${!theme.trim()
-                                    ? 'bg-slate-200 cursor-not-allowed text-slate-400'
-                                    : 'bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/40 hover:-translate-y-0.5'
-                                }`}
+                            className="cc-btn cc-btn-primary"
+                            style={{
+                                padding: '0.75rem 1.5rem',
+                                borderRadius: '0.75rem',
+                                backgroundColor: !theme.trim() ? '#e2e8f0' : '#4f46e5',
+                                cursor: !theme.trim() ? 'not-allowed' : 'pointer',
+                                color: !theme.trim() ? '#94a3b8' : 'white',
+                                boxShadow: !theme.trim() ? 'none' : '0 10px 15px -3px rgba(79, 70, 229, 0.3)'
+                            }}
                         >
                             Next
-                            <ChevronRight className="w-4 h-4" />
+                            <ChevronRight style={{ width: '1rem', height: '1rem' }} />
                         </button>
                     ) : (
                         <button
                             onClick={handleCreateClick}
                             disabled={isGeneratingConcepts}
-                            className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-white transition-all w-full sm:w-auto justify-center
-                ${isGeneratingConcepts
-                                    ? 'bg-slate-300 cursor-wait'
-                                    : 'bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/40 hover:-translate-y-0.5'
-                                }`}
+                            className="cc-btn cc-btn-primary"
+                            style={{
+                                width: '100%',
+                                justifyContent: 'center',
+                                padding: '0.75rem 2rem',
+                                border: 'none',
+                                borderRadius: '0.75rem',
+                                background: isGeneratingConcepts ? '#cbd5e1' : 'linear-gradient(to right, #4f46e5, #7c3aed)',
+                                cursor: isGeneratingConcepts ? 'wait' : 'pointer'
+                            }}
                         >
                             {isGeneratingConcepts ? (
                                 <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    <Loader2 className="cc-animate-spin" style={{ width: '1.25rem', height: '1.25rem' }} />
                                     Wait...
                                 </>
                             ) : (
                                 <>
-                                    <Wand2 className="w-5 h-5" />
+                                    <Wand2 style={{ width: '1.25rem', height: '1.25rem' }} />
                                     Generate 30-Page Book
                                 </>
                             )}

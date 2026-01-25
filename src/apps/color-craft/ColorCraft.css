@@ -1,0 +1,492 @@
+/* ColorCraft.css - Vanilla CSS for ColorCraft App */
+
+/* Layout & Container */
+.cc-app-container {
+    min-height: 100vh;
+    background-color: #f8fafc;
+    /* slate-50 */
+    display: flex;
+    flex-direction: column;
+    font-family: var(--font-body);
+    color: #0f172a;
+    /* slate-900 */
+    padding-bottom: 5rem;
+}
+
+.cc-main {
+    flex-grow: 1;
+    width: 100%;
+    max-width: 80rem;
+    /* max-w-7xl */
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+@media (min-width: 640px) {
+    .cc-main {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .cc-main {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+}
+
+/* Header */
+.cc-header {
+    width: 100%;
+    background-color: white;
+    border-bottom: 1px solid #e2e8f0;
+    /* slate-200 */
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.cc-header-content {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 0 1rem;
+    height: 4rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+@media (min-width: 640px) {
+    .cc-header-content {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .cc-header-content {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+}
+
+/* Queue Control Bar */
+.cc-queue-bar {
+    background-color: #312e81;
+    /* indigo-900 */
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    animation: cc-slide-in-top 0.3s ease-out;
+}
+
+.cc-queue-content {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 10;
+}
+
+.cc-progress-bg {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 0.25rem;
+    background-color: #1e1b4b;
+    /* indigo-950 */
+    width: 100%;
+    z-index: 0;
+}
+
+.cc-progress-bar {
+    height: 100%;
+    background: linear-gradient(to right, #818cf8, #c084fc);
+    /* indigo-400 to purple-400 */
+    transition: width 0.5s ease-out;
+}
+
+/* Hero / Wizard */
+.cc-hero-section {
+    max-width: 56rem;
+    /* max-w-4xl */
+    margin: 0 auto 3rem;
+}
+
+.cc-hero-text-center {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.cc-hero-title {
+    font-size: 1.875rem;
+    /* text-3xl */
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #0f172a;
+}
+
+@media (min-width: 768px) {
+    .cc-hero-title {
+        font-size: 2.25rem;
+        /* text-4xl */
+    }
+}
+
+.cc-hero-subtitle {
+    color: #475569;
+    /* slate-600 */
+    font-size: 1.125rem;
+    /* text-lg */
+}
+
+/* Prompt Input Card */
+.cc-card {
+    width: 100%;
+    background-color: white;
+    border-radius: 1.5rem;
+    /* rounded-3xl */
+    box-shadow: 0 20px 25px -5px rgba(226, 232, 240, 0.5);
+    /* shadow-xl shadow-slate-200/50 */
+    border: 1px solid #f1f5f9;
+    /* border-slate-100 */
+    overflow: hidden;
+    position: relative;
+}
+
+.cc-card-header {
+    background-color: #f8fafc;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.cc-card-body {
+    padding: 1.5rem;
+    min-height: 350px;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (min-width: 768px) {
+    .cc-card-body {
+        padding: 2.5rem;
+    }
+}
+
+/* Gallery */
+.cc-gallery-section {
+    margin-top: 3rem;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 3rem;
+}
+
+.cc-gallery-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 640px) {
+    .cc-gallery-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .cc-gallery-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 1280px) {
+    .cc-gallery-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Image Card */
+.cc-image-card {
+    position: relative;
+    background-color: white;
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.cc-image-card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.cc-image-card.error {
+    border-color: #fecaca;
+}
+
+.cc-image-container {
+    aspect-ratio: 3/4;
+    width: 100%;
+    background-color: #f8fafc;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.cc-image-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 1rem;
+    transition: transform 0.5s ease;
+}
+
+.cc-image-card:hover img {
+    transform: scale(1.02);
+}
+
+.cc-card-overlay {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0);
+    transition: background-color 0.3s;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 1.5rem;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.cc-image-card:hover .cc-card-overlay {
+    background-color: rgba(0, 0, 0, 0.05);
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Buttons */
+.cc-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.cc-btn-primary {
+    background-color: #4f46e5;
+    color: white;
+    box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+}
+
+.cc-btn-primary:hover {
+    background-color: #4338ca;
+    transform: translateY(-0.0625rem);
+}
+
+.cc-btn-white {
+    background-color: white;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+}
+
+.cc-btn-white:hover {
+    background-color: #f8fafc;
+    color: #4f46e5;
+    border-color: #c7d2fe;
+    /* indigo-200 */
+}
+
+/* Badges */
+.cc-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.625rem;
+    /* 10px */
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    border: 1px solid transparent;
+}
+
+.cc-badge-pending {
+    color: #d97706;
+    background-color: #fffbeb;
+    border-color: #fef3c7;
+}
+
+.cc-badge-generating {
+    color: #4f46e5;
+    background-color: #eef2ff;
+    border-color: #e0e7ff;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.cc-badge-error {
+    color: #dc2626;
+    background-color: #fef2f2;
+    border-color: #fee2e2;
+}
+
+.cc-badge-success {
+    color: #059669;
+    background-color: #ecfdf5;
+    border-color: #d1fae5;
+}
+
+/* Modals */
+.cc-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+@media (min-width: 640px) {
+    .cc-modal-overlay {
+        padding: 1.5rem;
+    }
+}
+
+.cc-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(15, 23, 42, 0.6);
+    /* slate-900/60 */
+    backdrop-filter: blur(4px);
+}
+
+.cc-modal-content {
+    position: relative;
+    background-color: white;
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: cc-zoom-in 0.2s ease-out;
+}
+
+/* Animations */
+@keyframes cc-slide-in-top {
+    from {
+        transform: translateY(-0.5rem);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes cc-zoom-in {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: .5;
+    }
+}
+
+/* Utilities */
+.cc-animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.cc-animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.cc-flex-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cc-hidden-sm {
+    display: none;
+}
+
+@media (min-width: 640px) {
+    .cc-hidden-sm {
+        display: inline;
+    }
+
+    .cc-block-sm {
+        display: block;
+    }
+
+    .cc-flex-sm {
+        display: flex;
+    }
+}
+
+@media (max-width: 639px) {
+    .cc-only-sm {
+        display: inline;
+    }
+}
+
+/* Form inputs */
+.cc-textarea {
+    width: 100%;
+    height: 8rem;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    border: 2px solid #e2e8f0;
+    outline: none;
+    transition: all 0.2s;
+    font-size: 1.125rem;
+    resize: none;
+}
+
+.cc-textarea:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+}

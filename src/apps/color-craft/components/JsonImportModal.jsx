@@ -212,78 +212,93 @@ const JsonImportModal = ({ isOpen, onClose, onImport }) => {
     ];
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+        <div className="cc-modal-overlay">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+                className="cc-modal-backdrop"
                 onClick={onClose}
             />
 
             {/* Modal Content */}
-            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="cc-modal-content" style={{ maxWidth: '48rem', maxHeight: '90vh' }}>
 
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f8fafc' }}>
                     <div className="flex items-center gap-3">
-                        <div className="bg-indigo-100 p-2 rounded-lg">
-                            <Plus className="w-5 h-5 text-indigo-600" />
+                        <div style={{ backgroundColor: '#e0e7ff', padding: '0.5rem', borderRadius: '0.5rem' }}>
+                            <Plus style={{ width: '1.25rem', height: '1.25rem', color: '#4f46e5' }} />
                         </div>
                         <div>
-                            <h3 className="font-bold text-slate-800">Batch Creator</h3>
-                            <p className="text-xs text-slate-500">Add multiple pages to your queue at once.</p>
+                            <h3 style={{ fontWeight: 'bold', color: '#1e293b' }}>Batch Creator</h3>
+                            <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Add multiple pages to your queue at once.</p>
                         </div>
                     </div>
                     <button
                         onClick={onClose}
-                        className="text-slate-400 hover:text-slate-600 hover:bg-slate-200 p-2 rounded-full transition-colors"
+                        style={{ color: '#94a3b8', padding: '0.5rem', borderRadius: '50%', transition: 'all 0.2s' }}
                     >
-                        <X className="w-5 h-5" />
+                        <X style={{ width: '1.25rem', height: '1.25rem' }} />
                     </button>
                 </div>
 
                 {/* Body */}
-                <div className="p-0 flex-grow overflow-hidden flex flex-col relative bg-slate-50/50">
+                <div style={{ padding: 0, flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative', backgroundColor: 'rgba(248, 250, 252, 0.5)' }}>
 
                     {/* Toolbar */}
-                    <div className="px-6 py-3 border-b border-slate-200 bg-white flex items-center justify-between">
+                    <div style={{ padding: '0.75rem 1.5rem', borderBottom: '1px solid #e2e8f0', backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => setShowPasteMode(!showPasteMode)}
-                                className={`text-xs font-medium flex items-center gap-1.5 px-2 py-1.5 rounded transition-colors
-                    ${showPasteMode
-                                        ? 'bg-indigo-100 text-indigo-700'
-                                        : 'text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50'
-                                    }`}
+                                style={{
+                                    fontSize: '0.75rem',
+                                    fontWeight: '500',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.375rem',
+                                    padding: '0.375rem 0.5rem',
+                                    borderRadius: '0.25rem',
+                                    backgroundColor: showPasteMode ? '#e0e7ff' : 'transparent',
+                                    color: showPasteMode ? '#4338ca' : '#4f46e5'
+                                }}
                             >
-                                {showPasteMode ? <X className="w-4 h-4" /> : <AlignLeft className="w-4 h-4" />}
+                                {showPasteMode ? <X style={{ width: '1rem', height: '1rem' }} /> : <AlignLeft style={{ width: '1rem', height: '1rem' }} />}
                                 {showPasteMode ? "Close Paste Tool" : "Paste List or JSON"}
                             </button>
 
-                            <div className="h-4 w-px bg-slate-200 mx-1"></div>
+                            <div style={{ height: '1rem', width: '1px', backgroundColor: '#e2e8f0', margin: '0 0.25rem' }}></div>
 
                             <button
                                 onClick={handleCopyTemplate}
-                                className="text-xs font-medium text-slate-500 hover:text-indigo-600 flex items-center gap-1.5 hover:bg-slate-50 px-2 py-1.5 rounded transition-colors"
+                                style={{
+                                    fontSize: '0.75rem',
+                                    fontWeight: '500',
+                                    color: '#64748b',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.375rem',
+                                    padding: '0.375rem 0.5rem',
+                                    borderRadius: '0.25rem'
+                                }}
                             >
-                                {templateCopied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                                {templateCopied ? <Check style={{ width: '0.875rem', height: '0.875rem', color: '#22c55e' }} /> : <Copy style={{ width: '0.875rem', height: '0.875rem' }} />}
                                 {templateCopied ? "Copied!" : "Copy 30-Page Template"}
                             </button>
                         </div>
 
-                        <div className="text-xs text-slate-400 font-medium">
+                        <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '500' }}>
                             {rows.length} {rows.length === 1 ? 'item' : 'items'}
                         </div>
                     </div>
 
                     {/* Paste Overlay */}
                     {showPasteMode && (
-                        <div className="p-4 bg-indigo-50 border-b border-indigo-100 animate-in slide-in-from-top-2">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs font-semibold text-indigo-800 flex items-center gap-2">
-                                    <FileJson className="w-3 h-3" />
+                        <div style={{ padding: '1rem', backgroundColor: '#eef2ff', borderBottom: '1px solid #e0e7ff', animation: 'cc-slide-in-top 0.2s ease-out' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#3730a3', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <FileJson style={{ width: '0.75rem', height: '0.75rem' }} />
                                     Paste text list OR JSON template
                                 </span>
-                                <span className="text-[10px] text-indigo-600/70">
+                                <span style={{ fontSize: '10px', color: 'rgba(79, 70, 229, 0.7)' }}>
                                     Auto-detects format
                                 </span>
                             </div>
@@ -291,20 +306,23 @@ const JsonImportModal = ({ isOpen, onClose, onImport }) => {
                                 value={pasteContent}
                                 onChange={(e) => setPasteContent(e.target.value)}
                                 placeholder={'Example List:\nCat on a roof\nDog in a park\n\nExample JSON:\n[{"prompt": "Dragon", "style": "anime"}]'}
-                                className="w-full h-32 p-3 rounded-xl border border-indigo-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none text-xs font-mono resize-none bg-white mb-3 placeholder:text-slate-300"
+                                className="cc-textarea"
+                                style={{ height: '8rem', fontSize: '0.75rem', fontFamily: 'monospace', marginBottom: '0.75rem', backgroundColor: 'white' }}
                                 autoFocus
                             />
-                            <div className="flex justify-end gap-2">
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                                 <button
                                     onClick={() => setShowPasteMode(false)}
-                                    className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200 rounded-lg"
+                                    className="cc-btn cc-btn-white"
+                                    style={{ padding: '0.375rem 0.75rem', fontSize: '0.75rem' }}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleProcessPaste}
                                     disabled={!pasteContent.trim()}
-                                    className="px-4 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm disabled:opacity-50"
+                                    className="cc-btn cc-btn-primary"
+                                    style={{ padding: '0.375rem 1rem', fontSize: '0.75rem', opacity: !pasteContent.trim() ? 0.5 : 1 }}
                                 >
                                     Process & Add
                                 </button>
@@ -313,36 +331,36 @@ const JsonImportModal = ({ isOpen, onClose, onImport }) => {
                     )}
 
                     {/* Scrollable Rows */}
-                    <div className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-3">
+                    <div style={{ flexGrow: 1, overflowY: 'auto', padding: '1rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         {rows.map((row, index) => (
-                            <div key={row.id} className="group flex flex-col sm:flex-row gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-500/10 transition-all">
-                                <div className="flex items-center justify-between sm:hidden mb-1">
-                                    <span className="text-xs font-bold text-slate-400">Page {index + 1}</span>
+                            <div key={row.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', backgroundColor: 'white', padding: '0.75rem', borderRadius: '0.75rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)', transition: 'all 0.2s' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }} className="cc-only-sm">
+                                    <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#94a3b8' }}>Page {index + 1}</span>
                                     <button
                                         onClick={() => handleDeleteRow(row.id)}
-                                        className="text-slate-400 hover:text-red-500 p-1"
+                                        style={{ color: '#94a3b8', padding: '0.25rem' }}
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Trash2 style={{ width: '1rem', height: '1rem' }} />
                                     </button>
                                 </div>
 
-                                <div className="flex-grow flex items-center gap-3">
-                                    <span className="hidden sm:block text-xs font-bold text-slate-300 w-6 text-right">{index + 1}</span>
+                                <div style={{ flexGrow: 1, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#cbd5e1', width: '1.5rem', textAlign: 'right' }} className="cc-hidden-sm">{index + 1}</span>
                                     <input
                                         type="text"
                                         value={row.prompt}
                                         onChange={(e) => handleUpdateRow(row.id, 'prompt', e.target.value)}
                                         placeholder="Describe what you want to color..."
-                                        className="flex-grow bg-transparent outline-none text-sm text-slate-800 placeholder:text-slate-400"
+                                        style={{ flexGrow: 1, backgroundColor: 'transparent', outline: 'none', border: 'none', fontSize: '0.875rem', color: '#1e293b' }}
                                         autoFocus={index === rows.length - 1 && !showPasteMode}
                                     />
                                 </div>
 
-                                <div className="flex items-center gap-2 border-t sm:border-t-0 sm:border-l border-slate-100 pt-2 sm:pt-0 sm:pl-2 mt-1 sm:mt-0">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.5rem' }}>
                                     <select
                                         value={row.style}
                                         onChange={(e) => handleUpdateRow(row.id, 'style', e.target.value)}
-                                        className="bg-slate-50 border border-slate-200 text-xs font-medium text-slate-600 rounded-lg px-2 py-1.5 outline-none focus:border-indigo-500 w-full sm:w-32 cursor-pointer hover:bg-slate-100"
+                                        style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', fontSize: '0.75rem', fontWeight: '500', color: '#475569', borderRadius: '0.5rem', padding: '0.375rem 0.5rem', outline: 'none', cursor: 'pointer', width: '100%' }}
                                     >
                                         {styles.map(s => (
                                             <option key={s.value} value={s.value}>{s.label}</option>
@@ -351,10 +369,11 @@ const JsonImportModal = ({ isOpen, onClose, onImport }) => {
 
                                     <button
                                         onClick={() => handleDeleteRow(row.id)}
-                                        className="hidden sm:flex text-slate-300 hover:text-red-500 p-2 rounded-lg hover:bg-red-50 transition-colors"
+                                        className="cc-hidden-sm"
+                                        style={{ color: '#cbd5e1', padding: '0.5rem', borderRadius: '0.5rem', transition: 'color 0.2s' }}
                                         title="Remove row"
                                     >
-                                        <Trash2 className="w-4 h-4" />
+                                        <Trash2 style={{ width: '1rem', height: '1rem' }} />
                                     </button>
                                 </div>
                             </div>
@@ -362,9 +381,22 @@ const JsonImportModal = ({ isOpen, onClose, onImport }) => {
 
                         <button
                             onClick={handleAddRow}
-                            className="w-full py-3 border-2 border-dashed border-slate-200 rounded-xl text-slate-500 font-medium text-sm hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50/50 transition-all flex items-center justify-center gap-2"
+                            style={{
+                                width: '100%',
+                                padding: '0.75rem',
+                                border: '2px dashed #e2e8f0',
+                                borderRadius: '0.75rem',
+                                color: '#64748b',
+                                fontWeight: '500',
+                                fontSize: '0.875rem',
+                                transition: 'all 0.2s',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.5rem'
+                            }}
                         >
-                            <Plus className="w-4 h-4" />
+                            <Plus style={{ width: '1rem', height: '1rem' }} />
                             Add Another Page
                         </button>
                     </div>
@@ -372,19 +404,24 @@ const JsonImportModal = ({ isOpen, onClose, onImport }) => {
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-slate-100 bg-white flex justify-end gap-3">
+                <div style={{ padding: '1rem', borderTop: '1px solid #f1f5f9', backgroundColor: 'white', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg transition-colors"
+                        className="cc-btn cc-btn-white"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleCreate}
                         disabled={rows.filter(r => r.prompt.trim()).length === 0}
-                        className="px-6 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="cc-btn cc-btn-primary"
+                        style={{
+                            padding: '0.5rem 1.5rem',
+                            opacity: rows.filter(r => r.prompt.trim()).length === 0 ? 0.5 : 1,
+                            cursor: rows.filter(r => r.prompt.trim()).length === 0 ? 'not-allowed' : 'pointer'
+                        }}
                     >
-                        <Wand2 className="w-4 h-4" />
+                        <Wand2 style={{ width: '1rem', height: '1rem' }} />
                         Create {rows.filter(r => r.prompt.trim()).length} Pages
                     </button>
                 </div>

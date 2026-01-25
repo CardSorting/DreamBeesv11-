@@ -136,52 +136,52 @@ const JsonExportModal = ({ isOpen, onClose, images }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+        <div className="cc-modal-overlay">
             {/* Backdrop */}
             <div
-                className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+                className="cc-modal-backdrop"
                 onClick={onClose}
             />
 
             {/* Modal Content */}
-            <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="cc-modal-content" style={{ maxWidth: '32rem' }}>
 
                 {/* Header */}
-                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f8fafc' }}>
                     <div>
-                        <h3 className="font-bold text-slate-800 text-lg">Export Coloring Book</h3>
-                        <p className="text-xs text-slate-500">Download your pages as a printable document</p>
+                        <h3 style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '1.125rem' }}>Export Coloring Book</h3>
+                        <p style={{ fontSize: '0.75rem', color: '#64748b' }}>Download your pages as a printable document</p>
                     </div>
                     <button
                         onClick={onClose}
-                        className="text-slate-400 hover:text-slate-600 hover:bg-slate-200 p-2 rounded-full transition-colors"
+                        style={{ color: '#94a3b8', padding: '0.5rem', borderRadius: '50%', transition: 'all 0.2s' }}
                     >
-                        <X className="w-5 h-5" />
+                        <X style={{ width: '1.25rem', height: '1.25rem' }} />
                     </button>
                 </div>
 
                 {/* Body */}
-                <div className="p-6 flex-grow flex flex-col items-center justify-center text-center space-y-6">
-                    <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center">
-                        <FileText className="w-10 h-10" />
+                <div style={{ padding: '1.5rem', flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: '1.5rem', backgroundColor: 'white' }}>
+                    <div style={{ width: '5rem', height: '5rem', backgroundColor: '#eff6ff', color: '#2563eb', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <FileText style={{ width: '2.5rem', height: '2.5rem' }} />
                     </div>
-                    <div className="max-w-sm">
-                        <h4 className="text-lg font-semibold text-slate-800 mb-2">Printable Word Document</h4>
-                        <p className="text-slate-500 text-sm">
+                    <div style={{ maxWidth: '24rem' }}>
+                        <h4 style={{ fontSize: '1.125rem', fontWeight: '600', color: '#1e293b', marginBottom: '0.5rem' }}>Printable Word Document</h4>
+                        <p style={{ color: '#64748b', fontSize: '0.875rem' }}>
                             Generates a Microsoft Word (.docx) file with a title page and one image per page, formatted for A4 paper.
                         </p>
-                        <div className="mt-6 flex flex-col gap-2 text-xs text-slate-400 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                            <p className="flex justify-between"><span>Pages included:</span> <span className="font-semibold text-slate-600">{validImages.length}</span></p>
-                            <p className="flex justify-between"><span>Format:</span> <span className="font-semibold text-slate-600">A4 Portrait</span></p>
+                        <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.75rem', color: '#94a3b8', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #f1f5f9' }}>
+                            <p style={{ display: 'flex', justifyContent: 'space-between' }}><span>Pages included:</span> <span style={{ fontWeight: '600', color: '#475569' }}>{validImages.length}</span></p>
+                            <p style={{ display: 'flex', justifyContent: 'space-between' }}><span>Format:</span> <span style={{ fontWeight: '600', color: '#475569' }}>A4 Portrait</span></p>
                         </div>
                     </div>
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-slate-100 bg-white flex justify-end gap-3">
+                <div style={{ padding: '1rem', borderTop: '1px solid #f1f5f9', backgroundColor: 'white', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-50 rounded-lg transition-colors"
+                        className="cc-btn cc-btn-white"
                     >
                         Cancel
                     </button>
@@ -189,18 +189,20 @@ const JsonExportModal = ({ isOpen, onClose, images }) => {
                     <button
                         onClick={handleDownloadDocx}
                         disabled={isGeneratingDoc || validImages.length === 0}
-                        className={`px-6 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-500/20 flex items-center gap-2
-              ${(isGeneratingDoc || validImages.length === 0) ? 'opacity-50 cursor-not-allowed' : ''}
-            `}
+                        className="cc-btn cc-btn-primary"
+                        style={{
+                            opacity: (isGeneratingDoc || validImages.length === 0) ? 0.5 : 1,
+                            cursor: (isGeneratingDoc || validImages.length === 0) ? 'not-allowed' : 'pointer'
+                        }}
                     >
                         {isGeneratingDoc ? (
                             <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
+                                <Loader2 className="cc-animate-spin" style={{ width: '1rem', height: '1rem' }} />
                                 Generating...
                             </>
                         ) : (
                             <>
-                                <Download className="w-4 h-4" />
+                                <Download style={{ width: '1rem', height: '1rem' }} />
                                 Download Book
                             </>
                         )}

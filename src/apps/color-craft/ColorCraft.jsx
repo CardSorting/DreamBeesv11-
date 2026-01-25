@@ -8,6 +8,8 @@ import { generateBookConcepts } from './services/geminiService';
 import { useBatchProcessor } from './hooks/useBatchProcessor';
 import { loadImages, saveImage, deleteImage, clearPendingImages } from './services/storage';
 import { FileText, Play, Pause, XCircle, Loader2 } from 'lucide-react';
+import './ColorCraft.css';
+
 
 const BATCH_DELAY_MS = 3000;
 
@@ -136,9 +138,9 @@ const ColorCraft = () => {
 
     if (isLoadingDB) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-400">
+            <div className="cc-flex-center" style={{ minHeight: '100vh', backgroundColor: '#f8fafc', color: '#94a3b8' }}>
                 <div className="flex flex-col items-center gap-2">
-                    <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+                    <Loader2 className="cc-animate-spin" style={{ width: '2rem', height: '2rem', color: '#6366f1' }} />
                     <p>Loading Gallery...</p>
                 </div>
             </div>
@@ -146,33 +148,33 @@ const ColorCraft = () => {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900 pb-20">
+        <div className="cc-app-container">
             <Header onImportClick={() => setIsImportModalOpen(true)} />
 
             {/* Queue Control Bar (Sticky) */}
             {isProcessingBatch && (
-                <div className="bg-indigo-900 text-white sticky top-0 z-40 shadow-lg animate-in slide-in-from-top-2 overflow-hidden">
-                    <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between relative z-10">
+                <div className="cc-queue-bar">
+                    <div className="cc-queue-content">
                         <div className="flex items-center gap-4">
                             {isQueuePaused ? (
-                                <div className="p-2 bg-amber-500/20 rounded-lg">
-                                    <Pause className="w-5 h-5 text-amber-300" />
+                                <div style={{ padding: '0.5rem', backgroundColor: 'rgba(245, 158, 11, 0.2)', borderRadius: '0.5rem' }}>
+                                    <Pause style={{ width: '1.25rem', height: '1.25rem', color: '#fcd34d' }} />
                                 </div>
                             ) : (
-                                <div className="p-2 bg-indigo-500/20 rounded-lg">
-                                    <Loader2 className="w-5 h-5 animate-spin text-indigo-300" />
+                                <div style={{ padding: '0.5rem', backgroundColor: 'rgba(99, 102, 241, 0.2)', borderRadius: '0.5rem' }}>
+                                    <Loader2 className="cc-animate-spin" style={{ width: '1.25rem', height: '1.25rem', color: '#a5b4fc' }} />
                                 </div>
                             )}
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <p className="text-sm font-bold text-white">
+                                    <p style={{ fontSize: '0.875rem', fontWeight: 'bold', color: 'white' }}>
                                         {isQueuePaused ? "Batch Paused" : "Producing Book..."}
                                     </p>
-                                    <span className="text-xs bg-indigo-800 px-2 py-0.5 rounded-full text-indigo-200">
+                                    <span style={{ fontSize: '0.75rem', backgroundColor: '#3730a3', padding: '0.125rem 0.5rem', borderRadius: '9999px', color: '#c7d2fe' }}>
                                         {Math.max(0, batchTotal - activeCount)} / {batchTotal}
                                     </span>
                                 </div>
-                                <p className="text-xs text-indigo-300 mt-0.5">
+                                <p style={{ fontSize: '0.75rem', color: '#a5b4fc', marginTop: '0.125rem' }}>
                                     {pendingCount} pending · {generatingCount} generating
                                 </p>
                             </div>
@@ -181,43 +183,45 @@ const ColorCraft = () => {
                         <div className="flex items-center gap-3">
                             <button
                                 onClick={() => setIsQueuePaused(!isQueuePaused)}
-                                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-800 hover:bg-indigo-700 text-xs font-medium transition-colors border border-indigo-700 hover:border-indigo-600"
+                                className="cc-btn cc-btn-primary cc-hidden-sm"
+                                style={{ backgroundColor: '#3730a3', borderColor: '#4338ca' }}
                             >
                                 {isQueuePaused ? (
-                                    <> <Play className="w-3.5 h-3.5" /> Resume </>
+                                    <> <Play style={{ width: '0.875rem', height: '0.875rem' }} /> Resume </>
                                 ) : (
-                                    <> <Pause className="w-3.5 h-3.5" /> Pause </>
+                                    <> <Pause style={{ width: '0.875rem', height: '0.875rem' }} /> Pause </>
                                 )}
                             </button>
                             <button
                                 onClick={handleClearQueue}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-800/50 hover:bg-red-900/80 text-xs font-medium transition-colors text-indigo-200 hover:text-white border border-indigo-700/50 hover:border-red-800"
+                                className="cc-btn cc-flex-center"
+                                style={{ backgroundColor: 'rgba(55, 48, 163, 0.5)', color: '#c7d2fe' }}
                             >
-                                <XCircle className="w-3.5 h-3.5" />
-                                <span className="hidden sm:inline">Cancel</span>
+                                <XCircle style={{ width: '0.875rem', height: '0.875rem' }} />
+                                <span className="cc-hidden-sm">Cancel</span>
                             </button>
                         </div>
                     </div>
 
                     {/* Progress Bar Background */}
-                    <div className="absolute bottom-0 left-0 h-1 bg-indigo-950 w-full z-0">
+                    <div className="cc-progress-bg">
                         <div
-                            className="h-full bg-gradient-to-r from-indigo-400 to-purple-400 transition-all duration-500 ease-out"
+                            className="cc-progress-bar"
                             style={{ width: `${batchProgress}%` }}
                         />
                     </div>
                 </div>
             )}
 
-            <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="cc-main">
 
                 {/* Hero / Wizard Section */}
-                <div className="max-w-4xl mx-auto mb-12">
-                    <div className="text-center mb-8">
-                        <h2 className="text-3xl md:text-4xl font-bold mb-4 text-slate-900">
-                            Auto <span className="text-indigo-600">Coloring Book</span> Maker
+                <div className="cc-hero-section">
+                    <div className="cc-hero-text-center">
+                        <h2 className="cc-hero-title">
+                            Auto <span style={{ color: '#4f46e5' }}>Coloring Book</span> Maker
                         </h2>
-                        <p className="text-slate-600 text-lg">
+                        <p className="cc-hero-subtitle">
                             Generate a complete 30-page coloring book from a single theme.
                         </p>
                     </div>
@@ -231,23 +235,23 @@ const ColorCraft = () => {
 
                 {/* Gallery Section */}
                 {images.length > 0 && (
-                    <div id="gallery-section" className="mt-12 border-t border-slate-200 pt-12 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                    <div id="gallery-section" className="cc-gallery-section" style={{ animation: 'cc-slide-in-top 0.7s ease-out' }}>
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-                            <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 Your Book Pages
-                                <span className="bg-slate-100 text-slate-600 text-sm py-0.5 px-2 rounded-full">{images.length}</span>
+                                <span style={{ backgroundColor: '#f1f5f9', color: '#475569', fontSize: '0.875rem', padding: '0.125rem 0.5rem', borderRadius: '9999px' }}>{images.length}</span>
                             </h3>
 
                             <button
                                 onClick={() => setIsJsonModalOpen(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-slate-600 text-sm font-medium hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm"
+                                className="cc-btn cc-btn-white"
                             >
-                                <FileText className="w-4 h-4" />
+                                <FileText style={{ width: '1rem', height: '1rem' }} />
                                 Export Book
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <div className="cc-gallery-grid">
                             {images.map((img) => (
                                 <ImageCard key={img.id} image={img} onDelete={handleDelete} />
                             ))}
@@ -262,8 +266,8 @@ const ColorCraft = () => {
                 )}
             </main>
 
-            <footer className="bg-white border-t border-slate-200 py-8 mt-12">
-                <div className="max-w-7xl mx-auto px-4 text-center text-slate-500 text-sm">
+            <footer style={{ backgroundColor: 'white', borderTop: '1px solid #e2e8f0', padding: '2rem 0', marginTop: '3rem' }}>
+                <div className="cc-main" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.875rem' }}>
                     <p>© {new Date().getFullYear()} ColorCraft AI. Powered by Google Gemini.</p>
                 </div>
             </footer>

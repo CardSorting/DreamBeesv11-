@@ -44,29 +44,29 @@ const ImageCard = ({ image, onDelete }) => {
         switch (status) {
             case 'pending':
                 return (
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100">
-                        <Clock className="w-3 h-3" />
+                    <div className="cc-badge cc-badge-pending">
+                        <Clock style={{ width: '0.75rem', height: '0.75rem' }} />
                         <span>Queued</span>
                     </div>
                 );
             case 'generating':
                 return (
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full border border-indigo-100 animate-pulse">
-                        <Loader2 className="w-3 h-3 animate-spin" />
+                    <div className="cc-badge cc-badge-generating">
+                        <Loader2 className="cc-animate-spin" style={{ width: '0.75rem', height: '0.75rem' }} />
                         <span>Generating</span>
                     </div>
                 );
             case 'error':
                 return (
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-red-600 bg-red-50 px-2.5 py-1 rounded-full border border-red-100">
-                        <XCircle className="w-3 h-3" />
+                    <div className="cc-badge cc-badge-error">
+                        <XCircle style={{ width: '0.75rem', height: '0.75rem' }} />
                         <span>Failed</span>
                     </div>
                 );
             case 'success':
                 return (
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
-                        <CheckCircle2 className="w-3 h-3" />
+                    <div className="cc-badge cc-badge-success">
+                        <CheckCircle2 style={{ width: '0.75rem', height: '0.75rem' }} />
                         <span>Ready</span>
                     </div>
                 );
@@ -78,25 +78,23 @@ const ImageCard = ({ image, onDelete }) => {
     const isPlaceholder = status !== 'success';
 
     return (
-        <div className={`group relative bg-white rounded-2xl border overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full
-        ${status === 'error' ? 'border-red-200' : 'border-slate-200'}
-    `}>
+        <div className={`cc-image-card ${status === 'error' ? 'error' : ''}`}>
 
             {/* Image / Placeholder Area */}
-            <div className="aspect-[3/4] w-full bg-slate-50 relative overflow-hidden flex-shrink-0">
+            <div className="cc-image-container">
                 {isPlaceholder ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
-                        {status === 'pending' && <RefreshCw className="w-10 h-10 text-slate-300 mb-4 opacity-50" />}
-                        {status === 'generating' && <Loader2 className="w-10 h-10 text-indigo-500 animate-spin mb-4" />}
-                        {status === 'error' && <AlertCircle className="w-10 h-10 text-red-400 mb-4" />}
+                    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', textAlign: 'center' }}>
+                        {status === 'pending' && <RefreshCw style={{ width: '2.5rem', height: '2.5rem', color: '#cbd5e1', marginBottom: '1rem', opacity: 0.5 }} />}
+                        {status === 'generating' && <Loader2 className="cc-animate-spin" style={{ width: '2.5rem', height: '2.5rem', color: '#6366f1', marginBottom: '1rem' }} />}
+                        {status === 'error' && <AlertCircle style={{ width: '2.5rem', height: '2.5rem', color: '#f87171', marginBottom: '1rem' }} />}
 
-                        <p className="text-sm font-medium text-slate-700">
+                        <p style={{ fontSize: '0.875rem', fontWeight: '500', color: '#334155' }}>
                             {status === 'pending' && 'Waiting in line...'}
                             {status === 'generating' && 'Drawing artwork...'}
                             {status === 'error' && 'Generation Failed'}
                         </p>
                         {status === 'error' && (
-                            <p className="text-xs text-red-500 mt-2 line-clamp-3 bg-red-50 p-2 rounded-lg border border-red-100">
+                            <p style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '0.5rem', padding: '0.5rem', borderRadius: '0.5rem', backgroundColor: '#fef2f2', border: '1px solid #fee2e2' }}>
                                 {image.errorMessage || "Unknown error"}
                             </p>
                         )}
@@ -106,25 +104,24 @@ const ImageCard = ({ image, onDelete }) => {
                         <img
                             src={image.url}
                             alt={image.prompt}
-                            className="w-full h-full object-contain p-4 group-hover:scale-[1.02] transition-transform duration-500"
                         />
 
                         {/* Overlay Actions */}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 flex items-end justify-center pb-6 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto">
-                            <div className="flex gap-2 scale-90 group-hover:scale-100 transition-all duration-300">
+                        <div className="cc-card-overlay">
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
                                 <button
                                     onClick={handlePrint}
-                                    className="bg-white p-3 rounded-full text-slate-700 shadow-lg hover:text-indigo-600 hover:scale-110 transition-all"
+                                    style={{ backgroundColor: 'white', padding: '0.75rem', borderRadius: '50%', color: '#334155', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
                                     title="Print"
                                 >
-                                    <Printer className="w-5 h-5" />
+                                    <Printer style={{ width: '1.25rem', height: '1.25rem' }} />
                                 </button>
                                 <button
                                     onClick={handleDownload}
-                                    className="bg-indigo-600 p-3 rounded-full text-white shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 hover:scale-110 transition-all"
+                                    style={{ backgroundColor: '#4f46e5', padding: '0.75rem', borderRadius: '50%', color: 'white', boxShadow: '0 10px 15px -3px rgba(79, 70, 229, 0.3)' }}
                                     title="Download"
                                 >
-                                    <Download className="w-5 h-5" />
+                                    <Download style={{ width: '1.25rem', height: '1.25rem' }} />
                                 </button>
                             </div>
                         </div>
@@ -133,24 +130,24 @@ const ImageCard = ({ image, onDelete }) => {
             </div>
 
             {/* Content Footer */}
-            <div className="p-4 border-t border-slate-100 bg-white flex flex-col flex-grow">
-                <div className="flex justify-between items-start gap-3 mb-4">
-                    <p className="text-sm font-medium text-slate-900 line-clamp-2 leading-relaxed" title={image.prompt}>
+            <div style={{ padding: '1rem', borderTop: '1px solid #f1f5f9', backgroundColor: 'white', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '1rem' }}>
+                    <p style={{ fontSize: '0.875rem', fontWeight: '500', color: '#0f172a', lineHeight: '1.625' }} title={image.prompt}>
                         {image.prompt}
                     </p>
                     <button
                         onClick={() => onDelete(image.id)}
-                        className="text-slate-300 hover:text-red-500 transition-colors p-1 flex-shrink-0 rounded-md hover:bg-slate-50"
+                        style={{ color: '#cbd5e1', padding: '0.25rem', borderRadius: '0.375rem', transition: 'color 0.2s' }}
                         title="Delete"
                     >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 style={{ width: '1rem', height: '1rem' }} />
                     </button>
                 </div>
 
-                <div className="mt-auto flex items-center justify-between">
+                <div style={{ marginTop: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     {renderStatusBadge()}
                     {status === 'success' && (
-                        <span className="text-[10px] font-medium text-slate-400 bg-slate-100/50 px-2 py-1 rounded-full">
+                        <span style={{ fontSize: '10px', fontWeight: '500', color: '#94a3b8', backgroundColor: 'rgba(241, 245, 249, 0.5)', padding: '0.25rem 0.5rem', borderRadius: '9999px' }}>
                             #{image.id.slice(0, 4)}
                         </span>
                     )}
