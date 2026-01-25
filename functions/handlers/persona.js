@@ -484,3 +484,158 @@ export const handleChatPersona = async (request) => {
         throw new HttpsError('internal', "Failed to get character response.");
     }
 };
+
+export const handleGiftPersona = async (request) => {
+    const { imageId, amount } = request.data;
+    if (!request.auth) throw new HttpsError('unauthenticated', 'User must be logged in.');
+    if (!amount || amount <= 0) throw new HttpsError('invalid-argument', 'Invalid ZAP amount');
+
+    const userId = request.auth.uid;
+    const db = getFirestore();
+    const personaRef = db.collection('personas').doc(imageId);
+
+    // 1. Deduct ZAPs
+    await db.runTransaction(async (t) => {
+        const userRef = db.collection('users').doc(userId);
+        const userDoc = await t.get(userRef);
+        if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+        const zaps = userDoc.data().zaps || 0;
+        if (zaps < amount) throw new HttpsError('resource-exhausted', `Insufficient Zaps. Need ${amount}.`);
+        t.update(userRef, { zaps: FieldValue.increment(-amount) });
+    });
+
+    // 2. Update Persona State (Community Goal & Hype)
+    let personaData;
+    await db.runTransaction(async (t) => {
+        const pDoc = await t.get(personaRef);
+        if (!pDoc.exists) throw new HttpsError('not-found', 'Persona not found');
+        personaData = pDoc.data();
+
+        const newZapCurrent = (personaData.zapCurrent || 0) + amount;
+        const zapGoal = personaData.zapGoal || 500;
+        const hypeBoost = Math.floor(amount / 10); // 10 ZAPs = 1 Hype point
+
+        const updateData = {
+            zapCurrent: newZapCurrent,
+            hypeScore: Math.min(100, (personaData.hypeScore || 0) + hypeBoost),
+            lastActivity: FieldValue.serverTimestamp()
+        };
+
+        // Handle Goal Reached
+        if (newZapCurrent >= zapGoal) {
+            updateData.zapCurrent = 0; // Reset
+            updateData.zapGoal = zapGoal * 1.5; // Next goal is harder
+        }
+
+        updateData.hypeLevel = Math.ceil(updateData.hypeScore / 20) || 1;
+        t.update(personaRef, updateData);
+    });
+
+    // 3. Log Supporter & Message
+    await personaRef.collection('shared_messages').add({
+        uid: userId,
+        displayName: request.auth.token.name || 'Anonymous',
+        text: `gifted ${amount} ZAPs!`,
+        role: 'system',
+        type: 'gift',
+        amount,
+        timestamp: FieldValue.serverTimestamp()
+    });
+
+    // 4. Pusher Broadcast
+    try {
+        const Pusher = (await import("pusher")).default;
+        const pusher = new Pusher({
+            appId: process.env.SOKETI_APP_ID,
+            key: process.env.SOKETI_APP_KEY,
+            secret: process.env.SOKETI_APP_SECRET,
+            host: process.env.SOKETI_HOST || "127.0.0.1",
+            port: process.env.SOKETI_PORT || "6001",
+            useTLS: process.env.SOKETI_USE_TLS === 'true',
+            cluster: "mt1",
+        });
+
+        pusher.trigger(`presence-chat-${imageId}`, "celebration", {
+            type: 'gift',
+            amount,
+            from: request.auth.token.name || 'Anonymous',
+            newZapCurrent: personaData.zapCurrent + amount,
+            newZapGoal: personaData.zapGoal
+        });
+    } catch (e) {
+        logger.error("Gift Broadcast Error", e);
+    }
+
+    return { success: true };
+};
+
+export const handleTriggerAction = async (request) => {
+    const { imageId, actionId, cost } = request.data;
+    if (!request.auth) throw new HttpsError('unauthenticated', 'User must be logged in.');
+
+    const userId = request.auth.uid;
+    const db = getFirestore();
+
+    // 1. Deduct ZAPs (Higher cost for direct agency)
+    await db.runTransaction(async (t) => {
+        const userRef = db.collection('users').doc(userId);
+        const userDoc = await t.get(userRef);
+        const zaps = userDoc.data().zaps || 0;
+        if (zaps < cost) throw new HttpsError('resource-exhausted', `Insufficient Zaps.`);
+        t.update(userRef, { zaps: FieldValue.increment(-cost) });
+    });
+
+    // 2. Update Persona Environmental State
+    const update = {};
+    if (actionId === 'pose') update.currentPose = `pose_${Date.now()}`;
+    if (actionId === 'background') update.currentBackground = `bg_${Date.now()}`;
+
+    await db.collection('personas').doc(imageId).update(update);
+
+    // 3. Broadcast Action to all viewers
+    try {
+        const Pusher = (await import("pusher")).default;
+        const pusher = new Pusher({
+            appId: process.env.SOKETI_APP_ID,
+            key: process.env.SOKETI_APP_KEY,
+            secret: process.env.SOKETI_APP_SECRET,
+            host: process.env.SOKETI_HOST || "127.0.0.1",
+            port: process.env.SOKETI_PORT || "6001",
+            useTLS: process.env.SOKETI_USE_TLS === 'true',
+            cluster: "mt1",
+        });
+
+        pusher.trigger(`presence-chat-${imageId}`, "state-change", {
+            actionId,
+            from: request.auth.token.name || 'Anonymous'
+        });
+    } catch (e) {
+        logger.error("Action Broadcast Error", e);
+    }
+
+    return { success: true };
+};
+
+export const handleVotePoll = async (request) => {
+    const { imageId, optionId } = request.data;
+    if (!request.auth) throw new HttpsError('unauthenticated', 'User must be logged in.');
+
+    const db = getFirestore();
+    const personaRef = db.collection('personas').doc(imageId);
+
+    await db.runTransaction(async (t) => {
+        const pDoc = await t.get(personaRef);
+        if (!pDoc.exists) return;
+        const poll = pDoc.data().activePoll;
+        if (!poll) return;
+
+        const newOptions = poll.options.map(opt => {
+            if (opt.id === optionId) return { ...opt, votes: (opt.votes || 0) + 1 };
+            return opt;
+        });
+
+        t.update(personaRef, { 'activePoll.options': newOptions });
+    });
+
+    return { success: true };
+};

@@ -4,7 +4,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { doc, getDoc, onSnapshot, collection, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase';
-import { ArrowLeft, Send, Sparkles, Loader2, Info, MessageCircle, AlertCircle, RefreshCw, Zap } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, Loader2, Info, MessageCircle, AlertCircle, RefreshCw, Zap, Maximize, Minimize, Settings } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getOptimizedImageUrl } from '../utils';
 import { formatTwitchCount, getHypeMetadata } from '../utils/twitchHelpers';
@@ -82,7 +82,41 @@ const PersonaChat = () => {
     const [pinnedMessage, setPinnedMessage] = useState(null);
     const [topSupporters, setTopSupporters] = useState([]);
     const [isMuted, setIsMuted] = useState(false);
+    const [isTheaterMode, setIsTheaterMode] = useState(false);
+    const [showZapActions, setShowZapActions] = useState(false);
+    const [isShaking, setIsShaking] = useState(false);
     const [error, setError] = useState(null);
+
+    const triggerShake = () => {
+        setIsShaking(true);
+        setTimeout(() => setIsShaking(false), 500);
+    };
+
+    const triggerZapAction = async (actionId, cost) => {
+        if (!currentUser) return toast.error("Please log in to use ZAPs!");
+        triggerShake();
+
+        try {
+            const triggerActionFn = httpsCallable(functions, 'triggerAction');
+            await triggerActionFn({ imageId: id, actionId, cost });
+            setShowZapActions(false);
+            toast.success(`Action ${actionId} triggered!`);
+        } catch (e) {
+            console.error(e);
+            toast.error("Failed to trigger action.");
+        }
+    };
+
+    const handleVote = async (optionId) => {
+        if (!currentUser) return toast.error("Please log in to vote!");
+        try {
+            const votePollFn = httpsCallable(functions, 'votePoll');
+            await votePollFn({ imageId: id, optionId });
+            setActivePoll(null); // Local hide for instant feedback
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
     const scrollRef = useRef(null);
     const isMounted = useRef(true);
@@ -134,6 +168,27 @@ const PersonaChat = () => {
                 setTimeout(() => {
                     setAlerts(prev => prev.filter(a => a.id !== newAlert.id));
                 }, 5000);
+            });
+
+            channel.bind('celebration', (data) => {
+                triggerShake();
+                const newAlert = {
+                    id: Date.now(),
+                    text: data.message || `${data.from} gifted ZAPs!`,
+                    type: data.type || 'gift'
+                };
+                setAlerts(prev => [newAlert, ...prev]);
+                setTimeout(() => setAlerts(prev => prev.filter(a => a.id !== newAlert.id)), 5000);
+            });
+
+            channel.bind('state-change', (data) => {
+                const newAlert = {
+                    id: Date.now(),
+                    text: `COMMUNITY ACTION: ${data.from} triggered [${data.actionId}]!`,
+                    type: 'action'
+                };
+                setAlerts(prev => [newAlert, ...prev]);
+                setTimeout(() => setAlerts(prev => prev.filter(a => a.id !== newAlert.id)), 5000);
             });
 
             channel.bind('pusher:member_removed', () => {
@@ -492,20 +547,63 @@ const PersonaChat = () => {
 
 
     return (
-        <div className="channel-page-content">
-            <SEO title={persona ? `Live: ${persona.name}` : 'Awakening Character...'} />
+        <div className={`persona-chat-container ${isTheaterMode ? 'mode-theater' : ''}`}>
+            <SEO title={persona ? `${persona.name} - AI Live Stream` : "AI Live Stream"} />
 
             <div className="twitch-stream-split">
                 {/* Main Video Section */}
                 <div className="video-section">
-                    <div className={`video-player-mock ${persona?.hypeLevel >= 5 ? 'hype-level-5' : ''}`}>
+                    <div className={`video-player-mock ${persona?.hypeLevel >= 5 ? 'hype-level-5' : ''} ${isShaking ? 'screen-shake' : ''}`}>
                         {imageItem && (
                             <img
                                 src={getOptimizedImageUrl(imageItem.imageUrl)}
-                                alt="Character"
-                                className="stream-video"
+                                alt={persona?.name || 'Persona'}
+                                className={`main-stream-image hype-level-${persona?.hypeLevel || 1}`}
+                                style={{
+                                    filter: `
+                                        contrast(${100 + (persona?.hypeLevel || 1) * 5}%) 
+                                        brightness(${100 + (persona?.hypeLevel || 1) * 2}%)
+                                        ${(persona?.hypeLevel || 1) >= 4 ? 'saturate(120%)' : ''}
+                                    `,
+                                    transition: 'filter 0.5s ease'
+                                }}
                             />
                         )}
+
+                        {/* Stream Ticker (Marquee) */}
+                        <div className="stream-ticker">
+                            <div className="ticker-scroll">
+                                <span className="ticker-item">LATEST ZAP: {alerts[0]?.message || 'No recent Zaps'}</span>
+                                <span className="ticker-spacer">•</span>
+                                <span className="ticker-item">TOP SUPPORTER: {topSupporters[0]?.displayName || 'Searching...'}</span>
+                                <span className="ticker-spacer">•</span>
+                                <span className="ticker-item">HYPE LEVEL: {persona?.hypeLevel || 1} ({getHypeMetadata(persona?.hypeLevel || 1).label})</span>
+                                <span className="ticker-spacer">•</span>
+                                <span className="ticker-item">LATEST ZAP: {alerts[0]?.message || 'No recent Zaps'}</span>
+                            </div>
+                        </div>
+
+                        {/* Live Poll Overlay (Real State) */}
+                        {persona?.activePoll && (
+                            <div className="live-poll-overlay">
+                                <div className="poll-header">LIVE POLL</div>
+                                <div className="poll-question">{persona.activePoll.question}</div>
+                                <div className="poll-options">
+                                    {persona.activePoll.options?.map(opt => (
+                                        <button
+                                            key={opt.id}
+                                            className="poll-option-btn"
+                                            onClick={() => handleVote(opt.id)}
+                                        >
+                                            <span className="opt-label">{opt.label}</span>
+                                            <span className="opt-votes">{opt.votes || 0}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Floating Reactions Layer */}
                         <div className="stream-ui-overlay">
                             <div className="live-badge">LIVE</div>
                             <div className="viewer-count">
@@ -541,6 +639,13 @@ const PersonaChat = () => {
                                 <RefreshCw size={18} />
                             </div>
                             <div className="right-controls">
+                                <button
+                                    className="player-control-btn"
+                                    title="Theater Mode"
+                                    onClick={() => setIsTheaterMode(!isTheaterMode)}
+                                >
+                                    {isTheaterMode ? <Minimize size={18} /> : <Maximize size={18} />}
+                                </button>
                                 <Info size={18} />
                             </div>
                         </div>
@@ -716,6 +821,31 @@ const PersonaChat = () => {
                                 />
                                 <button className="emote-btn" onClick={() => setShowEmotes(!showEmotes)}>
                                     😀
+                                </button>
+                                {showZapActions && (
+                                    <div className="zap-actions-overlay">
+                                        <div className="zap-actions-header">ZAP ACTIONS</div>
+                                        <div className="zap-action-item" onClick={() => triggerZapAction('pose', 300)}>
+                                            <div className="action-info">
+                                                <span className="action-title">Pose Shift</span>
+                                                <span className="action-desc">Change character's pose/mood</span>
+                                            </div>
+                                            <div className="action-cost"><Zap size={10} /> 300</div>
+                                        </div>
+                                        <div className="zap-action-item" onClick={() => triggerZapAction('background', 500)}>
+                                            <div className="action-info">
+                                                <span className="action-title">Re-imagine World</span>
+                                                <span className="action-desc">Change the stream background</span>
+                                            </div>
+                                            <div className="action-cost"><Zap size={10} /> 500</div>
+                                        </div>
+                                    </div>
+                                )}
+                                <button className="bits-btn zap-action-btn" onClick={() => setShowZapActions(!showZapActions)}>
+                                    <Sparkles size={16} /> Actions
+                                </button>
+                                <button className="bits-btn" onClick={() => setShowBitsModal(!showBitsModal)}>
+                                    <Zap size={16} /> Get ZAPs
                                 </button>
                             </div>
                             <div className="twitch-input-footer">
