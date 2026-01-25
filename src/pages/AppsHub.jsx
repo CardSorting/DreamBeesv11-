@@ -115,6 +115,17 @@ const AppsHub = () => {
                     isNew: true
                 };
 
+                const colorCraftApp = {
+                    id: 'color-craft',
+                    title: 'Color Craft',
+                    description: 'Auto Coloring Book Maker. Generate complete coloring books from a single theme.',
+                    icon: Palette,
+                    tags: ['coloring', 'books', 'ai', 'art'],
+                    path: '/color-craft',
+                    previewImage: '/app-previews/color_craft.png',
+                    isNew: true
+                };
+
                 const avatarForgeApp = {
                     id: 'avatar-forge',
                     title: 'Avatar Forge',
@@ -124,8 +135,7 @@ const AppsHub = () => {
                     path: '/avatar',
                     color: 'violet',
                     previewImage: '/app-previews/avatar_forge.png',
-                    isNew: true,
-                    isFeatured: true
+                    isNew: true
                 };
 
                 const q = query(collection(db, "apps"), orderBy("order"));
@@ -143,8 +153,8 @@ const AppsHub = () => {
                     });
                 }
 
-                // Prepend Quick Mockups, Mockup Studio, Meme Formatter, AutoCSV
-                setApps([quickMockupsApp, mockupStudioApp, memeFormatterApp, autoCsvApp, meowaccApp, avatarForgeApp, ...loadedApps]);
+                // Prepend Quick Mockups, Mockup Studio, Meme Formatter, AutoCSV, MeowAcc, Color Craft, Avatar Forge
+                setApps([quickMockupsApp, mockupStudioApp, memeFormatterApp, autoCsvApp, meowaccApp, colorCraftApp, avatarForgeApp, ...loadedApps]);
 
             } catch (error) {
                 console.error("Error fetching apps:", error);

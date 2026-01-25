@@ -18,226 +18,56 @@ let s3Client;
 let db;
 
 const PROMPTS = [
-    {
-        prompt: "A neon sign saying 'DREAM BEES' in a rainy cyberpunk city, highly detailed, cinematic lighting, 8k",
-        category: "text"
-    },
-    {
-        prompt: "A cinematic portrait of an elderly fisherman with detailed wrinkles, stormy ocean background, photorealistic, 8k, masterpiece",
-        category: "portrait"
-    },
-    {
-        prompt: "A miniature world inside a lightbulb, highly detailed, macro photography, moss, tiny house, magical atmosphere",
-        category: "macro"
-    },
-    {
-        prompt: "A majestic dragon made of stained glass, cathedral lighting, vibrant colors, intricate details, fantasy art",
-        category: "art"
-    },
-    {
-        prompt: "A delicious gourmet burger with melting cheese, steam rising, professional food photography, studio lighting, advertising quality",
-        category: "food"
-    },
-    {
-        prompt: "A futuristic city floating in the clouds, waterfalls cascading into the void, golden hour lighting, 8k, dreamlike",
-        category: "landscape"
-    },
-    {
-        prompt: "A detailed close-up of a cybernetic warrior with glowing blue eyes, metallic skin texture, rain effects, cinematic lighting",
-        category: "portrait"
-    },
-    {
-        prompt: "A stack of fluffy pancakes with dripping maple syrup and fresh berries, steam rising, morning sunlight, photorealistic",
-        category: "food"
-    },
-    {
-        prompt: "A majestic white tiger walking through a snowy forest, piercing blue eyes, snowflakes resting on fur, 8k, wildlife photography",
-        category: "animal"
-    },
-    {
-        prompt: "Starry night style painting of a modern metropolis, swirling blue skies, glowing yellow windows, impasto texture",
-        category: "art"
-    },
-    {
-        prompt: "An ancient temple overgrown with bioluminescent plants in a dark jungle, mystical atmosphere, volumetric fog",
-        category: "architecture"
-    },
-    {
-        prompt: "A vintage 1950s diner sign saying 'MILKSHAKES' with neon tubing, wet pavement reflection, night time",
-        category: "text"
-    },
-    {
-        prompt: "Dew drops on a spider web, morning light refracting through droplets, bokeh background, macro photography",
-        category: "macro"
-    },
-    {
-        prompt: "A model wearing a dress made of flowing water, high fashion photography, studio lighting, surreal concept",
-        category: "fashion"
-    },
-    {
-        prompt: "Astronaut standing on a red planet looking at a giant ringed planet in the sky, desolate landscape, cinematic composition",
-        category: "sci-fi"
-    },
-    {
-        prompt: "A wizard's tower spiraling into the sky, surrounded by floating islands, magical energy trails, epic scale",
-        category: "fantasy"
-    },
-    {
-        prompt: "A retro-futuristic hover car speeding through a neon tunnel, motion blur, synthwave aesthetic",
-        category: "vehicle"
-    },
-    {
-        prompt: "A cozy library with floor-to-ceiling bookshelves, a fireplace, leather armchair, warm lighting, dust motes dancing",
-        category: "interior"
-    },
-    {
-        prompt: "Explosion of colorful powder dyes, high speed photography, vibrant colors, black background",
-        category: "abstract"
-    },
-    {
-        prompt: "A redhead woman with freckles in a field of sunflowers, soft natural lighting, golden hour, bokeh",
-        category: "portrait"
-    },
-    {
-        prompt: "Japanese ukiyo-e style woodblock print of a giant wave crashing over a futuristic city",
-        category: "art"
-    },
-    {
-        prompt: "A glass of refreshing mojito with mint leaves and lime wedges, ice cubes, condensation on glass, summer vibe",
-        category: "food"
-    },
-    {
-        prompt: "A tiny owl wearing a steampunk hat and goggles, perched on a brass gear, fantasy illustration",
-        category: "animal"
-    },
-    {
-        prompt: "Aurora borealis over a frozen lake, reflection in the ice, mountains in background, night photography",
-        category: "landscape"
-    },
-    {
-        prompt: "Gold foil balloons spelling 'PARTY' floating against a pink pastel background, studio lighting",
-        category: "text"
-    },
-    {
-        prompt: "Complex mechanical watch movement gears, macro shot, shallow depth of field, golden metal textures",
-        category: "macro"
-    },
-    {
-        prompt: "Cyberpunk street style, neon jacket, visor, raining alleyway background, edgy pose",
-        category: "fashion"
-    },
-    {
-        prompt: "A giant mech robot rusty and abandoned in a forest, overgrown with vines, birds nesting on it",
-        category: "sci-fi"
-    },
-    {
-        prompt: "A crystal clear lake with a mermaid resting on a rock, iridescent scales, moonlight, magical atmosphere",
-        category: "fantasy"
-    },
-    {
-        prompt: "Low poly 3D render of a fox in a geometric forest, pastel colors, soft lighting",
-        category: "art"
-    },
-    {
-        prompt: "Minimalist concrete house on a cliff edge overlooking the ocean, storm approaching, dramatic lighting",
-        category: "architecture"
-    },
-    {
-        prompt: "Old sea captain with a pipe, detailed beard texture, moody lighting, rembrandt style",
-        category: "portrait"
-    },
-    {
-        prompt: "Freshly baked artisan bread on a wooden board, flour dusting, sharp knife, rustic setting",
-        category: "food"
-    },
-    {
-        prompt: "A group of penguins sliding on ice, dynamic motion, antarctica landscape, bright sunlight",
-        category: "animal"
-    },
-    {
-        prompt: "Modern manufacturing plant looking clean and high tech, robots assembling cars, cool blue lighting",
-        category: "interior"
-    },
-    {
-        prompt: "Graffiti art on a brick wall saying 'REVOLUTION' in bright colors, urban street art style",
-        category: "text"
-    },
-    {
-        prompt: "Liquid metal ferrofluid forming spikes, black and shiny, studio lighting, abstract sculpture",
-        category: "abstract"
-    },
-    {
-        prompt: "Cherry blossom avenue in Japan, petals falling, spring time, soft pink hues",
-        category: "landscape"
-    },
-    {
-        prompt: "A floating castle made of clouds, golden gates, sunbeams piercing through, heavenly atmosphere",
-        category: "fantasy"
-    },
-    {
-        prompt: "Cybernetic brain interface, glowing neural networks, data streams, digital art style",
-        category: "sci-fi"
-    },
-    {
-        prompt: "Victorian era dress with a modern twist, lace details, studio portrait, sepia tone",
-        category: "fashion"
-    },
-    {
-        prompt: "Close up of a chameleon's eye, detailed skin texture, vibrant colors",
-        category: "macro"
-    },
-    {
-        prompt: "A warrior princess with face paint, fur armor, snowy mountain background, fierce expression",
-        category: "portrait"
-    },
-    {
-        prompt: "Charcoal sketch of a dancer in motion, dynamic lines, smudge effects, artistic style",
-        category: "art"
-    },
-    {
-        prompt: "Sushi platter with salmon, tuna, and avocado rolls, chopsticks, wasabi, elegant plating",
-        category: "food"
-    },
-    {
-        prompt: "A bioluminescent jellyfish floating in deep ocean, glowing tentacles, dark blue water",
-        category: "animal"
-    },
-    {
-        prompt: "Glass skyscraper reflecting the sunset, city skyline background, modern architecture",
-        category: "architecture"
-    },
-    {
-        prompt: "Chalkboard menu art saying 'COFFEE' with illustrations of beans and cups, rustic cafe style",
-        category: "text"
-    },
-    {
-        prompt: "Portal to another dimension opening in a subway station, swirling energy, surprised commuters",
-        category: "sci-fi"
-    },
-    {
-        prompt: "Book of spells open on a desk, magic particles rising from pages, candle light, wizard's study",
-        category: "fantasy"
-    },
-    {
-        prompt: "Desert dunes at sunset, camels walking in distance, long shadows, warm orange tones",
-        category: "landscape"
-    },
-    {
-        prompt: "Paper cut art style landscape, layered paper mountains, depth effect, soft shadows",
-        category: "art"
-    },
-    {
-        prompt: "Astronaut removing helmet on an alien planet, looking at strange flora, detailed reflection in visor",
-        category: "portrait"
-    },
-    {
-        prompt: "Frost patterns on a window pane, intricate ice crystals, winter morning light",
-        category: "macro"
-    },
-    {
-        prompt: "Sneaker product shot, floating in air, deconstructed parts, commercial photography",
-        category: "fashion"
-    }
+    { prompt: "Abstract flowing liquid gold and midnight blue silk, ripples and waves, luxurious texture, 8k vertical wallpaper", category: "abstract" },
+    { prompt: "Minimalist single mountain peak at sunrise, soft pastel colors, clean lines, serene atmosphere, high resolution mobile wallpaper", category: "nature" },
+    { prompt: "Cyberpunk street in the rain at night, neon reflections in puddles, pink and teal color palette, ultra-detailed vertical composition", category: "synthwave" },
+    { prompt: "Close-up of a single iridescent butterfly wing, macro photography, scales reflecting rainbow colors, bokeh background", category: "macro" },
+    { prompt: "A floating crystalline island in an endless purple nebula, magical stars, ethereal lighting, fantasy wallpaper", category: "fantasy" },
+    { prompt: "Dreamy Lo-fi bedroom window overlooking a rainy city, cozy vibes, soft lighting, anime aesthetic", category: "anime" },
+    { prompt: "Geometric 3D shapes floating in a gradient space, soft shadows, glassmorphism effect, modern minimalist wallpaper", category: "abstract" },
+    { prompt: "An ancient forest with bioluminescent mushrooms glowing in the dark, mystical fog, emerald green tones", category: "nature" },
+    { prompt: "Futuristic space station interior looking out at Saturn's rings, cinematic lighting, sleek sci-fi design", category: "sci-fi" },
+    { prompt: "Macro shot of a single drop of water on a blade of grass, morning dew, sun flare, refreshing green background", category: "macro" },
+    { prompt: "Surreal desert with giant planet hanging in the sky, sand dunes at golden hour, epic scale, cinematic", category: "fantasy" },
+    { prompt: "A lone astronaut sitting on a moon rock, looking at Earth, tranquil atmosphere, starry background", category: "sci-fi" },
+    { prompt: "Fluid acrylic pour art, vibrant swirls of orange, magenta, and gold, high contrast, artistic wallpaper", category: "art" },
+    { prompt: "Japanese torii gate in the middle of a calm snowy lake, minimalist composition, blue hour lighting", category: "nature" },
+    { prompt: "Intricate clockwork gears and cogs made of brass and silver, steampunk aesthetic, macro detail", category: "art" },
+    { prompt: "A cozy cabin in the woods during a snowstorm, warm light glowing from windows, pine trees, winter vibes", category: "nature" },
+    { prompt: "Holographic jellyfish floating in a digital ocean, neon circuit lines, futuristic aesthetic", category: "sci-fi" },
+    { prompt: "A cascading waterfall in a tropical jungle, lush greenery, mist, vibrant parrots flying, 8k", category: "nature" },
+    { prompt: "Vaporwave sunset with palm tree silhouettes, 80s aesthetic, purple and pink gradients, glitch effects", category: "synthwave" },
+    { prompt: "A majestic phoenix rising from embers, fire and sparks, dramatic lighting, fantasy art", category: "fantasy" },
+    { prompt: "Minimalist line art of a face merged with botanical leaves, beige background, elegant and modern", category: "art" },
+    { prompt: "Macro photography of an iris flower, deep velvet purple, crystalline dew drops on petals", category: "macro" },
+    { prompt: "A futuristic skyscraper reaching above the clouds, sunset sky, glass reflections, architectural masterpiece", category: "architecture" },
+    { prompt: "Ghibli style summer field with fluffy clouds, blue sky, sunflowers, nostalgic atmosphere", category: "anime" },
+    { prompt: "Abstract geometric patterns inspired by Islamic art, intricate gold lines on deep emerald background", category: "art" },
+    { prompt: "A quiet street in Kyoto at night, lantern light, traditional wooden houses, peaceful atmosphere", category: "architecture" },
+    { prompt: "Deep ocean abyss with glowing anglerfish and mysterious ruins, dark and moody, cinematic", category: "nature" },
+    { prompt: "A magical library with books flying through the air, enchanted candles, warm mahogany tones", category: "fantasy" },
+    { prompt: "Close-up of a cat's eye reflecting a galaxy, ultra-detailed fur, mystical animal", category: "animal" },
+    { prompt: "Smooth marble texture with gold veins, elegant and minimalist, high-end interior feel", category: "minimalist" },
+    { prompt: "A field of lavender under a starry night sky, Milky Way visible, purple tones, dreamy", category: "nature" },
+    { prompt: "Futuristic city with flying cars and neon billboards, Blade Runner aesthetic, vertical perspective", category: "sci-fi" },
+    { prompt: "A dragon's eye close-up, slit pupil, iridescent scales, smoldering heat, fantasy detail", category: "fantasy" },
+    { prompt: "Cybernetic hand holding a delicate holographic flower, contrast between machine and nature", category: "sci-fi" },
+    { prompt: "Minimalist wave of sand in the Sahara, perfect curve, deep shadows, warm orange light", category: "nature" },
+    { prompt: "Enchanted underwater garden with coral reefs and glowing sea creatures, vibrant colors", category: "nature" },
+    { prompt: "A steam locomotive traveling through a pine forest, steam blending with fog, cinematic mood", category: "landscape" },
+    { prompt: "Abstract 3D crystalline structure, refracting light into rainbows, dark background, sharp edges", category: "abstract" },
+    { prompt: "A cozy bookstore corner with a rainy window, stack of books, steaming tea, soft bokeh", category: "interior" },
+    { prompt: "Portrait of a majestic lion with a mane made of stars and nebulae, celestial creature", category: "animal" },
+    { prompt: "Japanese garden with a koi pond, red bridge, cherry blossoms, peaceful zen atmosphere", category: "nature" },
+    { prompt: "A futuristic motorcycle speeding through a neon tunnel, light trails, motion blur, synthwave", category: "vehicle" },
+    { prompt: "Macro shot of a snowflake on a dark wool mitten, perfect hexagonal symmetry, winter detail", category: "macro" },
+    { prompt: "A floating city in the sky with waterfalls falling into the clouds, fantasy architecture", category: "fantasy" },
+    { prompt: "Minimalist black and white photography of a staircase, geometric shadows, architectural", category: "architecture" },
+    { prompt: "A glowing forest path at night with fireflies, ancient trees, mystical and inviting", category: "nature" },
+    { prompt: "Abstract smoke trails in vibrant colors against a black background, fluid and graceful", category: "abstract" },
+    { prompt: "A steampunk airship flying through a sunset sky filled with gears-shaped clouds", category: "fantasy" },
+    { prompt: "Anime girl standing on a rooftop at sunset, wind blowing through hair, city lights below", category: "anime" },
+    { prompt: "A polished obsidian sphere reflecting a surreal landscape, minimalist and mysterious", category: "abstract" }
 ];
 
 async function uploadAndRecord(imageBuffer, prompt, index) {
