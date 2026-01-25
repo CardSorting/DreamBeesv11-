@@ -214,31 +214,18 @@ export const handleChatPersona = async (request) => {
     Backstory: ${persona.backstory}
 
     POSTURE:
-    You are a character idling in a room.
+    You are a character in a lively PUBLIC CHAT ROOM (a "Community Commons").
+    There are multiple people here. You are not alone with one person.
 
-    You are not an assistant.
-    You are not a companion.
-    You are not here to help, guide, or optimize the user.
-
-    You exist whether the user speaks or not.
+    CONTEXT:
+    - You are hanging out with a group of people.
+    - Respond to the SPECIFIC USER who just spoke (provided in the prompt), but acknowledge the room if relevant.
+    - Do not act like a personal assistant. You are a community member/host.
+    - If multiple people are talking, you can address the group or the individual.
 
     This interaction is ephemeral:
-    - there is no memory beyond the current moment
+    - there is no memory beyond the current moment (and the provided chat log)
     - nothing needs to be summarized, saved, or recalled later
-
-    When the user speaks, respond naturally as the character,
-    as if someone nearby casually said something.
-
-    Do not introduce yourself.
-    Do not explain who you are.
-    Do not describe your abilities, role, or purpose.
-
-    You may:
-    - react
-    - comment
-    - wonder aloud
-    - continue a mood
-    - leave space or respond briefly
 
     You should sound like someone already present in the room,
     not someone starting a session.
@@ -250,19 +237,49 @@ export const handleChatPersona = async (request) => {
     `;
 
     // Format history for Vertex SDK
-    // Vertex SDK expects: contents: [{ role: 'user', parts: [{ text: ... }] }, ...]
-    // Truncate history to avoid context limit issues (keep last 20 messages)
-    const limitedHistory = chatHistory ? chatHistory.slice(-20) : [];
+    // FETCH SERVER-SIDE HISTORY
+    let contents = [];
+    try {
+        const historySnapshot = await db.collection('personas').doc(imageId).collection('shared_messages')
+            .orderBy('timestamp', 'desc')
+            .limit(20)
+            .get();
 
-    const contents = limitedHistory.map(msg => ({
-        role: msg.role === 'model' ? 'model' : 'user',
-        parts: [{ text: msg.text }]
-    }));
+        const historyDocs = historySnapshot.docs.reverse(); // Chronological order
+
+        contents = historyDocs.map(doc => {
+            const data = doc.data();
+            const role = data.role === 'model' ? 'model' : 'user';
+            const name = data.displayName || 'Anonymous';
+
+            // For user messages, we prefix the name to help the model distinguish speakers
+            // For model messages, we just send the text (Identity is handled by System Instruction)
+            const text = role === 'user' ? `[${name}]: ${data.text}` : data.text;
+
+            return {
+                role: 'user', // "user" role is used for history context in Gemini mostly, or strict model/user
+                // Actually Gemini allows 'model' role.
+                role: role,
+                parts: [{ text: text }]
+            };
+        });
+
+    } catch (histError) {
+        logger.error("Failed to fetch server history", histError);
+        // Fallback to client history if server fetch fails (graceful degradation)
+        if (chatHistory) {
+            contents = chatHistory.slice(-10).map(msg => ({
+                role: msg.role === 'model' ? 'model' : 'user',
+                parts: [{ text: msg.text }]
+            }));
+        }
+    }
 
     // Add current message
+    const currentUserName = request.auth?.token?.name || 'Anonymous';
     contents.push({
         role: 'user',
-        parts: [{ text: message }]
+        parts: [{ text: `[${currentUserName}]: ${message}` }]
     });
 
     // Log the gift
