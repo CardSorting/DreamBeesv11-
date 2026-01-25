@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getOptimizedImageUrl } from '../utils';
 import SEO from '../components/SEO';
 import toast from 'react-hot-toast';
+import Pusher from 'pusher-js';
 import './PersonaChat.css';
 
 const Typewriter = ({ text, onUpdate }) => {
@@ -82,6 +83,59 @@ export default function PersonaChat() {
         isMounted.current = true;
         return () => { isMounted.current = false; };
     }, []);
+
+    // Pusher / Soketi Subscription
+    useEffect(() => {
+        if (!id || !_currentUser?.uid || !import.meta.env.VITE_SOKETI_APP_KEY) return;
+
+        const initPusher = async () => {
+            const token = await _currentUser.getIdToken();
+            const authEndpoint = import.meta.env.VITE_SOKETI_AUTH_ENDPOINT || '/api/pusher/auth';
+
+            const pusher = new Pusher(import.meta.env.VITE_SOKETI_APP_KEY, {
+                wsHost: import.meta.env.VITE_SOKETI_HOST || "127.0.0.1",
+                wsPort: parseInt(import.meta.env.VITE_SOKETI_PORT || "6001"),
+                forceTLS: import.meta.env.VITE_SOKETI_USE_TLS === 'true',
+                disableStats: true,
+                enabledTransports: ['ws', 'wss'],
+                cluster: 'mt1',
+                authEndpoint: authEndpoint,
+                auth: {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            });
+
+            const channelName = `private-chat-${id}-${_currentUser.uid}`;
+            const channel = pusher.subscribe(channelName);
+
+            channel.bind('new-message', (data) => {
+                if (isMounted.current) {
+                    setMessages(prev => {
+                        const isDuplicate = prev.some(m =>
+                            m.role === data.role &&
+                            m.text === data.text &&
+                            (Date.now() - m.timestamp < 10000)
+                        );
+
+                        if (isDuplicate) return prev;
+                        return [...prev, { ...data, id: data.id || Date.now().toString() }];
+                    });
+                }
+            });
+
+            return () => {
+                pusher.unsubscribe(channelName);
+                pusher.disconnect();
+            };
+        };
+
+        const cleanupPromise = initPusher();
+        return () => {
+            cleanupPromise.then(cleanup => cleanup?.());
+        };
+    }, [id, _currentUser]);
 
     useEffect(() => {
         const fetchImage = async () => {
@@ -221,7 +275,16 @@ export default function PersonaChat() {
             };
 
             if (isMounted.current) {
-                setMessages(prev => [...prev, replyMsg]);
+                setMessages(prev => {
+                    // Check if Pusher already added this message
+                    const isDuplicate = prev.some(m =>
+                        m.role === replyMsg.role &&
+                        m.text === replyMsg.text &&
+                        (Date.now() - m.timestamp < 10000)
+                    );
+                    if (isDuplicate) return prev;
+                    return [...prev, replyMsg];
+                });
             }
 
         } catch (error) {

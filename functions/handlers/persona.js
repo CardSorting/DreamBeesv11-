@@ -258,6 +258,25 @@ export const handleChatPersona = async (request) => {
         parts: [{ text: message }]
     });
 
+    // Initialize Pusher for Soketi
+    let pusher = null;
+    if (process.env.SOKETI_APP_ID) {
+        try {
+            const Pusher = (await import("pusher")).default;
+            pusher = new Pusher({
+                appId: process.env.SOKETI_APP_ID,
+                key: process.env.SOKETI_APP_KEY,
+                secret: process.env.SOKETI_APP_SECRET,
+                host: process.env.SOKETI_HOST || "127.0.0.1",
+                port: process.env.SOKETI_PORT || "6001",
+                useTLS: process.env.SOKETI_USE_TLS === 'true',
+                cluster: "mt1", // Pusher-js requires a cluster, Soketi ignores it but SDK might need it
+            });
+        } catch (e) {
+            logger.error("Pusher Init Error", e);
+        }
+    }
+
     try {
         // [MODIFIED] Use VertexFlow (High Priority for Chat)
         const result = await vertexFlow.execute('PERSONA_CHAT', async () => {
@@ -268,6 +287,15 @@ export const handleChatPersona = async (request) => {
         }, vertexFlow.constructor.PRIORITY.HIGH);
 
         const responseText = (await result.response).candidates[0].content.parts[0].text;
+
+        // Broadcast via Soketi
+        if (pusher) {
+            pusher.trigger(`private-chat-${imageId}-${userId}`, "new-message", {
+                role: 'model',
+                text: responseText,
+                timestamp: Date.now()
+            }).catch(e => logger.error("Soketi Broadcast Error", e));
+        }
 
         // --- Logging ---
         try {

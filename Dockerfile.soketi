@@ -1,0 +1,3 @@
+FROM quay.io/soketi/soketi:latest-node18-alpine
+EXPOSE 6001
+CMD ["node", "server.js"]

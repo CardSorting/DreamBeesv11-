@@ -89,6 +89,55 @@ const handleStripeWebhook = async (req, res) => {
     }
 };
 
+const handlePusherAuth = async (req, res) => {
+    // Note: Soketi/Pusher sends auth request as application/x-www-form-urlencoded
+    // but the client-side pusher-js can be configured to send JSON.
+    // We'll support both for robustness.
+    const socketId = req.body.socket_id;
+    const channelName = req.body.channel_name;
+    const authHeader = req.headers.authorization;
+
+    if (!socketId || !channelName || !authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(403).send('Forbidden: Missing parameters or invalid auth header');
+    }
+
+    const idToken = authHeader.split('Bearer ')[1];
+
+    try {
+        const { getAuth } = await import("firebase-admin/auth");
+        const decodedToken = await getAuth().verifyIdToken(idToken);
+        const uid = decodedToken.uid;
+
+        // Basic channel authorization logic:
+        // Format: private-chat-${imageId}-${userId}
+        if (channelName.startsWith('private-chat-')) {
+            const parts = channelName.split('-');
+            const targetUserId = parts[parts.length - 1];
+
+            if (uid !== targetUserId) {
+                logger.warn(`[PusherAuth] User ${uid} attempted to access channel ${channelName} belonging to ${targetUserId}`);
+                return res.status(403).send('Forbidden: Access denied to this channel');
+            }
+        }
+
+        const Pusher = (await import("pusher")).default;
+        const pusher = new Pusher({
+            appId: process.env.SOKETI_APP_ID,
+            key: process.env.SOKETI_APP_KEY,
+            secret: process.env.SOKETI_APP_SECRET,
+            host: process.env.SOKETI_HOST || "127.0.0.1",
+            port: process.env.SOKETI_PORT || "6001",
+            useTLS: process.env.SOKETI_USE_TLS === 'true',
+        });
+
+        const auth = pusher.authenticate(socketId, channelName);
+        res.json(auth);
+    } catch (error) {
+        logger.error("[PusherAuth] Auth failed:", error);
+        res.status(403).send('Forbidden: Invalid token');
+    }
+};
+
 const handleSitemap = async (req, res) => {
     try {
         const baseUrl = 'https://dreambeesai.com';
@@ -326,12 +375,17 @@ const handleApp = async (req, res) => {
 // Dedicated sitemap function for Firebase Hosting rewrite
 export const serveSitemap = onRequest({ memory: "256MiB", cors: true }, handleSitemap);
 export const serveApp = onRequest({ memory: "256MiB", cors: true }, handleApp);
+export const servePusherAuth = onRequest({ memory: "256MiB", cors: true }, handlePusherAuth);
 
 export const web = onRequest({ memory: "256MiB", cors: true }, async (req, res) => {
     const path = req.path;
 
     if (path === '/stripe-webhook') {
         return handleStripeWebhook(req, res);
+    }
+
+    if (path === '/pusher/auth') {
+        return handlePusherAuth(req, res);
     }
 
     if (path === '/sitemap.xml' || path === '/sitemap') {
