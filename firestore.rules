@@ -102,5 +102,22 @@ service cloud.firestore {
     match /rate_limits/{limitId} {
       allow read, write: if false; 
     }
+
+    // Twitch Platform Collections
+    match /personas/{id} {
+      allow read: if true;
+      allow write: if false; // Admin only
+      
+      match /shared_messages/{msgId} {
+        allow read: if true;
+        allow create: if request.auth != null;
+        allow update, delete: if false;
+      }
+    }
+
+    match /categories/{id} {
+      allow read: if true;
+      allow write: if false; // Admin only
+    }
   }
 }

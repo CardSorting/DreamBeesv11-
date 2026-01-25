@@ -68,6 +68,7 @@ async function generatePersonaFromImage(imageBuffer, mimeType) {
     - personality (written as vibes, not traits)
     - backstory (2–3 sentences, informal)
     - greeting (in character, mid-conversation, natural)
+    - category (A Twitch-style category like "Just Chatting", "Art", "Education", "Gaming", or "Music". Choose the best fit or invent a highly relevant one.)
     Avoid formal introductions or self-descriptions.
     Do not mention AI, images, or analysis.
     `;

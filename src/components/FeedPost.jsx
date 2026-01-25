@@ -632,6 +632,30 @@ const FeedPost = ({
                                 <Aperture size={16} /> Remix
                             </motion.button>
                         )}
+
+                        <motion.button
+                            whileTap={{ scale: 0.8 }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/channel/${imgItem.id}`, { state: { imageItem: imgItem } });
+                            }}
+                            style={{
+                                background: 'rgba(169, 112, 255, 0.2)',
+                                border: '1px solid rgba(169, 112, 255, 0.4)',
+                                color: '#a970ff',
+                                cursor: 'pointer',
+                                padding: '6px 12px',
+                                borderRadius: '20px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                fontSize: '0.8rem',
+                                fontWeight: 700
+                            }}
+                            title="Talk to this character"
+                        >
+                            <MessageCircle size={16} /> Talk to a picture
+                        </motion.button>
                     </div>
 
                     <div style={{ display: 'flex', gap: '12px' }}>

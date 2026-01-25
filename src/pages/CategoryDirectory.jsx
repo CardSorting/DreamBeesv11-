@@ -1,18 +1,17 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
+import { useTwitch } from '../contexts/TwitchContext';
 import './CategoryDirectory.css';
 
 const CategoryDirectory = () => {
     const navigate = useNavigate();
+    const { categories, loading } = useTwitch();
 
-    const categories = [
-        { id: 'just-chatting', name: 'Just Chatting', viewers: '254k', image: 'https://static-cdn.jtvnw.net/ttv-boxart/509658-188x250.jpg' },
-        { id: 'funny', name: 'Comedy & Satire', viewers: '142k', image: 'https://static-cdn.jtvnw.net/ttv-boxart/516575-188x250.jpg' },
-        { id: 'academic', name: 'Education', viewers: '84k', image: 'https://static-cdn.jtvnw.net/ttv-boxart/509670-188x250.jpg' },
-        { id: 'creative', name: 'Art & AI Art', viewers: '62k', image: 'https://static-cdn.jtvnw.net/ttv-boxart/26330_IGDB-188x250.jpg' },
-        { id: 'music', name: 'Music & ASMR', viewers: '45k', image: 'https://static-cdn.jtvnw.net/ttv-boxart/26936-188x250.jpg' },
-        { id: 'gaming', name: 'Gaming (AI)', viewers: '120k', image: 'https://static-cdn.jtvnw.net/ttv-boxart/33214-188x250.jpg' }
+    // Fallback categories if none awakened yet
+    const displayCategories = categories.length > 0 ? categories : [
+        { id: 'just-chatting', name: 'Just Chatting', viewers: '0', image: 'https://static-cdn.jtvnw.net/ttv-boxart/509658-188x250.jpg' },
+        { id: 'ai-art', name: 'AI Art', viewers: '0', image: 'https://static-cdn.jtvnw.net/ttv-boxart/26330_IGDB-188x250.jpg' }
     ];
 
     return (
@@ -29,7 +28,7 @@ const CategoryDirectory = () => {
             </div>
 
             <div className="category-grid-twitch">
-                {categories.map(cat => (
+                {displayCategories.map(cat => (
                     <div key={cat.id} className="category-card-twitch" onClick={() => navigate(`/browse`)}>
                         <div className="cat-boxart">
                             <img src={cat.image} alt={cat.name} />

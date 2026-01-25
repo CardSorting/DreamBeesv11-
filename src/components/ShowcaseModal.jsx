@@ -229,21 +229,40 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                             <p className="text-sm text-[var(--color-text-muted)] mb-4">
                                 Activate this model engine to generate similar high-quality results.
                             </p>
-                            <button
-                                onClick={() => {
-                                    onClose();
-                                    const params = new URLSearchParams();
-                                    if (image.prompt) params.set('prompt', image.prompt);
-                                    if (image.steps) params.set('steps', image.steps);
-                                    if (image.cfg) params.set('cfg', image.cfg);
-                                    if (image.aspectRatio) params.set('aspectRatio', image.aspectRatio);
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button
+                                    onClick={() => {
+                                        onClose();
+                                        const params = new URLSearchParams();
+                                        if (image.prompt) params.set('prompt', image.prompt);
+                                        if (image.steps) params.set('steps', image.steps);
+                                        if (image.cfg) params.set('cfg', image.cfg);
+                                        if (image.aspectRatio) params.set('aspectRatio', image.aspectRatio);
 
-                                    navigate(`/generate?${params.toString()}`);
-                                }}
-                                className="btn btn-outline w-full justify-center text-xs"
-                            >
-                                START CREATING
-                            </button>
+                                        navigate(`/generate?${params.toString()}`);
+                                    }}
+                                    className="btn btn-outline w-full justify-center text-xs"
+                                    style={{ flex: 1 }}
+                                >
+                                    START CREATING
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        onClose();
+                                        navigate(`/channel/${image.id}`, { state: { imageItem: image } });
+                                    }}
+                                    className="btn w-full justify-center text-xs"
+                                    style={{
+                                        flex: 1,
+                                        background: '#a970ff',
+                                        color: 'white',
+                                        border: 'none',
+                                        fontWeight: '700'
+                                    }}
+                                >
+                                    TALK TO A PICTURE
+                                </button>
+                            </div>
                         </div>
                     </div>
 
