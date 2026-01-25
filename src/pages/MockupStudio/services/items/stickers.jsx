@@ -146,5 +146,14 @@ export const stickerItems = [
     subjectNoun: 'washi tape',
     icon: <Icons.WashiTape />,
     category: 'Stickers'
+  },
+  {
+    id: 'sticker_pack',
+    label: 'Sticker Pack',
+    description: 'A set of varied vinyl stickers for your brand.',
+    formatSpec: 'a collection of various die-cut vinyl stickers arranged neatly on a surface, sticker pack aesthetic, white borders, high quality merchandise',
+    subjectNoun: 'sticker pack',
+    icon: <Icons.StickerPack />,
+    category: 'Stickers'
   }
 ];

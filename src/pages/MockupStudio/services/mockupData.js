@@ -20,6 +20,7 @@ import { bathroomItems } from './items/bathroom';
 import { bedroomItems } from './items/bedroom';
 import { petItems } from './items/pets';
 import { toolItems } from './items/tools';
+import { emotesItems } from './items/digital';
 
 export const MOCKUP_ITEMS = [
     ...packagingItems,
@@ -43,5 +44,6 @@ export const MOCKUP_ITEMS = [
     ...stickerItems,
     ...vehicleItems,
     ...electronicsItems,
-    ...animeItems
+    ...animeItems,
+    ...emotesItems
 ];

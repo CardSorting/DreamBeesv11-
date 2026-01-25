@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Shirt, Smartphone, Coffee, Image, User, ArrowRight, CreditCard, Shapes } from 'lucide-react';
 import SEO from '../../components/SEO';
+import { Icons as MockupIcons } from '../MockupStudio/components/MockupIcons';
 import './QuickMockups.css';
 
 const POPULAR_MOCKUPS = [
@@ -25,6 +26,20 @@ const POPULAR_MOCKUPS = [
         description: 'Essential for home and office. High-res ceramic finish.',
         icon: Coffee,
         category: 'Home & Living'
+    },
+    {
+        id: 'digital_emote',
+        label: 'Chat Emote',
+        description: 'Expressive streaming emotes. Perfect for Twitch and Discord.',
+        icon: MockupIcons.Emote,
+        category: 'Digital'
+    },
+    {
+        id: 'sticker_pack',
+        label: 'Sticker Pack',
+        description: 'Die-cut vinyl sticker set. High quality printable aesthetics.',
+        icon: MockupIcons.StickerPack,
+        category: 'Stickers'
     },
     {
         id: 'electronics-phone-case',

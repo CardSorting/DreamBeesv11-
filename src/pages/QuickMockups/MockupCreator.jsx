@@ -9,6 +9,9 @@ import { ArrowLeft, Upload, Loader2, Sparkles, Image as ImageIcon, Download, Che
 import SEO from '../../components/SEO';
 import './QuickMockups.css';
 import '../MockupCatalog/MockupProductPage.css'; // Reuse some layout styles but we'll override as needed
+import { MOCKUP_ITEMS } from '../MockupStudio/services/mockupData';
+import { stickerItems } from '../MockupStudio/services/items/stickers';
+import { Icons as MockupIcons } from '../MockupStudio/components/MockupIcons';
 
 const MOCKUP_PRESETS = [
     { id: 'studio', label: 'Clean Studio' },
@@ -44,10 +47,25 @@ const MockupCreator = () => {
     useEffect(() => {
         const fetchItem = async () => {
             try {
+                // First try finding in local definitions (faster/safer for new items)
+                const localItem = MOCKUP_ITEMS.find(i => i.id === itemId);
+                if (localItem) {
+                    setItemData(localItem);
+                    // Force white background for emotes and stickers
+                    if (itemId === 'digital_emote' || itemId.startsWith('sticker_')) {
+                        setSelectedPreset('studio');
+                    }
+                    setLoadingItem(false);
+                    return;
+                }
+
                 const docRef = doc(db, 'mockup_items', itemId);
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
                     setItemData({ id: docSnap.id, ...docSnap.data() });
+                    if (itemId === 'digital_emote' || itemId.startsWith('sticker_')) {
+                        setSelectedPreset('studio');
+                    }
                 } else {
                     toast.error("Mockup not found");
                     navigate('/quick-mockups');
@@ -118,6 +136,37 @@ const MockupCreator = () => {
     }
 
     if (!itemData) return null;
+
+    // Special View for Sticker Pack selection
+    if (itemId === 'sticker_pack') {
+        return (
+            <div className="qm-creator-container animate-in">
+                <Link to="/quick-mockups" className="qm-back-link">
+                    <ChevronLeft size={20} /> Back to Mockup Maker
+                </Link>
+                <div className="mpp-header" style={{ marginBottom: '2rem', textAlign: 'center' }}>
+                    <h1 style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>Sticker Pack</h1>
+                    <p>Choose a specific sticker style to generate.</p>
+                </div>
+
+                <div className="qm-grid">
+                    {stickerItems.filter(s => s.id !== 'sticker_pack').map(sticker => (
+                        <div
+                            key={sticker.id}
+                            className="qm-card"
+                            onClick={() => navigate(`/quick-mockups/${sticker.id}`)}
+                        >
+                            <div className="qm-icon-wrapper">
+                                {sticker.icon}
+                            </div>
+                            <h3>{sticker.label}</h3>
+                            <p>{sticker.description}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="qm-creator-container animate-in">
@@ -202,20 +251,31 @@ const MockupCreator = () => {
                     </div>
 
                     {/* Step 2: Preset */}
-                    <div className="mpp-section">
-                        <h3>2. Select Environment</h3>
-                        <div className="mpp-presets-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))' }}>
-                            {MOCKUP_PRESETS.map(preset => (
-                                <div
-                                    key={preset.id}
-                                    className={`mpp-preset-card ${selectedPreset === preset.id ? 'active' : ''}`}
-                                    onClick={() => setSelectedPreset(preset.id)}
-                                >
-                                    <div className="mpp-preset-label">{preset.label}</div>
-                                </div>
-                            ))}
+                    {itemId !== 'digital_emote' && !itemId.startsWith('sticker_') ? (
+                        <div className="mpp-section">
+                            <h3>2. Select Environment</h3>
+                            <div className="mpp-presets-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))' }}>
+                                {MOCKUP_PRESETS.map(preset => (
+                                    <div
+                                        key={preset.id}
+                                        className={`mpp-preset-card ${selectedPreset === preset.id ? 'active' : ''}`}
+                                        onClick={() => setSelectedPreset(preset.id)}
+                                    >
+                                        <div className="mpp-preset-label">{preset.label}</div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="mpp-section">
+                            <h3>2. Environment</h3>
+                            <div className="mpp-presets-grid">
+                                <div className="mpp-preset-card active">
+                                    <div className="mpp-preset-label">Solid White Background</div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Step 3: Generate */}
                     <div className="mpp-actions">
