@@ -110,6 +110,7 @@ const AppsHub = () => {
                     icon: Sparkles,
                     tags: ['cat', 'aesthetic', 'transformer', 'fun'],
                     path: '/meowacc',
+                    color: 'pink',
                     previewImage: '/app-previews/meowacc.png',
                     isNew: true
                 };
@@ -121,8 +122,10 @@ const AppsHub = () => {
                     icon: Zap,
                     tags: ['avatar', 'pfp', 'collection', 'nft'],
                     path: '/avatar',
+                    color: 'violet',
                     previewImage: '/app-previews/avatar_forge.png',
-                    isNew: true
+                    isNew: true,
+                    isFeatured: true
                 };
 
                 const q = query(collection(db, "apps"), orderBy("order"));
@@ -140,7 +143,7 @@ const AppsHub = () => {
                     });
                 }
 
-                // Prepend Quick Mockups, Mockup Studio, Meme Formatter, AutoCSV, MeowAcc & Avatar Forge
+                // Prepend Quick Mockups, Mockup Studio, Meme Formatter, AutoCSV
                 setApps([quickMockupsApp, mockupStudioApp, memeFormatterApp, autoCsvApp, meowaccApp, avatarForgeApp, ...loadedApps]);
 
             } catch (error) {
@@ -154,7 +157,14 @@ const AppsHub = () => {
     // Filter Logic
     const filteredApps = useMemo(() => {
         const query = searchQuery.toLowerCase();
-        return apps.filter(app => (
+        let baseApps = apps;
+
+        // If not searching, we can split featured from explore
+        if (!query) {
+            baseApps = apps.filter(app => !app.isFeatured);
+        }
+
+        return baseApps.filter(app => (
             app.title.toLowerCase().includes(query) ||
             app.description.toLowerCase().includes(query) ||
             app.tags.some(tag => tag.toLowerCase().includes(query))
@@ -228,6 +238,24 @@ const AppsHub = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Featured App Showcase */}
+                {!searchQuery && (
+                    <>
+                        <SectionHeader title="Featured" />
+                        <div className="play-grid-section featured-rail">
+                            {apps.filter(a => a.isFeatured).map((app) => (
+                                <AppCard
+                                    key={app.id}
+                                    {...app}
+                                    isLiked={isLiked(app.id)}
+                                    likeCount={app.likeCount || 0}
+                                    onToggleLike={() => toggleLike(app.id)}
+                                />
+                            ))}
+                        </div>
+                    </>
+                )}
 
                 {/* Explore Apps Grid */}
                 <SectionHeader title="Explore Apps" />

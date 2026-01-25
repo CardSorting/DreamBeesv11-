@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { db } from '../../firebase';
 import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
-import { Layers, Search, User } from 'lucide-react';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { Layers, Search, User, Filter, SlidersHorizontal } from 'lucide-react';
+import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
 
-const TiltCard = ({ item }) => {
+const TiltCard = ({ item, rarityScale = 1 }) => {
     const x = useMotionValue(0);
     const y = useMotionValue(0);
 
@@ -14,7 +14,6 @@ const TiltCard = ({ item }) => {
     const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["12deg", "-12deg"]);
     const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-12deg", "12deg"]);
 
-    // Holographic Foil Shift
     const holoShiftX = useTransform(mouseXSpring, [-0.5, 0.5], ["0%", "100%"]);
     const holoShiftY = useTransform(mouseYSpring, [-0.5, 0.5], ["0%", "100%"]);
 
@@ -46,16 +45,16 @@ const TiltCard = ({ item }) => {
                 rotateX,
                 rotateY,
                 transformStyle: "preserve-3d",
+                scale: rarityScale
             }}
-            initial={{ opacity: 0, scale: 0.9, y: 50 }}
-            whileInView={{ opacity: 1, scale: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.8 * rarityScale, y: 50 }}
+            whileInView={{ opacity: 1, scale: 1 * rarityScale, y: 0 }}
             viewport={{ once: true, margin: "-50px" }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         >
             <div className="card-visual-container" style={{ transform: "translateZ(20px)" }}>
                 <img src={item.url} alt="" loading="lazy" />
 
-                {/* Rarity Effects */}
                 <div className={`card-glare-effect ${rarity}`} />
                 {rarity === 'legendary' && (
                     <motion.div
@@ -67,7 +66,6 @@ const TiltCard = ({ item }) => {
                     />
                 )}
 
-                {/* Fixed Top Badge - Higher Z */}
                 <div className="card-top-row" style={{ transform: "translateZ(60px)" }}>
                     <span className={`rarity-tag-glass-v2 ${rarity}`}>
                         {item.rarity || 'Common'}
@@ -77,7 +75,6 @@ const TiltCard = ({ item }) => {
                     </span>
                 </div>
 
-                {/* Hover Overlay - Different Depth */}
                 <div className="card-bottom-overlay-v2" style={{ transform: "translateZ(40px)" }}>
                     <div className="user-info-glass-v2">
                         <User size={12} className="mr-1.5 opacity-80" />
@@ -87,19 +84,68 @@ const TiltCard = ({ item }) => {
                 </div>
             </div>
 
-            {/* Ambient Shadow/Glow */}
             <div className={`card-ambient-glow-v2 ${rarity}`} />
         </motion.div>
     );
 };
 
+const SectionHeader = ({ title, subtitle, count }) => (
+    <div className="museum-section-header">
+        <div className="header-content">
+            <h2 className="section-title">{title}</h2>
+            <p className="section-subtitle">{subtitle}</p>
+        </div>
+        <div className="section-count">
+            <span className="count-num">{count}</span>
+            <span className="count-label">Artifacts</span>
+        </div>
+        <div className="header-line" />
+    </div>
+);
+
+const ForgeOverviewCard = () => (
+    <motion.div
+        className="forge-overview-card"
+        initial={{ opacity: 0, scale: 0.95 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        viewport={{ once: true }}
+    >
+        <div className="overview-image-wrap">
+            <img src="/app-previews/avatar_forge.png" alt="Avatar Forge Preview" />
+            <div className="overview-overlay-glass" />
+        </div>
+        <div className="overview-content">
+            <div className="overview-feature-tag">NEW TECHNOLOGY</div>
+            <h2 className="overview-title">The Avatar Forge</h2>
+            <p className="overview-desc">
+                Materialize high-fidelity PFP collections using advanced latent synthesis.
+                Each entity is unique, generated with consistent attributes and varying rarity tiers.
+            </p>
+            <div className="overview-stats-grid">
+                <div className="overview-stat">
+                    <Zap size={16} />
+                    <span>30 ENTITIES PER FORGE</span>
+                </div>
+                <div className="overview-stat">
+                    <Sparkles size={16} />
+                    <span>3 RARITY TIERS</span>
+                </div>
+                <div className="overview-stat">
+                    <Layers size={16} />
+                    <span>GLOBAL ARCHIVE</span>
+                </div>
+            </div>
+        </div>
+    </motion.div>
+);
+
 export default function AvatarForgeFloor() {
     const [mintedItems, setMintedItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [filterRarity, setFilterRarity] = useState('all');
     const containerRef = useRef(null);
 
-    // Global Spotlight Motion Values
     const spotX = useMotionValue(50);
     const spotY = useMotionValue(50);
     const spotXSpring = useSpring(spotX, { stiffness: 100, damping: 30 });
@@ -107,7 +153,7 @@ export default function AvatarForgeFloor() {
 
     const spotlightGradient = useTransform(
         [spotXSpring, spotYSpring],
-        ([x, y]) => `radial-gradient(circle at ${x}% ${y}%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.9) 100%)`
+        ([x, y]) => `radial-gradient(circle at ${x}% ${y}%, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 40%, rgba(0,0,0,0.92) 100%)`
     );
 
     useEffect(() => {
@@ -130,6 +176,22 @@ export default function AvatarForgeFloor() {
         return () => unsubscribe();
     }, []);
 
+    const filteredItems = useMemo(() => {
+        return mintedItems.filter(item => {
+            const matchesSearch = item.theme?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                item.userDisplayName?.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesRarity = filterRarity === 'all' || item.rarity?.toLowerCase() === filterRarity;
+            return matchesSearch && matchesRarity;
+        });
+    }, [mintedItems, searchTerm, filterRarity]);
+
+    const sections = useMemo(() => {
+        const legendaries = filteredItems.filter(item => item.rarity?.toLowerCase() === 'legendary');
+        const rares = filteredItems.filter(item => item.rarity?.toLowerCase() === 'rare');
+        const commons = filteredItems.filter(item => item.rarity?.toLowerCase() === 'common');
+        return { legendaries, rares, commons };
+    }, [filteredItems]);
+
     const handleGlobalPointerMove = (e) => {
         if (!containerRef.current) return;
         const rect = containerRef.current.getBoundingClientRect();
@@ -139,70 +201,145 @@ export default function AvatarForgeFloor() {
         spotY.set(yPercent);
     };
 
-    const filteredItems = mintedItems.filter(item =>
-        item.theme?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.userDisplayName?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
     return (
         <section
-            className="forge-immersive-container floor-mode museum-v2"
+            className="forge-immersive-container floor-mode museum-v3"
             ref={containerRef}
             onPointerMove={handleGlobalPointerMove}
         >
-            {/* Global Spotlight Overlay */}
             <motion.div
                 className="museum-spotlight-overlay"
                 style={{ background: spotlightGradient }}
             />
 
-            {/* Museum Control Bar */}
-            <div className="floor-control-bar museum-style-v2">
-                <div className="museum-header-group">
-                    <h2 className="museum-title-v2">The Collective Archive</h2>
-                    <div className="museum-stat-pill">
-                        <div className="stat-indicator pulse" />
-                        <span>{mintedItems.length} ARTIFACTS MATERIALIZED</span>
+            {/* Museum Title & Stats */}
+            <div className="museum-hero-v3">
+                <motion.h1
+                    className="museum-main-title"
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                >
+                    The Collective Archive
+                </motion.h1>
+                <div className="museum-info-row">
+                    <div className="stat-pill-v3">
+                        <div className="stat-blob" />
+                        <span>ACTIVE NODE: ALCHEMIST_CORE</span>
                     </div>
-                </div>
-
-                <div className="floor-search-v2">
-                    <Search size={20} className="search-icon-v2" />
-                    <input
-                        type="text"
-                        placeholder="Scan archives..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                    <div className="stat-pill-v3">
+                        <span>ENTITIES: {mintedItems.length}</span>
+                    </div>
                 </div>
             </div>
 
-            {/* Gallery Grid */}
-            <div className="floor-scroll-area-v2">
+            {/* Floating Glass Command Bar */}
+            <motion.div
+                className="museum-command-bar"
+                initial={{ y: 50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+            >
+                <div className="command-inner">
+                    <div className="command-search-wrap">
+                        <Search size={16} />
+                        <input
+                            type="text"
+                            placeholder="Scan by theme or creator..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="command-divider" />
+
+                    <div className="command-filters">
+                        {['all', 'legendary', 'rare', 'common'].map((r) => (
+                            <button
+                                key={r}
+                                className={`filter-btn ${filterRarity === r ? 'active' : ''}`}
+                                onClick={() => setFilterRarity(r)}
+                            >
+                                {r}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </motion.div>
+
+            {/* Gallery Content */}
+            <div className="museum-content-v3">
                 {loading ? (
-                    <div className="floor-grid-immersive-v2">
+                    <div className="floor-grid-skeleton-v3">
                         {[...Array(12)].map((_, i) => (
-                            <div key={i} className="immersive-card-skeleton-v2 animate-pulse" />
+                            <div key={i} className="skeleton-card-v3 animate-pulse" />
                         ))}
                     </div>
                 ) : filteredItems.length === 0 ? (
-                    <div className="empty-state-immersive-v2">
-                        <Layers size={64} className="empty-icon-v2" />
-                        <h3>VOID DETECTED</h3>
-                        <p>No matching signals found in the archive.</p>
-                        <button className="reset-search-btn" onClick={() => setSearchTerm('')}>Reset Scan</button>
+                    <div className="empty-gallery-v3">
+                        <Layers size={64} />
+                        <h2>Archive Void</h2>
+                        <p>No materialized entities match your search criteria.</p>
+                        <button onClick={() => { setSearchTerm(''); setFilterRarity('all'); }}>Reset Archive Scan</button>
                     </div>
                 ) : (
-                    <div className="floor-grid-immersive-v2">
-                        {filteredItems.map((item) => (
-                            <TiltCard key={item.id} item={item} />
-                        ))}
+                    <div className="museum-architectural-grid">
+
+                        <ForgeOverviewCard />
+
+                        {/* LEGENDARY SECTION */}
+                        {sections.legendaries.length > 0 && (
+                            <div className="museum-section legendary-hall">
+                                <SectionHeader
+                                    title="Legendary Hall"
+                                    subtitle="One-of-a-kind artifacts from the deep ether."
+                                    count={sections.legendaries.length}
+                                />
+                                <div className="grid-layout-premium">
+                                    {sections.legendaries.map(item => (
+                                        <TiltCard key={item.id} item={item} rarityScale={1.1} />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* RARE SECTION */}
+                        {sections.rares.length > 0 && (
+                            <div className="museum-section rare-wing">
+                                <SectionHeader
+                                    title="Rare Wing"
+                                    subtitle="Exceptional personas with unique material variants."
+                                    count={sections.rares.length}
+                                />
+                                <div className="grid-layout-standard">
+                                    {sections.rares.map(item => (
+                                        <TiltCard key={item.id} item={item} />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* COMMON SECTION */}
+                        {sections.commons.length > 0 && (
+                            <div className="museum-section common-archive">
+                                <SectionHeader
+                                    title="Common Archive"
+                                    subtitle="The foundational entities of the collective."
+                                    count={sections.commons.length}
+                                />
+                                <div className="grid-layout-dense">
+                                    {sections.commons.map(item => (
+                                        <TiltCard key={item.id} item={item} rarityScale={0.9} />
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
 
-            {/* Floor Perspective Background */}
-            <div className="museum-floor-grid" />
+            {/* Global Environment Details */}
+            <div className="museum-floor-v3" />
+            <div className="museum-ambient-particles" />
         </section>
     );
 }

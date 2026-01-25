@@ -523,6 +523,23 @@
     margin: 0 auto;
 }
 
+.featured-rail {
+    grid-template-columns: 1fr;
+    margin-bottom: 20px;
+}
+
+.featured-rail .app-card {
+    max-width: 100%;
+    border-radius: var(--play-radius-lg);
+    background: rgba(255, 255, 255, 0.02);
+    box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.featured-rail .app-card-preview {
+    aspect-ratio: 21/9;
+}
+
 /* Compact Card (Vertical) for Grid */
 .play-grid-section .app-card {
     border-radius: 0;
@@ -811,9 +828,9 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 60%;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, transparent 100%);
-    opacity: 0.6;
+    height: 100%;
+    background: linear-gradient(to top, rgba(15, 15, 20, 0.9) 0%, rgba(15, 15, 20, 0.4) 40%, transparent 100%);
+    opacity: 0.8;
     pointer-events: none;
 }
 
@@ -863,6 +880,7 @@
 .app-card.has-preview .app-footer {
     padding: 0 16px 16px;
 }
+
 /* --- Pagination --- */
 .apps-pagination {
     display: flex;
@@ -915,4 +933,3 @@
 .rotate-180 {
     transform: rotate(180deg);
 }
-

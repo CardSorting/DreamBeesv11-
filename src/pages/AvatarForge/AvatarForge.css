@@ -1547,69 +1547,55 @@
 }
 
 /* =========================================
-   MUSEUM 2.0 (High Precision Immersion)
+   MUSEUM V3 (Architectural Experience)
    ========================================= */
 
-.museum-v2 {
+.museum-v3 {
     background: #000;
-    overflow-x: hidden;
-    position: relative;
     min-height: 100vh;
+    position: relative;
+    padding-top: 20px;
+    overflow-x: hidden;
 }
 
 .museum-spotlight-overlay {
-    position: absolute;
+    position: fixed;
     inset: 0;
     z-index: 5;
     pointer-events: none;
     mix-blend-mode: multiply;
 }
 
-.museum-floor-grid {
-    position: absolute;
-    bottom: -100px;
-    left: -20%;
-    width: 140%;
-    height: 600px;
-    background-image:
-        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 80px 80px;
-    transform: perspective(800px) rotateX(60deg);
-    z-index: 0;
-    mask-image: linear-gradient(to top, white, transparent);
-    pointer-events: none;
-}
-
-.museum-style-v2 {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    padding: 80px 40px 60px 40px;
-    z-index: 10;
+/* HERO SECTION */
+.museum-hero-v3 {
+    max-width: 1400px;
+    margin: 60px auto 20px auto;
+    padding: 0 40px;
+    text-align: center;
     position: relative;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent);
+    z-index: 10;
 }
 
-.museum-header-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.museum-title-v2 {
-    font-size: 3.5rem;
+.museum-main-title {
+    font-size: 5rem;
     font-weight: 1000;
     letter-spacing: -0.06em;
-    line-height: 0.9;
+    line-height: 0.85;
     text-transform: uppercase;
-    background: linear-gradient(135deg, #fff 0%, #64748b 100%);
+    background: linear-gradient(to bottom, #fff 30%, rgba(255, 255, 255, 0.2));
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
+    margin-bottom: 24px;
 }
 
-.museum-stat-pill {
-    margin-top: 16px;
+.museum-info-row {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+}
+
+.stat-pill-v3 {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -1618,237 +1604,454 @@
     border-radius: 99px;
     font-size: 0.7rem;
     font-weight: 900;
-    color: #94a3b8;
+    color: #64748b;
     letter-spacing: 0.15em;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    width: fit-content;
 }
 
-.stat-indicator.pulse {
-    width: 6px;
-    height: 6px;
+.stat-blob {
+    width: 8px;
+    height: 8px;
     background: #10b981;
     border-radius: 50%;
     box-shadow: 0 0 10px #10b981;
     animation: beacon-pulse 2s infinite;
 }
 
-@keyframes beacon-pulse {
-    0% {
-        transform: scale(1);
-        opacity: 1;
-    }
-
-    50% {
-        transform: scale(1.5);
-        opacity: 0.5;
-    }
-
-    100% {
-        transform: scale(1);
-        opacity: 1;
-    }
-}
-
-.floor-search-v2 {
-    position: relative;
-    width: 320px;
-}
-
-.search-icon-v2 {
-    position: absolute;
-    left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: rgba(255, 255, 255, 0.3);
-}
-
-.floor-search-v2 input {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.03);
+/* FLOATING COMMAND BAR */
+.museum-command-bar {
+    position: sticky;
+    top: 32px;
+    width: fit-content;
+    margin: 40px auto;
+    z-index: 100;
+    background: rgba(15, 15, 20, 0.7);
+    backdrop-filter: blur(40px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 16px 16px 16px 48px;
-    border-radius: 20px;
-    color: #fff;
-    font-size: 0.9rem;
-    font-weight: 600;
-    transition: all 0.3s;
+    padding: 10px 14px;
+    border-radius: 100px;
+    box-shadow:
+        0 20px 60px -10px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.floor-search-v2 input:focus {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+.museum-command-bar:hover {
+    background: rgba(20, 20, 25, 0.8);
+    box-shadow:
+        0 30px 80px -15px rgba(0, 0, 0, 0.7),
+        0 0 0 1px rgba(139, 92, 246, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+}
+
+.command-inner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.command-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-left: 12px;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.command-search-wrap input {
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    width: 280px;
+    padding: 10px 0;
+}
+
+.command-search-wrap input:focus {
     outline: none;
 }
 
-/* CARDS 2.0 */
-.floor-grid-immersive-v2 {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 40px;
-    padding: 60px 40px 160px 40px;
+.command-divider {
+    width: 1px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.command-filters {
+    display: flex;
+    gap: 4px;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    border: none;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.filter-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.filter-btn.active {
+    background: #fff;
+    color: #000;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+}
+
+/* SECTION ARCHITECTURE */
+.museum-content-v3 {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 40px 40px 200px 40px;
     position: relative;
     z-index: 10;
 }
 
-.immersive-card-premium.museum-2-0 {
-    background: #000;
-    border-radius: 32px;
+.museum-section {
+    margin-bottom: 160px;
 }
 
-.card-holo-foil {
-    position: absolute;
-    inset: 0;
-    z-index: 6;
-    background: linear-gradient(110deg,
-            rgba(255, 0, 0, 0.1) 0%,
-            rgba(255, 0, 255, 0.1) 20%,
-            rgba(0, 0, 255, 0.1) 40%,
-            rgba(0, 255, 255, 0.1) 60%,
-            rgba(0, 255, 0, 0.1) 80%,
-            rgba(255, 255, 0, 0.1) 100%);
-    background-size: 400% 400%;
-    mix-blend-mode: color-dodge;
-    opacity: 0;
-    transition: opacity 0.5s;
-    pointer-events: none;
+.museum-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 40px;
+    position: relative;
+    padding-bottom: 24px;
 }
 
-.immersive-card-premium.legendary:hover .card-holo-foil {
-    opacity: 0.8;
-}
-
-.rarity-tag-glass-v2 {
-    padding: 6px 14px;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px;
-    font-size: 0.75rem;
+.section-title {
+    font-size: 3rem;
     font-weight: 1000;
-    letter-spacing: 0.1em;
-    color: #fff;
+    letter-spacing: -0.05em;
+    line-height: 0.9;
     text-transform: uppercase;
+    color: #fff;
+    text-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
 }
 
-.rarity-tag-glass-v2.legendary {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.4), rgba(120, 53, 15, 0.4));
-    border-color: #f59e0b;
-    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
+.section-subtitle {
+    font-size: 1rem;
+    color: #94a3b8;
+    font-weight: 500;
+    margin-top: 8px;
+    letter-spacing: 0.02em;
 }
 
-.mint-count-glass-v2 {
-    padding: 6px 10px;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    font-family: monospace;
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.8);
+.section-count {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.count-num {
+    font-size: 3rem;
+    font-weight: 1000;
+    line-height: 0.8;
+    color: #fff;
+    opacity: 0.15;
+}
+
+.count-label {
+    font-size: 0.7rem;
     font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: #64748b;
+    margin-top: 4px;
 }
 
-.card-bottom-overlay-v2 {
+.header-line {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    padding: 40px 24px 24px 24px;
-    background: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 60%, transparent 100%);
-    opacity: 0;
-    transform: translateY(20px);
-    transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-    z-index: 10;
+    height: 1px;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
 }
 
-.immersive-card-premium:hover .card-bottom-overlay-v2 {
-    opacity: 1;
-    transform: translateY(0);
+/* GRID LAYOUTS */
+
+.grid-layout-premium {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 40px;
 }
 
-.user-info-glass-v2 {
-    display: flex;
-    align-items: center;
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.6);
-    margin-bottom: 6px;
-    font-weight: 700;
+.grid-layout-standard {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 32px;
 }
 
-.card-theme-title-v2 {
-    font-size: 1.6rem;
-    font-weight: 1000;
-    color: #fff;
-    letter-spacing: -0.04em;
-    line-height: .9;
-    margin-top: 4px;
+.grid-layout-dense {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 24px;
 }
 
-.card-ambient-glow-v2 {
+/* ENVIRONMENT V3 */
+.museum-floor-v3 {
+    position: fixed;
+    bottom: -100px;
+    left: -20%;
+    width: 140%;
+    height: 800px;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+    background-size: 100px 100px;
+    transform: perspective(1000px) rotateX(65deg);
+    z-index: 1;
+    mask-image: radial-gradient(circle at center, white, transparent 80%);
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* CARDS 2.0 REFINEMENTS */
+.immersive-card-premium.museum-2-0 {
+    background: #121214;
+    border-radius: 32px;
+    box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.8);
+}
+
+.card-top-row {
     position: absolute;
-    inset: -20px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.05), transparent 70%);
-    filter: blur(40px);
-    z-index: -1;
-    opacity: 0;
-    transition: opacity 0.6s;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    display: flex;
+    justify-content: space-between;
+    z-index: 50;
 }
 
-.immersive-card-premium:hover .card-ambient-glow-v2 {
-    opacity: 1;
+.rarity-tag-glass-v2 {
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 1000;
+    text-transform: uppercase;
 }
 
-.card-ambient-glow-v2.legendary {
-    background: radial-gradient(circle, rgba(245, 158, 11, 0.25), transparent 70%);
+.mint-count-glass-v2 {
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+    font-family: monospace;
+    font-size: 0.8rem;
+    font-weight: 900;
 }
 
-.empty-state-immersive-v2 {
+/* EMPTY STATE */
+.empty-gallery-v3 {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 120px 20px;
+    padding: 200px 40px;
     text-align: center;
+    color: rgba(255, 255, 255, 0.2);
 }
 
-.empty-icon-v2 {
-    color: rgba(255, 255, 255, 0.05);
-    margin-bottom: 24px;
-}
-
-.empty-state-immersive-v2 h3 {
-    font-size: 1.5rem;
+.empty-gallery-v3 h2 {
+    font-size: 2rem;
     font-weight: 900;
+    text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: rgba(255, 255, 255, 0.4);
+    margin: 24px 0 12px 0;
+    color: #fff;
 }
 
-.reset-search-btn {
-    margin-top: 24px;
-    padding: 12px 24px;
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #fff;
+.empty-gallery-v3 button {
+    margin-top: 32px;
+    padding: 12px 32px;
+    background: #fff;
+    color: #000;
+    border: none;
     border-radius: 12px;
-    font-weight: 800;
+    font-weight: 900;
     cursor: pointer;
 }
 
-@media (max-width: 768px) {
-    .museum-title-v2 {
+/* RESPONSIVE V3 */
+@media (max-width: 1024px) {
+    .museum-main-title {
+        font-size: 3.5rem;
+    }
+
+    .section-title {
         font-size: 2.2rem;
     }
 
-    .museum-style-v2 {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 32px;
-        padding: 40px 20px;
+    .count-num {
+        font-size: 2.5rem;
     }
 
-    .floor-search-v2 {
-        width: 100%;
+    .museum-command-bar {
+        width: auto;
+        max-width: calc(100% - 40px);
+        margin: 30px auto;
+        overflow-x: auto;
+        padding: 8px 12px;
+        border-radius: 20px;
+    }
+
+    .command-search-wrap input {
+        width: 200px;
+        min-width: 150px;
+    }
+
+    .museum-hero-v3 {
+        padding: 40px 20px;
+    }
+}
+
+@media (max-width: 640px) {
+    .museum-main-title {
+        font-size: 2.5rem;
+    }
+
+    .museum-hero-v3 {
+        margin-top: 40px;
+    }
+
+    .stat-pill-v3 span {
+        display: none;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 24px;
+    }
+
+    .section-count {
+        align-items: flex-start;
+    }
+}
+/* FORGE OVERVIEW CARD */
+.forge-overview-card {
+    grid-column: 1 / -1;
+    display: flex;
+    background: rgba(22, 22, 24, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 40px;
+    overflow: hidden;
+    margin-bottom: 120px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 40px 100px -30px rgba(0, 0, 0, 0.8);
+}
+
+.overview-image-wrap {
+    flex: 1.4;
+    position: relative;
+    min-height: 480px;
+}
+
+.overview-image-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.overview-overlay-glass {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, rgba(18, 18, 20, 0.8) 0%, transparent 60%);
+}
+
+.overview-content {
+    flex: 1;
+    padding: 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    z-index: 5;
+    background: linear-gradient(to left, rgba(18, 18, 20, 0.4), transparent);
+}
+
+.overview-feature-tag {
+    font-size: 0.75rem;
+    font-weight: 900;
+    color: #8b5cf6;
+    letter-spacing: 0.2em;
+    margin-bottom: 16px;
+}
+
+.overview-title {
+    font-size: 4rem;
+    font-weight: 1000;
+    letter-spacing: -0.05em;
+    line-height: 0.95;
+    margin-bottom: 24px;
+    text-transform: uppercase;
+}
+
+.overview-desc {
+    font-size: 1.2rem;
+    color: #94a3b8;
+    line-height: 1.6;
+    margin-bottom: 40px;
+    max-width: 500px;
+}
+
+.overview-stats-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.overview-stat {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+.overview-stat svg {
+    color: #8b5cf6;
+}
+
+@media (max-width: 1024px) {
+    .forge-overview-card {
+        flex-direction: column;
+        margin-bottom: 80px;
+    }
+    
+    .overview-image-wrap {
+        min-height: 300px;
+    }
+    
+    .overview-overlay-glass {
+        background: linear-gradient(to bottom, transparent, rgba(18, 18, 20, 0.9));
+    }
+    
+    .overview-content {
+        padding: 40px;
+    }
+    
+    .overview-title {
+        font-size: 2.5rem;
     }
 }
