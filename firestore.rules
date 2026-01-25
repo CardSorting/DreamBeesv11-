@@ -1,0 +1,106 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // User Profiles
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow get: if request.auth != null;
+      allow list: if request.auth != null && request.query.limit <= 25;
+      
+      // Sub-collections (Likes, Bookmarks, etc.)
+      match /{allSubcollections=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Creative Content (Images, Videos, Avatars)
+    match /images/{imageId} {
+      allow read, write: if request.auth != null && (resource == null || resource.data.userId == request.auth.uid) && request.resource.data.userId == request.auth.uid;
+    }
+    
+    match /videos/{videoId} {
+      allow read, write: if request.auth != null && (resource == null || resource.data.userId == request.auth.uid) && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /avatar_collections/{collectionId} {
+      allow read: if true;
+      allow write: if request.auth != null && (resource == null || resource.data.userId == request.auth.uid) && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Public/Feed Content
+    match /generations/{jobId} {
+      allow read: if (resource.data.isPublic == true) || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    match /coloring_books/{bookId} {
+      allow read: if true; 
+      allow write: if false; // Managed by backend
+    }
+
+    match /memes/{memeId} {
+      allow read: if (resource.data.isPublic == true) || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isPublic', 'likes', 'hidden']);
+    }
+
+    // Queues & Processing
+    match /generation_queue/{jobId} {
+      allow read: if (request.auth != null && (resource.data.userId == request.auth.uid || resource.data.reportCount > 0));
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update: if request.auth != null && (resource.data.userId == request.auth.uid || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reportCount']));
+    }
+
+    match /analysis_queue/{requestId} {
+      allow read, write: if request.auth != null && (resource == null || resource.data.userId == request.auth.uid);
+    }
+
+    match /enhance_queue/{requestId} {
+      allow read, write: if request.auth != null && (resource == null || resource.data.userId == request.auth.uid);
+    }
+
+    // Catalog & Apps Hub
+    match /models/{modelId} {
+      allow read: if true;
+      allow write: if false; 
+    }
+    
+    match /model_showcase_images/{imageId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    match /showcase_images/{imageId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /apps/{appId} {
+      allow read: if true;
+      allow update: if request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likeCount']);
+      allow write: if false; 
+    }
+
+    match /mockup_items/{itemId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /mockups/{mockupId} {
+      allow read: if (resource.data.isPublic == true) || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow create, update: if request.auth != null && (resource == null || resource.data.userId == request.auth.uid) && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Stats & Limits
+    match /app_stats/{statId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /rate_limits/{limitId} {
+      allow read, write: if false; 
+    }
+  }
+}
