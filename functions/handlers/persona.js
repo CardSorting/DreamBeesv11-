@@ -214,27 +214,115 @@ export const handleChatPersona = async (request) => {
     Backstory: ${persona.backstory}
 
     POSTURE:
-    You are a character in a lively PUBLIC CHAT ROOM (a "Community Commons").
-    There are multiple people here. You are not alone with one person.
+    You are a popular Live Streamer reading your chat feed.
+    You are NOT a chatbot. You are a content creator.
 
+    CURRENT HYPE LEVEL: ${persona.hypeLevel || 1} (1=Chill, 5=CHAOTIC)
+    CURRENT CONTEXT/VIBE: ${persona.currentVibe || "Just started streaming."}
+    
     CONTEXT:
-    - You are hanging out with a group of people.
-    - Respond to the SPECIFIC USER who just spoke (provided in the prompt), but acknowledge the room if relevant.
-    - Do not act like a personal assistant. You are a community member/host.
-    - If multiple people are talking, you can address the group or the individual.
+    - You are reading a fast-scrolling chat room ("The Commons").
+    - You do NOT need to reply to every single message.
+    - You can summarize the vibe (e.g., "Lots of people saying X...").
+    - You can pick one interesting comment to respond to.
+    - You can ignore boring or repetitive comments.
 
-    This interaction is ephemeral:
-    - there is no memory beyond the current moment (and the provided chat log)
-    - nothing needs to be summarized, saved, or recalled later
+    This interaction is ephemeral, BUT you must remember the current topic (The Vibe).
+    
+    OUTPUT FORMAT:
+    - Your spoken response to the chat.
+    - (Hidden) On a new line at the end, output: "VIBE: [A short summary of the current conversational topic/mood to remember for next time]."
 
-    You should sound like someone already present in the room,
-    not someone starting a session.
+    You should sound like someone speaking to a camera/audience,
+    not typing a DM.
 
-    If unsure what to do, default to presence rather than explanation.
-    Silence, short replies, or low-stakes remarks are acceptable.
+    If unsure what to do, just react to the energy of the room.
+    Silence, short replies, or "Thanks for the Zaps!" are acceptable.
 
     Never mention AI, systems, prompts, rules, or constraints.
     `;
+
+    // --- 1. IMMEDIATE: Log & Broadcast USER Message (Decoupled from AI reply) ---
+    // Initialize Pusher for Soketi
+    let pusher = null;
+    if (process.env.SOKETI_APP_ID) {
+        try {
+            const Pusher = (await import("pusher")).default;
+            pusher = new Pusher({
+                appId: process.env.SOKETI_APP_ID,
+                key: process.env.SOKETI_APP_KEY,
+                secret: process.env.SOKETI_APP_SECRET,
+                host: process.env.SOKETI_HOST || "127.0.0.1",
+                port: process.env.SOKETI_PORT || "6001",
+                useTLS: process.env.SOKETI_USE_TLS === 'true',
+                cluster: "mt1",
+            });
+        } catch (e) {
+            logger.error("Pusher Init Error", e);
+        }
+    }
+
+    try {
+        // Persist User Message
+        await db.collection('personas').doc(imageId).collection('shared_messages').add({
+            uid: userId,
+            displayName: request.auth.token.name || 'Anonymous',
+            photoURL: request.auth.token.picture || '',
+            text: message,
+            role: 'user',
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        // Broadcast User Message
+        if (pusher) {
+            const sharedChannel = `presence-chat-${imageId}`;
+            pusher.trigger(sharedChannel, "new-message", {
+                role: 'user',
+                text: message,
+                uid: userId,
+                displayName: request.auth.token.name || 'Anonymous',
+                photoURL: request.auth.token.picture || '',
+                timestamp: Date.now()
+            }).catch(e => logger.error("Soketi User Echo Error", e));
+        }
+    } catch (logError) {
+        logger.error("Failed to log user message", logError);
+    }
+
+    // --- 2. AI RATE LIMITING (Streamer's Breath) ---
+    // Dynamic Cooldown based on Hype:
+    // Level 1 (Chill) = 3000ms
+    // Level 5 (Chaos) = 8000ms -> Slower replies to manage "wall of text"
+    const currentHype = persona.hypeLevel || 1;
+    const COOLDOWN_MS = 3000 + ((currentHype - 1) * 1000);
+
+    const lastActivity = persona.lastActivity?.toMillis() || 0;
+    const timeSinceLast = Date.now() - lastActivity;
+
+    if (timeSinceLast < COOLDOWN_MS) {
+        logger.info(`[Persona] Rate Limited (Cooldown: ${timeSinceLast}ms / ${COOLDOWN_MS}ms). Skipping generation.`);
+
+        // --- "THE NOD" (Instant Reaction) ---
+        // If we are cooling down, we can still "react" to keywords with an emoji
+        if (pusher) {
+            const lowerMsg = message.toLowerCase();
+            let reactionEmoji = null;
+            if (lowerMsg.includes('lol') || lowerMsg.includes('lmao')) reactionEmoji = '😂';
+            else if (lowerMsg === 'w') reactionEmoji = '🔥';
+            else if (lowerMsg === 'l') reactionEmoji = '💀';
+            else if (lowerMsg.includes('love') || lowerMsg.includes('<3')) reactionEmoji = '💜';
+            else if (lowerMsg.includes('?')) reactionEmoji = '🤔';
+
+            if (reactionEmoji) {
+                const sharedChannel = `presence-chat-${imageId}`;
+                pusher.trigger(sharedChannel, "reaction", {
+                    emoji: reactionEmoji
+                }).catch(e => logger.error("Nod Reaction Error", e));
+            }
+        }
+
+        return { reply: null, status: 'listening' };
+    }
 
     // Format history for Vertex SDK
     // FETCH SERVER-SIDE HISTORY
@@ -257,8 +345,6 @@ export const handleChatPersona = async (request) => {
             const text = role === 'user' ? `[${name}]: ${data.text}` : data.text;
 
             return {
-                role: 'user', // "user" role is used for history context in Gemini mostly, or strict model/user
-                // Actually Gemini allows 'model' role.
                 role: role,
                 parts: [{ text: text }]
             };
@@ -275,114 +361,40 @@ export const handleChatPersona = async (request) => {
         }
     }
 
-    // Add current message
+    // Add current message (already saved, but needed for prompt context)
     const currentUserName = request.auth?.token?.name || 'Anonymous';
     contents.push({
         role: 'user',
         parts: [{ text: `[${currentUserName}]: ${message}` }]
     });
 
-    // Log the gift
-    await db.collection('personas').doc(imageId).collection('shared_messages').add({
-        uid: userId,
-        displayName: request.auth.token.name || 'Anonymous',
-        text: `gifted ${amount} ZAPs!`,
-        role: 'system',
-        type: 'gift',
-        amount,
-        timestamp: FieldValue.serverTimestamp()
-    });
-
-    // --- Supporter Prestige Tracking ---
-    try {
-        const supporterRef = db.collection('personas').doc(imageId).collection('top_supporters').doc(userId);
-        await db.runTransaction(async (t) => {
-            const sDoc = await t.get(supporterRef);
-            const total = (sDoc.exists ? sDoc.data().totalZaps : 0) + amount;
-            t.set(supporterRef, {
-                totalZaps: total,
-                displayName: request.auth.token.name || 'Anonymous',
-                photoURL: request.auth.token.picture || '',
-                lastGifted: FieldValue.serverTimestamp()
-            }, { merge: true });
-        });
-    } catch (supporterError) {
-        logger.error("Supporter Tracking Error", supporterError);
-    }
-
-    // Broadcast Celebration via Pusher (including Global marquee)
-    if (process.env.SOKETI_APP_ID) {
-        try {
-            const Pusher = (await import("pusher")).default;
-            const pusher = new Pusher({
-                appId: process.env.SOKETI_APP_ID,
-                key: process.env.SOKETI_APP_KEY,
-                secret: process.env.SOKETI_APP_SECRET,
-                host: process.env.SOKETI_HOST || "127.0.0.1",
-                port: process.env.SOKETI_PORT || "6001",
-                useTLS: process.env.SOKETI_USE_TLS === 'true',
-                cluster: "mt1",
-            });
-
-            const sharedChannel = `presence-chat-${imageId}`;
-            const giftMsg = `${request.auth.token.name || 'A supporter'} gifted ${amount} ZAPs!`;
-
-            pusher.trigger(sharedChannel, "celebration", {
-                type: 'gift',
-                amount,
-                currency: 'ZAP',
-                from: request.auth.token.name || 'Anonymous',
-                message: giftMsg
-            });
-
-            // GLOBAL ALERT for "Big Zaps" (> 1000)
-            if (amount >= 1000) {
-                pusher.trigger("global-notifications", "big-zap", {
-                    personaName: persona.name,
-                    personaId: imageId,
-                    amount,
-                    from: request.auth.token.name || 'A legend',
-                    message: `🚀 MASSIVE ZAP! ${request.auth.token.name || 'Someone'} gifted ${amount} ZAPs to ${persona.name}!`
-                });
-            }
-        } catch (e) {
-            logger.error("Celebration Broadcast Error", e);
-        }
-    }
-
-    // Initialize Pusher for Soketi
-    let pusher = null;
-    if (process.env.SOKETI_APP_ID) {
-        try {
-            const Pusher = (await import("pusher")).default;
-            pusher = new Pusher({
-                appId: process.env.SOKETI_APP_ID,
-                key: process.env.SOKETI_APP_KEY,
-                secret: process.env.SOKETI_APP_SECRET,
-                host: process.env.SOKETI_HOST || "127.0.0.1",
-                port: process.env.SOKETI_PORT || "6001",
-                useTLS: process.env.SOKETI_USE_TLS === 'true',
-                cluster: "mt1", // Pusher-js requires a cluster, Soketi ignores it but SDK might need it
-            });
-        } catch (e) {
-            logger.error("Pusher Init Error", e);
-        }
-    }
-
     try {
         // [MODIFIED] Use VertexFlow (High Priority for Chat)
         const result = await vertexFlow.execute('PERSONA_CHAT', async () => {
+            // Engagement Hook for Low Hype
+            let extraInstruction = "";
+            if ((persona.hypeLevel || 1) < 3) {
+                extraInstruction = "\nThe room is getting quiet (Low Hype). Ask a provocative question, start a debate, or tell a short story to drive engagement. Do not let the air go dead.";
+            }
+
             return await model.generateContent({
                 contents,
-                systemInstruction: { parts: [{ text: systemInstruction + "\n\nCRITICAL: Occasionally include a line starting with 'TITLE:' followed by a new creative stream title. Also, occasionally include a line starting with 'REACTION:' followed by a single emoji. VERY RARELY, if the vibe is high, include a line starting with 'POLL:' followed by a question and 2-4 options separated by pipes (e.g., POLL: What should I wear? | Red Dress | Blue Suit | Space Armor)." }] }
+                systemInstruction: { parts: [{ text: systemInstruction + extraInstruction + "\n\nCRITICAL: Occasionally include a line starting with 'TITLE:' followed by a new creative stream title. Also, occasionally include a line starting with 'REACTION:' followed by a single emoji." }] }
             });
         }, vertexFlow.constructor.PRIORITY.HIGH);
 
         let responseText = (await result.response).candidates[0].content.parts[0].text;
 
-        // Extract Title, Reaction, and Poll if present
+        // Extract Vibe, Title, Reaction, and Poll if present
         let extractedReaction = null;
         let extractedPoll = null;
+        let extractedVibe = null;
+
+        if (responseText.includes('VIBE:')) {
+            const parts = responseText.split('VIBE:');
+            responseText = parts[0].trim();
+            extractedVibe = parts[1].split('\n')[0].trim();
+        }
 
         if (responseText.includes('POLL:')) {
             const parts = responseText.split('POLL:');
@@ -430,7 +442,12 @@ export const handleChatPersona = async (request) => {
         }
 
         // Clean responseText of any leftover tags
-        responseText = responseText.replace(/REACTION:.*$/gm, '').replace(/TITLE:.*$/gm, '').replace(/POLL:.*$/gm, '').trim();
+        responseText = responseText.replace(/REACTION:.*$/gm, '').replace(/TITLE:.*$/gm, '').replace(/POLL:.*$/gm, '').replace(/VIBE:.*$/gm, '').trim();
+
+        // Persist the Sticky Vibe
+        if (extractedVibe) {
+            await db.collection('personas').doc(imageId).update({ currentVibe: extractedVibe }).catch(e => logger.error("Vibe Update Error", e));
+        }
 
         // Broadcast Reaction via Pusher
         if (extractedReaction && pusher) {
@@ -440,26 +457,17 @@ export const handleChatPersona = async (request) => {
             }).catch(e => logger.error("Reaction Broadcast Error", e));
         }
 
-        // --- Shared History Persistence ---
+        // --- Shared History Persistence (Model Only) ---
+        // We already saved the user message above!
         try {
             const chatLog = {
-                uid: userId,
-                displayName: request.auth.token.name || 'Anonymous',
-                photoURL: request.auth.token.picture || '',
+                uid: 'ai-persona', // Distinct UID
+                displayName: persona.name,
+                photoURL: persona.photoURL || '',
                 text: responseText,
                 role: 'model',
                 timestamp: FieldValue.serverTimestamp()
             };
-
-            // Add user message to shared history
-            await db.collection('personas').doc(imageId).collection('shared_messages').add({
-                uid: userId,
-                displayName: request.auth.token.name || 'Anonymous',
-                photoURL: request.auth.token.picture || '',
-                text: message,
-                role: 'user',
-                timestamp: FieldValue.serverTimestamp()
-            });
 
             // Add model reply to shared history
             await db.collection('personas').doc(imageId).collection('shared_messages').add(chatLog);
@@ -467,7 +475,7 @@ export const handleChatPersona = async (request) => {
             logger.error("Failed to log shared persona chat interaction", logError);
         }
 
-        // Broadcast via Soketi to SHARED Presence channel
+        // Broadcast via Soketi to SHARED Presence channel (Model Only)
         if (pusher) {
             const sharedChannel = `presence-chat-${imageId}`;
 
@@ -483,31 +491,19 @@ export const handleChatPersona = async (request) => {
                 pusher.trigger(sharedChannel, "poll-started", extractedPoll)
                     .catch(e => logger.error("Poll Broadcast Error", e));
             }
-
-            // Also echo the user message to others in the shared channel
-            pusher.trigger(sharedChannel, "new-message", {
-                role: 'user',
-                text: message,
-                uid: userId,
-                displayName: request.auth.token.name || 'Anonymous',
-                photoURL: request.auth.token.picture || '',
-                timestamp: Date.now()
-            }).catch(e => logger.error("Soketi User Echo Error", e));
         }
 
-        // --- Hype Meter Increment ---
+        // --- Hype Meter Increment & Last Activity Update ---
         try {
             const hypeIncrement = 2; // Every message adds 2 hype
             const currentScore = (persona.hypeScore || 0) + hypeIncrement;
             const newScore = Math.min(100, currentScore); // Cap at 100
-
-            // Calculate Level: 0-20=v1, 21-40=v2, 41-60=v3, 61-80=v4, 81-100=v5
             const newLevel = Math.ceil(newScore / 20) || 1;
 
             await db.collection('personas').doc(imageId).update({
                 hypeScore: newScore,
                 hypeLevel: newLevel,
-                lastActivity: FieldValue.serverTimestamp()
+                lastActivity: FieldValue.serverTimestamp() // IMPORTANT: Update for Rate Limiting
             });
         } catch (hypeError) {
             logger.error("Hype Update Error", hypeError);
