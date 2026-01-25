@@ -74,7 +74,7 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                     position: 'relative'
                 }}>
                     <img
-                        src={getOptimizedImageUrl(image.url || image)}
+                        src={getOptimizedImageUrl(image.imageUrl || image.url || image)}
                         alt={image.prompt ? `Showcase: ${image.prompt}` : "Model Showcase Detail"}
                         style={{
                             maxWidth: '100%', maxHeight: '100%',

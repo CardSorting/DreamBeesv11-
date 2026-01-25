@@ -33,6 +33,9 @@ export function UserInteractionsProvider({ children }) {
     const [hidden, setHidden] = useState([]);
     const [mockups, setMockups] = useState([]);
     const [memes, setMemes] = useState([]);
+    const [appGenerations, setAppGenerations] = useState([]); // from generation_queue
+    const [personalCreations, setPersonalCreations] = useState([]); // from images
+    const [mainstreamGenerations, setMainstreamGenerations] = useState([]);
 
     // User Profile Data (Centralized Sync)
     const [userProfile, setUserProfile] = useState({
@@ -63,6 +66,12 @@ export function UserInteractionsProvider({ children }) {
             setMockups([]);
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setMemes([]);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setAppGenerations([]);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setPersonalCreations([]);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setMainstreamGenerations([]);
             setIsProfileLoaded(false);
             return;
         }
@@ -145,7 +154,38 @@ export function UserInteractionsProvider({ children }) {
             setIsProfileLoaded(true);
         }, (error) => {
             console.warn("Global profile listener failed:", error);
-            setIsProfileLoaded(true); // Don't block app on error, but maybe won't show onboarding
+            setIsProfileLoaded(true);
+        });
+
+        // Listener for all completed generations in generation_queue
+        const gensQuery = query(
+            collection(db, 'generation_queue'),
+            where('userId', '==', uid),
+            where('status', '==', 'completed'),
+            orderBy('createdAt', 'desc')
+        );
+        const unsubGens = onSnapshot(gensQuery, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Separate app-specific vs mainstream
+            const apps = data.filter(item => item.type === 'dress-up' || item.type === 'slideshow' || item.modelId === 'meowacc');
+            const mainstream = data.filter(item => !item.type || (item.type !== 'dress-up' && item.type !== 'slideshow' && item.modelId !== 'meowacc'));
+            setAppGenerations(apps);
+            setMainstreamGenerations(mainstream);
+        }, (error) => {
+            console.warn("Global generation_queue listener failed:", error);
+        });
+
+        // Listener for personal creations in 'images' collection
+        const personalQuery = query(
+            collection(db, 'images'),
+            where('userId', '==', uid),
+            orderBy('createdAt', 'desc')
+        );
+        const unsubPersonal = onSnapshot(personalQuery, (snapshot) => {
+            const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setPersonalCreations(data);
+        }, (error) => {
+            console.warn("Global images listener failed:", error);
         });
 
         return () => {
@@ -155,6 +195,8 @@ export function UserInteractionsProvider({ children }) {
             unsubMockups();
             unsubMemes();
             unsubProfile();
+            unsubGens();
+            unsubPersonal();
         };
     }, [currentUser?.uid]);
 
@@ -544,6 +586,17 @@ export function UserInteractionsProvider({ children }) {
         bookmarks,
         mockups,
         memes,
+        appCreations: React.useMemo(() => [
+            ...mockups,
+            ...memes,
+            ...appGenerations,
+            ...personalCreations
+        ].sort((a, b) => {
+            const dateA = a.createdAt?.seconds || (a.createdAt?.toMillis ? a.createdAt.toMillis() / 1000 : (a.createdAt instanceof Date ? a.createdAt.getTime() / 1000 : 0));
+            const dateB = b.createdAt?.seconds || (b.createdAt?.toMillis ? b.createdAt.toMillis() / 1000 : (b.createdAt instanceof Date ? b.createdAt.getTime() / 1000 : 0));
+            return dateB - dateA;
+        }), [mockups, memes, appGenerations, personalCreations]),
+        mainstreamGenerations,
         isLiked,
         isBookmarked,
         hidePost,
