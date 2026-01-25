@@ -150,7 +150,13 @@ export const handleCreatePersona = async (request) => {
             ...generated,
             imageId,
             createdBy: userId, // First user to discover/animate them
-            createdAt: FieldValue.serverTimestamp()
+            createdAt: FieldValue.serverTimestamp(),
+            // Broadcast Metadata
+            zapGoal: 500,
+            zapCurrent: 0,
+            hypeScore: 0,
+            hypeLevel: 1,
+            streamTitle: generated.greeting || `Live with ${generated.name}`
         };
     } catch (e) {
         logger.error("Gemini Persona Generation Error", e);
@@ -351,35 +357,63 @@ export const handleChatPersona = async (request) => {
         const result = await vertexFlow.execute('PERSONA_CHAT', async () => {
             return await model.generateContent({
                 contents,
-                systemInstruction: { parts: [{ text: systemInstruction + "\n\nCRITICAL: Occasionally include a line starting with 'TITLE:' followed by a new creative stream title. Also, occasionally include a line starting with 'REACTION:' followed by a single emoji that reflects your current mood." }] }
+                systemInstruction: { parts: [{ text: systemInstruction + "\n\nCRITICAL: Occasionally include a line starting with 'TITLE:' followed by a new creative stream title. Also, occasionally include a line starting with 'REACTION:' followed by a single emoji. VERY RARELY, if the vibe is high, include a line starting with 'POLL:' followed by a question and 2-4 options separated by pipes (e.g., POLL: What should I wear? | Red Dress | Blue Suit | Space Armor)." }] }
             });
         }, vertexFlow.constructor.PRIORITY.HIGH);
 
         let responseText = (await result.response).candidates[0].content.parts[0].text;
 
-        // Extract Title and Reaction if present
+        // Extract Title, Reaction, and Poll if present
         let extractedReaction = null;
+        let extractedPoll = null;
+
+        if (responseText.includes('POLL:')) {
+            const parts = responseText.split('POLL:');
+            responseText = parts[0].trim();
+            const pollLine = parts[1].split('\n')[0].trim();
+            const pollParts = pollLine.split('|').map(p => p.trim());
+            if (pollParts.length >= 3) {
+                extractedPoll = {
+                    question: pollParts[0],
+                    options: pollParts.slice(1).map((label, idx) => ({ id: idx + 1, label, votes: 0 }))
+                };
+            }
+        }
+
         if (responseText.includes('TITLE:')) {
             const parts = responseText.split('TITLE:');
-            responseText = parts[0].trim();
-            const rest = parts[1].split('\n');
-            const newTitle = rest[0].trim().replace(/["']/g, '');
-            if (newTitle) {
-                await db.collection('personas').doc(imageId).update({ streamTitle: newTitle }).catch(e => logger.error("Title Update Error", e));
+            // If responseText was already sliced by POLL:, make sure we only slice the remainder
+            const preText = parts[0].trim();
+            const postText = parts[1] || '';
+
+            // If responseText still has TITLE:, update it
+            if (responseText.includes('TITLE:')) {
+                responseText = preText;
+                const newTitle = postText.split('\n')[0].trim().replace(/["']/g, '');
+                if (newTitle) {
+                    await db.collection('personas').doc(imageId).update({ streamTitle: newTitle }).catch(e => logger.error("Title Update Error", e));
+                }
             }
-            // Check if reaction is in the rest of the text
-            const fullRest = rest.join('\n');
-            if (fullRest.includes('REACTION:')) {
-                extractedReaction = fullRest.split('REACTION:')[1].trim().split('\n')[0];
-            }
-        } else if (responseText.includes('REACTION:')) {
+        }
+
+        if (responseText.includes('REACTION:')) {
             const parts = responseText.split('REACTION:');
-            responseText = parts[0].trim();
-            extractedReaction = parts[1].trim().split('\n')[0];
+            const preText = parts[0].trim();
+            const postText = parts[1] || '';
+
+            if (responseText.includes('REACTION:')) {
+                responseText = preText;
+                extractedReaction = postText.trim().split('\n')[0];
+            }
+        }
+
+        // Apply Poll if extracted
+        if (extractedPoll) {
+            await db.collection('personas').doc(imageId).update({ activePoll: extractedPoll }).catch(e => logger.error("Poll Update Error", e));
         }
 
         // Clean responseText of any leftover tags
-        responseText = responseText.replace(/REACTION:.*$/gm, '').trim();
+        responseText = responseText.replace(/REACTION:.*$/gm, '').replace(/TITLE:.*$/gm, '').replace(/POLL:.*$/gm, '').trim();
 
         // Broadcast Reaction via Pusher
         if (extractedReaction && pusher) {
@@ -427,6 +461,11 @@ export const handleChatPersona = async (request) => {
                 displayName: persona.name,
                 timestamp: Date.now()
             }).catch(e => logger.error("Soketi Broadcast Error", e));
+
+            if (extractedPoll) {
+                pusher.trigger(sharedChannel, "poll-started", extractedPoll)
+                    .catch(e => logger.error("Poll Broadcast Error", e));
+            }
 
             // Also echo the user message to others in the shared channel
             pusher.trigger(sharedChannel, "new-message", {

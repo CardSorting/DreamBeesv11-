@@ -191,6 +191,16 @@ const PersonaChat = () => {
                 setTimeout(() => setAlerts(prev => prev.filter(a => a.id !== newAlert.id)), 5000);
             });
 
+            channel.bind('poll-started', (data) => {
+                const newAlert = {
+                    id: Date.now(),
+                    text: `📊 NEW POLL: ${data.question}`,
+                    type: 'poll'
+                };
+                setAlerts(prev => [newAlert, ...prev]);
+                setTimeout(() => setAlerts(prev => prev.filter(a => a.id !== newAlert.id)), 5000);
+            });
+
             channel.bind('pusher:member_removed', () => {
                 setViewerCount(prev => Math.max(1, prev - 1));
             });
