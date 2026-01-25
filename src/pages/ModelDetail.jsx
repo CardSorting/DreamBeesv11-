@@ -464,48 +464,13 @@ export default function ModelDetail() {
                                 const ratio = imgItem.aspectRatio || ratios[index % ratios.length];
 
                                 return (
-                                    <article
+                                    <ShowcaseCard
                                         key={imgItem.id || index}
-                                        className="masonry-item group"
+                                        imgItem={imgItem}
+                                        index={index}
+                                        ratio={ratio}
                                         onClick={() => openShowcase(imgItem)}
-                                        style={{
-                                            animation: `fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) ${0.1 + ((index * 0.08) % 0.4)}s both`
-                                        }}
-                                    >
-                                        <div className="image-card">
-                                            <div className="image-wrapper" style={{
-                                                aspectRatio: ratio,
-                                                background: imgItem.lqip ? `url(${imgItem.lqip}) center/cover no-repeat` : 'rgba(255,255,255,0.02)',
-                                                filter: imgItem.lqip ? 'blur(10px)' : 'none',
-                                                transition: 'filter 0.5s ease',
-                                                overflow: 'hidden'
-                                            }}>
-                                                <img
-                                                    src={getOptimizedImageUrl(imgItem.url || imgItem.imageUrl || imgItem.thumbnailUrl || (typeof imgItem === 'string' ? imgItem : ''))}
-                                                    srcSet={getImageSrcSet(imgItem)}
-                                                    sizes="(max-width: 500px) 50vw, (max-width: 1200px) 25vw, 20vw"
-                                                    alt={`Showcase generation: ${imgItem.prompt ? imgItem.prompt.slice(0, 50) + "..." : "AI Artwork"}`}
-                                                    loading={index < 8 ? "eager" : "lazy"}
-                                                    style={{
-                                                        width: '100%',
-                                                        height: '100%',
-                                                        objectFit: 'cover',
-                                                        display: 'block'
-                                                    }}
-                                                />
-                                                <div style={{
-                                                    position: 'absolute',
-                                                    inset: 0,
-                                                    background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%)',
-                                                    opacity: 0,
-                                                    transition: 'opacity 0.3s'
-                                                }} className="group-hover:opacity-100" />
-                                            </div>
-                                            <div className="image-meta">
-                                                <div className="meta-badge">SAMPLE_{String(index + 1).padStart(2, '0')}</div>
-                                            </div>
-                                        </div>
-                                    </article>
+                                    />
                                 );
                             })}
                         </div>
@@ -727,3 +692,57 @@ export default function ModelDetail() {
         </main>
     );
 }
+
+// Sub-component to handle individual image loading state
+const ShowcaseCard = React.memo(({ imgItem, index, ratio, onClick }) => {
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    return (
+        <article
+            className="masonry-item group"
+            onClick={onClick}
+            style={{
+                animation: `fadeInUp 1s cubic-bezier(0.16, 1, 0.3, 1) ${0.1 + ((index * 0.08) % 0.4)}s both`
+            }}
+        >
+            <div className="image-card">
+                <div className="image-wrapper" style={{
+                    aspectRatio: ratio,
+                    background: imgItem.lqip ? `url(${imgItem.lqip}) center/cover no-repeat` : 'rgba(255,255,255,0.02)',
+                    // Only blur if LQIP exists AND image hasn't loaded yet
+                    filter: (imgItem.lqip && !isLoaded) ? 'blur(10px)' : 'none',
+                    transition: 'filter 0.5s ease',
+                    overflow: 'hidden'
+                }}>
+                    <img
+                        src={getOptimizedImageUrl(imgItem.url || imgItem.imageUrl || imgItem.thumbnailUrl || (typeof imgItem === 'string' ? imgItem : ''))}
+                        srcSet={getImageSrcSet(imgItem)}
+                        sizes="(max-width: 500px) 50vw, (max-width: 1200px) 25vw, 20vw"
+                        alt={`Showcase generation: ${imgItem.prompt ? imgItem.prompt.slice(0, 50) + "..." : "AI Artwork"}`}
+                        loading={index < 8 ? "eager" : "lazy"}
+                        onLoad={() => setIsLoaded(true)}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            display: 'block',
+                            // Fade in texture when loaded
+                            opacity: isLoaded ? 1 : 0,
+                            transition: 'opacity 0.5s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.6s'
+                        }}
+                    />
+                    <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%)',
+                        opacity: 0,
+                        transition: 'opacity 0.3s'
+                    }} className="group-hover:opacity-100" />
+                </div>
+                <div className="image-meta">
+                    <div className="meta-badge">SAMPLE_{String(index + 1).padStart(2, '0')}</div>
+                </div>
+            </div>
+        </article>
+    );
+});
