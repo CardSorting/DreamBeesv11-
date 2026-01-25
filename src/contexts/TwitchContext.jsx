@@ -11,7 +11,11 @@ export const useTwitch = () => {
 };
 
 export const TwitchProvider = ({ children }) => {
+    const [personas, setPersonas] = useState([]);
+    const [followedPersonas, setFollowedPersonas] = useState([]);
+    const [suggestedPersonas, setSuggestedPersonas] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         // Real-time listener for personas to keep them synced

@@ -1,4 +1,9 @@
-import React, { useState } from 'react';
+import { formatTwitchCount } from '../utils/twitchHelpers';
+
+// Inside component...
+<div className="viewer-count-sidebar">
+    <span className="v-count">{formatTwitchCount((channel.hypeScore || 0) + 1000)}</span>
+</div>
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
@@ -107,36 +112,6 @@ const Sidebar = ({ activeId }) => {
                     </Link>
 
                 </div>
-
-                {/* Suggested Channels Group */}
-                <CollapsibleGroup key="suggested-channels" title="SUGGESTED CHANNELS" defaultOpen={true}>
-                    {personas.sort((a, b) => (b.hypeScore || 0) - (a.hypeScore || 0)).slice(0, 7).map(channel => (
-                        <Link
-                            to={`/channel/${channel.id}`}
-                            key={channel.id}
-                            className={`sidebar-channel-item ${location.pathname === `/channel/${channel.id}` ? 'active' : ''}`}
-                        >
-                            <div className="channel-avatar-wrapper">
-                                <img src={channel.imageUrl} alt={channel.name} className="channel-avatar" />
-                                {channel.hypeLevel >= 3 && (
-                                    <div className="live-status-dot hype-pulse"></div>
-                                )}
-                            </div>
-                            <div className="channel-info-sidebar">
-                                <div className="channel-name-row">
-                                    <span className="channel-name-text">{channel.name}</span>
-                                    {channel.hypeLevel >= 3 && (
-                                        <span className="hype-badge-sidebar">HYPE</span>
-                                    )}
-                                </div>
-                                <span className="channel-category-text">{channel.category || 'Just Chatting'}</span>
-                            </div>
-                            <div className="viewer-count-sidebar">
-                                <span className="v-count">{(channel.hypeScore || 0) + 1}k</span>
-                            </div>
-                        </Link>
-                    ))}
-                </CollapsibleGroup>
 
                 {/* Groups */}
                 {visibleGroups.map((group, idx) => (

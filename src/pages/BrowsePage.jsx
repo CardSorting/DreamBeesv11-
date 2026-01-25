@@ -1,4 +1,9 @@
-import React from 'react';
+import { formatTwitchCount } from '../utils/twitchHelpers';
+
+// ...
+<span className="viewers-count-card">
+    {formatTwitchCount((p.hypeScore || 0) + 1000)} viewers
+</span>
 import { useNavigate } from 'react-router-dom';
 import SEO from '../components/SEO';
 import { Play } from 'lucide-react';
