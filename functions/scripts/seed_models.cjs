@@ -84,7 +84,7 @@ const MODELS = [
         type: 'SDXL',
         order: 12,
         isActive: true,
-        image: '/showcase/wai-illustrious/cover.png'
+        image: 'https://cdn.dreambeesai.com/file/printeregg/assets/landing/wai_illustrious_preview.png'
     },
     {
         id: 'lightricks-ltx-2-pro',
@@ -111,6 +111,15 @@ const MODELS = [
         order: 15,
         isActive: true,
         image: 'https://cdn.dreambeesai.com/file/printeregg/showcase/gemini-2.5-flash-image/1769040312885_0.webp'
+    },
+    {
+        id: 'flux-2-dev',
+        name: 'Flux 2 Dev',
+        description: 'Next-generation image synthesis with superior detail and prompt adherence by Black Forest Labs.',
+        type: 'Flux',
+        order: 16,
+        isActive: true,
+        image: 'https://cdn.dreambeesai.com/file/printeregg/assets/landing/flux_2_dev_preview.png'
     }
 ];
 
