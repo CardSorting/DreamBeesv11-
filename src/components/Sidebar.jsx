@@ -108,6 +108,36 @@ const Sidebar = ({ activeId }) => {
 
                 </div>
 
+                {/* Suggested Channels Group */}
+                <CollapsibleGroup key="suggested-channels" title="SUGGESTED CHANNELS" defaultOpen={true}>
+                    {personas.sort((a, b) => (b.hypeScore || 0) - (a.hypeScore || 0)).slice(0, 7).map(channel => (
+                        <Link
+                            to={`/channel/${channel.id}`}
+                            key={channel.id}
+                            className={`sidebar-channel-item ${location.pathname === `/channel/${channel.id}` ? 'active' : ''}`}
+                        >
+                            <div className="channel-avatar-wrapper">
+                                <img src={channel.imageUrl} alt={channel.name} className="channel-avatar" />
+                                {channel.hypeLevel >= 3 && (
+                                    <div className="live-status-dot hype-pulse"></div>
+                                )}
+                            </div>
+                            <div className="channel-info-sidebar">
+                                <div className="channel-name-row">
+                                    <span className="channel-name-text">{channel.name}</span>
+                                    {channel.hypeLevel >= 3 && (
+                                        <span className="hype-badge-sidebar">HYPE</span>
+                                    )}
+                                </div>
+                                <span className="channel-category-text">{channel.category || 'Just Chatting'}</span>
+                            </div>
+                            <div className="viewer-count-sidebar">
+                                <span className="v-count">{(channel.hypeScore || 0) + 1}k</span>
+                            </div>
+                        </Link>
+                    ))}
+                </CollapsibleGroup>
+
                 {/* Groups */}
                 {visibleGroups.map((group, idx) => (
                     <CollapsibleGroup key={idx} title={group.title}>
@@ -143,7 +173,7 @@ const Sidebar = ({ activeId }) => {
                     background: rgba(255,255,255,0.1);
                     border-radius: 4px;
                 }
-                
+
                 .sidebar-logo {
                     display: flex;
                     align-items: center;
@@ -227,6 +257,35 @@ const Sidebar = ({ activeId }) => {
                 }
                 .primary-link {
                     font-weight: 600;
+                }
+                .hype-badge-sidebar {
+                    background: #a970ff;
+                    color: white;
+                    font-size: 0.6rem;
+                    font-weight: 800;
+                    padding: 1px 4px;
+                    border-radius: 2px;
+                    margin-left: 6px;
+                }
+
+                .hype-pulse {
+                    box-shadow: 0 0 0 0 rgba(169, 112, 255, 0.7);
+                    animation: pulse-hype 1.5s infinite;
+                }
+
+                @keyframes pulse-hype {
+                    0% {
+                        transform: scale(0.95);
+                        box-shadow: 0 0 0 0 rgba(169, 112, 255, 0.7);
+                    }
+                    70% {
+                        transform: scale(1);
+                        box-shadow: 0 0 0 6px rgba(169, 112, 255, 0);
+                    }
+                    100% {
+                        transform: scale(0.95);
+                        box-shadow: 0 0 0 0 rgba(169, 112, 255, 0);
+                    }
                 }
             `}</style>
         </aside>

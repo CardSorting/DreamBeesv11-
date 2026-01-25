@@ -30,16 +30,20 @@ export const TwitchProvider = ({ children }) => {
                         catMap[catName] = {
                             id: catName.toLowerCase().replace(/\s+/g, '-'),
                             name: catName,
-                            image: p.imageUrl, // Use the latest persona image as category boxart
-                            viewers: 0
+                            image: p.imageUrl,
+                            viewers: 0,
+                            hype: 0
                         };
                     }
-                    catMap[catName].viewers += Math.floor(Math.random() * 5) + 1; // Fake dynamic viewers
+                    // Viewers derived from ZAPs + standard random
+                    const zapViewers = Math.floor((p.zapCurrent || 0) / 10);
+                    catMap[catName].viewers += zapViewers + Math.floor(Math.random() * 5) + 1;
+                    catMap[catName].hype += p.hypeScore || 0;
                 }
             });
 
-            // Add standard defaults if missing but don't force them if empty
-            const derivedCats = Object.values(catMap);
+            // Sort categories by total hype/viewers
+            const derivedCats = Object.values(catMap).sort((a, b) => b.viewers - a.viewers);
             setCategories(derivedCats);
 
             setFollowedPersonas(all.slice(0, 5));

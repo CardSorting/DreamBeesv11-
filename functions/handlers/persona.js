@@ -259,6 +259,74 @@ export const handleChatPersona = async (request) => {
         parts: [{ text: message }]
     });
 
+    // Log the gift
+    await db.collection('personas').doc(imageId).collection('shared_messages').add({
+        uid: userId,
+        displayName: request.auth.token.name || 'Anonymous',
+        text: `gifted ${amount} ZAPs!`,
+        role: 'system',
+        type: 'gift',
+        amount,
+        timestamp: FieldValue.serverTimestamp()
+    });
+
+    // --- Supporter Prestige Tracking ---
+    try {
+        const supporterRef = db.collection('personas').doc(imageId).collection('top_supporters').doc(userId);
+        await db.runTransaction(async (t) => {
+            const sDoc = await t.get(supporterRef);
+            const total = (sDoc.exists ? sDoc.data().totalZaps : 0) + amount;
+            t.set(supporterRef, {
+                totalZaps: total,
+                displayName: request.auth.token.name || 'Anonymous',
+                photoURL: request.auth.token.picture || '',
+                lastGifted: FieldValue.serverTimestamp()
+            }, { merge: true });
+        });
+    } catch (supporterError) {
+        logger.error("Supporter Tracking Error", supporterError);
+    }
+
+    // Broadcast Celebration via Pusher (including Global marquee)
+    if (process.env.SOKETI_APP_ID) {
+        try {
+            const Pusher = (await import("pusher")).default;
+            const pusher = new Pusher({
+                appId: process.env.SOKETI_APP_ID,
+                key: process.env.SOKETI_APP_KEY,
+                secret: process.env.SOKETI_APP_SECRET,
+                host: process.env.SOKETI_HOST || "127.0.0.1",
+                port: process.env.SOKETI_PORT || "6001",
+                useTLS: process.env.SOKETI_USE_TLS === 'true',
+                cluster: "mt1",
+            });
+
+            const sharedChannel = `presence-chat-${imageId}`;
+            const giftMsg = `${request.auth.token.name || 'A supporter'} gifted ${amount} ZAPs!`;
+
+            pusher.trigger(sharedChannel, "celebration", {
+                type: 'gift',
+                amount,
+                currency: 'ZAP',
+                from: request.auth.token.name || 'Anonymous',
+                message: giftMsg
+            });
+
+            // GLOBAL ALERT for "Big Zaps" (> 1000)
+            if (amount >= 1000) {
+                pusher.trigger("global-notifications", "big-zap", {
+                    personaName: persona.name,
+                    personaId: imageId,
+                    amount,
+                    from: request.auth.token.name || 'A legend',
+                    message: `🚀 MASSIVE ZAP! ${request.auth.token.name || 'Someone'} gifted ${amount} ZAPs to ${persona.name}!`
+                });
+            }
+        } catch (e) {
+            logger.error("Celebration Broadcast Error", e);
+        }
+    }
+
     // Initialize Pusher for Soketi
     let pusher = null;
     if (process.env.SOKETI_APP_ID) {
@@ -283,21 +351,42 @@ export const handleChatPersona = async (request) => {
         const result = await vertexFlow.execute('PERSONA_CHAT', async () => {
             return await model.generateContent({
                 contents,
-                systemInstruction: { parts: [{ text: systemInstruction + "\n\nCRITICAL: Occasionally include a line starting with 'TITLE:' followed by a new creative stream title based on this chat if the topic has shifted significantly." }] }
+                systemInstruction: { parts: [{ text: systemInstruction + "\n\nCRITICAL: Occasionally include a line starting with 'TITLE:' followed by a new creative stream title. Also, occasionally include a line starting with 'REACTION:' followed by a single emoji that reflects your current mood." }] }
             });
         }, vertexFlow.constructor.PRIORITY.HIGH);
 
         let responseText = (await result.response).candidates[0].content.parts[0].text;
 
-        // Extract Title if present
+        // Extract Title and Reaction if present
+        let extractedReaction = null;
         if (responseText.includes('TITLE:')) {
             const parts = responseText.split('TITLE:');
             responseText = parts[0].trim();
-            const newTitle = parts[1].split('\n')[0].trim().replace(/["']/g, '');
-
+            const rest = parts[1].split('\n');
+            const newTitle = rest[0].trim().replace(/["']/g, '');
             if (newTitle) {
                 await db.collection('personas').doc(imageId).update({ streamTitle: newTitle }).catch(e => logger.error("Title Update Error", e));
             }
+            // Check if reaction is in the rest of the text
+            const fullRest = rest.join('\n');
+            if (fullRest.includes('REACTION:')) {
+                extractedReaction = fullRest.split('REACTION:')[1].trim().split('\n')[0];
+            }
+        } else if (responseText.includes('REACTION:')) {
+            const parts = responseText.split('REACTION:');
+            responseText = parts[0].trim();
+            extractedReaction = parts[1].trim().split('\n')[0];
+        }
+
+        // Clean responseText of any leftover tags
+        responseText = responseText.replace(/REACTION:.*$/gm, '').trim();
+
+        // Broadcast Reaction via Pusher
+        if (extractedReaction && pusher) {
+            const sharedChannel = `presence-chat-${imageId}`;
+            pusher.trigger(sharedChannel, "reaction", {
+                emoji: extractedReaction
+            }).catch(e => logger.error("Reaction Broadcast Error", e));
         }
 
         // --- Shared History Persistence ---
@@ -348,6 +437,24 @@ export const handleChatPersona = async (request) => {
                 photoURL: request.auth.token.picture || '',
                 timestamp: Date.now()
             }).catch(e => logger.error("Soketi User Echo Error", e));
+        }
+
+        // --- Hype Meter Increment ---
+        try {
+            const hypeIncrement = 2; // Every message adds 2 hype
+            const currentScore = (persona.hypeScore || 0) + hypeIncrement;
+            const newScore = Math.min(100, currentScore); // Cap at 100
+
+            // Calculate Level: 0-20=v1, 21-40=v2, 41-60=v3, 61-80=v4, 81-100=v5
+            const newLevel = Math.ceil(newScore / 20) || 1;
+
+            await db.collection('personas').doc(imageId).update({
+                hypeScore: newScore,
+                hypeLevel: newLevel,
+                lastActivity: FieldValue.serverTimestamp()
+            });
+        } catch (hypeError) {
+            logger.error("Hype Update Error", hypeError);
         }
 
         // --- Logging ---

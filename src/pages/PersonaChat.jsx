@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, collection, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase';
 import { ArrowLeft, Send, Sparkles, Loader2, Info, MessageCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -77,7 +77,10 @@ const PersonaChat = () => {
     const [followedPersonas, setFollowedPersonas] = useState([]);
     const [activeTab, setActiveTab] = useState('Home');
     const [alerts, setAlerts] = useState([]);
-    const [showEmotes, setShowEmotes] = useState(false);
+    const [floatingReactions, setFloatingReactions] = useState([]);
+    const [pinnedMessage, setPinnedMessage] = useState(null);
+    const [topSupporters, setTopSupporters] = useState([]);
+    const [isMuted, setIsMuted] = useState(false);
     const [error, setError] = useState(null);
 
     const scrollRef = useRef(null);
@@ -136,6 +139,19 @@ const PersonaChat = () => {
                 setViewerCount(prev => Math.max(1, prev - 1));
             });
 
+            // Site-Wide Notifications
+            const globalChannel = pusher.subscribe('global-notifications');
+            globalChannel.bind('big-zap', (data) => {
+                if (data.personaId !== id) {
+                    toast(`${data.message}`, {
+                        icon: '🚀',
+                        style: { background: '#1f1f23', color: '#a970ff', border: '1px solid #a970ff' },
+                        duration: 6000,
+                        onClick: () => navigate(`/channel/${data.personaId}`)
+                    });
+                }
+            });
+
             channel.bind('celebration', (data) => {
                 if (isMounted.current) {
                     const newAlert = {
@@ -150,6 +166,16 @@ const PersonaChat = () => {
 
                     // Trigger "Celebration" confetti if we want (Mocked as alert for now)
                     toast.success(data.message, { icon: '🎁', duration: 5000 });
+                }
+            });
+
+            channel.bind('reaction', (data) => {
+                if (isMounted.current) {
+                    const id = Date.now() + Math.random();
+                    setFloatingReactions(prev => [...prev, { id, emoji: data.emoji, x: 20 + Math.random() * 60 }]);
+                    setTimeout(() => {
+                        setFloatingReactions(prev => prev.filter(r => r.id !== id));
+                    }, 3000);
                 }
             });
 
@@ -233,6 +259,30 @@ const PersonaChat = () => {
         });
         return () => unsub();
     }, [id]);
+
+    useEffect(() => {
+        if (!id) return;
+        const supporterQuery = query(
+            collection(db, 'personas', id, 'top_supporters'),
+            orderBy('totalZaps', 'desc'),
+            limit(5)
+        );
+        const unsub = onSnapshot(supporterQuery, (snapshot) => {
+            const supporters = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setTopSupporters(supporters);
+        });
+        return () => unsub();
+    }, [id]);
+
+    const getSupporterBadge = (userUid) => {
+        const supporter = topSupporters.find(s => s.id === userUid);
+        if (!supporter) return null;
+        const total = supporter.totalZaps || 0;
+        if (total >= 5000) return <span className="badge-legend" title="Legendary Supporter">👑</span>;
+        if (total >= 1000) return <span className="badge-blaze" title="Mega Supporter">🔥</span>;
+        if (total >= 100) return <span className="badge-spark" title="Supporter">⚡</span>;
+        return null;
+    };
 
     useEffect(() => {
         const initPersona = async () => {
@@ -360,7 +410,7 @@ const PersonaChat = () => {
         }
     };
 
-    const handleGift = async (amount = 10) => {
+    const handleGift = async (amount = 100) => {
         if (isSending) return;
         try {
             const apiFn = httpsCallable(functions, 'api');
@@ -368,12 +418,20 @@ const PersonaChat = () => {
                 action: 'giftPersona',
                 imageId: id,
                 amount: amount,
-                type: 'bits'
+                type: 'zaps'
             });
-            toast.success(`You gifted ${amount} Bits!`);
+            toast.success(`You gifted ${amount} ZAPs!`, { icon: '⚡' });
+
+            if (amount >= 500) {
+                setPinnedMessage({
+                    id: Date.now(),
+                    author: user.displayName || 'You',
+                    text: `gifted ${amount} ZAPs for a Priestess' blessing!`
+                });
+            }
         } catch (error) {
             console.error("Gift Error:", error);
-            toast.error(error.message || "Failed to send gift.");
+            toast.error(error.message || "Failed to send ZAPs.");
         }
     };
 
@@ -439,7 +497,7 @@ const PersonaChat = () => {
             <div className="twitch-stream-split">
                 {/* Main Video Section */}
                 <div className="video-section">
-                    <div className="video-player-mock">
+                    <div className={`video-player-mock ${persona?.hypeLevel >= 5 ? 'hype-level-5' : ''}`}>
                         {imageItem && (
                             <img
                                 src={getOptimizedImageUrl(imageItem.imageUrl)}
@@ -451,6 +509,19 @@ const PersonaChat = () => {
                             <div className="live-badge">LIVE</div>
                             <div className="viewer-count">
                                 <span className="view-dot"></span> {viewerCount} viewers
+                            </div>
+
+                            {/* Floating Reactions Overlay */}
+                            <div className="floating-reactions-container">
+                                {floatingReactions.map(reaction => (
+                                    <div
+                                        key={reaction.id}
+                                        className="floating-emoji"
+                                        style={{ left: `${reaction.x}%` }}
+                                    >
+                                        {reaction.emoji}
+                                    </div>
+                                ))}
                             </div>
 
                             {/* Stream Alerts Overlay */}
@@ -534,29 +605,87 @@ const PersonaChat = () => {
                     </div>
                 </div>
 
-                {/* Sidebar Chat Section */}
-                <div className="chat-sidebar">
-                    <div className="chat-header-twitch">
+                {/* Chat Section */}
+                <div className="chat-section">
+                    <div className="hype-meter-wrapper">
+                        <div className="hype-meter-header">
+                            <span className="hype-label">HYPE LEVEL {persona?.hypeLevel || 1}</span>
+                            <Zap size={12} className="hype-icon" />
+                        </div>
+                        <div className="hype-bar-container">
+                            <div
+                                className="hype-bar-fill"
+                                style={{ width: `${persona?.hypeScore || 10}%` }}
+                            ></div>
+                        </div>
+
+                        {/* Community Zap Goal */}
+                        <div className="community-goal-wrapper">
+                            <div className="goal-header">
+                                <span className="goal-label">COMMUNITY GOAL: SPECIAL GREETING</span>
+                                <span className="goal-stats">{persona?.zapCurrent || 0}/{persona?.zapGoal || 1000}</span>
+                            </div>
+                            <div className="goal-bar-container">
+                                <div
+                                    className="goal-bar-fill"
+                                    style={{ width: `${Math.min(100, ((persona?.zapCurrent || 0) / (persona?.zapGoal || 1000)) * 100)}%` }}
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Top Supporters Widget */}
+                    {topSupporters.length > 0 && (
+                        <div className="top-supporters-widget">
+                            <div className="supporters-label">TOP SUPPORTERS</div>
+                            <div className="supporters-list-mini">
+                                {topSupporters.map((s, i) => (
+                                    <div key={s.id} className="mini-supporter-item" title={`${s.displayName}: ${s.totalZaps} ZAPs`}>
+                                        <div className="mini-avatar-wrap">
+                                            {s.photoURL ? <img src={s.photoURL} alt="" /> : <div className="avatar-placeholder">{s.displayName[0]}</div>}
+                                            <span className="rank-idx">{i + 1}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="chat-header">
                         STREAM CHAT
                     </div>
+
+                    {/* Pinned Priority Message */}
+                    {pinnedMessage && (
+                        <div className="pinned-message-bar">
+                            <div className="pinned-header">
+                                <Zap size={10} fill="#ffd700" /> PRIORITY MESSAGE
+                                <button className="clear-pin" onClick={() => setPinnedMessage(null)}>×</button>
+                            </div>
+                            <div className="pinned-content">
+                                <strong>{pinnedMessage.author}:</strong> {pinnedMessage.text}
+                            </div>
+                        </div>
+                    )}
 
                     <div className="chat-messages-twitch" ref={scrollRef}>
                         <div className="chat-welcome-msg">
                             Welcome to the chat room!
                         </div>
                         {messages.map((msg, idx) => (
-                            <div key={msg.id || idx} className="twitch-message">
-                                {msg.role === 'model' && (
-                                    <span className="chat-badge broadcaster-badge" title="Broadcaster">
-                                        <div className="badge-icon">🎥</div>
-                                    </span>
+                            <div key={idx} className={`twitch-message ${msg.role === 'model' ? 'ai-msg' : ''}`}>
+                                {msg.role === 'system' ? (
+                                    <span className="system-msg">{msg.text}</span>
+                                ) : (
+                                    <>
+                                        <span className="message-author">
+                                            {getSupporterBadge(msg.uid)}
+                                            {msg.role === 'model' && <span className="chat-badge ai-badge">AI</span>}
+                                            {msg.displayName}:
+                                        </span>
+                                        <span className="message-body"> {msg.text}</span>
+                                    </>
                                 )}
-                                <span className={`message-author ${msg.role === 'model' ? 'ai-author' : ''}`}>
-                                    {msg.displayName || (msg.role === 'model' ? persona?.name : 'User')}:
-                                </span>
-                                <span className="message-text">
-                                    {msg.text}
-                                </span>
                             </div>
                         ))}
                         {isSending && (
@@ -594,7 +723,9 @@ const PersonaChat = () => {
                                     <span>0.25 Zaps</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '8px' }}>
-                                    <button className="bits-btn" onClick={() => handleGift(100)}>Bits</button>
+                                    <button className="bits-btn zap-btn-pulse" onClick={() => handleGift(100)}>
+                                        <Zap size={14} fill="#ffd700" /> ZAPs
+                                    </button>
                                     <button
                                         onClick={handleSend}
                                         disabled={!inputValue.trim() || isLoading || isSending}

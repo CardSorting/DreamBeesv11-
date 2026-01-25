@@ -39,10 +39,8 @@ const BrowseHero = ({ featuredPersona }) => {
 };
 
 const BrowsePage = () => {
-    const { personas, loading } = useTwitch();
+    const { personas, categories, loading } = useTwitch();
     const navigate = useNavigate();
-
-    const categories = ['All', 'Funny', 'Relaxed', 'Academic', 'Gamer', 'AI Alpha'];
 
     return (
         <div className="browse-page-twitch">
@@ -50,34 +48,50 @@ const BrowsePage = () => {
 
             <BrowseHero featuredPersona={personas[0]} />
 
+            {/* Suggested Categories Carousel */}
+            <section className="suggested-categories-section">
+                <h2>Suggested Categories</h2>
+                <div className="categories-carousel">
+                    {categories.length > 0 ? categories.map(cat => (
+                        <div key={cat.id} className="category-carousel-card" onClick={() => navigate('/directory')}>
+                            <div className="cat-card-image">
+                                <img src={cat.image} alt={cat.name} />
+                            </div>
+                            <div className="cat-card-info">
+                                <h3>{cat.name}</h3>
+                                <p>{cat.viewers} viewers</p>
+                            </div>
+                        </div>
+                    )) : (
+                        <div className="empty-categories">No active categories yet. Start a conversation to awaken one!</div>
+                    )}
+                </div>
+            </section>
+
             <header className="browse-header">
-                <h1>Browse</h1>
+                <h1>Live Channels</h1>
             </header>
 
-            <div className="category-chips">
-                {categories.map(cat => (
-                    <button key={cat} className={`cat-chip ${cat === 'All' ? 'active' : ''}`}>
-                        {cat}
-                    </button>
-                ))}
-            </div>
-
             <section className="live-streams-grid">
-                <h2>Live Channels</h2>
                 <div className="streams-grid">
                     {loading ? (
                         Array(8).fill(0).map((_, i) => (
                             <div key={i} className="stream-skeleton"></div>
                         ))
                     ) : (
-                        personas.map(p => (
+                        personas.sort((a, b) => (b.hypeScore || 0) - (a.hypeScore || 0)).map(p => (
                             <div key={p.id} className="stream-card-twitch" onClick={() => navigate(`/channel/${p.id}`)}>
                                 <div className="card-thumbnail">
                                     <img src={p.imageUrl} alt={p.name} />
                                     <div className="card-badges">
-                                        <span className="live-badge-card">LIVE</span>
+                                        <div style={{ display: 'flex', gap: '4px' }}>
+                                            <span className="live-badge-card">LIVE</span>
+                                            {p.hypeLevel >= 3 && (
+                                                <span className="hype-badge-card">HYPE</span>
+                                            )}
+                                        </div>
                                         <span className="viewers-count-card">
-                                            {Math.floor(Math.random() * 10) + 1}.2k viewers
+                                            {(p.hypeScore || 0) + 1}k viewers
                                         </span>
                                     </div>
                                     <div className="play-overlay">
@@ -89,12 +103,13 @@ const BrowsePage = () => {
                                         <img src={p.imageUrl} alt="" />
                                     </div>
                                     <div className="card-info-text">
-                                        <h3 className="card-title-twitch">Chillin with {p.name}</h3>
+                                        <h3 className="card-title-twitch">{p.streamTitle || `Chillin with ${p.name}`}</h3>
                                         <p className="card-author-twitch">{p.name}</p>
-                                        <p className="card-game-twitch">Just Chatting (AI)</p>
+                                        <p className="card-game-twitch">{p.category || 'Just Chatting'}</p>
                                         <div className="card-tags-twitch">
                                             <span className="tag-twitch">AI</span>
                                             <span className="tag-twitch">English</span>
+                                            {p.hypeLevel >= 4 && <span className="tag-twitch-hype">Trending</span>}
                                         </div>
                                     </div>
                                 </div>
