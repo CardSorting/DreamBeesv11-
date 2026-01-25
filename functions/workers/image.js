@@ -57,6 +57,12 @@ class LoadBalancer {
                 url: 'https://mariecoderinc--flux-klein-4b-flux-fastapi-app.modal.run',
                 tier: 'standard', costFactor: 1.0, baseLatency: 10000,
                 coldStartLatency: 55000, maxConcurrency: 5
+            },
+            // Cloudflare Flux Endpoint
+            'cf-flux-2-dev': {
+                url: `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/black-forest-labs/flux-2-dev`,
+                tier: 'standard', costFactor: 1.0, baseLatency: 8000,
+                coldStartLatency: 0, maxConcurrency: 50
             }
         };
 
@@ -950,43 +956,78 @@ export const processImageTask = async (req) => {
                 throw new Error("Cloudflare credentials not configured");
             }
 
-            logger.info(`[${requestId}] Calling Cloudflare for flux-2-dev generation`);
+            logger.info(`[${requestId}] Calling Cloudflare (via VertexFlow/LB) for flux-2-dev`);
 
-            const formData = new FormData();
-            formData.append('prompt', prompt);
-            formData.append('num_steps', (steps || 20).toString());
-            formData.append('guidance', (cfg || 3.5).toString());
+            const CF_ENDPOINT = 'cf-flux-2-dev';
 
-            const cfResponse = await fetch(`https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/black-forest-labs/flux-2-dev`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${CLOUDFLARE_API_TOKEN}`
-                },
-                body: formData
-            });
+            // Use VertexFlow for queuing and concurrency management
+            response = await vertexFlow.execute('WORKER_FLUX_DEV', async () => {
+                // LoadBalancer: Check throttling (logging only, VertexFlow handles queue)
+                if (loadBalancer.shouldThrottle(CF_ENDPOINT)) {
+                    logger.debug(`[LoadBalancer] ${CF_ENDPOINT} reports throttled state.`);
+                }
 
-            if (!cfResponse.ok) {
-                const errText = await cfResponse.text();
-                throw new Error(`Cloudflare Flux-2 Error (${cfResponse.status}): ${errText}`);
-            }
+                const jobStartTime = loadBalancer.recordJobStart(CF_ENDPOINT);
 
-            // Cloudflare usually returns JSON with "result": { "image": "base64..." } or just "result": "base64..."
-            // The user request says "Generated image as Base64 string".
-            const cfJson = await cfResponse.json();
+                // LoadBalancer: Spread requests (jitter)
+                await loadBalancer.applyRequestSpread(CF_ENDPOINT);
 
-            let base64Img = null;
-            if (cfJson.result && cfJson.result.image) {
-                base64Img = cfJson.result.image;
-            } else if (typeof cfJson.result === 'string') {
-                base64Img = cfJson.result; // sometimes it's direct
-            }
+                const formData = new FormData();
+                formData.append('prompt', prompt);
+                formData.append('num_steps', (steps || 20).toString());
+                formData.append('guidance', (cfg || 3.5).toString());
 
-            if (!base64Img) {
-                throw new Error("No image data found in Cloudflare response");
-            }
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 120000); // 2 min
 
-            const imageBuffer = Buffer.from(base64Img, 'base64');
-            response = { ok: true, _fluxImageBuffer: imageBuffer };
+                try {
+                    // Use the URL from the LoadBalancer config to ensure consistency
+                    const endpointUrl = loadBalancer.endpoints[CF_ENDPOINT].url;
+
+                    const cfResponse = await fetch(endpointUrl, {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${CLOUDFLARE_API_TOKEN}`
+                        },
+                        body: formData,
+                        signal: controller.signal
+                    });
+
+                    if (!cfResponse.ok) {
+                        const errText = await cfResponse.text();
+                        const error = new Error(`Cloudflare Flux-2 Error (${cfResponse.status}): ${errText}`);
+                        loadBalancer.recordFailure(CF_ENDPOINT, jobStartTime, error);
+                        throw error;
+                    }
+
+                    const cfJson = await cfResponse.json();
+                    let base64Img = null;
+                    if (cfJson.result && cfJson.result.image) {
+                        base64Img = cfJson.result.image;
+                    } else if (typeof cfJson.result === 'string') {
+                        base64Img = cfJson.result;
+                    }
+
+                    if (!base64Img) {
+                        const error = new Error("No image data found in Cloudflare response");
+                        loadBalancer.recordFailure(CF_ENDPOINT, jobStartTime, error);
+                        throw error;
+                    }
+
+                    const imageBuffer = Buffer.from(base64Img, 'base64');
+                    loadBalancer.recordSuccess(CF_ENDPOINT, jobStartTime);
+
+                    // Return consistent response object
+                    return { ok: true, _fluxImageBuffer: imageBuffer };
+                } catch (e) {
+                    // Ensure we record failure if we haven't already
+                    // (Simple check: if we're catching here, it's likely a failure of the fetch block)
+                    loadBalancer.recordFailure(CF_ENDPOINT, jobStartTime, e);
+                    throw e;
+                } finally {
+                    clearTimeout(timeout);
+                }
+            }, vertexFlow.constructor.PRIORITY.NORMAL);
         } else {
             // SDXL Handling - Use LoadBalancer for intelligent endpoint selection
             const sdxlEndpoints = loadBalancer.selectEndpoints('sdxl', {
