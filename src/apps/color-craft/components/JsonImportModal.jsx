@@ -13,7 +13,7 @@ const JsonImportModal = ({ isOpen, onClose, onImport }) => {
         if (isOpen && rows.length === 0) {
             setRows([{ id: crypto.randomUUID(), prompt: '', style: ArtStyle.SIMPLE }]);
         }
-    }, [isOpen]);
+    }, [isOpen, rows.length]);
 
     if (!isOpen) return null;
 

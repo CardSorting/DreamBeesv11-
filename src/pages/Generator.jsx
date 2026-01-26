@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 // motion.div is used for fullscreen view
 import { AnimatePresence, motion } from 'framer-motion';
 import { Toaster, toast } from 'react-hot-toast';
-import { trackEvent, trackSettingChange } from '../utils/analytics';
+import { trackEvent, trackSettingChange, trackFeatureAdoption } from '../utils/analytics';
 
 // Contexts
 import { useAuth } from '../contexts/AuthContext';
@@ -141,8 +141,8 @@ export default function Generator() {
     // Timer Logic
     useEffect(() => {
         if (!generating) {
-            _setElapsedTime(0);
-            _setProgress(0);
+            _setElapsedTime(prev => (prev !== 0 ? 0 : prev));
+            _setProgress(prev => (prev !== 0 ? 0 : prev));
             return;
         }
 

@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { setUserProperties, trackExperiment, trackChurnSignal } from './utils/analytics';
+import { setUserProperties, trackChurnSignal } from './utils/analytics';
 import { BrowserRouter as Router, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ModelProvider } from './contexts/ModelContext';

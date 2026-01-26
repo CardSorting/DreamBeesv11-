@@ -43,12 +43,14 @@ export default function DiscoveryDesktop() {
     const [activeModelId, setActiveModelId] = useState(modelId || 'all');
     const [searchParams, setSearchParams] = useSearchParams();
 
-    // Reset pagination when search changes
+    // Reset pagination when search changes (Search ignored for now as it's not implemented in this view)
+    /*
     useEffect(() => {
         if (currentPage !== 1) {
             setCurrentPage(1);
         }
     }, [searchQuery, currentPage]);
+    */
 
     // Update state when URL changes
     useEffect(() => {
@@ -292,7 +294,7 @@ export default function DiscoveryDesktop() {
             navigate(activeModelId === 'all' ? '/discovery' : `/discovery/model/${activeModelId}`);
         } else {
             // If using query param (?view=id), just clear the param
-            setFocusImage(null);
+            setFetchedFocusImage(null);
             setSearchParams(prev => {
                 const next = new URLSearchParams(prev);
                 next.delete('view');

@@ -20,12 +20,6 @@ const FeedPost = ({
     onCreatorClick,
     onTagClick
 }) => {
-    // Resilience Guard: Prevent crash if critical data is missing
-    if (!imgItem || !imgItem.id) {
-        console.warn('FeedPost: Received invalid item', imgItem);
-        return null;
-    }
-
     const { _currentUser } = useAuth();
     const { isLiked, isBookmarked, toggleLike, toggleBookmark, hidePost, unhidePost, reportPost, appealPost, isHidden } = useUserInteractions();
 
@@ -38,6 +32,12 @@ const FeedPost = ({
     const [dismissed, setDismissed] = useState(false);
     const timerRef = useRef(null);
     const videoRef = useRef(null);
+
+    // Resilience Guard: Prevent crash if critical data is missing
+    if (!imgItem || !imgItem.id) {
+        console.warn('FeedPost: Received invalid item', imgItem);
+        return null;
+    }
 
     const liked = isLiked(imgItem.id);
     const bookmarked = isBookmarked(imgItem.id);

@@ -13,7 +13,7 @@ export default function CommunityConsentModal() {
     useEffect(() => {
         const hasConsented = localStorage.getItem('feedConsentAccepted');
         if (!hasConsented) {
-            setIsVisible(true);
+            setIsVisible(prev => (!prev ? true : prev));
         }
     }, []);
 

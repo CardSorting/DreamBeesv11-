@@ -6,7 +6,7 @@ import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight, 
 import ShowcaseModal from '../components/ShowcaseModal';
 // eslint-disable-next-line no-unused-vars -- motion.div is used as JSX element
 import { motion, AnimatePresence } from 'framer-motion';
-import { getOptimizedImageUrl, getLCPAttributes, getImageSrcSet, preloadImage } from '../utils';
+import { getOptimizedImageUrl, getImageSrcSet, preloadImage } from '../utils';
 import { db } from '../firebase';
 
 export default function ModelDetail() {
@@ -85,9 +85,13 @@ export default function ModelDetail() {
     };
 
     // Deep Linking for Modal
+    const lastViewIdRef = useRef(null);
     useEffect(() => {
         const viewId = searchParams.get('view');
-        if (viewId && !activeShowcaseImage) {
+        if (viewId === lastViewIdRef.current) return;
+        lastViewIdRef.current = viewId;
+
+        if (viewId) {
             // Try to find in loaded images first
             const found = showcaseImages.find(img => img.id === viewId) ||
                 (model?.previewImages?.find(img => img.id === viewId || getOptimizedImageUrl(img) === viewId)); // Fallback logic
@@ -98,10 +102,10 @@ export default function ModelDetail() {
                 // Direct URL fallback if ID not found but it looks like a URL (legacy)
                 setActiveShowcaseImage({ url: viewId, id: viewId });
             }
-        } else if (!viewId && activeShowcaseImage) {
+        } else {
             setActiveShowcaseImage(null);
         }
-    }, [searchParams, showcaseImages, model, activeShowcaseImage]);
+    }, [searchParams, showcaseImages, model]);
 
     const openShowcase = (img) => {
         setActiveShowcaseImage(img);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, memo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Palette, Music, Sparkles, Presentation, Star, Clock, Search, ChevronRight, Gamepad2, LayoutGrid, Heart, Smile, Zap, ShoppingBag } from 'lucide-react';
 import './AppsHub.css';
@@ -191,10 +191,8 @@ const AppsHub = () => {
 
     // Reset pagination when search changes
     useEffect(() => {
-        if (currentPage !== 1) {
-            setCurrentPage(1);
-        }
-    }, [searchQuery, currentPage]);
+        setCurrentPage(prev => (prev !== 1 ? 1 : prev));
+    }, [searchQuery]);
 
     return (
         <div className="play-store-container">

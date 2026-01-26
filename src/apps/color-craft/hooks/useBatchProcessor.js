@@ -73,7 +73,7 @@ export const useBatchProcessor = ({
     const batchProgress = batchTotal > 0 ? Math.round(((batchTotal - activeCount) / batchTotal) * 100) : 0;
 
     // The actual processing logic
-    const processNextItem = useCallback(async () => {
+    const processNextItem = useCallback(async function next() {
         // 1. Check conditions
         if (queuePausedRef.current || !isComponentMounted.current) {
             isProcessingRef.current = false;
@@ -154,7 +154,7 @@ export const useBatchProcessor = ({
 
         // 5. Recursive Step
         setTimeout(() => {
-            processNextItem();
+            next();
         }, 100);
 
     }, [setImages, batchDelayMs]);
