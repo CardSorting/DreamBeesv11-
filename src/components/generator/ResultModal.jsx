@@ -3,6 +3,7 @@ import html2canvas from 'html2canvas';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ExternalLink, Download, Share2, Star, Zap, Copy, Check, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { trackSocialIntent, trackSentiment } from '../../utils/analytics';
 
 export default function ResultModal({
     isOpen,
@@ -61,6 +62,7 @@ export default function ResultModal({
                 window.open(downloadUrl, '_blank');
             }
             setIsDownloadSuccess(true);
+            trackSocialIntent('download', generationMode);
             toast.success("Download started!");
             setTimeout(() => setIsDownloadSuccess(false), 2000);
         } catch (error) {
@@ -74,6 +76,7 @@ export default function ResultModal({
 
     const handleCopyPrompt = () => {
         navigator.clipboard.writeText(prompt);
+        trackSocialIntent('copy_prompt', generationMode);
         setCopied(true);
         toast.success("Prompt copied!");
         setTimeout(() => setCopied(false), 2000);
@@ -238,6 +241,14 @@ export default function ResultModal({
                                                     key={star}
                                                     onClick={() => {
                                                         onRate && onRate(star);
+                                                        const promptLength = prompt?.length || 0;
+                                                        const promptBucket = promptLength <= 50 ? 'short' : (promptLength <= 150 ? 'medium' : 'long');
+
+                                                        trackSentiment(star, {
+                                                            model_id: generatedImage?.modelId || 'unknown',
+                                                            generation_mode: generationMode,
+                                                            prompt_length_bucket: promptBucket
+                                                        });
                                                         toast.success("Thanks for rating!");
                                                     }}
                                                     className="btn-secondary"
@@ -286,7 +297,7 @@ export default function ResultModal({
                                         </div>
                                     </button>
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                        <button className="action-btn btn-secondary">
+                                        <button className="action-btn btn-secondary" onClick={() => trackSocialIntent('share_open', generationMode)}>
                                             <Share2 size={18} /> Share
                                         </button>
                                         <button className="action-btn btn-secondary" onClick={() => window.open(downloadUrl, '_blank')}>

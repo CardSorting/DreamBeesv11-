@@ -7,6 +7,7 @@ import { useNavigate, Link, useParams, useSearchParams } from 'react-router-dom'
 import { Loader2, Search, Download, Trash2, X, ExternalLink, Calendar, Info, Check, Plus, Film } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getOptimizedImageUrl, getLCPAttributes, getImageSrcSet, preloadImage } from '../utils';
+import { trackQualitySignal, trackSearchQuality } from '../utils/analytics';
 
 export default function Gallery() {
     const navigate = useNavigate();
@@ -84,6 +85,10 @@ export default function Gallery() {
                     data.warnings.forEach(w => toast.error(w, { duration: 4000 }));
                 }
 
+                if (searchQuery) {
+                    trackSearchQuality(searchQuery, newImages.length);
+                }
+
             } catch (err) {
                 console.error("Error fetching images:", err);
                 toast.error("Failed to load images");
@@ -148,6 +153,7 @@ export default function Gallery() {
 
             if (result.data.success) {
                 setImages(prev => prev.filter(img => !selectedIds.includes(img.id)));
+                trackQualitySignal('batch_delete', { count: selectedIds.length, filter: activeFilter });
                 setSelectedIds([]);
                 setIsSelectionMode(false);
                 toast.success(`Deleted ${result.data.deleted} image(s) successfully`);

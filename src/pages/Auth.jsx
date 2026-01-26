@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import SEO from '../components/SEO';
-import { trackEvent } from '../utils/analytics';
+import { trackEvent, trackFunnelStep, trackFriction } from '../utils/analytics';
 import './Auth.css';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
@@ -21,7 +21,8 @@ export default function Auth() {
         if (currentUser) {
             navigate('/generate');
         }
-    }, [currentUser, navigate]);
+        trackFunnelStep('acquisition', isLogin ? 'login_page_view' : 'signup_page_view', 3);
+    }, [currentUser, navigate, isLogin]);
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -35,19 +36,23 @@ export default function Auth() {
             } else {
                 if (!birthday) {
                     setError('Birth date is required.');
+                    trackFriction('validation_error', 'Auth_Signup', 'Missing birthday');
                     setLoading(false);
                     return;
                 }
                 await signup(email, password, birthday);
                 trackEvent('sign_up', { method: 'email' });
+                trackFunnelStep('acquisition', 'signup_complete', 4, { method: 'email' });
             }
             navigate('/generate');
         } catch (err) {
             console.error(err);
             if (err.code === 'auth/configuration-not-found' || err.code === 'auth/operation-not-allowed') {
                 setError('Error: Authentication not enabled. Please enable Email/Password Sign-in in the Firebase Console (Authentication > Sign-in method).');
+                trackFriction('auth_config_error', 'Auth_Submit', err.code);
             } else {
                 setError('Failed to ' + (isLogin ? 'log in' : 'create account') + ': ' + err.message);
+                trackFriction('auth_failure', 'Auth_Submit', err.message);
             }
         }
         setLoading(false);
@@ -125,9 +130,11 @@ export default function Auth() {
                                 setLoading(true);
                                 await loginWithGoogle();
                                 trackEvent('login', { method: 'google' });
+                                if (!isLogin) trackFunnelStep('acquisition', 'signup_complete', 4, { method: 'google' });
                             } catch (err) {
                                 console.error(err);
                                 setError('Failed to sign in with Google: ' + err.message);
+                                trackFriction('auth_failure_google', 'Auth_Google', err.message);
                                 setLoading(false);
                             }
                         }}

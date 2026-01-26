@@ -4,7 +4,7 @@ import { functions as _firebaseFunctions } from '../firebase';
 import { useApi } from '../hooks/useApi';
 import { Check, Film, Image, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { trackViewItemList, trackBeginCheckout } from '../utils/analytics';
+import { trackViewItemList, trackBeginCheckout, trackNavigationPath, trackFunnelStep, trackFriction } from '../utils/analytics';
 import SEO from '../components/SEO';
 
 const SUBSCRIPTION_PLANS = [
@@ -84,7 +84,15 @@ export default function Pricing() {
     else if (currencyType === 'zaps') packs = ZAP_PACKS;
     else packs = REEL_PACKS;
 
+    const location = useLocation();
     const { call: apiCall } = useApi();
+
+    // Track when user lands on pricing and from where
+    React.useEffect(() => {
+        const fromPage = location.state?.from || 'direct';
+        trackNavigationPath('/pricing', fromPage);
+        trackFunnelStep('revenue', 'pricing_view', 1, { source: fromPage });
+    }, []);
 
     // Track view_item_list when the pack selection changes
     React.useEffect(() => {
@@ -95,6 +103,7 @@ export default function Pricing() {
             category: currencyType
         }));
         trackViewItemList(gaItems);
+        trackFunnelStep('revenue', `tab_${currencyType}_view`, 2);
     }, [currencyType]); // Re-track when user switches between membership, zaps, reels
 
     const handlePurchase = async (priceId) => {
@@ -111,6 +120,7 @@ export default function Pricing() {
                 price: pack.price,
                 category: currencyType
             });
+            trackFunnelStep('revenue', 'begin_checkout', 3, { item_id: pack.id });
         }
 
         try {
@@ -125,6 +135,7 @@ export default function Pricing() {
             window.location.href = result.data.url;
         } catch (error) {
             console.error("Error creating checkout session:", error);
+            trackFriction('checkout_init_failure', 'Pricing_Checkout', error.message);
             // toast.error("Failed to start checkout. Please try again."); // Handled by useApi
             setLoading(false);
         }

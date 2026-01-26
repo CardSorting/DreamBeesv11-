@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { setUserProperties, trackExperiment } from './utils/analytics';
 import { BrowserRouter as Router, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ModelProvider } from './contexts/ModelContext';
@@ -14,6 +15,7 @@ import BackToTop from './components/BackToTop';
 import AnimatedRoutes from './components/AnimatedRoutes';
 import GoogleAnalyticsTracker from './components/GoogleAnalyticsTracker';
 import PerformanceTracker from './components/PerformanceTracker';
+import BehavioralTracker from './components/BehavioralTracker';
 // import PublicGenerationsFeed from './pages/PublicGenerationsFeed';
 import SmoothScroll from './components/SmoothScroll';
 import NetworkStatus from './components/NetworkStatus';
@@ -71,10 +73,38 @@ function Layout() {
 import { TwitchProvider } from './contexts/TwitchContext';
 
 function App() {
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const utmSource = urlParams.get('utm_source');
+    const utmMedium = urlParams.get('utm_medium');
+    const utmCampaign = urlParams.get('utm_campaign');
+
+    if (utmSource || utmMedium || utmCampaign) {
+      setUserProperties({
+        campaign_source: utmSource || 'direct',
+        campaign_medium: utmMedium || 'none',
+        campaign_name: utmCampaign || 'none'
+      });
+    }
+
+    // Session Heartbeat (every 5 mins)
+    const heartbeat = setInterval(() => {
+      if (!document.hidden) {
+        setUserProperties({ last_active: new Date().toISOString() });
+      }
+    }, 300000);
+
+    // Initial Experiment Assignment (Example)
+    trackExperiment('home_layout_v2', 'control');
+
+    return () => clearInterval(heartbeat);
+  }, []);
+
   return (
     <Router>
       <GoogleAnalyticsTracker />
       <PerformanceTracker />
+      <BehavioralTracker />
       <NetworkStatus />
       <SmoothScroll />
       <ScrollToTop />

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Info, ShieldCheck, AlertCircle, ArrowRight, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { setConsent } from '../utils/analytics';
 
 export default function CommunityConsentModal() {
     const navigate = useNavigate();
@@ -19,6 +20,7 @@ export default function CommunityConsentModal() {
     const handleAccept = () => {
         if (checked1 && checked2) {
             localStorage.setItem('feedConsentAccepted', 'true');
+            setConsent({ analytics_storage: 'granted', ad_storage: 'granted' });
             setIsVisible(false);
         }
     };

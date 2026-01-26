@@ -3,7 +3,7 @@ import { useApi } from '../../hooks/useApi';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 import toast from 'react-hot-toast';
-import { trackEvent } from '../../utils/analytics';
+import { trackEvent, trackCreativeTelemetry, trackFriction } from '../../utils/analytics';
 
 export function useGenerationLogic({
     prompt,
@@ -60,10 +60,21 @@ export function useGenerationLogic({
                         unsubscribeRef.current();
                         unsubscribeRef.current = null;
                     }
+                    const promptLength = data.prompt?.length || 0;
+                    const promptBucket = promptLength <= 50 ? 'short' : (promptLength <= 150 ? 'medium' : 'long');
+
                     trackEvent('generate_image_success', {
                         model_id: data.modelId,
                         job_id: requestId,
-                        duration_ms: startTimeRef.current ? Date.now() - startTimeRef.current : undefined
+                        duration_ms: startTimeRef.current ? Date.now() - startTimeRef.current : undefined,
+                        aspect_ratio: data.aspectRatio || aspectRatio,
+                        prompt_length_bucket: promptBucket
+                    });
+
+                    trackCreativeTelemetry('generation_success', {
+                        model_id: data.modelId,
+                        aspect_ratio: data.aspectRatio || aspectRatio,
+                        prompt_length_bucket: promptBucket
                     });
                     localStorage.removeItem('activeGenerationJob');
                 } else if (data.status === 'failed') {
@@ -74,6 +85,7 @@ export function useGenerationLogic({
                         model_id: data.modelId || selectedModel?.id,
                         error: data.error || 'Server Side Failure'
                     });
+                    trackFriction('generation_failure', 'Generation_Listener', data.error || 'Server Side Failure');
                     // Cleanup listener after failure
                     if (unsubscribeRef.current) {
                         unsubscribeRef.current();
@@ -115,6 +127,7 @@ export function useGenerationLogic({
 
             if (zaps < cost && cost > 0) {
                 toast.error(`Insufficient Zaps ⚡ (Need ${cost}, have ${zaps.toFixed(1)})`);
+                trackFriction('insufficient_credits', 'Generation_Start', `Need ${cost}, have ${zaps}`);
                 return;
             }
 
@@ -159,6 +172,15 @@ export function useGenerationLogic({
                 model_id: selectedModel.id,
                 generation_mode: generationMode,
                 aspect_ratio: aspectRatio
+            });
+
+            const promptLength = finalPrompt?.length || 0;
+            const promptBucket = promptLength <= 50 ? 'short' : (promptLength <= 150 ? 'medium' : 'long');
+
+            trackCreativeTelemetry('generation_start', {
+                model_id: selectedModel.id,
+                aspect_ratio: aspectRatio,
+                prompt_length_bucket: promptBucket
             });
 
             const { requestId } = data;

@@ -4,6 +4,7 @@ import { ArrowLeft, X, ThumbsUp, ThumbsDown, Sparkles, Flag } from 'lucide-react
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useModel } from '../contexts/ModelContext';
 import { getOptimizedImageUrl } from '../utils';
+import { trackLoopConversion } from '../utils/analytics';
 
 const ShowcaseModal = ({ image, onClose, model }) => {
     const { rateShowcaseImage } = useModel();
@@ -239,6 +240,7 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                                         if (image.cfg) params.set('cfg', image.cfg);
                                         if (image.aspectRatio) params.set('aspectRatio', image.aspectRatio);
 
+                                        trackLoopConversion('showcase_start_creating', model?.id);
                                         navigate(`/generate?${params.toString()}`);
                                     }}
                                     className="btn btn-outline w-full justify-center text-xs"
@@ -249,6 +251,7 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                                 <button
                                     onClick={() => {
                                         onClose();
+                                        trackLoopConversion('showcase_talk_to_picture', model?.id);
                                         navigate(`/channel/${image.id}`, { state: { imageItem: image } });
                                     }}
                                     className="btn w-full justify-center text-xs"

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Hexagon, Home, Compass, Zap, Film, User, Plus, Image, ArrowLeft, LogOut, LayoutGrid } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
+import { trackNavigationPath } from '../utils/analytics';
 
 const MinimalHeader = () => {
     const location = useLocation();
@@ -93,7 +94,11 @@ const MinimalHeader = () => {
                                 </span>
                             </div>
 
-                            <Link to="/pricing" className="credit-badge">
+                            <Link
+                                to="/pricing"
+                                className="credit-badge"
+                                onClick={() => trackNavigationPath('/pricing', activePath)}
+                            >
                                 <Zap size={14} fill="currentColor" className="zap-icon" />
                                 <span className="credit-amount">{typeof zaps === 'number' ? zaps.toFixed(0) : '0'}</span>
                                 <div className="add-btn">

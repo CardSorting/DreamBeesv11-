@@ -48,7 +48,7 @@ export const trackPageView = (path, title) => {
  * @param {boolean} fatal - Whether the error was fatal.
  */
 export const trackException = (description, fatal = false) => {
-    if (typeof window.gtag === 'function') {
+    if (typeof window.gtag === 'event') {
         window.gtag('event', 'exception', {
             description: description,
             fatal: fatal,
@@ -85,6 +85,19 @@ export const trackOutboundLink = (url) => {
 export const trackSearch = (query) => {
     trackEvent('search', {
         search_term: query,
+    });
+};
+
+/**
+ * Tracks specialized search quality signals.
+ * @param {string} query - The search term that yielded results (or not).
+ * @param {number} resultCount - Number of items found.
+ */
+export const trackSearchQuality = (query, resultCount) => {
+    trackEvent('search_quality', {
+        search_term: query,
+        result_count: resultCount,
+        is_empty: resultCount === 0
     });
 };
 
@@ -142,5 +155,140 @@ export const trackMetric = ({ name, delta, id, value }) => {
         value: Math.round(name === 'CLS' ? delta * 1000 : delta),
         event_label: id,
         non_interaction: true,
+    });
+};
+
+/**
+ * Tracks an A/B testing experiment assignment.
+ * @param {string} experimentName - Name of the experiment.
+ * @param {string} variant - The assigned variant (e.g., 'A', 'B', 'control').
+ */
+export const trackExperiment = (experimentName, variant) => {
+    trackEvent('experiment_assignment', {
+        experiment_name: experimentName,
+        variant: variant
+    });
+};
+
+/**
+ * Tracks behavioral metrics like rage clicks or scroll depth.
+ * @param {string} type - 'rage_click', 'scroll_depth', etc.
+ * @param {Object} params - Contextual parameters.
+ */
+export const trackBehavior = (type, params = {}) => {
+    trackEvent(`behavior_${type}`, params);
+};
+
+/**
+ * Tracks an 'AHA' moment (e.g., first successful generation).
+ * @param {string} moment - Type of moment.
+ */
+export const trackAhaMoment = (moment) => {
+    trackEvent('aha_moment', { moment_type: moment });
+};
+
+/**
+ * Tracks the credit lifecycle (low balance, etc).
+ * @param {string} type - 'low_balance', 'exhausted'.
+ * @param {number} currentAmount - The current credit count.
+ */
+export const trackCreditLifecycle = (type, currentAmount) => {
+    trackEvent('credit_lifecycle', { lifecycle_type: type, amount: currentAmount });
+};
+
+/**
+ * Tracks navigation intent between pages (Journey Mapping).
+ * @param {string} target - The destination page/action.
+ * @param {string} source - Where the user is coming from.
+ */
+export const trackNavigationPath = (target, source) => {
+    trackEvent('navigation_intent', { target_page: target, source_page: source });
+};
+
+/**
+ * Tracks quality signals (Loss Analytics).
+ * @param {string} type - 'batch_delete', 'single_delete'.
+ * @param {Object} params - Parameters like count, age, etc.
+ */
+export const trackQualitySignal = (type, params = {}) => {
+    trackEvent(`quality_${type}`, params);
+};
+
+/**
+ * Tracks engagement loops (Conversion from browsing to creating).
+ * @param {string} source - 'showcase_modal', 'discovery_feed', etc.
+ * @param {string} modelId - The model used for conversion.
+ */
+export const trackLoopConversion = (source, modelId) => {
+    trackEvent('engagement_loops_conversion', { source_origin: source, model_id: modelId });
+};
+
+/**
+ * Tracks social intent (Sharing content).
+ * @param {string} method - 'copy_link', 'whatsapp', 'x', etc.
+ * @param {string} contentType - 'image', 'mockup', 'meme', etc.
+ */
+export const trackSocialIntent = (method, contentType) => {
+    trackEvent('share_intent', { method: method, content_type: contentType });
+};
+
+/**
+ * Updates cookie consent status.
+ * @param {Object} consent - { ad_storage: 'granted/denied', analytics_storage: 'granted/denied' }
+ */
+export const setConsent = (consent) => {
+    if (typeof window.gtag === 'function') {
+        window.gtag('consent', 'update', consent);
+    }
+};
+
+/**
+ * Tracks user sentiment (Ratings/Feedback).
+ * @param {number} rating - 1 to 5.
+ * @param {Object} context - Optional context like modelId, promptLength, etc.
+ */
+export const trackSentiment = (rating, context = {}) => {
+    trackEvent('user_sentiment', {
+        rating: rating,
+        ...context
+    });
+};
+
+/**
+ * Tracks creative telemetry for deeper content analysis.
+ * @param {string} action - 'generation_start', 'generation_success'.
+ * @param {Object} params - style, ratio, prompt_length_bucket.
+ */
+export const trackCreativeTelemetry = (action, params = {}) => {
+    trackEvent(`creative_${action}`, params);
+};
+
+/**
+ * Tracks a step in a multi-step funnel.
+ * @param {string} funnelName - 'acquisition', 'checkout', etc.
+ * @param {string} stepName - descriptive name of the step.
+ * @param {number} stepNumber - 1-indexed step number.
+ * @param {Object} params - additional metadata.
+ */
+export const trackFunnelStep = (funnelName, stepName, stepNumber, params = {}) => {
+    trackEvent('funnel_step', {
+        funnel_id: funnelName,
+        step_name: stepName,
+        step_number: stepNumber,
+        ...params
+    });
+};
+
+/**
+ * Tracks friction points (validation errors, timeouts, etc).
+ * @param {string} type - 'validation_error', 'timeout', 'api_failure'.
+ * @param {string} source - component or page name.
+ * @param {string} message - error details.
+ */
+export const trackFriction = (type, source, message) => {
+    trackEvent('friction_event', {
+        friction_type: type,
+        friction_source: source,
+        friction_message: message
     });
 };

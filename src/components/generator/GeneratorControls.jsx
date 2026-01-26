@@ -3,7 +3,7 @@ import {
     Wand2, Loader2, X, Mic, MicOff, Paperclip, Sparkles, Share2, Trash2, Zap
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { trackEvent, trackSettingChange } from '../../utils/analytics';
+import { trackEvent, trackSettingChange, trackSocialIntent } from '../../utils/analytics';
 import { getOptimizedImageUrl } from '../../utils';
 import { STYLE_REGISTRY } from '../../data/styles';
 
@@ -32,6 +32,7 @@ export default function GeneratorControls({
         if (negPrompt) url.searchParams.set('negPrompt', negPrompt);
         navigator.clipboard.writeText(url.toString());
         trackEvent('share_config', { mode: generationMode, model_id: selectedModel?.id });
+        trackSocialIntent('copy_config_link', generationMode);
         toast.success('Link copied to clipboard');
     };
 

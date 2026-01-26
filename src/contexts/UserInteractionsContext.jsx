@@ -7,7 +7,7 @@ import { useAuth } from './AuthContext';
 import { useModel } from './ModelContext';
 import { useApi } from '../hooks/useApi';
 import toast from 'react-hot-toast';
-import { trackEvent, setUserProperties } from '../utils/analytics';
+import { trackEvent, setUserProperties, trackAhaMoment, trackCreditLifecycle } from '../utils/analytics';
 
 const UserInteractionsContext = createContext();
 
@@ -184,6 +184,12 @@ export function UserInteractionsProvider({ children }) {
         );
         const unsubPersonal = onSnapshot(personalQuery, (snapshot) => {
             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // AHA Moment: First successful generation
+            if (data.length === 1 && personalCreations.length === 0) {
+                trackAhaMoment('first_generation_success');
+            }
+
             setPersonalCreations(data);
         }, (error) => {
             console.warn("Global images listener failed:", error);
@@ -201,14 +207,32 @@ export function UserInteractionsProvider({ children }) {
         };
     }, [currentUser?.uid]);
 
+    // Track Credit Lifecycle Lifecycle
+    const lastZapBalanceRef = React.useRef(null);
+    useEffect(() => {
+        if (isProfileLoaded && userProfile && userProfile.zaps !== undefined) {
+            const zaps = userProfile.zaps;
+
+            // Initial check or balance change
+            if (lastZapBalanceRef.current !== null && lastZapBalanceRef.current !== zaps) {
+                if (zaps === 0) {
+                    trackCreditLifecycle('exhausted', zaps);
+                } else if (zaps <= 2 && lastZapBalanceRef.current > 2) {
+                    trackCreditLifecycle('low_balance', zaps);
+                }
+            }
+
+            lastZapBalanceRef.current = zaps;
+        }
+    }, [userProfile.zaps, isProfileLoaded]);
+
     // Sync user profile properties to GA
     useEffect(() => {
         if (isProfileLoaded && userProfile) {
             setUserProperties({
-                subscription_status: userProfile.subscriptionStatus,
-                zap_count: userProfile.zaps,
-                reels_count: userProfile.reels,
-                karma_count: userProfile.karma
+                is_premium: !!userProfile.isPremium,
+                user_tier: userProfile.plan || (userProfile.isPremium ? 'premium' : 'free'),
+                join_date: userProfile.createdAt ? new Date(userProfile.createdAt.seconds * 1000).toISOString() : 'unknown'
             });
         }
     }, [userProfile, isProfileLoaded]);

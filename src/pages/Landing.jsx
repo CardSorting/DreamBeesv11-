@@ -2,9 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Sparkles, Zap, Shield, ArrowRight, Layers, ChevronDown, Cpu, Expand, Clock, Check, Plus, Minus } from 'lucide-react';
 import SEO from '../components/SEO';
+import { trackFunnelStep } from '../utils/analytics';
 import './LandingRefined.css';
 
 export default function Landing() {
+    useEffect(() => {
+        trackFunnelStep('acquisition', 'landing_view', 1);
+    }, []);
+
     return (
         <main className="landing-page bg-grid" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
             <div className="film-grain"></div>
@@ -206,7 +211,7 @@ export default function Landing() {
                     </p>
 
                     <div className="fade-in" style={{ animationDelay: '0.3s', display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                        <Link to="/auth" className="btn btn-primary" style={{ height: '56px', padding: '0 40px', fontSize: '1rem' }}>
+                        <Link to="/auth" className="btn btn-primary" style={{ height: '56px', padding: '0 40px', fontSize: '1rem' }} onClick={() => trackFunnelStep('acquisition', 'get_started_click', 2)}>
                             Start Creating for Free
                         </Link>
                         <Link to="/gallery" className="btn btn-outline" style={{ height: '56px', padding: '0 40px', fontSize: '1rem' }}>
@@ -524,7 +529,7 @@ export default function Landing() {
                         <h2 style={{ fontSize: 'clamp(2.5rem, 6vw, 3.5rem)', marginBottom: '32px', lineHeight: 1, fontWeight: '800', color: 'white' }}>
                             Ready to orchestrate <br /> your imagination?
                         </h2>
-                        <Link to="/auth" className="btn btn-primary" style={{ padding: '0 48px', height: '64px', fontSize: '1.1rem', borderRadius: 'var(--radius-full)' }}>
+                        <Link to="/auth" className="btn btn-primary" style={{ padding: '0 48px', height: '64px', fontSize: '1.1rem', borderRadius: 'var(--radius-full)' }} onClick={() => trackFunnelStep('acquisition', 'get_started_click_footer', 2)}>
                             Get Started Now <ArrowRight size={20} style={{ marginLeft: '12px' }} />
                         </Link>
                     </div>
