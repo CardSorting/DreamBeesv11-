@@ -9,9 +9,9 @@ import * as Voice from "../lib/persona/voice.js";
  * @param {Object} req - The task request object.
  */
 export const processVoiceTask = async (req) => {
-    const { imageId, messageId, text, voiceDna, emotion } = req.data;
+    const { imageId, messageId, text, voiceDna, emotion, hypeLevel } = req.data;
 
-    logger.info(`[VoiceWorker] Processing TTS for msg: ${messageId}`, { imageId, emotion });
+    logger.info(`[VoiceWorker] Processing TTS for msg: ${messageId}`, { imageId, emotion, hypeLevel });
 
     try {
         if (!text || !voiceDna) {
@@ -33,11 +33,12 @@ export const processVoiceTask = async (req) => {
             } else {
                 // Fallback to generating standard TTS if reaction gen fails
                 logger.warn(`[VoiceWorker] Reaction generation failed, falling back to standard TTS.`);
-                audioJobId = await Voice.submitTtsJob(text, voiceDna, emotion);
+                // Reactions are hype-neutral -> 5
+                audioJobId = await Voice.submitTtsJob(text, voiceDna, emotion, 5);
             }
         } else {
-            // 1. Submit to TTS API
-            audioJobId = await Voice.submitTtsJob(text, voiceDna, emotion);
+            // 1. Submit to TTS API (With Hype Pacing)
+            audioJobId = await Voice.submitTtsJob(text, voiceDna, emotion, hypeLevel);
             if (!audioJobId) {
                 logger.error(`[VoiceWorker] Failed to get audioJobId for msg: ${messageId}`);
                 return;

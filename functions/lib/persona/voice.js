@@ -27,72 +27,15 @@ const pollForCompletion = async (jobId, attempts = 10) => {
 };
 
 /**
- * Gets or creates a permanent reaction asset for a persona.
- */
-export const getOrCreateReaction = async (personaId, voiceDna, reactionKey, reactionData) => {
-    try {
-        const personaRef = db.collection('personas').doc(personaId);
-
-        // 1. Check if Reaction uses exist in Persona doc
-        const personaDoc = await personaRef.get();
-        const personaData = personaDoc.exists ? personaDoc.data() : {};
-        const savedReactions = personaData.reactions || {};
-
-        // Return if exists
-        if (savedReactions[reactionKey]) {
-            logger.info(`[Voice] Reaction cached for ${personaId}: ${reactionKey}`);
-            return { url: savedReactions[reactionKey], type: 'static', key: reactionKey };
-        }
-
-        logger.info(`[Voice] Generating new reaction for ${personaId}: ${reactionKey}`);
-
-        // 2. Generate Audio
-        const jobId = await submitTtsJob(reactionData.textPrompt, voiceDna, reactionData.emotion);
-        if (!jobId) throw new Error("Failed to submit TTS job");
-
-        // 3. Poll for Completion
-        await pollForCompletion(jobId);
-
-        // 4. Download Audio
-        const audioRes = await fetchWithRetry(`${JOBS_API_URL}/${jobId}/audio`);
-        if (!audioRes.ok) throw new Error("Failed to download audio");
-        const arrayBuffer = await audioRes.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-
-        // 5. Upload to Firebase Storage
-        const bucket = getStorage().bucket(); // Default bucket
-        const filePath = `persona-assets/${personaId}/reactions/${reactionKey}.wav`;
-        const file = bucket.file(filePath);
-
-        await file.save(buffer, {
-            metadata: { contentType: 'audio/wav' },
-            public: true
-        });
-
-        // 6. Save to Persona Document
-        const publicUrl = file.publicUrl();
-        await personaRef.update({
-            [`reactions.${reactionKey}`]: publicUrl
-        });
-
-        return { url: publicUrl, type: 'static', key: reactionKey };
-
-    } catch (e) {
-        logger.error(`[Voice] Failed to get/create reaction: ${reactionKey}`, e);
-        return null;
-    }
-};
-
-/**
- * Modulates the base voice DNA with emotional context.
+ * Modulates the base voice DNA with emotional context and pacing.
  * 
  * @param {string} baseDna - The character's core voice description.
- * @param {string} emotion - The detected emotion (e.g., "Happy", "Angry", "Sad", "Neutral").
+ * @param {string} emotion - The detected emotion (e.g., "Happy").
+ * @param {number} hypeLevel - Thread hype (1-10).
  * @returns {string} - The modulated voice description.
  */
-export const modulateDna = (baseDna, emotion) => {
-    if (!emotion || emotion === 'Neutral') return baseDna;
-
+export const modulateDna = (baseDna, emotion, hypeLevel = 5) => {
+    // 1. Emotion Modifier
     const modifiers = {
         'Happy': 'spoken with a cheerful, upbeat, and energetic tone',
         'Excited': 'spoken rapidly with high energy and excitement',
@@ -102,9 +45,21 @@ export const modulateDna = (baseDna, emotion) => {
         'Confused': 'spoken with a rising inflection and uncertain pacing',
         'Sarcastic': 'spoken with a dry, drawling, and mocking tone'
     };
+    const emotionMod = modifiers[emotion] || (emotion && emotion !== 'Neutral' ? `spoken in a ${emotion.toLowerCase()} tone` : '');
 
-    const modifier = modifiers[emotion] || `spoken in a ${emotion.toLowerCase()} tone`;
-    return `${baseDna}, ${modifier}.`;
+    // 2. Pacing Modifier
+    let pacingMod = "";
+    if (hypeLevel >= 7) {
+        pacingMod = "spoken with a fast, urgent, and energetic pace";
+    } else if (hypeLevel <= 3) {
+        pacingMod = "spoken with a relaxed, slow, and casual pace";
+    }
+
+    // Combine
+    const parts = [emotionMod, pacingMod].filter(Boolean);
+    if (parts.length === 0) return baseDna;
+
+    return `${baseDna}, ${parts.join(', ')}.`;
 };
 
 /**
@@ -112,14 +67,15 @@ export const modulateDna = (baseDna, emotion) => {
  * 
  * @param {string} text - The text to speak.
  * @param {string} voiceDna - The character's voice description.
- * @param {string} emotion - Optional emotion to modulate the voice.
+ * @param {string} emotion - Optional emotion.
+ * @param {number} hypeLevel - Optional hype level (1-10).
  * @returns {Promise<string|null>} - The job ID.
  */
-export const submitTtsJob = async (text, voiceDna, emotion = 'Neutral') => {
+export const submitTtsJob = async (text, voiceDna, emotion = 'Neutral', hypeLevel = 5) => {
     try {
         if (!text || !voiceDna) return null;
 
-        const description = modulateDna(voiceDna, emotion);
+        const description = modulateDna(voiceDna, emotion, hypeLevel);
 
         // --- 1. Check Cache ---
         const cacheKey = createHash('sha256').update(`${text}:${description}`).digest('hex');
@@ -171,6 +127,63 @@ export const submitTtsJob = async (text, voiceDna, emotion = 'Neutral') => {
 
     } catch (e) {
         logger.error("[Voice] TTS Error", e);
+        return null;
+    }
+};
+
+/**
+ * Gets or creates a permanent reaction asset for a persona.
+ */
+export const getOrCreateReaction = async (personaId, voiceDna, reactionKey, reactionData) => {
+    try {
+        const personaRef = db.collection('personas').doc(personaId);
+
+        // 1. Check if Reaction uses exist in Persona doc
+        const personaDoc = await personaRef.get();
+        const personaData = personaDoc.exists ? personaDoc.data() : {};
+        const savedReactions = personaData.reactions || {};
+
+        // Return if exists
+        if (savedReactions[reactionKey]) {
+            logger.info(`[Voice] Reaction cached for ${personaId}: ${reactionKey}`);
+            return { url: savedReactions[reactionKey], type: 'static', key: reactionKey };
+        }
+
+        logger.info(`[Voice] Generating new reaction for ${personaId}: ${reactionKey}`);
+
+        // 2. Generate Audio (Reactions are hype-neutral -> 5)
+        const jobId = await submitTtsJob(reactionData.textPrompt, voiceDna, reactionData.emotion, 5);
+        if (!jobId) throw new Error("Failed to submit TTS job");
+
+        // 3. Poll for Completion
+        await pollForCompletion(jobId);
+
+        // 4. Download Audio
+        const audioRes = await fetchWithRetry(`${JOBS_API_URL}/${jobId}/audio`);
+        if (!audioRes.ok) throw new Error("Failed to download audio");
+        const arrayBuffer = await audioRes.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        // 5. Upload to Firebase Storage
+        const bucket = getStorage().bucket(); // Default bucket
+        const filePath = `persona-assets/${personaId}/reactions/${reactionKey}.wav`;
+        const file = bucket.file(filePath);
+
+        await file.save(buffer, {
+            metadata: { contentType: 'audio/wav' },
+            public: true
+        });
+
+        // 6. Save to Persona Document
+        const publicUrl = file.publicUrl();
+        await personaRef.update({
+            [`reactions.${reactionKey}`]: publicUrl
+        });
+
+        return { url: publicUrl, type: 'static', key: reactionKey };
+
+    } catch (e) {
+        logger.error(`[Voice] Failed to get/create reaction: ${reactionKey}`, e);
         return null;
     }
 };

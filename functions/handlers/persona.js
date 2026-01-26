@@ -170,7 +170,8 @@ export const handleChatPersona = async (request) => {
                 messageId: msgRef.id,
                 text: cleanText,
                 voiceDna: persona.voice_dna,
-                emotion: metadata.emotion
+                emotion: metadata.emotion,
+                hypeLevel: persona.hypeLevel || 1
             });
             logger.info(`[Persona] Voice Task Enqueued for msg: ${msgRef.id}`);
         }
