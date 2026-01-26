@@ -1,0 +1,58 @@
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { logger } from "../utils.js";
+
+const db = getFirestore();
+
+/**
+ * Saves a message to the shared history (The Commons).
+ */
+export const saveMessage = async (personaId, messageData) => {
+    try {
+        await db.collection('personas').doc(personaId).collection('shared_messages').add({
+            ...messageData,
+            timestamp: FieldValue.serverTimestamp()
+        });
+    } catch (e) {
+        logger.error(`[Store] Failed to save message for ${personaId}`, e);
+    }
+};
+
+/**
+ * Updates the persona's volatile state (pose, background, vibe, hype, title, poll).
+ */
+export const updatePersonaState = async (personaId, updates) => {
+    try {
+        await db.collection('personas').doc(personaId).update(updates);
+    } catch (e) {
+        logger.error(`[Store] Failed to update persona state for ${personaId}`, e);
+    }
+};
+
+/**
+ * Saves a fact to the User's "Deep Memory" dossier.
+ */
+export const saveUserMemory = async (personaId, userId, fact) => {
+    try {
+        await db.collection('personas').doc(personaId).collection('memories').doc(userId).set({
+            facts: FieldValue.arrayUnion(fact),
+            lastUpdated: FieldValue.serverTimestamp()
+        }, { merge: true });
+        logger.info(`[Store] Memorized fact for user ${userId}`);
+    } catch (e) {
+        logger.error(`[Store] Failed to save user memory`, e);
+    }
+};
+
+/**
+ * Logs the interaction for analytics/debugging.
+ */
+export const logInteraction = async (data) => {
+    try {
+        await db.collection('persona_chat_logs').add({
+            ...data,
+            timestamp: FieldValue.serverTimestamp()
+        });
+    } catch (e) {
+        logger.error(`[Store] Failed to log interaction`, e);
+    }
+};
