@@ -123,7 +123,11 @@ export const handleChatPersona = async (request) => {
         const updates = {};
         if (metadata.title) await Store.updatePersonaState(imageId, { streamTitle: metadata.title });
         if (metadata.poll) await Store.updatePersonaState(imageId, { activePoll: metadata.poll });
-        if (metadata.vibe) await Store.updatePersonaState(imageId, { currentVibe: metadata.vibe });
+        if (metadata.vibe) {
+            await Store.updatePersonaState(imageId, { currentVibe: metadata.vibe });
+            // Alert chat that the "vibe" has shifted
+            await Broadcaster.broadcastStateChange(imageId, 'vibe-shift', 'AI Director');
+        }
 
         if (metadata.action) {
             if (metadata.action.startsWith('pose_')) updates.currentPose = metadata.action;
@@ -354,10 +358,11 @@ export const handleGiftPersona = async (request) => {
 
     await Broadcaster.broadcastCelebration(imageId, {
         type: 'gift',
-        amount,
         from: userName,
-        newZapCurrent: (personaData.zapCurrent || 0) + amount, // approx
-        newZapGoal: personaData.zapGoal || 500 // approx
+        amount,
+        message: `${userName} gifted ${amount} ZAPs! Hype is RISING!`,
+        newZapCurrent: (personaData.zapCurrent || 0) + amount,
+        newZapGoal: personaData.zapGoal || 500
     });
 
     return { success: true };
