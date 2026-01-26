@@ -1,13 +1,7 @@
 
 import { LoadBalancer } from '../workers/image.js';
 
-// Mock logger for the simulation
-const mockLogger = {
-    info: (msg, meta) => console.log(`[INFO] ${msg}`, meta || ''),
-    warn: (msg, meta) => console.warn(`[WARN] ${msg}`, meta || ''),
-    error: (msg, error, meta) => console.error(`[ERROR] ${msg}`, error?.message || error, meta || ''),
-    debug: () => { }
-};
+
 
 // Override the global logger if the module uses it
 // Since workers/image.js imports logger from ../lib/utils.js, 

@@ -531,7 +531,7 @@ export function UserInteractionsProvider({ children }) {
             // Also ensure we remove from local hidden persistence if present
             try {
                 await deleteDoc(doc(db, `users/${currentUser.uid}/hidden`, id));
-            } catch (e) { /* ignore */ }
+            } catch (_error) { /* ignore */ }
 
             await apiCall('api', {
                 action: 'appealGeneration',

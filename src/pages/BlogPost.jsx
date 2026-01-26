@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { blogPosts } from '../data/blogPosts';
 import { ArrowLeft, Calendar, Clock, User, Share2, Play, Pause, Square, Volume2 } from 'lucide-react';
 import SEO from '../components/SEO';
@@ -7,14 +7,12 @@ import { trackEvent } from '../utils/analytics';
 
 export default function BlogPost() {
     const { id } = useParams(); // 'id' here captures the slug from the route parameter
-    const navigate = useNavigate();
 
     const post = blogPosts.find(p => p.id === id || p.slug === id);
 
     // TTS State
     const [isPlaying, setIsPlaying] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
-    const [utterance, setUtterance] = useState(null);
     const contentRef = useRef(null);
     const textNodesRef = useRef([]);
 
@@ -100,7 +98,7 @@ export default function BlogPost() {
                 if (CSS.highlights) CSS.highlights.clear();
             };
 
-            setUtterance(newUtterance);
+
             synth.cancel(); // cancel any previous
             synth.speak(newUtterance);
             setIsPlaying(true);

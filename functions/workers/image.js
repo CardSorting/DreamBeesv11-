@@ -618,9 +618,9 @@ export const processImageTask = async (req) => {
     let thumbnailUrl = null;
     let lqip = null;
 
-    const [activeJobsSnapshot, userSnap] = await Promise.all([
+    const [activeJobsSnapshot] = await Promise.all([
         db.collection('generation_queue').where('userId', '==', userId).where('status', '==', 'processing').get(),
-        userId === 'anonymous-galmix' ? Promise.resolve({ data: () => ({}) }) : db.collection('users').doc(userId).get()
+        // userId === 'anonymous-galmix' ? Promise.resolve({ data: () => ({}) }) : db.collection('users').doc(userId).get() // [DELETED UNUSED]
     ]);
 
     const activeCount = activeJobsSnapshot.docs.filter(d => d.id !== requestId).length;

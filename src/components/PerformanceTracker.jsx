@@ -68,7 +68,7 @@ export default function PerformanceTracker() {
                 }
             });
             inpObserver.observe({ type: 'longtask', buffered: true });
-        } catch (e) {
+        } catch (error) {
             // Not supported in all browsers
         }
 

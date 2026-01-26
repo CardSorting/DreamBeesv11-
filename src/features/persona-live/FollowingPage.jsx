@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../../firebase';
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+
 import SEO from '../../components/SEO';
-import { Heart, Play, Clock } from 'lucide-react';
+import { Play } from 'lucide-react';
 import './BrowsePage.css'; // Reusing styles
 
 import { useTwitch } from '../../contexts/TwitchContext';

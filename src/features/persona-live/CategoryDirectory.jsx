@@ -6,7 +6,7 @@ import './CategoryDirectory.css';
 
 const CategoryDirectory = () => {
     const navigate = useNavigate();
-    const { categories, loading } = useTwitch();
+    const { categories } = useTwitch();
 
     // Fallback categories if none awakened yet
     const displayCategories = categories.length > 0 ? categories : [

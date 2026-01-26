@@ -52,7 +52,7 @@ const Typewriter = ({ text, onUpdate }) => {
         timeoutRef.current = setTimeout(type, 50);
 
         return () => clearTimeout(timeoutRef.current);
-    }, [text]); // Removed onUpdate from dependency to prevent re-renders reset
+    }, [text, onUpdate]); // Added onUpdate to satisfy linter, though we use it with care
 
     return (
         <span>
@@ -75,8 +75,6 @@ const PersonaChat = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isSending, setIsSending] = useState(false);
     const [viewerCount, setViewerCount] = useState(1);
-    const [suggestedPersonas, setSuggestedPersonas] = useState([]);
-    const [followedPersonas, setFollowedPersonas] = useState([]);
     const [activeTab, setActiveTab] = useState('Home');
     const [alerts, setAlerts] = useState([]);
     const [floatingReactions, setFloatingReactions] = useState([]);
@@ -85,6 +83,8 @@ const PersonaChat = () => {
     const [isShaking, setIsShaking] = useState(false);
     const [showEmotes, setShowEmotes] = useState(false);
     const [showBitsModal, setShowBitsModal] = useState(false);
+    const [showZapActions, setShowZapActions] = useState(false);
+    const [isTheaterMode, setIsTheaterMode] = useState(false);
 
     // Audio State
     const [audioQueue, setAudioQueue] = useState([]);
@@ -439,17 +439,6 @@ const PersonaChat = () => {
                         }]);
                     }
 
-                    // Fetch Suggested Personas
-                    const suggestedQuery = query(
-                        collection(db, 'personas'),
-                        orderBy('createdAt', 'desc'),
-                        limit(12)
-                    );
-                    const suggestedSnap = await getDocs(suggestedQuery);
-                    const allPersonas = suggestedSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-                    setSuggestedPersonas(allPersonas.filter(p => p.id !== id).slice(0, 6));
-                    setFollowedPersonas(allPersonas.filter(p => p.id !== id).sort(() => 0.5 - Math.random()).slice(0, 3));
                 }
             } catch (error) {
                 console.error("Persona Init Error:", error);
@@ -467,17 +456,7 @@ const PersonaChat = () => {
         }
     }, [id, imageItem, functions, persona]);
 
-    const scrollToBottom = (behavior = 'smooth') => {
-        if (scrollRef.current) {
-            const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-            // Only auto-scroll if user is near bottom or it's a forced update
-            const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
 
-            if (isNearBottom) {
-                scrollRef.current.scrollTo({ top: scrollHeight, behavior });
-            }
-        }
-    };
 
     useEffect(() => {
         // Force scroll on new messages
@@ -542,7 +521,7 @@ const PersonaChat = () => {
             if (amount >= 500) {
                 setPinnedMessage({
                     id: Date.now(),
-                    author: user.displayName || 'You',
+                    author: currentUser.displayName || 'You',
                     text: `gifted ${amount} ZAPs for a Priestess' blessing!`
                 });
             }
@@ -552,19 +531,7 @@ const PersonaChat = () => {
         }
     };
 
-    const handleReset = () => {
-        if (persona?.greeting) {
-            setMessages([{
-                id: 'greeting-' + Date.now(),
-                role: 'model',
-                text: persona.greeting,
-                timestamp: Date.now()
-            }]);
-        } else {
-            setMessages([]);
-        }
-        toast.success("Memory wiped.");
-    };
+
 
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {

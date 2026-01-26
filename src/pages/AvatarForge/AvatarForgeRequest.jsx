@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApi } from '../../hooks/useApi';
 import { Sparkles, Upload, X, Zap, ChevronRight, Image as ImageIcon, Wand2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import toast from 'react-hot-toast';
 
 const INSPIRATIONS = [

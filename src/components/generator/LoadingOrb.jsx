@@ -1,6 +1,6 @@
 import React from 'react';
 // eslint-disable-next-line no-unused-vars
-import { motion } from 'framer-motion';
+import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import { Sparkles, Zap } from 'lucide-react';
 
 export default function LoadingOrb({ size = 'large', useTurbo = false }) {

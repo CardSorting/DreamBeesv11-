@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 import { X, Zap } from 'lucide-react';
+import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import LoadingOrb from './LoadingOrb';
 
 const LOADING_MESSAGES = [
@@ -20,12 +21,21 @@ const GRACE_MESSAGES = [
 export default function LoadingModal({ useTurbo, onCancel }) {
     const [showGraceMessage, setShowGraceMessage] = useState(false);
 
+    const [graceMessageIndex, setGraceMessageIndex] = useState(0);
+
+    useEffect(() => {
+        if (showGraceMessage) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setGraceMessageIndex(Math.floor(Math.random() * GRACE_MESSAGES.length));
+        }
+    }, [showGraceMessage]);
+
     const graceMessage = useMemo(() => {
         if (showGraceMessage) {
-            return GRACE_MESSAGES[Math.floor(Math.random() * GRACE_MESSAGES.length)];
+            return GRACE_MESSAGES[graceMessageIndex] || "";
         }
         return "";
-    }, [showGraceMessage]);
+    }, [showGraceMessage, graceMessageIndex]);
 
     const [messageIndex, setMessageIndex] = useState(0);
 

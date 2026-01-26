@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import html2canvas from 'html2canvas';
 // eslint-disable-next-line no-unused-vars
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import { X, ExternalLink, Download, Share2, Star, Zap, Copy, Check, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { trackSocialIntent, trackSentiment } from '../../utils/analytics';

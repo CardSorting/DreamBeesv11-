@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
-import { trackEvent, trackOutboundLink } from '../utils/analytics';
+import { trackEvent } from '../utils/analytics';
 
 export default function Footer() {
     return (

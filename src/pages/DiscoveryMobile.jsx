@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useState, useRef, useCallback, useMemo } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import SEO from '../components/SEO';
 import { useModel } from '../contexts/ModelContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
@@ -120,7 +120,7 @@ export default function DiscoveryMobile() {
         } else {
             await getShowcaseImages(activeModelId, true);
         }
-    }, [getGlobalShowcaseImages, getShowcaseImages, activeModelId, globalShowcaseCache.length, showcaseCache, hasGlobalFeedEnded, hasShowcaseEnded]);
+    }, [getGlobalShowcaseImages, getShowcaseImages, activeModelId, globalShowcaseCache, showcaseCache, hasGlobalFeedEnded, hasShowcaseEnded]);
 
     // 3. Intersection Observer Setup
     useEffect(() => {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApi } from '../../hooks/useApi';
 import { useAuth } from '../../contexts/AuthContext';
 import { Zap, AlertCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import toast from 'react-hot-toast';
 import BeeCrateScene from '../MockupStudio/BeeCrateScene';
 

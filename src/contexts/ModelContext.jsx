@@ -452,7 +452,7 @@ export function ModelProvider({ children }) {
             if (flushInterval.current) clearInterval(flushInterval.current);
             processQueue();
         };
-    }, []);
+    }, [apiCall]);
 
     // Rate a generation (Buffered / Fire & Forget)
     const rateGeneration = async (job, rating) => {

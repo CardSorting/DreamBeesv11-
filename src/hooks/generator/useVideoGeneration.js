@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 // import { httpsCallable } from 'firebase/functions'; // Removed
 import { db } from '../../firebase';
 import { useApi } from '../../hooks/useApi';
-import { doc, onSnapshot, query, collection, where, orderBy, limit } from 'firebase/firestore';
+import { onSnapshot, query, collection, where, orderBy, limit } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { compressImage } from '../../utils';
 

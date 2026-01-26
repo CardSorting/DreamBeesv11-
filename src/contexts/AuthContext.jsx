@@ -137,7 +137,7 @@ export function AuthProvider({ children }) {
         // }).catch((error) => { /* Handle redirect error */ });
 
         return unsubscribe;
-    }, []);
+    }, [ensureUserInitialized]);
 
     const value = {
         currentUser,

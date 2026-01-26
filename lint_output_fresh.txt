@@ -1,0 +1,249 @@
+
+> dreambees-app@0.0.0 lint
+> eslint .
+
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/scripts/simulate_loadbalancer.js
+  5:7  error  'mockLogger' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/workers/image.js
+  621:32  error  'userSnap' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/FeedPost.jsx
+  62:5  error  'useEffect' is not defined  no-undef
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/Footer.jsx
+  4:22  error  'trackOutboundLink' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/ImagePickerModal.jsx
+  18:9  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/MinimalHeader.jsx
+  18:5  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/ModelSelectorModal.jsx
+  13:5   warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+  18:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+  20:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/PerformanceTracker.jsx
+  71:18  error  'e' is defined but never used  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/Sidebar.jsx
+  2:10  error  'formatTwitchCount' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/generator/LoadingModal.jsx
+  23:26  error  'useMemo' is not defined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           no-undef
+  25:46  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  23 |     const graceMessage = useMemo(() => {
+  24 |         if (showGraceMessage) {
+> 25 |             return GRACE_MESSAGES[Math.floor(Math.random() * GRACE_MESSAGES.length)];
+     |                                              ^^^^^^^^^^^^^ Cannot call impure function
+  26 |         }
+  27 |         return "";
+  28 |     }, [showGraceMessage]);  react-hooks/purity
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/contexts/AuthContext.jsx
+  140:8  warning  React Hook useEffect has a missing dependency: 'ensureUserInitialized'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/contexts/ModelContext.jsx
+  455:8  warning  React Hook useEffect has a missing dependency: 'apiCall'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/contexts/TwitchContext.jsx
+  3:45  error  'getDocs' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                  no-unused-vars
+  7:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/contexts/UserInteractionsContext.jsx
+   60:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   62:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   64:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   66:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   68:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   70:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   72:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   74:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   76:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   78:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+  218:8   warning  React Hook useEffect has a missing dependency: 'personalCreations.length'. Either include it or remove the dependency array. You can also replace multiple useState variables with useReducer if 'setSessionGenerations' needs the current value of 'personalCreations.length'  react-hooks/exhaustive-deps
+  237:8   warning  React Hook useEffect has a missing dependency: 'userProfile'. Either include it or remove the dependency array                                                                                                                                                                  react-hooks/exhaustive-deps
+  534:22  error    'e' is defined but never used                                                                                                                                                                                                                                                   no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/features/persona-live/BrowsePage.jsx
+  5:25  error  'p' is not defined  no-undef
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/features/persona-live/CategoryDirectory.jsx
+  9:25  error  'loading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/features/persona-live/FollowingPage.jsx
+  1:17  error  'useState' is defined but never used. Allowed unused vars must match /^[A-Z_]/u    no-unused-vars
+  1:27  error  'useEffect' is defined but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  3:10  error  'db' is defined but never used. Allowed unused vars must match /^[A-Z_]/u          no-unused-vars
+  4:10  error  'collection' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  4:22  error  'getDocs' is defined but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+  4:31  error  'query' is defined but never used. Allowed unused vars must match /^[A-Z_]/u       no-unused-vars
+  4:38  error  'orderBy' is defined but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+  4:47  error  'limit' is defined but never used. Allowed unused vars must match /^[A-Z_]/u       no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/features/persona-live/PersonaChat.jsx
+   55:8    warning  React Hook useEffect has a missing dependency: 'onUpdate'. Either include it or remove the dependency array. If 'onUpdate' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+   78:12   error    'suggestedPersonas' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                no-unused-vars
+   79:12   error    'followedPersonas' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                 no-unused-vars
+  108:13   error    'setShowZapActions' is not defined                                                                                                                                                                                               no-undef
+  470:11   error    'scrollToBottom' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                   no-unused-vars
+  545:29   error    'user' is not defined                                                                                                                                                                                                            no-undef
+  555:11   error    'handleReset' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                      no-unused-vars
+  611:51   error    'isTheaterMode' is not defined                                                                                                                                                                                                   no-undef
+  706:52   error    'setIsTheaterMode' is not defined                                                                                                                                                                                                no-undef
+  706:70   error    'isTheaterMode' is not defined                                                                                                                                                                                                   no-undef
+  708:38   error    'isTheaterMode' is not defined                                                                                                                                                                                                   no-undef
+  899:34   error    'showZapActions' is not defined                                                                                                                                                                                                  no-undef
+  918:92   error    'setShowZapActions' is not defined                                                                                                                                                                                               no-undef
+  918:111  error    'showZapActions' is not defined                                                                                                                                                                                                  no-undef
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/hooks/generator/useVideoGeneration.js
+   5:10  error    'doc' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                      no-unused-vars
+  40:8   warning  React Hook useEffect has a missing dependency: 'currentUser'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AccessDenied.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AutoCSV/AutoCSV.jsx
+  133:6  warning  React Hook useEffect has a missing dependency: 'processingState'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AvatarForge/AvatarForgeFloor.jsx
+  5:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AvatarForge/AvatarForgeLayout.jsx
+  3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AvatarForge/AvatarForgeMint.jsx
+  5:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AvatarForge/AvatarForgeRequest.jsx
+  4:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/BlogPost.jsx
+  10:11  error  'navigate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  17:12  error  'utterance' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/DiscoveryDesktop.jsx
+   56:12  error    'isFocusLoading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            no-unused-vars
+  186:40  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `globalShowcaseCache`, but the source dependencies were [getGlobalShowcaseImages, getShowcaseImages, activeModelId, globalShowcaseCache.length, showcaseCache, hasGlobalFeedEnded, hasShowcaseEnded]. Inferred less specific property than source.
+
+  184 |
+  185 |     // 2. Robust Infinite Scroll Handler - Debounced & Guarded
+> 186 |     const handleLoadMore = useCallback(async () => {
+      |                                        ^^^^^^^^^^^^^
+> 187 |         const now = Date.now();
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 188 |         const timeSinceLastFetch = now - lastFetchTimeRef.current;
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 225 |         // which update the central state in ModelContext.
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 226 |     }, [getGlobalShowcaseImages, getShowcaseImages, activeModelId, globalShowcaseCache.length, showcaseCache, hasGlobalFeedEnded, hasShowcaseEnded]);
+      | ^^^^^^ Could not preserve existing manual memoization
+  227 |
+  228 |     // 3. Intersection Observer Setup - Stable, no recreation on cache changes
+  229 |     useEffect(() => {  react-hooks/preserve-manual-memoization
+  226:8   warning  React Hook useCallback has a missing dependency: 'globalShowcaseCache'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/exhaustive-deps
+  301:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  299 |         if (!focusImage) {
+  300 |             // Only clear related images if we have them, to avoid unnecessary state updates
+> 301 |             setRelatedImages(prev => prev.length > 0 ? [] : prev);
+      |             ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  302 |             return;
+  303 |         }
+  304 |                                                                                                                                                                                                                                                                                                                                                                                                                                       react-hooks/set-state-in-effect
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/DiscoveryMobile.jsx
+    1:45  error    'useState' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 no-unused-vars
+  102:40  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `globalShowcaseCache`, but the source dependencies were [getGlobalShowcaseImages, getShowcaseImages, activeModelId, globalShowcaseCache.length, showcaseCache, hasGlobalFeedEnded, hasShowcaseEnded]. Inferred less specific property than source.
+
+  100 |
+  101 |     // 2. Robust Infinite Scroll Handler - Debounced & Guarded
+> 102 |     const handleLoadMore = useCallback(async () => {
+      |                                        ^^^^^^^^^^^^^
+> 103 |         const now = Date.now();
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 104 |         const timeSinceLastFetch = now - lastFetchTimeRef.current;
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 122 |         }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 123 |     }, [getGlobalShowcaseImages, getShowcaseImages, activeModelId, globalShowcaseCache.length, showcaseCache, hasGlobalFeedEnded, hasShowcaseEnded]);
+      | ^^^^^^ Could not preserve existing manual memoization
+  124 |
+  125 |     // 3. Intersection Observer Setup
+  126 |     useEffect(() => {  react-hooks/preserve-manual-memoization
+  123:8   warning  React Hook useCallback has a missing dependency: 'globalShowcaseCache'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/DressUp.jsx
+   78:8  warning  React Hook useEffect has missing dependencies: 'activeTab', 'page', and 'viewMode'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  166:8  warning  React Hook useEffect has a missing dependency: 'currentUser'. Either include it or remove the dependency array                          react-hooks/exhaustive-deps
+  213:9  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Gallery.jsx
+  30:8  warning  React Hook useEffect has a missing dependency: 'searchQuery'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Generator.jsx
+   89:9   warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+  146:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MemeFormatter/index.jsx
+  23:8  warning  React Hook useEffect has a missing dependency: 'memeText'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MobileGenerator.jsx
+  15:5  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MockupCatalog/index.jsx
+  37:8  warning  React Hook useEffect has a missing dependency: 'currentPage'. Either include it or remove the dependency array      react-hooks/exhaustive-deps
+  59:8  warning  React Hook useEffect has a missing dependency: 'setSearchParams'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MockupFeed.jsx
+   52:8  warning  React Hook useEffect has missing dependencies: 'creatorFilter' and 'getInitialFilter'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  194:8  warning  React Hook useEffect has a missing dependency: 'fetchMockups'. Either include it or remove the dependency array                            react-hooks/exhaustive-deps
+  214:8  warning  React Hook useEffect has a missing dependency: 'fetchMockups'. Either include it or remove the dependency array                            react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MockupStudio/index.jsx
+  41:8  warning  React Hook useEffect has a missing dependency: 'mode'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/ModelDetail.jsx
+  104:70  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Models.jsx
+  24:8  warning  React Hook React.useEffect has missing dependencies: 'activeCategory' and 'searchQuery'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Pricing.jsx
+   95:8  warning  React Hook React.useEffect has a missing dependency: 'location.state?.from'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  107:8  warning  React Hook React.useEffect has a missing dependency: 'packs'. Either include it or remove the dependency array                 react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/PublicGenerationsFeed.jsx
+  276:8  warning  React Hook useEffect has missing dependencies: 'fetchGenerations' and 'filterCache'. Either include them or remove the dependency array. You can also replace multiple useState variables with useReducer if 'setImages' needs the current value of 'filterCache'  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/ShowcaseDetail.jsx
+   74:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+  217:8   warning  React Hook useEffect has a missing dependency: 'loadMoreImages'. Either include it or remove the dependency array        react-hooks/exhaustive-deps
+  259:8   warning  React Hook useCallback has a missing dependency: 'visibleGlobalCache'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  301:8   warning  React Hook useCallback has a missing dependency: 'visibleGlobalCache'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/UserProfile.jsx
+  114:8  warning  React Hook useEffect has missing dependencies: 'appCreations' and 'productions'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+✖ 95 problems (47 errors, 48 warnings)
+  0 errors and 21 warnings potentially fixable with the `--fix` option.
+

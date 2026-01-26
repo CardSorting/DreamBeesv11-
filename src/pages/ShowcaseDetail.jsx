@@ -141,7 +141,7 @@ const ShowcaseDetail = () => {
 
         initFeed();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id, globalShowcaseCache, hasMoreGlobal, getGlobalShowcaseImages]);
+    }, [id, globalShowcaseCache, hasMoreGlobal, getGlobalShowcaseImages, visibleGlobalCache.length, rawId]);
 
 
     // 3. Load More Strategy - Now with history awareness
@@ -214,7 +214,7 @@ const ShowcaseDetail = () => {
         return () => {
             if (observerRef.current) observerRef.current.disconnect();
         };
-    }, [images, id, navigate, hasMoreGlobal]);
+    }, [images, id, navigate, hasMoreGlobal, loadMoreImages]);
 
 
 
@@ -326,7 +326,7 @@ const ShowcaseDetail = () => {
             const arr = Array.from(seenIdsRef.current);
             seenIdsRef.current = new Set(arr.slice(-HISTORY_CAP));
         }
-    }, [images]);
+    }, [images, currentIndex]);
 
 
     // Loading State

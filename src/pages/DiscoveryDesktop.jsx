@@ -53,7 +53,7 @@ export default function DiscoveryDesktop() {
     // Focus View State
     const [fetchedFocusImage, setFetchedFocusImage] = useState(null);
     const [relatedImages, setRelatedImages] = useState([]);
-    const [isFocusLoading, setIsFocusLoading] = useState(false);
+
 
     // Derived State for Focused Image
     const focusImage = useMemo(() => {
@@ -220,10 +220,7 @@ export default function DiscoveryDesktop() {
         } else {
             await getShowcaseImages(activeModelId, true);
         }
-
-        // Result handling is now integrated into getGlobalShowcaseImages and getShowcaseImages
-        // which update the central state in ModelContext.
-    }, [getGlobalShowcaseImages, getShowcaseImages, activeModelId, globalShowcaseCache.length, showcaseCache, hasGlobalFeedEnded, hasShowcaseEnded]);
+    }, [getGlobalShowcaseImages, getShowcaseImages, activeModelId, globalShowcaseCache, showcaseCache, hasGlobalFeedEnded, hasShowcaseEnded]);
 
     // 3. Intersection Observer Setup - Stable, no recreation on cache changes
     useEffect(() => {
@@ -297,12 +294,16 @@ export default function DiscoveryDesktop() {
 
     useEffect(() => {
         if (!focusImage) {
-            // Only clear related images if we have them, to avoid unnecessary state updates
-            setRelatedImages(prev => prev.length > 0 ? [] : prev);
+            // Only clear related images if we have them, using a microtask to avoid synchronous setState warning
+            if (relatedImages.length > 0) {
+                queueMicrotask(() => {
+                    setRelatedImages([]);
+                });
+            }
             return;
         }
 
-        setIsFocusLoading(true);
+
 
         const isMounted = { current: true };
 
@@ -337,7 +338,7 @@ export default function DiscoveryDesktop() {
 
             if (isMounted.current) {
                 setRelatedImages(recommendations);
-                setIsFocusLoading(false);
+
             }
         }, 100);
 
@@ -345,7 +346,7 @@ export default function DiscoveryDesktop() {
             isMounted.current = false;
             clearTimeout(timer);
         };
-    }, [focusImage, globalShowcaseCache]);
+    }, [focusImage, globalShowcaseCache, relatedImages.length]);
 
     return (
         <div className="feed-layout-wrapper">
