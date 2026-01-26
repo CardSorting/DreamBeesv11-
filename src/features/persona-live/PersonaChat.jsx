@@ -350,11 +350,17 @@ const PersonaChat = () => {
             channel.bind('audio-update', (data) => {
                 if (data.audioUrl) {
                     console.log("[AI Voice] Received audio update:", data);
-                    setVoiceQueue(prev => [...prev, data.audioUrl]);
+                    setVoiceQueue(prev => {
+                        // Limit queue size to 5 to prevent massive backlog if user is away
+                        const newQueue = [...prev, data.audioUrl];
+                        return newQueue.slice(-5);
+                    });
                 }
             });
 
             return () => {
+                console.log("[Soketi] Cleaning up connection...");
+                channel.unbind_all();
                 pusher.unsubscribe(channelName);
                 pusher.disconnect();
             };

@@ -8,10 +8,11 @@ const db = getFirestore();
  */
 export const saveMessage = async (personaId, messageData) => {
     try {
-        await db.collection('personas').doc(personaId).collection('shared_messages').add({
+        const docRef = await db.collection('personas').doc(personaId).collection('shared_messages').add({
             ...messageData,
             timestamp: FieldValue.serverTimestamp()
         });
+        return docRef;
     } catch (e) {
         logger.error(`[Store] Failed to save message for ${personaId}`, e);
     }

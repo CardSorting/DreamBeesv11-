@@ -138,7 +138,8 @@ export const generateResponse = async (systemPrompt, history, currentMsg) => {
  */
 export const extractMetadata = (rawText) => {
     const extract = (key) => {
-        const match = rawText.match(new RegExp(`${key}:(.*)`));
+        const regex = new RegExp(`${key}:\\s*(.*)`, 'i');
+        const match = rawText.match(regex);
         return match ? match[1].trim() : null;
     };
 
@@ -157,9 +158,9 @@ export const extractMetadata = (rawText) => {
     if (metadata.title) metadata.title = metadata.title.replace(/["']/g, '');
 
     // Poll extraction
-    if (rawText.includes('POLL:')) {
+    if (rawText.toLowerCase().includes('poll:')) {
         try {
-            const pollLine = rawText.split('POLL:')[1].split('\n')[0].trim();
+            const pollLine = rawText.split(/POLL:/i)[1].split('\n')[0].trim();
             const pollParts = pollLine.split('|').map(p => p.trim());
             if (pollParts.length >= 3) {
                 metadata.poll = {
