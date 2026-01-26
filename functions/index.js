@@ -5,7 +5,6 @@ import { web, serveSitemap } from "./web.js";
 import { urgentWorker, backgroundWorker, voiceWorker } from "./workers/queues.js";
 import { onCall } from "firebase-functions/v2/https";
 // Main API entry point handles all onCall persona actions
-export const { api } = await import("./api.js");
 
 // Export the main services
 export {
