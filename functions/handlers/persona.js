@@ -1,5 +1,6 @@
 import { HttpsError } from "firebase-functions/v2/https";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getFunctions } from "firebase-admin/functions"; // Added
 import { logger, fetchWithRetry } from "../lib/utils.js";
 import { vertexFlow } from "../lib/vertexFlow.js"; // Kept for creation logic
 
@@ -147,22 +148,32 @@ export const handleChatPersona = async (request) => {
         }
 
         // 9. Persist & Broadcast AI Reply
-        let audioJobId = null;
-        if (persona.voice_dna) {
-            audioJobId = await Voice.submitTtsJob(cleanText, persona.voice_dna, metadata.emotion);
-        }
-
+        // DECOUPLED: Voice generation is now an async background task (VoiceWorker)
         const aiMsgData = {
             uid: 'ai-persona',
             displayName: persona.name,
             photoURL: persona.photoURL || '',
             text: cleanText,
             role: 'model',
-            audioJobId: audioJobId || null
+            audioJobId: null // Client waits for update
         };
 
-        await Store.saveMessage(imageId, aiMsgData);
+        const msgRef = await Store.saveMessage(imageId, aiMsgData);
         await Broadcaster.broadcastMessage(imageId, aiMsgData);
+
+        // Enqueue Voice Task if DNA exists
+        if (persona.voice_dna) {
+            const queue = getFunctions().taskQueue("locations/us-central1/functions/voiceWorker");
+            await queue.enqueue({
+                taskType: 'voice',
+                imageId: imageId,
+                messageId: msgRef.id,
+                text: cleanText,
+                voiceDna: persona.voice_dna,
+                emotion: metadata.emotion
+            });
+            logger.info(`[Persona] Voice Task Enqueued for msg: ${msgRef.id}`);
+        }
 
         if (metadata.reaction) await Broadcaster.broadcastReaction(imageId, metadata.reaction);
         if (metadata.poll) await Broadcaster.broadcastPoll(imageId, metadata.poll);

@@ -1,4 +1,5 @@
 import { onTaskDispatched } from "firebase-functions/v2/tasks";
+import { processVoiceTask } from "./voice.js";
 import { processImageTask } from "./image.js";
 import { processVideoTask } from "./video.js";
 import { processDressUpTask } from "./dressUp.js";
@@ -19,6 +20,9 @@ const processTask = async (req, workerName) => {
     try {
         let result;
         switch (taskType) {
+            case 'voice':
+                result = await processVoiceTask(req);
+                break;
             case 'image':
                 result = await processImageTask(req);
                 break;
@@ -94,4 +98,23 @@ export const backgroundWorker = onTaskDispatched(
         timeoutSeconds: 900, // Longer timeout for deep analysis
     },
     (req) => processTask(req, "BackgroundWorker")
+);
+
+// --- Voice Worker (Throttled Priority) ---
+// For TTS tasks: throttled to protect the single-instance backend
+export const voiceWorker = onTaskDispatched(
+    {
+        retryConfig: {
+            maxAttempts: 3,
+            minBackoffSeconds: 5,
+            maxDoublings: 2
+        },
+        rateLimits: {
+            maxConcurrentDispatches: 10,
+            maxDispatchesPerSecond: 5
+        },
+        memory: "512MiB",
+        timeoutSeconds: 300,
+    },
+    (req) => processTask(req, "VoiceWorker")
 );

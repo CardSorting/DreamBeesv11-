@@ -2,7 +2,7 @@ import "./firebaseInit.js"; // Ensure Firebase Admin is initialized
 
 import { api } from "./api.js";
 import { web, serveSitemap } from "./web.js";
-import { urgentWorker, backgroundWorker } from "./workers/queues.js";
+import { urgentWorker, backgroundWorker, voiceWorker } from "./workers/queues.js";
 import { onCall } from "firebase-functions/v2/https";
 import { handleCreatePersona, handleChatPersona, handleGiftPersona, handleTriggerAction, handleVotePoll } from "./handlers/persona.js";
 
@@ -33,4 +33,5 @@ export {
     serveSitemap,
     urgentWorker,
     backgroundWorker,
+    voiceWorker
 };

@@ -11,5 +11,7 @@ const app = initializeApp({
 
 console.log("[FirebaseInit] Initialized with project:", app.options.projectId);
 
+import { getStorage } from "firebase-admin/storage";
+
 const db = getFirestore();
-export { db, FieldValue, getFunctions };
+export { db, FieldValue, getFunctions, getStorage };

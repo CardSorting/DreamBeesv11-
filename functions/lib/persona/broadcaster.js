@@ -61,3 +61,8 @@ export const broadcastCelebration = async (personaId, data) => {
     const channel = `presence-chat-${personaId}`;
     await trigger(channel, "celebration", data); // e.g. gift
 };
+
+export const broadcastAudioUpdate = async (personaId, messageId, audioJobId, audioUrl = null) => {
+    const channel = `presence-chat-${personaId}`;
+    await trigger(channel, "audio-update", { messageId, audioJobId, audioUrl });
+};
