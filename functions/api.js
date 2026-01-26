@@ -8,8 +8,7 @@ import {
     checkUserQuota,
     checkTokenBucket,
     checkAbuseScore,
-    recordViolation,
-    checkCumulativeLimit
+    recordViolation
 } from "./lib/abuse.js";
 
 // -- Imports from Handlers --

@@ -43,69 +43,72 @@ export default function DiscoveryDesktop() {
     const [activeModelId, setActiveModelId] = useState(modelId || 'all');
     const [searchParams, setSearchParams] = useSearchParams();
 
+    // Reset pagination when search changes
+    useEffect(() => {
+        if (currentPage !== 1) {
+            setCurrentPage(1);
+        }
+    }, [searchQuery, currentPage]);
+
     // Update state when URL changes
     useEffect(() => {
         setActiveModelId(modelId || 'all');
     }, [modelId]);
 
     // Focus View State
-    const [focusImage, setFocusImage] = useState(null);
+    const [fetchedFocusImage, setFetchedFocusImage] = useState(null);
     const [relatedImages, setRelatedImages] = useState([]);
     const [isFocusLoading, setIsFocusLoading] = useState(false);
 
-    // Deep Linking for Focused Image - Enhanced to handle both :id route param and ?view query param
-    useEffect(() => {
-        // Extract ID from route (for /discovery/:id) or fall back to query param (for ?view=id)
-        // The :id may include slug prefix (e.g., "artwork-title--actual-id")
+    // Derived State for Focused Image
+    const focusImage = useMemo(() => {
         let viewId = id || searchParams.get('view');
+        if (viewId && viewId.includes('--')) viewId = viewId.split('--').pop();
+        if (!viewId) return null;
 
-        // If we have a route ID with double hyphen separator, extract the actual ID
-        if (viewId && viewId.includes('--')) {
-            viewId = viewId.split('--').pop();
-        }
-
-        if (!viewId) {
-            if (focusImage) setFocusImage(null);
-            return;
-        }
-
-        if (focusImage && focusImage.id === viewId) return;
-
-        // 1. Try to find in current data source
         const source = activeModelId === 'all'
             ? globalShowcaseCache
             : (showcaseCache[activeModelId] || []);
 
         const found = source.find(img => img.id === viewId);
-        if (found) {
-            setFocusImage(found);
-        } else {
-            // 2. Fetch directly from Firestore if not in cache (Crucial for deep link sharing)
-            const fetchImage = async () => {
-                try {
-                    // Try official showcase first
-                    let docRef = doc(db, 'model_showcase_images', viewId);
-                    let snapshot = await getDoc(docRef);
+        if (found) return found;
+        if (fetchedFocusImage?.id === viewId) return fetchedFocusImage;
+        return null;
+    }, [id, searchParams, activeModelId, globalShowcaseCache, showcaseCache, fetchedFocusImage]);
 
-                    if (!snapshot.exists()) {
-                        // Try user generations as fallback
-                        docRef = doc(db, 'generations', viewId);
-                        snapshot = await getDoc(docRef);
-                    }
+    // Deep Linking: Async fallback
+    useEffect(() => {
+        let viewId = id || searchParams.get('view');
+        if (viewId && viewId.includes('--')) viewId = viewId.split('--').pop();
 
-                    if (snapshot.exists()) {
-                        setFocusImage({ id: snapshot.id, ...snapshot.data() });
-                    }
-                } catch (err) {
-                    // Only log non-permission errors
-                    if (err.code !== 'permission-denied') {
-                        console.error("Error fetching deep-linked image:", err);
-                    }
-                }
-            };
-            fetchImage();
+        if (!viewId) {
+            if (fetchedFocusImage) setFetchedFocusImage(null);
+            return;
         }
-    }, [id, searchParams, activeModelId, globalShowcaseCache, showcaseCache, focusImage]);
+
+        const source = activeModelId === 'all'
+            ? globalShowcaseCache
+            : (showcaseCache[activeModelId] || []);
+
+        if (source.some(img => img.id === viewId) || fetchedFocusImage?.id === viewId) return;
+
+        const fetchImage = async () => {
+            try {
+                let docRef = doc(db, 'model_showcase_images', viewId);
+                let snapshot = await getDoc(docRef);
+                if (!snapshot.exists()) {
+                    docRef = doc(db, 'generations', viewId);
+                    snapshot = await getDoc(docRef);
+                }
+                if (snapshot.exists()) {
+                    setFetchedFocusImage({ id: snapshot.id, ...snapshot.data() });
+                }
+            } catch (err) {
+                console.error("Error fetching discovery deep-linked image:", err);
+            }
+        };
+        fetchImage();
+    }, [id, searchParams, activeModelId, globalShowcaseCache, showcaseCache, fetchedFocusImage]);
 
     // Scroll to top on model change
     const handleModelSelect = (newModelId) => {

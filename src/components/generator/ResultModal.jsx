@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import html2canvas from 'html2canvas';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ExternalLink, Download, Share2, Star, Zap, Copy, Check, Loader2 } from 'lucide-react';
@@ -17,6 +17,8 @@ export default function ResultModal({
     const imageRef = useRef(null);
     const [isImageLoaded, setIsImageLoaded] = useState(false);
     const [isDownloadSuccess, setIsDownloadSuccess] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
+    const [copied, setCopied] = useState(false);
 
     // Reset states when opening new result
     useEffect(() => {
@@ -29,6 +31,8 @@ export default function ResultModal({
     const handleDownload = async () => {
         if (isDownloading || isDownloadSuccess) return;
         setIsDownloading(true);
+
+        const downloadFilename = generationMode === 'video' ? 'dreambees-video.mp4' : 'dreambees-creation.png';
 
         // Small delay to allow UI to update
         await new Promise(r => setTimeout(r, 100));

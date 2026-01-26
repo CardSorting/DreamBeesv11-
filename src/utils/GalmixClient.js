@@ -1,3 +1,4 @@
+/* global Buffer */
 
 import fs from 'fs/promises';
 

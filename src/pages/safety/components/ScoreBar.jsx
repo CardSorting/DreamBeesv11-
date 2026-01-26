@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { scoreToPercent, HIDE_THRESHOLD, SAFE_THRESHOLD } from '../constants';
 

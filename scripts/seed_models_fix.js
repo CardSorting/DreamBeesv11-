@@ -1,3 +1,4 @@
+/* global process */
 import admin from "firebase-admin";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";

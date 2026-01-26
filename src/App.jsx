@@ -87,6 +87,12 @@ function App() {
       });
     }
 
+    const refCode = urlParams.get('ref');
+    if (refCode) {
+      localStorage.setItem('referralCode', refCode);
+      setUserProperties({ referral_source: refCode });
+    }
+
     // Session Heartbeat (every 5 mins)
     const heartbeat = setInterval(() => {
       if (!document.hidden) {

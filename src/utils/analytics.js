@@ -150,7 +150,7 @@ export const trackBeginCheckout = (item) => {
  * Tracks performance metrics (Web Vitals).
  * @param {Object} metric - The performance metric object.
  */
-export const trackMetric = ({ name, delta, id, value }) => {
+export const trackMetric = ({ name, delta, id, value: _value }) => {
     trackEvent(name, {
         value: Math.round(name === 'CLS' ? delta * 1000 : delta),
         event_label: id,

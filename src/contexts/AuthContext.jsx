@@ -29,7 +29,14 @@ export function AuthProvider({ children }) {
 
     function signup(email, password, birthday = null) {
         if (birthday) setPendingBirthday(birthday);
-        return createUserWithEmailAndPassword(auth, email, password);
+        const referralCode = localStorage.getItem('referralCode');
+        return createUserWithEmailAndPassword(auth, email, password).then((userCredential) => {
+            if (referralCode) {
+                // Store temporarily for initializeUser
+                window._pendingReferral = referralCode;
+            }
+            return userCredential;
+        });
     }
 
     function login(email, password) {
@@ -66,12 +73,16 @@ export function AuthProvider({ children }) {
             // 2. Retry Logic for Creation (Handled by useApi)
             await apiCall('api', {
                 action: 'initializeUser',
-                birthday: pendingBirthday
+                birthday: pendingBirthday,
+                referralCode: window._pendingReferral || localStorage.getItem('referralCode')
             }, {
                 retries: 3,
                 timeout: 30000,
                 toastErrors: false // Don't spam user during auto-init, we catch globally if needed
             });
+
+            delete window._pendingReferral;
+            localStorage.removeItem('referralCode'); // Clear after use
 
             setPendingBirthday(null);
             console.log("User initialization successful via useApi");

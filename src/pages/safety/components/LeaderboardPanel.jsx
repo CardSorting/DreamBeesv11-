@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Trophy, Medal, Users, Loader2 } from 'lucide-react';
 
 export default function LeaderboardPanel({ reviewers, loading }) {
@@ -22,8 +21,8 @@ export default function LeaderboardPanel({ reviewers, loading }) {
                         <div className="flex items-center gap-3">
                             <div className="relative">
                                 <div className={`w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[10px] font-bold ${index === 0 ? 'border border-yellow-500/50 text-yellow-500' :
-                                        index === 1 ? 'border border-zinc-400/50 text-zinc-400' :
-                                            index === 2 ? 'border border-amber-600/50 text-amber-600' : 'text-zinc-500'
+                                    index === 1 ? 'border border-zinc-400/50 text-zinc-400' :
+                                        index === 2 ? 'border border-amber-600/50 text-amber-600' : 'text-zinc-500'
                                     }`}>
                                     {index + 1}
                                 </div>

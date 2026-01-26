@@ -18,8 +18,14 @@ const GRACE_MESSAGES = [
 ];
 
 export default function LoadingModal({ prompt, useTurbo, onCancel }) {
-    const [messageIndex, setMessageIndex] = useState(0);
     const [showGraceMessage, setShowGraceMessage] = useState(false);
+    const [graceMessage, setGraceMessage] = useState("");
+
+    useEffect(() => {
+        if (showGraceMessage) {
+            setGraceMessage(GRACE_MESSAGES[Math.floor(Math.random() * GRACE_MESSAGES.length)]);
+        }
+    }, [showGraceMessage]);
 
     useEffect(() => {
         const messageInterval = setInterval(() => {
@@ -104,7 +110,7 @@ export default function LoadingModal({ prompt, useTurbo, onCancel }) {
                             }}
                         >
                             {showGraceMessage
-                                ? GRACE_MESSAGES[Math.floor(Math.random() * GRACE_MESSAGES.length)]
+                                ? graceMessage
                                 : LOADING_MESSAGES[messageIndex]
                             }
                         </motion.p>

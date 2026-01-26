@@ -28,13 +28,14 @@ const FeedPost = ({
 
     const { _currentUser } = useAuth();
     const { isLiked, isBookmarked, toggleLike, toggleBookmark, hidePost, unhidePost, reportPost, appealPost, isHidden } = useUserInteractions();
+
     const [activeSlide, setActiveSlide] = useState(0);
-
-
     const [showLargeHeart, setShowLargeHeart] = useState(false);
     const [lastTap, setLastTap] = useState(0);
     const [isMuted, setIsMuted] = useState(true);
     const [manualUnmute, setManualUnmute] = useState(false);
+    const [showReportMenu, setShowReportMenu] = useState(false);
+    const [dismissed, setDismissed] = useState(false);
     const timerRef = useRef(null);
     const videoRef = useRef(null);
 
@@ -127,8 +128,6 @@ const FeedPost = ({
     }
 
     // --- Moderation State ---
-    const [showReportMenu, setShowReportMenu] = useState(false);
-    const [dismissed, setDismissed] = useState(false); // If true, completely remove from DOM (final state)
 
     // Derived state: Is this post effectively hidden for the user?
     const isPostHidden = isHidden(imgItem.id);

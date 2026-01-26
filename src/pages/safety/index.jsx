@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import SEO from '../../components/SEO';
 import Sidebar from '../../components/Sidebar';
 import { useUserInteractions } from '../../contexts/UserInteractionsContext';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';
 import { Loader2, Inbox, CheckCircle, Shield, Sparkles, Clock, Gavel, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { getOptimizedImageUrl } from '../../utils';
@@ -39,15 +39,19 @@ export default function CommunitySafety() {
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [expandedDetails, setExpandedDetails] = useState(false);
     const [hoveredButton, setHoveredButton] = useState(null);
-    const [showShortcuts, setShowShortcuts] = useState(false);
     const [showSummary, setShowSummary] = useState(false);
 
     // Onboarding check
+    // We still keep the effect but only toggle it if the profile changes meaningfully
+    // and it's not already shown. This is safer.
     useEffect(() => {
-        const hasSeenOnboarding = localStorage.getItem('safetyOnboardingComplete');
-        if (!hasSeenOnboarding && (userProfile.totalReviews || 0) === 0) {
-            setShowOnboarding(true);
-        }
+        const checkOnboarding = () => {
+            const hasSeen = localStorage.getItem('safetyOnboardingComplete');
+            if (hasSeen !== 'true' && userProfile.totalReviews === 0) {
+                setShowOnboarding(true);
+            }
+        };
+        checkOnboarding();
     }, [userProfile.totalReviews]);
 
     const completeOnboarding = useCallback(() => {
@@ -78,8 +82,7 @@ export default function CommunitySafety() {
                 case 'ArrowRight': onVote('unsafe'); break;
                 case 'ArrowDown':
                 case ' ': e.preventDefault(); onVote('skip'); break;
-                case 'z': if ((e.metaKey || e.ctrlKey) && !voting.quickVoteMode) voting.handleUndo(); break;
-                case '?': setShowShortcuts(s => !s); break;
+                case '?': setShowOnboarding(true); break;
             }
         };
         window.addEventListener('keydown', handleKeyDown);
@@ -289,21 +292,14 @@ export default function CommunitySafety() {
                                                     <Gavel size={12} /> Appeal
                                                 </div>
                                             )}
-                                            {/* Urgency Badge */}
-                                            {(() => {
-                                                const reportCount = currentCard.reportCount || 0;
-                                                const ageHours = (Date.now() - (currentCard.lastReportedAt?.seconds * 1000 || Date.now())) / 3600000;
-                                                let urgency = null;
-                                                if (reportCount >= 10) urgency = URGENCY_LEVELS.hot;
-                                                else if (ageHours >= 24) urgency = URGENCY_LEVELS.aging;
-
-                                                if (!urgency) return null;
-                                                return (
-                                                    <div className={`px-3 py-1 ${urgency.bg} ${urgency.color} rounded-full text-xs font-bold flex items-center gap-1.5 border border-white/5`}>
-                                                        {urgency.label}
-                                                    </div>
-                                                );
-                                            })()}
+                                            {currentCard?._urgency && (
+                                                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${currentCard._urgency === 'hot'
+                                                    ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                                    : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
+                                                    }`}>
+                                                    <Clock size={10} /> {currentCard._urgency === 'hot' ? 'High Urgency' : 'Aging Report'}
+                                                </div>
+                                            )}
                                             {/* Creator Context */}
                                             {(() => {
                                                 const tier = getCreatorTier(currentCard.creatorGenerationCount || 0);

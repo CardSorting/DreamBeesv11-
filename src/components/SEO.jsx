@@ -2,39 +2,44 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
 
-const SEO = ({ title, description, keywords, image, type = 'website', structuredData, noindex = false, canonical }) => {
+const SEO = ({ title, description, keywords, image, type = 'website', structuredData, noindex = false, canonical, schemaType = 'SoftwareApplication' }) => {
     const location = useLocation();
-    const siteUrl = 'https://dreambeesai.com'; // Replace with actual domain
+    const siteUrl = 'https://dreambeesai.com';
 
-    // Improved URL handling: includes search params for canonical if they are important (like 'view')
+    // Improved URL handling
     const searchParams = new URLSearchParams(location.search);
     const viewId = searchParams.get('view');
 
-    // Base canonical URL
     let currentUrl = `${siteUrl}${location.pathname}`;
 
-    // If a specific canonical is provided, use it
     if (canonical) {
         currentUrl = canonical.startsWith('http') ? canonical : `${siteUrl}${canonical}`;
     } else if (viewId) {
-        // Automatically include viewId in canonical if present
         currentUrl = `${currentUrl}?view=${viewId}`;
     }
 
-    const defaultTitle = 'AI Image Generator - Text to Image Online (No Discord Required)';
-    const defaultDescription = 'Generate high-quality AI art directly on the web. No Discord servers, no complex prompts. Fast, private, and simple text-to-image creation. Start for free.';
-    const defaultKeywords = 'AI image generator, text to image without discord, simple ai art tool, ai art generator, stable diffusion online, flux ai';
+    const defaultTitle = 'DreamBees AI - Pro AI Image Generator (No Discord)';
+    const defaultDescription = 'Generate high-fidelity AI art directly in your browser. Stable Diffusion XL, Flux, and SDXL Turbo support. Private, fast, and royalty-free.';
+    const defaultKeywords = 'AI image generator, text to image without discord, flux ai online, sd xl turbo, ai art tool, professional ai generation';
     const defaultImage = `${siteUrl}/dreambees_icon.png`;
 
     const metaTitle = title ? `${title} | DreamBeesAI` : defaultTitle;
-    const metaDescription = description || defaultDescription;
+    const metaDescription = (description || defaultDescription).slice(0, 160);
     const metaKeywords = keywords || defaultKeywords;
 
-    // Ensure image is absolute for OG/Twitter tags
     let metaImage = image || defaultImage;
     if (metaImage && !metaImage.startsWith('http')) {
         metaImage = `${siteUrl}${metaImage.startsWith('/') ? '' : '/'}${metaImage}`;
     }
+
+    const baseSchema = {
+        "@context": "https://schema.org",
+        "@type": schemaType,
+        "name": metaTitle,
+        "description": metaDescription,
+        "url": currentUrl,
+        "image": metaImage
+    };
 
     return (
         <Helmet>
@@ -63,11 +68,9 @@ const SEO = ({ title, description, keywords, image, type = 'website', structured
             <meta name="twitter:image" content={metaImage} />
 
             {/* Structured Data (JSON-LD) */}
-            {structuredData && (
-                <script type="application/ld+json">
-                    {JSON.stringify(structuredData)}
-                </script>
-            )}
+            <script type="application/ld+json">
+                {JSON.stringify(structuredData || baseSchema)}
+            </script>
         </Helmet>
     );
 };

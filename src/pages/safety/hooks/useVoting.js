@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useUserInteractions } from '../../../contexts/UserInteractionsContext';
 import { MILESTONES } from '../constants';
 import canvasConfetti from 'canvas-confetti';
@@ -17,7 +17,6 @@ export function useVoting() {
     const [lastMilestone, setLastMilestone] = useState(0);
     const [sessionCount, setSessionCount] = useState(0);
     const [consensusData, setConsensusData] = useState(null);
-    const [patternAlert, setPatternAlert] = useState(null);
 
     // Pattern Tracking
     const [voteStats, setVoteStats] = useState(() => {
@@ -27,12 +26,16 @@ export function useVoting() {
 
     useEffect(() => {
         localStorage.setItem('safetyPatterns', JSON.stringify(voteStats));
+    }, [voteStats]);
+
+    // Pattern Tracking - Derived State
+    const patternAlert = useMemo(() => {
         if (voteStats.total >= 10) {
             const keepRatio = voteStats.safe / voteStats.total;
-            if (keepRatio > 0.85) setPatternAlert("Bias detected: High KEEP rate (85%+). Review carefully!");
-            else if (keepRatio < 0.15) setPatternAlert("Bias detected: High REMOVE rate (85%+). Review carefully!");
-            else setPatternAlert(null);
+            if (keepRatio > 0.85) return "Bias detected: High KEEP rate (85%+). Review carefully!";
+            if (keepRatio < 0.15) return "Bias detected: High REMOVE rate (85%+). Review carefully!";
         }
+        return null;
     }, [voteStats]);
 
     // Vote Power Calculation

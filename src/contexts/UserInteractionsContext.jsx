@@ -46,7 +46,10 @@ export function UserInteractionsProvider({ children }) {
         credits: 5,
         subscriptionStatus: 'inactive',
         username: '',
-        displayPreference: 'name'
+        displayPreference: 'name',
+        referralCode: '',
+        referredBy: '',
+        referralCount: 0
     });
     const [isProfileLoaded, setIsProfileLoaded] = useState(false);
 
@@ -150,7 +153,10 @@ export function UserInteractionsProvider({ children }) {
                     username: data.username || '',
                     displayPreference: data.displayPreference || 'name',
                     karma: data.karma !== undefined ? data.karma : 0,
-                    birthday: data.birthday || null
+                    birthday: data.birthday || null,
+                    referralCode: data.referralCode || '',
+                    referredBy: data.referredBy || '',
+                    referralCount: data.referralCount || 0
                 });
             }
             setIsProfileLoaded(true);

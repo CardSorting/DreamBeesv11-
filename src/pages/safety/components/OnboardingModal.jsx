@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Shield, CheckCircle, XCircle, Zap, Rocket, ArrowLeft, ArrowRight, ArrowDown } from 'lucide-react';
 
 export default function OnboardingModal({ onComplete }) {

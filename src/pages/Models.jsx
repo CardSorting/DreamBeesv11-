@@ -3,7 +3,6 @@ import SEO from '../components/SEO';
 import { useModel } from '../contexts/ModelContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Search, Sparkles, Check } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
 
 export default function Models() {
     const { selectedModel, setSelectedModel, availableModels, loading, error } = useModel();
@@ -17,7 +16,6 @@ export default function Models() {
     const [searchQuery, setSearchQuery] = useState(queryParam);
     const [activeCategory, setActiveCategory] = useState(categoryParam);
 
-    const location = useLocation();
 
     // Sync state with URL changes (back/forward nav)
     React.useEffect(() => {

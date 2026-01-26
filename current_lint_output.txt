@@ -1,0 +1,761 @@
+
+> dreambees-app@0.0.0 lint
+> eslint .
+
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/api.js
+  12:5  error  'checkCumulativeLimit' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/handlers/avatars.js
+  198:15  error  'collectionRef' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  201:39  error  'idx' is defined but never used. Allowed unused args must match /^[A-Z_]/u                     no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/handlers/data.js
+  559:19  error  'imgDoc' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/handlers/persona.js
+  21:31  error  'chatHistory' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/lib/GalmixClient.js
+  2:8  error  'fs' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/scripts/generate_flux_showcase.js
+  6:10  error  'initializeApp' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/scripts/simulate_loadbalancer.js
+  5:7   error  'mockLogger' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  9:13  error  'msg' is defined but never used. Allowed unused args must match /^[A-Z_]/u                  no-unused-vars
+  9:18  error  'meta' is defined but never used. Allowed unused args must match /^[A-Z_]/u                 no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/workers/image.js
+    3:57  error  'fetchWithFallback' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  627:11  error  'userData' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/scripts/seed_avatar_forge.js
+   2:10  error  'readFileSync' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+   3:10  error  'join' is defined but never used. Allowed unused vars must match /^[A-Z_]/u          no-unused-vars
+  59:5   error  'process' is not defined                                                             no-undef
+
+/Users/bozoegg/Desktop/DreamBeesv11/scripts/seed_galmix.js
+   2:10  error  'readFileSync' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+   3:10  error  'join' is defined but never used. Allowed unused vars must match /^[A-Z_]/u          no-unused-vars
+  40:5   error  'process' is not defined                                                             no-undef
+
+/Users/bozoegg/Desktop/DreamBeesv11/scripts/seed_models_fix.js
+  12:19  error  'process' is not defined  no-undef
+  67:5   error  'process' is not defined  no-undef
+  72:5   error  'process' is not defined  no-undef
+
+/Users/bozoegg/Desktop/DreamBeesv11/scripts/test_galmix_backend.js
+  7:25  error  'process' is not defined  no-undef
+
+/Users/bozoegg/Desktop/DreamBeesv11/scripts/test_galmix_live.js
+  15:21  error  'process' is not defined  no-undef
+
+/Users/bozoegg/Desktop/DreamBeesv11/scripts/verify_firestore_client.js
+  14:13  error  'process' is not defined  no-undef
+  15:17  error  'process' is not defined  no-undef
+  16:16  error  'process' is not defined  no-undef
+  17:20  error  'process' is not defined  no-undef
+  18:24  error  'process' is not defined  no-undef
+  19:12  error  'process' is not defined  no-undef
+  26:9   error  'process' is not defined  no-undef
+  53:9   error  'process' is not defined  no-undef
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/App.jsx
+  3:29  error  'trackExperiment' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/apps/color-craft/components/JsonImportModal.jsx
+  14:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  12 |     useEffect(() => {
+  13 |         if (isOpen && rows.length === 0) {
+> 14 |             setRows([{ id: crypto.randomUUID(), prompt: '', style: ArtStyle.SIMPLE }]);
+     |             ^^^^^^^ Avoid calling setState() directly within an effect
+  15 |         }
+  16 |     }, [isOpen]);
+  17 |  react-hooks/set-state-in-effect
+  16:8   warning  React Hook useEffect has a missing dependency: 'rows.length'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/apps/color-craft/hooks/useBatchProcessor.js
+  157:13  error  Error: Cannot access variable before it is declared
+
+`processNextItem` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  155 |         // 5. Recursive Step
+  156 |         setTimeout(() => {
+> 157 |             processNextItem();
+      |             ^^^^^^^^^^^^^^^ `processNextItem` accessed before it is declared
+  158 |         }, 100);
+  159 |
+  160 |     }, [setImages, batchDelayMs]);
+
+   74 |
+   75 |     // The actual processing logic
+>  76 |     const processNextItem = useCallback(async () => {
+      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  77 |         // 1. Check conditions
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  78 |         if (queuePausedRef.current || !isComponentMounted.current) {
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 159 |
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 160 |     }, [setImages, batchDelayMs]);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `processNextItem` is declared here
+  161 |
+  162 |     // Trigger effect
+  163 |     useEffect(() => {  react-hooks/immutability
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/AgeVerificationModal.jsx
+    2:10  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    no-unused-vars
+   41:8   warning  React Hook useEffect has missing dependencies: 'items' and 'value'. Either include them or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           react-hooks/exhaustive-deps
+  167:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  165 |     useEffect(() => {
+  166 |         if (currentUser && isProfileLoaded && !userProfile.birthday) {
+> 167 |             setIsVisible(true);
+      |             ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  168 |         } else {
+  169 |             setIsVisible(false);
+  170 |         }  react-hooks/set-state-in-effect
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/AnimatedRoutes.jsx
+  3:27  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/AppCard.jsx
+  7:5  warning  Unused eslint-disable directive (no problems were reported from 'no-unused-vars')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/BookCard.jsx
+  3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/BookReaderModal.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/CommunityConsentModal.jsx
+   2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 no-unused-vars
+  16:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  14 |         const hasConsented = localStorage.getItem('feedConsentAccepted');
+  15 |         if (!hasConsented) {
+> 16 |             setIsVisible(true);
+     |             ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  17 |         }
+  18 |     }, []);
+  19 |  react-hooks/set-state-in-effect
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/FeedPost.jsx
+   29:30   error  React Hook "useAuth" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?              react-hooks/rules-of-hooks
+   30:64   error  'hidePost' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                               no-unused-vars
+   30:123  error  React Hook "useUserInteractions" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?  react-hooks/rules-of-hooks
+   31:43   error  React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?             react-hooks/rules-of-hooks
+   34:49   error  React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?             react-hooks/rules-of-hooks
+   35:35   error  React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?             react-hooks/rules-of-hooks
+   36:35   error  React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?             react-hooks/rules-of-hooks
+   37:45   error  React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?             react-hooks/rules-of-hooks
+   38:22   error  React Hook "useRef" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?               react-hooks/rules-of-hooks
+   39:22   error  React Hook "useRef" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?               react-hooks/rules-of-hooks
+   44:24   error  React Hook "useCallback" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?          react-hooks/rules-of-hooks
+   48:29   error  React Hook "useCallback" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?          react-hooks/rules-of-hooks
+   63:5    error  React Hook "React.useEffect" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?      react-hooks/rules-of-hooks
+  106:21   error  React Hook "useMemo" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?              react-hooks/rules-of-hooks
+  130:49   error  React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?             react-hooks/rules-of-hooks
+  131:39   error  React Hook "useState" is called conditionally. React Hooks must be called in the exact same order in every component render. Did you accidentally call a React Hook after an early return?             react-hooks/rules-of-hooks
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/Footer.jsx
+  4:22  error  'trackOutboundLink' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/ImagePickerModal.jsx
+  18:9  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/MinimalHeader.jsx
+  18:5  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/ModelSelectorModal.jsx
+  13:5   warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+  18:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+  20:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/NetworkStatus.jsx
+  3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/PerformanceTracker.jsx
+  71:18  error  'e' is defined but never used  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/RouteErrorBoundary.jsx
+  111:22  error  'process' is not defined  no-undef
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/Sidebar.jsx
+  2:10  error  'formatTwitchCount' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/generator/LoadingModal.jsx
+    2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   no-unused-vars
+   20:40  error  'prompt' is defined but never used. Allowed unused args must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   no-unused-vars
+  107:61  error  Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  105 |                         >
+  106 |                             {showGraceMessage
+> 107 |                                 ? GRACE_MESSAGES[Math.floor(Math.random() * GRACE_MESSAGES.length)]
+      |                                                             ^^^^^^^^^^^^^ Cannot call impure function
+  108 |                                 : LOADING_MESSAGES[messageIndex]
+  109 |                             }
+  110 |                         </motion.p>  react-hooks/purity
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/generator/LoadingOrb.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/generator/ResultModal.jsx
+    1:17   error  'useMemo' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+    3:10   error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+   30:13   error  'isDownloading' is not defined                                                  no-undef
+   31:9    error  'setIsDownloading' is not defined                                               no-undef
+   40:30   error  'downloadFilename' is not defined                                               no-undef
+   56:33   error  'downloadFilename' is not defined                                               no-undef
+   73:13   error  'setIsDownloading' is not defined                                               no-undef
+   80:9    error  'setCopied' is not defined                                                      no-undef
+   82:26   error  'setCopied' is not defined                                                      no-undef
+  225:135  error  'copied' is not defined                                                         no-undef
+  226:46   error  'copied' is not defined                                                         no-undef
+  227:46   error  'copied' is not defined                                                         no-undef
+  270:51   error  'isDownloading' is not defined                                                  no-undef
+  274:42   error  'isDownloading' is not defined                                                  no-undef
+  288:46   error  'isDownloading' is not defined                                                  no-undef
+  296:46   error  'isDownloading' is not defined                                                  no-undef
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/contexts/AuthContext.jsx
+  140:8  warning  React Hook useEffect has a missing dependency: 'ensureUserInitialized'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/contexts/ModelContext.jsx
+  455:8  warning  React Hook useEffect has a missing dependency: 'apiCall'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/contexts/TwitchContext.jsx
+  3:45  error  'getDocs' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                  no-unused-vars
+  7:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/contexts/UserInteractionsContext.jsx
+   60:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   62:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   64:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   66:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   68:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   70:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   72:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   74:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   76:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   78:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+  218:8   warning  React Hook useEffect has a missing dependency: 'personalCreations.length'. Either include it or remove the dependency array. You can also replace multiple useState variables with useReducer if 'setSessionGenerations' needs the current value of 'personalCreations.length'  react-hooks/exhaustive-deps
+  237:8   warning  React Hook useEffect has a missing dependency: 'userProfile'. Either include it or remove the dependency array                                                                                                                                                                  react-hooks/exhaustive-deps
+  534:22  error    'e' is defined but never used                                                                                                                                                                                                                                                   no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/features/persona-live/BrowsePage.jsx
+  5:25  error  'p' is not defined  no-undef
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/features/persona-live/CategoryDirectory.jsx
+  9:25  error  'loading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/features/persona-live/FollowingPage.jsx
+  1:17  error  'useState' is defined but never used. Allowed unused vars must match /^[A-Z_]/u    no-unused-vars
+  1:27  error  'useEffect' is defined but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  3:10  error  'db' is defined but never used. Allowed unused vars must match /^[A-Z_]/u          no-unused-vars
+  4:10  error  'collection' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  4:22  error  'getDocs' is defined but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+  4:31  error  'query' is defined but never used. Allowed unused vars must match /^[A-Z_]/u       no-unused-vars
+  4:38  error  'orderBy' is defined but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+  4:47  error  'limit' is defined but never used. Allowed unused vars must match /^[A-Z_]/u       no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/features/persona-live/PersonaChat.jsx
+   10:10   error    'formatTwitchCount' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                         no-unused-vars
+   55:8    warning  React Hook useEffect has a missing dependency: 'onUpdate'. Either include it or remove the dependency array. If 'onUpdate' changes too often, find the parent component that defines it and wrap that definition in useCallback  react-hooks/exhaustive-deps
+   78:12   error    'suggestedPersonas' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                no-unused-vars
+   79:12   error    'followedPersonas' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                 no-unused-vars
+   85:12   error    'isMuted' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                          no-unused-vars
+   85:21   error    'setIsMuted' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                       no-unused-vars
+  103:14   error    'currentUser' is not defined                                                                                                                                                                                                     no-undef
+  118:14   error    'currentUser' is not defined                                                                                                                                                                                                     no-undef
+  122:13   error    'setActivePoll' is not defined                                                                                                                                                                                                   no-undef
+  328:8    warning  React Hook useEffect has a missing dependency: 'navigate'. Either include it or remove the dependency array                                                                                                                      react-hooks/exhaustive-deps
+  473:11   error    'scrollToBottom' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                   no-unused-vars
+  548:29   error    'user' is not defined                                                                                                                                                                                                            no-undef
+  558:11   error    'handleReset' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                      no-unused-vars
+  883:26   error    'showEmotes' is not defined                                                                                                                                                                                                      no-undef
+  886:103  error    'setShowEmotes' is not defined                                                                                                                                                                                                   no-undef
+  899:78   error    'setShowEmotes' is not defined                                                                                                                                                                                                   no-undef
+  899:93   error    'showEmotes' is not defined                                                                                                                                                                                                      no-undef
+  924:77   error    'setShowBitsModal' is not defined                                                                                                                                                                                                no-undef
+  924:95   error    'showBitsModal' is not defined                                                                                                                                                                                                   no-undef
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/features/persona-live/TwitchLayout.jsx
+   5:20  error  'useEffect' is defined but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+   6:10  error  'db' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                    no-unused-vars
+   7:10  error  'collection' is defined but never used. Allowed unused vars must match /^[A-Z_]/u            no-unused-vars
+   7:22  error  'query' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                 no-unused-vars
+   7:29  error  'orderBy' is defined but never used. Allowed unused vars must match /^[A-Z_]/u               no-unused-vars
+   7:38  error  'limit' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                 no-unused-vars
+   7:45  error  'getDocs' is defined but never used. Allowed unused vars must match /^[A-Z_]/u               no-unused-vars
+  10:10  error  'useTwitch' is defined but never used. Allowed unused vars must match /^[A-Z_]/u             no-unused-vars
+  15:11  error  'navigate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+  16:11  error  'location' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+  17:13  error  'currentUser' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/hooks/generator/useVideoGeneration.js
+   5:10  error    'doc' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                      no-unused-vars
+  40:8   warning  React Hook useEffect has a missing dependency: 'currentUser'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AccessDenied.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AppsHub.jsx
+    1:47  error  'memo' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            no-unused-vars
+  194:9   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  192 |     // Reset pagination when search changes
+  193 |     useEffect(() => {
+> 194 |         setCurrentPage(1);
+      |         ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  195 |     }, [searchQuery]);
+  196 |
+  197 |     return (  react-hooks/set-state-in-effect
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AutoCSV/AutoCSV.jsx
+  133:6  warning  React Hook useEffect has a missing dependency: 'processingState'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AutoCSV/types.js
+  1:8  error  Parsing error: Unexpected token interface
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AvatarForge/AvatarForgeFloor.jsx
+  5:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AvatarForge/AvatarForgeLayout.jsx
+  3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AvatarForge/AvatarForgeMint.jsx
+  5:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AvatarForge/AvatarForgeRequest.jsx
+  4:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/BlogPost.jsx
+  10:11  error  'navigate' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  17:12  error  'utterance' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/DiscoveryDesktop.jsx
+   48:9   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  46 |     // Update state when URL changes
+  47 |     useEffect(() => {
+> 48 |         setActiveModelId(modelId || 'all');
+     |         ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  49 |     }, [modelId]);
+  50 |
+  51 |     // Focus View State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         react-hooks/set-state-in-effect
+   54:12  error    'isFocusLoading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            no-unused-vars
+   68:29  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  66 |
+  67 |         if (!viewId) {
+> 68 |             if (focusImage) setFocusImage(null);
+     |                             ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  69 |             return;
+  70 |         }
+  71 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    react-hooks/set-state-in-effect
+  189:40  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `globalShowcaseCache`, but the source dependencies were [getGlobalShowcaseImages, getShowcaseImages, activeModelId, globalShowcaseCache.length, showcaseCache, hasGlobalFeedEnded, hasShowcaseEnded]. Inferred less specific property than source.
+
+  187 |
+  188 |     // 2. Robust Infinite Scroll Handler - Debounced & Guarded
+> 189 |     const handleLoadMore = useCallback(async () => {
+      |                                        ^^^^^^^^^^^^^
+> 190 |         const now = Date.now();
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 191 |         const timeSinceLastFetch = now - lastFetchTimeRef.current;
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 228 |         // which update the central state in ModelContext.
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 229 |     }, [getGlobalShowcaseImages, getShowcaseImages, activeModelId, globalShowcaseCache.length, showcaseCache, hasGlobalFeedEnded, hasShowcaseEnded]);
+      | ^^^^^^ Could not preserve existing manual memoization
+  230 |
+  231 |     // 3. Intersection Observer Setup - Stable, no recreation on cache changes
+  232 |     useEffect(() => {  react-hooks/preserve-manual-memoization
+  229:8   warning  React Hook useCallback has a missing dependency: 'globalShowcaseCache'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/exhaustive-deps
+  304:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  302 |     useEffect(() => {
+  303 |         if (!focusImage) {
+> 304 |             setRelatedImages([]);
+      |             ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  305 |             return;
+  306 |         }
+  307 |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               react-hooks/set-state-in-effect
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/DiscoveryMobile.jsx
+   37:9   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  35 |     // Update state when URL changes
+  36 |     useEffect(() => {
+> 37 |         setActiveModelId(modelId || 'all');
+     |         ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  38 |     }, [modelId]);
+  39 |
+  40 |     // Scroll to top on model change                                                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/set-state-in-effect
+  110:40  error    Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. The inferred dependencies did not match the manually specified dependencies, which could cause the value to change more or less frequently than expected. The inferred dependency was `globalShowcaseCache`, but the source dependencies were [getGlobalShowcaseImages, getShowcaseImages, activeModelId, globalShowcaseCache.length, showcaseCache, hasGlobalFeedEnded, hasShowcaseEnded]. Inferred less specific property than source.
+
+  108 |
+  109 |     // 2. Robust Infinite Scroll Handler - Debounced & Guarded
+> 110 |     const handleLoadMore = useCallback(async () => {
+      |                                        ^^^^^^^^^^^^^
+> 111 |         const now = Date.now();
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 112 |         const timeSinceLastFetch = now - lastFetchTimeRef.current;
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 130 |         }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 131 |     }, [getGlobalShowcaseImages, getShowcaseImages, activeModelId, globalShowcaseCache.length, showcaseCache, hasGlobalFeedEnded, hasShowcaseEnded]);
+      | ^^^^^^ Could not preserve existing manual memoization
+  132 |
+  133 |     // 3. Intersection Observer Setup
+  134 |     useEffect(() => {  react-hooks/preserve-manual-memoization
+  131:8   warning  React Hook useCallback has a missing dependency: 'globalShowcaseCache'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/DressUp.jsx
+   78:8   warning  React Hook useEffect has missing dependencies: 'activeTab', 'page', and 'viewMode'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  166:8   warning  React Hook useEffect has a missing dependency: 'currentUser'. Either include it or remove the dependency array                          react-hooks/exhaustive-deps
+  213:9   warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+  227:22  error    '_err' is defined but never used                                                                                                        no-unused-vars
+  548:37  error    'index' is defined but never used. Allowed unused args must match /^[A-Z_]/u                                                            no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Gallery.jsx
+  30:8  warning  React Hook useEffect has a missing dependency: 'searchQuery'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Generator.jsx
+    4:27  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              no-unused-vars
+   89:9   warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+  118:13  error    'trackFeatureAdoption' is not defined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      no-undef
+  144:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  142 |     useEffect(() => {
+  143 |         if (!generating) {
+> 144 |             _setElapsedTime(0);
+      |             ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  145 |             _setProgress(0);
+  146 |             return;
+  147 |         }                      react-hooks/set-state-in-effect
+  183:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  181 |     useEffect(() => {
+  182 |         if (generatedImage && !generating) {
+> 183 |             setIsResultModalOpen(true);
+      |             ^^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  184 |         }
+  185 |     }, [generatedImage, generating]);
+  186 |  react-hooks/set-state-in-effect
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Generator.test.jsx
+   95:37  error  'intensity' is defined but never used. Allowed unused args must match /^[A-Z_]/u                no-unused-vars
+  104:9   error  'mockOnSnapshot' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  167:19  error  'referenceImage' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  178:19  error  'activeStyleId' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  238:19  error  'activeStyleId' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  287:19  error  'activeStyleId' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  353:19  error  'activeStyleId' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  358:19  error  'hasValidPrompt' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  419:19  error  'activeStyleId' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  464:35  error  'scenario' is defined but never used. Allowed unused args must match /^[A-Z_]/u                 no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Landing.jsx
+  733:11  warning  The 'demos' array makes the dependencies of useEffect Hook (at line 789) change on every render. To fix this, wrap the initialization of 'demos' in its own useMemo() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             react-hooks/exhaustive-deps
+  768:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  766 |
+  767 |         if (isTyping) {
+> 768 |             setShowStatus(false);
+      |             ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  769 |             if (displayedPrompt.length < currentDemo.prompt.length) {
+  770 |                 timeout = setTimeout(() => {
+  771 |                     setDisplayedPrompt(currentDemo.prompt.slice(0, displayedPrompt.length + 1));  react-hooks/set-state-in-effect
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Maintenance.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MemeFormatter/index.jsx
+  23:8  warning  React Hook useEffect has a missing dependency: 'memeText'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MobileGenerator.jsx
+  15:5  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MockupCatalog/components/CatalogSidebar.jsx
+  14:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  12 |     useEffect(() => {
+  13 |         if (activeParent) {
+> 14 |             setExpanded(prev => ({ ...prev, [activeParent]: true }));
+     |             ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  15 |         }
+  16 |     }, [activeParent]);
+  17 |  react-hooks/set-state-in-effect
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MockupCatalog/index.jsx
+  37:8  warning  React Hook useEffect has a missing dependency: 'currentPage'. Either include it or remove the dependency array      react-hooks/exhaustive-deps
+  59:8  warning  React Hook useEffect has a missing dependency: 'setSearchParams'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MockupFeed.jsx
+   22:13  error    'isLiked' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                    no-unused-vars
+   22:22  error    'toggleLike' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                 no-unused-vars
+   22:34  error    'isHidden' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                   no-unused-vars
+   22:44  error    'hidePost' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                   no-unused-vars
+   53:8   warning  React Hook useEffect has missing dependencies: 'creatorFilter' and 'getInitialFilter'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  195:8   warning  React Hook useEffect has a missing dependency: 'fetchMockups'. Either include it or remove the dependency array                            react-hooks/exhaustive-deps
+  215:8   warning  React Hook useEffect has a missing dependency: 'fetchMockups'. Either include it or remove the dependency array                            react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MockupStudio/index.jsx
+  41:8  warning  React Hook useEffect has a missing dependency: 'mode'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/ModelDetail.jsx
+   9:32  error  'getLCPAttributes' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 no-unused-vars
+  10:10  error  'db' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               no-unused-vars
+  74:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  72 |     useEffect(() => {
+  73 |         if (sortParam && ['TOP_RATED', 'LATEST'].includes(sortParam)) {
+> 74 |             setSortBy(sortParam);
+     |             ^^^^^^^^^ Avoid calling setState() directly within an effect
+  75 |         }
+  76 |     }, [sortParam]);
+  77 |                                                                                                                                                                                                                             react-hooks/set-state-in-effect
+  96:17  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  94 |
+  95 |             if (found) {
+> 96 |                 setActiveShowcaseImage(typeof found === 'string' ? { url: getOptimizedImageUrl(found), id: viewId } : found);
+     |                 ^^^^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  97 |             } else if (viewId?.startsWith('http')) {
+  98 |                 // Direct URL fallback if ID not found but it looks like a URL (legacy)
+  99 |                 setActiveShowcaseImage({ url: viewId, id: viewId });  react-hooks/set-state-in-effect
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/ModelFeed.jsx
+   4:10  error  'useAuth' is defined but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+   6:10  error  'collection' is defined but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+   6:22  error  'query' is defined but never used. Allowed unused vars must match /^[A-Z_]/u        no-unused-vars
+   6:29  error  'orderBy' is defined but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+   6:38  error  'limit' is defined but never used. Allowed unused vars must match /^[A-Z_]/u        no-unused-vars
+   6:45  error  'getDocs' is defined but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+  13:10  error  'useAppLikes' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Models.jsx
+  20:11  error    'location' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                     no-unused-vars
+  26:8   warning  React Hook React.useEffect has missing dependencies: 'activeCategory' and 'searchQuery'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/NotFound.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Offline.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Pricing.jsx
+   87:22  error    'useLocation' is not defined                                                                                                   no-undef
+   95:8   warning  React Hook React.useEffect has a missing dependency: 'location.state?.from'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  107:8   warning  React Hook React.useEffect has a missing dependency: 'packs'. Either include it or remove the dependency array                 react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/PublicGenerationsFeed.jsx
+   11:27  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                      no-unused-vars
+   41:37  error    'error' is defined but never used. Allowed unused args must match /^[A-Z_]/u                                                                                                                                                                                       no-unused-vars
+  276:8   warning  React Hook useEffect has missing dependencies: 'fetchGenerations' and 'filterCache'. Either include them or remove the dependency array. You can also replace multiple useState variables with useReducer if 'setImages' needs the current value of 'filterCache'  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/QuickMockups/MockupCreator.jsx
+  3:23  error  'collection' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  3:35  error  'query' is defined but never used. Allowed unused vars must match /^[A-Z_]/u       no-unused-vars
+  3:42  error  'where' is defined but never used. Allowed unused vars must match /^[A-Z_]/u       no-unused-vars
+  3:49  error  'orderBy' is defined but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+  3:58  error  'limit' is defined but never used. Allowed unused vars must match /^[A-Z_]/u       no-unused-vars
+  3:65  error  'getDocs' is defined but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/ShowcaseDetail.jsx
+   74:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+  217:8   warning  React Hook useEffect has a missing dependency: 'loadMoreImages'. Either include it or remove the dependency array        react-hooks/exhaustive-deps
+  259:8   warning  React Hook useCallback has a missing dependency: 'visibleGlobalCache'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  301:8   warning  React Hook useCallback has a missing dependency: 'visibleGlobalCache'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/UserProfile.jsx
+   14:27  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                        no-unused-vars
+  114:8   warning  React Hook useEffect has missing dependencies: 'appCreations' and 'productions'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/safety/components/KarmaToast.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/safety/components/LeaderboardPanel.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/safety/components/OnboardingModal.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/safety/components/ScoreBar.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/safety/components/SessionSummary.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/safety/hooks/useLeaderboard.js
+  3:54  error  'where' is defined but never used. Allowed unused vars must match /^[A-Z_]/u    no-unused-vars
+  3:61  error  'startAt' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  3:70  error  'endAt' is defined but never used. Allowed unused vars must match /^[A-Z_]/u    no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/safety/hooks/useSafetyStats.js
+  19:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  17 |         const saved = JSON.parse(localStorage.getItem('safetyStreak') || '{}');
+  18 |         if (saved.date === today) {
+> 19 |             setDailyCount(saved.count || 0);
+     |             ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  20 |             setStreak(saved.streak || 0);
+  21 |         } else if (saved.date) {
+  22 |             const lastDate = new Date(saved.date);  react-hooks/set-state-in-effect
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/safety/hooks/useVoting.js
+  28:5   error  'useEffect' is not defined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          no-undef
+  32:35  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+  30 |         if (voteStats.total >= 10) {
+  31 |             const keepRatio = voteStats.safe / voteStats.total;
+> 32 |             if (keepRatio > 0.85) setPatternAlert("Bias detected: High KEEP rate (85%+). Review carefully!");
+     |                                   ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  33 |             else if (keepRatio < 0.15) setPatternAlert("Bias detected: High REMOVE rate (85%+). Review carefully!");
+  34 |             else setPatternAlert(null);
+  35 |         }  react-hooks/set-state-in-effect
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/safety/index.jsx
+    5:27   error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-unused-vars
+   42:12   error  'showShortcuts' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-unused-vars
+  295:67   error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  293 |                                             {(() => {
+  294 |                                                 const reportCount = currentCard.reportCount || 0;
+> 295 |                                                 const ageHours = (Date.now() - (currentCard.lastReportedAt?.seconds * 1000 || Date.now())) / 3600000;
+      |                                                                   ^^^^^^^^^^ Cannot call impure function
+  296 |                                                 let urgency = null;
+  297 |                                                 if (reportCount >= 10) urgency = URGENCY_LEVELS.hot;
+  298 |                                                 else if (ageHours >= 24) urgency = URGENCY_LEVELS.aging;                                                              react-hooks/purity
+  295:127  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  293 |                                             {(() => {
+  294 |                                                 const reportCount = currentCard.reportCount || 0;
+> 295 |                                                 const ageHours = (Date.now() - (currentCard.lastReportedAt?.seconds * 1000 || Date.now())) / 3600000;
+      |                                                                                                                               ^^^^^^^^^^ Cannot call impure function
+  296 |                                                 let urgency = null;
+  297 |                                                 if (reportCount >= 10) urgency = URGENCY_LEVELS.hot;
+  298 |                                                 else if (ageHours >= 24) urgency = URGENCY_LEVELS.aging;  react-hooks/purity
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/utils/GalmixClient.js
+  95:24  error  'Buffer' is not defined  no-undef
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/utils/analytics.js
+  153:48  error  'value' is defined but never used. Allowed unused args must match /^[A-Z_]/u  no-unused-vars
+
+✖ 256 problems (205 errors, 51 warnings)
+  0 errors and 20 warnings potentially fixable with the `--fix` option.
+

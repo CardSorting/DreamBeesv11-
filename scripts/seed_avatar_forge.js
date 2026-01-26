@@ -1,6 +1,5 @@
+/* global process */
 import admin from 'firebase-admin';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 
 // Note: This script assumes you are authenticated via Firebase CLI or have GOOGLE_APPLICATION_CREDENTIALS set.
 // If you get a "credential" error, you can provide a serviceAccountKey.json path.

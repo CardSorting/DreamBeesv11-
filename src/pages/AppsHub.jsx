@@ -191,8 +191,10 @@ const AppsHub = () => {
 
     // Reset pagination when search changes
     useEffect(() => {
-        setCurrentPage(1);
-    }, [searchQuery]);
+        if (currentPage !== 1) {
+            setCurrentPage(1);
+        }
+    }, [searchQuery, currentPage]);
 
     return (
         <div className="play-store-container">

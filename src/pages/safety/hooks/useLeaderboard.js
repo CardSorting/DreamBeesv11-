@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db } from '../../../firebase';
-import { collection, query, orderBy, limit, getDocs, where, startAt, endAt } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 
 export function useLeaderboard() {
     const [topReviewers, setTopReviewers] = useState([]);

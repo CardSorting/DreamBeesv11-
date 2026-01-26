@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { functions as _firebaseFunctions } from '../firebase';
 import { useApi } from '../hooks/useApi';
 import { Check, Film, Image, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';

@@ -1,15 +1,31 @@
 {
-    "name": "DreamBeesAI",
+    "name": "DreamBees AI",
     "short_name": "DreamBees",
+    "description": "Professional AI Image Generator - Text to Image Online",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#000000",
-    "theme_color": "#000000",
+    "theme_color": "#8b5cf6",
     "icons": [
+        {
+            "src": "/dreambees_icon.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
         {
             "src": "/dreambees_icon.png",
             "sizes": "512x512",
             "type": "image/png"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/dreambees_creative_hero.png",
+            "sizes": "1200x630",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "Professional AI Art Generation"
         }
     ]
 }

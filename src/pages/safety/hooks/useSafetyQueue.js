@@ -35,7 +35,23 @@ export function useSafetyQueue() {
                     limit(50)
                 );
                 const snapshot = await getDocs(q);
-                let posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const now = Date.now();
+                let posts = snapshot.docs.map(doc => {
+                    const data = doc.id ? doc.data() : {};
+                    const reportCount = data.reportCount || 0;
+                    const lastReported = data.lastReportedAt?.seconds * 1000;
+                    const ageHours = lastReported ? (now - lastReported) / 3600000 : 0;
+
+                    let urgency = null;
+                    if (reportCount >= 10) urgency = 'hot';
+                    else if (ageHours >= 24) urgency = 'aging';
+
+                    return {
+                        id: doc.id,
+                        ...data,
+                        _urgency: urgency
+                    };
+                });
                 posts = sortPosts(posts, sortMode);
                 if (showAppealsOnly) {
                     posts = posts.filter(p => p.isAppeal);

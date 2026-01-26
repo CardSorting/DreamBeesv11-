@@ -38,7 +38,7 @@ function ScrollPicker({ items, value, onChange, label, width = 'w-20' }) {
         if (index !== -1 && scrollRef.current) {
             scrollRef.current.scrollTop = index * itemHeight;
         }
-    }, []);
+    }, [items, value, itemHeight]);
 
     const handleScroll = () => {
         if (!scrollRef.current) return;
@@ -163,12 +163,11 @@ export default function AgeVerificationModal() {
     }, []);
 
     useEffect(() => {
-        if (currentUser && isProfileLoaded && !userProfile.birthday) {
-            setIsVisible(true);
-        } else {
-            setIsVisible(false);
+        const shouldBeVisible = !!(currentUser && isProfileLoaded && !userProfile.birthday);
+        if (isVisible !== shouldBeVisible) {
+            setIsVisible(shouldBeVisible);
         }
-    }, [currentUser, isProfileLoaded, userProfile.birthday]);
+    }, [currentUser, isProfileLoaded, userProfile.birthday, isVisible]);
 
     // Convert month name to number
     const monthNumber = useMemo(() => MONTH_NAMES.indexOf(month) + 1, [month]);
