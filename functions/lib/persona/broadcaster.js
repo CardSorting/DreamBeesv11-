@@ -73,3 +73,8 @@ export const broadcastAudioUpdate = async (personaId, messageId, audioJobId, aud
     const channel = `presence-chat-${personaId}`;
     await trigger(channel, "audio-update", { messageId, audioJobId, audioUrl });
 };
+
+export const broadcastTyping = async (personaId, isTyping) => {
+    const channel = `presence-chat-${personaId}`;
+    await trigger(channel, "typing", { isTyping });
+};

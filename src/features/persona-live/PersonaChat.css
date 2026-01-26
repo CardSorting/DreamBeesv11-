@@ -117,6 +117,67 @@
     background: #eb0400;
 }
 
+/* Typing & Recovery UI */
+.ai-typing-msg .thinking-dots {
+    color: #adadb8;
+    font-style: italic;
+    animation: fade-pulse 1.5s infinite;
+}
+
+@keyframes fade-pulse {
+
+    0%,
+    100% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+.autoplay-recovery-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 100;
+    pointer-events: auto;
+}
+
+.unmute-stream-btn {
+    background: rgba(145, 71, 255, 0.9);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    transition: transform 0.2s;
+    animation: scale-pulse 2s infinite ease-in-out;
+}
+
+@keyframes scale-pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.unmute-stream-btn:hover {
+    transform: scale(1.1);
+    background: #a970ff;
+}
+
 .twitch-back-btn {
     position: absolute;
     bottom: 20px;

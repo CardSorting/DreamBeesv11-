@@ -86,8 +86,9 @@ const PersonaChat = () => {
     const [showZapActions, setShowZapActions] = useState(false);
     const [isTheaterMode, setIsTheaterMode] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState('initialized'); // 'initialized', 'connecting', 'connected', 'disconnected', 'unavailable'
-    const [voiceQueue, setVoiceQueue] = useState([]);
     const [isAiSpeaking, setIsAiSpeaking] = useState(false);
+    const [isPersonaTyping, setIsPersonaTyping] = useState(false);
+    const [isAutoplayBlocked, setIsAutoplayBlocked] = useState(false);
     const audioVoiceRef = useRef(null);
 
     // Audio State
@@ -362,6 +363,12 @@ const PersonaChat = () => {
                 }
             });
 
+            channel.bind('typing', (data) => {
+                if (isMounted.current) {
+                    setIsPersonaTyping(data.isTyping);
+                }
+            });
+
             return () => {
                 console.log("[Soketi] Cleaning up connection...");
                 channel.unbind_all();
@@ -526,8 +533,11 @@ const PersonaChat = () => {
 
             if (audioVoiceRef.current) {
                 audioVoiceRef.current.src = nextUrl;
-                audioVoiceRef.current.play().catch(e => {
+                audioVoiceRef.current.play().then(() => {
+                    setIsAutoplayBlocked(false);
+                }).catch(e => {
                     console.error("Audio playback error (likely autoplay block):", e);
+                    setIsAutoplayBlocked(true);
                     setIsAiSpeaking(false); // Reset so the queue doesn't get stuck
                 });
             }
@@ -761,6 +771,23 @@ const PersonaChat = () => {
                                     </div>
                                 ))}
                             </div>
+
+                            {/* Autoplay Recovery Button */}
+                            {isAutoplayBlocked && (
+                                <div className="autoplay-recovery-overlay">
+                                    <button
+                                        className="unmute-stream-btn"
+                                        onClick={() => {
+                                            if (audioVoiceRef.current) audioVoiceRef.current.play();
+                                            if (audioRef.current) audioRef.current.play();
+                                            setIsAutoplayBlocked(false);
+                                        }}
+                                    >
+                                        <VolumeX size={24} />
+                                        <span>Join Audio</span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         <div className="video-controls-overlay">
@@ -937,10 +964,13 @@ const PersonaChat = () => {
                                 )}
                             </div>
                         ))}
-                        {isSending && (
-                            <div className="twitch-message typing-indicator">
-                                <span className="message-author">AI Persona:</span>
-                                <span className="message-text">typing...</span>
+                        {(isPersonaTyping || isSending) && (
+                            <div className="twitch-message ai-typing-msg">
+                                <span className="message-author ai-author">
+                                    <span className="chat-badge ai-badge">AI</span>
+                                    {persona?.name || 'Persona'}:
+                                </span>
+                                <span className="message-body thinking-dots">is thinking...</span>
                             </div>
                         )}
                     </div>

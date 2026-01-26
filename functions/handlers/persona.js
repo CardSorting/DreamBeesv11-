@@ -46,6 +46,9 @@ export const handleChatPersona = async (request) => {
         await Store.saveMessage(imageId, userMsgData);
         await Broadcaster.broadcastMessage(imageId, userMsgData);
 
+        // Start Typing Indicator
+        await Broadcaster.broadcastTyping(imageId, true);
+
         // 3. Rate Limiting (Streamer Breath)
         const currentHype = persona.hypeLevel || 1;
         const COOLDOWN_MS = 3000 + ((currentHype - 1) * 1000);
@@ -197,10 +200,14 @@ export const handleChatPersona = async (request) => {
             thought: metadata.thought || null
         });
 
+        // End Typing Indicator
+        await Broadcaster.broadcastTyping(imageId, false);
+
         return { reply: cleanText };
 
     } catch (e) {
         logger.error("Chat Error", e);
+        await Broadcaster.broadcastTyping(imageId, false).catch(() => { });
         if (costDeducted > 0) await Billing.refundZaps(userId, costDeducted);
         throw new HttpsError('internal', "Failed to get character response.");
     }

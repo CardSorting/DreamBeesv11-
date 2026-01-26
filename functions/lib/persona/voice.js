@@ -15,7 +15,12 @@ const CACHE_TTL_MS = 20 * 60 * 60 * 1000; // 20 Hours (Safety for 24h cleanup)
  */
 const pollForCompletion = async (jobId, attempts = 30) => {
     for (let i = 0; i < attempts; i++) {
-        await new Promise(r => setTimeout(r, 1000)); // Wait 1s
+        // Adaptive delay: 500ms for first 4, 1s for next 10, then 2s
+        let delay = 1000;
+        if (i < 4) delay = 500;
+        else if (i > 14) delay = 2000;
+
+        await new Promise(r => setTimeout(r, delay));
         const res = await fetchWithRetry(`${JOBS_API_URL}/${jobId}`);
         if (res.ok) {
             const data = await res.json();
