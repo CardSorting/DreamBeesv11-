@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+// Force rebuild: useEffect import verified
+import { AnimatePresence, motion } from 'framer-motion';
 import { Heart, MoreHorizontal, Bookmark, BadgeCheck, Aperture, Volume2, VolumeX, Flag, ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';

@@ -93,6 +93,9 @@ const PersonaChat = () => {
 
     // Audio State
     const [queueIndex, setQueueIndex] = useState(0);
+    const [audioQueue, setAudioQueue] = useState([]);
+    const [voiceQueue, setVoiceQueue] = useState([]);
+    const [volume, setVolume] = useState(30);
     const audioRef = useRef(null);
 
     const [error, setError] = useState(null);

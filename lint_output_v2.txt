@@ -54,26 +54,10 @@
   534:22  error    '_error' is defined but never used                                                                                                                                                                                                                                              no-unused-vars
 
 /Users/bozoegg/Desktop/DreamBeesv11/src/features/persona-live/PersonaChat.jsx
-  150:17  error    'setAudioQueue' is not defined                                                                                                                                                                                                            no-undef
-  168:13  error    'audioQueue' is not defined                                                                                                                                                                                                               no-undef
-  173:26  error    'audioQueue' is not defined                                                                                                                                                                                                               no-undef
-  174:34  error    'audioQueue' is not defined                                                                                                                                                                                                               no-undef
-  179:13  error    'setAudioQueue' is not defined                                                                                                                                                                                                            no-undef
-  190:19  error    'token' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                     no-unused-vars
-  203:39  error    'options' is defined but never used. Allowed unused args must match /^[A-Z_]/u                                                                                                                                                            no-unused-vars
-  260:52  error    'member' is defined but never used. Allowed unused args must match /^[A-Z_]/u                                                                                                                                                             no-unused-vars
-  358:21  error    'setVoiceQueue' is not defined                                                                                                                                                                                                            no-undef
-  529:13  error    'voiceQueue' is not defined                                                                                                                                                                                                               no-undef
-  530:29  error    'voiceQueue' is not defined                                                                                                                                                                                                               no-undef
-  531:13  error    'setVoiceQueue' is not defined                                                                                                                                                                                                            no-undef
-  545:8   warning  React Hook useEffect has an unnecessary dependency: 'voiceQueue'. Either exclude it or remove the dependency array. Outer scope values like 'voiceQueue' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
-  545:9   error    'voiceQueue' is not defined                                                                                                                                                                                                               no-undef
-  551:46  error    'volume' is not defined                                                                                                                                                                                                                   no-undef
-  551:69  error    'volume' is not defined                                                                                                                                                                                                                   no-undef
-  573:8   warning  React Hook useEffect has an unnecessary dependency: 'volume'. Either exclude it or remove the dependency array. Outer scope values like 'volume' aren't valid dependencies because mutating them doesn't re-render the component          react-hooks/exhaustive-deps
-  573:23  error    'volume' is not defined                                                                                                                                                                                                                   no-undef
-  815:26  error    'audioQueue' is not defined                                                                                                                                                                                                               no-undef
-  818:38  error    'audioQueue' is not defined                                                                                                                                                                                                               no-undef
+   98:20  error  'setVolume' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  193:19  error  'token' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+  206:39  error  'options' is defined but never used. Allowed unused args must match /^[A-Z_]/u             no-unused-vars
+  263:52  error  'member' is defined but never used. Allowed unused args must match /^[A-Z_]/u              no-unused-vars
 
 /Users/bozoegg/Desktop/DreamBeesv11/src/hooks/generator/useVideoGeneration.js
   40:8  warning  React Hook useEffect has a missing dependency: 'currentUser'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
@@ -132,6 +116,6 @@
 /Users/bozoegg/Desktop/DreamBeesv11/src/pages/UserProfile.jsx
   114:8  warning  React Hook useEffect has missing dependencies: 'appCreations' and 'productions'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
 
-✖ 71 problems (24 errors, 47 warnings)
+✖ 55 problems (10 errors, 45 warnings)
   0 errors and 23 warnings potentially fixable with the `--fix` option.
 
