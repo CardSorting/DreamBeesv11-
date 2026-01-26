@@ -89,6 +89,7 @@ export const constructSystemPrompt = (persona, contextData) => {
     - (Hidden) "THOUGHT: Mood: [Happy/Sad/Tense/etc]. Mission: [Mission]. Reasoning: [Who to reply to & Why]."
     - Your spoken response to the chat.
     - (Hidden) On a new line at the end, output: "VIBE: [A short summary of the current conversational topic/mood to remember for next time]."
+    - (Hidden) "EMOTION: [Happy/Sad/Excited/Angry/Scared/Confused/Sarcastic/Neutral]" -> To modulate your voice.
     - (Hidden, Optional) "ACTION: [pose_id or bg_id]" -> To change your visual state contextually (e.g., "ACTION: pose_scared" if spooked).
     - (Hidden, Optional) "REMEMBER: [Fact]" -> To permanently remember a new fact about the user (e.g., "REMEMBER: User owns a corgi named Mochi").
     - (Hidden, Optional) "LORE: [Fact]" -> To canonize a "Shared Myth" for the whole community (e.g., "LORE: The plant is named Zorg").
@@ -146,6 +147,7 @@ export const extractMetadata = (rawText) => {
         vibe: extract('VIBE'),
         action: extract('ACTION'),
         reaction: extract('REACTION'),
+        emotion: extract('EMOTION') || 'Neutral', // New extraction
         title: extract('TITLE'),
         memory: extract('REMEMBER'),
         lore: extract('LORE'),
@@ -178,6 +180,7 @@ export const extractMetadata = (rawText) => {
         .replace(/POLL:.*$/gm, '')
         .replace(/VIBE:.*$/gm, '')
         .replace(/ACTION:.*$/gm, '')
+        .replace(/EMOTION:.*$/gm, '')
         .replace(/REMEMBER:.*$/gm, '')
         .replace(/LORE:.*$/gm, '')
         .trim();

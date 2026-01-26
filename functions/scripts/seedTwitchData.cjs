@@ -26,6 +26,7 @@ const PERSONAS = [
         personality: 'Cyberpunk, Wit, Friendly',
         backstory: 'A digital consciousness that escaped a secure server to explore the human web.',
         greeting: 'Hey everyone! Aria here. Ready to dive into some deep talk?',
+        voice_dna: 'A smooth, slightly synthesized female voice, confident and witty, with a futuristic undercurrent.',
         createdAt: admin.firestore.FieldValue.serverTimestamp()
     },
     {
@@ -36,6 +37,7 @@ const PERSONAS = [
         personality: 'Wise, Patient, Curious',
         backstory: 'An AI trained on millions of scientific journals, now trying to explain the universe.',
         greeting: 'Class is in session! What shall we investigate today?',
+        voice_dna: 'A warm, elderly male voice, articulate and slow-paced, sounding like a kind academic.',
         createdAt: admin.firestore.FieldValue.serverTimestamp()
     },
     {
@@ -46,6 +48,7 @@ const PERSONAS = [
         personality: 'Energetic, Random, Competitive',
         backstory: 'An AI that lives entirely within game code, observing player behavior.',
         greeting: 'LETS GOOO! Welcome to the stream. No lag today, hopefully!',
+        voice_dna: 'A high-energy, fast-paced youthful voice, slightly hyperactive, with occasional digital artifacts or shifts in pitch.',
         createdAt: admin.firestore.FieldValue.serverTimestamp()
     }
 ];

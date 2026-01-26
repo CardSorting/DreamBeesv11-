@@ -9,6 +9,7 @@ import * as Context from "../lib/persona/context.js";
 import * as Broadcaster from "../lib/persona/broadcaster.js";
 import * as Brain from "../lib/persona/brain.js";
 import * as Store from "../lib/persona/store.js";
+import * as Voice from "../lib/persona/voice.js";
 import { VertexAI } from "@google-cloud/vertexai";
 
 const vertexAI = new VertexAI({ project: process.env.GCLOUD_PROJECT, location: "us-central1" });
@@ -146,12 +147,18 @@ export const handleChatPersona = async (request) => {
         }
 
         // 9. Persist & Broadcast AI Reply
+        let audioJobId = null;
+        if (persona.voice_dna) {
+            audioJobId = await Voice.submitTtsJob(cleanText, persona.voice_dna, metadata.emotion);
+        }
+
         const aiMsgData = {
             uid: 'ai-persona',
             displayName: persona.name,
             photoURL: persona.photoURL || '',
             text: cleanText,
-            role: 'model'
+            role: 'model',
+            audioJobId: audioJobId || null
         };
 
         await Store.saveMessage(imageId, aiMsgData);
@@ -202,9 +209,10 @@ async function generatePersonaFromImage(imageBuffer, mimeType) {
     Return raw JSON only with:
     - name
     - personality (written as vibes, not traits)
-    - backstory (2–3 sentences, informal)
+    - backstory (2 to 3 sentences, informal)
     - greeting (in character, mid-conversation, natural)
     - category (A Twitch-style category like "Just Chatting", "Art", "Education", "Gaming", or "Music". Choose the best fit or invent a highly relevant one.)
+    - voice_dna (A detailed description of their voice including timbre, pitch, speed, and accent for a TTS model. Example: "A deep, resonant male voice with a slight British accent.")
     Avoid formal introductions or self-descriptions.
     Do not mention AI, images, or analysis.
     `;
