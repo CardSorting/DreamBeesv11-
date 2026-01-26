@@ -189,10 +189,19 @@ const AppsHub = () => {
         return filteredApps.slice(startIndex, startIndex + APPS_PER_PAGE);
     }, [filteredApps, currentPage]);
 
-    // Reset pagination when search changes
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchQuery]);
+    // Search input handler
+    const handleSearchChange = (e) => {
+        const val = e.target.value;
+        setSearchQuery(val);
+        setCurrentPage(1); // Reset page on user input
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            if (val) next.set('q', val);
+            else next.delete('q');
+            next.delete('page'); // Reset page in URL as well
+            return next;
+        }, { replace: true });
+    };
 
     return (
         <div className="play-store-container">
@@ -211,17 +220,7 @@ const AppsHub = () => {
                         className="search-input"
                         placeholder="Search apps, games, & inspiration"
                         value={searchQuery}
-                        onChange={(e) => {
-                            const val = e.target.value;
-                            setSearchQuery(val);
-                            setSearchParams(prev => {
-                                const next = new URLSearchParams(prev);
-                                if (val) next.set('q', val);
-                                else next.delete('q');
-                                next.delete('page'); // Reset page on search
-                                return next;
-                            }, { replace: true });
-                        }}
+                        onChange={handleSearchChange}
                     />
                 </div>
                 <div className="user-avatar">D</div>

@@ -28,13 +28,7 @@ export default function DiscoveryMobile() {
 
     // -- MODEL STATE --
     const { modelId } = useParams();
-    const [activeModelId, setActiveModelId] = useState(modelId || 'all');
-
-    // Update state when URL changes
-    useEffect(() => {
-        setActiveModelId(modelId || 'all');
-    }, [modelId]);
-
+    const activeModelId = modelId || 'all';
     // Scroll to top on model change
     const handleModelSelect = (newModelId) => {
         if (activeModelId === newModelId) return;

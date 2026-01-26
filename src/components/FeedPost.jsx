@@ -32,8 +32,34 @@ const FeedPost = ({
     const timerRef = useRef(null);
     const videoRef = useRef(null);
 
+    const liked = isLiked(imgItem?.id);
+    const bookmarked = isBookmarked(imgItem?.id);
+
+    const handleLike = useCallback(() => {
+        if (imgItem) toggleLike(imgItem, model);
+    }, [toggleLike, imgItem, model]);
+
+    const handleDoubleTap = useCallback(() => {
+        const now = Date.now();
+        if (now - lastTap < 300) {
+            handleLike();
+            setShowLargeHeart(true);
+            if (timerRef.current) clearTimeout(timerRef.current);
+            timerRef.current = setTimeout(() => {
+                setShowLargeHeart(false);
+                timerRef.current = null;
+            }, 800);
+        }
+        setLastTap(now);
+    }, [lastTap, handleLike]);
+
+    const timeAgo = useMemo(() => {
+        const options = ["2 HOURS AGO", "5 HOURS AGO", "1 DAY AGO", "3 DAYS AGO", "JUST NOW"];
+        return options[index % options.length];
+    }, [index]);
+
     // Cleanup on unmount
-    React.useEffect(() => {
+    useEffect(() => {
         return () => {
             if (timerRef.current) clearTimeout(timerRef.current);
         };
@@ -82,10 +108,7 @@ const FeedPost = ({
         }
     };
 
-    const timeAgo = useMemo(() => {
-        const options = ["2 HOURS AGO", "5 HOURS AGO", "1 DAY AGO", "3 DAYS AGO", "JUST NOW"];
-        return options[index % options.length];
-    }, [index]);
+
 
     const isMasonry = variant === 'masonry';
 

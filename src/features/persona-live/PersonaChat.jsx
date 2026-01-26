@@ -7,7 +7,7 @@ import { db } from '../../firebase';
 import { ArrowLeft, Send, Sparkles, Loader2, Info, MessageCircle, AlertCircle, RefreshCw, Zap, Maximize, Minimize, Settings } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getOptimizedImageUrl } from '../../utils';
-import { formatTwitchCount, getHypeMetadata } from '../../utils/twitchHelpers';
+import { getHypeMetadata } from '../../utils/twitchHelpers';
 import SEO from '../../components/SEO';
 import toast from 'react-hot-toast';
 import Pusher from 'pusher-js';
@@ -66,7 +66,7 @@ const PersonaChat = () => {
     const { id } = useParams(); // imageId
     const navigate = useNavigate();
     const location = useLocation();
-    const { currentUser: _currentUser } = useAuth();
+    const { currentUser } = useAuth();
 
     const [imageItem, setImageItem] = useState(location.state?.imageItem || null);
     const [persona, setPersona] = useState(null);
@@ -82,10 +82,9 @@ const PersonaChat = () => {
     const [floatingReactions, setFloatingReactions] = useState([]);
     const [pinnedMessage, setPinnedMessage] = useState(null);
     const [topSupporters, setTopSupporters] = useState([]);
-    const [isMuted, setIsMuted] = useState(false);
-    const [isTheaterMode, setIsTheaterMode] = useState(false);
-    const [showZapActions, setShowZapActions] = useState(false);
     const [isShaking, setIsShaking] = useState(false);
+    const [showEmotes, setShowEmotes] = useState(false);
+    const [showBitsModal, setShowBitsModal] = useState(false);
 
     // Audio State
     const [audioQueue, setAudioQueue] = useState([]);
@@ -119,7 +118,6 @@ const PersonaChat = () => {
         try {
             const votePollFn = httpsCallable(functions, 'votePoll');
             await votePollFn({ imageId: id, optionId });
-            setActivePoll(null); // Local hide for instant feedback
         } catch (e) {
             console.error(e);
         }
@@ -181,12 +179,11 @@ const PersonaChat = () => {
         }
     };
 
-    // Pusher / Soketi Subscription
     useEffect(() => {
-        if (!id || !_currentUser?.uid || !import.meta.env.VITE_SOKETI_APP_KEY) return;
+        if (!id || !currentUser?.uid || !import.meta.env.VITE_SOKETI_APP_KEY) return;
 
         const initPusher = async () => {
-            const token = await _currentUser.getIdToken();
+            const token = await currentUser.getIdToken();
             const authEndpoint = import.meta.env.VITE_SOKETI_AUTH_ENDPOINT || '/api/pusher/auth';
 
             const pusher = new Pusher(import.meta.env.VITE_SOKETI_APP_KEY, {
@@ -308,7 +305,7 @@ const PersonaChat = () => {
                             (Math.abs(Date.now() - (data.timestamp || Date.now())) < 5000)
                         );
 
-                        if (isDuplicate && data.role === 'user' && data.uid === _currentUser.uid) return prev;
+                        if (isDuplicate && data.role === 'user' && data.uid === currentUser.uid) return prev;
 
                         return [...prev, { ...data, id: data.id || Date.now().toString() }];
                     });
@@ -325,7 +322,7 @@ const PersonaChat = () => {
         return () => {
             cleanupPromise.then(cleanup => cleanup?.());
         };
-    }, [id, _currentUser]);
+    }, [id, currentUser, navigate]);
 
     useEffect(() => {
         const fetchImage = async () => {

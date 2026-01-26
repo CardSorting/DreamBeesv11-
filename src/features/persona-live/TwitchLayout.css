@@ -19,6 +19,73 @@
     flex-shrink: 0;
 }
 
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.twitch-logo-glitch {
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.twitch-logo-glitch:hover {
+    transform: scale(1.1);
+}
+
+.nav-center {
+    flex: 0 1 400px;
+}
+
+.twitch-search-bar {
+    display: flex;
+    background: #464649;
+    border-radius: 6px;
+    padding: 2px;
+}
+
+.twitch-search-bar input {
+    flex: 1;
+    background: #18181b;
+    border: none;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px 0 0 4px;
+    font-size: 0.9rem;
+}
+
+.search-icon-btn {
+    background: #2f2f35;
+    border: none;
+    color: #adadb8;
+    padding: 0 10px;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-avatar-mini {
+    width: 32px;
+    height: 32px;
+    background: #3a3a3d;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.user-avatar-mini:hover {
+    background: #464649;
+}
+
 .nav-links-twitch {
     display: flex;
     gap: 20px;

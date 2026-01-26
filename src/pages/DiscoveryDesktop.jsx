@@ -35,11 +35,8 @@ export default function DiscoveryDesktop() {
 
 
 
-    // -- MODEL STATE --
     const { modelId, id } = useParams();
-    // -- MODEL STATE --
-    // Sync state with URL param, default to 'all'
-    const [activeModelId, setActiveModelId] = useState(modelId || 'all');
+    const activeModelId = modelId || 'all';
     const [searchParams, setSearchParams] = useSearchParams();
 
     // Reset pagination when search changes (Search ignored for now as it's not implemented in this view)
@@ -51,10 +48,7 @@ export default function DiscoveryDesktop() {
     }, [searchQuery, currentPage]);
     */
 
-    // Update state when URL changes
-    useEffect(() => {
-        setActiveModelId(modelId || 'all');
-    }, [modelId]);
+
 
     // Focus View State
     const [fetchedFocusImage, setFetchedFocusImage] = useState(null);
@@ -83,7 +77,6 @@ export default function DiscoveryDesktop() {
         if (viewId && viewId.includes('--')) viewId = viewId.split('--').pop();
 
         if (!viewId) {
-            if (fetchedFocusImage) setFetchedFocusImage(null);
             return;
         }
 
@@ -302,10 +295,10 @@ export default function DiscoveryDesktop() {
         }
     };
 
-    // Fetch Related Images when Focused
     useEffect(() => {
         if (!focusImage) {
-            setRelatedImages([]);
+            // Only clear related images if we have them, to avoid unnecessary state updates
+            setRelatedImages(prev => prev.length > 0 ? [] : prev);
             return;
         }
 

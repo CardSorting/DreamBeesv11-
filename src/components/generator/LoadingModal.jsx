@@ -17,16 +17,17 @@ const GRACE_MESSAGES = [
     "Our GPUs are crunching hard for you..."
 ];
 
-export default function LoadingModal({ prompt, useTurbo, onCancel }) {
+export default function LoadingModal({ useTurbo, onCancel }) {
     const [showGraceMessage, setShowGraceMessage] = useState(false);
-    const [graceMessage, setGraceMessage] = useState("");
-    const [messageIndex, setMessageIndex] = useState(0);
 
-    useEffect(() => {
+    const graceMessage = useMemo(() => {
         if (showGraceMessage) {
-            setGraceMessage(GRACE_MESSAGES[Math.floor(Math.random() * GRACE_MESSAGES.length)]);
+            return GRACE_MESSAGES[Math.floor(Math.random() * GRACE_MESSAGES.length)];
         }
+        return "";
     }, [showGraceMessage]);
+
+    const [messageIndex, setMessageIndex] = useState(0);
 
     useEffect(() => {
         const messageInterval = setInterval(() => {
