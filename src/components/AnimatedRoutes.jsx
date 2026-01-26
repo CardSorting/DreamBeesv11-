@@ -34,7 +34,7 @@ const KaraokeGenie = lazyRetry(() => import('../pages/KaraokeGenie'));
 const DressUp = lazyRetry(() => import('../pages/DressUp'));
 const Slideshow = lazyRetry(() => import('../pages/Slideshow'));
 const AppsHub = lazyRetry(() => import('../pages/AppsHub'));
-const PersonaChat = lazyRetry(() => import('../pages/PersonaChat'));
+const PersonaChat = lazyRetry(() => import('../features/persona-live/PersonaChat'));
 const Discovery = lazyRetry(() => import('../pages/Discovery'));
 const DiscoveryDesktop = lazyRetry(() => import('../pages/DiscoveryDesktop'));
 const ShowcaseDetail = lazyRetry(() => import('../pages/ShowcaseDetail'));
@@ -61,10 +61,10 @@ const AvatarForgeMint = lazyRetry(() => import('../pages/AvatarForge/AvatarForge
 const AvatarForgeFloor = lazyRetry(() => import('../pages/AvatarForge/AvatarForgeFloor'));
 
 // Twitch Platform Components
-const TwitchLayout = lazyRetry(() => import('../pages/TwitchLayout'));
-const BrowsePage = lazyRetry(() => import('../pages/BrowsePage'));
-const FollowingPage = lazyRetry(() => import('../pages/FollowingPage'));
-const CategoryDirectory = lazyRetry(() => import('../pages/CategoryDirectory'));
+const TwitchLayout = lazyRetry(() => import('../features/persona-live/TwitchLayout'));
+const BrowsePage = lazyRetry(() => import('../features/persona-live/BrowsePage'));
+const FollowingPage = lazyRetry(() => import('../features/persona-live/FollowingPage'));
+const CategoryDirectory = lazyRetry(() => import('../features/persona-live/CategoryDirectory'));
 
 import { Privacy, Terms, Cookies } from '../pages/Legal';
 import { Careers, Brand, Api, Showcase } from '../pages/Misc';

@@ -1,8 +1,8 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sparkles, MessageCircle, Heart, ChevronDown, ChevronRight, Zap } from 'lucide-react';
-import { useTwitch } from '../contexts/TwitchContext';
-import { formatTwitchCount } from '../utils/twitchHelpers';
+import { useTwitch } from '../../contexts/TwitchContext';
+import { formatTwitchCount } from '../../utils/twitchHelpers';
 
 const TwitchSidebar = ({ isCollapsed, onToggle }) => {
     const navigate = useNavigate();

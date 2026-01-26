@@ -1,15 +1,15 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Sparkles, MessageCircle, Info, RefreshCw, LogIn } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { useState, useEffect } from 'react';
-import { db } from '../firebase';
+import { db } from '../../firebase';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import './TwitchLayout.css';
 
-import { useTwitch } from '../contexts/TwitchContext';
+import { useTwitch } from '../../contexts/TwitchContext';
 
-import TwitchSidebar from '../components/TwitchSidebar';
+import TwitchSidebar from './TwitchSidebar';
 
 const TwitchLayout = () => {
     const navigate = useNavigate();

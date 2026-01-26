@@ -3,15 +3,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { doc, getDoc, onSnapshot, collection, query, orderBy, limit } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db } from '../../firebase';
 import { ArrowLeft, Send, Sparkles, Loader2, Info, MessageCircle, AlertCircle, RefreshCw, Zap, Maximize, Minimize, Settings } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { getOptimizedImageUrl } from '../utils';
-import { formatTwitchCount, getHypeMetadata } from '../utils/twitchHelpers';
-import SEO from '../components/SEO';
+import { useAuth } from '../../contexts/AuthContext';
+import { getOptimizedImageUrl } from '../../utils';
+import { formatTwitchCount, getHypeMetadata } from '../../utils/twitchHelpers';
+import SEO from '../../components/SEO';
 import toast from 'react-hot-toast';
 import Pusher from 'pusher-js';
-import { listAudioFiles } from '../b2';
+import { listAudioFiles } from '../../b2';
 import './PersonaChat.css';
 
 const Typewriter = ({ text, onUpdate }) => {
