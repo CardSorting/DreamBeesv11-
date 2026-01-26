@@ -56,7 +56,7 @@ const SuggestedPanelMemo = SuggestedPanel;
 export default function ModelFeed() {
     const { id, filter } = useParams();
     const navigate = useNavigate();
-    const { availableModels, getShowcaseImages, getGlobalShowcaseImages, rateShowcaseImage, getUserVideos, globalShowcaseCache, showcaseCache, hasGlobalFeedEnded } = useModel();
+    const { availableModels, getShowcaseImages, getGlobalShowcaseImages, rateShowcaseImage, globalShowcaseCache, showcaseCache, hasGlobalFeedEnded } = useModel();
 
     // "feedItems" is the master list of all content, shuffled or sorted
     // Initialize from cache if available to prevent flash of loading
@@ -66,8 +66,6 @@ export default function ModelFeed() {
         return [];
     });
 
-    // Separate video state (fetched once)
-    const [videos, setVideos] = useState([]);
 
     // Loading state - false if we have data already
     const [isLoading, setIsLoading] = useState(() => {
@@ -263,13 +261,6 @@ export default function ModelFeed() {
 
                     setFeedItems(processedImages);
 
-                    // --- Curated Video Logic (Only fetch once) ---
-                    const CURATED_USER_ID = 'prT9j3royVTstWLDDcKMoUOU7aQ2';
-                    const curatedVideos = await getUserVideos(CURATED_USER_ID);
-
-                    if (curatedVideos && curatedVideos.length > 0) {
-                        setVideos(curatedVideos);
-                    }
 
                     // Preload top 4 images from the PROCESSED list
                     processedImages.slice(0, 4).forEach(img => {
@@ -293,7 +284,7 @@ export default function ModelFeed() {
         // REMOVED cleanup to prevent StrictMode double-fetch
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id, getShowcaseImages, getGlobalShowcaseImages, getUserVideos]); // Minimized dependencies
+    }, [id, getShowcaseImages, getGlobalShowcaseImages]); // Minimized dependencies
 
 
 
@@ -310,7 +301,7 @@ export default function ModelFeed() {
 
     const imagesToRender = useMemo(() => {
         // SELECT SOURCE
-        let sourceData = activeFilter === 'Videos' ? videos : feedItems;
+        let sourceData = feedItems;
 
         const seenUrls = new Set();
         let filtered = (Array.isArray(sourceData) ? sourceData : [])
@@ -338,7 +329,7 @@ export default function ModelFeed() {
             });
 
         // Filter Logic
-        if (!id && activeFilter !== 'All' && activeFilter !== 'Videos') {
+        if (!id && activeFilter !== 'All') {
             filtered = filtered.filter(img => {
                 // Check Model Tags
                 const modelTags = img?._model?.tags || [];
@@ -355,9 +346,8 @@ export default function ModelFeed() {
             });
         }
 
-        // If random, we just return the filtered list (which preserves the initial shuffle order)
         return filtered;
-    }, [feedItems, videos, id, availableModels, activeFilter]);
+    }, [feedItems, id, availableModels, activeFilter]);
 
 
 

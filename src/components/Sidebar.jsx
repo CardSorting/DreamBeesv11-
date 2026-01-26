@@ -1,9 +1,5 @@
+import React, { useState } from 'react';
 import { formatTwitchCount } from '../utils/twitchHelpers';
-
-// Inside component...
-<div className="viewer-count-sidebar">
-    <span className="v-count">{formatTwitchCount((channel.hypeScore || 0) + 1000)}</span>
-</div>
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {

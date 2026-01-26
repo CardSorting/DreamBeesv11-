@@ -87,7 +87,6 @@ export default function PublicGenerationsFeed() {
     const FILTERS = [
         { id: 'all', label: 'All', icon: '✨' },
         { id: 'coloring-books', label: 'Coloring Books', icon: '🎨' },
-        { id: 'video', label: 'Videos', icon: '🎬' },
         { id: 'slideshow', label: 'Slideshows', icon: '📽️' },
         { id: 'meowacc', label: 'MeowAcc', icon: '🐱' },
         { id: 'dress-up', label: 'Dress Up', icon: '👗' },
@@ -178,9 +177,7 @@ export default function PublicGenerationsFeed() {
                 );
 
                 // Apply filter
-                if (activeFilter === 'video') {
-                    q = query(q, where('type', '==', 'video'));
-                } else if (activeFilter === 'slideshow') {
+                if (activeFilter === 'slideshow') {
                     q = query(q, where('type', '==', 'slideshow'));
                 } else if (activeFilter === 'dress-up') {
                     q = query(q, where('type', '==', 'dress-up'));

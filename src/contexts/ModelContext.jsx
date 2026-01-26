@@ -156,7 +156,6 @@ export function ModelProvider({ children }) {
 
     // Refs for stable caching (prevents re-renders and unstable function references)
     const showcaseCacheRef = useRef({});
-    const videoCacheRef = useRef({});
 
     // Sync state cache with ref query (optional, for other consumers)
     useEffect(() => {
@@ -409,47 +408,6 @@ export function ModelProvider({ children }) {
     }, []); // EMPTY dependency array - function is now stable!
 
 
-    // Fetch user videos for mixing into feed
-    const getUserVideos = useCallback(async (userId) => {
-        if (videoCacheRef.current[userId]) {
-            console.log(`[Video Fetch] Returning cached videos for ${userId}`);
-            return videoCacheRef.current[userId];
-        }
-
-        try {
-            console.log(`[Video Fetch] Fetching videos for ${userId}`);
-            const q = query(
-                collection(db, 'videos'),
-                where('userId', '==', userId),
-                orderBy('createdAt', 'desc'),
-                limit(50)
-            );
-            const snapshot = await getDocs(q);
-            console.log(`[Video Fetch] Found ${snapshot.size} videos`);
-
-            const videos = snapshot.docs.map(doc => {
-                const data = doc.data();
-                return {
-                    id: doc.id,
-                    ...data,
-                    type: 'video',
-                    // Feed requires 'url' property for filtering/dedup logic
-                    url: data.videoUrl,
-                    // Fallbacks for display
-                    imageUrl: getOptimizedImageUrl(data.imageSnapshotUrl || data.thumbnailUrl || data.videoUrl),
-                    videoUrl: data.videoUrl,
-                    // Mock ratings for now if missing, to help them float up in sorted feeds
-                    rating: data.rating || 0
-                };
-            });
-
-            videoCacheRef.current = { ...videoCacheRef.current, [userId]: videos };
-            return videos;
-        } catch (error) {
-            console.error("Error fetching user videos:", error);
-            return [];
-        }
-    }, []);
 
     // --- High Velocity Rating Logic (Buffered) ---
     const ratingQueue = useRef(new Map()); // stores { jobId, rating, timestamp } by jobId
@@ -559,7 +517,6 @@ export function ModelProvider({ children }) {
         hasShowcaseEnded: (modelId) => !!hasShowcaseEndedRef.current[modelId], // EXPORTED helper
         rateGeneration,    // EXPORTED
         rateShowcaseImage, // EXPORTED
-        getUserVideos,     // EXPORTED
     };
 
     return (
