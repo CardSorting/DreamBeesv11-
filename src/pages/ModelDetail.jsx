@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import SEO from '../components/SEO';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
@@ -7,7 +7,7 @@ import ShowcaseModal from '../components/ShowcaseModal';
 // eslint-disable-next-line no-unused-vars -- motion.div is used as JSX element
 import { motion, AnimatePresence } from 'framer-motion';
 import { getOptimizedImageUrl, getImageSrcSet, preloadImage } from '../utils';
-import { db } from '../firebase';
+// import { db } from '../firebase'; // Unused in this component
 
 export default function ModelDetail() {
     const { id } = useParams();
@@ -71,7 +71,8 @@ export default function ModelDetail() {
 
     useEffect(() => {
         if (sortParam && ['TOP_RATED', 'LATEST'].includes(sortParam)) {
-            setSortBy(sortParam);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setSortBy(prev => (prev !== sortParam ? sortParam : prev));
         }
     }, [sortParam]);
 
@@ -97,10 +98,10 @@ export default function ModelDetail() {
                 (model?.previewImages?.find(img => img.id === viewId || getOptimizedImageUrl(img) === viewId)); // Fallback logic
 
             if (found) {
-                setActiveShowcaseImage(typeof found === 'string' ? { url: getOptimizedImageUrl(found), id: viewId } : found);
+                setActiveShowcaseImage(typeof found === 'string' ? { url: getOptimizedImageUrl(found), id: viewId } : found); // eslint-disable-line react-hooks/set-state-in-effect
             } else if (viewId?.startsWith('http')) {
                 // Direct URL fallback if ID not found but it looks like a URL (legacy)
-                setActiveShowcaseImage({ url: viewId, id: viewId });
+                setActiveShowcaseImage({ url: viewId, id: viewId }); // eslint-disable-line react-hooks/set-state-in-effect
             }
         } else {
             setActiveShowcaseImage(null);

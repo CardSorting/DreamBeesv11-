@@ -9,9 +9,14 @@ const CatalogSidebar = ({ activeParent, activeChild, onNavigate }) => {
     const [expanded, setExpanded] = useState({});
 
     // Sync with props: if activeParent changes, ensure it is expanded
+    // Sync with props: if activeParent changes, ensure it is expanded
     useEffect(() => {
         if (activeParent) {
-            setExpanded(prev => ({ ...prev, [activeParent]: true }));
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setExpanded(prev => {
+                if (prev[activeParent]) return prev;
+                return { ...prev, [activeParent]: true };
+            });
         }
     }, [activeParent]);
 

@@ -195,10 +195,10 @@ export const handleGenerateAvatarCollection = async (request) => {
             };
         }));
 
-        const collectionRef = db.collection('community_avatar_pool').doc();
+        // const collectionRef = db.collection('community_avatar_pool').doc(); // Unused
         const batch = db.batch();
 
-        processedImages.forEach((img, idx) => {
+        processedImages.forEach((img, _idx) => {
             const imgRef = db.collection('community_avatar_pool').doc();
             batch.set(imgRef, {
                 ...img,

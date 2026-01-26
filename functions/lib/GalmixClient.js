@@ -1,5 +1,5 @@
 
-import fs from 'fs/promises';
+// import fs from 'fs/promises'; // Unused in this implementation
 
 /**
  * GalmixClient - A Node.js client for the Galmix Image Generation API.

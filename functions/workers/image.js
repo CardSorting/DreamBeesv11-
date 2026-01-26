@@ -1,6 +1,6 @@
 
 import { db, FieldValue } from "../firebaseInit.js";
-import { getS3Client, fetchWithTimeout, fetchWithRetry, fetchWithFallback, readFirstBytes, detectImageFormat, logger, retryOperation } from "../lib/utils.js";
+import { getS3Client, fetchWithTimeout, fetchWithRetry, readFirstBytes, detectImageFormat, logger, retryOperation } from "../lib/utils.js";
 import { B2_BUCKET, B2_PUBLIC_URL, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN } from "../lib/constants.js";
 // import { withVertexRateLimiting } from "../lib/rateLimiter.js"; // [REMOVED]
 import { vertexFlow } from "../lib/vertexFlow.js"; // [NEW]
@@ -624,7 +624,7 @@ export const processImageTask = async (req) => {
     ]);
 
     const activeCount = activeJobsSnapshot.docs.filter(d => d.id !== requestId).length;
-    const userData = userSnap.data() || {};
+    // const userData = userSnap.data() || {}; // Unused
     const useTurbo = req.data.useTurbo;
     const isPremiumModel = ['zit-model', 'qwen-image-2512'].includes(modelId);
 

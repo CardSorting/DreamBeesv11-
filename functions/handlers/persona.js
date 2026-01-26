@@ -18,7 +18,7 @@ const db = getFirestore();
 
 // --- HANDLE CHAT PERSONA ---
 export const handleChatPersona = async (request) => {
-    const { imageId, message, chatHistory } = request.data;
+    const { imageId, message, _chatHistory } = request.data;
     if (!request.auth) throw new HttpsError('unauthenticated', 'User must be logged in.');
 
     const userId = request.auth.uid;
