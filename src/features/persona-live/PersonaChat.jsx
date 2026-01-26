@@ -85,6 +85,7 @@ const PersonaChat = () => {
     const [showBitsModal, setShowBitsModal] = useState(false);
     const [showZapActions, setShowZapActions] = useState(false);
     const [isTheaterMode, setIsTheaterMode] = useState(false);
+    const [connectionStatus, setConnectionStatus] = useState('initialized'); // 'initialized', 'connecting', 'connected', 'disconnected', 'unavailable'
 
     // Audio State
     const [audioQueue, setAudioQueue] = useState([]);
@@ -193,11 +194,43 @@ const PersonaChat = () => {
                 disableStats: true,
                 enabledTransports: ['ws', 'wss'],
                 cluster: 'mt1',
+                activityTimeout: 30000,
+                pongTimeout: 10000,
                 authEndpoint: authEndpoint,
-                auth: {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
+                authorizer: (channel, options) => {
+                    return {
+                        authorize: async (socketId, callback) => {
+                            try {
+                                const freshToken = await currentUser.getIdToken(true);
+                                const response = await fetch(authEndpoint, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'Authorization': `Bearer ${freshToken}`
+                                    },
+                                    body: JSON.stringify({
+                                        socket_id: socketId,
+                                        channel_name: channel.name
+                                    })
+                                });
+                                if (!response.ok) throw new Error('Auth failed');
+                                const data = await response.json();
+                                callback(null, data);
+                            } catch (error) {
+                                console.error('[PusherAuth] Custom authorizer failed:', error);
+                                callback(error);
+                            }
+                        }
+                    };
+                }
+            });
+
+            pusher.connection.bind('state_change', (states) => {
+                setConnectionStatus(states.current);
+                if (states.current === 'unavailable') {
+                    toast.error("Stream connection lost. Retrying...", { id: 'pusher-reconnect' });
+                } else if (states.current === 'connected') {
+                    toast.success("Connected to live stream!", { id: 'pusher-reconnect' });
                 }
             });
 
@@ -635,7 +668,8 @@ const PersonaChat = () => {
                         <div className="stream-ui-overlay">
                             <div className="live-badge">LIVE</div>
                             <div className="viewer-count">
-                                <span className="view-dot"></span> {viewerCount} viewers
+                                <span className={`view-dot ${connectionStatus === 'connected' ? 'online' : 'offline'}`}></span>
+                                {connectionStatus === 'connected' ? `${viewerCount} viewers` : connectionStatus.toUpperCase()}
                             </div>
 
                             {/* Floating Reactions Overlay */}

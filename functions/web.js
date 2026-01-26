@@ -93,11 +93,12 @@ const handlePusherAuth = async (req, res) => {
     // Note: Soketi/Pusher sends auth request as application/x-www-form-urlencoded
     // but the client-side pusher-js can be configured to send JSON.
     // We'll support both for robustness.
-    const socketId = req.body.socket_id;
-    const channelName = req.body.channel_name;
+    const socketId = req.body.socket_id || req.body.socketId;
+    const channelName = req.body.channel_name || req.body.channelName;
     const authHeader = req.headers.authorization;
 
     if (!socketId || !channelName || !authHeader || !authHeader.startsWith('Bearer ')) {
+        logger.error("[PusherAuth] Missing parameters:", { socketId, channelName, hasAuth: !!authHeader });
         return res.status(403).send('Forbidden: Missing parameters or invalid auth header');
     }
 
@@ -120,15 +121,23 @@ const handlePusherAuth = async (req, res) => {
             }
         }
 
-        const Pusher = (await import("pusher")).default;
-        const pusher = new Pusher({
-            appId: process.env.SOKETI_APP_ID,
-            key: process.env.SOKETI_APP_KEY,
-            secret: process.env.SOKETI_APP_SECRET,
-            host: process.env.SOKETI_HOST || "127.0.0.1",
-            port: process.env.SOKETI_PORT || "6001",
-            useTLS: process.env.SOKETI_USE_TLS === 'true',
-        });
+        let pusher;
+        const broadcaster = await import("./lib/persona/broadcaster.js");
+        // We can reuse the broadcaster's initPusher which maintains a singleton pusherInstance
+        // but we need to ensure we don't accidentally import non-existent things or circular dependencies.
+        // For simplicity within web.js, let's just create a shared instance here if not already exists.
+        if (!global._pusherInstance) {
+            const Pusher = (await import("pusher")).default;
+            global._pusherInstance = new Pusher({
+                appId: process.env.SOKETI_APP_ID,
+                key: process.env.SOKETI_APP_KEY,
+                secret: process.env.SOKETI_APP_SECRET,
+                host: process.env.SOKETI_HOST || "127.0.0.1",
+                port: process.env.SOKETI_PORT || "6001",
+                useTLS: process.env.SOKETI_USE_TLS === 'true',
+            });
+        }
+        pusher = global._pusherInstance;
 
         const auth = pusher.authenticate(socketId, channelName, {
             user_id: uid,

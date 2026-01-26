@@ -4,9 +4,17 @@ FROM quay.io/soketi/soketi:latest-16-alpine
 # Cloud Run provides the PORT environment variable, so we explicitly set SOKETI_PORT.
 ENV SOKETI_PORT=8080
 
+# Performance/Stability Environment Variables
+ENV SOKETI_DEBUG=0
+ENV SOKETI_LOG_LEVEL=info
+ENV SOKETI_METRICS_ENABLED=1
+
 # Expose the port for documentation purposes
 EXPOSE 8080
 
+# Health check (used by Docker and can be referenced by Cloud Run config)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:8080/health', (r) => { if (r.statusCode !== 200) process.exit(1); })"
+
 # The default entrypoint in the soketi image is already set up to run the server.
-# We explicitly specify it here to ensure it uses the environment variables correctly.
 CMD ["node", "bin/server.js", "start"]

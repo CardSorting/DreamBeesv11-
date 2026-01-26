@@ -27,7 +27,14 @@ const initPusher = async () => {
 const trigger = async (channel, event, data) => {
     const pusher = await initPusher();
     if (!pusher) return;
-    pusher.trigger(channel, event, data).catch(e => logger.error(`[Broadcaster] Trigger Error (${event})`, e));
+
+    // We use retryOperation to handle transient network issues or Soketi restarts
+    const { retryOperation } = await import("../utils.js");
+    await retryOperation(async () => {
+        return await pusher.trigger(channel, event, data);
+    }, { retries: 3, context: `Pusher trigger (${event})` }).catch(e => {
+        logger.error(`[Broadcaster] Permanent Trigger Error (${event})`, e);
+    });
 };
 
 export const broadcastMessage = async (personaId, msgData) => {
