@@ -201,6 +201,9 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
             case 'deleteImagesBatch': return Data.handleDeleteImagesBatch(request);
             case 'createPersona': return Persona.handleCreatePersona(request);
             case 'chatPersona': return Persona.handleChatPersona(request);
+            case 'giftPersona': return Persona.handleGiftPersona(request);
+            case 'triggerAction': return Persona.handleTriggerAction(request);
+            case 'votePoll': return Persona.handleVotePoll(request);
 
             case 'toggleBookmark': return Data.handleToggleBookmark(request);
             case 'toggleLike': return Data.handleToggleLike(request);

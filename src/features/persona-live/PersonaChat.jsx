@@ -103,8 +103,8 @@ const PersonaChat = () => {
         triggerShake();
 
         try {
-            const triggerActionFn = httpsCallable(functions, 'triggerAction');
-            await triggerActionFn({ imageId: id, actionId, cost });
+            const apiFn = httpsCallable(functions, 'api');
+            await apiFn({ action: 'triggerAction', imageId: id, actionId, cost });
             setShowZapActions(false);
             toast.success(`Action ${actionId} triggered!`);
         } catch (e) {
@@ -116,8 +116,8 @@ const PersonaChat = () => {
     const handleVote = async (optionId) => {
         if (!currentUser) return toast.error("Please log in to vote!");
         try {
-            const votePollFn = httpsCallable(functions, 'votePoll');
-            await votePollFn({ imageId: id, optionId });
+            const apiFn = httpsCallable(functions, 'api');
+            await apiFn({ action: 'votePoll', imageId: id, optionId });
         } catch (e) {
             console.error(e);
         }

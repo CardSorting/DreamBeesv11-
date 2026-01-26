@@ -1,3 +1,12 @@
 FROM quay.io/soketi/soketi:latest-16-alpine
-EXPOSE 6001
-CMD ["node", "server.js"]
+
+# Soketi uses SOKETI_PORT to determine which port to listen on.
+# Cloud Run provides the PORT environment variable, so we explicitly set SOKETI_PORT.
+ENV SOKETI_PORT=8080
+
+# Expose the port for documentation purposes
+EXPOSE 8080
+
+# The default entrypoint in the soketi image is already set up to run the server.
+# We explicitly specify it here to ensure it uses the environment variables correctly.
+CMD ["node", "bin/server.js", "start"]
