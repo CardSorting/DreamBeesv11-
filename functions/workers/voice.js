@@ -2,6 +2,7 @@ import { db, FieldValue } from "../firebaseInit.js";
 import { logger } from "../lib/utils.js";
 import * as Broadcaster from "../lib/persona/broadcaster.js";
 import * as Voice from "../lib/persona/voice.js";
+import { normalizeForTts } from "../lib/persona/textNormalizer.js";
 
 /**
  * Processes a voice generation task.
@@ -19,7 +20,7 @@ export const processVoiceTask = async (req) => {
             return;
         }
 
-        // 0. Check Reaction Bank
+        // 0. Check Reaction Bank (Use original text for pattern matching)
         const reactionMatch = Voice.getReaction(text);
         let audioJobId = null;
         let audioUrl = null;
@@ -31,14 +32,16 @@ export const processVoiceTask = async (req) => {
             if (result) {
                 audioUrl = result.url;
             } else {
-                // Fallback to generating standard TTS if reaction gen fails
+                // Fallback: Use standard TTS but keep original text prompt for the reaction
                 logger.warn(`[VoiceWorker] Reaction generation failed, falling back to standard TTS.`);
-                // Reactions are hype-neutral -> 5
                 audioJobId = await Voice.submitTtsJob(text, voiceDna, emotion, 5);
             }
         } else {
-            // 1. Submit to TTS API (With Hype Pacing)
-            audioJobId = await Voice.submitTtsJob(text, voiceDna, emotion, hypeLevel);
+            // 1. Normalize Text for TTS
+            const normalizedText = normalizeForTts(text);
+
+            // 2. Submit to TTS API (With Hype Pacing & Normalization)
+            audioJobId = await Voice.submitTtsJob(normalizedText, voiceDna, emotion, hypeLevel);
             if (!audioJobId) {
                 logger.error(`[VoiceWorker] Failed to get audioJobId for msg: ${messageId}`);
                 return;

@@ -27,14 +27,41 @@ const pollForCompletion = async (jobId, attempts = 10) => {
 };
 
 /**
+ * Injects filler words based on emotion and hype to sound more natural.
+ * @param {string} text 
+ * @param {string} emotion 
+ * @param {number} hypeLevel 
+ * @returns {string}
+ */
+const injectFillers = (text, emotion, hypeLevel) => {
+    // 30% chance to inject (unless very short)
+    if (Math.random() > 0.3 || text.length < 5) return text;
+
+    const fillers = [];
+
+    // Emotion-based fillers
+    switch (emotion) {
+        case 'Confused': fillers.push("Um...", "Hmm...", "Uh..."); break;
+        case 'Sad': fillers.push("*sigh*...", "Well...", "I guess..."); break;
+        case 'Happy': fillers.push("You know,", "Like,", "So yeah,"); break;
+        case 'Excited': (hypeLevel > 7) ? fillers.push("Yo!", "Oh wow!", "Dude!") : fillers.push("Yes!", "Okay!"); break;
+        default: fillers.push("Um,", "Well,"); break;
+    }
+
+    const filler = fillers[Math.floor(Math.random() * fillers.length)];
+    return `${filler} ${text}`;
+};
+
+/**
  * Modulates the base voice DNA with emotional context and pacing.
  * 
  * @param {string} baseDna - The character's core voice description.
  * @param {string} emotion - The detected emotion (e.g., "Happy").
  * @param {number} hypeLevel - Thread hype (1-10).
+ * @param {string} text - The text content.
  * @returns {string} - The modulated voice description.
  */
-export const modulateDna = (baseDna, emotion, hypeLevel = 5) => {
+export const modulateDna = (baseDna, emotion, hypeLevel = 5, text = "") => {
     // 1. Emotion Modifier
     const modifiers = {
         'Happy': 'spoken with a cheerful, upbeat, and energetic tone',
@@ -55,8 +82,24 @@ export const modulateDna = (baseDna, emotion, hypeLevel = 5) => {
         pacingMod = "spoken with a relaxed, slow, and casual pace";
     }
 
+    // 3. Intonation & Emphasis Modifier
+    let intonationMod = "";
+    const cleanText = text.trim();
+
+    // Check for ALL CAPS (Emphasis)
+    const letters = cleanText.replace(/[^a-zA-Z]/g, '');
+    const isYelling = letters.length > 4 && letters === letters.toUpperCase();
+
+    if (isYelling) {
+        intonationMod = "spoken with a loud, projected, and commanding voice";
+    } else if (cleanText.endsWith('?')) {
+        intonationMod = "spoken with a curious, rising intonation";
+    } else if (cleanText.endsWith('!')) {
+        intonationMod = "spoken with an emphatic, forceful tone";
+    }
+
     // Combine
-    const parts = [emotionMod, pacingMod].filter(Boolean);
+    const parts = [emotionMod, pacingMod, intonationMod].filter(Boolean);
     if (parts.length === 0) return baseDna;
 
     return `${baseDna}, ${parts.join(', ')}.`;
@@ -75,10 +118,12 @@ export const submitTtsJob = async (text, voiceDna, emotion = 'Neutral', hypeLeve
     try {
         if (!text || !voiceDna) return null;
 
-        const description = modulateDna(voiceDna, emotion, hypeLevel);
+        // Apply Fillers
+        const finalText = injectFillers(text, emotion, hypeLevel);
+        const description = modulateDna(voiceDna, emotion, hypeLevel, finalText);
 
         // --- 1. Check Cache ---
-        const cacheKey = createHash('sha256').update(`${text}:${description}`).digest('hex');
+        const cacheKey = createHash('sha256').update(`${finalText}:${description}`).digest('hex');
         const cacheRef = db.collection(CACHE_COLLECTION).doc(cacheKey);
 
         const cacheDoc = await cacheRef.get();
@@ -95,7 +140,7 @@ export const submitTtsJob = async (text, voiceDna, emotion = 'Neutral', hypeLeve
 
         // --- 2. Call API ---
         const payload = {
-            text: text,
+            text: finalText,
             voice_description: description, // Matches API expected param
             language: "English"
         };
@@ -117,7 +162,7 @@ export const submitTtsJob = async (text, voiceDna, emotion = 'Neutral', hypeLeve
         // --- 3. Save to Cache ---
         await cacheRef.set({
             jobId: data.job_id,
-            text,
+            text: finalText,
             description,
             createdAt: FieldValue.serverTimestamp()
         });
