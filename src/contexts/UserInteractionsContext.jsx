@@ -7,6 +7,7 @@ import { useAuth } from './AuthContext';
 import { useModel } from './ModelContext';
 import { useApi } from '../hooks/useApi';
 import toast from 'react-hot-toast';
+import { trackEvent, setUserProperties } from '../utils/analytics';
 
 const UserInteractionsContext = createContext();
 
@@ -200,6 +201,18 @@ export function UserInteractionsProvider({ children }) {
         };
     }, [currentUser?.uid]);
 
+    // Sync user profile properties to GA
+    useEffect(() => {
+        if (isProfileLoaded && userProfile) {
+            setUserProperties({
+                subscription_status: userProfile.subscriptionStatus,
+                zap_count: userProfile.zaps,
+                reels_count: userProfile.reels,
+                karma_count: userProfile.karma
+            });
+        }
+    }, [userProfile, isProfileLoaded]);
+
     // Helpers
     const isLiked = (id) => likedIds.has(id);
     const isBookmarked = (id) => bookmarkedIds.has(id);
@@ -239,8 +252,10 @@ export function UserInteractionsProvider({ children }) {
 
             if (currentlyLiked) {
                 // Was liked, so we unliked it
+                trackEvent('unlike_image', { image_id: id, model_id: model?.id });
                 // toast.success("Removed from likes"); // Optional: reduce noise
             } else {
+                trackEvent('like_image', { image_id: id, model_id: model?.id });
                 toast.success("Added to likes");
             }
 
@@ -287,8 +302,10 @@ export function UserInteractionsProvider({ children }) {
             }, { toastErrors: true });
 
             if (currentlySaved) {
+                trackEvent('unbookmark_image', { image_id: id, model_id: model?.id });
                 toast.success("Removed from bookmarks");
             } else {
+                trackEvent('bookmark_image', { image_id: id, model_id: model?.id });
                 toast.success("Saved to bookmarks");
             }
         } catch (error) {
@@ -323,6 +340,7 @@ export function UserInteractionsProvider({ children }) {
                 prompt: imgItem.prompt || "",
                 url: imgItem.url || imgItem.imageUrl || ""
             });
+            trackEvent('hide_post', { image_id: id });
             toast.success("Post hidden");
         } catch (error) {
             console.error("Hide post failed:", error);
@@ -371,6 +389,7 @@ export function UserInteractionsProvider({ children }) {
 
             await Promise.all([hidePromise, reportPromise]);
 
+            trackEvent('report_post', { image_id: id, reason: reason });
             toast.success("Content flagged and hidden", { icon: '🚩' });
         } catch (error) {
             console.error("Report failed:", error);
@@ -445,6 +464,7 @@ export function UserInteractionsProvider({ children }) {
                 }
             }
 
+            trackEvent('safety_vote', { image_id: imgItem.id, verdict: verdict });
             return result;
         } catch (error) {
             console.error("Safety vote failed:", error);
@@ -474,6 +494,7 @@ export function UserInteractionsProvider({ children }) {
                 jobId: id
             }, { toastErrors: true });
 
+            trackEvent('appeal_post', { image_id: id });
             toast.success("Appeal submitted", { icon: '⚖️' });
         } catch (error) {
             console.error("Appeal failed:", error);
@@ -565,6 +586,7 @@ export function UserInteractionsProvider({ children }) {
 
                 transaction.update(appRef, { likeCount: newLikes });
             });
+            trackEvent(currentlyLiked ? 'unlike_app' : 'like_app', { app_id: appId });
             return true;
         } catch (error) {
             console.error("Error toggling app like:", error);

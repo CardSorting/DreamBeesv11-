@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
+import { trackEvent, trackOutboundLink } from '../utils/analytics';
 
 export default function Footer() {
     return (
@@ -43,7 +44,10 @@ export default function Footer() {
                                     outline: 'none'
                                 }}
                             />
-                            <button className="btn btn-outline" style={{ borderRadius: '99px', padding: '0 24px' }}>
+                            <button
+                                onClick={() => trackEvent('newsletter_signup_start')}
+                                className="btn btn-outline"
+                                style={{ borderRadius: '99px', padding: '0 24px' }}>
                                 Subscribe
                             </button>
                         </div>
@@ -57,7 +61,10 @@ export default function Footer() {
                             <FooterLink to="/models">Models</FooterLink>
                         </FooterColumn>
                         <FooterColumn title="Studio">
-                            <Link to="/blog" style={{ color: 'white', fontWeight: '500', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Link
+                                to="/blog"
+                                onClick={() => trackEvent('click_footer_blog')}
+                                style={{ color: 'white', fontWeight: '500', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 Blog <ArrowUpRight size={16} color="var(--color-accent-primary)" />
                             </Link>
                             <FooterLink to="/about">About Us</FooterLink>
@@ -86,9 +93,9 @@ export default function Footer() {
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '24px', fontSize: '0.9rem', color: 'var(--color-text-dim)' }}>
                         <div style={{ display: 'flex', gap: '24px' }}>
-                            <Link to="/privacy">Privacy</Link>
-                            <Link to="/terms">Terms</Link>
-                            <Link to="/cookies">Cookies</Link>
+                            <Link to="/privacy" onClick={() => trackEvent('view_privacy')}>Privacy</Link>
+                            <Link to="/terms" onClick={() => trackEvent('view_terms')}>Terms</Link>
+                            <Link to="/cookies" onClick={() => trackEvent('view_cookies')}>Cookies</Link>
                         </div>
 
 

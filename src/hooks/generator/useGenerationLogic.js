@@ -3,6 +3,7 @@ import { useApi } from '../../hooks/useApi';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 import toast from 'react-hot-toast';
+import { trackEvent } from '../../utils/analytics';
 
 export function useGenerationLogic({
     prompt,
@@ -13,6 +14,8 @@ export function useGenerationLogic({
     zaps, reels: _reels, subscriptionStatus,
     setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId, setActiveJob
 }) {
+    // Track timing
+    const startTimeRef = useRef(null);
     // Track the current job listener
     const unsubscribeRef = useRef(null);
     const currentJobIdRef = useRef(null);
@@ -57,11 +60,20 @@ export function useGenerationLogic({
                         unsubscribeRef.current();
                         unsubscribeRef.current = null;
                     }
+                    trackEvent('generate_image_success', {
+                        model_id: data.modelId,
+                        job_id: requestId,
+                        duration_ms: startTimeRef.current ? Date.now() - startTimeRef.current : undefined
+                    });
                     localStorage.removeItem('activeGenerationJob');
                 } else if (data.status === 'failed') {
                     setGenerating(false);
                     toast.error(`Generation failed: ${data.error || 'Unknown error'}`, { id: 'gen-image' });
 
+                    trackEvent('generate_image_failure', {
+                        model_id: data.modelId || selectedModel?.id,
+                        error: data.error || 'Server Side Failure'
+                    });
                     // Cleanup listener after failure
                     if (unsubscribeRef.current) {
                         unsubscribeRef.current();
@@ -109,6 +121,7 @@ export function useGenerationLogic({
             setGenerating(true);
             setGeneratedImage(null);
             setCurrentJobType(generationMode);
+            startTimeRef.current = Date.now();
 
             const finalPrompt = effectivePrompt;
             const finalNegativePrompt = negPrompt;
@@ -140,6 +153,12 @@ export function useGenerationLogic({
             }, {
                 timeout: 540000,
                 toastErrors: false // We handle errors manually below
+            });
+
+            trackEvent('generate_image_start', {
+                model_id: selectedModel.id,
+                generation_mode: generationMode,
+                aspect_ratio: aspectRatio
             });
 
             const { requestId } = data;

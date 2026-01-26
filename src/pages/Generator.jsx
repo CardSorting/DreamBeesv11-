@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 // motion.div is used for fullscreen view
 import { AnimatePresence, motion } from 'framer-motion';
 import { Toaster, toast } from 'react-hot-toast';
+import { trackEvent, trackSettingChange } from '../utils/analytics';
 
 // Contexts
 import { useAuth } from '../contexts/AuthContext';
@@ -91,6 +92,7 @@ export default function Generator() {
 
     const handleModeChange = (newMode) => {
         setGenerationMode(newMode);
+        trackEvent('switch_generation_mode', { mode: newMode });
         setSearchParams(prev => {
             const next = new URLSearchParams(prev);
             if (newMode && newMode !== 'image') next.set('mode', newMode);
@@ -101,6 +103,7 @@ export default function Generator() {
 
     const handleTabChange = (newTab) => {
         setActiveTab(newTab);
+        trackEvent('switch_generator_tab', { tab: newTab });
         setSearchParams(prev => {
             const next = new URLSearchParams(prev);
             if (newTab && newTab !== 'simple') next.set('tab', newTab);
@@ -110,6 +113,7 @@ export default function Generator() {
     };
 
     const updateParam = (key, val) => {
+        trackSettingChange(key, val);
         setSearchParams(prev => {
             const next = new URLSearchParams(prev);
             if (val !== undefined && val !== null && val !== '' && val !== -1) {
@@ -120,6 +124,13 @@ export default function Generator() {
             return next;
         }, { replace: true });
     };
+
+    // Track model selection
+    useEffect(() => {
+        if (selectedModel) {
+            trackEvent('select_model', { model_id: selectedModel.id, model_name: selectedModel.name });
+        }
+    }, [selectedModel]);
 
     // Reference Image
     const [referenceImage, setReferenceImage] = useState(null);

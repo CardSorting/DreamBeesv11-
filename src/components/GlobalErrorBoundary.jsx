@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertCircle, RefreshCw, Home } from 'lucide-react';
+import { trackException } from '../utils/analytics';
 
 class GlobalErrorBoundary extends React.Component {
     constructor(props) {
@@ -26,6 +27,7 @@ class GlobalErrorBoundary extends React.Component {
         // Prevent default console error logging if we're handling it
         // event.preventDefault(); 
         console.error("GlobalErrorBoundary Caught Unhandled Rejection:", event.reason);
+        trackException(`Unhandled Rejection: ${event.reason}`, true);
         this.setState({
             hasError: true,
             error: event.reason instanceof Error ? event.reason : new Error(String(event.reason)),
@@ -36,6 +38,7 @@ class GlobalErrorBoundary extends React.Component {
     handleGlobalError = (event) => {
         // event.error might be undefined for cross-origin script errors
         console.error("GlobalErrorBoundary Caught Global Error:", event.error || event.message);
+        trackException(`Global Error: ${event.message || 'Unknown'}`, true);
         this.setState({
             hasError: true,
             error: event.error || new Error(event.message || 'Unknown Global Error'),
@@ -46,6 +49,7 @@ class GlobalErrorBoundary extends React.Component {
     componentDidCatch(error, errorInfo) {
         // You can also log the error to an error reporting service
         console.error("GlobalErrorBoundary Caught React Error:", error, errorInfo);
+        trackException(`React Error: ${error.message}`, true);
         this.setState({ error, errorInfo });
     }
 

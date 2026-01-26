@@ -4,6 +4,7 @@ import { functions as _firebaseFunctions } from '../firebase';
 import { useApi } from '../hooks/useApi';
 import { Check, Film, Image, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { trackViewItemList, trackBeginCheckout } from '../utils/analytics';
 import SEO from '../components/SEO';
 
 const SUBSCRIPTION_PLANS = [
@@ -85,12 +86,33 @@ export default function Pricing() {
 
     const { call: apiCall } = useApi();
 
+    // Track view_item_list when the pack selection changes
+    React.useEffect(() => {
+        const gaItems = packs.map(p => ({
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            category: currencyType
+        }));
+        trackViewItemList(gaItems);
+    }, [currencyType]); // Re-track when user switches between membership, zaps, reels
+
     const handlePurchase = async (priceId) => {
         if (!currentUser) {
             toast.error("Please log in to purchase.");
             return;
         }
         setLoading(true);
+        const pack = packs.find(p => p.id === priceId);
+        if (pack) {
+            trackBeginCheckout({
+                id: pack.id,
+                name: pack.name,
+                price: pack.price,
+                category: currencyType
+            });
+        }
+
         try {
             const result = await apiCall('api', {
                 action: 'createStripeCheckout',

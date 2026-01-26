@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { blogPosts } from '../data/blogPosts';
 import { ArrowLeft, Calendar, Clock, User, Share2, Play, Pause, Square, Volume2 } from 'lucide-react';
 import SEO from '../components/SEO';
+import { trackEvent } from '../utils/analytics';
 
 export default function BlogPost() {
     const { id } = useParams(); // 'id' here captures the slug from the route parameter
@@ -104,6 +105,7 @@ export default function BlogPost() {
             synth.speak(newUtterance);
             setIsPlaying(true);
             setIsPaused(false);
+            trackEvent('blog_tts_play', { article_id: post.id });
         }
     };
 
@@ -113,6 +115,7 @@ export default function BlogPost() {
             synth.pause();
             setIsPaused(true);
             setIsPlaying(false);
+            trackEvent('blog_tts_pause', { article_id: post.id });
         }
     };
 
@@ -122,6 +125,7 @@ export default function BlogPost() {
         setIsPlaying(false);
         setIsPaused(false);
         if (CSS.highlights) CSS.highlights.clear();
+        trackEvent('blog_tts_stop', { article_id: post.id });
     };
 
 
@@ -261,7 +265,12 @@ export default function BlogPost() {
                             </div>
                         </div>
 
-                        <button className="btn btn-outline" aria-label="Share article" style={{ borderRadius: '50%', width: '40px', height: '40px', padding: 0 }}>
+                        <button
+                            className="btn btn-outline"
+                            aria-label="Share article"
+                            style={{ borderRadius: '50%', width: '40px', height: '40px', padding: 0 }}
+                            onClick={() => trackEvent('blog_article_share', { article_id: post.id })}
+                        >
                             <Share2 size={18} />
                         </button>
                     </div>

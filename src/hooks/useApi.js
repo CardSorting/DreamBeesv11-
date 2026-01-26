@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../firebase';
 import toast from 'react-hot-toast';
+import { trackEvent } from '../utils/analytics';
 
 /**
  * Custom hook for resilient Cloud Function calls.
@@ -60,6 +61,12 @@ export function useApi() {
                 if (attempt > retries || !isRetryable) {
                     setLoading(false);
                     setError(err);
+
+                    trackEvent('api_failure', {
+                        function_name: functionName,
+                        error_code: err.code,
+                        error_message: err.message
+                    });
 
                     // Standardized Error Handling
                     let displayMessage = "Something went wrong.";

@@ -3,6 +3,7 @@ import {
     Wand2, Loader2, X, Mic, MicOff, Paperclip, Sparkles, Share2, Trash2, Zap
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { trackEvent, trackSettingChange } from '../../utils/analytics';
 import { getOptimizedImageUrl } from '../../utils';
 import { STYLE_REGISTRY } from '../../data/styles';
 
@@ -30,6 +31,7 @@ export default function GeneratorControls({
         if (cfg !== 7.0) url.searchParams.set('cfg', cfg);
         if (negPrompt) url.searchParams.set('negPrompt', negPrompt);
         navigator.clipboard.writeText(url.toString());
+        trackEvent('share_config', { mode: generationMode, model_id: selectedModel?.id });
         toast.success('Link copied to clipboard');
     };
 
@@ -76,7 +78,10 @@ export default function GeneratorControls({
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
                     <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                         <button
-                            onClick={toggleListening}
+                            onClick={() => {
+                                toggleListening();
+                                trackEvent('voice_input_toggle', { active: !isListening });
+                            }}
                             className={`btn-ghost ${isListening ? 'listening-pulse' : ''}`}
                             style={{
                                 padding: '8px 12px', borderRadius: '8px',
@@ -94,7 +99,10 @@ export default function GeneratorControls({
                         </button>
 
                         {referenceImage && (
-                            <button onClick={handleAutoPrompt} className={`btn-ghost ${isAutoPrompting ? 'animate-pulse' : ''}`} title="Analyze image with Gemini to auto-generate a detailed prompt" disabled={isAutoPrompting} style={{ padding: '8px', borderRadius: '8px', color: 'var(--color-accent-primary)', transition: 'all 0.2s', background: 'rgba(var(--color-accent-rgb), 0.1)' }}>
+                            <button onClick={() => {
+                                handleAutoPrompt();
+                                trackEvent('image_analysis_start', { mode: generationMode });
+                            }} className={`btn-ghost ${isAutoPrompting ? 'animate-pulse' : ''}`} title="Analyze image with Gemini to auto-generate a detailed prompt" disabled={isAutoPrompting} style={{ padding: '8px', borderRadius: '8px', color: 'var(--color-accent-primary)', transition: 'all 0.2s', background: 'rgba(var(--color-accent-rgb), 0.1)' }}>
                                 {isAutoPrompting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                             </button>
                         )}
@@ -126,7 +134,10 @@ export default function GeneratorControls({
                         )}
 
                         <button
-                            onClick={() => setUseTurbo(!useTurbo)}
+                            onClick={() => {
+                                setUseTurbo(!useTurbo);
+                                trackSettingChange('use_turbo', !useTurbo);
+                            }}
                             className="btn-ghost"
                             title={useTurbo ? "Disable Turbo Mode" : "Enable Turbo Mode (H100)"}
                             style={{

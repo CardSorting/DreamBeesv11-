@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import SEO from '../components/SEO';
+import { trackEvent } from '../utils/analytics';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, limit, getDocs, startAfter, doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
@@ -74,6 +75,7 @@ export default function PublicGenerationsFeed() {
     const activeFilter = searchParams.get('filter') || 'all';
 
     const setActiveFilter = (newFilter) => {
+        trackEvent('change_discovery_filter', { filter: newFilter });
         setSearchParams(prev => {
             const next = new URLSearchParams(prev);
             if (newFilter === 'all') next.delete('filter');
@@ -128,6 +130,7 @@ export default function PublicGenerationsFeed() {
 
     const openFocus = (img) => {
         setFocusImage(img);
+        trackEvent('view_generation_detail', { image_id: img.id, model_id: img.modelId });
         setSearchParams(prev => {
             const newParams = new URLSearchParams(prev);
             newParams.set('view', img.id);

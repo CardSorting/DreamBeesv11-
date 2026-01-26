@@ -12,6 +12,8 @@ import ScrollToTop from './components/ScrollToTop';
 import BackToTop from './components/BackToTop';
 // Imports for Animations
 import AnimatedRoutes from './components/AnimatedRoutes';
+import GoogleAnalyticsTracker from './components/GoogleAnalyticsTracker';
+import PerformanceTracker from './components/PerformanceTracker';
 // import PublicGenerationsFeed from './pages/PublicGenerationsFeed';
 import SmoothScroll from './components/SmoothScroll';
 import NetworkStatus from './components/NetworkStatus';
@@ -71,6 +73,8 @@ import { TwitchProvider } from './contexts/TwitchContext';
 function App() {
   return (
     <Router>
+      <GoogleAnalyticsTracker />
+      <PerformanceTracker />
       <NetworkStatus />
       <SmoothScroll />
       <ScrollToTop />

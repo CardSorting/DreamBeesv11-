@@ -14,6 +14,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import LoadingScreen from "../components/LoadingScreen";
 import { useApi } from "../hooks/useApi";
+import { identifyUser } from "../utils/analytics";
 
 const AuthContext = createContext();
 
@@ -104,12 +105,15 @@ export function AuthProvider({ children }) {
 
             if (user) {
                 console.log(`[Auth] User detected: ${user.uid}. Ensuring initialization...`);
+                identifyUser(user.uid);
                 try {
                     await ensureUserInitialized(user);
                     console.log("[Auth] User initialization flow complete.");
                 } catch (err) {
                     console.error("[Auth] User initialization flow failed:", err);
                 }
+            } else {
+                identifyUser(null);
             }
 
             setCurrentUser(user);

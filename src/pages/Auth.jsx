@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import SEO from '../components/SEO';
+import { trackEvent } from '../utils/analytics';
 import './Auth.css';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
@@ -30,6 +31,7 @@ export default function Auth() {
         try {
             if (isLogin) {
                 await login(email, password);
+                trackEvent('login', { method: 'email' });
             } else {
                 if (!birthday) {
                     setError('Birth date is required.');
@@ -37,6 +39,7 @@ export default function Auth() {
                     return;
                 }
                 await signup(email, password, birthday);
+                trackEvent('sign_up', { method: 'email' });
             }
             navigate('/generate');
         } catch (err) {
@@ -121,6 +124,7 @@ export default function Auth() {
                             try {
                                 setLoading(true);
                                 await loginWithGoogle();
+                                trackEvent('login', { method: 'google' });
                             } catch (err) {
                                 console.error(err);
                                 setError('Failed to sign in with Google: ' + err.message);

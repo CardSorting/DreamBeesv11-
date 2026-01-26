@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { blogPosts } from '../data/blogPosts';
 import { Search, ArrowRight, Calendar, User, Clock } from 'lucide-react';
 import SEO from '../components/SEO';
+import { trackEvent, trackSearch } from '../utils/analytics';
 
 export default function Blog() {
     const _navigate = useNavigate();
@@ -13,8 +14,12 @@ export default function Blog() {
     // Sync URL when typing (debouncing omitted for simplicity, but acceptable here)
     const handleSearch = (val) => {
         setSearchQuery(val);
-        if (val) setSearchParams({ q: val });
-        else setSearchParams({});
+        if (val) {
+            setSearchParams({ q: val });
+            trackSearch(val);
+        } else {
+            setSearchParams({});
+        }
     };
 
     const filteredPosts = useMemo(() => {
@@ -107,6 +112,7 @@ export default function Blog() {
                         to={`/blog/${post.slug || post.id}`}
                         key={post.id}
                         className="group"
+                        onClick={() => trackEvent('blog_article_click', { article_id: post.id, article_title: post.title })}
                         style={{ textDecoration: 'none' }}
                     >
                         <article
