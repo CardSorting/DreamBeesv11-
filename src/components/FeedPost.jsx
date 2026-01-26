@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-// eslint-disable-next-line no-unused-vars
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { Heart, MoreHorizontal, Bookmark, BadgeCheck, Aperture, Volume2, VolumeX, Flag, ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -21,7 +20,7 @@ const FeedPost = ({
     onTagClick
 }) => {
     const { _currentUser } = useAuth();
-    const { isLiked, isBookmarked, toggleLike, toggleBookmark, hidePost, unhidePost, reportPost, appealPost, isHidden } = useUserInteractions();
+    const { isLiked, isBookmarked, toggleLike, toggleBookmark, unhidePost, reportPost, appealPost, isHidden } = useUserInteractions();
 
     const [activeSlide, setActiveSlide] = useState(0);
     const [showLargeHeart, setShowLargeHeart] = useState(false);
@@ -33,39 +32,18 @@ const FeedPost = ({
     const timerRef = useRef(null);
     const videoRef = useRef(null);
 
-    // Resilience Guard: Prevent crash if critical data is missing
-    if (!imgItem || !imgItem.id) {
-        console.warn('FeedPost: Received invalid item', imgItem);
-        return null;
-    }
-
-    const liked = isLiked(imgItem.id);
-    const bookmarked = isBookmarked(imgItem.id);
-
-    const handleLike = useCallback(() => {
-        toggleLike(imgItem, model);
-    }, [toggleLike, imgItem, model]);
-
-    const handleDoubleTap = useCallback(() => {
-        const now = Date.now();
-        if (now - lastTap < 300) {
-            handleLike();
-            setShowLargeHeart(true);
-            if (timerRef.current) clearTimeout(timerRef.current);
-            timerRef.current = setTimeout(() => {
-                setShowLargeHeart(false);
-                timerRef.current = null;
-            }, 800);
-        }
-        setLastTap(now);
-    }, [lastTap, handleLike]);
-
     // Cleanup on unmount
     React.useEffect(() => {
         return () => {
             if (timerRef.current) clearTimeout(timerRef.current);
         };
     }, []);
+
+    // Resilience Guard: Prevent crash if critical data is missing
+    if (!imgItem || !imgItem.id) {
+        console.warn('FeedPost: Received invalid item', imgItem);
+        return null;
+    }
 
 
 

@@ -191,7 +191,7 @@ const AppsHub = () => {
 
     // Reset pagination when search changes
     useEffect(() => {
-        setCurrentPage(prev => (prev !== 1 ? 1 : prev));
+        setCurrentPage(1);
     }, [searchQuery]);
 
     return (

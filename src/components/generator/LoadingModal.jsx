@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-// eslint-disable-next-line no-unused-vars
-import { motion } from 'framer-motion';
+
 import { X, Zap } from 'lucide-react';
 import LoadingOrb from './LoadingOrb';
 
@@ -21,6 +20,7 @@ const GRACE_MESSAGES = [
 export default function LoadingModal({ prompt, useTurbo, onCancel }) {
     const [showGraceMessage, setShowGraceMessage] = useState(false);
     const [graceMessage, setGraceMessage] = useState("");
+    const [messageIndex, setMessageIndex] = useState(0);
 
     useEffect(() => {
         if (showGraceMessage) {

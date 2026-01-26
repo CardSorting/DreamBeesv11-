@@ -6,9 +6,7 @@ import { Sparkles, Loader2, CheckCircle2, Heart, Flag } from 'lucide-react';
 import BottomNav from '../components/BottomNav';
 import FeedSwitcher from '../components/FeedSwitcher';
 import { getOptimizedImageUrl, getImageSrcSet } from '../utils';
-// motion is used for motion.div components
-// eslint-disable-next-line no-unused-vars
-import { motion } from 'framer-motion';
+
 import { useNavigate, useParams } from 'react-router-dom';
 import { slugify } from '../utils/urlHelpers';
 import './Discovery.css';

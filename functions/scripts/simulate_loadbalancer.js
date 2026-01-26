@@ -3,10 +3,10 @@ import { LoadBalancer } from '../workers/image.js';
 
 // Mock logger for the simulation
 const mockLogger = {
-    info: (_msg, _meta) => console.log(`[INFO] ${_msg}`, _meta || ''),
-    warn: (_msg, _meta) => console.warn(`[WARN] ${_msg}`, _meta || ''),
-    error: (_msg, error, _meta) => console.error(`[ERROR] ${_msg}`, error?.message || error, _meta || ''),
-    debug: (msg, meta) => { } // console.debug(`[DEBUG] ${msg}`, meta || '')
+    info: (msg, meta) => console.log(`[INFO] ${msg}`, meta || ''),
+    warn: (msg, meta) => console.warn(`[WARN] ${msg}`, meta || ''),
+    error: (msg, error, meta) => console.error(`[ERROR] ${msg}`, error?.message || error, meta || ''),
+    debug: () => { }
 };
 
 // Override the global logger if the module uses it

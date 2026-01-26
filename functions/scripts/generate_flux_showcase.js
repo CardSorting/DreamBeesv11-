@@ -3,7 +3,6 @@ import path from "path";
 import fs from "fs/promises";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
-// import { initializeApp } from "firebase-admin/app"; // Unused
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 
 const __filename = fileURLToPath(import.meta.url);

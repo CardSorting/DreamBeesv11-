@@ -556,7 +556,6 @@ export const handleToggleLike = async (request) => {
                 lastRatedAt: FieldValue.serverTimestamp()
             });
             // Reward Creator Karma (+1)
-            // const imgDoc = await userLikeRef.transaction.get(imageRef); // Unused and logically incomplete logic from original code snippet
             // We aren't in a transaction here in the original code? 
             // Ah, handleToggleLike doesn't use a transaction in the snippet I saw?
             // "const userLikeRef = ..." then "await userLikeRef.delete()".
