@@ -526,22 +526,40 @@ const PersonaChat = () => {
 
             if (audioVoiceRef.current) {
                 audioVoiceRef.current.src = nextUrl;
-                audioVoiceRef.current.play().catch(e => console.error("Audio playback error:", e));
+                audioVoiceRef.current.play().catch(e => {
+                    console.error("Audio playback error (likely autoplay block):", e);
+                    setIsAiSpeaking(false); // Reset so the queue doesn't get stuck
+                });
             }
         }
     }, [voiceQueue, isAiSpeaking]);
 
-    // Background Music Ducking
+    // Background Music Ducking (Smooth Fade)
     useEffect(() => {
         if (!audioRef.current) return;
 
-        if (isAiSpeaking) {
-            // Duck volume (e.g., to 20%)
-            audioRef.current.volume = (volume / 100) * 0.2;
-        } else {
-            // Restore volume
-            audioRef.current.volume = volume / 100;
-        }
+        const targetVolume = isAiSpeaking ? (volume / 100) * 0.2 : (volume / 100);
+        const currentVolume = audioRef.current.volume;
+
+        if (Math.abs(currentVolume - targetVolume) < 0.01) return;
+
+        // Smooth transition over 500ms
+        const step = (targetVolume - currentVolume) / 10;
+        const interval = setInterval(() => {
+            if (!audioRef.current) {
+                clearInterval(interval);
+                return;
+            }
+            const nextVolume = audioRef.current.volume + step;
+            if ((step > 0 && nextVolume >= targetVolume) || (step < 0 && nextVolume <= targetVolume)) {
+                audioRef.current.volume = targetVolume;
+                clearInterval(interval);
+            } else {
+                audioRef.current.volume = Math.max(0, Math.min(1, nextVolume));
+            }
+        }, 50);
+
+        return () => clearInterval(interval);
     }, [isAiSpeaking, volume]);
 
     const handleAiAudioEnded = () => {

@@ -32,28 +32,37 @@ export const processVoiceTask = async (req) => {
             if (result) {
                 audioUrl = result.url;
             } else {
-                // Fallback: Use standard TTS but keep original text prompt for the reaction
+                // Fallback: Reaction generation failed, proceed to standard TTS path
                 logger.warn(`[VoiceWorker] Reaction generation failed, falling back to standard TTS.`);
-                audioJobId = await Voice.submitTtsJob(text, voiceDna, emotion, 5);
+                // audioUrl remains null, so the standard TTS path below will execute
             }
-        } else {
+        }
+
+        // If no reaction audio was found or reaction generation failed, proceed with standard TTS
+        if (!audioUrl) {
             // 1. Normalize Text for TTS
             const normalizedText = normalizeForTts(text);
 
             // 2. Submit to TTS API (With Hype Pacing & Normalization)
+            const submitStart = Date.now();
             audioJobId = await Voice.submitTtsJob(normalizedText, voiceDna, emotion, hypeLevel);
             if (!audioJobId) {
                 logger.error(`[VoiceWorker] Failed to get audioJobId for msg: ${messageId}`);
                 return;
             }
-            logger.info(`[VoiceWorker] TTS Job Submitted: ${audioJobId}. Polling for completion...`);
+            const submitDuration = Date.now() - submitStart;
+            logger.info(`[VoiceWorker] TTS Submitted: ${audioJobId} in ${submitDuration}ms. Polling for completion...`);
 
             // 2a. Poll for completion to get the final audio (blocking worker)
+            const pollStart = Date.now();
             try {
                 const jobResult = await Voice.pollForCompletion(audioJobId);
                 if (jobResult && jobResult.status === 'completed') {
                     // The Modal API usually returns audio at /v1/jobs/{job_id}/audio
                     audioUrl = `https://mariecoderinc--phantom-twitch-tts-fastapi-app-dev.modal.run/v1/jobs/${audioJobId}/audio`;
+                    const pollDuration = Date.now() - pollStart;
+                    const totalDuration = Date.now() - startTime;
+                    logger.info(`[VoiceWorker] TTS Ready: ${audioJobId}. Poll:${pollDuration}ms Total:${totalDuration}ms`);
                 }
             } catch (pollErr) {
                 logger.error(`[VoiceWorker] Polling failed for job: ${audioJobId}`, pollErr);
