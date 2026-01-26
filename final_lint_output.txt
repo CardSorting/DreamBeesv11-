@@ -54,57 +54,12 @@ Effects are intended to synchronize state between React and external systems suc
 Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
 
   12 |     useEffect(() => {
-  13 |         if (isOpen && rows.length === 0) {
-> 14 |             setRows([{ id: crypto.randomUUID(), prompt: '', style: ArtStyle.SIMPLE }]);
+  13 |         if (isOpen) {
+> 14 |             setRows(prev => (prev.length === 0 ? [{ id: crypto.randomUUID(), prompt: '', style: ArtStyle.SIMPLE }] : prev));
      |             ^^^^^^^ Avoid calling setState() directly within an effect
   15 |         }
-  16 |     }, [isOpen, rows.length]);
+  16 |     }, [isOpen]);
   17 |  react-hooks/set-state-in-effect
-
-/Users/bozoegg/Desktop/DreamBeesv11/src/components/AgeVerificationModal.jsx
-    2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   no-unused-vars
-  168:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
-
-Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
-* Update external systems with the latest state from React.
-* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
-
-Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
-
-  166 |         const shouldBeVisible = !!(currentUser && isProfileLoaded && !userProfile.birthday);
-  167 |         if (isVisible !== shouldBeVisible) {
-> 168 |             setIsVisible(shouldBeVisible);
-      |             ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
-  169 |         }
-  170 |     }, [currentUser, isProfileLoaded, userProfile.birthday, isVisible]);
-  171 |  react-hooks/set-state-in-effect
-
-/Users/bozoegg/Desktop/DreamBeesv11/src/components/AnimatedRoutes.jsx
-  3:27  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
-
-/Users/bozoegg/Desktop/DreamBeesv11/src/components/BookCard.jsx
-  3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
-
-/Users/bozoegg/Desktop/DreamBeesv11/src/components/BookReaderModal.jsx
-  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
-
-/Users/bozoegg/Desktop/DreamBeesv11/src/components/CommunityConsentModal.jsx
-   2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          no-unused-vars
-  16:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
-
-Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
-* Update external systems with the latest state from React.
-* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
-
-Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
-
-  14 |         const hasConsented = localStorage.getItem('feedConsentAccepted');
-  15 |         if (!hasConsented) {
-> 16 |             setIsVisible(prev => (!prev ? true : prev));
-     |             ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
-  17 |         }
-  18 |     }, []);
-  19 |  react-hooks/set-state-in-effect
 
 /Users/bozoegg/Desktop/DreamBeesv11/src/components/FeedPost.jsx
    24:64  error  'hidePost' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                           no-unused-vars
@@ -127,9 +82,6 @@ Calling setState synchronously within an effect body causes cascading renders th
   18:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
   20:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
 
-/Users/bozoegg/Desktop/DreamBeesv11/src/components/NetworkStatus.jsx
-  3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
-
 /Users/bozoegg/Desktop/DreamBeesv11/src/components/PerformanceTracker.jsx
   71:18  error  'e' is defined but never used  no-unused-vars
 
@@ -140,9 +92,8 @@ Calling setState synchronously within an effect body causes cascading renders th
   2:10  error  'formatTwitchCount' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
 
 /Users/bozoegg/Desktop/DreamBeesv11/src/components/generator/LoadingModal.jsx
-    2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   no-unused-vars
-   20:40  error  'prompt' is defined but never used. Allowed unused args must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   no-unused-vars
-   26:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+   21:40  error  'prompt' is defined but never used. Allowed unused args must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   no-unused-vars
+   27:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
 
 Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
 * Update external systems with the latest state from React.
@@ -150,22 +101,16 @@ Effects are intended to synchronize state between React and external systems suc
 
 Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
 
-  24 |     useEffect(() => {
-  25 |         if (showGraceMessage) {
-> 26 |             setGraceMessage(GRACE_MESSAGES[Math.floor(Math.random() * GRACE_MESSAGES.length)]);
+  25 |     useEffect(() => {
+  26 |         if (showGraceMessage) {
+> 27 |             setGraceMessage(GRACE_MESSAGES[Math.floor(Math.random() * GRACE_MESSAGES.length)]);
      |             ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
-  27 |         }
-  28 |     }, [showGraceMessage]);
-  29 |  react-hooks/set-state-in-effect
-   32:13  error  'setMessageIndex' is not defined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-undef
-   97:63  error  'messageIndex' is not defined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   no-undef
-  114:52  error  'messageIndex' is not defined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   no-undef
-
-/Users/bozoegg/Desktop/DreamBeesv11/src/components/generator/LoadingOrb.jsx
-  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
-
-/Users/bozoegg/Desktop/DreamBeesv11/src/components/generator/ResultModal.jsx
-  3:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  28 |         }
+  29 |     }, [showGraceMessage]);
+  30 |  react-hooks/set-state-in-effect
+   33:13  error  'setMessageIndex' is not defined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                no-undef
+   98:63  error  'messageIndex' is not defined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   no-undef
+  115:52  error  'messageIndex' is not defined                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   no-undef
 
 /Users/bozoegg/Desktop/DreamBeesv11/src/contexts/AuthContext.jsx
   140:8  warning  React Hook useEffect has a missing dependency: 'ensureUserInitialized'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
@@ -564,6 +509,6 @@ Calling setState synchronously within an effect body causes cascading renders th
    14:27  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                        no-unused-vars
   114:8   warning  React Hook useEffect has missing dependencies: 'appCreations' and 'productions'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
 
-✖ 181 problems (133 errors, 48 warnings)
+✖ 170 problems (122 errors, 48 warnings)
   0 errors and 19 warnings potentially fixable with the `--fix` option.
 

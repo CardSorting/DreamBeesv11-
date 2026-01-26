@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { WifiOff } from 'lucide-react';
+// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 
 export default function NetworkStatus() {

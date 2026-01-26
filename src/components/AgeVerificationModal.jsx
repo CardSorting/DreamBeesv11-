@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -152,7 +153,6 @@ export default function AgeVerificationModal() {
     const [year, setYear] = useState(2000);
 
     const [loading, setLoading] = useState(false);
-    const [isVisible, setIsVisible] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
     const days = useMemo(() => range(1, 31), []);
@@ -162,12 +162,10 @@ export default function AgeVerificationModal() {
         return range(currentYear - 100, currentYear).reverse();
     }, []);
 
-    useEffect(() => {
-        const shouldBeVisible = !!(currentUser && isProfileLoaded && !userProfile.birthday);
-        if (isVisible !== shouldBeVisible) {
-            setIsVisible(shouldBeVisible);
-        }
-    }, [currentUser, isProfileLoaded, userProfile.birthday, isVisible]);
+    const [dismissed, setDismissed] = useState(false);
+    const isVisible = useMemo(() => {
+        return !!(currentUser && isProfileLoaded && !userProfile.birthday) && !dismissed;
+    }, [currentUser, isProfileLoaded, userProfile.birthday, dismissed]);
 
     // Convert month name to number
     const monthNumber = useMemo(() => MONTH_NAMES.indexOf(month) + 1, [month]);
@@ -215,7 +213,7 @@ export default function AgeVerificationModal() {
             toast.success("Age verified successfully!");
 
             setTimeout(() => {
-                setIsVisible(false);
+                setDismissed(true);
             }, 2000);
         } catch (error) {
             console.error("Failed to update birthday:", error);

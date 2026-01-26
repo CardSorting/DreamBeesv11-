@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 import { X, Zap } from 'lucide-react';
 import LoadingOrb from './LoadingOrb';

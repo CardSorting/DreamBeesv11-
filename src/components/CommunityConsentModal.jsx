@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { Info, ShieldCheck, AlertCircle, ArrowRight, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -6,16 +7,11 @@ import { setConsent } from '../utils/analytics';
 
 export default function CommunityConsentModal() {
     const navigate = useNavigate();
-    const [isVisible, setIsVisible] = useState(false);
+    const [isVisible, setIsVisible] = useState(() => !localStorage.getItem('feedConsentAccepted'));
     const [checked1, setChecked1] = useState(false);
     const [checked2, setChecked2] = useState(false);
 
-    useEffect(() => {
-        const hasConsented = localStorage.getItem('feedConsentAccepted');
-        if (!hasConsented) {
-            setIsVisible(prev => (!prev ? true : prev));
-        }
-    }, []);
+    /* useEffect removed as logic is now in initial useState */
 
     const handleAccept = () => {
         if (checked1 && checked2) {

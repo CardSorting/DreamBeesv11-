@@ -10,10 +10,11 @@ const JsonImportModal = ({ isOpen, onClose, onImport }) => {
 
     // Reset when opening
     useEffect(() => {
-        if (isOpen && rows.length === 0) {
-            setRows([{ id: crypto.randomUUID(), prompt: '', style: ArtStyle.SIMPLE }]);
+        if (isOpen) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setRows(prev => (prev.length === 0 ? [{ id: crypto.randomUUID(), prompt: '', style: ArtStyle.SIMPLE }] : prev));
         }
-    }, [isOpen, rows.length]);
+    }, [isOpen]);
 
     if (!isOpen) return null;
 

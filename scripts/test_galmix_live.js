@@ -1,4 +1,5 @@
 
+/* global process */
 import { GalmixClient } from '../src/utils/GalmixClient.js';
 import path from 'path';
 import { fileURLToPath } from 'url';

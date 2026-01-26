@@ -1,3 +1,4 @@
+/* global process */
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, getDocs, query, orderBy } from "firebase/firestore";
 import dotenv from "dotenv";

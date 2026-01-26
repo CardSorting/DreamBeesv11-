@@ -1,11 +1,12 @@
+/* global process */
 import fetch from 'node-fetch';
 
 async function testGalmixUnauthenticated() {
     console.log("Testing GalMix unauthenticated generation request...");
-    
+
     // This assumes the function is running locally or at a known URL
     const functionUrl = process.env.GENERATE_API_URL || "http://localhost:5001/dreambees-alchemist/us-central1/api";
-    
+
     const payload = {
         data: {
             action: 'createGenerationRequest',
@@ -24,7 +25,7 @@ async function testGalmixUnauthenticated() {
         });
 
         const result = await response.json();
-        
+
         if (response.ok) {
             console.log("✓ Successfully created generation request!");
             console.log("Request ID:", result.result?.requestId);
