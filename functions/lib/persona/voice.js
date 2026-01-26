@@ -13,7 +13,7 @@ const CACHE_TTL_MS = 20 * 60 * 60 * 1000; // 20 Hours (Safety for 24h cleanup)
 /**
  * Polls the TTS API for job completion.
  */
-const pollForCompletion = async (jobId, attempts = 10) => {
+const pollForCompletion = async (jobId, attempts = 30) => {
     for (let i = 0; i < attempts; i++) {
         await new Promise(r => setTimeout(r, 1000)); // Wait 1s
         const res = await fetchWithRetry(`${JOBS_API_URL}/${jobId}`);

@@ -86,9 +86,11 @@ const PersonaChat = () => {
     const [showZapActions, setShowZapActions] = useState(false);
     const [isTheaterMode, setIsTheaterMode] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState('initialized'); // 'initialized', 'connecting', 'connected', 'disconnected', 'unavailable'
+    const [voiceQueue, setVoiceQueue] = useState([]);
+    const [isAiSpeaking, setIsAiSpeaking] = useState(false);
+    const audioVoiceRef = useRef(null);
 
     // Audio State
-    const [audioQueue, setAudioQueue] = useState([]);
     const [queueIndex, setQueueIndex] = useState(0);
     const audioRef = useRef(null);
 
@@ -345,6 +347,13 @@ const PersonaChat = () => {
                 }
             });
 
+            channel.bind('audio-update', (data) => {
+                if (data.audioUrl) {
+                    console.log("[AI Voice] Received audio update:", data);
+                    setVoiceQueue(prev => [...prev, data.audioUrl]);
+                }
+            });
+
             return () => {
                 pusher.unsubscribe(channelName);
                 pusher.disconnect();
@@ -497,6 +506,37 @@ const PersonaChat = () => {
             scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
         }
     }, [messages, isLoading, isSending]);
+
+    // AI Voice Playback & Ducking Logic
+    useEffect(() => {
+        if (voiceQueue.length > 0 && !isAiSpeaking) {
+            const nextUrl = voiceQueue[0];
+            setVoiceQueue(prev => prev.slice(1));
+            setIsAiSpeaking(true);
+
+            if (audioVoiceRef.current) {
+                audioVoiceRef.current.src = nextUrl;
+                audioVoiceRef.current.play().catch(e => console.error("Audio playback error:", e));
+            }
+        }
+    }, [voiceQueue, isAiSpeaking]);
+
+    // Background Music Ducking
+    useEffect(() => {
+        if (!audioRef.current) return;
+
+        if (isAiSpeaking) {
+            // Duck volume (e.g., to 20%)
+            audioRef.current.volume = (volume / 100) * 0.2;
+        } else {
+            // Restore volume
+            audioRef.current.volume = volume / 100;
+        }
+    }, [isAiSpeaking, volume]);
+
+    const handleAiAudioEnded = () => {
+        setIsAiSpeaking(false);
+    };
 
     const handleSend = async () => {
         if (!inputValue.trim() || isSending) return;
@@ -945,6 +985,11 @@ const PersonaChat = () => {
                     </div>
                 </div>
             </div>
+            <audio
+                ref={audioVoiceRef}
+                onEnded={handleAiAudioEnded}
+                style={{ display: 'none' }}
+            />
         </div>
     );
 };

@@ -69,6 +69,24 @@
     font-weight: bold;
     font-size: 0.8rem;
     width: fit-content;
+    animation: live-pulse 2s infinite ease-in-out;
+}
+
+@keyframes live-pulse {
+    0% {
+        background: #eb0400;
+        box-shadow: 0 0 0 0 rgba(235, 4, 0, 0.7);
+    }
+
+    70% {
+        background: #ff4d4d;
+        box-shadow: 0 0 0 10px rgba(235, 4, 0, 0);
+    }
+
+    100% {
+        background: #eb0400;
+        box-shadow: 0 0 0 0 rgba(235, 4, 0, 0);
+    }
 }
 
 .viewer-count {
@@ -84,8 +102,19 @@
 .view-dot {
     width: 6px;
     height: 6px;
-    background: #f00;
+    background: #adadb8;
+    /* Default grey */
     border-radius: 50%;
+    transition: background 0.3s ease;
+}
+
+.view-dot.online {
+    background: #00f593;
+    box-shadow: 0 0 8px #00f593;
+}
+
+.view-dot.offline {
+    background: #eb0400;
 }
 
 .twitch-back-btn {

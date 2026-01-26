@@ -46,7 +46,18 @@ export const processVoiceTask = async (req) => {
                 logger.error(`[VoiceWorker] Failed to get audioJobId for msg: ${messageId}`);
                 return;
             }
-            logger.info(`[VoiceWorker] TTS Job Submitted: ${audioJobId}`);
+            logger.info(`[VoiceWorker] TTS Job Submitted: ${audioJobId}. Polling for completion...`);
+
+            // 2a. Poll for completion to get the final audio (blocking worker)
+            try {
+                const jobResult = await Voice.pollForCompletion(audioJobId);
+                if (jobResult && jobResult.status === 'completed') {
+                    // The Modal API usually returns audio at /v1/jobs/{job_id}/audio
+                    audioUrl = `https://mariecoderinc--phantom-twitch-tts-fastapi-app-dev.modal.run/v1/jobs/${audioJobId}/audio`;
+                }
+            } catch (pollErr) {
+                logger.error(`[VoiceWorker] Polling failed for job: ${audioJobId}`, pollErr);
+            }
         }
 
         // 2. Update Firestore Message
