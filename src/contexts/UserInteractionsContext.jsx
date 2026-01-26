@@ -37,6 +37,7 @@ export function UserInteractionsProvider({ children }) {
     const [appGenerations, setAppGenerations] = useState([]); // from generation_queue
     const [personalCreations, setPersonalCreations] = useState([]); // from images
     const [mainstreamGenerations, setMainstreamGenerations] = useState([]);
+    const [sessionGenerations, setSessionGenerations] = useState(0);
 
     // User Profile Data (Centralized Sync)
     const [userProfile, setUserProfile] = useState({
@@ -190,6 +191,9 @@ export function UserInteractionsProvider({ children }) {
                 trackAhaMoment('first_generation_success');
             }
 
+            if (data.length > personalCreations.length) {
+                setSessionGenerations(prev => prev + (data.length - personalCreations.length));
+            }
             setPersonalCreations(data);
         }, (error) => {
             console.warn("Global images listener failed:", error);
@@ -229,13 +233,23 @@ export function UserInteractionsProvider({ children }) {
     // Sync user profile properties to GA
     useEffect(() => {
         if (isProfileLoaded && userProfile) {
+            const totalGens = personalCreations.length + mainstreamGenerations.length;
+            let maturity = 'newbie';
+            if (totalGens > 200) maturity = 'legend';
+            else if (totalGens > 50) maturity = 'artisan';
+            else if (totalGens > 10) maturity = 'creator';
+            else if (totalGens > 0) maturity = 'explorer';
+
             setUserProperties({
                 is_premium: !!userProfile.isPremium,
                 user_tier: userProfile.plan || (userProfile.isPremium ? 'premium' : 'free'),
-                join_date: userProfile.createdAt ? new Date(userProfile.createdAt.seconds * 1000).toISOString() : 'unknown'
+                join_date: userProfile.createdAt ? new Date(userProfile.createdAt.seconds * 1000).toISOString() : 'unknown',
+                total_generations: totalGens,
+                user_maturity: maturity,
+                session_generations: sessionGenerations
             });
         }
-    }, [userProfile, isProfileLoaded]);
+    }, [userProfile, isProfileLoaded, personalCreations.length, mainstreamGenerations.length, sessionGenerations]);
 
     // Helpers
     const isLiked = (id) => likedIds.has(id);

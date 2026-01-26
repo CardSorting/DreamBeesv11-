@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { setUserProperties, trackExperiment } from './utils/analytics';
+import { setUserProperties, trackExperiment, trackChurnSignal } from './utils/analytics';
 import { BrowserRouter as Router, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ModelProvider } from './contexts/ModelContext';
@@ -94,10 +94,20 @@ function App() {
       }
     }, 300000);
 
-    // Initial Experiment Assignment (Example)
-    trackExperiment('home_layout_v2', 'control');
+    // Exit Intent Tracking
+    const handleMouseLeave = (e) => {
+      if (e.clientY <= 0) {
+        trackChurnSignal('exit_intent', 'mouse_left_top', {
+          path: window.location.pathname
+        });
+      }
+    };
+    document.addEventListener('mouseleave', handleMouseLeave);
 
-    return () => clearInterval(heartbeat);
+    return () => {
+      clearInterval(heartbeat);
+      document.removeEventListener('mouseleave', handleMouseLeave);
+    };
   }, []);
 
   return (

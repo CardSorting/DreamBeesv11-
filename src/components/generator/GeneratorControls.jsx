@@ -3,7 +3,7 @@ import {
     Wand2, Loader2, X, Mic, MicOff, Paperclip, Sparkles, Share2, Trash2, Zap
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { trackEvent, trackSettingChange, trackSocialIntent } from '../../utils/analytics';
+import { trackEvent, trackSettingChange, trackSocialIntent, trackFeatureAdoption } from '../../utils/analytics';
 import { getOptimizedImageUrl } from '../../utils';
 import { STYLE_REGISTRY } from '../../data/styles';
 
@@ -82,6 +82,7 @@ export default function GeneratorControls({
                             onClick={() => {
                                 toggleListening();
                                 trackEvent('voice_input_toggle', { active: !isListening });
+                                if (!isListening) trackFeatureAdoption('voice_input');
                             }}
                             className={`btn-ghost ${isListening ? 'listening-pulse' : ''}`}
                             style={{
@@ -103,6 +104,7 @@ export default function GeneratorControls({
                             <button onClick={() => {
                                 handleAutoPrompt();
                                 trackEvent('image_analysis_start', { mode: generationMode });
+                                trackFeatureAdoption('image_analysis', { mode: generationMode });
                             }} className={`btn-ghost ${isAutoPrompting ? 'animate-pulse' : ''}`} title="Analyze image with Gemini to auto-generate a detailed prompt" disabled={isAutoPrompting} style={{ padding: '8px', borderRadius: '8px', color: 'var(--color-accent-primary)', transition: 'all 0.2s', background: 'rgba(var(--color-accent-rgb), 0.1)' }}>
                                 {isAutoPrompting ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                             </button>
@@ -138,6 +140,7 @@ export default function GeneratorControls({
                             onClick={() => {
                                 setUseTurbo(!useTurbo);
                                 trackSettingChange('use_turbo', !useTurbo);
+                                if (!useTurbo) trackFeatureAdoption('turbo_mode');
                             }}
                             className="btn-ghost"
                             title={useTurbo ? "Disable Turbo Mode" : "Enable Turbo Mode (H100)"}

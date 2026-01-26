@@ -48,7 +48,7 @@ export const trackPageView = (path, title) => {
  * @param {boolean} fatal - Whether the error was fatal.
  */
 export const trackException = (description, fatal = false) => {
-    if (typeof window.gtag === 'event') {
+    if (typeof window.gtag === 'function') {
         window.gtag('event', 'exception', {
             description: description,
             fatal: fatal,
@@ -290,5 +290,31 @@ export const trackFriction = (type, source, message) => {
         friction_type: type,
         friction_source: source,
         friction_message: message
+    });
+};
+
+/**
+ * Tracks adoption of specific professional features.
+ * @param {string} featureId - 'turbo_mode', 'aspect_ratio_unlock', etc.
+ * @param {Object} context - additional metadata about the usage.
+ */
+export const trackFeatureAdoption = (featureId, context = {}) => {
+    trackEvent('feature_adoption', {
+        feature_id: featureId,
+        ...context
+    });
+};
+
+/**
+ * Tracks high-risk signals indicating potential churn.
+ * @param {string} signalType - 'exit_intent', 'dormancy_warning', 'friction_abandonment'.
+ * @param {string} reason - description of the trigger.
+ * @param {Object} params - contextual data.
+ */
+export const trackChurnSignal = (signalType, reason, params = {}) => {
+    trackEvent('churn_risk_signal', {
+        signal_type: signalType,
+        reason: reason,
+        ...params
     });
 };

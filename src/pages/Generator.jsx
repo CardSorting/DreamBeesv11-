@@ -114,6 +114,9 @@ export default function Generator() {
 
     const updateParam = (key, val) => {
         trackSettingChange(key, val);
+        if (val !== undefined && val !== null && val !== '' && val !== -1) {
+            trackFeatureAdoption(`custom_${key}`, { value: val });
+        }
         setSearchParams(prev => {
             const next = new URLSearchParams(prev);
             if (val !== undefined && val !== null && val !== '' && val !== -1) {
