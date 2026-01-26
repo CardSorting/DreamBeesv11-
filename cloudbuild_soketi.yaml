@@ -1,0 +1,5 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/dreambees-alchemist/soketi-server', '-f', 'Dockerfile.soketi', '.']
+images:
+- 'gcr.io/dreambees-alchemist/soketi-server'
