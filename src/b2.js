@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 
 const B2_ENDPOINT = import.meta.env.VITE_B2_ENDPOINT;
 const B2_REGION = import.meta.env.VITE_B2_REGION;
@@ -37,5 +37,28 @@ export async function uploadImageToB2(blob, filename) {
     } catch (error) {
         console.error("Error uploading to Backblaze B2:", error);
         throw error;
+    }
+}
+
+export async function listAudioFiles(prefix = 'printeregg/ambient-audio/') {
+    try {
+        const command = new ListObjectsV2Command({
+            Bucket: B2_BUCKET,
+            Prefix: prefix,
+        });
+
+        const response = await s3Client.send(command);
+
+        if (!response.Contents) return [];
+
+        return response.Contents
+            .filter(item => item.Key.endsWith('.mp3') || item.Key.endsWith('.wav') || item.Key.endsWith('.ogg'))
+            .map(item => ({
+                key: item.Key,
+                url: `${B2_PUBLIC_URL}/${item.Key}`
+            }));
+    } catch (error) {
+        console.error("Error listing audio files from B2:", error);
+        return [];
     }
 }

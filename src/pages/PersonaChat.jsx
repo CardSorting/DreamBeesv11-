@@ -11,6 +11,7 @@ import { formatTwitchCount, getHypeMetadata } from '../utils/twitchHelpers';
 import SEO from '../components/SEO';
 import toast from 'react-hot-toast';
 import Pusher from 'pusher-js';
+import { listAudioFiles } from '../b2';
 import './PersonaChat.css';
 
 const Typewriter = ({ text, onUpdate }) => {
@@ -85,6 +86,12 @@ const PersonaChat = () => {
     const [isTheaterMode, setIsTheaterMode] = useState(false);
     const [showZapActions, setShowZapActions] = useState(false);
     const [isShaking, setIsShaking] = useState(false);
+
+    // Audio State
+    const [audioQueue, setAudioQueue] = useState([]);
+    const [queueIndex, setQueueIndex] = useState(0);
+    const audioRef = useRef(null);
+
     const [error, setError] = useState(null);
 
     const triggerShake = () => {
@@ -124,8 +131,55 @@ const PersonaChat = () => {
 
     useEffect(() => {
         isMounted.current = true;
+
+        // Initial Volume Set
+        if (audioRef.current) {
+            audioRef.current.volume = 0.3;
+        }
+
+        const fetchAudio = async () => {
+            const tracks = await listAudioFiles();
+            if (isMounted.current && tracks.length > 0) {
+                // Shuffle Array (Fisher-Yates)
+                for (let i = tracks.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [tracks[i], tracks[j]] = [tracks[j], tracks[i]];
+                }
+                setAudioQueue(tracks);
+                setQueueIndex(0);
+            }
+        };
+
+        fetchAudio();
+
         return () => { isMounted.current = false; };
     }, []);
+
+    // Handle Metadata load to set volume persistence
+    const handleAudioMetadata = () => {
+        if (audioRef.current) {
+            audioRef.current.volume = 0.3; // Cap at 30%
+        }
+    };
+
+    const handleTrackEnded = () => {
+        if (audioQueue.length === 0) return;
+
+        let nextIndex = queueIndex + 1;
+
+        // Reshuffle if end of queue
+        if (nextIndex >= audioQueue.length) {
+            const shuffled = [...audioQueue];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            setAudioQueue(shuffled);
+            setQueueIndex(0);
+        } else {
+            setQueueIndex(nextIndex);
+        }
+    };
 
     // Pusher / Soketi Subscription
     useEffect(() => {
@@ -663,6 +717,19 @@ const PersonaChat = () => {
                         <button onClick={() => navigate(-1)} className="twitch-back-btn" aria-label="Go back">
                             <ArrowLeft size={20} />
                         </button>
+
+                        {/* Hidden Background Audio Player */}
+                        {audioQueue.length > 0 && (
+                            <audio
+                                ref={audioRef}
+                                src={audioQueue[queueIndex]?.url}
+                                autoPlay
+                                loop={false}
+                                onEnded={handleTrackEnded}
+                                onLoadedMetadata={handleAudioMetadata}
+                                style={{ display: 'none' }}
+                            />
+                        )}
                     </div>
 
                     <div className="video-info-bar">
