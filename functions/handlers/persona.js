@@ -327,15 +327,8 @@ export const handleGiftPersona = async (request) => {
 
     if (!amount || amount <= 0) throw new HttpsError('invalid-argument', 'Invalid ZAP amount');
 
-    // Manually handle billing since amount is variable
-    await db.runTransaction(async (t) => {
-        const userRef = db.collection('users').doc(userId);
-        const userDoc = await t.get(userRef);
-        if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
-        const zaps = userDoc.data().zaps || 0;
-        if (zaps < amount) throw new HttpsError('resource-exhausted', `Insufficient Zaps. Need ${amount}.`);
-        t.update(userRef, { zaps: FieldValue.increment(-amount) });
-    });
+    // Use unified billing
+    await Billing.checkAndDeductZaps(userId, 'gift', amount);
 
     // Update Persona State
     const personaRef = db.collection('personas').doc(imageId);
@@ -395,14 +388,8 @@ export const handleTriggerAction = async (request) => {
     const userId = request.auth.uid;
     const userName = request.auth.token.name || 'Anonymous';
 
-    // Manual billing for action cost
-    await db.runTransaction(async (t) => {
-        const userRef = db.collection('users').doc(userId);
-        const userDoc = await t.get(userRef);
-        const zaps = userDoc.data().zaps || 0;
-        if (zaps < cost) throw new HttpsError('resource-exhausted', `Insufficient Zaps.`);
-        t.update(userRef, { zaps: FieldValue.increment(-cost) });
-    });
+    // Use unified billing
+    await Billing.checkAndDeductZaps(userId, actionId, cost);
 
     // Process Action
     const update = {};

@@ -256,6 +256,10 @@ const PersonaChat = () => {
                 }, 5000);
             });
 
+            channel.bind('pusher:member_removed', (member) => {
+                setViewerCount(prev => Math.max(0, prev - 1));
+            });
+
             channel.bind('celebration', (data) => {
                 triggerShake();
                 const newAlert = {

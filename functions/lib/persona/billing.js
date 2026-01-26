@@ -8,14 +8,16 @@ import { logger } from "../utils.js";
  * @param {string} action 'create' | 'chat'
  * @returns {Promise<number>} The amount of zaps deducted
  */
-export const checkAndDeductZaps = async (uid, action) => {
+export const checkAndDeductZaps = async (uid, action, customAmount = null) => {
     const db = getFirestore();
     const configDoc = await db.collection("sys_config").doc("persona").get();
     const config = configDoc.exists ? configDoc.data() : {};
 
     // Default Costs: Create = 5, Chat = 0.25
     let cost = 0;
-    if (action === 'create') {
+    if (customAmount !== null) {
+        cost = customAmount;
+    } else if (action === 'create') {
         cost = (config.cost_create !== undefined) ? Number(config.cost_create) : 5;
     } else if (action === 'chat') {
         cost = (config.cost_chat !== undefined) ? Number(config.cost_chat) : 0.25;
