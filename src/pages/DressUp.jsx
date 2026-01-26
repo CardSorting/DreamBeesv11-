@@ -224,7 +224,8 @@ export default function DressUp() {
             try {
                 const compressed = await compressImage(base64, 1024, 0.8);
                 setCurrentImage(compressed);
-            } catch (_err) {
+            } catch (err) {
+                console.error(err);
                 toast.error('Oops! Could not open that picture.');
             }
         };
@@ -545,7 +546,7 @@ export default function DressUp() {
                 <div className="items-grid">
                     {getCurrentItems()
                         .slice(page * 6, (page + 1) * 6)
-                        .map((item, index) => (
+                        .map((item, _index) => (
                             <button
                                 key={item}
                                 className="grid-item-btn"

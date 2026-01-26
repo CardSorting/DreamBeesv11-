@@ -7,7 +7,6 @@ import Sidebar from '../components/Sidebar';
 import FeedSwitcher from '../components/FeedSwitcher';
 import SuggestedPanel from '../components/SuggestedPanel';
 import { useModel } from '../contexts/ModelContext';
-// 10: Removed unused import
 // eslint-disable-next-line no-unused-vars -- motion.div is used as JSX element
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -19,7 +18,7 @@ import './Discovery.css'; // Re-use discovery styles
 export default function MockupFeed() {
     const navigate = useNavigate();
     const { availableModels } = useModel();
-    // 22: Removed unused variables
+
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [lastDoc, setLastDoc] = useState(null);

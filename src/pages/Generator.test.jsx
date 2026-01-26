@@ -92,7 +92,7 @@ const mockStyleRegistry = [
 
 vi.mock('../data/styles', () => ({
     STYLE_REGISTRY: mockStyleRegistry,
-    getStylePrompt: vi.fn((styleId, intensity) => ({
+    getStylePrompt: vi.fn((styleId, _intensity) => ({
         tags: [`${styleId}_tag`],
         negatives: []
     })),
@@ -101,14 +101,14 @@ vi.mock('../data/styles', () => ({
 
 describe('Generator - handleMagicEnhance', () => {
     let mockApi;
-    let mockOnSnapshot;
+    let _mockOnSnapshot;
 
     beforeEach(() => {
         vi.clearAllMocks();
 
         // Setup mock API
         mockApi = vi.fn();
-        mockOnSnapshot = vi.fn();
+        _mockOnSnapshot = vi.fn();
     });
 
     afterEach(() => {
@@ -164,9 +164,9 @@ describe('Generator - handleMagicEnhance', () => {
         });
 
         it('should show error when style is missing instructions', async () => {
-            const referenceImage = 'https://example.com/test-image.jpg';
-            const activeStyleId = 'test-style-no-instruction';
-            const styleObj = mockStyleRegistry.find(s => s.id === activeStyleId);
+            const _referenceImage = 'https://example.com/test-image.jpg';
+            const _activeStyleId = 'test-style-no-instruction';
+            const styleObj = mockStyleRegistry.find(s => s.id === _activeStyleId);
 
             expect(styleObj).toBeDefined();
             expect(styleObj.instruction).toBeFalsy();
@@ -174,15 +174,15 @@ describe('Generator - handleMagicEnhance', () => {
         });
 
         it('should handle transformImage API failure gracefully', async () => {
-            const referenceImage = 'https://example.com/test-image.jpg';
-            const activeStyleId = 'test-style-1';
+            const _referenceImage = 'https://example.com/test-image.jpg';
+            const _activeStyleId = 'test-style-1';
 
             mockApi.mockRejectedValue(new Error('API Error'));
 
             try {
                 await mockApi({
                     action: 'transformImage',
-                    imageUrl: referenceImage,
+                    imageUrl: _referenceImage,
                     styleName: 'Test Style 1',
                     intensity: 'medium',
                     instructions: 'Apply test style 1'
@@ -235,7 +235,7 @@ describe('Generator - handleMagicEnhance', () => {
         it('should transform prompt when prompt exists and no referenceImage', async () => {
             const prompt = 'A beautiful sunset';
             const referenceImage = null;
-            const activeStyleId = 'test-style-1';
+            const _activeStyleId = 'test-style-1';
 
             mockApi.mockResolvedValue({
                 data: {
@@ -284,7 +284,7 @@ describe('Generator - handleMagicEnhance', () => {
         it('should not transform prompt when referenceImage exists (priority check)', () => {
             const prompt = 'A beautiful sunset';
             const referenceImage = 'https://example.com/image.jpg';
-            const activeStyleId = 'test-style-1';
+            const _activeStyleId = 'test-style-1';
 
             // When referenceImage exists, prompt transformation should NOT be called
             // Image transformation takes priority
@@ -350,12 +350,12 @@ describe('Generator - handleMagicEnhance', () => {
         it('should prevent fallthrough from image transformation to prompt transformation', () => {
             const referenceImage = 'https://example.com/image.jpg';
             const prompt = 'test prompt';
-            const activeStyleId = 'test-style-1';
+            const _activeStyleId = 'test-style-1';
 
             // When referenceImage exists, even if prompt exists,
             // should only use image transformation path
             const hasValidReferenceImage = referenceImage && typeof referenceImage === 'string' && referenceImage.trim().length > 0;
-            const hasValidPrompt = prompt && typeof prompt === 'string' && prompt.trim().length > 0;
+            const _hasValidPrompt = prompt && typeof prompt === 'string' && prompt.trim().length > 0;
 
             // Priority check: referenceImage takes precedence
             if (hasValidReferenceImage) {
@@ -416,7 +416,7 @@ describe('Generator - handleMagicEnhance', () => {
     describe('Error Handling', () => {
         it('should handle API errors without silent fallthrough', async () => {
             const referenceImage = 'https://example.com/image.jpg';
-            const activeStyleId = 'test-style-1';
+            const _activeStyleId = 'test-style-1';
 
             mockApi.mockRejectedValue(new Error('Network error'));
 
@@ -461,7 +461,7 @@ describe('Generator - handleMagicEnhance', () => {
                 }
             ];
 
-            errorCases.forEach(({ scenario, expectedError }) => {
+            errorCases.forEach(({ _scenario, expectedError }) => {
                 expect(expectedError).toBeTruthy();
                 // In actual component, these should trigger appropriate error toasts
             });

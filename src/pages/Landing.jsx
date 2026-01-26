@@ -729,30 +729,33 @@ const demoAngel = landingAssets['ethereal_clockwork_angel_ascending_over_foggy_v
 const demoLibrary = landingAssets['infinite_arcane_library_with_spiraling_towers_of.jpeg'];
 const demoPhoenix = landingAssets['majestic_cosmic_phoenix_formed_from_supernova_stardust.jpeg'];
 
+// Demo data moved outside to fix exhaustive-deps
+const INTERACTIVE_DEMOS = [
+    {
+        prompt: "Ethereal Clockwork Angel ascending over foggy Victorian London, intricate brass gears, radiant golden wings, divine volumetric lighting, atmospheric depth, cinematic composition, 8k resolution, unreal engine 5 render, steampunk masterpiece",
+        image: demoAngel,
+        model: "SDXL Turbo",
+        seed: "CHRONOS_01",
+        time: "0.8s"
+    },
+    {
+        prompt: "Infinite Arcane Library with spiraling towers of floating grimoires, bioluminescent runes, swirling stardust, mystical atmosphere, photorealistic wood textures, deep depth of field, fantasy concept art, trending on ArtStation",
+        image: demoLibrary,
+        model: "Flux Pro",
+        seed: "AKASHIC_V9",
+        time: "1.2s"
+    },
+    {
+        prompt: "Majestic Cosmic Phoenix formed from supernova stardust, wings of molten solar plasma, vibrant nebula colors, deep space backdrop, hyper-realistic, dramatic lighting, epic scale, 8k, sharp focus, raytraced global illumination",
+        image: demoPhoenix,
+        model: "SDXL 1.0",
+        seed: "SOLARIS_X",
+        time: "0.9s"
+    }
+];
+
 function InteractiveDemo() {
-    const demos = [
-        {
-            prompt: "Ethereal Clockwork Angel ascending over foggy Victorian London, intricate brass gears, radiant golden wings, divine volumetric lighting, atmospheric depth, cinematic composition, 8k resolution, unreal engine 5 render, steampunk masterpiece",
-            image: demoAngel,
-            model: "SDXL Turbo",
-            seed: "CHRONOS_01",
-            time: "0.8s"
-        },
-        {
-            prompt: "Infinite Arcane Library with spiraling towers of floating grimoires, bioluminescent runes, swirling stardust, mystical atmosphere, photorealistic wood textures, deep depth of field, fantasy concept art, trending on ArtStation",
-            image: demoLibrary,
-            model: "Flux Pro",
-            seed: "AKASHIC_V9",
-            time: "1.2s"
-        },
-        {
-            prompt: "Majestic Cosmic Phoenix formed from supernova stardust, wings of molten solar plasma, vibrant nebula colors, deep space backdrop, hyper-realistic, dramatic lighting, epic scale, 8k, sharp focus, raytraced global illumination",
-            image: demoPhoenix,
-            model: "SDXL 1.0",
-            seed: "SOLARIS_X",
-            time: "0.9s"
-        }
-    ];
+    const demos = INTERACTIVE_DEMOS;
 
     const [index, setIndex] = useState(0);
     const [displayedPrompt, setDisplayedPrompt] = useState("");
@@ -765,7 +768,7 @@ function InteractiveDemo() {
         const currentDemo = demos[index];
 
         if (isTyping) {
-            setShowStatus(false);
+            setShowStatus(false); // eslint-disable-line react-hooks/set-state-in-effect
             if (displayedPrompt.length < currentDemo.prompt.length) {
                 timeout = setTimeout(() => {
                     setDisplayedPrompt(currentDemo.prompt.slice(0, displayedPrompt.length + 1));

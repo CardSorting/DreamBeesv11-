@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 // motion.div is used for fullscreen view
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { Toaster, toast } from 'react-hot-toast';
 import { trackEvent, trackSettingChange, trackFeatureAdoption } from '../utils/analytics';
 
@@ -141,7 +141,9 @@ export default function Generator() {
     // Timer Logic
     useEffect(() => {
         if (!generating) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             _setElapsedTime(prev => (prev !== 0 ? 0 : prev));
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             _setProgress(prev => (prev !== 0 ? 0 : prev));
             return;
         }
@@ -180,7 +182,7 @@ export default function Generator() {
     // Open Modal when generation completes (generatedImage changes and not generating)
     useEffect(() => {
         if (generatedImage && !generating) {
-            setIsResultModalOpen(true);
+            setIsResultModalOpen(true); // eslint-disable-line react-hooks/set-state-in-effect
         }
     }, [generatedImage, generating]);
 
