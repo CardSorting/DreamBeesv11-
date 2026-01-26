@@ -3,6 +3,7 @@ FROM quay.io/soketi/soketi:latest-16-alpine
 # Soketi uses SOKETI_PORT to determine which port to listen on.
 # Cloud Run provides the PORT environment variable, so we explicitly set SOKETI_PORT.
 ENV SOKETI_PORT=8080
+ENV SOKETI_ADDRESS=0.0.0.0
 
 # Performance/Stability Environment Variables
 ENV SOKETI_DEBUG=0
