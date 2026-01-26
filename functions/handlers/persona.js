@@ -69,10 +69,12 @@ export const handleChatPersona = async (request) => {
         }
 
         // 4. Gather Context
-        const [serverHistory, supporterData, relationshipContext] = await Promise.all([
+        // 4. Gather Context
+        const [serverHistory, supporterData, relationshipContext, loreContext] = await Promise.all([
             Context.fetchServerHistory(imageId),
             Context.fetchSupporters(imageId),
-            Context.fetchUserMemory(imageId, userId, userName)
+            Context.fetchUserMemory(imageId, userId, userName),
+            Context.fetchLore(imageId)
         ]);
 
         const historyWithVIPs = serverHistory.map(msg => {
@@ -99,15 +101,17 @@ export const handleChatPersona = async (request) => {
             hypeLevel: currentHype,
             currentVibe: persona.currentVibe,
             supporterContext: supporterData.context,
-            relationshipContext
+            relationshipContext,
+            loreContext
         });
 
         // Engagement Hook
-        if (currentHype < 3) {
-            systemPrompt += "\nThe room is getting quiet (Low Hype). Ask a provocative question, start a debate, or tell a short story to drive engagement. Do not let the air go dead.\n\nCRITICAL: Occasionally include a line starting with 'TITLE:' followed by a new creative stream title. Also, occasionally include a line starting with 'REACTION:' followed by a single emoji. You can ACTION pose changes with 'ACTION:'. You can REMEMBER facts with 'REMEMBER:'.";
-        } else {
-            systemPrompt += "\n\nCRITICAL: Occasionally include a line starting with 'TITLE:' followed by a new creative stream title. Also, occasionally include a line starting with 'REACTION:' followed by a single emoji. You can ACTION pose changes with 'ACTION:'. You can REMEMBER facts with 'REMEMBER:'.";
-        }
+        // Engagement Hook (MOVED TO BRAIN.JS via CURRENT MISSION)
+        // We still keep the CRITICAL instructions for formatting relative to tool usage instructions,
+        // although brain.js output format should cover it. Let's keep the tool instructions just in case
+        // but remove the "Ask a provocative question" part since the MicroGoal covers it.
+
+        systemPrompt += "\n\nCRITICAL: Occasionally include a line starting with 'TITLE:' followed by a new creative stream title. Also, occasionally include a line starting with 'REACTION:' followed by a single emoji.";
 
         // 6. Generate (The Brain)
         const generatedText = await Brain.generateResponse(systemPrompt, historyWithVIPs, currentMsgFormatted);
@@ -131,6 +135,10 @@ export const handleChatPersona = async (request) => {
 
         if (metadata.memory) {
             await Store.saveUserMemory(imageId, userId, metadata.memory);
+        }
+
+        if (metadata.lore) {
+            await Store.saveLore(imageId, metadata.lore);
         }
 
         // 9. Persist & Broadcast AI Reply
@@ -158,7 +166,13 @@ export const handleChatPersona = async (request) => {
             lastActivity: FieldValue.serverTimestamp()
         });
 
-        await Store.logInteraction({ userId, imageId, userMessage: message, modelReply: cleanText });
+        await Store.logInteraction({
+            userId,
+            imageId,
+            userMessage: message,
+            modelReply: cleanText,
+            thought: metadata.thought || null
+        });
 
         return { reply: cleanText };
 
@@ -244,6 +258,33 @@ export const handleCreatePersona = async (request) => {
         };
 
         await personaRef.set(personaData);
+
+        // --- SEEDING (Database Correctness) ---
+        // 1. Seed Lore (The Backstory is the first Canon Myth)
+        const initialLore = `Origin: ${generated.backstory.replace(/\n/g, ' ')}`;
+        await Store.saveLore(imageId, initialLore);
+
+        // 2. Seed History (Welcome Message)
+        const welcomeMsg = {
+            uid: 'system',
+            displayName: 'System',
+            text: `Stream started! Say hi to ${generated.name}!`,
+            role: 'system',
+            type: 'system'
+        };
+        await Store.saveMessage(imageId, welcomeMsg);
+
+        // 3. Seed Creator as VIP (First Supporter)
+        // We write to 'top_supporters' manually to seed the collection
+        await personaRef.collection('top_supporters').doc(userId).set({
+            displayName: 'Creator', // Request didn't provide creator name, default to Creator or fetch from auth if available? 
+            // Actually, we don't have creator name easily here without parsing header token again or passing it. 
+            // Let's skip name update since fetchSupporters handles it, or just set it to 'Creator' for now.
+            // Better: 'Stream God' (Flavor).
+            totalZaps: 0,
+            lastZap: FieldValue.serverTimestamp()
+        });
+
         return { success: true, persona: personaData, isNew: true };
 
     } catch (e) {

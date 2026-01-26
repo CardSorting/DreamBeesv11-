@@ -4,6 +4,26 @@ import { logger } from "../utils.js";
 const db = getFirestore();
 
 /**
+ * Fetches recent Global Lore (Shared Mythology).
+ */
+export const fetchLore = async (imageId) => {
+    try {
+        const snap = await db.collection('personas').doc(imageId).collection('lore')
+            .orderBy('timestamp', 'desc')
+            .limit(5)
+            .get();
+
+        if (snap.empty) return "";
+
+        const facts = snap.docs.map(d => d.data().fact);
+        return `SHARED MYTHOLOGY (LORE):\n${facts.map(f => `- ${f}`).join('\n')}`;
+    } catch (e) {
+        logger.warn(`[Context] Failed to fetch lore`, e);
+        return "";
+    }
+};
+
+/**
  * Fetches server-side shared history (The Commons).
  */
 export const fetchServerHistory = async (personaId) => {

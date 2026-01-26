@@ -56,3 +56,18 @@ export const logInteraction = async (data) => {
         logger.error(`[Store] Failed to log interaction`, e);
     }
 };
+
+/**
+ * Saves a Global Lore fact (Shared Mythology).
+ */
+export const saveLore = async (personaId, fact) => {
+    try {
+        await db.collection('personas').doc(personaId).collection('lore').add({
+            fact,
+            timestamp: FieldValue.serverTimestamp()
+        });
+        logger.info(`[Store] Canonized Lore for ${personaId}: ${fact}`);
+    } catch (e) {
+        logger.error(`[Store] Failed to save lore`, e);
+    }
+};
