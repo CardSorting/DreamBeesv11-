@@ -31,7 +31,6 @@ export default function Navbar() {
         { path: '/generate', label: 'Studio', icon: Zap },
         { path: '/models', label: 'Engine', icon: Settings },
         { path: '/gallery', label: 'Gallery', icon: LayoutGrid },
-        { path: '/karaoke', label: 'Karaoke', icon: Music },
         { path: '/dressup', label: 'Dress Up', icon: Sparkles },
         { path: '/slideshow', label: 'Infographic', icon: Presentation },
         { path: '/pricing', label: 'Refill', icon: Hexagon },
@@ -39,7 +38,7 @@ export default function Navbar() {
 
     const isAdmin = currentUser?.uid === 'prT9j3royVTstWLDDcKMoUOU7aQ2';
 
-    const limitWidth = ['/dressup', '/karaoke', '/generate', '/slideshow', '/apps'].includes(location.pathname) || location.pathname.startsWith('/chat');
+    const limitWidth = ['/dressup', '/generate', '/slideshow', '/apps'].includes(location.pathname) || location.pathname.startsWith('/chat');
     const isModelFeed = /^\/model\/[^/]+\/feed$/.test(location.pathname);
     const isGlobalFeed = location.pathname === '/';
 

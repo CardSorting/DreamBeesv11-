@@ -19,7 +19,6 @@ export const ZAP_COSTS = {
     IMAGE_ANALYSIS: 0.5,
     IMAGE_ENHANCE: 1.0,
     IMAGE_TRANSFORM: 0.5,            // Gemini-based transformation
-    LYRICS_GENERATION: 3.0,
     MEOWACC: 0.5,
 
     // Ecommerce & Tools

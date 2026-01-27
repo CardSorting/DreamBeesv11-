@@ -15,17 +15,6 @@ const db = admin.firestore();
 
 const APPS = [
     {
-        id: "karaoke-party",
-        title: "Karaoke Party",
-        description: "Sing your heart out with visual effects that react to your voice.",
-        icon: "Music",
-        path: "/karaoke",
-        color: "violet",
-        tags: ["Music & Audio"],
-        rating: "4.9",
-        order: 1
-    },
-    {
         id: "magic-wardrobe",
         title: "Magic Wardrobe",
         description: "Try on digital outfits instantly. Your style, reimagined.",
@@ -70,17 +59,6 @@ const APPS = [
         order: 5
     },
     {
-        id: "beat-maker",
-        title: "Beat Maker",
-        description: "Compose lofi beats in seconds.",
-        icon: "Music",
-        path: "/karaoke",
-        color: "amber",
-        tags: ["Music"],
-        rating: "4.5",
-        order: 6
-    },
-    {
         id: "icon-gen",
         title: "Icon Gen",
         description: "Create app icons with AI.",
@@ -123,17 +101,6 @@ const APPS = [
         tags: ["Productivity"],
         rating: "4.6",
         order: 10
-    },
-    {
-        id: "sound-labs",
-        title: "Sound Labs",
-        description: "Experiment with synthetic audio.",
-        icon: "Music",
-        path: "/",
-        color: "sky",
-        tags: ["Music"],
-        rating: "4.8",
-        order: 11
     },
     {
         id: "dev-tools",

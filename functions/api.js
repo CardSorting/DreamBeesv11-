@@ -165,7 +165,6 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
             case 'createEnhanceRequest': return Transformation.handleCreateEnhanceRequest(request);
             case 'transformPrompt': return Transformation.handleTransformPrompt(request);
             case 'transformImage': return Transformation.handleTransformImage(request);
-            case 'generateLyrics': return Transformation.handleGenerateLyrics(request);
             case 'meowaccTransform': return Transformation.handleMeowaccTransform(request);
 
             // Billing

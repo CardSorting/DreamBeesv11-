@@ -31,7 +31,6 @@ const Contact = lazyRetry(() => import('../pages/Contact'));
 const UserProfile = lazyRetry(() => import('../pages/UserProfile'));
 const BlogPost = lazyRetry(() => import('../pages/BlogPost'));
 const Blog = lazyRetry(() => import('../pages/Blog'));
-const KaraokeGenie = lazyRetry(() => import('../pages/KaraokeGenie'));
 const DressUp = lazyRetry(() => import('../pages/DressUp'));
 const Slideshow = lazyRetry(() => import('../pages/Slideshow'));
 const AppsHub = lazyRetry(() => import('../pages/AppsHub'));
@@ -176,9 +175,6 @@ const AnimatedRoutes = () => {
                             <Route path="/showcase" element={<Showcase />} />
 
                             <Route path="/apps" element={<AppsHub />} />
-                            <Route path="/karaoke" element={
-                                <PrivateRoute><KaraokeGenie /></PrivateRoute>
-                            } />
                             <Route path="/dressup" element={
                                 <PrivateRoute><DressUp /></PrivateRoute>
                             } />
