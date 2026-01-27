@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Hexagon, Home, Compass, Zap, Film, User, Plus, Image, ArrowLeft, LogOut, LayoutGrid } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { trackNavigationPath } from '../utils/analytics';
@@ -101,7 +102,18 @@ const MinimalHeader = () => {
                                 onClick={() => trackNavigationPath('/pricing', activePath)}
                             >
                                 <Zap size={14} fill="currentColor" className="zap-icon" />
-                                <span className="credit-amount">{formatZaps(zaps)}</span>
+                                <AnimatePresence mode="wait">
+                                    <motion.span
+                                        key={zaps}
+                                        initial={{ opacity: 0.5, scale: 0.9, y: 5 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 1.1, y: -5 }}
+                                        transition={{ duration: 0.2, ease: "easeOut" }}
+                                        className="credit-amount"
+                                    >
+                                        {formatZaps(zaps)}
+                                    </motion.span>
+                                </AnimatePresence>
                                 <div className="add-btn">
                                     <Plus size={12} />
                                 </div>

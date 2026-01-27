@@ -13,7 +13,9 @@ export function useMagicEnhance({
     generatedImage, setGeneratedImage,
     activeJob, setActiveJob,
     styleIntensity,
-    handleGenerate // Callback to trigger standard generation if needed
+    handleGenerate, // Callback to trigger standard generation if needed
+    deductZapsOptimistically,
+    rollbackZaps
 }) {
     const [isEnhancing, setIsEnhancing] = useState(false);
     const [enhanceStatus, setEnhanceStatus] = useState(''); // 'transforming', 'enhancing', 'uploading', etc.
@@ -78,6 +80,9 @@ export function useMagicEnhance({
 
                 setEnhanceStatus('Transforming image...');
                 toast.loading(`✨ Starting ${styleObj.label} transformation...`, { id: 'style-magic' });
+
+                const cost = 0.5; // IMAGE_TRANSFORM
+                if (deductZapsOptimistically) deductZapsOptimistically(cost);
 
                 try {
                     let processedImage = currentReferenceImage;
@@ -145,6 +150,9 @@ export function useMagicEnhance({
                         throw new Error("Transformation failed to return an image");
                     }
                 } catch (error) {
+                    const cost = 0.5; // IMAGE_TRANSFORM
+                    if (rollbackZaps) rollbackZaps(cost);
+
                     console.error("[handleMagicEnhance] transformImage error:", error);
                     let errorMessage = error.message || "Failed to transform image";
                     if (errorMessage.includes('INVALID_ARGUMENT') || errorMessage.includes('too large')) {
@@ -209,6 +217,9 @@ export function useMagicEnhance({
 
                 // 3. Standard Magic Enhance (No Style)
                 try {
+                    const cost = 1.0; // IMAGE_ENHANCE
+                    if (deductZapsOptimistically) deductZapsOptimistically(cost);
+
                     const result = await api({ action: 'createEnhanceRequest', prompt: currentPrompt });
                     const requestId = result.data.requestId;
 
@@ -273,6 +284,9 @@ export function useMagicEnhance({
                     });
                     listenerRef.current = unsubscribe;
                 } catch (error) {
+                    const cost = 1.0; // IMAGE_ENHANCE
+                    if (rollbackZaps) rollbackZaps(cost);
+
                     console.error("Enhance request error", error);
                     toast.error("Failed to enhance prompt", { id: 'style-magic' });
                     setIsEnhancing(false);

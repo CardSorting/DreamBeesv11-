@@ -5,7 +5,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 import { compressImage } from '../../utils';
 
-export function useAutoPrompt(prompt, setPrompt, referenceImage, setReferenceImage, generationMode) {
+export function useAutoPrompt(prompt, setPrompt, referenceImage, setReferenceImage, generationMode, { deductZapsOptimistically, rollbackZaps } = {}) {
     const [isAutoPrompting, setIsAutoPrompting] = useState(false);
     const listenerRef = useRef(null);
 
@@ -39,6 +39,9 @@ export function useAutoPrompt(prompt, setPrompt, referenceImage, setReferenceIma
         const clearProgressTimers = () => progressTimers.forEach(timer => clearTimeout(timer));
 
         try {
+            const cost = 0.5; // IMAGE_ANALYSIS
+            if (deductZapsOptimistically) deductZapsOptimistically(cost);
+
             toast.loading("Starting analysis...", { id: 'auto-prompt' });
 
             // const api = httpsCallable(functions, 'api', { timeout: 540000 });
@@ -119,6 +122,9 @@ export function useAutoPrompt(prompt, setPrompt, referenceImage, setReferenceIma
             }, 180000);
 
         } catch (error) {
+            const cost = 0.5;
+            if (rollbackZaps) rollbackZaps(cost);
+
             clearProgressTimers();
             console.error("Auto prompt error", error);
             toast.error(`Failed to start analysis: ${error.message}`, { id: 'auto-prompt' });

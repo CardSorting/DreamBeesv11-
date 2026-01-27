@@ -5,10 +5,14 @@ import { Zap, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import toast from 'react-hot-toast';
 import BeeCrateScene from '../MockupStudio/BeeCrateScene';
+import { useUserInteractions } from '../../contexts/UserInteractionsContext';
+import { calculateZapCost } from '../../constants/zapCosts';
 
 export default function AvatarForgeMint() {
     const { currentUser } = useAuth();
     const { call: apiCall } = useApi();
+    const { userProfile, deductZapsOptimistically, rollbackZaps } = useUserInteractions();
+    const zaps = userProfile?.zaps || 0;
 
     const [appState, setAppState] = useState('IDLE'); // IDLE, SPINNING, PRIZE
     const [prize, setPrize] = useState(null);
@@ -20,6 +24,16 @@ export default function AvatarForgeMint() {
 
         setIsMinting(true);
         setAppState('SPINNING');
+
+        const cost = 2;
+        if (zaps < cost) {
+            toast.error(`Insufficient Zaps ⚡ (Need ${cost})`);
+            setIsMinting(false);
+            setAppState('IDLE');
+            return;
+        }
+
+        deductZapsOptimistically(cost);
         const toastId = toast.loading("Disconnecting Reality...");
 
         try {
@@ -38,8 +52,9 @@ export default function AvatarForgeMint() {
             }
         } catch (error) {
             console.error("Mint failed:", error);
+            rollbackZaps(2);
             setAppState('IDLE');
-            toast.error(error.message || "Minting failed. No Zaps were spent.", { id: toastId });
+            toast.error(error.message || "Minting failed. Rollback applied.", { id: toastId });
         } finally {
             setIsMinting(false);
         }
@@ -70,7 +85,8 @@ export default function AvatarForgeMint() {
                                 <button
                                     className="forge-crank-btn"
                                     onClick={handleMint}
-                                    disabled={isMinting}
+                                    disabled={isMinting || zaps < 2}
+                                    title={zaps < 2 ? "Insufficient Zaps ⚡" : ""}
                                 >
                                     IGNITE FORGE
                                 </button>

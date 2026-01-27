@@ -10,6 +10,7 @@ import { MOCKUP_ITEMS, MOCKUP_PRESETS, TCG_ITEMS, TCG_PRESETS, DOLL_ITEMS, DOLL_
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { db, FieldValue } from "../firebaseInit.js";
 import { HttpsError } from "firebase-functions/v2/https";
+import { ZAP_COSTS } from "../lib/costs.js";
 
 // ESM __dirname fix
 const __filename = fileURLToPath(import.meta.url);

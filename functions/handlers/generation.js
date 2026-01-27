@@ -86,7 +86,7 @@ export const handleCreateGenerationRequest = async (request) => {
                 const effectiveZaps = (userData.zaps || 0);
                 if (effectiveZaps < cost && cost > 0) throw new HttpsError('resource-exhausted', `Insufficient Zaps.`);
 
-                if (cost > 0) t.update(userRef, { zaps: effectiveZaps - cost, lastGenerationTime: new Date() });
+                if (cost > 0) t.update(userRef, { zaps: FieldValue.increment(-cost), lastGenerationTime: new Date() });
 
                 t.set(queueRef, {
                     userId: uid, prompt: cleanPrompt, negative_prompt: negative_prompt || "", modelId: modelId || "wai-illustrious",

@@ -59,7 +59,7 @@ const LOADING_MSG = "MAKING MAGIC...";
 
 export default function DressUp() {
     const { currentUser } = useAuth();
-    const { userProfile, deductZapsOptimistically } = useUserInteractions(); // Centralized
+    const { userProfile, deductZapsOptimistically, rollbackZaps } = useUserInteractions(); // Centralized
     const [currentImage, setCurrentImage] = useState(null); // base64
     const [searchParams, setSearchParams] = useSearchParams();
     const viewParam = searchParams.get('view') || 'main';
@@ -297,11 +297,10 @@ export default function DressUp() {
 
         setGenerating(true);
 
-        const cost = zaps < 0.5 ? 0.5 : ZAP_COSTS.DRESS_UP; // Simplistic local check, but better to use calculate
-        // Actually for dress-up, it's pretty fixed.
+        const cost = ZAP_COSTS.DRESS_UP || 0.5;
 
         try {
-            if (deductZapsOptimistically) deductZapsOptimistically(ZAP_COSTS.DRESS_UP || 0.5);
+            if (deductZapsOptimistically) deductZapsOptimistically(cost);
             // const api = httpsCallable(functions, 'api');
             let prompt = "";
 
@@ -384,11 +383,11 @@ export default function DressUp() {
             }
         } catch (error) {
             console.error(error);
-            // Handled by useApi mostly
-            // If zaps error, handled. If other error, also handled.
+            const cost = ZAP_COSTS.DRESS_UP || 0.5;
+            if (rollbackZaps) rollbackZaps(cost);
 
             // Only stop generating if we didn't start a listener (listener handles it on success/fail)
-            if (!error.message.includes('No Request ID')) { // Assuming apiCall might throw specific error
+            if (!error.message?.includes('No Request ID')) {
                 setGenerating(false);
             }
         }

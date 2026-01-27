@@ -18,7 +18,8 @@ export function useGenerationLogic({
     aspectRatio, steps, cfg, seed, useTurbo,
     zaps, reels: _reels, subscriptionStatus,
     setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId, setActiveJob,
-    deductZapsOptimistically
+    deductZapsOptimistically,
+    rollbackZaps
 }) {
     // Track timing
     const startTimeRef = useRef(null);
@@ -261,6 +262,14 @@ export function useGenerationLogic({
 
         } catch (error) {
             console.error("[handleGenerate] CAUGHT ERROR:", error);
+            const cost = calculateZapCost('IMAGE_GENERATION', {
+                subscriptionStatus,
+                modelId: selectedModel.id,
+                useTurbo
+            });
+            if (cost > 0 && rollbackZaps) {
+                rollbackZaps(cost);
+            }
             setGenerating(false);
             const errorMessage = error.message || "Failed to create generation request";
             toast.error(errorMessage, { id: 'gen-image' });

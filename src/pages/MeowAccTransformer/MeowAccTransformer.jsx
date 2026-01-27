@@ -9,6 +9,8 @@ import { fileToBase64 } from './utils/imageUtils';
 import { generateFullDeck } from './utils/pokerUtils';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import toast from 'react-hot-toast';
+import { useUserInteractions } from '../../contexts/UserInteractionsContext';
+import { ZAP_COSTS } from '../../constants/zapCosts';
 import './MeowAccTransformer.css';
 
 const AppState = {
@@ -30,12 +32,21 @@ const MeowAccTransformer = () => {
     const [singleResult, setSingleResult] = useState(null);
     const [error, setError] = useState(null);
     const [mode, setMode] = useState('standard');
+    const { userProfile, deductZapsOptimistically, rollbackZaps } = useUserInteractions();
+    const zaps = userProfile?.zaps || 0;
 
     const handleImageSelect = async (file) => {
         try {
             setError(null);
             const base64 = await fileToBase64(file);
 
+            const cost = ZAP_COSTS.MEOWACC || 0.5;
+            if (zaps < cost) {
+                toast.error(`Insufficient Zaps ⚡ (Need ${cost})`);
+                return;
+            }
+
+            deductZapsOptimistically(cost);
             setAppState(AppState.LOADING);
             const originalUrl = URL.createObjectURL(file);
 
@@ -72,6 +83,9 @@ const MeowAccTransformer = () => {
 
         } catch (err) {
             console.error(err);
+            const cost = ZAP_COSTS.MEOWACC || 0.5;
+            if (rollbackZaps) rollbackZaps(cost);
+
             const msg = err.message || "Something went wrong while reimagining your image.";
             setError(msg);
             setAppState(AppState.ERROR);
@@ -243,7 +257,16 @@ const MeowAccTransformer = () => {
                         {appState === AppState.IDLE && (
                             <div className="flex flex-col items-center animate-fade-in">
                                 <div className="w-full max-w-xl">
-                                    <ImageUpload onImageSelect={handleImageSelect} isLoading={false} />
+                                    <ImageUpload
+                                        onImageSelect={handleImageSelect}
+                                        isLoading={false}
+                                        disabled={zaps < (ZAP_COSTS.MEOWACC || 0.5)}
+                                    />
+                                    {zaps < (ZAP_COSTS.MEOWACC || 0.5) && (
+                                        <p className="text-red-400 text-sm mt-2 text-center font-bold">
+                                            Insufficient Zaps (Need 0.5⚡)
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6 text-center">

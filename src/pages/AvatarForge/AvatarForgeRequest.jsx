@@ -3,6 +3,8 @@ import { useApi } from '../../hooks/useApi';
 import { Sparkles, Upload, X, Zap, ChevronRight, Image as ImageIcon, Wand2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import toast from 'react-hot-toast';
+import { useUserInteractions } from '../../contexts/UserInteractionsContext';
+import { calculateZapCost } from '../../constants/zapCosts';
 
 const INSPIRATIONS = [
     "Cyberpunk Samurai with Neon Katanas",
@@ -15,6 +17,8 @@ const INSPIRATIONS = [
 
 export default function AvatarForgeRequest() {
     const { call: apiCall } = useApi();
+    const { userProfile, deductZapsOptimistically, rollbackZaps } = useUserInteractions();
+    const zaps = userProfile?.zaps || 0;
     const [prompt, setPrompt] = useState('');
     const [referenceImage, setReferenceImage] = useState(null);
     const [showRefUpload, setShowRefUpload] = useState(false);
@@ -40,6 +44,13 @@ export default function AvatarForgeRequest() {
     const handleForgeRequest = async () => {
         if (!prompt) return toast.error("The forge needs a vision (prompt)!");
 
+        const cost = 5;
+        if (zaps < cost) {
+            toast.error(`Insufficient Zaps ⚡ (Need ${cost})`);
+            return;
+        }
+
+        deductZapsOptimistically(cost);
         setGenerating(true);
         const toastId = toast.loading("Forging your collection...");
 
@@ -56,7 +67,8 @@ export default function AvatarForgeRequest() {
             setShowRefUpload(false);
         } catch (error) {
             console.error("Forge failed:", error);
-            toast.error(error.message || "Forge failed", { id: toastId });
+            rollbackZaps(5);
+            toast.error(error.message || "Forge failed. Rollback applied.", { id: toastId });
         } finally {
             setGenerating(false);
         }
@@ -147,7 +159,8 @@ export default function AvatarForgeRequest() {
                         <button
                             className="forge-launch-btn"
                             onClick={handleForgeRequest}
-                            disabled={generating || !prompt}
+                            disabled={generating || !prompt || zaps < 5}
+                            title={zaps < 5 ? "Insufficient Zaps ⚡" : ""}
                         >
                             {generating ? (
                                 <span className="flex items-center gap-2">

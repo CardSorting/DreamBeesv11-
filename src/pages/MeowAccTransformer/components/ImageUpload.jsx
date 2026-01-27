@@ -2,7 +2,7 @@
 import React, { useRef, useState } from 'react';
 import { Upload, Image as ImageIcon, Sparkles } from 'lucide-react';
 
-export const ImageUpload = ({ onImageSelect, isLoading }) => {
+export const ImageUpload = ({ onImageSelect, isLoading, disabled }) => {
     const fileInputRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
 
@@ -38,7 +38,7 @@ export const ImageUpload = ({ onImageSelect, isLoading }) => {
         <div
             className={`relative group cursor-pointer transition-all duration-300 ease-in-out transform
         ${isDragging ? 'scale-[1.02] border-pink-400 bg-pink-50/50' : 'hover:scale-[1.01] hover:bg-white/40'}
-        ${isLoading ? 'pointer-events-none opacity-50' : ''}
+        ${isLoading || disabled ? 'pointer-events-none opacity-50' : ''}
         border-4 border-dashed rounded-3xl p-10 flex flex-col items-center justify-center text-center h-80
         glass-panel
         ${isDragging ? 'border-pink-400' : 'border-purple-200'}

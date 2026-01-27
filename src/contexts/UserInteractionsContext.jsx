@@ -612,6 +612,14 @@ export function UserInteractionsProvider({ children }) {
         }));
     };
 
+    const rollbackZaps = (amount) => {
+        if (typeof amount !== 'number' || amount <= 0) return;
+        setUserProfile(prev => ({
+            ...prev,
+            zaps: prev.zaps + amount
+        }));
+    };
+
     const toggleAppLike = async (appId) => {
         if (!currentUser) return false;
 
@@ -708,6 +716,7 @@ export function UserInteractionsProvider({ children }) {
         toggleAppLike,
         isProfileLoaded,
         deductZapsOptimistically,
+        rollbackZaps,
         // Aligned/Legacy underscores
         _isLiked: isLiked,
         _toggleLike: toggleLike,

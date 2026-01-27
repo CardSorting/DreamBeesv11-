@@ -10,6 +10,8 @@ import { ImageUploader } from '../components/Slideshow/ImageUploader';
 import { Sparkles, Download, Languages, Presentation, Image as ImageIcon, Loader2, ArrowLeft, Wand2, FileImage, Gem, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { compressImage } from '../utils';
+import { useUserInteractions } from '../contexts/UserInteractionsContext';
+import { calculateZapCost } from '../constants/zapCosts';
 import './Slideshow.css';
 
 const LOADING_MESSAGES = [
@@ -26,6 +28,8 @@ const LOADING_MESSAGES = [
 
 export default function Slideshow() {
     const { currentUser } = useAuth();
+    const { userProfile, deductZapsOptimistically, rollbackZaps } = useUserInteractions();
+    const zaps = userProfile?.zaps || 0;
 
     // Steps: 'upload' | 'processing' | 'result'
     const [currentStep, setCurrentStep] = useState('upload');
@@ -88,6 +92,13 @@ export default function Slideshow() {
         if (!selectedFile) return toast.error("Please select an image first");
         if (!currentUser) return toast.error("Please sign in to generate");
 
+        const cost = mode === 'slideshow' ? 3 : 0.5;
+        if (zaps < cost) {
+            toast.error(`Insufficient Zaps ⚡ (Need ${cost})`);
+            return;
+        }
+
+        deductZapsOptimistically(cost);
         setCurrentStep('processing');
         setProgress(5);
         setResults([]);
@@ -118,6 +129,8 @@ export default function Slideshow() {
 
         } catch (error) {
             console.error("Generation failed:", error);
+            const cost = mode === 'slideshow' ? 3 : 0.5;
+            rollbackZaps(cost);
             if (isMounted.current) {
                 // toast handled by useApi
                 setCurrentStep('upload');
@@ -354,7 +367,8 @@ export default function Slideshow() {
 
                                 <Button
                                     onClick={handleGenerate}
-                                    disabled={!selectedFile}
+                                    disabled={!selectedFile || zaps < (mode === 'slideshow' ? 3 : 0.5)}
+                                    title={zaps < (mode === 'slideshow' ? 3 : 0.5) ? "Insufficient Zaps ⚡" : ""}
                                     className="w-full"
                                     icon={Wand2}
                                 >
