@@ -1,5 +1,5 @@
 import { VertexAI } from "@google-cloud/vertexai";
-import { vertexFlow } from "../vertexFlow.js";
+// [REMOVED] import { vertexFlow } from "../vertexFlow.js";
 import { logger } from "../utils.js";
 
 const vertexAI = new VertexAI({ project: process.env.GCLOUD_PROJECT, location: "us-central1" });
@@ -119,12 +119,10 @@ export const generateResponse = async (systemPrompt, history, currentMsg) => {
     try {
         const contents = [...history, currentMsg];
 
-        const result = await vertexFlow.execute('PERSONA_CHAT', async () => {
-            return await model.generateContent({
-                contents,
-                systemInstruction: { parts: [{ text: systemPrompt }] }
-            });
-        }, vertexFlow.constructor.PRIORITY.HIGH);
+        const result = await model.generateContent({
+            contents,
+            systemInstruction: { parts: [{ text: systemPrompt }] }
+        });
 
         return (await result.response).candidates[0].content.parts[0].text;
     } catch (e) {

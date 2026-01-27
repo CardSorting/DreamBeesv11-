@@ -146,9 +146,7 @@ async function main() {
 
     // 2. Dynamic Import of Libraries (TRIGGERS FIREBASE INIT)
     // This must happen BEFORE getFirestore()
-    console.log("Importing VertexFlow & LoadBalancer...");
-    const { vertexFlow } = await import("../lib/vertexFlow.js");
-    const { loadBalancer } = await import("../workers/image.js");
+    // [REMOVED] vertexFlow & loadBalancer imports
 
     // 3. Initialize Firebase Accessors (now that app is initialized by image.js -> firebaseInit.js)
     db = getFirestore();
@@ -163,93 +161,47 @@ async function main() {
         },
     });
 
-    // 5. Configure LoadBalancer
-    const CF_ENDPOINT = 'cf-flux-2-dev';
-    loadBalancer.endpoints[CF_ENDPOINT] = {
-        url: `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/black-forest-labs/flux-2-dev`,
-        tier: 'standard',
-        costFactor: 1.0,
-        baseLatency: 8000,
-        maxConcurrency: 1 // Strict limit for background script
-    };
-
-    // Initialize metrics if missing
-    if (!loadBalancer.healthMetrics[CF_ENDPOINT]) {
-        loadBalancer.healthMetrics[CF_ENDPOINT] = {
-            consecutiveFailures: 0,
-            consecutiveSuccesses: 0,
-            recentLatencies: [],
-            avgLatency: null,
-            p95Latency: null,
-            circuitState: 'closed',
-            circuitBackoffMs: 15000,
-            circuitRecoveryAttempts: 0,
-            totalRequests: 0,
-            totalFailures: 0,
-            transientErrors: 0,
-            permanentErrors: 0,
-            saturationEvents: 0,
-            maxObservedConcurrent: 0,
-            lastRequest: null
-        };
-    }
+    // [REMOVED] LoadBalancer config
 
     // Generator Helper
     const generateImage = async (prompt, index) => {
-        // Wrap in VertexFlow for queuing
-        return vertexFlow.execute('FLUX_SHOWCASE', async () => {
-            // Throttling Check (LoadBalancer)
-            if (loadBalancer.shouldThrottle(CF_ENDPOINT)) {
-                // We don't throw here inside VertexFlow retry loop usually, unless we want to trigger backoff
-                // VertexFlow handles queuing, so we might not need strict LB throttling throwing,
-                // but checking health doesn't hurt.
+        console.log(`[${index}] Generating: "${prompt.substring(0, 30)}..."`);
+
+        const formData = new FormData();
+        formData.append('prompt', prompt);
+        formData.append('num_steps', "25");
+        formData.append('guidance', "3.5");
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 120000); // 2 min
+
+        try {
+            const url = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/black-forest-labs/flux-2-dev`;
+            const response = await fetch(url, {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${CLOUDFLARE_API_TOKEN}` },
+                body: formData,
+                signal: controller.signal
+            });
+
+            if (!response.ok) {
+                const err = await response.text();
+                throw new Error(`CF Error (${response.status}): ${err}`);
             }
 
-            const jobStartTime = loadBalancer.recordJobStart(CF_ENDPOINT);
-            // Spread requests
-            await loadBalancer.applyRequestSpread(CF_ENDPOINT);
+            const json = await response.json();
 
-            console.log(`[${index}] Generating: "${prompt.substring(0, 30)}..."`);
-
-            const formData = new FormData();
-            formData.append('prompt', prompt);
-            formData.append('num_steps', "25");
-            formData.append('guidance', "3.5");
-
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 120000); // 2 min
-
-            try {
-                const response = await fetch(loadBalancer.endpoints[CF_ENDPOINT].url, {
-                    method: "POST",
-                    headers: { "Authorization": `Bearer ${CLOUDFLARE_API_TOKEN}` },
-                    body: formData,
-                    signal: controller.signal
-                });
-
-                if (!response.ok) {
-                    const err = await response.text();
-                    loadBalancer.recordFailure(CF_ENDPOINT, jobStartTime, new Error(err));
-                    throw new Error(`CF Error (${response.status}): ${err}`);
-                }
-
-                const json = await response.json();
-
-                let base64 = json.result?.image || json.result;
-                if (!base64) {
-                    loadBalancer.recordFailure(CF_ENDPOINT, jobStartTime, new Error("No image data"));
-                    throw new Error("No image data");
-                }
-
-                loadBalancer.recordSuccess(CF_ENDPOINT, jobStartTime);
-                return Buffer.from(base64, 'base64');
-            } catch (e) {
-                loadBalancer.recordFailure(CF_ENDPOINT, jobStartTime, e);
-                throw e; // Propagate to VertexFlow for retry decision
-            } finally {
-                clearTimeout(timeout);
+            let base64 = json.result?.image || json.result;
+            if (!base64) {
+                throw new Error("No image data");
             }
-        }, vertexFlow.constructor.PRIORITY.LOW);
+
+            return Buffer.from(base64, 'base64');
+        } catch (e) {
+            throw e;
+        } finally {
+            clearTimeout(timeout);
+        }
     };
 
     // Execution Loop

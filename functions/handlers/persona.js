@@ -2,7 +2,7 @@ import { HttpsError } from "firebase-functions/v2/https";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getFunctions } from "firebase-admin/functions"; // Added
 import { logger, fetchWithRetry } from "../lib/utils.js";
-import { vertexFlow } from "../lib/vertexFlow.js"; // Kept for creation logic
+// [REMOVED] import { vertexFlow } from "../lib/vertexFlow.js";
 
 // Import new modules
 import * as Billing from "../lib/persona/billing.js";
@@ -240,9 +240,8 @@ async function generatePersonaFromImage(imageBuffer, mimeType) {
         contents: [{ role: 'user', parts: [{ text: promptFull }, { inlineData: { mimeType: mimeType, data: imageBase64 } }] }]
     };
 
-    const result = await vertexFlow.execute('PERSONA_CREATE', async () => {
-        return await model.generateContent(request);
-    }, vertexFlow.constructor.PRIORITY.HIGH);
+    // Reverted to direct call
+    const result = await model.generateContent(request);
 
     const text = (await result.response).candidates[0].content.parts[0].text;
     const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();

@@ -2,7 +2,7 @@ import { HttpsError } from "firebase-functions/v2/https";
 import { db, FieldValue } from "../firebaseInit.js";
 import { getS3Client, fetchWithTimeout } from "./utils.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "./constants.js";
-import { vertexFlow } from "./vertexFlow.js"; // [NEW] Import central flow processor
+// [REMOVED] import { vertexFlow } from "./vertexFlow.js";
 
 // Move Constants
 export const SLIDESHOW_STYLE_INSTRUCTION = `
@@ -86,21 +86,14 @@ export const getSlidePrompts = (language) => [
 ];
 
 // Helper for Vision Prompt Generation
-export async function generateVisionPrompt(imageUrl, priority = vertexFlow.constructor.PRIORITY.NORMAL) {
+export async function generateVisionPrompt(imageUrl) {
     const { VertexAI } = await import("@google-cloud/vertexai");
     const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
     const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-    // Assuming PROMPT_GUIDELINES is handled here or passed? 
-    // Wait, PROMPT_GUIDELINES was referenced in index.js around 2155. I missed extracting it.
-    // I need to fetch PROMPT_GUIDELINES content or assume it's just a string constant.
-    // I will placeholder it for a sec or use a default if I can't find it.
     const PROMPT_GUIDELINES = "Describe the image in detail for an AI art generator. Focus on subject, medium, style, lighting, color, and composition.";
-    // I should check if I saw PROMPT_GUIDELINES definition. It wasn't in the viewed lines. 
-    // I will search for it.
 
-
-    let mimeType = "image/png"; // Default
+    let mimeType = "image/png";
     let imageBase64 = "";
 
     if (imageUrl.trim().startsWith('data:')) {
@@ -137,10 +130,8 @@ export async function generateVisionPrompt(imageUrl, priority = vertexFlow.const
         ]
     };
 
-    // [MODIFIED] Use VertexFlowProcessor
-    const result = await vertexFlow.execute('VISION_PROMPT', async () => {
-        return await model.generateContent(request);
-    }, priority);
+    // Reverted to direct call
+    const result = await model.generateContent(request);
 
     const response = await result.response;
     const candidate = response.candidates?.[0];
@@ -150,7 +141,7 @@ export async function generateVisionPrompt(imageUrl, priority = vertexFlow.const
 }
 
 // Helper for Gemini Prompt Enhancement
-export const enhancePromptWithGemini = async (prompt, priority = vertexFlow.constructor.PRIORITY.NORMAL) => {
+export const enhancePromptWithGemini = async (prompt) => {
     const { VertexAI } = await import("@google-cloud/vertexai");
     const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
     const model = vertexAI.getGenerativeModel({
@@ -169,10 +160,8 @@ export const enhancePromptWithGemini = async (prompt, priority = vertexFlow.cons
         ]
     };
 
-    // [MODIFIED] Use VertexFlowProcessor
-    const result = await vertexFlow.execute('PROMPT_ENHANCE', async () => {
-        return await model.generateContent(request);
-    }, priority);
+    // Reverted to direct call
+    const result = await model.generateContent(request);
 
     const response = await result.response;
     const textOutput = response.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -181,9 +170,7 @@ export const enhancePromptWithGemini = async (prompt, priority = vertexFlow.cons
 };
 
 // Helper for Vision-based Style Transformation (using Vertex AI)
-export const transformImageWithGemini = async (imageUrl, styleName, instructions, intensity = 'medium', userId = 'system', priority = vertexFlow.constructor.PRIORITY.NORMAL) => {
-
-
+export const transformImageWithGemini = async (imageUrl, styleName, instructions, intensity = 'medium', userId = 'system') => {
     // 1. Fetch Input Image & Convert to Base64
     let inputBase64 = null;
     let mimeType = "image/png";
@@ -230,11 +217,9 @@ export const transformImageWithGemini = async (imageUrl, styleName, instructions
     let generatedImageBase64 = null;
 
     try {
-        // [MODIFIED] Use VertexFlowProcessor
-        const result = await vertexFlow.execute('TRANSFORM_IMAGE', async () => {
-            console.log(`[Transform] Executing Vertex AI call for ${styleName}...`);
-            return await model.generateContent(request);
-        }, priority);
+        // Reverted to direct call
+        console.log(`[Transform] Executing Vertex AI call for ${styleName}...`);
+        const result = await model.generateContent(request);
 
         const response = await result.response;
 
@@ -449,8 +434,7 @@ You are here to make images internet-shaped, not interesting.
 Obey the grammar of memes.`;
 
 // Helper for Meme Formatting (using Vertex AI)
-export const formatMemeWithGemini = async (imageUrl, text, userId = 'system', priority = vertexFlow.constructor.PRIORITY.NORMAL) => {
-
+export const formatMemeWithGemini = async (imageUrl, text, userId = 'system') => {
     // 1. Fetch Input Image & Convert to Base64
     let inputBase64 = null;
     let mimeType = "image/png";
@@ -505,10 +489,8 @@ export const formatMemeWithGemini = async (imageUrl, text, userId = 'system', pr
     let generatedImageBase64 = null;
 
     try {
-        // [MODIFIED] Use VertexFlowProcessor
-        const result = await vertexFlow.execute('MEME_FORMAT', async () => {
-            return await model.generateContent(request);
-        }, priority);
+        // Reverted to direct call
+        const result = await model.generateContent(request);
 
         const response = await result.response;
 
@@ -598,7 +580,7 @@ export const formatMemeWithGemini = async (imageUrl, text, userId = 'system', pr
 };
 
 // Helper for ColorCraft Concepts (using Vertex AI)
-export const generateColoringBookConcepts = async (theme, style, priority = vertexFlow.constructor.PRIORITY.NORMAL) => {
+export const generateColoringBookConcepts = async (theme, style) => {
     const { VertexAI } = await import("@google-cloud/vertexai");
     const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
     const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -617,13 +599,11 @@ export const generateColoringBookConcepts = async (theme, style, priority = vert
         - Return ONLY a valid JSON object with a "pages" property containing the array of strings.
         `;
 
-    // [MODIFIED] Use VertexFlowProcessor
-    const result = await vertexFlow.execute('COLORCRAFT_CONCEPTS', async () => {
-        return await model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: "application/json" }
-        });
-    }, priority);
+    // Reverted to direct call
+    const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { responseMimeType: "application/json" }
+    });
 
     const responseText = (await result.response).candidates?.[0]?.content?.parts?.[0]?.text;
     if (!responseText) throw new Error("No text returned from AI");
@@ -635,7 +615,7 @@ export const generateColoringBookConcepts = async (theme, style, priority = vert
 };
 
 // Helper for ColorCraft Image Generation (using Vertex AI)
-export const generateColoringPageImage = async (prompt, style, priority = vertexFlow.constructor.PRIORITY.NORMAL) => {
+export const generateColoringPageImage = async (prompt, style) => {
     // Construct Prompts
     const basePrompt = `
         Create a black and white coloring book page image.
@@ -666,16 +646,14 @@ export const generateColoringPageImage = async (prompt, style, priority = vertex
     const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
     const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
 
-    // [MODIFIED] Use VertexFlowProcessor
-    const result = await vertexFlow.execute('COLORCRAFT_IMAGE', async () => {
-        return await model.generateContent({
-            contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
-            generationConfig: {
-                maxOutputTokens: 8192,
-                temperature: 0.4
-            }
-        });
-    }, priority);
+    // Reverted to direct call
+    const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
+        generationConfig: {
+            maxOutputTokens: 8192,
+            temperature: 0.4
+        }
+    });
 
     const response = (await result.response).candidates?.[0];
     if (response?.finishReason === 'SAFETY') throw new Error("Blocked by safety filter.");

@@ -1,7 +1,7 @@
 import { HttpsError } from "firebase-functions/v2/https";
 import { db, FieldValue } from "../firebaseInit.js";
 import { logger } from "../lib/utils.js";
-import { vertexFlow } from "../lib/vertexFlow.js"; // [NEW]
+// [REMOVED] import { vertexFlow } from "../lib/vertexFlow.js";
 
 const SYSTEM_INSTRUCTION = `
 You are an expert e-commerce product manager and SEO specialist.
@@ -81,25 +81,23 @@ export const handleAnalyzeProductImage = async (request) => {
 
         let textOutput;
         try {
-            // [MODIFIED] Use VertexFlow (Normal Priority)
-            const result = await vertexFlow.execute('ECOMMERCE_ANALYZE', async () => {
-                return await model.generateContent({
-                    contents: [
-                        {
-                            role: 'user',
-                            parts: [
-                                { text: "Analyze this product image and generate e-commerce data." },
-                                {
-                                    inlineData: {
-                                        mimeType: mimeType,
-                                        data: imageBase64
-                                    }
+            // Reverted to direct call
+            const result = await model.generateContent({
+                contents: [
+                    {
+                        role: 'user',
+                        parts: [
+                            { text: "Analyze this product image and generate e-commerce data." },
+                            {
+                                inlineData: {
+                                    mimeType: mimeType,
+                                    data: imageBase64
                                 }
-                            ]
-                        }
-                    ]
-                });
-            }, vertexFlow.constructor.PRIORITY.NORMAL);
+                            }
+                        ]
+                    }
+                ]
+            });
 
             const response = await result.response;
             const candidate = response.candidates?.[0];

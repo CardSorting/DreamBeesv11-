@@ -1,7 +1,7 @@
 import { db, FieldValue } from "../firebaseInit.js";
 import { fetchWithRetry, logger } from "../lib/utils.js";
 import { VertexAI, SchemaType } from "@google-cloud/vertexai";
-import { vertexFlow } from "../lib/vertexFlow.js"; // [NEW]
+// [REMOVED] import { vertexFlow } from "../lib/vertexFlow.js";
 
 // --- Configuration ---
 const PROJECT_ID = "dreambees-alchemist";
@@ -165,10 +165,8 @@ async function analyzeImage(imageBuffer, mimeType = "image/png") {
     };
 
     try {
-        // [MODIFIED] Use VertexFlowProcessor
-        const result = await vertexFlow.execute('SHOWCASE_ANALYSIS', async () => {
-            return await strictModel.generateContent(request);
-        }, vertexFlow.constructor.PRIORITY.LOW);
+        // Reverted to direct call
+        const result = await strictModel.generateContent(request);
 
         const response = await result.response;
         const text = response.candidates[0].content.parts[0].text;

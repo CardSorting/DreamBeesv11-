@@ -1,7 +1,7 @@
 import { db, FieldValue } from "../firebaseInit.js";
 import { getS3Client, fetchWithTimeout, readFirstBytes, detectImageFormat, logger, retryOperation } from "../lib/utils.js";
 import { B2_BUCKET, B2_PUBLIC_URL, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN } from "../lib/constants.js";
-import { vertexFlow } from "../lib/vertexFlow.js";
+// [REMOVED] import { vertexFlow } from "../lib/vertexFlow.js";
 import { GalmixClient } from "../lib/GalmixClient.js";
 
 const galmixClient = new GalmixClient();
@@ -67,7 +67,7 @@ export const processImageTask = async (req) => {
         let response;
 
         if (modelId === 'zit-model') {
-            imageBuffer = await vertexFlow.execute('WORKER_ZIT', async () => {
+            imageBuffer = await (async () => {
                 logger.info(`[${requestId}] Running Zit-Model generation`);
                 const body = {
                     prompt, steps,
@@ -100,16 +100,16 @@ export const processImageTask = async (req) => {
                     }
                 }
                 throw new Error("Zit generation timed out");
-            }, 1); // NORMAL priority
+            })();
         }
         else if (modelId === 'galmix') {
-            imageBuffer = await vertexFlow.execute('WORKER_GALMIX', async () => {
+            imageBuffer = await (async () => {
                 const galmixResult = await galmixClient.generateImage(prompt, { negative_prompt, steps });
                 return Buffer.from(galmixResult.result, 'base64');
-            }, 1);
+            })();
         }
         else if (modelId === 'flux-2-dev') {
-            imageBuffer = await vertexFlow.execute('WORKER_FLUX_DEV', async () => {
+            imageBuffer = await (async () => {
                 const cfUrl = ENDPOINTS.flux2dev.replace('CLOUDFLARE_ACCOUNT_ID', CLOUDFLARE_ACCOUNT_ID);
                 const formData = new FormData();
                 formData.append('prompt', prompt);
@@ -125,11 +125,11 @@ export const processImageTask = async (req) => {
                 const base64Img = cfJson.result?.image || cfJson.result;
                 if (!base64Img) throw new Error("No image data from Cloudflare");
                 return Buffer.from(base64Img, 'base64');
-            }, 1);
+            })();
         }
         else {
             // Default SDXL Path
-            imageBuffer = await vertexFlow.execute('WORKER_SDXL', async () => {
+            imageBuffer = await (async () => {
                 logger.info(`[${requestId}] Running SDXL generation`);
                 const body = {
                     prompt,
@@ -141,10 +141,14 @@ export const processImageTask = async (req) => {
                     scheduler: scheduler || 'DPM++ 2M Karras'
                 };
 
-                const submitResponse = await fetch(`${ENDPOINTS.sdxl}/generate`, {
+                const submitResponse = await fetchWithTimeout(`${ENDPOINTS.sdxl}/generate`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(body)
+                    headers: {
+                        "Content-Type": "application/json",
+                        "User-Agent": "DreamBees/1.1"
+                    },
+                    body: JSON.stringify(body),
+                    timeout: 30000
                 });
 
                 if (!submitResponse.ok) throw new Error(`SDXL Submission Failed (${submitResponse.status})`);
@@ -165,7 +169,7 @@ export const processImageTask = async (req) => {
                     }
                 }
                 throw new Error("SDXL generation timed out");
-            }, 1);
+            })();
         }
 
         if (!imageBuffer || imageBuffer.length < 100) {

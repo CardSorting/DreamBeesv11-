@@ -3,7 +3,7 @@ import { db, FieldValue, getFunctions } from "../firebaseInit.js";
 import { handleError, logger, retryOperation } from "../lib/utils.js";
 import { enhancePromptWithGemini, transformImageWithGemini } from "../lib/ai.js";
 import { VertexAI } from "@google-cloud/vertexai";
-import { vertexFlow } from "../lib/vertexFlow.js"; // [NEW]
+// [REMOVED] import { vertexFlow } from "../lib/vertexFlow.js";
 
 export const handleCreateAnalysisRequest = async (request) => {
     const uid = request.auth?.uid;
@@ -78,8 +78,7 @@ export const handleTransformPrompt = async (request) => {
     if (!prompt) throw new HttpsError('invalid-argument', "Prompt required");
     try {
         const enhanced = await enhancePromptWithGemini(
-            `${prompt}. Style: ${styleName}. Intensity: ${intensity}. ${instructions || ""}`,
-            vertexFlow.constructor.PRIORITY.HIGH
+            `${prompt}. Style: ${styleName}. Intensity: ${intensity}. ${instructions || ""}`
         );
         return { prompt: enhanced };
     } catch (error) { throw handleError(error); }
@@ -99,7 +98,7 @@ export const handleTransformImage = async (request) => {
             if (zaps < COST) throw new HttpsError('resource-exhausted', "Insufficient Zaps.");
             t.update(userRef, { zaps: FieldValue.increment(-COST) });
         });
-        const result = await transformImageWithGemini(imageUrl, styleName, instructions, intensity, uid, vertexFlow.constructor.PRIORITY.HIGH);
+        const result = await transformImageWithGemini(imageUrl, styleName, instructions, intensity, uid);
         return result;
     } catch (error) {
         if (error.code !== 'resource-exhausted') {
@@ -132,16 +131,12 @@ export const handleGenerateLyrics = async (request) => {
         let result;
         if (mode === 'audio') {
             const prompt = "Listen to this audio. Transcribe the lyrics and format them as a standard LRC file. Timestamps must be extremely accurate to the vocals [mm:ss.xx]. Return ONLY the LRC content, no code blocks.";
-            // [MODIFIED] Use VertexFlowProcessor with HIGH Priority
-            result = await vertexFlow.execute('LYRICS_AUDIO', async () => {
-                return await model.generateContent({ contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { data: audioBase64, mimeType } }] }] });
-            }, vertexFlow.constructor.PRIORITY.HIGH);
+            // Reverted to direct call
+            result = await model.generateContent({ contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { data: audioBase64, mimeType } }] }] });
         } else {
             const prompt = `Convert these lyrics to LRC format for a ${Math.floor(songDuration || 180)}s song. Distribute lines evenly. Return ONLY LRC content. Lyrics: ${rawText}`;
-            // [MODIFIED] Use VertexFlowProcessor with HIGH Priority
-            result = await vertexFlow.execute('LYRICS_TEXT', async () => {
-                return await model.generateContent({ contents: [{ role: 'user', parts: [{ text: prompt }] }] });
-            }, vertexFlow.constructor.PRIORITY.HIGH);
+            // Reverted to direct call
+            result = await model.generateContent({ contents: [{ role: 'user', parts: [{ text: prompt }] }] });
         }
         const text = (await result.response).candidates?.[0]?.content?.parts?.[0]?.text || "";
         const cleanText = text.replace(/```lrc/g, '').replace(/```/g, '').trim();
@@ -213,18 +208,16 @@ export const handleMeowaccTransform = async (request) => {
         const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
         const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
 
-        // [MODIFIED] Use VertexFlowProcessor with HIGH Priority
-        const result = await vertexFlow.execute('MEOWACC_TRANSFORM', async () => {
-            return await model.generateContent({
-                contents: [{
-                    role: 'user',
-                    parts: [
-                        { text: selectedPrompt },
-                        { inlineData: { data: imageBase64, mimeType: mimeType || 'image/jpeg' } }
-                    ]
-                }]
-            });
-        }, vertexFlow.constructor.PRIORITY.HIGH);
+        // Reverted to direct call
+        const result = await model.generateContent({
+            contents: [{
+                role: 'user',
+                parts: [
+                    { text: selectedPrompt },
+                    { inlineData: { data: imageBase64, mimeType: mimeType || 'image/jpeg' } }
+                ]
+            }]
+        });
 
         const response = (await result.response).candidates?.[0];
         if (response?.finishReason === 'SAFETY') throw new HttpsError('failed-precondition', "Blocked by safety filter.");

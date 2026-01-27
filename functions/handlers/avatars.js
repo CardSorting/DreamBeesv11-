@@ -1,7 +1,7 @@
 import { HttpsError } from "firebase-functions/v2/https";
 import { db, FieldValue } from "../firebaseInit.js";
 import { handleError, logger } from "../lib/utils.js";
-import { vertexFlow } from "../lib/vertexFlow.js";
+// [REMOVED] import { vertexFlow } from "../lib/vertexFlow.js";
 import { VertexAI } from "@google-cloud/vertexai";
 
 const RATE_LIMIT_DELAY = 6000;
@@ -51,12 +51,10 @@ export const handleGenerateAvatarCollection = async (request) => {
             }
         `;
 
-        const idResult = await vertexFlow.execute('IDENTITY_COMPILER', async () => {
-            return await textModel.generateContent({
-                contents: [{ role: 'user', parts: [{ text: identityPrompt }] }],
-                generationConfig: { responseMimeType: "application/json" }
-            });
-        }, vertexFlow.constructor.PRIORITY.HIGH);
+        const idResult = await textModel.generateContent({
+            contents: [{ role: 'user', parts: [{ text: identityPrompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+        });
 
         const idData = JSON.parse((await idResult.response).candidates[0].content.parts[0].text);
 
@@ -72,12 +70,10 @@ export const handleGenerateAvatarCollection = async (request) => {
             - Background_Syllables: { environments: [], atmospheres: [] }
         `;
 
-        const syllableResult = await vertexFlow.execute('SYLLABLE_POOL_COMPILER', async () => {
-            return await textModel.generateContent({
-                contents: [{ role: 'user', parts: [{ text: syllablePrompt }] }],
-                generationConfig: { responseMimeType: "application/json" }
-            });
-        }, vertexFlow.constructor.PRIORITY.HIGH);
+        const syllableResult = await textModel.generateContent({
+            contents: [{ role: 'user', parts: [{ text: syllablePrompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+        });
 
         const syllablePool = JSON.parse((await syllableResult.response).candidates[0].content.parts[0].text);
 
@@ -102,12 +98,10 @@ export const handleGenerateAvatarCollection = async (request) => {
             }
         `;
 
-        const matrixResult = await vertexFlow.execute('MATRIX_COMPILER', async () => {
-            return await textModel.generateContent({
-                contents: [{ role: 'user', parts: [{ text: matrixPrompt }] }],
-                generationConfig: { responseMimeType: "application/json" }
-            });
-        }, vertexFlow.constructor.PRIORITY.HIGH);
+        const matrixResult = await textModel.generateContent({
+            contents: [{ role: 'user', parts: [{ text: matrixPrompt }] }],
+            generationConfig: { responseMimeType: "application/json" }
+        });
 
         const manifest = JSON.parse((await matrixResult.response).candidates[0].content.parts[0].text);
 
@@ -131,9 +125,7 @@ export const handleGenerateAvatarCollection = async (request) => {
             });
         }
 
-        const masterResult = await vertexFlow.execute('MASTER_PFP', async () => {
-            return await imageModel.generateContent({ contents: [{ role: 'user', parts: masterParts }] });
-        }, vertexFlow.constructor.PRIORITY.HIGH);
+        const masterResult = await imageModel.generateContent({ contents: [{ role: 'user', parts: masterParts }] });
 
         const masterBase64 = (await masterResult.response).candidates[0].content.parts.find(p => p.inlineData).inlineData.data;
         const generatedImages = [{ base64: masterBase64, prompt: masterPrompt, definition: masterDef }];
@@ -154,14 +146,12 @@ export const handleGenerateAvatarCollection = async (request) => {
             `;
 
             try {
-                const evoResult = await vertexFlow.execute(`EVO_${i}`, async () => {
-                    return await imageModel.generateContent({
-                        contents: [{
-                            role: 'user',
-                            parts: [{ inlineData: { data: masterBase64, mimeType: 'image/png' } }, { text: evolutionPrompt }]
-                        }]
-                    });
-                }, vertexFlow.constructor.PRIORITY.NORMAL);
+                const evoResult = await imageModel.generateContent({
+                    contents: [{
+                        role: 'user',
+                        parts: [{ inlineData: { data: masterBase64, mimeType: 'image/png' } }, { text: evolutionPrompt }]
+                    }]
+                });
 
                 const base64 = (await evoResult.response).candidates[0].content.parts.find(p => p.inlineData).inlineData.data;
                 generatedImages.push({ base64, prompt: evolutionPrompt, definition: def });

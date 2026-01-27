@@ -1,4 +1,4 @@
-
+import { fetchWithTimeout } from "./utils.js";
 
 /**
  * GalmixClient - A Node.js client for the Galmix Image Generation API.
@@ -36,10 +36,14 @@ export class GalmixClient {
             guidance_scale
         };
 
-        const submitResp = await fetch(submitUrl, {
+        const submitResp = await fetchWithTimeout(submitUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            headers: {
+                'Content-Type': 'application/json',
+                'User-Agent': 'DreamBees/1.1'
+            },
+            body: JSON.stringify(payload),
+            timeout: 30000 // 30s timeout for initial submission
         });
 
         if (submitResp.status !== 202) {
@@ -61,7 +65,10 @@ export class GalmixClient {
             }
 
             console.log(`[Galmix] Polling status for ${jobId}...`);
-            const pollResp = await fetch(pollUrl);
+            const pollResp = await fetchWithTimeout(pollUrl, {
+                headers: { 'User-Agent': 'DreamBees/1.1' },
+                timeout: 15000 // 15s timeout for polling calls
+            });
             if (pollResp.status !== 200) {
                 console.error(`[Galmix] Polling failed with status ${pollResp.status}`);
                 throw new Error(`Polling failed (${pollResp.status})`);
