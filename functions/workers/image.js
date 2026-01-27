@@ -34,23 +34,23 @@ class LoadBalancer {
             'zit-h100': {
                 url: 'https://mariecoderinc--zit-h100-stable-fastapi-app.modal.run',
                 tier: 'premium', costFactor: 1.5, baseLatency: 8000,
-                coldStartLatency: 45000, maxConcurrency: 10
+                coldStartLatency: 45000, maxConcurrency: 30
             },
             'zit-a10g': {
                 url: 'https://mariecoderinc--zit-a10g-fastapi-app.modal.run',
                 tier: 'standard', costFactor: 1.0, baseLatency: 15000,
-                coldStartLatency: 60000, maxConcurrency: 5
+                coldStartLatency: 60000, maxConcurrency: 20
             },
             // SDXL endpoints
             'sdxl-h100': {
                 url: 'https://mariecoderinc--sdxl-multi-model-h100-model-web.modal.run',
                 tier: 'premium', costFactor: 1.5, baseLatency: 8000,
-                coldStartLatency: 45000, maxConcurrency: 10
+                coldStartLatency: 45000, maxConcurrency: 30
             },
             'sdxl-a10g': {
                 url: 'https://mariecoderinc--sdxl-multi-model-a10g-model-web.modal.run',
                 tier: 'standard', costFactor: 1.0, baseLatency: 12000,
-                coldStartLatency: 50000, maxConcurrency: 5
+                coldStartLatency: 50000, maxConcurrency: 20
             },
             // Flux endpoint
             'flux': {
@@ -94,7 +94,7 @@ class LoadBalancer {
 
         // Circuit breaker - TUNED for responsiveness
         this.circuitBreaker = {
-            failureThreshold: 3,
+            failureThreshold: 5,
             successThreshold: 1,             // Faster recovery (was 2)
             minOpenDuration: 10000,          // 10s min (was 15s)
             maxOpenDuration: 120000,         // 2 min max (was 5 min)
@@ -186,8 +186,8 @@ class LoadBalancer {
         // Only throttle if significantly over capacity (not at capacity)
         if (currentLoad >= endpoint.maxConcurrency + 2) return true;
 
-        // Only throttle on 3+ failures (was 2)
-        if (health.consecutiveFailures >= 3) return true;
+        // Only throttle on 5+ failures if not probing (half-open)
+        if (health.consecutiveFailures >= 5 && health.circuitState !== 'half-open') return true;
 
         return false;
     }
@@ -459,7 +459,8 @@ class LoadBalancer {
 
         // Check for rate limiting (429)
         const is429 = error?.message?.includes('429');
-        const shouldOpen = is429 || health.consecutiveFailures >= this.circuitBreaker.failureThreshold;
+        // Only open on 429 if we have multiple consecutive failures to avoid thundering herd spikes
+        const shouldOpen = (is429 && health.consecutiveFailures >= 2) || health.consecutiveFailures >= this.circuitBreaker.failureThreshold;
 
         if (shouldOpen && health.circuitState !== 'open') {
             health.circuitState = 'open';
@@ -710,115 +711,101 @@ export const processImageTask = async (req) => {
                 concurrency: `${activeCount}/${allowedConcurrency}`
             });
 
-            let submitResponse;
-            let baseUrl;
-            let usedEndpointKey = null;
-            let jobStartTime = null;
+            let isFinalized = false;
 
-            // Try endpoints in order based on LoadBalancer scoring
-            for (const endpoint of zitEndpoints) {
-                try {
-                    // Check if we should throttle this endpoint
-                    if (loadBalancer.shouldThrottle(endpoint.key)) {
-                        logger.warn(`[LoadBalancer] ${endpoint.key} throttled, trying next`);
-                        continue;
-                    }
-
-                    usedEndpointKey = endpoint.key;
-                    jobStartTime = loadBalancer.recordJobStart(endpoint.key);
-
-                    // Apply request spread delay to prevent thundering herd
-                    await loadBalancer.applyRequestSpread(endpoint.key);
-
-                    const result = await fetchWithRetry(`${endpoint.url}/generate`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(zBody),
-                        timeout: 45000,
-                        retries: 2
-                    });
-                    submitResponse = result;
-                    baseUrl = endpoint.url;
-                    break; // Success, exit the loop
-                } catch (err) {
-                    loadBalancer.recordFailure(endpoint.key, jobStartTime, err);
-
-                    if (err.message.includes("429")) {
-                        logger.warn(`[LoadBalancer] ${endpoint.key} rate limited (429), trying next endpoint`);
-                        continue; // Try next endpoint
-                    }
-
-                    // For other errors, continue to next endpoint
-                    logger.warn(`[LoadBalancer] ${endpoint.key} failed: ${err.message}, trying next endpoint`);
-                }
-            }
-
-            if (!submitResponse) {
-                logger.warn(`[Throttling] All Zit endpoints exhausted for task ${requestId}.`);
-                throw new Error(`Throttling: Zit API Busy. All endpoints failed. Retrying...`);
-            }
-
-            const submitJson = await submitResponse.json();
-            if (!submitJson.job_id) {
-                loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error("No job_id returned"));
-                throw new Error("No job_id from Zit API");
-            }
-            const jobId = submitJson.job_id;
-            logger.info(`[${requestId}] Zit job submitted to ${usedEndpointKey}: ${jobId}`);
-
-            // Poll for result (max 180 seconds)
-            const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-            let imageBuffer = null;
-            // Poll every 2s for up to 90 attempts (180s)
-            for (let poll = 0; poll < 90; poll++) {
-                await sleep(2000);
-                const resultRes = await fetch(`${baseUrl}/result/${jobId}`);
-
-                if (resultRes.status === 202) {
-                    // Still processing
-                    continue;
-                }
-
-                if (!resultRes.ok) {
-                    // Try to parse error
+            try {
+                // Try endpoints in order based on LoadBalancer scoring
+                for (const endpoint of zitEndpoints) {
                     try {
-                        const errJson = await resultRes.json();
-                        if (errJson.status === 'failed') {
-                            loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error(errJson.error));
-                            throw new Error(errJson.error || `Zit generation failed with status ${resultRes.status}`);
+                        // Check if we should throttle this endpoint
+                        if (loadBalancer.shouldThrottle(endpoint.key)) {
+                            logger.warn(`[LoadBalancer] ${endpoint.key} throttled, trying next`);
+                            continue;
                         }
-                    } catch {
-                        // ignore json parse error, just throw status error
+
+                        usedEndpointKey = endpoint.key;
+                        jobStartTime = loadBalancer.recordJobStart(endpoint.key);
+
+                        // Apply request spread delay to prevent thundering herd
+                        await loadBalancer.applyRequestSpread(endpoint.key);
+
+                        const result = await fetchWithRetry(`${endpoint.url}/generate`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(zBody),
+                            timeout: 300000,
+                            retries: 2
+                        });
+                        submitResponse = result;
+                        baseUrl = endpoint.url;
+                        break; // Success, exit the loop
+                    } catch (err) {
+                        loadBalancer.recordFailure(endpoint.key, jobStartTime, err);
+                        usedEndpointKey = null;
+                        jobStartTime = null;
+
+                        if (err.message.includes("429")) {
+                            logger.warn(`[LoadBalancer] ${endpoint.key} rate limited (429), trying next endpoint`);
+                            continue; // Try next endpoint
+                        }
+
+                        // For other errors, continue to next endpoint
+                        logger.warn(`[LoadBalancer] ${endpoint.key} failed: ${err.message}, trying next endpoint`);
                     }
-                    loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error(`Status ${resultRes.status}`));
-                    throw new Error(`Zit Polling Error (${resultRes.status}): ${await resultRes.text()}`);
                 }
 
-                const ct = resultRes.headers.get('content-type') || '';
-                if (ct.includes('image/')) {
-                    imageBuffer = Buffer.from(await resultRes.arrayBuffer());
-                    loadBalancer.recordSuccess(usedEndpointKey, jobStartTime);
-                    break;
+                if (!submitResponse) {
+                    logger.warn(`[Throttling] All Zit endpoints exhausted for task ${requestId}.`);
+                    throw new Error(`Throttling: Zit API Busy. All endpoints failed. Retrying...`);
                 }
 
-                const statusJson = await resultRes.json();
-                if (statusJson.status === 'failed') {
-                    loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error(statusJson.error));
-                    throw new Error(statusJson.error || 'Zit generation failed');
+                const submitJson = await submitResponse.json();
+                if (!submitJson.job_id) {
+                    throw new Error("No job_id from Zit API");
                 }
-                if (statusJson.status === 'completed' && !imageBuffer) {
-                    // Should have been binary if completed, but handle edge case if it returns json with url
-                    loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error('Completed but no binary'));
-                    throw new Error('Zit reported completed but returned JSON instead of binary image.');
+                const jobId = submitJson.job_id;
+                logger.info(`[${requestId}] Zit job submitted to ${usedEndpointKey}: ${jobId}`);
+
+                // Poll for result
+                const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+                for (let poll = 0; poll < 90; poll++) {
+                    await sleep(2000);
+                    let resultRes = await fetch(`${baseUrl}/result/${jobId}`);
+                    if (resultRes.status === 404) {
+                        resultRes = await fetch(`${baseUrl}/jobs/${jobId}`);
+                    }
+
+                    if (resultRes.status === 202) continue;
+
+                    if (!resultRes.ok) {
+                        try {
+                            const errJson = await resultRes.json();
+                            if (errJson.status === 'failed') {
+                                throw new Error(errJson.error || `Zit generation failed with status ${resultRes.status}`);
+                            }
+                        } catch (e) { /* ignore parse error */ }
+                        throw new Error(`Zit Polling Error (${resultRes.status}): ${await resultRes.text()}`);
+                    }
+
+                    const ct = resultRes.headers.get('content-type') || '';
+                    if (ct.includes('image/')) {
+                        imageBuffer = Buffer.from(await resultRes.arrayBuffer());
+                        loadBalancer.recordSuccess(usedEndpointKey, jobStartTime);
+                        isFinalized = true;
+                        break;
+                    }
+                }
+
+                if (!imageBuffer) {
+                    throw new Error("Zit generation timed out after 3 minutes");
+                }
+                response = { ok: true, _fluxImageBuffer: imageBuffer };
+            } finally {
+                if (usedEndpointKey && !isFinalized) {
+                    logger.warn(`[LoadBalancer] Cleaning up active slot for ${usedEndpointKey} due to error/timeout`);
+                    loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error("Job processing interrupted or polling failed"));
                 }
             }
-            if (!imageBuffer) {
-                loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error('Timeout'));
-                throw new Error("Zit generation timed out");
-            }
-
-            // Skip standard response processing
-            response = { ok: true, _fluxImageBuffer: imageBuffer }; // reusing _fluxImageBuffer hack for now as it handles raw buffer bypass
         } else if (modelId === 'galmix') {
             logger.info(`[${requestId}] Submitting GalMix generation`);
             const galmixResult = await galmixClient.generateImage(prompt, {
@@ -849,69 +836,77 @@ export const processImageTask = async (req) => {
             // 1. Submit job
             let submitResponse;
 
-            // Check if endpoint is throttled
-            if (loadBalancer.shouldThrottle(fluxEndpointKey)) {
-                logger.warn(`[LoadBalancer] Flux endpoint throttled. Re-queuing task ${requestId}.`);
-                throw new Error(`Throttling: Flux endpoint temporarily unavailable. Retrying...`);
-            }
-
-            const jobStartTime = loadBalancer.recordJobStart(fluxEndpointKey);
-
-            // Apply request spread delay to prevent thundering herd
-            await loadBalancer.applyRequestSpread(fluxEndpointKey);
+            let isFinalized = false;
+            let jobStartTime = null;
 
             try {
+                // Check if endpoint is throttled
+                if (loadBalancer.shouldThrottle(fluxEndpointKey)) {
+                    logger.warn(`[LoadBalancer] Flux endpoint throttled. Re-queuing task ${requestId}.`);
+                    throw new Error(`Throttling: Flux endpoint temporarily unavailable. Retrying...`);
+                }
+
+                jobStartTime = loadBalancer.recordJobStart(fluxEndpointKey);
+
+                // Apply request spread delay to prevent thundering herd
+                await loadBalancer.applyRequestSpread(fluxEndpointKey);
+
                 submitResponse = await fetchWithRetry(`${FLUX_ENDPOINT}/generate`, {
                     method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         prompt,
                         height: resolution.height,
                         width: resolution.width
-                    }), timeout: 45000, retries: 3
+                    }), timeout: 300000, retries: 3
                 });
-            } catch (err) {
-                loadBalancer.recordFailure(fluxEndpointKey, jobStartTime, err);
-                if (err.message.includes("429")) {
-                    logger.warn(`[Throttling] Flux API rate limited (429). Re-queuing task ${requestId}.`);
-                    throw new Error(`Throttling: Flux API Busy (429). Retrying...`);
-                }
-                throw err;
-            }
 
-            const submitJson = await submitResponse.json();
-            if (!submitJson.job_id) {
-                loadBalancer.recordFailure(fluxEndpointKey, jobStartTime, new Error("No job_id returned"));
-                throw new Error("No job_id from Flux API");
-            }
-            const jobId = submitJson.job_id;
-            logger.info(`[${requestId}] Flux job submitted to ${fluxEndpointKey}: ${jobId}`);
-
-            // 2. Poll for result (max 120 seconds)
-            const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-            let imageBuffer = null;
-            for (let poll = 0; poll < 60; poll++) {
-                await sleep(2000);
-                const resultRes = await fetch(`${FLUX_ENDPOINT}/result/${jobId}`);
-                const ct = resultRes.headers.get('content-type') || '';
-                if (ct.includes('image/')) {
-                    imageBuffer = Buffer.from(await resultRes.arrayBuffer());
-                    loadBalancer.recordSuccess(fluxEndpointKey, jobStartTime);
-                    break;
+                if (!submitResponse.ok) {
+                    throw new Error(`Flux Submission Failed (${submitResponse.status})`);
                 }
-                const statusJson = await resultRes.json();
-                if (statusJson.status === 'failed') {
-                    loadBalancer.recordFailure(fluxEndpointKey, jobStartTime, new Error(statusJson.error));
-                    throw new Error(statusJson.error || 'Flux generation failed');
+
+                const submitJson = await submitResponse.json();
+                if (!submitJson.job_id) {
+                    throw new Error("No job_id from Flux API");
+                }
+                const jobId = submitJson.job_id;
+                logger.info(`[${requestId}] Flux job submitted to ${fluxEndpointKey}: ${jobId}`);
+
+                // 2. Poll for result
+                const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+                for (let poll = 0; poll < 60; poll++) {
+                    await sleep(2000);
+                    const resultRes = await fetch(`${FLUX_ENDPOINT}/result/${jobId}`);
+                    if (resultRes.status === 202) continue;
+
+                    if (!resultRes.ok) {
+                        try {
+                            const errJson = await resultRes.json();
+                            if (errJson.status === 'failed') {
+                                throw new Error(errJson.error || `Flux generation failed with status ${resultRes.status}`);
+                            }
+                        } catch (e) { /* ignore parse error */ }
+                        throw new Error(`Flux Polling Error (${resultRes.status}): ${await resultRes.text()}`);
+                    }
+
+                    const ct = resultRes.headers.get('content-type') || '';
+                    if (ct.includes('image/')) {
+                        imageBuffer = Buffer.from(await resultRes.arrayBuffer());
+                        loadBalancer.recordSuccess(fluxEndpointKey, jobStartTime);
+                        isFinalized = true;
+                        break;
+                    }
+                }
+
+                if (!imageBuffer) {
+                    throw new Error("Flux generation timed out after 2 minutes");
+                }
+                response = { ok: true, _fluxImageBuffer: imageBuffer };
+            } finally {
+                if (fluxEndpointKey && !isFinalized && jobStartTime !== null) {
+                    logger.warn(`[LoadBalancer] Cleaning up active slot for ${fluxEndpointKey} due to error/timeout`);
+                    loadBalancer.recordFailure(fluxEndpointKey, jobStartTime, new Error("Job processing interrupted or polling failed"));
                 }
             }
-            if (!imageBuffer) {
-                loadBalancer.recordFailure(fluxEndpointKey, jobStartTime, new Error('Timeout'));
-                throw new Error("Flux generation timed out");
-            }
-
-            // Skip the normal response parsing; we already have imageBuffer
-            // Jump directly to image processing (after the main if/else block handles response)
-            response = { ok: true, _fluxImageBuffer: imageBuffer };
         } else if (modelId === 'gemini-2.5-flash-image') {
             const { VertexAI } = await import("@google-cloud/vertexai");
             const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
@@ -1057,112 +1052,109 @@ export const processImageTask = async (req) => {
             let baseUrl;
             let usedEndpointKey = null;
             let jobStartTime = null;
+            let isFinalized = false;
 
-            // Try endpoints in order based on LoadBalancer scoring
-            for (const endpoint of sdxlEndpoints) {
-                try {
-                    // Check if we should throttle this endpoint
-                    if (loadBalancer.shouldThrottle(endpoint.key)) {
-                        logger.warn(`[LoadBalancer] ${endpoint.key} throttled, trying next`);
-                        continue;
-                    }
-
-                    usedEndpointKey = endpoint.key;
-                    jobStartTime = loadBalancer.recordJobStart(endpoint.key);
-
-                    // Apply request spread delay to prevent thundering herd
-                    await loadBalancer.applyRequestSpread(endpoint.key);
-
-                    const result = await fetchWithRetry(`${endpoint.url}/generate`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(sBody),
-                        timeout: 45000,
-                        retries: 2
-                    });
-
-                    if (!result.ok) {
-                        throw new Error(`SDXL Submission Failed (${result.status})`);
-                    }
-
-                    submitResponse = result;
-                    baseUrl = endpoint.url;
-                    break; // Success, exit the loop
-                } catch (err) {
-                    loadBalancer.recordFailure(endpoint.key, jobStartTime, err);
-
-                    if (err.message.includes("429")) {
-                        logger.warn(`[LoadBalancer] ${endpoint.key} rate limited (429), trying next endpoint`);
-                        continue; // Try next endpoint
-                    }
-
-                    // For other errors, continue to next endpoint
-                    logger.warn(`[LoadBalancer] ${endpoint.key} failed: ${err.message}, trying next endpoint`);
-                }
-            }
-
-            if (!submitResponse) {
-                logger.warn(`[Throttling] All SDXL endpoints exhausted for task ${requestId}.`);
-                throw new Error(`Throttling: SDXL API Busy. All endpoints failed. Retrying...`);
-            }
-
-            const submitJson = await submitResponse.json();
-            if (!submitJson.job_id) {
-                loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error("No job_id returned"));
-                throw new Error("No job_id from SDXL API");
-            }
-            const jobId = submitJson.job_id;
-            logger.info(`[${requestId}] SDXL job submitted to ${usedEndpointKey}: ${jobId}`);
-
-            // Poll for result (max 180 seconds)
-            const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-            let imageBuffer = null;
-            for (let poll = 0; poll < 90; poll++) {
-                await sleep(2000);
-
-                // Try /result/ first, then fallback to /jobs/ if 404
-                let resultRes = await fetch(`${baseUrl}/result/${jobId}`);
-                if (resultRes.status === 404) {
-                    resultRes = await fetch(`${baseUrl}/jobs/${jobId}`);
-                }
-
-                if (resultRes.status === 202) continue; // Still processing (Queued/Generating)
-
-                if (!resultRes.ok) {
+            try {
+                // Try endpoints in order based on LoadBalancer scoring
+                for (const endpoint of sdxlEndpoints) {
                     try {
-                        const errJson = await resultRes.json();
-                        if (errJson.status === 'failed') {
-                            loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error(errJson.error));
-                            throw new Error(errJson.error || `SDXL generation failed with status ${resultRes.status}`);
+                        // Check if we should throttle this endpoint
+                        if (loadBalancer.shouldThrottle(endpoint.key)) {
+                            logger.warn(`[LoadBalancer] ${endpoint.key} throttled, trying next`);
+                            continue;
                         }
-                    } catch {
-                        // ignore parse error
+
+                        usedEndpointKey = endpoint.key;
+                        jobStartTime = loadBalancer.recordJobStart(endpoint.key);
+
+                        // Apply request spread delay to prevent thundering herd
+                        await loadBalancer.applyRequestSpread(endpoint.key);
+
+                        const result = await fetchWithRetry(`${endpoint.url}/generate`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(sBody),
+                            timeout: 300000,
+                            retries: 2
+                        });
+
+                        if (!result.ok) {
+                            throw new Error(`SDXL Submission Failed (${result.status})`);
+                        }
+
+                        submitResponse = result;
+                        baseUrl = endpoint.url;
+                        break; // Success, exit the loop
+                    } catch (err) {
+                        // recordFailure correctly decrements activeJobs[endpoint.key]
+                        loadBalancer.recordFailure(endpoint.key, jobStartTime, err);
+                        usedEndpointKey = null;
+                        jobStartTime = null;
+
+                        if (err.message.includes("429")) {
+                            logger.warn(`[LoadBalancer] ${endpoint.key} rate limited (429), trying next endpoint`);
+                            continue; // Try next endpoint
+                        }
+
+                        // For other errors, continue to next endpoint
+                        logger.warn(`[LoadBalancer] ${endpoint.key} failed: ${err.message}, trying next endpoint`);
                     }
-                    loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error(`Status ${resultRes.status}`));
-                    throw new Error(`SDXL Polling Error (${resultRes.status}): ${await resultRes.text()}`);
                 }
 
-                const ct = resultRes.headers.get('content-type') || '';
-                if (ct.includes('image/')) {
-                    imageBuffer = Buffer.from(await resultRes.arrayBuffer());
-                    loadBalancer.recordSuccess(usedEndpointKey, jobStartTime);
-                    break;
+                if (!submitResponse) {
+                    logger.warn(`[Throttling] All SDXL endpoints exhausted for task ${requestId}.`);
+                    throw new Error(`Throttling: SDXL API Busy. All endpoints failed. Retrying...`);
                 }
 
-                const statusJson = await resultRes.json();
-                if (statusJson.status === 'failed') {
-                    loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error(statusJson.error));
-                    throw new Error(statusJson.error || 'SDXL generation failed');
+                const submitJson = await submitResponse.json();
+                if (!submitJson.job_id) {
+                    throw new Error("No job_id from SDXL API");
                 }
+                const jobId = submitJson.job_id;
+                logger.info(`[${requestId}] SDXL job submitted to ${usedEndpointKey}: ${jobId}`);
 
-                if (['queued', 'generating', 'processing'].includes(statusJson.status)) continue;
+                // Poll for result (max 180 seconds)
+                const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+                for (let poll = 0; poll < 90; poll++) {
+                    await sleep(2000);
+
+                    // Try /result/ first, then fallback to /jobs/ if 404
+                    let resultRes = await fetch(`${baseUrl}/result/${jobId}`);
+                    if (resultRes.status === 404) {
+                        resultRes = await fetch(`${baseUrl}/jobs/${jobId}`);
+                    }
+
+                    if (resultRes.status === 202) continue; // Still processing (Queued/Generating)
+
+                    if (!resultRes.ok) {
+                        try {
+                            const errJson = await resultRes.json();
+                            if (errJson.status === 'failed') {
+                                throw new Error(errJson.error || `SDXL generation failed with status ${resultRes.status}`);
+                            }
+                        } catch (e) { /* ignore parse error */ }
+                        throw new Error(`SDXL Polling Error (${resultRes.status}): ${await resultRes.text()}`);
+                    }
+
+                    const ct = resultRes.headers.get('content-type') || '';
+                    if (ct.includes('image/')) {
+                        imageBuffer = Buffer.from(await resultRes.arrayBuffer());
+                        loadBalancer.recordSuccess(usedEndpointKey, jobStartTime);
+                        isFinalized = true;
+                        break;
+                    }
+                }
+                if (!imageBuffer) {
+                    throw new Error("SDXL generation timed out after 3 minutes");
+                }
+                response = { ok: true, _fluxImageBuffer: imageBuffer }; // reusing _fluxImageBuffer hack
+            } finally {
+                // LEAK FIX: If we recorded a start but never explicitly succeeded/failed (e.g. unexpected error in polling block)
+                if (usedEndpointKey && !isFinalized) {
+                    logger.warn(`[LoadBalancer] Cleaning up active slot for ${usedEndpointKey} due to error/timeout`);
+                    loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error("Job processing interrupted or polling failed"));
+                }
             }
-
-            if (!imageBuffer) {
-                loadBalancer.recordFailure(usedEndpointKey, jobStartTime, new Error('Timeout'));
-                throw new Error("SDXL generation timed out");
-            }
-            response = { ok: true, _fluxImageBuffer: imageBuffer }; // reusing _fluxImageBuffer hack
         }
 
         if (!response.ok && !response._fluxImageBuffer) throw new Error(`Model Provider Error (${response.status}): ${await response.text()}`);
