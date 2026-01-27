@@ -219,26 +219,57 @@ export function useMagicEnhance({
                         setEnhanceStatus('');
                     }, 60000);
 
-                    const unsubscribe = onSnapshot(doc(db, 'enhance_queue', requestId), (snapshot) => {
-                        if (!snapshot.exists()) return;
-                        const data = snapshot.data();
+                    // Advanced Stability: Backup Polling Fallback
+                    let fallbackTimer = null;
+                    const startFallback = () => {
+                        if (fallbackTimer) return;
+                        fallbackTimer = setInterval(async () => {
+                            try {
+                                const { getDoc, doc } = await import('firebase/firestore');
+                                const snap = await getDoc(doc(db, 'enhance_queue', requestId));
+                                if (snap.exists()) {
+                                    const data = snap.data();
+                                    if (data.status === 'completed' || data.status === 'failed') {
+                                        handleStatus(data);
+                                    }
+                                }
+                            } catch (e) { console.error("Enhance fallback fail", e); }
+                        }, 10000);
+                    };
 
+                    const handleStatus = (data) => {
                         if (data.status === 'completed') {
                             clearTimeout(timeoutId);
+                            if (fallbackTimer) clearInterval(fallbackTimer);
                             setPrompt(data.prompt);
                             toast.success("Magic enhanced!", { id: 'style-magic' });
                             setIsEnhancing(false);
                             setEnhanceStatus('');
-                            unsubscribe();
-                            listenerRef.current = null;
+                            if (listenerRef.current) {
+                                listenerRef.current();
+                                listenerRef.current = null;
+                            }
                         } else if (data.status === 'failed') {
                             clearTimeout(timeoutId);
+                            if (fallbackTimer) clearInterval(fallbackTimer);
                             toast.error("Failed: " + (data.error || "Unknown"), { id: 'style-magic' });
                             setIsEnhancing(false);
                             setEnhanceStatus('');
-                            unsubscribe();
-                            listenerRef.current = null;
+                            if (listenerRef.current) {
+                                listenerRef.current();
+                                listenerRef.current = null;
+                            }
                         }
+                    };
+
+                    setTimeout(startFallback, 25000);
+
+                    const unsubscribe = onSnapshot(doc(db, 'enhance_queue', requestId), (snapshot) => {
+                        if (!snapshot.exists()) return;
+                        handleStatus(snapshot.data());
+                    }, (err) => {
+                        console.error("Enhance listener err", err);
+                        startFallback();
                     });
                     listenerRef.current = unsubscribe;
                 } catch (error) {

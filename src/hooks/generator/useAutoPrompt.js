@@ -58,28 +58,51 @@ export function useAutoPrompt(prompt, setPrompt, referenceImage, setReferenceIma
 
             const requestId = data.requestId;
 
-            const unsub = onSnapshot(doc(db, "analysis_queue", requestId), (snapshot) => {
-                if (snapshot.exists()) {
-                    const status = snapshot.data().status;
-                    if (status === 'completed') {
-                        clearProgressTimers();
-                        setPrompt(snapshot.data().prompt);
-                        toast.success("Prompt generated!", { id: 'auto-prompt' });
+            // Advanced Stability: Polling Fallback
+            let fallbackTimer = null;
+            const startFallback = () => {
+                if (fallbackTimer) return;
+                fallbackTimer = setInterval(async () => {
+                    try {
+                        const { getDoc, doc } = await import('firebase/firestore');
+                        const snap = await getDoc(doc(db, "analysis_queue", requestId));
+                        if (snap.exists()) handleUpdate(snap.data());
+                    } catch (e) { console.error("AutoPrompt fallback fail", e); }
+                }, 10000);
+            };
 
-                        if (generationMode === 'image') {
-                            setReferenceImage(null);
-                        }
-                        setIsAutoPrompting(false);
-                        unsub();
+            const handleUpdate = (data) => {
+                if (data.status === 'completed') {
+                    clearProgressTimers();
+                    if (fallbackTimer) clearInterval(fallbackTimer);
+                    setPrompt(data.prompt);
+                    toast.success("Prompt generated!", { id: 'auto-prompt' });
+
+                    if (generationMode === 'image') setReferenceImage(null);
+                    setIsAutoPrompting(false);
+                    if (listenerRef.current) {
+                        listenerRef.current();
                         listenerRef.current = null;
-                    } else if (status === 'failed') {
-                        clearProgressTimers();
-                        toast.error("Analysis failed: " + snapshot.data().error, { id: 'auto-prompt' });
-                        setIsAutoPrompting(false);
-                        unsub();
+                    }
+                } else if (data.status === 'failed') {
+                    clearProgressTimers();
+                    if (fallbackTimer) clearInterval(fallbackTimer);
+                    toast.error("Analysis failed: " + data.error, { id: 'auto-prompt' });
+                    setIsAutoPrompting(false);
+                    if (listenerRef.current) {
+                        listenerRef.current();
                         listenerRef.current = null;
                     }
                 }
+            };
+
+            setTimeout(startFallback, 25000);
+
+            const unsub = onSnapshot(doc(db, "analysis_queue", requestId), (snapshot) => {
+                if (snapshot.exists()) handleUpdate(snapshot.data());
+            }, (err) => {
+                console.error("AutoPrompt listener err", err);
+                startFallback();
             });
             listenerRef.current = unsub;
 

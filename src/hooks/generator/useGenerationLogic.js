@@ -5,6 +5,10 @@ import { db } from '../../firebase';
 import toast from 'react-hot-toast';
 import { trackEvent, trackCreativeTelemetry, trackFriction } from '../../utils/analytics';
 
+// Reliability Constants
+const DEBOUNCE_MS = 2000;        // Minimum time between generation requests
+const SLOW_THRESHOLD_MS = 120000; // 2 min - show "taking longer" message
+
 export function useGenerationLogic({
     prompt,
     selectedModel,
@@ -20,6 +24,9 @@ export function useGenerationLogic({
     const unsubscribeRef = useRef(null);
     const currentJobIdRef = useRef(null);
 
+    // Reliability: Debounce guard
+    const lastRequestTimeRef = useRef(null);
+
     // Cleanup listener on unmount
     useEffect(() => {
         return () => {
@@ -32,75 +39,112 @@ export function useGenerationLogic({
     const { call: apiCall } = useApi();
 
     // Listen to job status changes
-    const listenToJob = (requestId) => {
+    const listenToJob = (requestId, isRestored = false) => {
         // Cleanup any existing listener
         if (unsubscribeRef.current) {
             unsubscribeRef.current();
         }
 
         currentJobIdRef.current = requestId;
+        let lastKnownStatus = 'queued';
+        let fallbackTimer = null;
+
+        const cleanup = () => {
+            if (unsubscribeRef.current) {
+                unsubscribeRef.current();
+                unsubscribeRef.current = null;
+            }
+            if (fallbackTimer) {
+                clearInterval(fallbackTimer);
+                fallbackTimer = null;
+            }
+            localStorage.removeItem('activeGenerationJob');
+        };
+
+        // Advanced Stability: Backup Polling Fallback
+        // If onSnapshot stalls or Firestore stream breaks, this ensures we eventually get the result.
+        const startFallback = () => {
+            if (fallbackTimer) return;
+            console.log(`[useGenerationLogic] Initializing backup polling for ${requestId}`);
+            fallbackTimer = setInterval(async () => {
+                try {
+                    const { getDoc, doc } = await import('firebase/firestore');
+                    const snap = await getDoc(doc(db, 'generation_queue', requestId));
+                    if (snap.exists()) {
+                        const data = snap.data();
+                        handleStatusUpdate(data);
+                    }
+                } catch (err) {
+                    console.error("[useGenerationLogic] Fallback poll failed:", err);
+                }
+            }, 10000); // Poll every 10s as a safety net
+        };
+
+        const handleStatusUpdate = (data) => {
+            if (!data) return;
+
+            if (data.status === 'completed' && data.imageUrl) {
+                setGeneratedImage(data.imageUrl);
+                setGenerating(false);
+                if (setActiveJob) {
+                    setActiveJob({ id: requestId, ...data });
+                }
+                toast.success('Image generated successfully! 🎨', { id: 'gen-image' });
+                cleanup();
+
+                const promptLength = data.prompt?.length || 0;
+                const promptBucket = promptLength <= 50 ? 'short' : (promptLength <= 150 ? 'medium' : 'long');
+
+                trackEvent('generate_image_success', {
+                    model_id: data.modelId,
+                    job_id: requestId,
+                    duration_ms: startTimeRef.current ? Date.now() - startTimeRef.current : undefined,
+                    aspect_ratio: data.aspectRatio || aspectRatio,
+                    prompt_length_bucket: promptBucket
+                });
+
+                trackCreativeTelemetry('generation_success', {
+                    model_id: data.modelId,
+                    aspect_ratio: data.aspectRatio || aspectRatio,
+                    prompt_length_bucket: promptBucket
+                });
+            } else if (data.status === 'failed') {
+                setGenerating(false);
+                toast.error(`Generation failed: ${data.error || 'Unknown error'}`, { id: 'gen-image' });
+
+                trackEvent('generate_image_failure', {
+                    model_id: data.modelId || selectedModel?.id,
+                    error: data.error || 'Server Side Failure'
+                });
+                trackFriction('generation_failure', 'Generation_Listener', data.error || 'Server Side Failure');
+                cleanup();
+            } else if (data.status === 'processing' && lastKnownStatus !== 'processing') {
+                lastKnownStatus = 'processing';
+                toast.loading('Processing your image...', { id: 'gen-image' });
+            }
+
+            // Slow Detection: Notify user if taking longer than usual
+            if (data.status === 'processing' && startTimeRef.current) {
+                const elapsedTime = Date.now() - startTimeRef.current;
+                if (elapsedTime > SLOW_THRESHOLD_MS) {
+                    toast.loading('This is taking longer than usual...', { id: 'gen-image' });
+                }
+            }
+        };
+
+        // Start fallback after a short delay to see if onSnapshot works
+        const gracePeriod = isRestored ? 2000 : 25000;
+        setTimeout(startFallback, gracePeriod);
 
         const unsubscribe = onSnapshot(
             doc(db, 'generation_queue', requestId),
             (docSnap) => {
                 if (!docSnap.exists()) return;
-
-                const data = docSnap.data();
-
-                if (data.status === 'completed' && data.imageUrl) {
-                    setGeneratedImage(data.imageUrl);
-                    setGenerating(false);
-                    if (setActiveJob) {
-                        setActiveJob({ id: requestId, ...data });
-                    }
-                    toast.success('Image generated successfully! 🎨', { id: 'gen-image' });
-
-                    // Cleanup listener after completion
-                    if (unsubscribeRef.current) {
-                        unsubscribeRef.current();
-                        unsubscribeRef.current = null;
-                    }
-                    const promptLength = data.prompt?.length || 0;
-                    const promptBucket = promptLength <= 50 ? 'short' : (promptLength <= 150 ? 'medium' : 'long');
-
-                    trackEvent('generate_image_success', {
-                        model_id: data.modelId,
-                        job_id: requestId,
-                        duration_ms: startTimeRef.current ? Date.now() - startTimeRef.current : undefined,
-                        aspect_ratio: data.aspectRatio || aspectRatio,
-                        prompt_length_bucket: promptBucket
-                    });
-
-                    trackCreativeTelemetry('generation_success', {
-                        model_id: data.modelId,
-                        aspect_ratio: data.aspectRatio || aspectRatio,
-                        prompt_length_bucket: promptBucket
-                    });
-                    localStorage.removeItem('activeGenerationJob');
-                } else if (data.status === 'failed') {
-                    setGenerating(false);
-                    toast.error(`Generation failed: ${data.error || 'Unknown error'}`, { id: 'gen-image' });
-
-                    trackEvent('generate_image_failure', {
-                        model_id: data.modelId || selectedModel?.id,
-                        error: data.error || 'Server Side Failure'
-                    });
-                    trackFriction('generation_failure', 'Generation_Listener', data.error || 'Server Side Failure');
-                    // Cleanup listener after failure
-                    if (unsubscribeRef.current) {
-                        unsubscribeRef.current();
-                        unsubscribeRef.current = null;
-                    }
-                    localStorage.removeItem('activeGenerationJob');
-                } else if (data.status === 'processing') {
-                    toast.loading('Processing your image...', { id: 'gen-image' });
-                }
+                handleStatusUpdate(docSnap.data());
             },
             (error) => {
                 console.error('[useGenerationLogic] Listener error:', error);
-                setGenerating(false);
-                toast.error('Error tracking generation status', { id: 'gen-image' });
-                localStorage.removeItem('activeGenerationJob');
+                startFallback(); // Immediate fallback trigger on error
             }
         );
 
@@ -109,6 +153,14 @@ export function useGenerationLogic({
 
     const handleGenerate = async (promptOverride = null) => {
         try {
+            // Debounce Guard: Prevent rapid duplicate submissions
+            const now = Date.now();
+            if (lastRequestTimeRef.current && (now - lastRequestTimeRef.current < DEBOUNCE_MS)) {
+                toast('Too fast! Please wait a moment.', { icon: '⏳', id: 'debounce' });
+                return;
+            }
+            lastRequestTimeRef.current = now;
+
             const effectivePrompt = (typeof promptOverride === 'string' ? promptOverride : prompt);
 
             if (!effectivePrompt || !selectedModel) {
