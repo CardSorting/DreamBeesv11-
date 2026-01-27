@@ -2,11 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, act, cleanup, fireEvent } from '@testing-library/react';
 import LoadingModal from './LoadingModal';
 
-// Mock LoadingOrb
-vi.mock('./LoadingOrb', () => ({
-    default: () => <div data-testid="loading-orb">LoadingOrb</div>
-}));
-
 // Mock Lucide icons
 vi.mock('lucide-react', () => ({
     X: () => <div data-testid="close-icon">X</div>,
@@ -17,9 +12,9 @@ vi.mock('lucide-react', () => ({
 vi.mock('framer-motion', () => ({
     motion: {
         div: ({ children, ...props }) => <div {...props}>{children}</div>,
-        p: ({ children, ...props }) => <p {...props}>{children}</p>
-    },
-    AnimatePresence: ({ children }) => <>{children}</>
+        span: ({ children, ...props }) => <span {...props}>{children}</span>,
+        button: ({ children, onClick, ...props }) => <button onClick={onClick} {...props}>{children}</button>
+    }
 }));
 
 describe('LoadingModal', () => {
@@ -32,68 +27,64 @@ describe('LoadingModal', () => {
         cleanup();
     });
 
-    it('renders correctly with default props', () => {
+    it('renders with initial 0s timer', () => {
         render(<LoadingModal useTurbo={false} />);
-        expect(screen.getByText('Creating')).toBeTruthy();
-        expect(screen.getByText('Dreaming up your vision...')).toBeTruthy();
-        expect(screen.getByTestId('loading-orb')).toBeTruthy();
-        expect(screen.queryByText('TURBO MODE ACTIVE')).toBeNull();
+        expect(screen.getByText('0s')).toBeTruthy();
+        expect(screen.getByText('Generating')).toBeTruthy();
     });
 
-    it('shows turbo badge when useTurbo is true', () => {
+    it('shows turbo indicator when useTurbo is true', () => {
         render(<LoadingModal useTurbo={true} />);
-        expect(screen.getByText('TURBO MODE ACTIVE')).toBeTruthy();
+        expect(screen.getByText('Generating with Turbo')).toBeTruthy();
+        expect(screen.getByTestId('zap-icon')).toBeTruthy();
     });
 
-    it('shows stop button and calls onCancel', () => {
+    it('shows cancel button and calls onCancel', () => {
         const onCancel = vi.fn();
         render(<LoadingModal onCancel={onCancel} />);
 
-        const stopButton = screen.getByText('Stop Generating');
-        expect(stopButton).toBeTruthy();
+        const cancelButton = screen.getByText('Cancel');
+        expect(cancelButton).toBeTruthy();
 
-        fireEvent.click(stopButton);
+        fireEvent.click(cancelButton);
         expect(onCancel).toHaveBeenCalledTimes(1);
     });
 
-    it('cycles through loading messages', () => {
+    it('increments elapsed timer every second', () => {
         render(<LoadingModal />);
-        expect(screen.getByText('Dreaming up your vision...')).toBeTruthy();
+        expect(screen.getByText('0s')).toBeTruthy();
 
-        // Fast forward 2.5s
+        // Fast forward 1 second
         act(() => {
-            vi.advanceTimersByTime(2500);
+            vi.advanceTimersByTime(1000);
         });
-        expect(screen.getByText('Mixing pixels and imagination...')).toBeTruthy();
+        expect(screen.getByText('1s')).toBeTruthy();
 
-        // Fast forward another 2.5s
+        // Fast forward to 5 seconds
         act(() => {
-            vi.advanceTimersByTime(2500);
+            vi.advanceTimersByTime(4000);
         });
-        expect(screen.getByText('Applying artistic styles...')).toBeTruthy();
+        expect(screen.getByText('5s')).toBeTruthy();
     });
 
-    it('shows grace message after timeout', () => {
+    it('formats elapsed time correctly for minutes', () => {
         render(<LoadingModal />);
 
-        // Default message
-        expect(screen.getByText('Dreaming up your vision...')).toBeTruthy();
-
-        // Fast forward 12s (grace timeout)
+        // Fast forward to 65 seconds (1:05)
         act(() => {
-            vi.advanceTimersByTime(12000);
+            vi.advanceTimersByTime(65000);
         });
+        expect(screen.getByText('1:05')).toBeTruthy();
 
-        // Should show one of the grace messages
-        const graceMessages = [
-            "This is taking a bit longer than usual...",
-            "Complex prompts need a little more time...",
-            "Our GPUs are crunching hard for you..."
-        ];
-
-        const currentText = screen.getByText((content) => {
-            return graceMessages.includes(content);
+        // Fast forward to 2:05
+        act(() => {
+            vi.advanceTimersByTime(60000);
         });
-        expect(currentText).toBeTruthy();
+        expect(screen.getByText('2:05')).toBeTruthy();
+    });
+
+    it('does not show cancel button when onCancel is not provided', () => {
+        render(<LoadingModal />);
+        expect(screen.queryByText('Cancel')).toBeNull();
     });
 });

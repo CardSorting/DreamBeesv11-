@@ -1,58 +1,28 @@
-import React, { useState, useEffect, useMemo } from 'react';
-
+import React, { useState, useEffect } from 'react';
 import { X, Zap } from 'lucide-react';
 import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
-import LoadingOrb from './LoadingOrb';
 
-const LOADING_MESSAGES = [
-    "Dreaming up your vision...",
-    "Mixing pixels and imagination...",
-    "Applying artistic styles...",
-    "Refining details and lighting...",
-    "Polishing your masterpiece..."
-];
-
-const GRACE_MESSAGES = [
-    "This is taking a bit longer than usual...",
-    "Complex prompts need a little more time...",
-    "Our GPUs are crunching hard for you..."
-];
+// Format elapsed time: 0s, 1s, ..., 1:00, 1:01, etc.
+const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return mins > 0
+        ? `${mins}:${secs.toString().padStart(2, '0')}`
+        : `${secs}s`;
+};
 
 export default function LoadingModal({ useTurbo, onCancel }) {
-    const [showGraceMessage, setShowGraceMessage] = useState(false);
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-    const [graceMessageIndex, setGraceMessageIndex] = useState(0);
-
+    // Elapsed time counter
     useEffect(() => {
-        if (showGraceMessage) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setGraceMessageIndex(Math.floor(Math.random() * GRACE_MESSAGES.length));
-        }
-    }, [showGraceMessage]);
-
-    const graceMessage = useMemo(() => {
-        if (showGraceMessage) {
-            return GRACE_MESSAGES[graceMessageIndex] || "";
-        }
-        return "";
-    }, [showGraceMessage, graceMessageIndex]);
-
-    const [messageIndex, setMessageIndex] = useState(0);
-
-    useEffect(() => {
-        const messageInterval = setInterval(() => {
-            setMessageIndex(prev => (prev + 1) % LOADING_MESSAGES.length);
-        }, 2500);
-
-        const graceTimeout = setTimeout(() => {
-            setShowGraceMessage(true);
-        }, 12000);
-
-        return () => {
-            clearInterval(messageInterval);
-            clearTimeout(graceTimeout);
-        };
+        const timer = setInterval(() => {
+            setElapsedSeconds(prev => prev + 1);
+        }, 1000);
+        return () => clearInterval(timer);
     }, []);
+
+    const accentColor = useTurbo ? '#fbbf24' : '#8b5cf6';
 
     return (
         <motion.div
@@ -63,140 +33,139 @@ export default function LoadingModal({ useTurbo, onCancel }) {
                 position: 'fixed',
                 inset: 0,
                 zIndex: 9999,
-                background: 'rgba(0,0,0,0.85)',
-                backdropFilter: 'blur(12px)',
+                background: '#000',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontFamily: '"Outfit", sans-serif',
-                padding: '20px' // Ensure padding on mobile
+                flexDirection: 'column',
+                fontFamily: '"Outfit", sans-serif'
             }}
         >
+            {/* Ambient glow */}
+            <motion.div
+                animate={{
+                    opacity: [0.3, 0.6, 0.3],
+                    scale: [1, 1.1, 1]
+                }}
+                transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: 'easeInOut'
+                }}
+                style={{
+                    position: 'absolute',
+                    width: '300px',
+                    height: '300px',
+                    borderRadius: '50%',
+                    background: `radial-gradient(circle, ${accentColor}40 0%, transparent 70%)`,
+                    filter: 'blur(60px)',
+                    pointerEvents: 'none'
+                }}
+            />
+
+            {/* Main content */}
             <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ duration: 0.3 }}
                 style={{
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     gap: '24px',
-                    maxWidth: '400px',
-                    width: '100%',
-                    textAlign: 'center',
-                    padding: '32px 24px',
-                    background: 'rgba(24, 24, 27, 0.8)',
-                    borderRadius: '32px',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+                    zIndex: 1
                 }}
             >
-                <div style={{ marginBottom: '8px' }}>
-                    <LoadingOrb size="large" useTurbo={useTurbo} />
+                {/* Large elapsed time - the hero element */}
+                <motion.div
+                    key={elapsedSeconds}
+                    initial={{ opacity: 0.5, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.2 }}
+                    style={{
+                        fontFamily: 'monospace',
+                        fontSize: '4rem',
+                        fontWeight: '300',
+                        color: 'white',
+                        letterSpacing: '-0.02em',
+                        lineHeight: 1
+                    }}
+                >
+                    {formatTime(elapsedSeconds)}
+                </motion.div>
+
+                {/* Subtle status text */}
+                <div style={{
+                    fontSize: '1rem',
+                    color: 'rgba(255,255,255,0.5)',
+                    fontWeight: '400',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                }}>
+                    {useTurbo && <Zap size={16} style={{ color: accentColor }} fill={accentColor} />}
+                    <span>Generating{useTurbo ? ' with Turbo' : ''}</span>
+                    <motion.span
+                        animate={{ opacity: [0.3, 1, 0.3] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                        ...
+                    </motion.span>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 1, width: '100%' }}>
-                    <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                        Creating
-                        <span style={{ display: 'inline-flex' }}>
-                            <motion.span animate={{ opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0 }}>.</motion.span>
-                            <motion.span animate={{ opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}>.</motion.span>
-                            <motion.span animate={{ opacity: [0, 1, 0] }} transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}>.</motion.span>
-                        </span>
-                    </h3>
-                    <div style={{ height: '24px', position: 'relative', width: '100%' }}>
-                        <motion.p
-                            key={showGraceMessage ? 'grace' : messageIndex}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.3 }}
-                            style={{
-                                fontSize: '1rem',
-                                color: '#a1a1aa',
-                                position: 'absolute',
-                                width: '100%',
-                                textAlign: 'center',
-                                margin: 0,
-                                padding: '0 10px'
-                            }}
-                        >
-                            {showGraceMessage
-                                ? graceMessage
-                                : LOADING_MESSAGES[messageIndex]
-                            }
-                        </motion.p>
-                    </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div style={{ width: '100%', maxWidth: '200px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden', marginTop: '8px', position: 'relative' }}>
+                {/* Minimal progress indicator */}
+                <div style={{
+                    width: '120px',
+                    height: '2px',
+                    background: 'rgba(255,255,255,0.1)',
+                    borderRadius: '1px',
+                    overflow: 'hidden',
+                    marginTop: '8px'
+                }}>
                     <motion.div
-                        initial={{ width: '0%' }}
-                        animate={{ width: '95%' }}
-                        transition={{ duration: 12, ease: "linear" }}
+                        initial={{ x: '-100%' }}
+                        animate={{ x: '100%' }}
+                        transition={{
+                            duration: 1.5,
+                            repeat: Infinity,
+                            ease: 'easeInOut'
+                        }}
                         style={{
+                            width: '50%',
                             height: '100%',
-                            background: useTurbo ? '#fbbf24' : '#8b5cf6',
-                            borderRadius: '2px',
-                            position: 'relative',
-                            overflow: 'hidden'
+                            background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`
                         }}
-                    >
-                        {/* Shimmer Effect */}
-                        <div style={{
-                            position: 'absolute',
-                            top: 0, left: 0, bottom: 0, width: '100%',
-                            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)',
-                            transform: 'translateX(-100%)',
-                            animation: 'shimmer 1.5s infinite',
-                        }} />
-                    </motion.div>
+                    />
                 </div>
-                <style>{`
-                    @keyframes shimmer {
-                        100% { transform: translateX(100%); }
-                    }
-                `}</style>
-
-                {useTurbo && (
-                    <div style={{
-                        marginTop: '0px', padding: '6px 16px',
-                        background: 'rgba(245, 158, 11, 0.1)',
-                        border: '1px solid rgba(245, 158, 11, 0.2)',
-                        borderRadius: '20px',
-                        display: 'flex', alignItems: 'center', gap: '8px',
-                        color: '#fbbf24', fontSize: '0.85rem', fontWeight: '600'
-                    }}>
-                        <Zap size={14} fill="currentColor" />
-                        TURBO MODE ACTIVE
-                    </div>
-                )}
-
-                {onCancel && (
-                    <button
-                        onClick={onCancel}
-                        style={{
-                            marginTop: '12px',
-                            background: 'transparent',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            color: '#ef4444',
-                            padding: '8px 16px',
-                            borderRadius: '12px',
-                            fontSize: '0.9rem',
-                            cursor: 'pointer',
-                            display: 'flex', alignItems: 'center', gap: '8px',
-                            transition: 'all 0.2s',
-                            opacity: 0.8
-                        }}
-                        onMouseOver={e => e.currentTarget.style.opacity = 1}
-                        onMouseOut={e => e.currentTarget.style.opacity = 0.8}
-                    >
-                        <X size={16} />
-                        Stop Generating
-                    </button>
-                )}
             </motion.div>
+
+            {/* Cancel button - very subtle at bottom */}
+            {onCancel && (
+                <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 0.5 }}
+                    whileHover={{ opacity: 1 }}
+                    onClick={onCancel}
+                    style={{
+                        position: 'absolute',
+                        bottom: '32px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: 'rgba(255,255,255,0.6)',
+                        padding: '8px 16px',
+                        borderRadius: '8px',
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        transition: 'all 0.2s'
+                    }}
+                >
+                    <X size={14} />
+                    Cancel
+                </motion.button>
+            )}
         </motion.div>
     );
 }
