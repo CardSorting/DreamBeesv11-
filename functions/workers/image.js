@@ -660,8 +660,11 @@ export const processImageTask = async (req) => {
 
     // 4. Get Dynamic Concurrency Limit Based on Endpoint Health
     let allowedConcurrency;
+    let primaryEndpoint = 'sdxl-a10g'; // Default for logging
+
     if (modelType === 'cf-flux') {
         allowedConcurrency = 50; // Cloudflare concurrency
+        primaryEndpoint = 'cf-flux-2-dev';
     } else {
         // Use the primary endpoint for the model type to determine limit
         const selectedEndpoints = loadBalancer.selectEndpoints(modelType, {
@@ -669,7 +672,7 @@ export const processImageTask = async (req) => {
             jobComplexity,
             preferPremium: isPremiumModel || useTurbo
         });
-        const primaryEndpoint = selectedEndpoints[0]?.key || 'sdxl-a10g';
+        primaryEndpoint = selectedEndpoints[0]?.key || 'sdxl-a10g';
         allowedConcurrency = loadBalancer.getDynamicConcurrencyLimit(
             primaryEndpoint,
             useTurbo ? 10 : 3
@@ -768,7 +771,7 @@ export const processImageTask = async (req) => {
 
                 // Poll for result
                 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-                for (let poll = 0; poll < 90; poll++) {
+                for (let poll = 0; poll < 240; poll++) {
                     await sleep(2000);
                     let resultRes = await fetch(`${baseUrl}/result/${jobId}`);
                     if (resultRes.status === 404) {
@@ -797,7 +800,7 @@ export const processImageTask = async (req) => {
                 }
 
                 if (!imageBuffer) {
-                    throw new Error("Zit generation timed out after 3 minutes");
+                    throw new Error("Zit generation timed out after 8 minutes");
                 }
                 response = { ok: true, _fluxImageBuffer: imageBuffer };
             } finally {
@@ -1115,7 +1118,7 @@ export const processImageTask = async (req) => {
 
                 // Poll for result (max 180 seconds)
                 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-                for (let poll = 0; poll < 90; poll++) {
+                for (let poll = 0; poll < 240; poll++) {
                     await sleep(2000);
 
                     // Try /result/ first, then fallback to /jobs/ if 404
@@ -1145,7 +1148,7 @@ export const processImageTask = async (req) => {
                     }
                 }
                 if (!imageBuffer) {
-                    throw new Error("SDXL generation timed out after 3 minutes");
+                    throw new Error("SDXL generation timed out after 8 minutes");
                 }
                 response = { ok: true, _fluxImageBuffer: imageBuffer }; // reusing _fluxImageBuffer hack
             } finally {

@@ -24,7 +24,7 @@ export class GalmixClient {
             steps = 30,
             guidance_scale = 7.5,
             poll_interval = 1000,
-            timeout = 300000
+            timeout = 480000
         } = options;
 
         // 1. Submit Job

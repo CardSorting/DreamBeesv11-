@@ -393,7 +393,7 @@ export default function Generator() {
                     generationMode={generationMode} setGenerationMode={handleModeChange}
                     selectedModel={selectedModel}
                     setSelectedModel={setSelectedModel}
-                    availableModels={currentUser ? availableModels : availableModels.filter(m => m.id === 'galmix')}
+                    availableModels={currentUser ? availableModels.filter(m => !m.hideFromGenerator) : availableModels.filter(m => m.id === 'galmix')}
                     setIsModelModalOpen={setIsModelModalOpen}
                     aspectRatio={aspectRatio} setAspectRatio={(val) => { setAspectRatio(val); updateParam('aspectRatio', val); }}
                     showcaseImages={showcaseImages} setPrompt={setPrompt} setGeneratedImage={setGeneratedImage}
@@ -421,7 +421,7 @@ export default function Generator() {
                     <ModelSelectorModal
                         isOpen={isModelModalOpen}
                         onClose={() => setIsModelModalOpen(false)}
-                        models={currentUser ? availableModels : availableModels.filter(m => m.id === 'galmix')}
+                        models={currentUser ? availableModels.filter(m => !m.hideFromGenerator) : availableModels.filter(m => m.id === 'galmix')}
                         selectedModel={selectedModel}
                         onSelectModel={setSelectedModel}
                     />

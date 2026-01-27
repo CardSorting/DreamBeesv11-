@@ -55,6 +55,7 @@ export function ModelProvider({ children }) {
                         type: 'Transformer',
                         order: 100,
                         isActive: true,
+                        hideFromGenerator: true,
                         image: '/app-previews/meowacc.png',
                         tags: ['cat', 'aesthetic', 'transformer', 'fun']
                     });
@@ -68,6 +69,7 @@ export function ModelProvider({ children }) {
                         type: 'Transformer',
                         order: 101,
                         isActive: true,
+                        hideFromGenerator: true,
                         image: '/app-previews/wardrobe.png',
                         tags: ['fashion', 'lifestyle', 'magic', 'transformer']
                     });
@@ -78,9 +80,10 @@ export function ModelProvider({ children }) {
                         id: 'nekomimi',
                         name: 'Nekomimi Academy',
                         description: 'Turn ideas into Kawaii children\'s educational art.',
-                        type: 'Generator',
+                        type: 'Transformer',
                         order: 102,
                         isActive: true,
+                        hideFromGenerator: true,
                         image: '/app-previews/slides.png',
                         tags: ['education', 'kawaii', 'slideshow', 'poster']
                     });

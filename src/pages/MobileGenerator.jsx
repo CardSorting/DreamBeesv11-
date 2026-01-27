@@ -364,33 +364,36 @@ export default function MobileGenerator() {
                         <div style={{ padding: '8px 12px', fontSize: '0.85rem', fontWeight: '600', color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                             Select Model
                         </div>
-                        {(availableModels || []).filter(m => m.isActive !== false).filter(m => currentUser ? true : m.id === 'galmix').map(model => (
-                            <button
-                                key={model.id}
-                                onClick={() => {
-                                    setSelectedModel(model);
-                                    setShowModelSelector(false);
-                                }}
-                                style={{
-                                    width: '100%',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                    padding: '12px',
-                                    background: selectedModel?.id === model.id ? 'rgba(139, 92, 246, 0.1)' : 'transparent',
-                                    border: 'none',
-                                    borderRadius: '12px',
-                                    color: 'white',
-                                    marginBottom: '4px',
-                                    cursor: 'pointer',
-                                    textAlign: 'left'
-                                }}
-                            >
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    <span style={{ fontWeight: '500' }}>{model.name}</span>
-                                    <span style={{ fontSize: '0.75rem', color: '#a1a1aa' }}>{model.description?.substring(0, 50)}...</span>
-                                </div>
-                                {selectedModel?.id === model.id && <Check size={16} className="text-purple-500" />}
-                            </button>
-                        ))}
+                        {(availableModels || [])
+                            .filter(m => m.isActive !== false && m.hideFromGenerator !== true)
+                            .filter(m => currentUser ? true : m.id === 'galmix')
+                            .map(model => (
+                                <button
+                                    key={model.id}
+                                    onClick={() => {
+                                        setSelectedModel(model);
+                                        setShowModelSelector(false);
+                                    }}
+                                    style={{
+                                        width: '100%',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                        padding: '12px',
+                                        background: selectedModel?.id === model.id ? 'rgba(139, 92, 246, 0.1)' : 'transparent',
+                                        border: 'none',
+                                        borderRadius: '12px',
+                                        color: 'white',
+                                        marginBottom: '4px',
+                                        cursor: 'pointer',
+                                        textAlign: 'left'
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                        <span style={{ fontWeight: '500' }}>{model.name}</span>
+                                        <span style={{ fontSize: '0.75rem', color: '#a1a1aa' }}>{model.description?.substring(0, 50)}...</span>
+                                    </div>
+                                    {selectedModel?.id === model.id && <Check size={16} className="text-purple-500" />}
+                                </button>
+                            ))}
                     </div>
                 </div>
             )}

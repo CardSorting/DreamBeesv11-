@@ -48,12 +48,13 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
     if (!isOpen) return null;
 
     // Filter models safely
-    const filteredModels = (models || []).filter(model => model.isActive !== false).filter(model => {
-        if (!model) return false;
-        const nameMatch = model.name?.toLowerCase().includes(searchQuery.toLowerCase());
-        const tagMatch = model.tags?.some(tag => tag?.toLowerCase().includes(searchQuery.toLowerCase()));
-        return nameMatch || tagMatch;
-    });
+    const filteredModels = (models || [])
+        .filter(model => model && model.isActive !== false && model.hideFromGenerator !== true)
+        .filter(model => {
+            const nameMatch = model.name?.toLowerCase().includes(searchQuery.toLowerCase());
+            const tagMatch = model.tags?.some(tag => tag?.toLowerCase().includes(searchQuery.toLowerCase()));
+            return nameMatch || tagMatch;
+        });
 
     // Pagination Logic
     const totalPages = Math.ceil(filteredModels.length / ITEMS_PER_PAGE);
