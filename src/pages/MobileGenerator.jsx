@@ -5,14 +5,20 @@ import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useGenerationLogic } from '../hooks/generator/useGenerationLogic';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
-import { Send, Sparkles, Bot, User as UserIcon, Image as ImageIcon, Download, RefreshCw, Copy, X, ChevronDown, Check } from 'lucide-react';
+import { Send, Sparkles, Bot, Download, RefreshCw, Copy, X, ChevronDown, Check } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
-import LoadingOrb from '../components/generator/LoadingOrb';
+
+// Format elapsed time helper
+const formatElapsedTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return mins > 0 ? `${mins}:${secs.toString().padStart(2, '0')}` : `${secs}s`;
+};
 
 export default function MobileGenerator() {
     const { currentUser } = useAuth();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     const { selectedModel, availableModels, setSelectedModel } = useModel();
 
     // Remote state
@@ -23,7 +29,6 @@ export default function MobileGenerator() {
     const [inputValue, setInputValue] = useState('');
     const inputRef = useRef(null);
     const messagesEndRef = useRef(null);
-    const _lastScrollY = useRef(0);
 
     const { isLiked: _isLiked, toggleLike: _toggleLike, isHidden: _isHidden, hidePost: _hidePost } = useUserInteractions();
     // UX State
@@ -36,13 +41,29 @@ export default function MobileGenerator() {
     const [_currentJobId, setCurrentJobId] = useState(null);
     const [_activeJob, setActiveJob] = useState(null);
 
-    // Progressive Status
+    // Progressive Status with elapsed timer
     const [loadingStatus, setLoadingStatus] = useState("Dreaming...");
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
+    // Elapsed timer effect
+    useEffect(() => {
+        if (!generating) {
+            setElapsedSeconds(0);
+            return;
+        }
+
+        const timer = setInterval(() => {
+            setElapsedSeconds(prev => prev + 1);
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [generating]);
+
+    // Loading status rotation
     useEffect(() => {
         if (!generating) return;
 
-        const messages = [
+        const statusMessages = [
             "Dreaming up your vision...",
             "Mixing pixels and imagination...",
             "Applying artistic styles...",
@@ -57,14 +78,14 @@ export default function MobileGenerator() {
         ];
 
         let i = 0;
-        setLoadingStatus(messages[0]);
+        setLoadingStatus(statusMessages[0]);
 
         const interval = setInterval(() => {
             i++;
-            if (i < messages.length) {
-                setLoadingStatus(messages[i]);
+            if (i < statusMessages.length) {
+                setLoadingStatus(statusMessages[i]);
             } else {
-                const graceIndex = (i - messages.length) % graceMessages.length;
+                const graceIndex = (i - statusMessages.length) % graceMessages.length;
                 setLoadingStatus(graceMessages[graceIndex]);
             }
         }, 3000);
@@ -72,7 +93,7 @@ export default function MobileGenerator() {
         return () => clearInterval(interval);
     }, [generating]);
 
-    // History Fetching (Pull-based)
+    // History Fetching
     const fetchMessages = async () => {
         if (!currentUser) return;
         try {
@@ -145,25 +166,21 @@ export default function MobileGenerator() {
         setGenerating,
         setGeneratedImage: (img) => {
             setGeneratedImage(img);
-            // Clear local optimistic messages once specific generation is done if needed,
-            // but effectively the remote message will replace it.
-            // We'll clear local "generating" message types.
             setLocalMessages(prev => prev.filter(m => m.type !== 'generating'));
-            // Refresh history
             fetchMessages();
-            // Force scroll to bottom when generation completes
             setTimeout(scrollToBottom, 100);
+            // Haptic feedback on completion
+            if (navigator.vibrate) navigator.vibrate(50);
         },
+        setCurrentJobType: () => { },
         setCurrentJobId,
         setActiveJob
     });
 
-    // Scroll to bottom
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
-    // Combine local and remote messages
     const displayMessages = [
         ...messages,
         ...localMessages.filter(local =>
@@ -177,28 +194,28 @@ export default function MobileGenerator() {
         scrollToBottom();
     }, [displayMessages.length, loadingStatus, generating]);
 
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!inputValue.trim() || generating) return;
 
         const prompt = inputValue;
         setInputValue('');
-        if (inputRef.current) inputRef.current.style.height = 'auto'; // Reset height
+        if (inputRef.current) inputRef.current.style.height = 'auto';
 
-        // Optimistic Update
+        // Haptic feedback on submit
+        if (navigator.vibrate) navigator.vibrate(30);
+
         const optimisticMsg = {
             id: 'optimistic_' + Date.now(),
             role: 'user',
             content: prompt,
-            createdAt: { seconds: Date.now() / 1000 } // Simulate firestore timestamp
+            createdAt: { seconds: Date.now() / 1000 }
         };
         setLocalMessages(prev => [...prev, optimisticMsg]);
 
         await handleGenerate(prompt);
     };
 
-    // Starter Prompts
     const starterPrompts = [
         "A futuristic city with neon lights and flying cars",
         "A cute robot gardening in a sunlit greenhouse",
@@ -209,7 +226,7 @@ export default function MobileGenerator() {
     const handleStarterClick = (prompt) => {
         setInputValue(prompt);
         if (inputRef.current) {
-            inputRef.current.style.height = 'auto'; // Reset then calc
+            inputRef.current.style.height = 'auto';
             inputRef.current.focus();
             setTimeout(() => {
                 if (inputRef.current) inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 120) + 'px';
@@ -223,7 +240,6 @@ export default function MobileGenerator() {
         e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
     };
 
-    // Actions
     const handleDownload = async (imageUrl, id) => {
         if (!imageUrl) return;
 
@@ -238,19 +254,15 @@ export default function MobileGenerator() {
         const toastId = toast.loading('Preparing download...');
 
         try {
-            // Using html2canvas to screenshot the image element
-            // useCORS: true is required for cross-origin images
-            // allowTaint: false allows us to export with toDataURL (if server supports CORS)
             const canvas = await html2canvas(element, {
                 useCORS: true,
-                allowTaint: false, // Must be false to use toDataURL
+                allowTaint: false,
                 logging: false,
-                backgroundColor: null, // Transparent background
-                scale: 2 // High resolution
+                backgroundColor: null,
+                scale: 2
             });
 
             const dataUrl = canvas.toDataURL('image/png');
-
             const link = document.createElement('a');
             link.href = dataUrl;
             link.download = `dreambees-${id}.png`;
@@ -262,7 +274,6 @@ export default function MobileGenerator() {
         } catch (err) {
             console.error("Screenshot download failed:", err);
             toast.error('Download failed. Opening externally...', { id: toastId });
-            // Fallback: Open in new tab if capture fails (e.g. strict CORS)
             window.open(imageUrl, '_blank');
         }
     };
@@ -276,8 +287,6 @@ export default function MobileGenerator() {
         if (!prompt) return;
         setInputValue(prompt);
         if (inputRef.current) inputRef.current.focus();
-        // Optionally auto-submit:
-        // await handleGenerate(prompt);
     }
 
 
@@ -294,13 +303,13 @@ export default function MobileGenerator() {
         }}>
             <Toaster position="top-center" toastOptions={{ style: { background: '#333', color: '#fff' } }} />
 
-            {/* Header - Glassmorphism & Model Selector */}
+            {/* Header - Glassmorphism & Model Selector with Safe Area */}
             <div style={{
                 position: 'absolute',
                 top: 0,
                 left: 0,
                 right: 0,
-                padding: '12px 16px',
+                padding: 'calc(12px + env(safe-area-inset-top, 0px)) 16px 12px 16px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -498,13 +507,19 @@ export default function MobileGenerator() {
                     const showAvatar = !isUser && (index === 0 || displayMessages[index - 1]?.role === 'user');
 
                     return (
-                        <div key={msg.id} style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: isUser ? 'flex-end' : 'flex-start',
-                            width: '100%',
-                            gap: '4px'
-                        }}>
+                        <motion.div
+                            key={msg.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.25, delay: Math.min(index * 0.03, 0.3) }}
+                            style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: isUser ? 'flex-end' : 'flex-start',
+                                width: '100%',
+                                gap: '4px'
+                            }}
+                        >
                             {/* Avatar (Assistant) */}
                             {!isUser && showAvatar && (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', paddingLeft: '4px' }}>
@@ -593,85 +608,184 @@ export default function MobileGenerator() {
                                     msg.content
                                 )}
                             </div>
-                        </div>
+                        </motion.div>
                     );
                 })}
 
-                {/* Active Generation State */}
-                {generating && (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', gap: '4px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '4px' }}>
-                            <div style={{
-                                width: '24px', height: '24px',
-                                background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
-                                borderRadius: '6px',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center'
-                            }}>
-                                <Bot size={14} color="white" />
-                            </div>
-                            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#a1a1aa' }}>DreamBees</span>
-                        </div>
-                        <div style={{
-                            padding: '16px',
-                            borderRadius: '4px 24px 24px 24px',
-                            background: 'rgba(24, 24, 27, 0.95)',
-                            color: '#fff',
-                            fontSize: '0.95rem',
-                            border: '1px solid rgba(139, 92, 246, 0.2)',
-                            display: 'flex', flexDirection: 'column', gap: '12px',
-                            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-                            minWidth: '220px'
-                        }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                <div style={{ transform: 'scale(0.8)', transformOrigin: 'left center' }}>
-                                    <LoadingOrb size="small" />
+                {/* Active Generation State - Enhanced */}
+                <AnimatePresence>
+                    {generating && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.3 }}
+                            style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', width: '100%', gap: '4px' }}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingLeft: '4px' }}>
+                                <div style={{
+                                    width: '24px', height: '24px',
+                                    background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+                                    borderRadius: '6px',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                }}>
+                                    <Bot size={14} color="white" />
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                    <span style={{
-                                        color: '#e4e4e7',
-                                        fontWeight: '500',
-                                        fontSize: '0.95rem',
-                                        background: 'linear-gradient(90deg, #fff, #a1a1aa)',
-                                        WebkitBackgroundClip: 'text',
-                                        WebkitTextFillColor: 'transparent'
-                                    }}>
-                                        {loadingStatus}
-                                    </span>
-                                </div>
+                                <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#a1a1aa' }}>DreamBees</span>
                             </div>
 
-                            <button
-                                onClick={cancelGeneration}
+                            {/* Glassmorphism Loading Card */}
+                            <motion.div
                                 style={{
-                                    alignSelf: 'flex-start',
-                                    background: 'rgba(239, 68, 68, 0.1)',
-                                    color: '#ef4444',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    padding: '6px 12px',
-                                    fontSize: '0.8rem',
-                                    fontWeight: '500',
-                                    cursor: 'pointer',
-                                    display: 'flex', alignItems: 'center', gap: '6px'
+                                    padding: '20px',
+                                    borderRadius: '4px 24px 24px 24px',
+                                    background: 'rgba(24, 24, 27, 0.85)',
+                                    backdropFilter: 'blur(16px)',
+                                    color: '#fff',
+                                    border: '1px solid rgba(139, 92, 246, 0.25)',
+                                    display: 'flex', flexDirection: 'column', gap: '16px',
+                                    boxShadow: '0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)',
+                                    minWidth: '240px',
+                                    position: 'relative',
+                                    overflow: 'hidden'
                                 }}
                             >
-                                <X size={14} /> Stop
-                            </button>
-                        </div>
-                    </div>
-                )}
+                                {/* Ambient Glow */}
+                                <motion.div
+                                    animate={{ opacity: [0.3, 0.5, 0.3], scale: [1, 1.1, 1] }}
+                                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                                    style={{
+                                        position: 'absolute',
+                                        top: '-50%', left: '-50%',
+                                        width: '200%', height: '200%',
+                                        background: 'radial-gradient(circle at 30% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 50%)',
+                                        pointerEvents: 'none'
+                                    }}
+                                />
+
+                                {/* Timer and Status Row */}
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
+                                    {/* Elapsed Timer */}
+                                    <motion.div
+                                        key={elapsedSeconds}
+                                        initial={{ opacity: 0.5, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ duration: 0.2 }}
+                                        style={{
+                                            fontFamily: 'monospace',
+                                            fontSize: '2rem',
+                                            fontWeight: '300',
+                                            color: 'white',
+                                            letterSpacing: '-0.02em',
+                                            lineHeight: 1
+                                        }}
+                                    >
+                                        {formatElapsedTime(elapsedSeconds)}
+                                    </motion.div>
+
+                                    {/* Animated Sparkle */}
+                                    <motion.div
+                                        animate={{ rotate: 360 }}
+                                        transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                                    >
+                                        <Sparkles size={20} style={{ color: '#8b5cf6' }} />
+                                    </motion.div>
+                                </div>
+
+                                {/* Status Message with Animated Transition */}
+                                <AnimatePresence mode="wait">
+                                    <motion.div
+                                        key={loadingStatus}
+                                        initial={{ opacity: 0, y: 5 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -5 }}
+                                        transition={{ duration: 0.3 }}
+                                        style={{
+                                            fontSize: '0.9rem',
+                                            color: 'rgba(255,255,255,0.7)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            position: 'relative',
+                                            zIndex: 1
+                                        }}
+                                    >
+                                        {loadingStatus}
+                                        <motion.span
+                                            animate={{ opacity: [0.3, 1, 0.3] }}
+                                            transition={{ duration: 1.2, repeat: Infinity }}
+                                            style={{ color: 'rgba(255,255,255,0.4)' }}
+                                        >
+                                            ...
+                                        </motion.span>
+                                    </motion.div>
+                                </AnimatePresence>
+
+                                {/* Progress Bar */}
+                                <div style={{
+                                    width: '100%',
+                                    height: '3px',
+                                    background: 'rgba(255,255,255,0.1)',
+                                    borderRadius: '2px',
+                                    overflow: 'hidden',
+                                    position: 'relative',
+                                    zIndex: 1
+                                }}>
+                                    <motion.div
+                                        initial={{ x: '-100%' }}
+                                        animate={{ x: '100%' }}
+                                        transition={{
+                                            duration: 1.8,
+                                            repeat: Infinity,
+                                            ease: 'easeInOut'
+                                        }}
+                                        style={{
+                                            width: '40%',
+                                            height: '100%',
+                                            background: 'linear-gradient(90deg, transparent, #8b5cf6, #ec4899, transparent)',
+                                            borderRadius: '2px'
+                                        }}
+                                    />
+                                </div>
+
+                                {/* Cancel Button */}
+                                <motion.button
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={cancelGeneration}
+                                    style={{
+                                        alignSelf: 'flex-start',
+                                        background: 'rgba(239, 68, 68, 0.1)',
+                                        color: '#ef4444',
+                                        border: '1px solid rgba(239, 68, 68, 0.2)',
+                                        borderRadius: '8px',
+                                        padding: '8px 14px',
+                                        fontSize: '0.8rem',
+                                        fontWeight: '500',
+                                        cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', gap: '6px',
+                                        position: 'relative',
+                                        zIndex: 1,
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    <X size={14} /> Cancel
+                                </motion.button>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
+            {/* Input Area with Safe Area */}
             <div style={{
                 position: 'fixed',
                 bottom: 0,
                 left: 0,
                 right: 0,
-                padding: '16px 16px 32px 16px',
-                background: 'linear-gradient(to top, #000 80%, rgba(0,0,0,0) 100%)',
+                padding: 'calc(16px) 16px calc(16px + env(safe-area-inset-bottom, 16px)) 16px',
+                background: 'linear-gradient(to top, #000 90%, rgba(0,0,0,0) 100%)',
                 zIndex: 20
             }}>
                 <form onSubmit={handleSubmit} style={{
