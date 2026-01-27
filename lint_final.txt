@@ -1,0 +1,155 @@
+
+> dreambees-app@0.0.0 lint
+> eslint .
+
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/index.js
+  6:10  error  'onCall' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/web.js
+  125:15  error  'broadcaster' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/FeedPost.jsx
+  3:27  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/ImagePickerModal.jsx
+  18:9  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/MinimalHeader.jsx
+  18:5  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/ModelSelectorModal.jsx
+  13:5   warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+  18:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+  20:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/PerformanceTracker.jsx
+  71:18  error  'error' is defined but never used  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/generator/LoadingOrb.jsx
+  2:1  warning  Unused eslint-disable directive (no problems were reported from 'no-unused-vars')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/generator/ResultModal.jsx
+  3:1  warning  Unused eslint-disable directive (no problems were reported from 'no-unused-vars')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/contexts/AuthContext.jsx
+  58:5  warning  The 'ensureUserInitialized' function makes the dependencies of useEffect Hook (at line 140) change on every render. Move it inside the useEffect callback. Alternatively, wrap the definition of 'ensureUserInitialized' in its own useCallback() Hook  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/contexts/TwitchContext.jsx
+  7:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/contexts/UserInteractionsContext.jsx
+   60:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   62:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   64:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   66:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   68:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   70:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   72:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   74:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   76:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+   78:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+  218:8   warning  React Hook useEffect has a missing dependency: 'personalCreations.length'. Either include it or remove the dependency array. You can also replace multiple useState variables with useReducer if 'setSessionGenerations' needs the current value of 'personalCreations.length'  react-hooks/exhaustive-deps
+  237:8   warning  React Hook useEffect has a missing dependency: 'userProfile'. Either include it or remove the dependency array                                                                                                                                                                  react-hooks/exhaustive-deps
+  534:22  error    '_error' is defined but never used                                                                                                                                                                                                                                              no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/features/persona-live/PersonaChat.jsx
+   98:20  error  'setVolume' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  193:19  error  'token' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u      no-unused-vars
+  206:39  error  'options' is defined but never used. Allowed unused args must match /^[A-Z_]/u             no-unused-vars
+  263:52  error  'member' is defined but never used. Allowed unused args must match /^[A-Z_]/u              no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/hooks/generator/useVideoGeneration.js
+   1:10  error    'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                   no-unused-vars
+   2:31  error    'useCallback' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                              no-unused-vars
+   2:44  error    'useRef' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                   no-unused-vars
+  41:8   warning  React Hook useEffect has a missing dependency: 'currentUser'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AutoCSV/AutoCSV.jsx
+  133:6  warning  React Hook useEffect has a missing dependency: 'processingState'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/DiscoveryDesktop.jsx
+  9:27  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/DiscoveryMobile.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/DressUp.jsx
+   78:8  warning  React Hook useEffect has missing dependencies: 'activeTab', 'page', and 'viewMode'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  166:8  warning  React Hook useEffect has a missing dependency: 'currentUser'. Either include it or remove the dependency array                          react-hooks/exhaustive-deps
+  213:9  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Gallery.jsx
+  30:8  warning  React Hook useEffect has a missing dependency: 'searchQuery'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Generator.jsx
+   89:9   warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+  146:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Maintenance.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MemeFormatter/index.jsx
+  23:8  warning  React Hook useEffect has a missing dependency: 'memeText'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MobileGenerator.jsx
+  15:5  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MockupCatalog/index.jsx
+  37:8  warning  React Hook useEffect has a missing dependency: 'currentPage'. Either include it or remove the dependency array      react-hooks/exhaustive-deps
+  59:8  warning  React Hook useEffect has a missing dependency: 'setSearchParams'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MockupFeed.jsx
+   52:8  warning  React Hook useEffect has missing dependencies: 'creatorFilter' and 'getInitialFilter'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  194:8  warning  React Hook useEffect has a missing dependency: 'fetchMockups'. Either include it or remove the dependency array                            react-hooks/exhaustive-deps
+  214:8  warning  React Hook useEffect has a missing dependency: 'fetchMockups'. Either include it or remove the dependency array                            react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MockupStudio/index.jsx
+  41:8  warning  React Hook useEffect has a missing dependency: 'mode'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/ModelDetail.jsx
+  104:70  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Models.jsx
+  24:8  warning  React Hook React.useEffect has missing dependencies: 'activeCategory' and 'searchQuery'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/NotFound.jsx
+  1:17  error  'useEffect' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Offline.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Pricing.jsx
+   95:8  warning  React Hook React.useEffect has a missing dependency: 'location.state?.from'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  107:8  warning  React Hook React.useEffect has a missing dependency: 'packs'. Either include it or remove the dependency array                 react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/PublicGenerationsFeed.jsx
+  276:8  warning  React Hook useEffect has missing dependencies: 'fetchGenerations' and 'filterCache'. Either include them or remove the dependency array. You can also replace multiple useState variables with useReducer if 'setImages' needs the current value of 'filterCache'  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/ShowcaseDetail.jsx
+   74:13  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/set-state-in-effect')
+  259:8   warning  React Hook useCallback has a missing dependency: 'visibleGlobalCache'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  301:8   warning  React Hook useCallback has a missing dependency: 'visibleGlobalCache'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/UserProfile.jsx
+  114:8  warning  React Hook useEffect has missing dependencies: 'appCreations' and 'productions'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/safety/components/KarmaToast.jsx
+  1:17  error  'useEffect' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/safety/components/OnboardingModal.jsx
+  1:17  error  'useEffect' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  1:28  error  'useState' is defined but never used. Allowed unused vars must match /^[A-Z_]/u   no-unused-vars
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u     no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/safety/components/ScoreBar.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/safety/components/SessionSummary.jsx
+  2:10  error  'motion' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+✖ 71 problems (26 errors, 45 warnings)
+  0 errors and 23 warnings potentially fixable with the `--fix` option.
+

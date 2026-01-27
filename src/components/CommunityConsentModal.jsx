@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Info, ShieldCheck, AlertCircle, ArrowRight, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { setConsent } from '../utils/analytics';

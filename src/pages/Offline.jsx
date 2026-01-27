@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { WifiOff, RefreshCw } from 'lucide-react';
 import OfflineBg from '../assets/offline-bg.png';
 

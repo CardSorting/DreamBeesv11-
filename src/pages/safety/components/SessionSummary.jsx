@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { CheckCircle, Shield, Sparkles, TrendingUp, Trophy, X } from 'lucide-react';
 
 export default function SessionSummary({ sessionCount, karmaEarned, consensusMatches, onShare, onClose }) {

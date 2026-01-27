@@ -8,7 +8,7 @@ import { Loader2, Zap, ShieldAlert, HelpCircle } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import SuggestedPanel from '../components/SuggestedPanel';
 import { useModel } from '../contexts/ModelContext';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import FeedPost from '../components/FeedPost';
 import { getOptimizedImageUrl } from '../utils';

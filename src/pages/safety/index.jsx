@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import SEO from '../../components/SEO';
 import Sidebar from '../../components/Sidebar';
 import { useUserInteractions } from '../../contexts/UserInteractionsContext';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';
 import { Loader2, Inbox, CheckCircle, Shield, Sparkles, Clock, Gavel, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import { getOptimizedImageUrl } from '../../utils';

@@ -148,6 +148,8 @@ export default function Slideshow() {
     useEffect(() => {
         if (!requestId) return;
 
+        console.log("[Slideshow] Starting listener for ID:", requestId);
+
         const unsubscribe = onSnapshot(doc(db, 'generation_queue', requestId), (snapshot) => {
             if (!snapshot.exists()) return;
             const data = snapshot.data();
@@ -156,31 +158,40 @@ export default function Slideshow() {
             if (!isMounted.current) return;
 
             if (data.status === 'processing') {
-                const total = mode === 'slideshow' ? 8 : 1;
-                const completed = data.results ? data.results.length : 0;
-
-                // Sync results if changed
-                if (data.results && JSON.stringify(data.results) !== JSON.stringify(results)) {
-                    setResults(data.results);
-                }
+                // Use functional update to avoid dependency on results
+                // AND use refs for mode if needed, but here simple calculation is fine
+                setResults(prevResults => {
+                    // Only update if actually different to save renders
+                    if (JSON.stringify(prevResults) !== JSON.stringify(data.results)) {
+                        return data.results || [];
+                    }
+                    return prevResults;
+                });
 
                 // Live Streaming: Switch to result view if we have at least one result
-                if (completed > 0 && currentStep === 'processing') {
-                    setCurrentStep('result');
-                }
+                // Use functional update for step to avoid dependency
+                setCurrentStep(prevStep => {
+                    if ((data.results?.length || 0) > 0 && prevStep === 'processing') {
+                        return 'result';
+                    }
+                    return prevStep;
+                });
 
+                const completed = data.results ? data.results.length : 0;
                 if (completed > 0) {
-                    setLoadingMessage(`Generating Slide ${completed + 1} of ${total}...`);
+                    // We can't easily access 'mode' here without a ref if we want to be pure,
+                    // but 'total' is just for display.
+                    // A cleaner way is to just set it based on what we know or just generic text.
+                    // But actually, we can use a ref for 'mode' if we really need it,
+                    // or just omit it from deps and accept it might be stale if it changed (which it shouldn't during gen).
+                    // However, to be safe and clean:
+                    setLoadingMessage(`Generating images... (${completed} completed)`);
                 }
 
             } else if (data.status === 'completed') {
                 setResults(data.results || []);
                 setProgress(100);
-
-                // Ensure we are on result step
-                if (currentStep !== 'result') {
-                    setCurrentStep('result');
-                }
+                setCurrentStep('result');
 
                 // Only stop listening when fully completed
                 setTimeout(() => {
@@ -190,18 +201,21 @@ export default function Slideshow() {
                     }
                 }, 1000);
 
-                // No return needed here as it's a callback
-
             } else if (data.status === 'failed') {
                 toast.error(`Failed: ${data.error}`);
                 setCurrentStep('upload');
                 setRequestId(null);
                 localStorage.removeItem('slideshowState');
             }
+        }, (error) => {
+            console.error("Slideshow listener error:", error);
         });
 
-        return () => unsubscribe();
-    }, [requestId, mode, currentStep, results]);
+        return () => {
+            console.log("[Slideshow] Unsubscribing listener for ID:", requestId);
+            unsubscribe();
+        };
+    }, [requestId]); // Only depend on requestId
 
 
     // Zeno's Progress Simulation

@@ -6,7 +6,7 @@ import { Sparkles, Loader2, CheckCircle2, Heart, Flag } from 'lucide-react';
 import Footer from '../components/Footer';
 import { getOptimizedImageUrl, getImageSrcSet } from '../utils';
 import { getBalancedRecommendations } from '../utils/relevance';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';

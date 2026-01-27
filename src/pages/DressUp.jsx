@@ -166,7 +166,17 @@ export default function DressUp() {
     }, [currentUser?.uid]);
 
     const startListening = (id) => {
-        if (listenerRef.current) return; // Already listening
+        // If we are already listening to THIS id, do nothing.
+        // If we were listening to a different ID, stop that one first.
+        if (listenerRef.current) {
+            // For now, let's just abort if we try to double-listen (assuming valid single-threaded flow)
+            // or we could force unsubscribe. Let's just return to be safe if it's the same ID logic,
+            // but here we just check if ref exists.
+            // Ideally we should track *which* ID we are listening to, but usually generating=true locks UI.
+            // We will iterate to make it cleaner:
+            return;
+        }
+
         setGenerating(true);
 
         // Persist ID
@@ -182,13 +192,13 @@ export default function DressUp() {
                         style: { background: '#FFD700', color: '#000', fontWeight: 'bold' }
                     });
                     setGenerating(false);
-                    unsubscribe();
+                    if (listenerRef.current) listenerRef.current();
                     listenerRef.current = null;
                     localStorage.removeItem('dressUpRequestId'); // Clear
                 } else if (data.status === 'failed') {
                     setGenerating(false);
                     toast.error(`Magic failed: ${data.error || 'Unknown error'}`, { icon: '🪄' });
-                    unsubscribe();
+                    if (listenerRef.current) listenerRef.current();
                     listenerRef.current = null;
                     localStorage.removeItem('dressUpRequestId'); // Clear
                 }
@@ -197,6 +207,7 @@ export default function DressUp() {
             console.error("Queue listener error:", error);
             setGenerating(false);
             toast.error("Error tracking magic", { icon: '🪄' });
+            if (listenerRef.current) listenerRef.current();
             listenerRef.current = null;
             localStorage.removeItem('dressUpRequestId');
         });

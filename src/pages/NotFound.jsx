@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { Home, Compass, Box, Image as ImageIcon, ArrowLeft, Search } from 'lucide-react';
 import NotFoundBg from '../assets/404-bg.png';
