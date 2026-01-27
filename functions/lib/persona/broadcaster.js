@@ -2,7 +2,7 @@ import { logger } from "../utils.js";
 
 let pusherInstance = null;
 
-const initPusher = async () => {
+export const initPusher = async () => {
     if (pusherInstance) return pusherInstance;
     if (!process.env.SOKETI_APP_ID) return null;
 

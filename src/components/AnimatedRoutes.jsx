@@ -161,18 +161,10 @@ const AnimatedRoutes = () => {
                                 <PrivateRoute><ModelFeed /></PrivateRoute>
                             } />
 
-                            <Route path="/features" element={
-                                <PrivateRoute><Features /></PrivateRoute>
-                            } />
-                            <Route path="/pricing" element={
-                                <PrivateRoute><Pricing /></PrivateRoute>
-                            } />
-                            <Route path="/about" element={
-                                <PrivateRoute><About /></PrivateRoute>
-                            } />
-                            <Route path="/contact" element={
-                                <PrivateRoute><Contact /></PrivateRoute>
-                            } />
+                            <Route path="/features" element={<Features />} />
+                            <Route path="/pricing" element={<Pricing />} />
+                            <Route path="/about" element={<About />} />
+                            <Route path="/contact" element={<Contact />} />
                             <Route path="/privacy" element={<Privacy />} />
                             <Route path="/terms" element={<Terms />} />
                             <Route path="/cookies" element={<Cookies />} />

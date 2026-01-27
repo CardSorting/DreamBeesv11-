@@ -56,9 +56,10 @@ export default function Footer() {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }}>
                         <FooterColumn title="Platform">
                             <FooterLink to="/generate">Studio</FooterLink>
-                            <FooterLink to="/gallery">Gallery</FooterLink>
-                            <FooterLink to="/pricing">Pricing</FooterLink>
+                            <FooterLink to="/discovery">Discovery</FooterLink>
                             <FooterLink to="/models">Models</FooterLink>
+                            <FooterLink to="/apps">Apps</FooterLink>
+                            <FooterLink to="/pricing">Pricing</FooterLink>
                         </FooterColumn>
                         <FooterColumn title="Studio">
                             <Link
@@ -67,6 +68,7 @@ export default function Footer() {
                                 style={{ color: 'white', fontWeight: '500', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 Blog <ArrowUpRight size={16} color="var(--color-accent-primary)" />
                             </Link>
+                            <FooterLink to="/showcase">Showcase</FooterLink>
                             <FooterLink to="/about">About Us</FooterLink>
                             <FooterLink to="/careers">Careers</FooterLink>
                             <FooterLink to="/brand">Brand Assets</FooterLink>

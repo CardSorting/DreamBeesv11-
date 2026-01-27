@@ -3,16 +3,34 @@ Allow: /
 Allow: /discovery/
 Allow: /mockups/
 Allow: /models/
+Allow: /model/
 Allow: /mockup-catalog/
 Allow: /blog/
+Allow: /generate
+Allow: /pricing
+Allow: /apps
+Allow: /features
+Allow: /about
+Allow: /contact
+Allow: /privacy
+Allow: /terms
+Allow: /cookies
+Allow: /safety
+Allow: /generations
+Allow: /memes
+Allow: /slideshow
+Allow: /landing
 
 # Block user-specific and transient state pages
 Disallow: /gallery/
 Disallow: /studio/
 Disallow: /settings/
+Disallow: /login
+Disallow: /signup
 Disallow: /*?success=
 Disallow: /*?canceled=
 Disallow: /*?session_id=
+Disallow: /api/
 
 # Sitemap
 Sitemap: https://dreambeesai.com/sitemap.xml

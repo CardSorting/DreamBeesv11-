@@ -164,7 +164,7 @@ export default function DiscoveryMobile() {
 
     const handleImageClick = useCallback((imgItem) => {
         const slug = slugify(imgItem.prompt?.slice(0, 40) || 'artwork');
-        navigate(`/discovery/${slug}--${imgItem.id}`);
+        navigate(`/discovery/${slug}-${imgItem.id}`);
     }, [navigate]);
 
     return (

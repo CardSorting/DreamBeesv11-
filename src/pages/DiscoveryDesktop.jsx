@@ -58,7 +58,7 @@ export default function DiscoveryDesktop() {
     // Derived State for Focused Image
     const focusImage = useMemo(() => {
         let viewId = id || searchParams.get('view');
-        if (viewId && viewId.includes('--')) viewId = viewId.split('--').pop();
+        if (viewId && viewId.includes('-')) viewId = viewId.split('-').pop();
         if (!viewId) return null;
 
         const source = activeModelId === 'all'
@@ -74,7 +74,7 @@ export default function DiscoveryDesktop() {
     // Deep Linking: Async fallback
     useEffect(() => {
         let viewId = id || searchParams.get('view');
-        if (viewId && viewId.includes('--')) viewId = viewId.split('--').pop();
+        if (viewId && viewId.includes('-')) viewId = viewId.split('-').pop();
 
         if (!viewId) {
             return;
@@ -272,7 +272,7 @@ export default function DiscoveryDesktop() {
     // Handle Image Click (Standardized Deterministic Navigation)
     const handleImageClick = useCallback((imgItem) => {
         const slug = slugify(imgItem.prompt?.slice(0, 40) || 'artwork');
-        const deterministicPath = `/discovery/${slug}--${imgItem.id}`;
+        const deterministicPath = `/discovery/${slug}-${imgItem.id}`;
         navigate(deterministicPath);
     }, [navigate]);
 
@@ -354,7 +354,7 @@ export default function DiscoveryDesktop() {
                 title={focusImage ? `${focusImage.prompt?.slice(0, 60)}...` : "Discover AI Art - Community Showcase"}
                 description={focusImage ? focusImage.prompt : "Explore a curated feed of AI-generated artwork. Get inspired by unique styles, prompts, and creative techniques from the DreamBees community."}
                 image={focusImage ? (focusImage.thumbnailUrl || focusImage.imageUrl) : undefined}
-                canonical={focusImage ? `/discovery/${focusImage.id}` : undefined}
+                canonical={focusImage ? `/discovery/${slugify(focusImage.prompt?.slice(0, 40) || 'artwork')}-${focusImage.id}` : undefined}
                 keywords="AI art gallery, AI generated images, explore AI artwork, community showcase, AI art inspiration, creative prompts"
                 structuredData={{
                     "@context": "https://schema.org",
