@@ -56,21 +56,27 @@ export class GalmixClient {
 
         while (true) {
             if (Date.now() - startTime > timeout) {
+                console.error(`[Galmix] Job ${jobId} timed out after ${timeout}ms`);
                 throw new Error("Generation timed out.");
             }
 
+            console.log(`[Galmix] Polling status for ${jobId}...`);
             const pollResp = await fetch(pollUrl);
             if (pollResp.status !== 200) {
+                console.error(`[Galmix] Polling failed with status ${pollResp.status}`);
                 throw new Error(`Polling failed (${pollResp.status})`);
             }
 
             const pollData = await pollResp.json();
-            const status = pollData.status.toUpperCase();
+            const status = (pollData.status || "UNKNOWN").toUpperCase();
+            console.log(`[Galmix] Job ${jobId} Status: ${status}`);
 
             if (status === "COMPLETED" || status === "SUCCESS") {
+                console.log(`[Galmix] Job ${jobId} finished!`);
                 return pollData;
             } else if (status === "FAILED") {
                 const errorMsg = pollData.error || "Unknown error";
+                console.error(`[Galmix] Job ${jobId} FAILED: ${errorMsg}`);
                 throw new Error(`Job failed: ${errorMsg}`);
             }
 
