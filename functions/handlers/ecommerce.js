@@ -1,6 +1,7 @@
 import { HttpsError } from "firebase-functions/v2/https";
 import { db, FieldValue } from "../firebaseInit.js";
 import { logger } from "../lib/utils.js";
+import { ZAP_COSTS } from "../lib/costs.js";
 // [REMOVED] import { vertexFlow } from "../lib/vertexFlow.js";
 
 const SYSTEM_INSTRUCTION = `
@@ -51,7 +52,7 @@ export const handleAnalyzeProductImage = async (request) => {
         throw new HttpsError('invalid-argument', 'imageBase64 and mimeType are required.');
     }
 
-    const COST = 0.25;
+    const COST = ZAP_COSTS.AUTO_CSV_IMAGE;
 
     try {
         // Deduct Zaps

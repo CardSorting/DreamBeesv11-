@@ -9,6 +9,7 @@ import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { Upload, X, RotateCcw, Sparkles, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { compressImage } from '../utils';
+import { calculateZapCost, formatZaps, ZAP_COSTS } from '../constants/zapCosts';
 import './DressUp.css';
 import SEO from '../components/SEO';
 
@@ -58,7 +59,7 @@ const LOADING_MSG = "MAKING MAGIC...";
 
 export default function DressUp() {
     const { currentUser } = useAuth();
-    const { userProfile } = useUserInteractions(); // Centralized
+    const { userProfile, deductZapsOptimistically } = useUserInteractions(); // Centralized
     const [currentImage, setCurrentImage] = useState(null); // base64
     const [searchParams, setSearchParams] = useSearchParams();
     const viewParam = searchParams.get('view') || 'main';
@@ -296,7 +297,11 @@ export default function DressUp() {
 
         setGenerating(true);
 
+        const cost = zaps < 0.5 ? 0.5 : ZAP_COSTS.DRESS_UP; // Simplistic local check, but better to use calculate
+        // Actually for dress-up, it's pretty fixed.
+
         try {
+            if (deductZapsOptimistically) deductZapsOptimistically(ZAP_COSTS.DRESS_UP || 0.5);
             // const api = httpsCallable(functions, 'api');
             let prompt = "";
 
@@ -497,7 +502,7 @@ export default function DressUp() {
             {/* RIGHT: TOY CHEST */}
             <div className="toy-chest">
                 <div className="chest-header">
-                    <h2>Toy Box <span style={{ fontSize: '0.8rem', opacity: 0.7, fontWeight: 'normal' }}>({zaps.toFixed(1)} Zaps)</span></h2>
+                    <h2>Toy Box <span style={{ fontSize: '0.8rem', opacity: 0.7, fontWeight: 'normal' }}>({formatZaps(zaps)} Zaps)</span></h2>
                 </div>
 
                 <div className="tab-container">
@@ -562,7 +567,8 @@ export default function DressUp() {
                                 key={item}
                                 className="grid-item-btn"
                                 onClick={() => !generating && handleDressUp(item)}
-                                disabled={generating}
+                                disabled={generating || zaps < (ZAP_COSTS.DRESS_UP || 0.5)}
+                                title={zaps < (ZAP_COSTS.DRESS_UP || 0.5) ? "Insufficient Zaps ⚡" : ""}
                             >
                                 <span className="item-label">{item}</span>
                             </button>

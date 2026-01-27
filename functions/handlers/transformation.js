@@ -3,6 +3,7 @@ import { db, FieldValue, getFunctions } from "../firebaseInit.js";
 import { handleError, logger, retryOperation } from "../lib/utils.js";
 import { enhancePromptWithGemini, transformImageWithGemini } from "../lib/ai.js";
 import { VertexAI } from "@google-cloud/vertexai";
+import { ZAP_COSTS } from "../lib/costs.js";
 // [REMOVED] import { vertexFlow } from "../lib/vertexFlow.js";
 
 export const handleCreateAnalysisRequest = async (request) => {
@@ -11,7 +12,7 @@ export const handleCreateAnalysisRequest = async (request) => {
     const { image, imageUrl } = request.data;
     if (!image && !imageUrl) throw new HttpsError('invalid-argument', "Image required");
 
-    const COST = 0.5;
+    const COST = ZAP_COSTS.IMAGE_ANALYSIS;
 
     try {
         await db.runTransaction(async (t) => {
@@ -46,7 +47,7 @@ export const handleCreateEnhanceRequest = async (request) => {
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
     if (!request.data.prompt) throw new HttpsError('invalid-argument', "Prompt required");
 
-    const COST = 1;
+    const COST = ZAP_COSTS.IMAGE_ENHANCE;
 
     try {
         await db.runTransaction(async (t) => {
@@ -88,7 +89,7 @@ export const handleTransformImage = async (request) => {
     const { imageUrl, styleName, instructions, intensity } = request.data;
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
-    const COST = 5;
+    const COST = ZAP_COSTS.IMAGE_TRANSFORM;
     try {
         await db.runTransaction(async (t) => {
             const userRef = db.collection('users').doc(uid);
@@ -116,7 +117,7 @@ export const handleGenerateLyrics = async (request) => {
     const { audioBase64, mimeType, rawText, songDuration, mode } = request.data;
     const apiKey = process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY;
     if (!apiKey) throw new HttpsError('internal', "Service config error");
-    const COST = 3;
+    const COST = ZAP_COSTS.LYRICS_GENERATION;
 
     try {
         await db.runTransaction(async (t) => {
@@ -157,7 +158,7 @@ export const handleMeowaccTransform = async (request) => {
     const { imageBase64, mimeType, mode, extraData } = request.data;
     if (!imageBase64) throw new HttpsError('invalid-argument', "Image data required");
 
-    const COST = 0.5; // Standard transformation cost
+    const COST = ZAP_COSTS.MEOWACC;
 
     try {
         const userRef = db.collection('users').doc(uid);

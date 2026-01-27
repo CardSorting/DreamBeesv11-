@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { trackEvent, trackSettingChange, trackSocialIntent, trackFeatureAdoption } from '../../utils/analytics';
 import { getOptimizedImageUrl } from '../../utils';
 import { STYLE_REGISTRY } from '../../data/styles';
+import { calculateZapCost } from '../../constants/zapCosts';
 
 export default function GeneratorControls({
     prompt, setPrompt,
@@ -20,7 +21,9 @@ export default function GeneratorControls({
     generating,
     handleGenerate,
     seed, aspectRatio, steps, cfg, negPrompt,
-    selectedModel
+    selectedModel,
+    zaps,
+    subscriptionStatus
 }) {
     const handleShare = () => {
         const url = new URL(window.location);
@@ -35,6 +38,9 @@ export default function GeneratorControls({
         trackSocialIntent('copy_config_link', generationMode);
         toast.success('Link copied to clipboard');
     };
+
+    const cost = calculateZapCost('IMAGE_GENERATION', { subscriptionStatus, modelId: selectedModel?.id, useTurbo });
+    const hasInsufficientZaps = zaps < cost;
 
     return (
         <div style={{ padding: '0', background: 'transparent', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
@@ -68,7 +74,7 @@ export default function GeneratorControls({
                             outline: 'none', lineHeight: '1.6', fontFamily: '"Outfit", sans-serif', letterSpacing: '0.01em'
                         }}
                         onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey && !generating) {
+                            if (e.key === 'Enter' && !e.shiftKey && !generating && !hasInsufficientZaps) {
                                 e.preventDefault();
                                 handleGenerate();
                             }
@@ -161,17 +167,17 @@ export default function GeneratorControls({
 
                         <button
                             onClick={() => {
-                                console.log('[GeneratorControls] Generate button CLICKED!');
                                 handleGenerate();
                             }}
-                            disabled={generating || (!prompt && !referenceImage)}
+                            disabled={generating || (!prompt && !referenceImage) || hasInsufficientZaps}
                             className="btn-primary"
+                            title={hasInsufficientZaps ? "Insufficient Zaps ⚡" : ""}
                             style={{
                                 padding: '10px 24px', fontSize: '1rem', fontWeight: '600',
                                 background: generating ? 'var(--color-surface-hover)' : (selectedModel?.id === 'galmix' ? '#10b981' : 'var(--color-accent-primary)'),
                                 border: 'none', borderRadius: '10px', color: 'white',
-                                cursor: generating || (!prompt && !referenceImage) ? 'not-allowed' : 'pointer',
-                                opacity: generating || (!prompt && !referenceImage) ? 0.7 : 1,
+                                cursor: (generating || (!prompt && !referenceImage) || hasInsufficientZaps) ? 'not-allowed' : 'pointer',
+                                opacity: (generating || (!prompt && !referenceImage) || hasInsufficientZaps) ? 0.7 : 1,
                                 boxShadow: selectedModel?.id === 'galmix' ? '0 0 20px rgba(16, 185, 129, 0.4)' : '0 0 20px rgba(var(--color-accent-rgb), 0.3)',
                                 display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.3s'
                             }}

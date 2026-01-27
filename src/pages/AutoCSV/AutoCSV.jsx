@@ -7,6 +7,8 @@ import { useUserInteractions } from '../../contexts/UserInteractionsContext';
 import { WOOCOMMERCE_HEADERS, WOOCOMMERCE_HEADER_STRING, SHOPIFY_HEADERS, SHOPIFY_HEADER_STRING } from './constants';
 import { processImageForGemini } from './utils/imageUtils';
 import { FileDown, Sparkles, AlertCircle, Loader2, Trash2, Layers, Package, Settings, Info, Globe, ShoppingBag, Store, Clock, Zap } from 'lucide-react';
+import { ZAP_COSTS, formatZaps } from '../../constants/zapCosts';
+import toast from 'react-hot-toast';
 
 export default function AutoCSV() {
   const [products, setProducts] = useState([]);
@@ -29,8 +31,8 @@ export default function AutoCSV() {
   const [queue, setQueue] = useState([]);
   const processingRef = useRef(false);
 
-  const { userProfile } = useUserInteractions();
-  const COST_PER_IMAGE = 0.25;
+  const { userProfile, deductZapsOptimistically } = useUserInteractions();
+  const COST_PER_IMAGE = ZAP_COSTS.AUTO_CSV_IMAGE;
   const totalBatchCost = queue.length * COST_PER_IMAGE;
   const hasEnoughZaps = userProfile.zaps >= COST_PER_IMAGE; // Basic check for next item
   const hasEnoughZapsForBatch = userProfile.zaps >= totalBatchCost;
@@ -133,6 +135,15 @@ export default function AutoCSV() {
   }, [queue, processingState.status]);
 
   const handleUpload = useCallback((files) => {
+    const costForNewFiles = files.length * ZAP_COSTS.AUTO_CSV_IMAGE;
+
+    if (userProfile.zaps < costForNewFiles) {
+      toast.error(`Insufficient Zaps! You need at least ${formatZaps(costForNewFiles)} Zaps.`);
+      return;
+    }
+
+    if (deductZapsOptimistically) deductZapsOptimistically(costForNewFiles);
+
     setProcessingState(prev => {
       const isNewBatch = prev.status === 'idle' || prev.status === 'completed';
       return {
@@ -142,7 +153,7 @@ export default function AutoCSV() {
       };
     });
     setQueue(prev => [...prev, ...files]);
-  }, []);
+  }, [userProfile.zaps, deductZapsOptimistically]);
 
   const handleUpdateProduct = useCallback((id, data) => {
     setProducts((prev) => prev.map(p => p.id === id ? { ...p, ...data } : p));
@@ -500,7 +511,7 @@ export default function AutoCSV() {
                 </span>
                 {totalBatchCost > 0 && (
                   <div className="text-[10px] text-gray-400 font-inter">
-                    Remaining Batch Cost: {queue.length * COST_PER_IMAGE} Zaps
+                    Remaining Batch Cost: {formatZaps(queue.length * COST_PER_IMAGE)} Zaps
                   </div>
                 )}
               </div>
@@ -540,7 +551,7 @@ export default function AutoCSV() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-indigo-900 font-inter">Ready to process {queue.length} images</p>
-                <p className="text-xs text-indigo-600 font-inter">Total Cost: {totalBatchCost} Zaps ({userProfile?.zaps || 0} available)</p>
+                <p className="text-xs text-indigo-600 font-inter">Total Cost: {formatZaps(totalBatchCost)} Zaps ({formatZaps(userProfile?.zaps || 0)} available)</p>
               </div>
             </div>
             {!hasEnoughZapsForBatch && (

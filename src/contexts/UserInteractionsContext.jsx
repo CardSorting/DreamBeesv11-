@@ -165,6 +165,8 @@ export function UserInteractionsProvider({ children }) {
             setIsProfileLoaded(true);
         });
 
+        // Listen to reels too? They are already in the profile doc.
+
         // Listener for all completed generations in generation_queue
         const gensQuery = query(
             collection(db, 'generation_queue'),
@@ -225,6 +227,23 @@ export function UserInteractionsProvider({ children }) {
 
             // Initial check or balance change
             if (lastZapBalanceRef.current !== null && lastZapBalanceRef.current !== zaps) {
+                if (zaps < lastZapBalanceRef.current) {
+                    const diff = lastZapBalanceRef.current - zaps;
+                    // Only show for significant drops or specific user actions to avoid noise
+                    // But for now, any drop is a "cost" confirm
+                    toast(`-${Number(diff.toFixed(2))} Zaps`, {
+                        icon: '⚡',
+                        style: {
+                            borderRadius: '10px',
+                            background: '#333',
+                            color: '#fff',
+                            fontSize: '0.8rem',
+                            fontWeight: '600'
+                        },
+                        duration: 2000
+                    });
+                }
+
                 if (zaps === 0) {
                     trackCreditLifecycle('exhausted', zaps);
                 } else if (zaps <= 2 && lastZapBalanceRef.current > 2) {
@@ -585,6 +604,14 @@ export function UserInteractionsProvider({ children }) {
     // the client-side transaction logic here.
 
     // We need to import runTransaction for this.
+    const deductZapsOptimistically = (amount) => {
+        if (typeof amount !== 'number' || amount <= 0) return;
+        setUserProfile(prev => ({
+            ...prev,
+            zaps: Math.max(0, prev.zaps - amount)
+        }));
+    };
+
     const toggleAppLike = async (appId) => {
         if (!currentUser) return false;
 
@@ -680,6 +707,7 @@ export function UserInteractionsProvider({ children }) {
         isAppLiked,
         toggleAppLike,
         isProfileLoaded,
+        deductZapsOptimistically,
         // Aligned/Legacy underscores
         _isLiked: isLiked,
         _toggleLike: toggleLike,

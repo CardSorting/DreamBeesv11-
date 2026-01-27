@@ -4,6 +4,7 @@ import { Hexagon, Home, Compass, Zap, Film, User, Plus, Image, ArrowLeft, LogOut
 import { useAuth } from '../contexts/AuthContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { trackNavigationPath } from '../utils/analytics';
+import { formatZaps } from '../constants/zapCosts';
 
 const MinimalHeader = () => {
     const location = useLocation();
@@ -100,7 +101,7 @@ const MinimalHeader = () => {
                                 onClick={() => trackNavigationPath('/pricing', activePath)}
                             >
                                 <Zap size={14} fill="currentColor" className="zap-icon" />
-                                <span className="credit-amount">{typeof zaps === 'number' ? zaps.toFixed(0) : '0'}</span>
+                                <span className="credit-amount">{formatZaps(zaps)}</span>
                                 <div className="add-btn">
                                     <Plus size={12} />
                                 </div>

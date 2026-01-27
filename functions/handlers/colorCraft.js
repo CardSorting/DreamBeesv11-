@@ -4,6 +4,7 @@ import { handleError, logger, retryOperation, getS3Client } from "../lib/utils.j
 import { generateColoringBookConcepts, generateColoringPageImage } from "../lib/ai.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { ZAP_COSTS } from "../lib/costs.js";
 import sharp from "sharp";
 
 /**
@@ -17,7 +18,7 @@ export const handleCreateBookConcepts = async (request) => {
     if (!theme || !style) throw new HttpsError('invalid-argument', "Theme and Style are required.");
 
     // Cost: 1 Zap for the brainstorming session? Let's say 0.5 for text.
-    const COST = 0.5;
+    const COST = ZAP_COSTS.BOOK_CONCEPTS;
 
     try {
         await db.runTransaction(async (t) => {
@@ -74,7 +75,7 @@ export const handleCreateColoringPage = async (request) => {
     if (!prompt) throw new HttpsError('invalid-argument', "Prompt is required.");
 
     // Cost: 1 Zap per image
-    const COST = 1;
+    const COST = ZAP_COSTS.COLORING_PAGE;
 
     try {
         await db.runTransaction(async (t) => {

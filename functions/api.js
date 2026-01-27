@@ -21,8 +21,10 @@ import * as Mockup from "./handlers/mockup.js";
 import * as Meme from "./handlers/meme.js";
 import * as Ecommerce from "./handlers/ecommerce.js";
 import * as Avatar from "./handlers/avatars.js";
+import * as ColorCraft from "./handlers/colorCraft.js";
 
 // ============================================================================
+
 // Main API Dispatcher
 // ============================================================================
 

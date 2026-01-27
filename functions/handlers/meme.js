@@ -2,6 +2,7 @@ import { HttpsError } from "firebase-functions/v2/https";
 import { db, FieldValue } from "../firebaseInit.js";
 import { handleError, logger, retryOperation } from "../lib/utils.js";
 import { formatMemeWithGemini } from "../lib/ai.js";
+import { ZAP_COSTS } from "../lib/costs.js";
 
 export const handleFormatMeme = async (request) => {
     const uid = request.auth?.uid;
@@ -11,7 +12,7 @@ export const handleFormatMeme = async (request) => {
     if (!image && !imageUrl) throw new HttpsError('invalid-argument', "Image required");
     // Text is optional now (auto-gen mode)
 
-    const COST = 0.25;
+    const COST = ZAP_COSTS.MEME_FORMAT;
 
     try {
         // 1. Deduct Zaps

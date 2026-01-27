@@ -29,12 +29,8 @@ const MODEL_NAME = "gemini-2.5-flash-image";
  * @returns {Promise<number>} The amount of zaps deducted
  */
 const checkAndDeductZaps = async (uid) => {
-    // 1. Check Config for Cost
-    const configDoc = await db.collection("sys_config").doc("mockup_studio").get();
-    const config = configDoc.exists ? configDoc.data() : {};
-
-    // Default to 0.25 if not specified (Micro-transaction style)
-    const cost = (config.cost_per_generation !== undefined) ? Number(config.cost_per_generation) : 0.25;
+    // Default to centralized cost
+    const cost = ZAP_COSTS.MOCKUP_GEN || 0.25;
 
     // 2. Deduct Zaps
     await db.runTransaction(async (t) => {

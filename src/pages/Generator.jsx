@@ -37,7 +37,7 @@ export default function Generator() {
 
     // 2. State Management (Inlined from useGeneratorState)
     const [searchParams, setSearchParams] = useSearchParams();
-    const { userProfile } = useUserInteractions();
+    const { userProfile, deductZapsOptimistically } = useUserInteractions();
 
     const modeParam = searchParams.get('mode') || 'image';
     const tabParam = searchParams.get('tab') || 'simple';
@@ -174,7 +174,8 @@ export default function Generator() {
         negPrompt, aspectRatio, steps, cfg, seed, useTurbo,
         zaps: selectedModel?.id === 'galmix' ? 999 : zaps, // bypass local check
         reels, subscriptionStatus,
-        setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId, setActiveJob
+        setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId, setActiveJob,
+        deductZapsOptimistically
     });
 
     const [isResultModalOpen, setIsResultModalOpen] = useState(false);
@@ -373,6 +374,8 @@ export default function Generator() {
                                 generating={generating} handleGenerate={() => handleGenerate()}
                                 seed={seed} aspectRatio={aspectRatio} steps={steps} cfg={cfg} negPrompt={negPrompt}
                                 selectedModel={selectedModel}
+                                zaps={zaps}
+                                subscriptionStatus={subscriptionStatus}
                             />
                         )}
 

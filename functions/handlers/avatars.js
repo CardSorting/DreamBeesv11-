@@ -3,6 +3,7 @@ import { db, FieldValue } from "../firebaseInit.js";
 import { handleError, logger } from "../lib/utils.js";
 // [REMOVED] import { vertexFlow } from "../lib/vertexFlow.js";
 import { VertexAI } from "@google-cloud/vertexai";
+import { ZAP_COSTS } from "../lib/costs.js";
 
 const RATE_LIMIT_DELAY = 6000;
 
@@ -13,7 +14,7 @@ export const handleGenerateAvatarCollection = async (request) => {
     const { theme, style, referenceImage, referenceImageMimeType } = request.data;
     if (!theme && !style) throw new HttpsError('invalid-argument', "Theme or Style required");
 
-    const COST = 5;
+    const COST = ZAP_COSTS.AVATAR_COLLECTION;
     const TARGET_COUNT = 30;
 
     try {
@@ -214,7 +215,7 @@ export const handleMintRandomAvatar = async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
 
-    const MINT_COST = 2; // User didn't specify, but let's set a small cost for gachapon
+    const MINT_COST = ZAP_COSTS.AVATAR_MINT; // User didn't specify, but let's set a small cost for gachapon
 
     try {
         const userRef = db.collection('users').doc(uid);

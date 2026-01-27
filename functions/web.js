@@ -340,6 +340,7 @@ const handleApp = async (req, res) => {
         const isSSR = req.query?.ssr === '1';
 
         if (isSSR) {
+            res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
             res.status(200).send(`
 <!DOCTYPE html>
 <html lang="en">
@@ -366,6 +367,7 @@ const handleApp = async (req, res) => {
             return;
         }
 
+        res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
         res.status(200).send(`
 <!DOCTYPE html>
 <html>

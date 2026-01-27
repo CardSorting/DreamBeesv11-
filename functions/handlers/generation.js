@@ -3,6 +3,7 @@ import { db, FieldValue, getFunctions } from "../firebaseInit.js";
 import { handleError, logger, getPromptHash, getPromptMetadata } from "../lib/utils.js";
 import { generateVisionPrompt, SLIDESHOW_MASTER_PROMPT } from "../lib/ai.js";
 import { VALID_MODELS } from "../lib/constants.js";
+import { ZAP_COSTS, REEL_COSTS } from "../lib/costs.js";
 import { randomUUID } from 'crypto';
 
 export const handleCreateGenerationRequest = async (request) => {
@@ -78,9 +79,9 @@ export const handleCreateGenerationRequest = async (request) => {
                 const isPremiumModel = ['zit-model'].includes(modelId);
                 const isFreeModel = ['galmix'].includes(modelId);
 
-                if (isFreeModel) cost = 0;
-                else if (useTurbo || isPremiumModel) cost = 1.0;
-                else if (!isSubscriber) cost = 0.5;
+                if (isFreeModel) cost = ZAP_COSTS.IMAGE_GENERATION_FREE;
+                else if (useTurbo || isPremiumModel) cost = ZAP_COSTS.IMAGE_GENERATION_TURBO;
+                else if (!isSubscriber) cost = ZAP_COSTS.IMAGE_GENERATION;
 
                 const effectiveZaps = (userData.zaps || 0);
                 if (effectiveZaps < cost && cost > 0) throw new HttpsError('resource-exhausted', `Insufficient Zaps.`);
@@ -146,7 +147,7 @@ export const handleCreateVideoGenerationRequest = async (request) => {
     const safeResolution = ['720p', '1080p', '2k', '4k'].includes(resolution) ? resolution : '1080p';
     const safeAspectRatio = ['16:9', '9:16', '1:1', '21:9', '9:21', '3:2', '2:3'].includes(aspectRatio) ? aspectRatio : '3:2';
 
-    const rate = safeResolution === '4k' ? 50 : (safeResolution === '2k' ? 26 : 12);
+    const rate = safeResolution === '4k' ? REEL_COSTS.VIDEO_4K : (safeResolution === '2k' ? REEL_COSTS.VIDEO_2K : REEL_COSTS.VIDEO_SD);
     const totalCost = rate * safeDuration;
 
     try {
@@ -182,7 +183,7 @@ export const handleCreateDressUpRequest = async (request) => {
     if (!uid) throw new HttpsError('unauthenticated', "Auth required");
 
     // Applying the same 0.5 Zap cost strategy as MeowAcc for these lightweight transformations
-    const COST = 0.5;
+    const COST = ZAP_COSTS.DRESS_UP;
 
     try {
         const queueRef = db.collection('generation_queue').doc();
@@ -227,7 +228,7 @@ export const handleCreateSlideshowGeneration = async (request) => {
     const uid = request.auth.uid;
     if (!uid) throw new HttpsError('unauthenticated', "Auth required");
     const safeMode = mode || 'poster';
-    const COST = safeMode === 'slideshow' ? 3 : 0.5;
+    const COST = safeMode === 'slideshow' ? ZAP_COSTS.SLIDESHOW : ZAP_COSTS.POSTER;
     try {
         const queueRef = db.collection('generation_queue').doc();
         await db.runTransaction(async (t) => {
@@ -272,7 +273,7 @@ export const handleGenerateVideoPrompt = async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
 
-    const COST = 1;
+    const COST = ZAP_COSTS.VIDEO_PROMPT;
 
     try {
         // Deduct Zaps

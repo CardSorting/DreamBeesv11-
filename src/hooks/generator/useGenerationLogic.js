@@ -4,6 +4,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
 import toast from 'react-hot-toast';
 import { trackEvent, trackCreativeTelemetry, trackFriction } from '../../utils/analytics';
+import { calculateZapCost } from '../../constants/zapCosts';
 
 // Reliability Constants
 const DEBOUNCE_MS = 2000;        // Minimum time between generation requests
@@ -16,7 +17,8 @@ export function useGenerationLogic({
     negPrompt,
     aspectRatio, steps, cfg, seed, useTurbo,
     zaps, reels: _reels, subscriptionStatus,
-    setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId, setActiveJob
+    setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId, setActiveJob,
+    deductZapsOptimistically
 }) {
     // Track timing
     const startTimeRef = useRef(null);
@@ -173,14 +175,21 @@ export function useGenerationLogic({
                 return;
             }
 
-            const isFreeModel = selectedModel?.id === 'galmix';
-            const isPremiumModel = selectedModel?.id === 'zit-model';
-            const cost = isFreeModel ? 0 : ((useTurbo || isPremiumModel) ? 1 : (subscriptionStatus === 'active' ? 0 : 0.5));
+            const cost = calculateZapCost('IMAGE_GENERATION', {
+                subscriptionStatus,
+                modelId: selectedModel.id,
+                useTurbo
+            });
 
             if (zaps < cost && cost > 0) {
                 toast.error(`Insufficient Zaps ⚡ (Need ${cost}, have ${zaps.toFixed(1)})`);
                 trackFriction('insufficient_credits', 'Generation_Start', `Need ${cost}, have ${zaps}`);
                 return;
+            }
+
+            // Optimistic Deduction
+            if (cost > 0 && deductZapsOptimistically) {
+                deductZapsOptimistically(cost);
             }
 
             setGenerating(true);
