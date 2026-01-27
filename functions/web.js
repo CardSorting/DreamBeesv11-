@@ -4,47 +4,33 @@ import { handlePusherAuth } from "./handlers/web/pusherHandler.js";
 import { handleSitemap } from "./handlers/web/sitemapHandler.js";
 import { handleApp } from "./handlers/web/appHandler.js";
 
-// Dedicated sitemap function for Firebase Hosting rewrite (high memory)
-export const serveSitemap = onRequest({
+/**
+ * Unified 'web' entry point.
+ * Handles App Metadata (SEO), Sitemap generation, Stripe Webhooks, and Pusher Auth.
+ * Memory and timeout are boosted to accommodate sitemap generation for large collections.
+ */
+export const web = onRequest({
     memory: "512MiB",
     cors: true,
     timeoutSeconds: 60
-}, handleSitemap);
-
-// Dedicated app function for fallback metadata injection
-export const serveApp = onRequest({
-    memory: "256MiB",
-    cors: true
-}, handleApp);
-
-// Dedicated pusher auth function (standard memory)
-export const servePusherAuth = onRequest({
-    memory: "256MiB",
-    cors: true
-}, handlePusherAuth);
-
-/**
- * Main 'web' entry point function.
- * Routes requests based on path to specific specialized handlers.
- */
-export const web = onRequest({
-    memory: "256MiB",
-    cors: true
 }, async (req, res) => {
     const path = req.path;
 
+    // 1. Stripe Webhooks
     if (path === '/stripe-webhook') {
         return handleStripeWebhook(req, res);
     }
 
+    // 2. Pusher/Soketi Authentication
     if (path === '/pusher/auth') {
         return handlePusherAuth(req, res);
     }
 
+    // 3. XML Sitemap handling
     if (path === '/sitemap.xml' || path === '/sitemap') {
         return handleSitemap(req, res);
     }
 
-    // Default to handling as the main application (for metadata/SEO injection)
+    // 4. Default: Handle as App Metadata / SEO Injection
     return handleApp(req, res);
 });

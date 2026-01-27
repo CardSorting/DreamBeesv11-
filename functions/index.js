@@ -1,7 +1,7 @@
 import "./firebaseInit.js"; // Ensure Firebase Admin is initialized
 
 import { api } from "./api.js";
-import { web, serveSitemap } from "./web.js";
+import { web } from "./web.js";
 import { urgentWorker, backgroundWorker, voiceWorker } from "./workers/queues.js";
 import { staleJobCleanup } from "./workers/recovery.js";
 import { onCall } from "firebase-functions/v2/https";
@@ -11,7 +11,6 @@ import { onCall } from "firebase-functions/v2/https";
 export {
     api,
     web,
-    serveSitemap,
     urgentWorker,
     backgroundWorker,
     voiceWorker,

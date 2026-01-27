@@ -20,7 +20,7 @@
     "rewrites": [
       {
         "source": "/sitemap.xml",
-        "function": "serveSitemap"
+        "function": "web"
       },
       {
         "source": "/discovery/**",
