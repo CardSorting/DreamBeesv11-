@@ -148,7 +148,7 @@ export const processImageTask = async (req) => {
                         "User-Agent": "DreamBees/1.1"
                     },
                     body: JSON.stringify(body),
-                    timeout: 30000
+                    timeout: 120000
                 });
 
                 if (!submitResponse.ok) throw new Error(`SDXL Submission Failed (${submitResponse.status})`);
@@ -167,6 +167,11 @@ export const processImageTask = async (req) => {
                     if (resultRes.headers.get('content-type')?.includes('image/')) {
                         return Buffer.from(await resultRes.arrayBuffer());
                     }
+
+                    // Prevent infinite loop if 200 OK but not image (e.g. JSON error)
+                    const text = await resultRes.text();
+                    logger.warn(`[${requestId}] SDXL Polling: Received 200 OK but Content-Type is ${resultRes.headers.get('content-type')}`, { body: text.substring(0, 500) });
+                    throw new Error(`SDXL Unexpected Response: ${text.substring(0, 100)}`);
                 }
                 throw new Error("SDXL generation timed out");
             })();

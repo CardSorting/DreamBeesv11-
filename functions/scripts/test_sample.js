@@ -27,9 +27,8 @@ async function runSample() {
     const { db } = await import('../firebaseInit.js');
 
     const testModels = [
-        { id: "zit-model", name: "Zit (H100)" },
         { id: "wai-illustrious", name: "SDXL (Illustrious)" },
-        { id: "flux-2-dev", name: "Flux 2 Dev" }
+        { id: "galmix", name: "Galmix" }
     ];
 
     for (const model of testModels) {

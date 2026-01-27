@@ -65,7 +65,7 @@ export class GalmixClient {
             }
 
             console.log(`[Galmix] Polling status for ${jobId}...`);
-            const pollResp = await fetchWithTimeout(pollUrl, {
+            const pollResp = await fetchWithTimeout(`${pollUrl}?t=${Date.now()}`, {
                 headers: { 'User-Agent': 'DreamBees/1.1' },
                 timeout: 15000 // 15s timeout for polling calls
             });
@@ -75,6 +75,7 @@ export class GalmixClient {
             }
 
             const pollData = await pollResp.json();
+            console.log(`[Galmix] Debug Poll Response:`, JSON.stringify(pollData));
             const status = (pollData.status || "UNKNOWN").toUpperCase();
             console.log(`[Galmix] Job ${jobId} Status: ${status}`);
 
