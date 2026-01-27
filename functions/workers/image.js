@@ -15,8 +15,10 @@ const looksLikeJSON = (buffer) => {
 
 // Simplified Endpoints
 const ENDPOINTS = {
-    'zit': 'https://mariecoderinc--zit-h100-stable-fastapi-app.modal.run',
-    'sdxl': 'https://mariecoderinc--sdxl-multi-model-a10g-model-web.modal.run',
+    'zit_h100': 'https://mariecoderinc--zit-h100-stable-fastapi-app.modal.run',
+    'zit_a10g': 'https://mariecoderinc--zit-a10g-fastapi-app.modal.run',
+    'sdxl_a10g': 'https://mariecoderinc--sdxl-multi-model-a10g-model-web.modal.run',
+    'sdxl_h100': 'https://mariecoderinc--sdxl-multi-model-h100-model-web.modal.run',
     'flux2dev': 'https://api.cloudflare.com/client/v4/accounts/CLOUDFLARE_ACCOUNT_ID/ai/run/@cf/black-forest-labs/flux-2-dev'
 };
 
@@ -75,7 +77,7 @@ export const processImageTask = async (req) => {
                     height: resolution.height
                 };
 
-                const submitResponse = await fetch(`${ENDPOINTS.zit}/generate`, {
+                const submitResponse = await fetch(`${ENDPOINTS.zit_h100}/generate`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(body)
@@ -88,8 +90,8 @@ export const processImageTask = async (req) => {
                 // Poll for result
                 for (let poll = 0; poll < 120; poll++) {
                     await new Promise(r => setTimeout(r, 4000));
-                    let resultRes = await fetch(`${ENDPOINTS.zit}/result/${job_id}`);
-                    if (resultRes.status === 404) resultRes = await fetch(`${ENDPOINTS.zit}/jobs/${job_id}`);
+                    let resultRes = await fetch(`${ENDPOINTS.zit_h100}/result/${job_id}`);
+                    if (resultRes.status === 404) resultRes = await fetch(`${ENDPOINTS.zit_h100}/jobs/${job_id}`);
 
                     if (resultRes.status === 202) continue;
                     if (!resultRes.ok) throw new Error(`Zit Polling Error (${resultRes.status})`);
@@ -141,7 +143,7 @@ export const processImageTask = async (req) => {
                     scheduler: scheduler || 'DPM++ 2M Karras'
                 };
 
-                const submitResponse = await fetchWithTimeout(`${ENDPOINTS.sdxl}/generate`, {
+                const submitResponse = await fetchWithTimeout(`${ENDPOINTS.sdxl_a10g}/generate`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -158,8 +160,8 @@ export const processImageTask = async (req) => {
                 // Poll for result
                 for (let poll = 0; poll < 120; poll++) {
                     await new Promise(r => setTimeout(r, 4000));
-                    let resultRes = await fetch(`${ENDPOINTS.sdxl}/result/${job_id}`);
-                    if (resultRes.status === 404) resultRes = await fetch(`${ENDPOINTS.sdxl}/jobs/${job_id}`);
+                    let resultRes = await fetch(`${ENDPOINTS.sdxl_a10g}/result/${job_id}`);
+                    if (resultRes.status === 404) resultRes = await fetch(`${ENDPOINTS.sdxl_a10g}/jobs/${job_id}`);
 
                     if (resultRes.status === 202) continue;
                     if (!resultRes.ok) throw new Error(`SDXL Polling Error (${resultRes.status})`);
