@@ -14,4 +14,5 @@ console.log("[FirebaseInit] Initialized with project:", app.options.projectId);
 import { getStorage } from "firebase-admin/storage";
 
 const db = getFirestore();
+db.settings({ ignoreUndefinedProperties: true });
 export { db, FieldValue, getFunctions, getStorage };

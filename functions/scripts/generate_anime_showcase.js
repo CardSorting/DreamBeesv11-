@@ -12,8 +12,8 @@ import sharp from "sharp";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { LoadBalancer } from "../workers/image.js";
-const loadBalancer = new LoadBalancer();
+// [REMOVED] import { LoadBalancer } from "../workers/image.js";
+// [REMOVED] const loadBalancer = new LoadBalancer();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -374,7 +374,7 @@ async function main() {
             await Promise.all(batch.map(async (prompt, idx) => {
                 const globalIdx = i + idx;
                 try {
-                    const imageBuffer = await generateWithLoadBalancer(modelId, prompt);
+                    const imageBuffer = await generateWithDirectCall(modelId, prompt);
                     const url = await processAndUpload(imageBuffer, modelId, globalIdx, prompt);
                     console.log(`   [${globalIdx + 1}] ✓ ${url}`);
                 } catch (err) {
@@ -382,8 +382,7 @@ async function main() {
                 }
             }));
 
-            console.log(`\n--- Load Balancer Stats ---`);
-            console.table(loadBalancer.getHealthSummary());
+            // [REMOVED] loadBalancer stats
 
             await sleep(2000);
         }
