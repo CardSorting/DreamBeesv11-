@@ -296,6 +296,7 @@ export const handleCreatePersona = async (request) => {
         const personaData = {
             ...generated,
             imageId,
+            imageUrl,
             createdBy: userId,
             createdAt: FieldValue.serverTimestamp(),
             zapGoal: 500,

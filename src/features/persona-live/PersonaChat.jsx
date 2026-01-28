@@ -136,6 +136,25 @@ const PersonaChat = () => {
     const isMounted = useRef(true);
     const functions = getFunctions();
 
+    // Reset state when switching characters
+    useEffect(() => {
+        if (!id) return;
+        setImageItem(location.state?.imageItem || null);
+        setPersona(null);
+        setMessages([]);
+        setAlerts([]);
+        setFloatingReactions([]);
+        setVoiceQueue([]);
+        setIsAiSpeaking(false);
+        setIsPersonaTyping(false);
+        setError(null);
+
+        // If we have state, we can skip initial loading for UI smoothness
+        if (!location.state?.imageItem) {
+            setIsLoading(true);
+        }
+    }, [id, location.state]);
+
     useEffect(() => {
         isMounted.current = true;
 
@@ -388,7 +407,7 @@ const PersonaChat = () => {
         return () => {
             cleanupPromise.then(cleanup => cleanup?.());
         };
-    }, [id, currentUser, navigate]);
+    }, [id, currentUser?.uid, navigate]);
 
     useEffect(() => {
         const fetchImage = async () => {
@@ -413,18 +432,29 @@ const PersonaChat = () => {
                     docSnap = await getDoc(docRef);
                 }
 
+                if (!docSnap.exists()) {
+                    docRef = doc(db, 'personas', id);
+                    docSnap = await getDoc(docRef);
+                }
+
                 if (docSnap.exists() && isMounted.current) {
                     const data = { id: docSnap.id, ...docSnap.data() };
+                    // Handle inconsistencies in property naming
                     if (!data.imageUrl && data.url) data.imageUrl = data.url;
                     setImageItem(data);
+
+                    // If we fetched from persona collection, we can also sync persona state
+                    if (docSnap.ref.path.startsWith('personas/')) {
+                        setPersona(prev => ({ ...prev, ...data }));
+                    }
                 } else if (isMounted.current) {
-                    setError("Image not found. It may have been deleted.");
+                    setError("Character not found. They may have returned to the spirit world.");
                     setIsLoading(false);
                 }
             } catch (err) {
-                console.error("Error fetching image:", err);
+                console.error("Error fetching image/persona:", err);
                 if (isMounted.current) {
-                    setError("Failed to load image data.");
+                    setError("Failed to load character data.");
                     setIsLoading(false);
                 }
             }
