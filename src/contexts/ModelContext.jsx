@@ -102,17 +102,26 @@ export function ModelProvider({ children }) {
                     });
                 }
 
-                if (!models.find(m => m.id === 'wai-illustrious')) {
+                let waiModel = models.find(m => m.id === 'wai-illustrious');
+                if (!waiModel) {
                     models.push({
                         id: 'wai-illustrious',
                         name: 'Wai Illustrious',
                         description: 'High-quality illustrations with enforced quality tags and custom High-Res Fix workflow.',
                         type: 'Generator',
-                        order: 6, // Placed after zit-base-model
+                        order: 6,
                         isActive: true,
                         image: 'https://cdn.dreambeesai.com/file/printeregg/assets/landing/wai_illustrious_preview.png',
                         tags: ['illustration', 'high-quality', 'anime', 'base']
                     });
+                } else {
+                    // Force fix broken Firestore data
+                    waiModel.image = 'https://cdn.dreambeesai.com/file/printeregg/assets/landing/wai_illustrious_preview.png';
+                    waiModel.type = 'Generator';
+                    waiModel.order = 6;
+                    if (!waiModel.tags || waiModel.tags.length === 0) {
+                        waiModel.tags = ['illustration', 'high-quality', 'anime', 'base'];
+                    }
                 }
 
                 console.log(`[ModelContext] Fetched ${models.length} models. Checked MeowAcc.`);
