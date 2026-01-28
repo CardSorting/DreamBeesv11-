@@ -251,7 +251,12 @@ export default function MemeFeed() {
                             "artMedium": "AI Generated Meme",
                             "creator": {
                                 "@type": "Person",
-                                "name": focusImage.userDisplayName || "Meme Creator"
+                                "name": focusImage.userDisplayName || "Meme Creator",
+                                "url": `https://dreambeesai.com/memes/creator/${focusImage.userId}`,
+                                "mainEntityOfPage": {
+                                    "@type": "ProfilePage",
+                                    "@id": `https://dreambeesai.com/memes/creator/${focusImage.userId}`
+                                }
                             }
                         }] : [])
                     ]

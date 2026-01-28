@@ -151,60 +151,34 @@ export default function Pricing() {
                     "@context": "https://schema.org",
                     "@graph": [
                         {
+                            "@type": "WebPage",
+                            "name": "DreamBees AI Pricing"
+                        },
+                        ...packs.map(p => ({
                             "@type": "Product",
-                            "name": "DreamBeesAI Pro Membership",
-                            "description": "Unlimited AI image generation with 500 monthly Turbo credits, priority queue, and commercial license.",
+                            "name": p.name,
+                            "description": p.features.join(', '),
+                            "sku": p.id,
                             "offers": {
                                 "@type": "Offer",
-                                "price": "19.99",
+                                "price": p.price,
                                 "priceCurrency": "USD",
                                 "availability": "https://schema.org/InStock",
-                                "priceValidUntil": "2027-12-31",
-                                "priceSpecification": {
-                                    "@type": "UnitPriceSpecification",
-                                    "price": "19.99",
-                                    "priceCurrency": "USD",
-                                    "referenceQuantity": {
-                                        "@type": "QuantitativeValue",
-                                        "value": "1",
-                                        "unitCode": "MON"
+                                "url": `https://dreambeesai.com/pricing?type=${currencyType}`,
+                                ...(currencyType === 'membership' ? {
+                                    "priceSpecification": {
+                                        "@type": "UnitPriceSpecification",
+                                        "price": p.price,
+                                        "priceCurrency": "USD",
+                                        "referenceQuantity": {
+                                            "@type": "QuantitativeValue",
+                                            "value": "1",
+                                            "unitCode": "MON"
+                                        }
                                     }
-                                }
+                                } : {})
                             }
-                        },
-                        {
-                            "@type": "Product",
-                            "name": "DreamBeesAI Starter Zaps",
-                            "description": "50 Turbo image generation credits with no expiry.",
-                            "offers": {
-                                "@type": "Offer",
-                                "price": "5.00",
-                                "priceCurrency": "USD",
-                                "availability": "https://schema.org/InStock"
-                            }
-                        },
-                        {
-                            "@type": "Product",
-                            "name": "DreamBeesAI Creator Zaps",
-                            "description": "250 Turbo image generation credits with no expiry.",
-                            "offers": {
-                                "@type": "Offer",
-                                "price": "20.00",
-                                "priceCurrency": "USD",
-                                "availability": "https://schema.org/InStock"
-                            }
-                        },
-                        {
-                            "@type": "Product",
-                            "name": "DreamBeesAI Reels Starter",
-                            "description": "600 video generation credits for high-definition AI videos.",
-                            "offers": {
-                                "@type": "Offer",
-                                "price": "6.00",
-                                "priceCurrency": "USD",
-                                "availability": "https://schema.org/InStock"
-                            }
-                        },
+                        })),
                         {
                             "@type": "BreadcrumbList",
                             "itemListElement": [

@@ -15,7 +15,8 @@ const SEO = ({
     preconnect = [], // Array of URLs to preconnect
     dnsPrefetch = [], // Array of URLs to dns-prefetch
     mentions = [], // Array of strings/entities the page mentions
-    citations = [] // Array of links/objects for citations
+    citations = [], // Array of links/objects for citations
+    alternates = [] // Array of { href, hreflang } objects
 }) => {
     const location = useLocation();
     const siteUrl = 'https://dreambeesai.com';
@@ -142,6 +143,11 @@ const SEO = ({
 
             {/* Security & Privacy */}
             <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+            {/* Alternates / Hreflang */}
+            {alternates.map(alt => (
+                <link key={`alt-${alt.hreflang}`} rel="alternate" href={alt.href.startsWith('http') ? alt.href : `${siteUrl}${alt.href}`} hreflang={alt.hreflang} />
+            ))}
 
             {/* Structured Data (JSON-LD) */}
             <script type="application/ld+json">
