@@ -1,7 +1,7 @@
 import { HttpsError } from "firebase-functions/v2/https";
 import { db, FieldValue } from "../firebaseInit.js";
 import { handleError, logger, retryOperation, getS3Client } from "../lib/utils.js";
-import { generateColoringBookConcepts, generateColoringPageImage } from "../lib/ai.js";
+import { generateColoringPageImage } from "../lib/ai.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { ZAP_COSTS } from "../lib/costs.js";
