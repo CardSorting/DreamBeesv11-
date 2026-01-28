@@ -4,7 +4,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { doc, getDoc, onSnapshot, collection, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { ArrowLeft, Send, Sparkles, Loader2, Info, MessageCircle, AlertCircle, RefreshCw, Zap } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, Loader2, Info, MessageCircle, AlertCircle, RefreshCw, Zap, VolumeX } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getOptimizedImageUrl } from '../../utils';
 import { getHypeMetadata } from '../../utils/twitchHelpers';
@@ -123,7 +123,6 @@ const PersonaChatContent = () => {
     const [latestZap, setLatestZap] = useState(null);
     const [isShaking, setIsShaking] = useState(false);
     const [showEmotes, setShowEmotes] = useState(false);
-    const [showBitsModal, setShowBitsModal] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState('initialized'); // 'initialized', 'connecting', 'connected', 'disconnected', 'unavailable'
     const [isAiSpeaking, setIsAiSpeaking] = useState(false);
     const [isPersonaTyping, setIsPersonaTyping] = useState(false);
@@ -1163,9 +1162,6 @@ const PersonaChatContent = () => {
                                 />
                                 <button className="emote-btn" onClick={() => setShowEmotes(!showEmotes)}>
                                     😀
-                                </button>
-                                <button className="bits-btn" onClick={() => setShowBitsModal(!showBitsModal)}>
-                                    <Zap size={16} /> Get ZAPs
                                 </button>
                             </div>
                             <div className="twitch-input-footer">

@@ -89,6 +89,7 @@ function ScrollPicker({ items, value, onChange, label, width = 'w-20' }) {
             >
                 {/* Desktop Controls - Up */}
                 <button
+                    type="button"
                     onClick={() => scrollAdjust('up')}
                     className="hidden md:flex mb-2 text-zinc-600 hover:text-white transition-colors opacity-0 group-hover/picker:opacity-100"
                 >
@@ -131,6 +132,7 @@ function ScrollPicker({ items, value, onChange, label, width = 'w-20' }) {
 
                 {/* Desktop Controls - Down */}
                 <button
+                    type="button"
                     onClick={() => scrollAdjust('down')}
                     className="hidden md:flex mt-2 text-zinc-600 hover:text-white transition-colors opacity-0 group-hover/picker:opacity-100"
                 >
@@ -154,17 +156,35 @@ export default function AgeVerificationModal() {
     const [loading, setLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
 
-    const days = useMemo(() => range(1, 31), []);
+    // Dynamic days based on month/year
+    const days = useMemo(() => {
+        const monthIndex = MONTH_NAMES.indexOf(month) + 1;
+        const daysInMonth = new Date(year, monthIndex, 0).getDate();
+        return range(1, daysInMonth);
+    }, [month, year]);
+
     const months = useMemo(() => MONTH_NAMES, []);
     const years = useMemo(() => {
         const currentYear = new Date().getFullYear();
         return range(currentYear - 100, currentYear).reverse();
     }, []);
 
+    // Auto-correct day if invalid for new month
+    useEffect(() => {
+        const monthIndex = MONTH_NAMES.indexOf(month) + 1;
+        const maxDays = new Date(year, monthIndex, 0).getDate();
+        if (day > maxDays) {
+            setDay(maxDays);
+        }
+    }, [month, year, day]);
+
     const [dismissed, setDismissed] = useState(false);
     const isVisible = useMemo(() => {
-        return !!(currentUser && isProfileLoaded && !userProfile.birthday) && !dismissed;
-    }, [currentUser, isProfileLoaded, userProfile.birthday, dismissed]);
+        const needsVerification = !!(currentUser && isProfileLoaded && !userProfile?.birthday);
+        const result = (needsVerification || isSuccess) && !dismissed;
+        if (result && isProfileLoaded) console.log("[AgeVerification] Modal is active", { needsVerification, isSuccess, dismissed });
+        return result;
+    }, [currentUser, isProfileLoaded, userProfile?.birthday, dismissed, isSuccess]);
 
     // Convert month name to number
     const monthNumber = useMemo(() => MONTH_NAMES.indexOf(month) + 1, [month]);
@@ -187,8 +207,20 @@ export default function AgeVerificationModal() {
 
     const isVerified = calculatedAge !== null && calculatedAge >= 18;
 
+    // Mounted ref for async safety
+    const isMounted = useRef(true);
+    useEffect(() => {
+        isMounted.current = true;
+        return () => { isMounted.current = false; };
+    }, []);
+
     async function handleSubmit(e) {
         e.preventDefault();
+
+        if (!currentUser) {
+            toast.error("You must be logged in.");
+            return;
+        }
 
         const birthday = `${year}-${String(monthNumber).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
@@ -208,152 +240,160 @@ export default function AgeVerificationModal() {
             await updateDoc(userRef, {
                 birthday: birthday
             });
-            setIsSuccess(true);
-            toast.success("Age verified successfully!");
 
-            setTimeout(() => {
-                setDismissed(true);
-            }, 2000);
+            if (isMounted.current) {
+                setIsSuccess(true);
+                toast.success("Age verified successfully!");
+
+                setTimeout(() => {
+                    if (isMounted.current) {
+                        setDismissed(true);
+                    }
+                }, 2000);
+            }
         } catch (error) {
             console.error("Failed to update birthday:", error);
-            toast.error("Failed to save birth date. Please try again.");
-            setLoading(false);
+            if (isMounted.current) {
+                toast.error("Failed to save birth date. Please try again.");
+                setLoading(false);
+            }
         }
     }
 
-    if (!isVisible) return null;
-
     return (
         <AnimatePresence>
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-2xl p-4"
-                style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-            >
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <div className="absolute -top-24 -left-24 w-[32rem] h-[32rem] bg-purple-500/10 blur-[150px] rounded-full animate-pulse" />
-                    <div className="absolute -bottom-24 -right-24 w-[32rem] h-[32rem] bg-blue-500/10 blur-[150px] rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
-                </div>
-
+            {isVisible && (
                 <motion.div
-                    initial={{ scale: 0.9, y: 20, opacity: 0 }}
-                    animate={{ scale: 1, y: 0, opacity: 1 }}
-                    className="bg-zinc-950/95 backdrop-blur-3xl border border-white/20 rounded-[4rem] max-w-md md:max-w-2xl w-full p-8 md:p-16 shadow-[0_32px_128px_-16px_rgba(0,0,0,1)] overflow-hidden relative"
+                    key="age-verification-modal"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-2xl p-4"
+                    style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
                 >
-                    <div className="relative z-10">
-                        <AnimatePresence mode="wait">
-                            {isSuccess ? (
-                                <motion.div
-                                    key="success"
-                                    initial={{ scale: 0.5, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    className="flex flex-col items-center justify-center py-20"
-                                >
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        <div className="absolute -top-24 -left-24 w-[32rem] h-[32rem] bg-purple-500/10 blur-[150px] rounded-full animate-pulse" />
+                        <div className="absolute -bottom-24 -right-24 w-[32rem] h-[32rem] bg-blue-500/10 blur-[150px] rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
+                    </div>
+
+                    <motion.div
+                        initial={{ scale: 0.9, y: 20, opacity: 0 }}
+                        animate={{ scale: 1, y: 0, opacity: 1 }}
+                        className="bg-zinc-950/95 backdrop-blur-3xl border border-white/20 rounded-[4rem] max-w-md md:max-w-2xl w-full p-8 md:p-16 shadow-[0_32px_128px_-16px_rgba(0,0,0,1)] overflow-hidden relative"
+                    >
+                        <div className="relative z-10">
+                            <AnimatePresence mode="wait">
+                                {isSuccess ? (
                                     <motion.div
-                                        initial={{ scale: 0 }}
-                                        animate={{ scale: 1 }}
-                                        transition={{ type: 'spring', damping: 12 }}
-                                        className="w-32 h-32 bg-green-500/20 rounded-full flex items-center justify-center mb-8 border border-green-500/30"
+                                        key="success"
+                                        initial={{ scale: 0.5, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        className="flex flex-col items-center justify-center py-20"
                                     >
-                                        <CheckCircle2 size={80} className="text-green-400" />
+                                        <motion.div
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            transition={{ type: 'spring', damping: 12 }}
+                                            className="w-32 h-32 bg-green-500/20 rounded-full flex items-center justify-center mb-8 border border-green-500/30"
+                                        >
+                                            <CheckCircle2 size={80} className="text-green-400" />
+                                        </motion.div>
+                                        <h2 className="text-4xl font-black text-white text-center mb-4">Verified!</h2>
+                                        <p className="text-zinc-400 text-center text-lg">Your journey begins now.</p>
                                     </motion.div>
-                                    <h2 className="text-4xl font-black text-white text-center mb-4">Verified!</h2>
-                                    <p className="text-zinc-400 text-center text-lg">Your journey begins now.</p>
-                                </motion.div>
-                            ) : (
-                                <motion.div key="form" exit={{ opacity: 0, y: -20 }}>
-                                    <div className="flex justify-center mb-10">
-                                        <div className="w-20 h-20 bg-gradient-to-br from-white/10 to-transparent backdrop-blur-md rounded-3xl border border-white/20 flex items-center justify-center shadow-2xl">
-                                            <Shield size={40} className="text-white" />
-                                        </div>
-                                    </div>
-
-                                    <h2 className="text-4xl font-black text-white text-center mb-4 tracking-tight">Identity Check</h2>
-                                    <p className="text-zinc-300 text-center text-lg mb-12 leading-relaxed font-medium max-w-md mx-auto">
-                                        Confirm your birth date to enter. We're committed to keeping DreamBees safe for everyone.
-                                    </p>
-
-                                    <form onSubmit={handleSubmit} className="space-y-12">
-                                        <div className="flex justify-center items-center gap-8 px-4">
-                                            <ScrollPicker
-                                                items={days}
-                                                value={day}
-                                                onChange={setDay}
-                                                label="Day"
-                                                width="w-24"
-                                            />
-                                            <ScrollPicker
-                                                items={months}
-                                                value={month}
-                                                onChange={setMonth}
-                                                label="Month"
-                                                width="w-32"
-                                            />
-                                            <ScrollPicker
-                                                items={years}
-                                                value={year}
-                                                onChange={setYear}
-                                                label="Year"
-                                                width="w-36"
-                                            />
+                                ) : (
+                                    <motion.div key="form" exit={{ opacity: 0, y: -20 }}>
+                                        <div className="flex justify-center mb-10">
+                                            <div className="w-20 h-20 bg-gradient-to-br from-white/10 to-transparent backdrop-blur-md rounded-3xl border border-white/20 flex items-center justify-center shadow-2xl">
+                                                <Shield size={40} className="text-white" />
+                                            </div>
                                         </div>
 
-                                        <div className="text-center pt-8">
-                                            <AnimatePresence mode="wait">
-                                                {calculatedAge !== null && (
-                                                    <motion.div
-                                                        key={calculatedAge}
-                                                        initial={{ opacity: 0, scale: 0.9 }}
-                                                        animate={{ opacity: 1, scale: 1 }}
-                                                        exit={{ opacity: 0, scale: 0.9 }}
-                                                        className="flex items-center justify-center gap-4 bg-white/5 py-4 px-10 rounded-full border border-white/10 inline-flex shadow-inner"
-                                                    >
-                                                        <span className={`text-2xl font-black ${isVerified ? 'text-green-400' : 'text-red-400'}`}>
-                                                            {calculatedAge} <span className="text-zinc-500 font-bold uppercase text-xs tracking-tighter">Years Old</span>
-                                                        </span>
-                                                        {isVerified ? (
-                                                            <CheckCircle2 size={24} className="text-green-400" />
-                                                        ) : (
-                                                            <div className="w-3 h-3 rounded-full bg-red-400 animate-pulse" />
-                                                        )}
-                                                    </motion.div>
-                                                )}
-                                            </AnimatePresence>
-                                        </div>
+                                        <h2 className="text-4xl font-black text-white text-center mb-4 tracking-tight">Identity Check</h2>
+                                        <p className="text-zinc-300 text-center text-lg mb-12 leading-relaxed font-medium max-w-md mx-auto">
+                                            Confirm your birth date to enter. We're committed to keeping DreamBees safe for everyone.
+                                        </p>
 
-                                        <button
-                                            disabled={loading || !isVerified}
-                                            className="
+                                        <form onSubmit={handleSubmit} className="space-y-12">
+                                            <div className="flex justify-center items-center gap-8 px-4">
+                                                <ScrollPicker
+                                                    items={days}
+                                                    value={day}
+                                                    onChange={setDay}
+                                                    label="Day"
+                                                    width="w-24"
+                                                />
+                                                <ScrollPicker
+                                                    items={months}
+                                                    value={month}
+                                                    onChange={setMonth}
+                                                    label="Month"
+                                                    width="w-32"
+                                                />
+                                                <ScrollPicker
+                                                    items={years}
+                                                    value={year}
+                                                    onChange={setYear}
+                                                    label="Year"
+                                                    width="w-36"
+                                                />
+                                            </div>
+
+                                            <div className="text-center pt-8">
+                                                <AnimatePresence mode="wait">
+                                                    {calculatedAge !== null && (
+                                                        <motion.div
+                                                            key={calculatedAge}
+                                                            initial={{ opacity: 0, scale: 0.9 }}
+                                                            animate={{ opacity: 1, scale: 1 }}
+                                                            exit={{ opacity: 0, scale: 0.9 }}
+                                                            className="flex items-center justify-center gap-4 bg-white/5 py-4 px-10 rounded-full border border-white/10 inline-flex shadow-inner"
+                                                        >
+                                                            <span className={`text-2xl font-black ${isVerified ? 'text-green-400' : 'text-red-400'}`}>
+                                                                {calculatedAge} <span className="text-zinc-500 font-bold uppercase text-xs tracking-tighter">Years Old</span>
+                                                            </span>
+                                                            {isVerified ? (
+                                                                <CheckCircle2 size={24} className="text-green-400" />
+                                                            ) : (
+                                                                <div className="w-3 h-3 rounded-full bg-red-400 animate-pulse" />
+                                                            )}
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                            </div>
+
+                                            <button
+                                                disabled={loading || !isVerified}
+                                                className="
                                                 w-full group relative overflow-hidden h-16 rounded-2xl 
                                                 bg-white text-black font-bold text-lg 
                                                 flex items-center justify-center gap-2 
                                                 hover:bg-zinc-100 transition-all active:scale-[0.98]
                                                 disabled:opacity-20 disabled:cursor-not-allowed
                                             "
-                                        >
-                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                                            {loading ? (
-                                                <Loader2 className="animate-spin" size={24} />
-                                            ) : (
-                                                <>
-                                                    Verify & Continue
-                                                    <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                                                </>
-                                            )}
-                                        </button>
-                                    </form>
+                                            >
+                                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                                                {loading ? (
+                                                    <Loader2 className="animate-spin" size={24} />
+                                                ) : (
+                                                    <>
+                                                        Verify & Continue
+                                                        <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                                                    </>
+                                                )}
+                                            </button>
+                                        </form>
 
-                                    <p className="text-[10px] text-zinc-600 text-center mt-10 px-8 leading-relaxed font-bold uppercase tracking-widest opacity-50">
-                                        Secure · Private · Compliant
-                                    </p>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                                        <p className="text-[10px] text-zinc-600 text-center mt-10 px-8 leading-relaxed font-bold uppercase tracking-widest opacity-50">
+                                            Secure · Private · Compliant
+                                        </p>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    </motion.div>
                 </motion.div>
-            </motion.div>
+            )}
         </AnimatePresence>
     );
 }
