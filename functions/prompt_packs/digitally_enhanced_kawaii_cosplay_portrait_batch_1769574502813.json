@@ -1,0 +1,35 @@
+{
+  "pack_name": "Digitally Enhanced Kawaii Cosplay Portrait",
+  "batch": [
+    {
+      "prompt": "Full-body portrait, East Asian female, wearing a fluffy bunny costume, long dark hair styled in pigtails, oversized eyes, defined lips, seated on a sleek white chair in a futuristic gaming room, subtle neon blue and purple lights glowing from background panels, softbox lighting, frontal illumination, eye-level perspective, subject dominating 70% of frame, pastel pinks and whites, black costume accents, smooth skin, clean polished surfaces, direct gaze at camera.",
+      "negative_prompt": "Gritty realism, Grotesque imagery, Dark fantasy, Overt violence, Complex narrative scenes, Abstract art, Overt masculine themes, Excessive grunge, decay, Photorealism without digital enhancement, Monochrome, vintage filters, Overtly traditional East Asian costume, Overly simplistic, cartoonish, non-human anatomical features, harsh lighting, strong side light, unfiltered sunlight, dark colors, desaturated, rough texture, dirty, distressed, busy background, cluttered background, sharp features, angular face, mature face, complex pose, action pose, rough skin, unrefined features, multiple subjects, background dominant.",
+      "style_lock_notes": [
+        "Subject, costume, facial features, lighting, and color palette directly adhere to aesthetic pack's core principles.",
+        "Futuristic gaming room adapted through subtle, clean background elements and neon accents, maintaining subject dominance.",
+        "Motifs (fluffy bunny costume, pigtails, oversized eyes, defined lips) and recurrence pattern (direct gaze) are integrated."
+      ],
+      "internal_mode": "Stabilized"
+    },
+    {
+      "prompt": "Close-up portrait, East Asian female, bunny girl costume, bangs, oversized eyes, defined lips, wearing a choker, hand near mouth, in a futuristic gaming room with blurred electric blue and purple neon light strips, ring light on subject, high-angle perspective, subject centered and dominating 90% of frame, vibrant reds and blacks, white costume accents, smooth synthetic leather texture, smooth skin, moderate saturation on clothing and makeup.",
+      "negative_prompt": "Gritty realism, Grotesque imagery, Dark fantasy, Overt violence, Complex narrative scenes, Abstract art, Overt masculine themes, Excessive grunge, decay, Photorealism without digital enhancement, Monochrome, vintage filters, Overtly traditional East Asian costume, Overly simplistic, cartoonish, non-human anatomical features, harsh lighting, strong side light, unfiltered sunlight, dark colors, desaturated, rough texture, dirty, distressed, busy background, cluttered background, sharp features, angular face, mature face, complex pose, action pose, rough skin, unrefined features, multiple subjects, background dominant.",
+      "style_lock_notes": [
+        "Focus on close-up composition, specific motifs (choker, bangs, oversized eyes), and color behavior (reds, blacks, neons) from the pack.",
+        "Futuristic gaming room serves as a secondary, blurred backdrop enhancing the subject without competing for focus.",
+        "Lighting (ring light) and texture bias (smooth synthetic leather, skin) are maintained."
+      ],
+      "internal_mode": "Variant"
+    },
+    {
+      "prompt": "Half-body portrait, East Asian female, fluffy bunny costume with ribbon accents, long dark hair, oversized eyes, defined lips, seated at a minimalistic, glowing desk within a futuristic gaming room, large diffused light source overhead, eye-level perspective, subject slightly off-center, occupying 60% of frame, pastel mint, white, black, and subtle digital green hues in environment, faux fur trim, smooth skin, clean uniform surfaces, direct gaze at camera.",
+      "negative_prompt": "Gritty realism, Grotesque imagery, Dark fantasy, Overt violence, Complex narrative scenes, Abstract art, Overt masculine themes, Excessive grunge, decay, Photorealism without digital enhancement, Monochrome, vintage filters, Overtly traditional East Asian costume, Overly simplistic, cartoonish, non-human anatomical features, harsh lighting, strong side light, unfiltered sunlight, dark colors, desaturated, rough texture, dirty, distressed, busy background, cluttered background, sharp features, angular face, mature face, complex pose, action pose, rough skin, unrefined features, multiple subjects, background dominant.",
+      "style_lock_notes": [
+        "Recurrence pattern (seated at table, direct gaze), motifs (fluffy bunny costume, ribbons, oversized eyes), and subject treatment are consistent.",
+        "The 'futuristic gaming room' is interpreted as a clean, minimalist environment with specific color hints, aligning with texture bias and color behavior.",
+        "Soft, overhead lighting ensures subject remains evenly lit and digitally enhanced."
+      ],
+      "internal_mode": "Strain"
+    }
+  ]
+}

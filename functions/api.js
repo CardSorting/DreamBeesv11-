@@ -24,6 +24,7 @@ import * as Avatar from "./handlers/avatars.js";
 import * as ColorCraft from "./handlers/colorCraft.js";
 import * as Distill from "./handlers/distill.js";
 import * as DistillStudent from "./handlers/distillStudent.js";
+import * as DistillStudentBatch from "./handlers/distillStudentBatch.js";
 
 // ============================================================================
 
@@ -195,6 +196,7 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
             // Distill
             case 'distill': return Distill.handleDistillRequest(request);
             case 'studentCompose': return DistillStudent.handleStudentComposeRequest(request);
+            case 'studentBatchCompose': return DistillStudentBatch.handleStudentBatchComposeRequest(request);
 
             // Data & Ratings
             case 'getGenerationHistory': return Data.handleGetGenerationHistory(request);

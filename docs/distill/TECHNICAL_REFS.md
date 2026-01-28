@@ -14,8 +14,16 @@ Engages the Student to generate a prompt and trigger an image.
 - **Data**:
   - `packId`: Filename in `functions/packs/`.
   - `userRequest`: String describing the subject.
-  - `modelId`: Target generation model (e.g., `wai-illustrious`).
+  - `modelId`: Target generation model.
   - `aspectRatio`: (Optional) Default `1:1`.
+
+### `studentBatchCompose`
+Engages the Batch Student to synthesize multiple diverse prompts.
+- **Data**:
+  - `packId`: Filename in `functions/packs/`.
+  - `batchCount`: Number of prompts (default 10).
+  - `triggerGeneration`: If true, triggers immediate image generation for all prompts.
+  - `userRequest`: Semantic direction for the batch.
 
 ## Integration Tests
 
@@ -28,6 +36,14 @@ Located in `functions/scripts/`:
 2.  **[testDistillStudent.js](file:///Users/bozoegg/Desktop/DreamBeesv11/functions/scripts/testDistillStudent.js)**
     - Tests the Student handler.
     - Loads a saved pack, generates a prompt, and verifies the `Generation` trigger logic and cost estimation.
+
+3.  **[test_student_batch.js](file:///Users/bozoegg/Desktop/DreamBeesv11/functions/scripts/test_student_batch.js)**
+    - Tests the Batch Student handler.
+    - Generates 3 prompts from a sample pack and verifies internal mode diversity and JSON structure.
+4.  **[generate_kawaii_cosplay_showcase.js](file:///Users/bozoegg/Desktop/DreamBeesv11/functions/scripts/generate_kawaii_cosplay_showcase.js)**
+    - Automates showcase image generation for the Kawaii Cosplay aesthetic.
+    - **Automation**: Supports the `--pack` flag to load prompts from saved batch JSON files.
+    - **Usage**: `node functions/scripts/generate_kawaii_cosplay_showcase.js --pack=functions/prompt_packs/YOUR_BATCH_FILE.json`
 
 ## Troubleshooting
 
@@ -52,7 +68,7 @@ Located in `functions/scripts/`:
 }
 ```
 
-### Student Output
+### Student Output (Single)
 ```json
 {
   "success": true,
@@ -64,3 +80,22 @@ Located in `functions/scripts/`:
   "generation": { ... }
 }
 ```
+
+### Student Output (Batch)
+```json
+{
+  "success": true,
+  "pack_name": "...",
+  "batch": [
+    {
+      "prompt": "...",
+      "negative_prompt": "...",
+      "style_lock_notes": ["..."],
+      "internal_mode": "..."
+    }
+  ]
+}
+```
+
+### Batch Persistence
+Batches are saved to `functions/prompt_packs/{sanitized_name}_batch_{timestamp}.json`.

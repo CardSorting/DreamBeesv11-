@@ -18,12 +18,37 @@ The Student handler is integrated directly with the `Generation` handler. Once a
 2. It calls `Generation.handleCreateGenerationRequest`.
 3. It handles errors gracefully (e.g., in local environments, it returns the composition result even if the queueing fails).
 
+## Handler: `handleStudentBatchComposeRequest`
+- **File**: [functions/handlers/distillStudentBatch.js](file:///Users/bozoegg/Desktop/DreamBeesv11/functions/handlers/distillStudentBatch.js)
+- **Model**: Gemini 2.5 Flash
+- **System Prompt**: [distill-student-batch.md](file:///Users/bozoegg/Desktop/DreamBeesv11/distill-student-batch.md)
+
+### Batch Responsibilities
+- **High Volume**: Generates multiple prompts (default 10) in a single LLM call.
+- **Exploration**: Varies `internal_mode` and `seed` per prompt within the same batch to show different facets of the aesthetic.
+- **Optional Generation**: Can optionally trigger the image generation pipeline for every prompt in the batch in parallel.
+- **Persistence**: Automatically saves the resulting batch JSON to the `functions/prompt_packs/` directory for historical reference and manual auditing.
+
 ## Precision Prompting
-Unlike generic prompt generators, the Student:
 - **Locked Aesthetics**: Ensures motifs from the pack are present.
 - **Negative Enforcement**: Incorporates forbidden elements into the `negative_prompt`.
 - **Style Locking**: Returns `style_lock_notes`—mechanical reminders of the aesthetic's rigid boundaries.
 
 ## Usage
-Triggered via the `studentCompose` action.
-Required parameters: `packId` (or `pack` object), `userRequest`, and `modelId`.
+- **Single**: Triggered via `studentCompose`.
+- **Batch**: Triggered via `studentBatchCompose`.
+
+### Batch Parameters
+- `packId` or `pack`: Aesthetic Pack data.
+- `batchCount`: Number of prompts to generate (default 10).
+- `triggerGeneration`: Boolean. If true, starts image generation for all prompts.
+- `userRequest`: (Optional) Conceptual direction for the batch.
+- `modelId`, `aspectRatio`, `steps`: Standard generation overrides.
+### Batch Synthesis Workflow
+The batch synth strategy allows for a fully automated elite showcase flow:
+1. **Compose**: Call `studentBatchCompose` to generate 10+ prompts.
+2. **Audit**: Locate the saved JSON in `functions/prompt_packs/`.
+3. **Showcase**: Run the showcase script with the saved JSON:
+   ```bash
+   node functions/scripts/generate_kawaii_cosplay_showcase.js --pack=functions/prompt_packs/filename.json
+   ```
