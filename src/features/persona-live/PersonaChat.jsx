@@ -11,7 +11,7 @@ import { getHypeMetadata } from '../../utils/twitchHelpers';
 import SEO from '../../components/SEO';
 import toast from 'react-hot-toast';
 import Pusher from 'pusher-js';
-import { listAudioFiles } from '../../b2';
+
 import { ZAP_COSTS } from '../../constants/zapCosts';
 import './PersonaChat.css';
 
@@ -129,12 +129,7 @@ const PersonaChatContent = () => {
     const [isAutoplayBlocked, setIsAutoplayBlocked] = useState(false);
     const audioVoiceRef = useRef(null);
 
-    // Audio State
-    const [queueIndex, setQueueIndex] = useState(0);
-    const [audioQueue, setAudioQueue] = useState([]);
     const [voiceQueue, setVoiceQueue] = useState([]);
-    const [volume, setVolume] = useState(30);
-    const audioRef = useRef(null);
 
     const [error, setError] = useState(null);
 
@@ -180,67 +175,58 @@ const PersonaChatContent = () => {
 
     useEffect(() => {
         isMounted.current = true;
-
-        // Initial Volume Set
-        if (audioRef.current) {
-            audioRef.current.volume = 0.3;
-        }
-
-        const fetchAudio = async () => {
-            const tracks = await listAudioFiles();
-            if (isMounted.current && tracks.length > 0) {
-                // Shuffle Array (Fisher-Yates)
-                for (let i = tracks.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [tracks[i], tracks[j]] = [tracks[j], tracks[i]];
-                }
-                setAudioQueue(tracks);
-                setQueueIndex(0);
-            }
-        };
-
-        fetchAudio();
-
         return () => { isMounted.current = false; };
     }, []);
 
-    // Handle Metadata load to set volume persistence
-    const handleAudioMetadata = () => {
-        if (audioRef.current) {
-            audioRef.current.volume = 0.3; // Cap at 30%
-        }
-    };
-
-    const handleTrackEnded = () => {
-        if (audioQueue.length === 0) return;
-
-        let nextIndex = queueIndex + 1;
-
-        // Reshuffle if end of queue
-        if (nextIndex >= audioQueue.length) {
-            const shuffled = [...audioQueue];
-            for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
-            setAudioQueue(shuffled);
-            setQueueIndex(0);
-        } else {
-            setQueueIndex(nextIndex);
-        }
-    };
+    // Debugging dependency changes
+    const prevDeps = useRef({ id, uid: currentUser?.uid });
+    const initializingRef = useRef(false); // Prevent concurrent init attempts
 
     useEffect(() => {
-        if (!id || !currentUser?.uid || !import.meta.env.VITE_SOKETI_APP_KEY) return;
+        console.log("[Soketi] PersonaChat MOUNTED/UPDATED");
+        const changed = [];
+        if (prevDeps.current.id !== id) changed.push(`id: ${prevDeps.current.id} -> ${id}`);
+        if (prevDeps.current.uid !== currentUser?.uid) changed.push(`uid: ${prevDeps.current.uid} -> ${currentUser?.uid}`);
+
+        if (changed.length > 0) {
+            console.log("[Soketi] Dependencies changed:", changed.join(', '));
+            prevDeps.current = { id, uid: currentUser?.uid };
+        }
+
+        if (!id || !currentUser?.uid || !import.meta.env.VITE_SOKETI_APP_KEY) {
+            console.log("[Soketi] Skipping init - missing deps");
+            return;
+        }
+
+        // SYNCHRONOUS guard - check BEFORE async code
+        if (pusherRef.current) {
+            console.log("[Soketi] Pusher already initialized, skipping.");
+            return;
+        }
+
+        if (initializingRef.current) {
+            console.log("[Soketi] Initialization already in progress, skipping.");
+            return;
+        }
+
+        // Mark as initializing immediately (synchronously)
+        initializingRef.current = true;
+
+        let isCleanedUp = false;
 
         const initPusher = async () => {
-            // Prevent multiple initializations
-            if (pusherRef.current) return;
+            console.log("[Soketi] Initializing connection...");
 
-            const token = await currentUser.getIdToken();
+            // Check if we were cleaned up before starting
+            if (isCleanedUp) {
+                console.log("[Soketi] Aborting init - already cleaned up");
+                initializingRef.current = false;
+                return null;
+            }
+
             const authEndpoint = import.meta.env.VITE_SOKETI_AUTH_ENDPOINT || '/api/pusher/auth';
             let authRetryCount = 0;
-            const MAX_AUTH_RETRIES = 5; // Increased for backoff strategy
+            const MAX_AUTH_RETRIES = 5;
 
             // Helper for backoff delay
             const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -259,6 +245,8 @@ const PersonaChatContent = () => {
                 authorizer: (channel, options) => {
                     return {
                         authorize: async (socketId, callback) => {
+                            if (isCleanedUp) return; // Stop if unmounted
+
                             try {
                                 if (authRetryCount >= MAX_AUTH_RETRIES) {
                                     console.warn(`[PusherAuth] Max retries reached for ${channel.name}. Aborting.`);
@@ -273,20 +261,31 @@ const PersonaChatContent = () => {
                                     await sleep(delay);
                                 }
 
+                                if (isCleanedUp) return; // Check again after sleep
+
                                 // 1. Try with cached token first (false)
                                 let token = await currentUser.getIdToken(false);
 
-                                let response = await fetch(authEndpoint, {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Authorization': `Bearer ${token}`
-                                    },
-                                    body: JSON.stringify({
-                                        socket_id: socketId,
-                                        channel_name: channel.name
-                                    })
-                                });
+                                let response;
+                                try {
+                                    response = await fetch(authEndpoint, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'Authorization': `Bearer ${token}`
+                                        },
+                                        body: JSON.stringify({
+                                            socket_id: socketId,
+                                            channel_name: channel.name
+                                        })
+                                    });
+                                } catch (fetchErr) {
+                                    console.error("[PusherAuth] Network request failed:", fetchErr);
+                                    authRetryCount++;
+                                    throw fetchErr;
+                                }
+
+                                if (isCleanedUp) return; // Check usage
 
                                 // 2. If 401/403, force refresh and retry ONCE
                                 if (response.status === 401 || response.status === 403) {
@@ -306,6 +305,7 @@ const PersonaChatContent = () => {
                                 }
 
                                 if (!response.ok) {
+                                    console.error(`[PusherAuth] Auth failed. Status: ${response.status} Text: ${response.statusText}`);
                                     authRetryCount++;
                                     throw new Error(`Auth failed with status: ${response.status}`);
                                 }
@@ -326,11 +326,11 @@ const PersonaChatContent = () => {
             pusherRef.current = pusher;
 
             pusher.connection.bind('state_change', (states) => {
-                if (!isMounted.current) return;
+                if (isCleanedUp || !isMounted.current) return;
                 setConnectionStatus(states.current);
                 if (states.current === 'unavailable') {
                     // Quietly retry, don't spam toast
-                    console.log("Stream connection lost. Retrying...");
+                    console.log("Stream connection lost. Retrying...", states);
                 } else if (states.current === 'connected') {
                     // Only toast on recovery if it was previously disconnected long enough to notice?
                     // For now, keeping it simple or removing to reduce noise
@@ -339,6 +339,7 @@ const PersonaChatContent = () => {
             });
 
             pusher.connection.bind('error', (err) => {
+                if (isCleanedUp) return;
                 console.error('[Soketi] Connection error:', err);
                 if (err?.error?.data?.code === 4004) {
                     console.warn("[Soketi] Over limit or subscription error. Stopping retries.");
@@ -350,15 +351,22 @@ const PersonaChatContent = () => {
             const channel = pusher.subscribe(channelName);
 
             channel.bind('pusher:subscription_succeeded', (members) => {
-                if (isMounted.current) setViewerCount(members.count);
+                if (isCleanedUp || !isMounted.current) return;
+                setViewerCount(members.count);
                 // Reset auth retries on successful subscription
                 authRetryCount = 0;
             });
 
             // ... (rest of bindings remain the same)
 
-            channel.bind('pusher:member_added', (member) => {
-                if (!isMounted.current) return;
+            const bindSafe = (event, callback) => {
+                channel.bind(event, (data) => {
+                    if (isCleanedUp || !isMounted.current) return;
+                    callback(data);
+                });
+            };
+
+            bindSafe('pusher:member_added', (member) => {
                 setViewerCount(prev => prev + 1);
                 const newAlert = {
                     id: Date.now(),
@@ -367,18 +375,15 @@ const PersonaChatContent = () => {
                 };
                 setAlerts(prev => [...prev, newAlert]);
                 setTimeout(() => {
-                    if (isMounted.current) {
-                        setAlerts(prev => prev.filter(a => a.id !== newAlert.id));
-                    }
+                    if (isMounted.current) setAlerts(prev => prev.filter(a => a.id !== newAlert.id));
                 }, 5000);
             });
 
-            channel.bind('pusher:member_removed', (member) => {
-                if (isMounted.current) setViewerCount(prev => Math.max(0, prev - 1));
+            bindSafe('pusher:member_removed', (member) => {
+                setViewerCount(prev => Math.max(0, prev - 1));
             });
 
-            channel.bind('celebration', (data) => {
-                if (!isMounted.current) return;
+            bindSafe('celebration', (data) => {
                 triggerShake();
                 const newAlert = {
                     id: Date.now(),
@@ -388,14 +393,23 @@ const PersonaChatContent = () => {
                 setLatestZap(newAlert.text);
                 setAlerts(prev => [newAlert, ...prev]);
                 setTimeout(() => {
-                    if (isMounted.current) {
-                        setAlerts(prev => prev.filter(a => a.id !== newAlert.id));
-                    }
+                    if (isMounted.current) setAlerts(prev => prev.filter(a => a.id !== newAlert.id));
                 }, 5000);
+
+                // Second celebration logic from original code
+                const celebrationAlert = {
+                    id: Date.now(),
+                    text: data.message,
+                    type: 'celebration'
+                };
+                setAlerts(prev => [...prev, celebrationAlert]);
+                setTimeout(() => {
+                    setAlerts(prev => prev.filter(a => a.id !== celebrationAlert.id));
+                }, 8000);
+                toast.success(data.message, { icon: '🎁', duration: 5000 });
             });
 
-            channel.bind('state-change', (data) => {
-                if (!isMounted.current) return;
+            bindSafe('state-change', (data) => {
                 const newAlert = {
                     id: Date.now(),
                     text: `COMMUNITY ACTION: ${data.from} triggered [${data.actionId}]!`,
@@ -403,14 +417,11 @@ const PersonaChatContent = () => {
                 };
                 setAlerts(prev => [newAlert, ...prev]);
                 setTimeout(() => {
-                    if (isMounted.current) {
-                        setAlerts(prev => prev.filter(a => a.id !== newAlert.id));
-                    }
+                    if (isMounted.current) setAlerts(prev => prev.filter(a => a.id !== newAlert.id));
                 }, 5000);
             });
 
-            channel.bind('poll-started', (data) => {
-                if (!isMounted.current) return;
+            bindSafe('poll-started', (data) => {
                 const newAlert = {
                     id: Date.now(),
                     text: `📊 NEW POLL: ${data.question}`,
@@ -418,9 +429,7 @@ const PersonaChatContent = () => {
                 };
                 setAlerts(prev => [newAlert, ...prev]);
                 setTimeout(() => {
-                    if (isMounted.current) {
-                        setAlerts(prev => prev.filter(a => a.id !== newAlert.id));
-                    }
+                    if (isMounted.current) setAlerts(prev => prev.filter(a => a.id !== newAlert.id));
                 }, 5000);
             });
 
@@ -428,7 +437,7 @@ const PersonaChatContent = () => {
             // Site-Wide Notifications
             const globalChannel = pusher.subscribe('global-notifications');
             globalChannel.bind('big-zap', (data) => {
-                if (!isMounted.current) return;
+                if (isCleanedUp || !isMounted.current) return;
                 if (data.personaId !== id) {
                     toast(`${data.message}`, {
                         icon: '🚀',
@@ -440,52 +449,31 @@ const PersonaChatContent = () => {
                 }
             });
 
-            channel.bind('celebration', (data) => {
-                if (isMounted.current) {
-                    const newAlert = {
-                        id: Date.now(),
-                        text: data.message,
-                        type: 'celebration'
-                    };
-                    setAlerts(prev => [...prev, newAlert]);
-                    setTimeout(() => {
-                        setAlerts(prev => prev.filter(a => a.id !== newAlert.id));
-                    }, 8000);
-
-                    // Trigger "Celebration" confetti if we want (Mocked as alert for now)
-                    toast.success(data.message, { icon: '🎁', duration: 5000 });
-                }
+            bindSafe('reaction', (data) => {
+                const id = Date.now() + Math.random();
+                setFloatingReactions(prev => [...prev, { id, emoji: data.emoji, x: 20 + Math.random() * 60 }]);
+                setTimeout(() => {
+                    setFloatingReactions(prev => prev.filter(r => r.id !== id));
+                }, 3000);
             });
 
-            channel.bind('reaction', (data) => {
-                if (isMounted.current) {
-                    const id = Date.now() + Math.random();
-                    setFloatingReactions(prev => [...prev, { id, emoji: data.emoji, x: 20 + Math.random() * 60 }]);
-                    setTimeout(() => {
-                        setFloatingReactions(prev => prev.filter(r => r.id !== id));
-                    }, 3000);
-                }
+            bindSafe('new-message', (data) => {
+                setMessages(prev => {
+                    const isDuplicate = prev.some(m =>
+                        m.id === data.id || (
+                            m.text === data.text &&
+                            m.uid === data.uid &&
+                            (Math.abs(Date.now() - (data.timestamp || Date.now())) < 5000)
+                        )
+                    );
+
+                    if (isDuplicate && data.role === 'user' && data.uid === currentUser.uid) return prev;
+
+                    return [...prev, { ...data, id: data.id || Date.now().toString() }];
+                });
             });
 
-            channel.bind('new-message', (data) => {
-                if (isMounted.current) {
-                    setMessages(prev => {
-                        const isDuplicate = prev.some(m =>
-                            m.id === data.id || (
-                                m.text === data.text &&
-                                m.uid === data.uid &&
-                                (Math.abs(Date.now() - (data.timestamp || Date.now())) < 5000)
-                            )
-                        );
-
-                        if (isDuplicate && data.role === 'user' && data.uid === currentUser.uid) return prev;
-
-                        return [...prev, { ...data, id: data.id || Date.now().toString() }];
-                    });
-                }
-            });
-
-            channel.bind('audio-update', (data) => {
+            bindSafe('audio-update', (data) => {
                 if (data.audioUrl) {
                     console.log("[AI Voice] Received audio update:", data);
                     setVoiceQueue(prev => {
@@ -496,15 +484,15 @@ const PersonaChatContent = () => {
                 }
             });
 
-            channel.bind('typing', (data) => {
-                if (isMounted.current) {
-                    setIsPersonaTyping(data.isTyping);
-                }
+            bindSafe('typing', (data) => {
+                setIsPersonaTyping(data.isTyping);
             });
 
             return () => {
+                isCleanedUp = true;
                 console.log("[Soketi] Cleaning up connection...");
                 channel.unbind_all();
+                globalChannel.unbind_all(); // also unbind global
                 try {
                     pusher.unsubscribe(channelName);
                     pusher.unsubscribe('global-notifications');
@@ -513,6 +501,7 @@ const PersonaChatContent = () => {
                     console.warn("Disconnect cleanup error:", e);
                 }
                 pusherRef.current = null;
+                initializingRef.current = false; // Reset so next mount can initialize
             };
         };
 
@@ -537,6 +526,11 @@ const PersonaChatContent = () => {
         window.addEventListener('online', handleOnline);
 
         return () => {
+            // Set cleanup flag immediately (synchronously) to stop any pending async operations
+            isCleanedUp = true;
+            initializingRef.current = false;
+
+            // Then handle the async cleanup promise
             cleanupPromise.then(cleanup => cleanup?.());
             window.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('online', handleOnline);
@@ -742,33 +736,7 @@ const PersonaChatContent = () => {
         }
     }, [voiceQueue, isAiSpeaking]);
 
-    // Background Music Ducking (Smooth Fade)
-    useEffect(() => {
-        if (!audioRef.current) return;
 
-        const targetVolume = isAiSpeaking ? (volume / 100) * 0.2 : (volume / 100);
-        const currentVolume = audioRef.current.volume;
-
-        if (Math.abs(currentVolume - targetVolume) < 0.01) return;
-
-        // Smooth transition over 500ms
-        const step = (targetVolume - currentVolume) / 10;
-        const interval = setInterval(() => {
-            if (!audioRef.current) {
-                clearInterval(interval);
-                return;
-            }
-            const nextVolume = audioRef.current.volume + step;
-            if ((step > 0 && nextVolume >= targetVolume) || (step < 0 && nextVolume <= targetVolume)) {
-                audioRef.current.volume = targetVolume;
-                clearInterval(interval);
-            } else {
-                audioRef.current.volume = Math.max(0, Math.min(1, nextVolume));
-            }
-        }, 50);
-
-        return () => clearInterval(interval);
-    }, [isAiSpeaking, volume]);
 
     const handleAiAudioEnded = () => {
         setIsAiSpeaking(false);
@@ -999,7 +967,6 @@ const PersonaChatContent = () => {
                                         className="unmute-stream-btn"
                                         onClick={() => {
                                             if (audioVoiceRef.current) audioVoiceRef.current.play();
-                                            if (audioRef.current) audioRef.current.play();
                                             setIsAutoplayBlocked(false);
                                         }}
                                     >
@@ -1033,18 +1000,7 @@ const PersonaChatContent = () => {
                             <ArrowLeft size={20} />
                         </button>
 
-                        {/* Hidden Background Audio Player */}
-                        {audioQueue.length > 0 && (
-                            <audio
-                                ref={audioRef}
-                                src={audioQueue[queueIndex]?.url}
-                                autoPlay
-                                loop={false}
-                                onEnded={handleTrackEnded}
-                                onLoadedMetadata={handleAudioMetadata}
-                                style={{ display: 'none' }}
-                            />
-                        )}
+
                     </div>
 
                     <div className="video-info-bar">
