@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import FeedPost from '../components/FeedPost';
 import { getOptimizedImageUrl } from '../utils';
-import './Discovery.css'; // Re-use discovery styles
+
 
 export default function MemeFeed() {
     const navigate = useNavigate();

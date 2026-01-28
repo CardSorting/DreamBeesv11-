@@ -46,9 +46,9 @@ const Sidebar = ({ activeId }) => {
             ]
         },
         {
-            title: "DISCOVER",
+            title: "EXPLORE",
             items: [
-                { path: '/discovery', label: 'Discovery', icon: Compass },
+
                 { path: '/generations', label: 'Feed', icon: Sparkles },
                 { path: '/mockups', label: 'Mockups', icon: Images },
                 { path: '/memes', label: 'Memes', icon: Smile },
@@ -67,7 +67,7 @@ const Sidebar = ({ activeId }) => {
         const visibleItems = group.items.filter(item => {
             if (isAdmin) return true;
             // Public items for everyone
-            if (item.path === '/discovery') return true;
+
             if (item.path === '/mockups') return true;
             if (item.path === '/memes') return true;
             if (item.path === '/models') return true;

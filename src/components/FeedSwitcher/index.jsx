@@ -5,7 +5,7 @@ import './FeedSwitcher.css';
 
 const FEEDS = [
     { id: 'hive', label: 'Hive', path: '/', icon: Sparkles },
-    { id: 'discovery', label: 'Discovery', path: '/discovery', icon: LayoutGrid },
+
     { id: 'mockups', label: 'Mockups', path: '/mockups', icon: Palette },
     { id: 'memes', label: 'Memes', path: '/memes', icon: Smile },
 ];

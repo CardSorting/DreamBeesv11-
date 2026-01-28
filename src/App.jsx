@@ -31,7 +31,7 @@ function Layout() {
   const { currentUser } = useAuth();
   const { userProfile, isProfileLoaded } = useUserInteractions();
 
-  const isShowcaseDetail = pathname.startsWith('/discovery/') && pathname !== '/discovery';
+  const isShowcaseDetail = false; // Discovery routes removed
 
   // Check if we need to show onboarding
   const showOnboarding = currentUser && isProfileLoaded && !userProfile.username;
@@ -39,7 +39,6 @@ function Layout() {
   // Determine if we should hide the header based on the current route
   const hideHeaderRoutes = [
     '/',
-    '/discovery',
     '/mockups',
     '/memes',
     '/filter',
@@ -58,13 +57,13 @@ function Layout() {
 
         <AnimatedRoutes />
       </main>
-      {!isLanding && !isShowcaseDetail && !pathname.startsWith('/discovery') && pathname !== '/generate' && !(pathname.startsWith('/mockup-catalog') && isMobile) && (
+      {!isLanding && pathname !== '/generate' && !(pathname.startsWith('/mockup-catalog') && isMobile) && (
         <div className="app-footer">
           <Footer />
         </div>
       )}
 
-      {!isShowcaseDetail && !pathname.startsWith('/discovery') && pathname !== '/generate' && <BottomNav />}
+      {pathname !== '/generate' && <BottomNav />}
       <BackToTop />
     </div>
   );

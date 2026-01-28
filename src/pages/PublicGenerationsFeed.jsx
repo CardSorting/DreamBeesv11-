@@ -15,7 +15,7 @@ import { getOptimizedImageUrl } from '../utils';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { isOver18 } from '../utils/age';
 import CommunityConsentModal from '../components/CommunityConsentModal';
-import './Discovery.css';
+
 import BookCard from '../components/BookCard';
 import BookReaderModal from '../components/BookReaderModal';
 

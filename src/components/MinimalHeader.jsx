@@ -34,7 +34,7 @@ const MinimalHeader = () => {
 
     const navItems = [
         { path: '/', label: 'Home', icon: Home, hideOnMobile: true },
-        { path: '/discovery', label: 'Discovery', icon: Compass },
+
         { path: '/generate', label: 'Studio', icon: Zap, hideOnMobile: true },
         { path: '/apps', label: 'Apps', icon: LayoutGrid },
         { path: '/profile', label: 'Profile', icon: User, hideOnMobile: true },
@@ -48,10 +48,12 @@ const MinimalHeader = () => {
     return (
         <header className={`minimal-header ${isBottomNavVisible ? 'hide-on-mobile-if-nav' : ''}`}>
             <div className="header-content">
-                <Link to="/discovery" className="mobile-back-nav">
-                    <ArrowLeft size={20} />
-                    <span>Back to Discovery</span>
-                </Link>
+                {activePath === '/generate' && (
+                    <Link to="/models" className="mobile-back-nav">
+                        <ArrowLeft size={20} />
+                        <span>Back to Models</span>
+                    </Link>
+                )}
 
                 <Link to="/" className="header-logo desktop-only">
                     <Hexagon size={24} fill="white" className="logo-icon" />

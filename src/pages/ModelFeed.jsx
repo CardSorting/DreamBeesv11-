@@ -26,24 +26,7 @@ const FeedPostSkeleton = () => (
     </div>
 );
 
-const CollapsibleGroup = ({ title, children, defaultOpen = true }) => {
-    const [isOpen, setIsOpen] = useState(defaultOpen);
 
-    return (
-        <div className="nav-group">
-            <button
-                className="sidebar-group-header"
-                onClick={() => setIsOpen(!isOpen)}
-            >
-                <span className="group-title-text">{title}</span>
-                {isOpen ? <ChevronDown size={14} className="group-chevron" /> : <ChevronRight size={14} className="group-chevron" />}
-            </button>
-            <div className={`group-content ${isOpen ? 'open' : ''}`}>
-                {children}
-            </div>
-        </div>
-    );
-};
 
 import Sidebar from '../components/Sidebar';
 import FeedSwitcher from '../components/FeedSwitcher';
@@ -357,9 +340,7 @@ export default function ModelFeed() {
                 const modelTags = img?._model?.tags || [];
                 if (modelTags.includes(activeFilter)) return true;
 
-                // Check Discovery Vibe Tags (NEW)
-                const vibeTags = img.discovery?.vibeTags || [];
-                if (vibeTags.includes(activeFilter)) return true;
+
 
                 // Check explicit Tags
                 if (img.tags && img.tags.includes(activeFilter)) return true;
@@ -456,7 +437,7 @@ export default function ModelFeed() {
                 title={activeShowcaseImage ? `${activeShowcaseImage.prompt?.slice(0, 50)}...` : `${model.name} Feed - DreamBees`}
                 description={activeShowcaseImage ? activeShowcaseImage.prompt : `Instagram-style showcase feed for the ${model.name} AI model.`}
                 image={activeShowcaseImage ? (activeShowcaseImage.url || activeShowcaseImage.imageUrl) : model.image}
-                canonical={activeShowcaseImage ? `/discovery/${activeShowcaseImage.id}` : undefined}
+                canonical={activeShowcaseImage ? `/model/${model.id || 'global'}/image/${activeShowcaseImage.id}` : undefined}
             />
 
             <Sidebar activeId={id ? `/models` : location.pathname} /> {/* Dynamic active ID */}
