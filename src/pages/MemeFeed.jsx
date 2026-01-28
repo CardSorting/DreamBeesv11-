@@ -230,8 +230,9 @@ export default function MemeFeed() {
                         {
                             "@type": "ImageGallery",
                             "name": creatorFilter ? `${creatorFilter.name} Meme Collection` : "DreamBees AI Meme Showcase",
-                            "description": "A collection of AI-generated memes.",
-                            "image": images.slice(0, 5).map(img => img.thumbnailUrl || img.imageUrl)
+                            "description": creatorFilter ? `A curated collection of memes created by ${creatorFilter.name} using DreamBees AI.` : "A collection of AI-generated memes.",
+                            "image": images.slice(0, 5).map(img => img.thumbnailUrl || img.imageUrl),
+                            "keywords": "AI memes, internet culture, generative humor, community art"
                         },
                         {
                             "@type": "BreadcrumbList",
@@ -247,10 +248,15 @@ export default function MemeFeed() {
                             "description": focusImage.prompt,
                             "image": focusImage.imageUrl || focusImage.url,
                             "artworkSurface": "Digital",
-                            "artMedium": "AI Generated Meme"
+                            "artMedium": "AI Generated Meme",
+                            "creator": {
+                                "@type": "Person",
+                                "name": focusImage.userDisplayName || "Meme Creator"
+                            }
                         }] : [])
                     ]
                 }}
+                mentions={["Internet Memes", "AI Image Generation", "Digital Art", "Humor"]}
             />
 
             <Sidebar activeId="/memes" />

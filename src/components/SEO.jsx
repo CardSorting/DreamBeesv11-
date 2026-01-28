@@ -2,7 +2,21 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
 
-const SEO = ({ title, description, keywords, image, type = 'website', structuredData, noindex = false, canonical, schemaType = 'SoftwareApplication' }) => {
+const SEO = ({
+    title,
+    description,
+    keywords,
+    image,
+    type = 'website',
+    structuredData,
+    noindex = false,
+    canonical,
+    schemaType = 'SoftwareApplication',
+    preconnect = [], // Array of URLs to preconnect
+    dnsPrefetch = [], // Array of URLs to dns-prefetch
+    mentions = [], // Array of strings/entities the page mentions
+    citations = [] // Array of links/objects for citations
+}) => {
     const location = useLocation();
     const siteUrl = 'https://dreambeesai.com';
 
@@ -46,7 +60,13 @@ const SEO = ({ title, description, keywords, image, type = 'website', structured
                     "width": "512",
                     "height": "512"
                 },
-                "sameAs": []
+                "sameAs": [
+                    "https://twitter.com/dreambeesai",
+                    "https://www.instagram.com/dreambeesai"
+                ],
+                "description": "Premium AI generation platform for high-fidelity art, video, and design.",
+                "knowsAbout": ["Artificial Intelligence", "Generative Art", "Stable Diffusion", "SDXL", "Neural Networks", "Creative Design"],
+                "knowsLanguage": ["English"]
             },
             {
                 "@type": "WebSite",
@@ -67,7 +87,9 @@ const SEO = ({ title, description, keywords, image, type = 'website', structured
                 "url": currentUrl,
                 "image": metaImage,
                 "applicationCategory": "MultimediaApplication",
-                "operatingSystem": "Any"
+                "operatingSystem": "Any",
+                ...(mentions.length > 0 ? { "mentions": mentions.map(m => ({ "@type": "Thing", "name": m })) } : {}),
+                ...(citations.length > 0 ? { "citation": citations } : {})
             }
         ]
     };
@@ -104,6 +126,22 @@ const SEO = ({ title, description, keywords, image, type = 'website', structured
             <meta name="twitter:image" content={metaImage} />
             <meta name="twitter:image:alt" content={title || "DreamBees AI Preview"} />
             <meta name="twitter:site_name" content="DreamBeesAI" />
+
+            {/* Performance Hints */}
+            {preconnect.map(url => (
+                <link key={`preconnect-${url}`} rel="preconnect" href={url} />
+            ))}
+            {dnsPrefetch.map(url => (
+                <link key={`dns-prefetch-${url}`} rel="dns-prefetch" href={url} />
+            ))}
+
+            {/* Default Critical Preconnects */}
+            <link rel="preconnect" href="https://fonts.googleapis.com" />
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+            <link rel="preconnect" href="https://firebasestorage.googleapis.com" />
+
+            {/* Security & Privacy */}
+            <meta name="referrer" content="strict-origin-when-cross-origin" />
 
             {/* Structured Data (JSON-LD) */}
             <script type="application/ld+json">

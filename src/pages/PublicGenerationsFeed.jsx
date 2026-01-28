@@ -303,8 +303,43 @@ export default function PublicGenerationsFeed() {
                 description={focusImage ? focusImage.prompt : `Explore the latest ${activeFilter !== 'all' ? activeFilter : ''} AI generations from the DreamBees community.`}
                 image={focusImage ? (focusImage.thumbnailUrl || focusImage.imageUrl) : undefined}
                 canonical={focusImage ? `/generations?view=${focusImage.id}` : undefined}
-                structuredData={{ /* ... reusable structured data ... */ }}
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "CreativeWorkSeries",
+                            "name": "DreamBees AI Generation Stream",
+                            "description": "A real-time stream of high-fidelity AI generated artwork, coloring books, and slideshows by the DreamBees community.",
+                            "genre": "AI Art",
+                            "about": { "@type": "Thing", "name": "Generative Artificial Intelligence" }
+                        },
+                        {
+                            "@type": "ItemList",
+                            "name": `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} AI Generations`,
+                            "numberOfItems": images.length,
+                            "itemListElement": images.slice(0, 10).map((img, idx) => ({
+                                "@type": "ListItem",
+                                "position": idx + 1,
+                                "item": {
+                                    "@type": "VisualArtwork",
+                                    "name": img.prompt?.slice(0, 60) || "AI Generation",
+                                    "image": img.imageUrl || img.url || img.coverUrl,
+                                    "creator": { "@type": "Person", "name": img.userDisplayName || "Artist" }
+                                }
+                            }))
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
+                                { "@type": "ListItem", "position": 2, "name": "Generations", "item": "https://dreambeesai.com/generations" }
+                            ]
+                        }
+                    ]
+                }}
+                mentions={["Stable Diffusion", "SDXL", "Generative Art", "Latent Diffusion Models"]}
             />
+            Kushal 2026-01-28 13:52:42-07:00
 
             <Sidebar activeId="/generations" />
 

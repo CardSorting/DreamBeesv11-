@@ -32,9 +32,27 @@ Disallow: /*?success=
 Disallow: /*?canceled=
 Disallow: /*?session_id=
 
+# AI Discovery & LLM Access
+User-agent: GPTBot
+Allow: /blog/
+Allow: /models/
+Allow: /model/
+Allow: /about
+Allow: /safety
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+# LLM Manifest
+# https://dreambeesai.com/llms.txt
+
 # Sitemap
 Sitemap: https://dreambeesai.com/sitemap.xml
 Sitemap: https://dreambeesai.com/sitemap-images.xml
+Sitemap: https://dreambeesai.com/sitemap-video.xml
 
 # Politeness
 Crawl-delay: 1

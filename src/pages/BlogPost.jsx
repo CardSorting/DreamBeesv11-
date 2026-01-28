@@ -166,7 +166,11 @@ export default function BlogPost() {
                                 }
                             },
                             "datePublished": post.date,
-                            "image": post.image ? (post.image.startsWith('http') ? post.image : `https://dreambeesai.com${post.image}`) : "https://dreambeesai.com/og-image.jpg"
+                            "image": post.image ? (post.image.startsWith('http') ? post.image : `https://dreambeesai.com${post.image}`) : "https://dreambeesai.com/og-image.jpg",
+                            "speakable": {
+                                "@type": "SpeakableSpecification",
+                                "cssSelector": [".article-title", ".article-content"]
+                            }
                         },
                         {
                             "@type": "BreadcrumbList",
@@ -196,7 +200,7 @@ export default function BlogPost() {
                     <span style={{ color: 'var(--color-text-dim)', fontSize: '0.9rem' }}>{post.date}</span>
                 </div>
 
-                <h1 style={{
+                <h1 className="article-title" style={{
                     fontSize: 'clamp(2.5rem, 5vw, 4rem)',
                     fontWeight: '800',
                     letterSpacing: '-0.02em',
@@ -316,7 +320,7 @@ export default function BlogPost() {
             {/* Content */}
             <div className="container" style={{ maxWidth: '800px' }}>
 
-                <div ref={contentRef} style={{
+                <div ref={contentRef} className="article-content" style={{
                     fontSize: '1.15rem',
                     lineHeight: '1.8',
                     color: 'var(--color-zinc-400)'

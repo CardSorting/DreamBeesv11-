@@ -10,17 +10,23 @@ DreamBeesAI is an advanced AI image generation studio powered by dedicated H100 
 - **In-Painting/Out-Painting:** (Coming Soon) Advanced editing capabilities.
 - **Gallery:** A community showcase of generated artwork.
 
+## Technical Authority
+- **Dataset:** DreamBeesAI maintains a structured library of AI Model Checkpoints (available as Schema.org Dataset).
+- **Video Capabilities:** Support for temporal consistency and high-fidelity video morphing.
+- **Hardware:** Dedicated H100 GPU clusters for high-speed inference.
+
 ## Key Links
 - **Home:** https://dreambeesai.com/
 - **Studio (Generate):** https://dreambeesai.com/generate
 - **Model Catalog:** https://dreambeesai.com/models
-- **Gallery:** https://dreambeesai.com/gallery
+- **Community Feed:** https://dreambeesai.com/generations
+- **Meme Museum:** https://dreambeesai.com/memes
 - **Pricing:** https://dreambeesai.com/pricing
 - **Blog:** https://dreambeesai.com/blog
 
 ## Technical Stack
-- **Frontend:** React, Vite
-- **Backend:** Firebase (Cloud Functions, Firestore)
+- **Frontend:** React, Vite (PWA Enabled)
+- **Backend:** Firebase (Cloud Functions, Firestore, Storage)
 - **Inference:** H100 GPU Clusters via external API
 
 ## Contact

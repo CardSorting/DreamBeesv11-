@@ -241,6 +241,16 @@ export default function ModelDetail() {
                                 "priceCurrency": "USD"
                             }
                         },
+                        // Dynamic VideoObject if viewing a video item
+                        ...(activeShowcaseImage?.type === 'video' ? [{
+                            "@type": "VideoObject",
+                            "name": activeShowcaseImage.prompt || model.name,
+                            "description": activeShowcaseImage.prompt || model.description,
+                            "thumbnailUrl": [activeShowcaseImage.thumbnailUrl || activeShowcaseImage.url],
+                            "uploadDate": activeShowcaseImage.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
+                            "contentUrl": activeShowcaseImage.url,
+                            "embedUrl": `https://dreambeesai.com/model/${model.id}?view=${activeShowcaseImage.id}`
+                        }] : []),
                         {
                             "@type": "BreadcrumbList",
                             "itemListElement": [

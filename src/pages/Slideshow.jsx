@@ -295,6 +295,41 @@ export default function Slideshow() {
 
     return (
         <div className="slideshow-page">
+            <SEO
+                title="Slideshow Magic - AI Educational Art Creator"
+                description="Transform your images into professional Nekomimi educational posters or interactive slideshows using advanced AI."
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "Service",
+                            "name": "DreamBeesAI Slideshow Magic",
+                            "description": "Educational AI art transformation service.",
+                            "provider": {
+                                "@type": "Organization",
+                                "name": "DreamBeesAI"
+                            },
+                            "offers": {
+                                "@type": "Offer",
+                                "price": "0.50",
+                                "priceCurrency": "USD",
+                                "description": "0.5 Zaps per poster transformation."
+                            }
+                        },
+                        {
+                            "@type": "SoftwareApplication",
+                            "name": "DreamBeesAI Slideshow Magic",
+                            "applicationCategory": "EducationalApplication",
+                            "operatingSystem": "Web",
+                            "offers": {
+                                "@type": "Offer",
+                                "price": "0.00",
+                                "priceCurrency": "USD"
+                            }
+                        }
+                    ]
+                }}
+            />
             <div className="slideshow-container">
 
                 {/* Steps */}

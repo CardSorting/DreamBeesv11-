@@ -9,6 +9,7 @@ import { Send, Sparkles, Bot, Download, RefreshCw, Copy, X, ChevronDown, Check }
 import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
+import SEO from '../components/SEO';
 
 // Format elapsed time helper
 const formatElapsedTime = (seconds) => {
@@ -301,6 +302,22 @@ export default function MobileGenerator() {
             overflow: 'hidden',
             position: 'relative'
         }}>
+            <SEO
+                title="Mobile AI Studio - Generation on the Go"
+                description="Generate AI art directly from your phone. Fast, private, and powerful mobile AI image generation."
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@type": "SoftwareApplication",
+                    "name": "DreamBees Mobile Studio",
+                    "applicationCategory": "DesignApplication",
+                    "operatingSystem": "Android, iOS, Web",
+                    "offers": {
+                        "@type": "Offer",
+                        "price": "0",
+                        "priceCurrency": "USD"
+                    }
+                }}
+            />
             <Toaster position="top-center" toastOptions={{ style: { background: '#333', color: '#fff' } }} />
 
             {/* Header - Glassmorphism & Model Selector with Safe Area */}

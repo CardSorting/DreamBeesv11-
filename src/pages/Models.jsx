@@ -115,6 +115,13 @@ export default function Models() {
                                 "description": "Browse our curated collection of fine-tuned Stable Diffusion models specialized for specific artistic styles."
                             },
                             {
+                                "@type": "Dataset",
+                                "name": "DreamBees AI Generation Models Library",
+                                "description": "A comprehensive database of fine-tuned Stable Diffusion and Flux models for professional creative workflows.",
+                                "license": "https://dreambeesai.com/terms",
+                                "creator": { "@id": "https://dreambeesai.com/#organization" }
+                            },
+                            {
                                 "@type": "ItemList",
                                 "name": "Top AI Generation Models",
                                 "itemListElement": availableModels.map((model, index) => ({

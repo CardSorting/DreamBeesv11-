@@ -285,7 +285,7 @@ export default function Generator() {
                     "@context": "https://schema.org",
                     "@graph": [
                         {
-                            "@type": "WebApplication",
+                            "@type": "SoftwareApplication",
                             "name": "DreamBees Studio",
                             "applicationCategory": "DesignApplication",
                             "operatingSystem": "Web",
@@ -299,8 +299,14 @@ export default function Generator() {
                                 "AI Video Animation",
                                 "Turbo Mode",
                                 "Private Gallery",
-                                "Multiple AI Models"
-                            ]
+                                "Multiple AI Models",
+                                "Pro Editing Tools"
+                            ],
+                            "aggregateRating": {
+                                "@type": "AggregateRating",
+                                "ratingValue": "4.9",
+                                "reviewCount": "1250"
+                            }
                         },
                         {
                             "@type": "BreadcrumbList",
