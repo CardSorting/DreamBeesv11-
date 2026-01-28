@@ -133,6 +133,34 @@
     }
 }
 
+.msg-status-tag {
+    font-size: 0.7rem;
+    color: #adadb8;
+    margin-left: 8px;
+    font-style: italic;
+    opacity: 0.8;
+}
+
+.msg-status-tag.error {
+    color: #ff4d4d;
+    cursor: pointer;
+    text-decoration: underline;
+    font-weight: bold;
+}
+
+.msg-status-tag.error:hover {
+    color: #ff8080;
+}
+
+.twitch-message.sending {
+    opacity: 0.6;
+}
+
+.twitch-message.error {
+    border-left: 2px solid #ff4d4d;
+    background: rgba(255, 77, 77, 0.05);
+}
+
 .view-dot {
     width: 6px;
     height: 6px;
@@ -956,4 +984,51 @@
     100% {
         filter: hue-rotate(360deg);
     }
+}
+.error-boundary-content {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0e0e10;
+    color: white;
+}
+
+.error-card {
+    background: #18181b;
+    padding: 2rem;
+    border-radius: 8px;
+    text-align: center;
+    max-width: 400px;
+    border: 1px solid #3f3f46;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.error-card h2 {
+    color: #efeff1;
+    margin: 0;
+}
+
+.error-card p {
+    color: #adadb8;
+    margin: 0;
+}
+
+.error-card button {
+    background: #a970ff;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.error-card button:hover {
+    background: #bf94ff;
 }

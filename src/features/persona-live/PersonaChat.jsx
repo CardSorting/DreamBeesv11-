@@ -15,6 +15,37 @@ import { listAudioFiles } from '../../b2';
 import { ZAP_COSTS } from '../../constants/zapCosts';
 import './PersonaChat.css';
 
+class PersonaErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false };
+    }
+
+    static getDerivedStateFromError(error) {
+        return { hasError: true };
+    }
+
+    componentDidCatch(error, errorInfo) {
+        console.error("PersonaLive Error Boundary caught:", error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="error-boundary-content">
+                    <div className="error-card">
+                        <AlertCircle size={48} color="#ff4d4d" />
+                        <h2>Oops! Something went wrong.</h2>
+                        <p>The spirit world is experiencing some turbulence. We've notified our technicians.</p>
+                        <button onClick={() => window.location.reload()}>Refresh Stream</button>
+                    </div>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
 const Typewriter = ({ text, onUpdate }) => {
     const [display, setDisplay] = useState('');
     const [isTyping, setIsTyping] = useState(true);
@@ -64,6 +95,14 @@ const Typewriter = ({ text, onUpdate }) => {
 };
 
 const PersonaChat = () => {
+    return (
+        <PersonaErrorBoundary>
+            <PersonaChatContent />
+        </PersonaErrorBoundary>
+    );
+};
+
+const PersonaChatContent = () => {
     const { id } = useParams(); // imageId
     const navigate = useNavigate();
     const location = useLocation();
@@ -109,16 +148,20 @@ const PersonaChat = () => {
 
     const triggerZapAction = async (actionId, cost) => {
         if (!currentUser) return toast.error("Please log in to use ZAPs!");
+        if (isSending) return;
         triggerShake();
+        setIsSending(true);
 
         try {
             const apiFn = httpsCallable(functions, 'api');
             await apiFn({ action: 'triggerAction', imageId: id, actionId, cost });
-            setShowZapActions(false);
+            if (isMounted.current) setShowZapActions(false);
             toast.success(`Action ${actionId} triggered!`);
         } catch (e) {
             console.error(e);
             toast.error("Failed to trigger action.");
+        } finally {
+            if (isMounted.current) setIsSending(false);
         }
     };
 
@@ -134,6 +177,7 @@ const PersonaChat = () => {
 
     const scrollRef = useRef(null);
     const isMounted = useRef(true);
+    const lastSendTime = useRef(0);
     const functions = getFunctions();
 
     // Reset state when switching characters
@@ -393,9 +437,11 @@ const PersonaChat = () => {
                 if (isMounted.current) {
                     setMessages(prev => {
                         const isDuplicate = prev.some(m =>
-                            m.text === data.text &&
-                            m.uid === data.uid &&
-                            (Math.abs(Date.now() - (data.timestamp || Date.now())) < 5000)
+                            m.id === data.id || (
+                                m.text === data.text &&
+                                m.uid === data.uid &&
+                                (Math.abs(Date.now() - (data.timestamp || Date.now())) < 5000)
+                            )
                         );
 
                         if (isDuplicate && data.role === 'user' && data.uid === currentUser.uid) return prev;
@@ -691,24 +737,30 @@ const PersonaChat = () => {
     const handleSend = async () => {
         if (!inputValue.trim() || isSending) return;
 
+        // Rate Limiting (2 seconds)
+        const now = Date.now();
+        if (now - lastSendTime.current < 2000) {
+            toast.error("Slow down! You're messaging too fast.");
+            return;
+        }
+
         const userText = inputValue.trim();
+        const msgId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         const userMsg = {
-            id: Date.now().toString(),
+            id: msgId,
             role: 'user',
             text: userText,
-            timestamp: Date.now()
+            timestamp: now,
+            status: 'sending'
         };
 
         setMessages(prev => [...prev, userMsg]);
         setInputValue('');
         setIsSending(true);
+        lastSendTime.current = now;
 
         try {
             const apiFn = httpsCallable(functions, 'api');
-
-            // We don't need to manually push to messages here because Pusher will echo it back to us
-            // but for instant feedback, we can push a "sending" state message if we want.
-            // However, Pusher handles the shared experience better.
 
             await apiFn({
                 action: 'chatPersona',
@@ -717,16 +769,26 @@ const PersonaChat = () => {
                 chatHistory: messages.slice(-10).map(m => ({ role: m.role, text: m.text }))
             });
 
+            // Upon success, keep it as is, Pusher will eventually provide the real one
+            // We'll filter out temp messages in the render if we want, OR Pusher replaces it
+            setMessages(prev => prev.map(m => m.id === msgId ? { ...m, status: 'sent' } : m));
+
         } catch (error) {
             console.error("Chat Error:", error);
             if (isMounted.current) {
-                toast.error("Connection interrupted.");
+                toast.error("Failed to send message.");
+                setMessages(prev => prev.map(m => m.id === msgId ? { ...m, status: 'error' } : m));
             }
         } finally {
             if (isMounted.current) {
                 setIsSending(false);
             }
         }
+    };
+
+    const handleRetryMessage = (msg) => {
+        setInputValue(msg.text);
+        setMessages(prev => prev.filter(m => m.id !== msg.id));
     };
 
     const handleGift = async (amountInput = 100) => {
@@ -1076,7 +1138,7 @@ const PersonaChat = () => {
                             Welcome to the chat room!
                         </div>
                         {messages.map((msg, idx) => (
-                            <div key={idx} className={`twitch-message ${msg.role === 'model' ? 'ai-msg' : ''}`}>
+                            <div key={msg.id || idx} className={`twitch-message ${msg.role === 'model' ? 'ai-msg' : ''} ${msg.status || ''}`}>
                                 {msg.role === 'system' ? (
                                     <span className="system-msg">{msg.text}</span>
                                 ) : (
@@ -1084,9 +1146,17 @@ const PersonaChat = () => {
                                         <span className="message-author">
                                             {getSupporterBadge(msg.uid)}
                                             {msg.role === 'model' && <span className="chat-badge ai-badge">AI</span>}
-                                            {msg.displayName}:
+                                            {msg.displayName || (msg.role === 'user' ? (currentUser?.displayName || 'You') : 'System')}:
                                         </span>
-                                        <span className="message-body"> {msg.text}</span>
+                                        <span className="message-body">
+                                            {msg.text}
+                                            {msg.status === 'sending' && <span className="msg-status-tag">...sending</span>}
+                                            {msg.status === 'error' && (
+                                                <span className="msg-status-tag error" onClick={() => handleRetryMessage(msg)}>
+                                                    Error - Retry?
+                                                </span>
+                                            )}
+                                        </span>
                                     </>
                                 )}
                             </div>
