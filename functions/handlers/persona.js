@@ -43,8 +43,8 @@ export const handleChatPersona = async (request) => {
             role: 'user'
         };
 
-        await Store.saveMessage(imageId, userMsgData);
-        await Broadcaster.broadcastMessage(imageId, userMsgData);
+        const userMsgRef = await Store.saveMessage(imageId, userMsgData);
+        await Broadcaster.broadcastMessage(imageId, { ...userMsgData, id: userMsgRef.id });
 
         // Start Typing Indicator
         await Broadcaster.broadcastTyping(imageId, true);
@@ -162,7 +162,7 @@ export const handleChatPersona = async (request) => {
         };
 
         const msgRef = await Store.saveMessage(imageId, aiMsgData);
-        await Broadcaster.broadcastMessage(imageId, aiMsgData);
+        await Broadcaster.broadcastMessage(imageId, { ...aiMsgData, id: msgRef.id });
 
         // Enqueue Voice Task if DNA exists
         if (persona.voice_dna) {

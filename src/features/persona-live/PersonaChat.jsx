@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { doc, getDoc, onSnapshot, collection, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { ArrowLeft, Send, Sparkles, Loader2, Info, MessageCircle, AlertCircle, RefreshCw, Zap, VolumeX } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, Loader2, Info, MessageCircle, AlertCircle, RefreshCw, Zap, VolumeX, Volume2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getOptimizedImageUrl } from '../../utils';
 import { getHypeMetadata } from '../../utils/twitchHelpers';
@@ -126,10 +125,14 @@ const PersonaChatContent = () => {
     const [connectionStatus, setConnectionStatus] = useState('initialized'); // 'initialized', 'connecting', 'connected', 'disconnected', 'unavailable'
     const [isAiSpeaking, setIsAiSpeaking] = useState(false);
     const [isPersonaTyping, setIsPersonaTyping] = useState(false);
-    const [isAutoplayBlocked, setIsAutoplayBlocked] = useState(false);
     const audioVoiceRef = useRef(null);
 
-    const [voiceQueue, setVoiceQueue] = useState([]);
+    // Audio stored per message ID (click-to-play)
+    const [messageAudioMap, setMessageAudioMap] = useState({});
+    const [currentlyPlayingMsgId, setCurrentlyPlayingMsgId] = useState(null);
+    const [loadingAudioMsgId, setLoadingAudioMsgId] = useState(null); // Track which message's audio is loading
+    const [audioErrorMsgId, setAudioErrorMsgId] = useState(null); // Track which message's audio failed
+    const pendingAudioUpdates = useRef({}); // Queue audio updates that arrive before message exists
 
     const [error, setError] = useState(null);
 
@@ -157,12 +160,23 @@ const PersonaChatContent = () => {
     // Reset state when switching characters
     useEffect(() => {
         if (!id) return;
+
+        // Stop any playing audio when switching characters
+        if (audioVoiceRef.current) {
+            audioVoiceRef.current.pause();
+            audioVoiceRef.current.src = '';
+        }
+
         setImageItem(location.state?.imageItem || null);
         setPersona(null);
         setMessages([]);
         setAlerts([]);
         setFloatingReactions([]);
-        setVoiceQueue([]);
+        setMessageAudioMap({});
+        setCurrentlyPlayingMsgId(null);
+        setLoadingAudioMsgId(null);
+        setAudioErrorMsgId(null);
+        pendingAudioUpdates.current = {};
         setIsAiSpeaking(false);
         setIsPersonaTyping(false);
         setError(null);
@@ -175,7 +189,14 @@ const PersonaChatContent = () => {
 
     useEffect(() => {
         isMounted.current = true;
-        return () => { isMounted.current = false; };
+        return () => {
+            isMounted.current = false;
+            // Cleanup audio on unmount
+            if (audioVoiceRef.current) {
+                audioVoiceRef.current.pause();
+                audioVoiceRef.current.src = '';
+            }
+        };
     }, []);
 
     // Debugging dependency changes
@@ -466,6 +487,7 @@ const PersonaChatContent = () => {
             });
 
             bindSafe('new-message', (data) => {
+                console.log("[Chat] Received new-message:", data);
                 setMessages(prev => {
                     const isDuplicate = prev.some(m =>
                         m.id === data.id || (
@@ -475,20 +497,30 @@ const PersonaChatContent = () => {
                         )
                     );
 
-                    if (isDuplicate && data.role === 'user' && data.uid === currentUser.uid) return prev;
+                    // Only skip if it's the CURRENT user's own message that they sent (to avoid double-add)
+                    if (isDuplicate && data.role === 'user' && data.uid === currentUser?.uid) {
+                        console.log("[Chat] Skipping duplicate user message");
+                        return prev;
+                    }
 
+                    // If it's a duplicate from someone else or AI, still skip
+                    if (isDuplicate && data.role !== 'user') {
+                        console.log("[Chat] Skipping duplicate AI/system message");
+                        return prev;
+                    }
+
+                    console.log("[Chat] Adding message to chat:", data.id || Date.now().toString());
                     return [...prev, { ...data, id: data.id || Date.now().toString() }];
                 });
             });
 
             bindSafe('audio-update', (data) => {
-                if (data.audioUrl) {
-                    console.log("[AI Voice] Received audio update:", data);
-                    setVoiceQueue(prev => {
-                        // Limit queue size to 5 to prevent massive backlog if user is away
-                        const newQueue = [...prev, data.audioUrl];
-                        return newQueue.slice(-5);
-                    });
+                if (data.audioUrl && data.messageId) {
+                    console.log("[AI Voice] Received audio for message:", data.messageId);
+                    setMessageAudioMap(prev => ({
+                        ...prev,
+                        [data.messageId]: data.audioUrl
+                    }));
                 }
             });
 
@@ -688,6 +720,17 @@ const PersonaChatContent = () => {
 
                     if (historicalMessages.length > 0) {
                         setMessages(historicalMessages);
+
+                        // Pre-populate audio map from historical messages
+                        const audioMap = {};
+                        historicalMessages.forEach(msg => {
+                            if (msg.audioUrl && msg.id) {
+                                audioMap[msg.id] = msg.audioUrl;
+                            }
+                        });
+                        if (Object.keys(audioMap).length > 0) {
+                            setMessageAudioMap(prev => ({ ...prev, ...audioMap }));
+                        }
                     } else if (data.persona.greeting) {
                         setMessages([{
                             id: 'greeting-' + Date.now(),
@@ -729,30 +772,61 @@ const PersonaChatContent = () => {
         }
     }, [messages, isLoading, isSending]);
 
-    // AI Voice Playback & Ducking Logic
-    useEffect(() => {
-        if (voiceQueue.length > 0 && !isAiSpeaking) {
-            const nextUrl = voiceQueue[0];
-            setVoiceQueue(prev => prev.slice(1));
-            setIsAiSpeaking(true);
+    // Click-to-play audio handler with loading states and error recovery
+    const handlePlayAudio = (msgId) => {
+        const audioUrl = messageAudioMap[msgId];
+        if (!audioUrl) return;
 
-            if (audioVoiceRef.current) {
-                audioVoiceRef.current.src = nextUrl;
-                audioVoiceRef.current.play().then(() => {
-                    setIsAutoplayBlocked(false);
-                }).catch(e => {
-                    console.error("Audio playback error (likely autoplay block):", e);
-                    setIsAutoplayBlocked(true);
-                    setIsAiSpeaking(false); // Reset so the queue doesn't get stuck
-                });
-            }
+        // Clear any previous error state for this message
+        if (audioErrorMsgId === msgId) {
+            setAudioErrorMsgId(null);
         }
-    }, [voiceQueue, isAiSpeaking]);
+
+        // If already playing this message, stop it
+        if (currentlyPlayingMsgId === msgId && audioVoiceRef.current) {
+            audioVoiceRef.current.pause();
+            audioVoiceRef.current.currentTime = 0;
+            setCurrentlyPlayingMsgId(null);
+            setLoadingAudioMsgId(null);
+            setIsAiSpeaking(false);
+            return;
+        }
+
+        // Stop any currently playing audio first
+        if (audioVoiceRef.current && currentlyPlayingMsgId) {
+            audioVoiceRef.current.pause();
+            audioVoiceRef.current.currentTime = 0;
+        }
+
+        // Play the selected audio with loading state
+        if (audioVoiceRef.current) {
+            setLoadingAudioMsgId(msgId);
+            setAudioErrorMsgId(null);
+            audioVoiceRef.current.src = audioUrl;
+
+            audioVoiceRef.current.play().then(() => {
+                if (isMounted.current) {
+                    setCurrentlyPlayingMsgId(msgId);
+                    setLoadingAudioMsgId(null);
+                    setIsAiSpeaking(true);
+                }
+            }).catch(e => {
+                console.error("Audio playback error:", e);
+                if (isMounted.current) {
+                    setLoadingAudioMsgId(null);
+                    setAudioErrorMsgId(msgId);
+                    toast.error("Audio failed to load. Click to retry.");
+                }
+            });
+        }
+    };
 
 
 
     const handleAiAudioEnded = () => {
         setIsAiSpeaking(false);
+        setCurrentlyPlayingMsgId(null);
+        setLoadingAudioMsgId(null);
     };
 
     const handleSend = async () => {
@@ -972,22 +1046,6 @@ const PersonaChatContent = () => {
                                     </div>
                                 ))}
                             </div>
-
-                            {/* Autoplay Recovery Button */}
-                            {isAutoplayBlocked && (
-                                <div className="autoplay-recovery-overlay">
-                                    <button
-                                        className="unmute-stream-btn"
-                                        onClick={() => {
-                                            if (audioVoiceRef.current) audioVoiceRef.current.play();
-                                            setIsAutoplayBlocked(false);
-                                        }}
-                                    >
-                                        <VolumeX size={24} />
-                                        <span>Join Audio</span>
-                                    </button>
-                                </div>
-                            )}
                         </div>
 
                         <div className="video-controls-overlay">
@@ -1083,6 +1141,29 @@ const PersonaChatContent = () => {
                                                 </span>
                                             )}
                                         </span>
+                                        {/* Click-to-play audio button for AI messages */}
+                                        {msg.role === 'model' && messageAudioMap[msg.id] && (
+                                            <button
+                                                className={`msg-audio-btn ${currentlyPlayingMsgId === msg.id ? 'playing' : ''} ${loadingAudioMsgId === msg.id ? 'loading' : ''} ${audioErrorMsgId === msg.id ? 'error' : ''}`}
+                                                onClick={() => handlePlayAudio(msg.id)}
+                                                disabled={loadingAudioMsgId === msg.id}
+                                                title={
+                                                    loadingAudioMsgId === msg.id ? 'Loading audio...' :
+                                                        audioErrorMsgId === msg.id ? 'Click to retry' :
+                                                            currentlyPlayingMsgId === msg.id ? 'Stop audio' : 'Play voice'
+                                                }
+                                            >
+                                                {loadingAudioMsgId === msg.id ? (
+                                                    <Loader2 size={14} className="spin" />
+                                                ) : audioErrorMsgId === msg.id ? (
+                                                    <AlertCircle size={14} />
+                                                ) : currentlyPlayingMsgId === msg.id ? (
+                                                    <VolumeX size={14} />
+                                                ) : (
+                                                    <Volume2 size={14} />
+                                                )}
+                                            </button>
+                                        )}
                                     </>
                                 )}
                             </div>

@@ -698,6 +698,51 @@
     color: #efeff1;
 }
 
+/* Click-to-play audio button for AI messages */
+.msg-audio-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(169, 112, 255, 0.2);
+    border: 1px solid rgba(169, 112, 255, 0.4);
+    color: #a970ff;
+    border-radius: 4px;
+    padding: 4px 6px;
+    margin-left: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    vertical-align: middle;
+}
+
+.msg-audio-btn:hover {
+    background: rgba(169, 112, 255, 0.4);
+    border-color: #a970ff;
+    transform: scale(1.05);
+}
+
+.msg-audio-btn.playing {
+    background: rgba(235, 4, 0, 0.2);
+    border-color: rgba(235, 4, 0, 0.5);
+    color: #eb0400;
+    animation: pulse-playing 1.5s infinite;
+}
+
+.msg-audio-btn.playing:hover {
+    background: rgba(235, 4, 0, 0.3);
+}
+
+@keyframes pulse-playing {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(235, 4, 0, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 0 4px rgba(235, 4, 0, 0);
+    }
+}
+
 .chat-input-twitch {
     padding: 15px;
     background: #18181b;
@@ -1044,4 +1089,80 @@
 
 .error-card button:hover {
     background: #bf94ff;
+}
+
+/* Click-to-play audio button */
+.msg-audio-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    margin-left: 6px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(169, 112, 255, 0.2);
+    color: #a970ff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    vertical-align: middle;
+}
+
+.msg-audio-btn:hover:not(:disabled) {
+    background: rgba(169, 112, 255, 0.4);
+    transform: scale(1.1);
+}
+
+.msg-audio-btn:disabled {
+    cursor: wait;
+    opacity: 0.7;
+}
+
+.msg-audio-btn.playing {
+    background: rgba(255, 77, 77, 0.3);
+    color: #ff4d4d;
+    animation: pulse-playing 1.5s ease-in-out infinite;
+}
+
+.msg-audio-btn.loading {
+    background: rgba(169, 112, 255, 0.2);
+    color: #bf94ff;
+}
+
+.msg-audio-btn.error {
+    background: rgba(255, 180, 77, 0.3);
+    color: #ffb44d;
+}
+
+.msg-audio-btn.error:hover {
+    background: rgba(255, 180, 77, 0.5);
+}
+
+@keyframes pulse-playing {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.15);
+        opacity: 0.8;
+    }
+}
+
+.msg-audio-btn .spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }

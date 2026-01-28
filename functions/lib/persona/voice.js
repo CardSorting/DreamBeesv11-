@@ -13,7 +13,7 @@ const CACHE_TTL_MS = 20 * 60 * 60 * 1000; // 20 Hours (Safety for 24h cleanup)
 /**
  * Polls the TTS API for job completion.
  */
-const pollForCompletion = async (jobId, attempts = 30) => {
+export const pollForCompletion = async (jobId, attempts = 30) => {
     for (let i = 0; i < attempts; i++) {
         // Adaptive delay: 500ms for first 4, 1s for next 10, then 2s
         let delay = 1000;

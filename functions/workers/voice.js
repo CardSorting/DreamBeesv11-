@@ -61,7 +61,7 @@ export const processVoiceTask = async (req) => {
                     // The Modal API usually returns audio at /v1/jobs/{job_id}/audio
                     audioUrl = `https://mariecoderinc--phantom-twitch-tts-fastapi-app-dev.modal.run/v1/jobs/${audioJobId}/audio`;
                     const pollDuration = Date.now() - pollStart;
-                    const totalDuration = Date.now() - startTime;
+                    const totalDuration = Date.now() - submitStart;
                     logger.info(`[VoiceWorker] TTS Ready: ${audioJobId}. Poll:${pollDuration}ms Total:${totalDuration}ms`);
                 }
             } catch (pollErr) {
