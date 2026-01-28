@@ -265,7 +265,7 @@ async function main() {
             }
         }));
 
-        if (i + CONCURRENCY < SHOWCASE_PROMPTS.length) {
+        if (i + CONCURRENCY < prompts.length) {
             console.log("Waiting between batches...");
             await sleep(5000);
         }
