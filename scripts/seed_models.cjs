@@ -79,6 +79,16 @@ const MODELS = [
         isActive: true,
         tags: ['Realistic', 'Fast', 'Photo']
     },
+    {
+        id: 'zit-base-model',
+        name: 'Z-Image Base',
+        description: 'High-quality stable base model for hyper-realistic and cinematic generations.',
+        type: 'SDXL',
+        order: 11,
+        isActive: true,
+        image: '/showcase/zit-base-model/cover.png',
+        tags: ['Realistic', 'Cinematic', 'High-Quality', 'Base']
+    },
 
     {
         id: 'wai-illustrious',

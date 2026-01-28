@@ -89,6 +89,19 @@ export function ModelProvider({ children }) {
                     });
                 }
 
+                if (!models.find(m => m.id === 'zit-base-model')) {
+                    models.push({
+                        id: 'zit-base-model',
+                        name: 'Z-Image Base',
+                        description: 'High-quality stable base model for hyper-realistic and cinematic generations.',
+                        type: 'Generator',
+                        order: 5,
+                        isActive: true,
+                        image: '/showcase/zit-base-model/cover.png',
+                        tags: ['realistic', 'cinematic', 'high-quality', 'base']
+                    });
+                }
+
                 console.log(`[ModelContext] Fetched ${models.length} models. Checked MeowAcc.`);
                 setAvailableModels(models);
 

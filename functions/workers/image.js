@@ -17,6 +17,7 @@ const looksLikeJSON = (buffer) => {
 const ENDPOINTS = {
     'zit_h100': 'https://mariecoderinc--zit-h100-stable-fastapi-app.modal.run',
     'zit_a10g': 'https://mariecoderinc--zit-a10g-fastapi-app.modal.run',
+    'zit_base': 'https://mariecoderinc--zit-h100-stable-base-fastapi-app.modal.run',
     'sdxl_a10g': 'https://mariecoderinc--sdxl-multi-model-a10g-model-web.modal.run',
     'sdxl_h100': 'https://mariecoderinc--sdxl-multi-model-h100-model-web.modal.run',
     'flux2dev': 'https://api.cloudflare.com/client/v4/accounts/CLOUDFLARE_ACCOUNT_ID/ai/run/@cf/black-forest-labs/flux-2-dev'
@@ -68,40 +69,44 @@ export const processImageTask = async (req) => {
         // --- MODEL EXECUTION ---
         let response;
 
-        if (modelId === 'zit-model') {
+        if (modelId === 'zit-model' || modelId === 'zit-base-model') {
             imageBuffer = await (async () => {
-                logger.info(`[${requestId}] Running Zit-Model generation`);
+                const endpoint = modelId === 'zit-base-model' ? ENDPOINTS.zit_base : ENDPOINTS.zit_h100;
+                const defaultSteps = modelId === 'zit-base-model' ? 28 : 9;
+
+                logger.info(`[${requestId}] Running ${modelId} generation`);
                 const body = {
-                    prompt, steps,
+                    prompt,
+                    steps: steps || defaultSteps,
                     width: resolution.width,
                     height: resolution.height
                 };
 
-                const submitResponse = await fetch(`${ENDPOINTS.zit_h100}/generate`, {
+                const submitResponse = await fetch(`${endpoint}/generate`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(body)
                 });
 
-                if (!submitResponse.ok) throw new Error(`Zit Submission Failed (${submitResponse.status})`);
+                if (!submitResponse.ok) throw new Error(`${modelId} Submission Failed (${submitResponse.status})`);
 
                 const { job_id } = await submitResponse.json();
 
                 // Poll for result
                 for (let poll = 0; poll < 120; poll++) {
                     await new Promise(r => setTimeout(r, 4000));
-                    let resultRes = await fetch(`${ENDPOINTS.zit_h100}/result/${job_id}`);
-                    if (resultRes.status === 404) resultRes = await fetch(`${ENDPOINTS.zit_h100}/jobs/${job_id}`);
+                    let resultRes = await fetch(`${endpoint}/result/${job_id}`);
+                    if (resultRes.status === 404) resultRes = await fetch(`${endpoint}/jobs/${job_id}`);
 
                     if (resultRes.status === 202) continue;
-                    if (!resultRes.ok) throw new Error(`Zit Polling Error (${resultRes.status})`);
+                    if (!resultRes.ok) throw new Error(`${modelId} Polling Error (${resultRes.status})`);
 
                     const ct = resultRes.headers.get('content-type') || '';
                     if (ct.includes('image/')) {
                         return Buffer.from(await resultRes.arrayBuffer());
                     }
                 }
-                throw new Error("Zit generation timed out");
+                throw new Error(`${modelId} generation timed out`);
             })();
         }
         else if (modelId === 'galmix') {

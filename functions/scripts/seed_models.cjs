@@ -76,6 +76,16 @@ const MODELS = [
         isActive: true,
         image: 'https://cdn.dreambeesai.com/file/printeregg/showcase/zit-model/1769040774566_0.webp'
     },
+    {
+        id: 'zit-base-model',
+        name: 'Z-Image Base',
+        description: 'High-quality stable base model for hyper-realistic and cinematic generations.',
+        type: 'SDXL',
+        order: 11,
+        isActive: true,
+        image: '/showcase/zit-base-model/cover.png',
+        tags: ['realistic', 'cinematic', 'high-quality', 'base']
+    },
 
     {
         id: 'wai-illustrious',

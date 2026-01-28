@@ -36,7 +36,7 @@ export const calculateZapCost = (action, options = {}) => {
     switch (action) {
         case 'IMAGE_GENERATION':
             if (modelId === 'galmix') return 0;
-            if (modelId === 'zit-model') return ZAP_COSTS.IMAGE_GENERATION_PREMIUM;
+            if (modelId === 'zit-model' || modelId === 'zit-base-model') return ZAP_COSTS.IMAGE_GENERATION_PREMIUM;
             if (useTurbo) return ZAP_COSTS.IMAGE_GENERATION_TURBO;
             // Standard models are free for subscribers
             return isSubscribed ? 0 : ZAP_COSTS.IMAGE_GENERATION;

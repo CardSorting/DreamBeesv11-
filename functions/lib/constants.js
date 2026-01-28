@@ -1,7 +1,7 @@
 export const VALID_MODELS = [
     'nova-furry-xl', 'perfect-illustrious',
     'gray-color', 'scyrax-pastel', 'ani-detox', 'animij-v7', 'swijtspot-no1',
-    'zit-model', 'wai-illustrious', 'flux-klein-4b',
+    'zit-model', 'zit-base-model', 'wai-illustrious', 'flux-klein-4b',
     'rin-anime-blend', 'rin-anime-popcute',
     'crystal-cuteness', 'veretoon-v10',
     'meowacc', 'dressup', 'flux-2-dev',

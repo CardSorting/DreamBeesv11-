@@ -76,7 +76,7 @@ export const handleCreateGenerationRequest = async (request) => {
                 if (activeJobs.size >= 10) throw new HttpsError('resource-exhausted', "Too many pending generations.");
 
                 let cost = 0;
-                const isPremiumModel = ['zit-model'].includes(modelId);
+                const isPremiumModel = ['zit-model', 'zit-base-model'].includes(modelId);
                 const isFreeModel = ['galmix'].includes(modelId);
 
                 if (isFreeModel) cost = ZAP_COSTS.IMAGE_GENERATION_FREE;
