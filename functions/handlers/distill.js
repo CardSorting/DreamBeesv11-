@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename);
  * @param {import("firebase-functions/v2/https").CallableRequest} request
  */
 export async function handleDistillRequest(request) {
-    const { images } = request.data;
+    const { images, basePack } = request.data;
     const uid = request.auth?.uid;
 
     if (!images || !Array.isArray(images) || images.length === 0) {
@@ -41,20 +41,49 @@ export async function handleDistillRequest(request) {
         });
 
         // 3. Prepare Image Parts for Gemini
-        const imageParts = await Promise.all(images.map(async (url) => {
+        const imageParts = await Promise.all(images.map(async (imageInput) => {
             try {
-                const imgRes = await fetchWithTimeout(url);
-                if (!imgRes.ok) throw new Error(`HTTP ${imgRes.status}`);
-                const arrayBuffer = await imgRes.arrayBuffer();
-                const mimeType = imgRes.headers.get("content-type") || "image/png";
+                let buffer;
+                let mimeType = "image/png";
+
+                if (typeof imageInput === "string" && imageInput.startsWith("http")) {
+                    // It's a URL
+                    const imgRes = await fetchWithTimeout(imageInput);
+                    if (!imgRes.ok) throw new Error(`HTTP ${imgRes.status}`);
+                    const arrayBuffer = await imgRes.arrayBuffer();
+                    buffer = Buffer.from(arrayBuffer);
+                    mimeType = imgRes.headers.get("content-type") || "image/png";
+                } else if (typeof imageInput === "string" && imageInput.startsWith("data:image")) {
+                    // It's a data URL
+                    const match = imageInput.match(/^data:(image\/[a-z]+);base64,(.+)$/);
+                    if (!match) throw new Error("Invalid base64 format");
+                    mimeType = match[1];
+                    buffer = Buffer.from(match[2], "base64");
+                } else {
+                    // Assume it's a local path
+                    const absolutePath = path.isAbsolute(imageInput)
+                        ? imageInput
+                        : path.resolve(__dirname, "../../", imageInput);
+
+                    if (fs.existsSync(absolutePath)) {
+                        buffer = fs.readFileSync(absolutePath);
+                        const ext = path.extname(absolutePath).toLowerCase();
+                        if (ext === ".jpg" || ext === ".jpeg") mimeType = "image/jpeg";
+                        else if (ext === ".png") mimeType = "image/png";
+                        else if (ext === ".webp") mimeType = "image/webp";
+                    } else {
+                        throw new Error(`File not found: ${absolutePath}`);
+                    }
+                }
+
                 return {
                     inlineData: {
                         mimeType,
-                        data: Buffer.from(arrayBuffer).toString("base64")
+                        data: buffer.toString("base64")
                     }
                 };
             } catch (e) {
-                logger.error(`[Distill] Failed to fetch image ${url}:`, e);
+                logger.error(`[Distill] Failed to process image input:`, e);
                 return null;
             }
         }));
@@ -66,16 +95,25 @@ export async function handleDistillRequest(request) {
         }
 
         // 4. Construct Request
-        const promptText = "Analyze these images and output a single consolidated JSON aesthetic pack representing their center of gravity, as per your system instructions.";
+        let promptText = "Analyze these images and output a single consolidated JSON aesthetic pack representing their center of gravity, as per your system instructions.";
+        let parts = [...validImageParts];
+
+        if (basePack) {
+            promptText = "You are in Refinement Mode. I have provided an existing 'basePack' JSON below. Analyze these new images and update the basePack to reflect the shared aesthetic more accurately. Provide the FINAL updated JSON.";
+            parts = [
+                { text: `BASE_PACK: ${JSON.stringify(basePack, null, 2)}` },
+                ...validImageParts,
+                { text: promptText }
+            ];
+        } else {
+            parts.push({ text: promptText });
+        }
 
         const genRequest = {
             contents: [
                 {
                     role: 'user',
-                    parts: [
-                        ...validImageParts,
-                        { text: promptText }
-                    ]
+                    parts: parts
                 }
             ],
             generationConfig: {
@@ -84,11 +122,25 @@ export async function handleDistillRequest(request) {
         };
 
         // 5. Execute Gemini Call
+        const totalSize = validImageParts.reduce((acc, part) => acc + part.inlineData.data.length, 0);
+        logger.info(`[Distill] Sending ${validImageParts.length} images to Gemini. Total base64 size: ${(totalSize / (1024 * 1024)).toFixed(2)} MB`);
+
         const result = await model.generateContent(genRequest);
-        const responseText = (await result.response).candidates?.[0]?.content?.parts?.[0]?.text;
+        const response = await result.response;
+
+        logger.info(`[Distill] Gemini response received: ${JSON.stringify(response, null, 2)}`);
+        const candidate = response.candidates?.[0];
+
+        const responseText = candidate?.content?.parts?.[0]?.text;
 
         if (!responseText) {
-            throw new Error("No response returned from Gemini");
+            if (response.promptFeedback?.blockReason === 'PROHIBITED_CONTENT') {
+                throw new Error(`Gemini blocked the prompt due to prohibited content: ${response.promptFeedback.blockReasonMessage}`);
+            }
+            if (candidate?.finishReason === 'SAFETY') {
+                throw new Error("Gemini blocked the response due to safety filters.");
+            }
+            throw new Error(`No response returned from Gemini. FinishReason: ${candidate?.finishReason}`);
         }
 
         // 6. Parse, Save and Return
