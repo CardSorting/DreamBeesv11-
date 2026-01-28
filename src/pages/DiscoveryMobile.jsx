@@ -77,6 +77,11 @@ export default function DiscoveryMobile() {
         isLoadingRef.current = activeModelId === 'all' ? isGlobalFeedLoading : isModelShowcaseLoading;
     }, [isGlobalFeedLoading, isModelShowcaseLoading, activeModelId]);
 
+    // Sync end-of-feed state to ref for stable callback access
+    useEffect(() => {
+        hasReachedEndRef.current = activeModelId === 'all' ? hasGlobalFeedEnded : hasShowcaseEnded(activeModelId);
+    }, [hasGlobalFeedEnded, hasShowcaseEnded, activeModelId]);
+
     // 0. Scroll to top immediately on mount
     useLayoutEffect(() => {
         window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -92,19 +97,13 @@ export default function DiscoveryMobile() {
         if (globalShowcaseCache.length === 0) {
             getGlobalShowcaseImages(false, 'discovery_mobile_init');
         }
-
-        return () => {
-            hasInitializedRef.current = false;
-            hasReachedEndRef.current = false;
-        };
+        // No cleanup - refs should persist across StrictMode remounts
     }, [getGlobalShowcaseImages, globalShowcaseCache.length]);
 
     // 2. Robust Infinite Scroll Handler - Stabilized with refs to prevent observer recreation
     const handleLoadMore = useCallback(async () => {
         if (isLoadingRef.current) return;
-
-        const isEnd = activeModelId === 'all' ? hasGlobalFeedEnded : hasShowcaseEnded(activeModelId);
-        if (isEnd) return;
+        if (hasReachedEndRef.current) return;
 
         const now = Date.now();
         if (now - lastFetchTimeRef.current < DEBOUNCE_MS) return;
@@ -116,7 +115,7 @@ export default function DiscoveryMobile() {
         } else {
             await getShowcaseImages(activeModelId, true);
         }
-    }, [getGlobalShowcaseImages, getShowcaseImages, activeModelId, hasGlobalFeedEnded, hasShowcaseEnded]);
+    }, [getGlobalShowcaseImages, getShowcaseImages, activeModelId]);
 
     // 3. Intersection Observer Setup - with force-check for already-visible sentinel
     useEffect(() => {

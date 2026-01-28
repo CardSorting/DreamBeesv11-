@@ -159,6 +159,11 @@ export default function DiscoveryDesktop() {
         isLoadingRef.current = activeModelId === 'all' ? isGlobalFeedLoading : isModelShowcaseLoading;
     }, [isGlobalFeedLoading, isModelShowcaseLoading, activeModelId]);
 
+    // Sync end-of-feed state to ref for stable callback access
+    useEffect(() => {
+        hasReachedEndRef.current = activeModelId === 'all' ? hasGlobalFeedEnded : hasShowcaseEnded(activeModelId);
+    }, [hasGlobalFeedEnded, hasShowcaseEnded, activeModelId]);
+
     // 0. Scroll to top immediately on mount
     useLayoutEffect(() => {
         if (window.lenis) {
@@ -168,6 +173,7 @@ export default function DiscoveryDesktop() {
         }
     }, []);
 
+
     // 1. Initial Load - Stable, one-time trigger
     useEffect(() => {
         if (hasInitializedRef.current) return;
@@ -175,11 +181,7 @@ export default function DiscoveryDesktop() {
 
         console.log('[Discovery] 🚀 Initial load triggered');
         getGlobalShowcaseImages(false, 'discovery_init');
-
-        return () => {
-            hasInitializedRef.current = false;
-            hasReachedEndRef.current = false;
-        };
+        // No cleanup - refs should persist across StrictMode remounts
     }, [getGlobalShowcaseImages]);
 
     // 2. Robust Infinite Scroll Handler - Stabilized with refs to prevent observer recreation
@@ -189,8 +191,7 @@ export default function DiscoveryDesktop() {
             return;
         }
 
-        const isEnd = activeModelId === 'all' ? hasGlobalFeedEnded : hasShowcaseEnded(activeModelId);
-        if (isEnd) {
+        if (hasReachedEndRef.current) {
             console.log('[Discovery] ✅ Already at end of feed');
             return;
         }
@@ -209,7 +210,7 @@ export default function DiscoveryDesktop() {
         } else {
             await getShowcaseImages(activeModelId, true);
         }
-    }, [getGlobalShowcaseImages, getShowcaseImages, activeModelId, hasGlobalFeedEnded, hasShowcaseEnded]);
+    }, [getGlobalShowcaseImages, getShowcaseImages, activeModelId]);
 
     // 3. Intersection Observer Setup - with force-check for already-visible sentinel
     useEffect(() => {

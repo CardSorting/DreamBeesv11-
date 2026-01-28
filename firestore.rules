@@ -32,7 +32,9 @@ service cloud.firestore {
 
     // Public/Feed Content
     match /generations/{jobId} {
-      allow read: if (resource.data.isPublic == true) || (request.auth != null && resource.data.userId == request.auth.uid);
+      // Allow any authenticated user to read (for deep-linking shared images)
+      // Allow public read if isPublic == true
+      allow read: if request.auth != null || resource.data.isPublic == true;
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       allow update: if request.auth != null && resource.data.userId == request.auth.uid;
     }

@@ -64,6 +64,15 @@ export default function ModelFeed() {
         return [];
     });
 
+    // Sync feedItems with globalShowcaseCache updates from other components
+    useEffect(() => {
+        if (!id && globalShowcaseCache && globalShowcaseCache.length > feedItems.length) {
+            // Cache has more items than our local state - sync it
+            console.log(`[ModelFeed] Syncing cache: ${feedItems.length} -> ${globalShowcaseCache.length}`);
+            setFeedItems(globalShowcaseCache);
+        }
+    }, [id, globalShowcaseCache, feedItems.length]);
+
 
     // Loading state - false if we have data already
     const [isLoading, setIsLoading] = useState(() => {
@@ -213,6 +222,17 @@ export default function ModelFeed() {
     // Track raw fetched count to calculate diffs for mixing
     const fetchedCountRef = useRef(0);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
+    const isFetchingMoreRef = useRef(false);
+    const hasGlobalFeedEndedRef = useRef(false);
+
+    // Sync refs for stable callback access
+    useEffect(() => {
+        isFetchingMoreRef.current = isFetchingMore;
+    }, [isFetchingMore]);
+
+    useEffect(() => {
+        hasGlobalFeedEndedRef.current = hasGlobalFeedEnded;
+    }, [hasGlobalFeedEnded]);
 
     // --- Data Loading Effect ---
     useEffect(() => {
@@ -360,7 +380,7 @@ export default function ModelFeed() {
 
     // --- Infinite Scroll Logic (Robust Backend Fetching) ---
     const handleLoadMore = async () => {
-        if (isFetchingMore || hasGlobalFeedEnded || id) return; // Only global feed supports infinite scroll for now
+        if (isFetchingMoreRef.current || hasGlobalFeedEndedRef.current || id) return; // Only global feed supports infinite scroll for now
 
         try {
             setIsFetchingMore(true);
@@ -404,7 +424,7 @@ export default function ModelFeed() {
 
                 // 2. Backend Fetch (Get more if we are running low)
                 // Trigger if we have shown almost everything we have
-                if (!id && scrollPos >= threshold && !isFetchingMore && !hasGlobalFeedEnded) {
+                if (!id && scrollPos >= threshold && !isFetchingMoreRef.current && !hasGlobalFeedEndedRef.current) {
                     // Check if we are near the end of the loaded buffer
                     if (visibleImages.length >= imagesToRender.length - 12) { // 1 page buffer
                         handleLoadMore();
@@ -420,7 +440,7 @@ export default function ModelFeed() {
             if (timeoutId) clearTimeout(timeoutId);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [visibleImages.length, imagesToRender.length, model, isFetchingMore, hasGlobalFeedEnded]);
+    }, [visibleImages.length, imagesToRender.length, model]);
 
     if (!model) {
         return (

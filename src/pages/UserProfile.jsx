@@ -16,6 +16,7 @@ import { trackQualitySignal, trackSearchQuality } from '../utils/analytics';
 
 import ShowcaseModal from '../components/ShowcaseModal';
 import { AnimatePresence, motion } from 'framer-motion';
+import './UserProfile.css';
 
 export default function UserProfile() {
     const { currentUser } = useAuth();

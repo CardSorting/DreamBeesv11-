@@ -1,0 +1,75 @@
+/* Mobile Simplification for UserProfile */
+@media (max-width: 768px) {
+
+    /* Hide Stats to reduce clutter */
+    .dashboard-container .stats-grid {
+        display: none !important;
+    }
+
+    /* Compact Header */
+    .dashboard-container .dashboard-header {
+        margin-bottom: 20px !important;
+        padding-bottom: 0 !important;
+        border-bottom: none !important;
+    }
+
+    .dashboard-container .dashboard-header h1 {
+        font-size: 2rem !important;
+        /* Smaller title */
+    }
+
+    /* Hide header description text */
+    .dashboard-container .dashboard-header p.text-zinc-400 {
+        display: none !important;
+    }
+
+    /* Buttons row adjustment */
+    .dashboard-container .header-content {
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 12px !important;
+    }
+
+    /* Make buttons smaller or icon-only if needed - keeping text for now but smaller padding */
+    .dashboard-container .bee-btn {
+        padding: 8px 12px !important;
+        font-size: 0.8rem !important;
+    }
+
+    /* Toolbar / Filters Compact */
+    .dashboard-container .toolbar {
+        margin-bottom: 16px !important;
+        overflow-x: auto;
+        /* Ensure horizontal scroll if many filters */
+        padding-bottom: 4px;
+        /* Space for scrollbar if any */
+    }
+
+    .dashboard-container .filter-group {
+        gap: 8px !important;
+    }
+
+    .dashboard-container .filter-btn {
+        padding: 6px 12px !important;
+        font-size: 0.8rem !important;
+    }
+
+
+    .dashboard-container .studio-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 2px !important;
+    }
+
+    /* Adjust main padding */
+    .dashboard-container {
+        padding: 16px !important;
+        padding-top: 80px !important;
+        /* Account for fixed header if any, generally existing padding is okay */
+    }
+
+    /* Ensure content area uses full width available minus small padding */
+    .dashboard-container .content-area {
+        width: 100% !important;
+    }
+}
