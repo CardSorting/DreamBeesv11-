@@ -443,7 +443,7 @@ export default function UserProfile() {
 
             {/* Header Section */}
             <div className="dashboard-header">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', flexWrap: 'wrap', gap: '20px' }}>
+                <div className="header-content">
                     <div>
                         <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
                             My Studio
@@ -989,11 +989,20 @@ export default function UserProfile() {
                     border-radius: 24px;
                 }
 
+                .header-content {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    width: 100%;
+                    flex-wrap: wrap;
+                    gap: 20px;
+                }
+
                 @media (max-width: 1024px) {
-                    .dashboard-header {
+                    .header-content {
                         flex-direction: column;
                         align-items: flex-start;
-                        gap: 24px;
+                        gap: 16px;
                     }
                     .stats-grid {
                         width: 100%;
