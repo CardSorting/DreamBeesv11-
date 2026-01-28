@@ -4,51 +4,25 @@ import PromptInput from './components/PromptInput';
 import ImageCard from './components/ImageCard';
 import JsonExportModal from './components/JsonExportModal';
 import JsonImportModal from './components/JsonImportModal';
-import { generateBookConcepts } from './services/geminiService';
-import { useBatchProcessor } from './hooks/useBatchProcessor';
-import { loadImages, saveImage, deleteImage, clearPendingImages } from './services/storage';
-import { FileText, Play, Pause, XCircle, Loader2 } from 'lucide-react';
+import { generateColoringPage } from './services/geminiService';
+import { loadImages, saveImage, deleteImage } from './services/storage';
+import { FileText, Loader2 } from 'lucide-react';
 import './ColorCraft.css';
-
-
-const BATCH_DELAY_MS = 3000;
 
 const ColorCraft = () => {
     const [images, setImages] = useState([]);
-    const [isGeneratingConcepts, setIsGeneratingConcepts] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState(null);
     const [isJsonModalOpen, setIsJsonModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isLoadingDB, setIsLoadingDB] = useState(true);
-
-    // Queue Control
-    const [isQueuePaused, setIsQueuePaused] = useState(false);
-
-    // Use Custom Hook for Batch Processing
-    const {
-        batchTotal,
-        batchProgress,
-        pendingCount,
-        generatingCount,
-        activeCount,
-        isProcessingBatch
-    } = useBatchProcessor({
-        images,
-        setImages,
-        isQueuePaused,
-        batchDelayMs: BATCH_DELAY_MS
-    });
 
     // Load from IndexedDB on mount
     useEffect(() => {
         const fetchImages = async () => {
             try {
                 const loaded = await loadImages();
-                // Reset 'generating' items to 'pending' on load to handle interrupted sessions
-                const sanitized = loaded.map(img =>
-                    img.status === 'generating' ? { ...img, status: 'pending' } : img
-                );
-                setImages(sanitized);
+                setImages(loaded);
             } catch (e) {
                 console.error("Failed to load images from DB", e);
             } finally {
@@ -58,69 +32,38 @@ const ColorCraft = () => {
         fetchImages();
     }, []);
 
-    // Main Action: Create a 30-page book
-    const handleCreateBook = async (theme, style) => {
-        setIsGeneratingConcepts(true);
+    // Main Action: Create a single page
+    const handleCreateImage = async (prompt, style) => {
+        setIsGenerating(true);
         setError(null);
 
         try {
-            // Step 1: Generate Concepts
-            const { pages: concepts, bookId } = await generateBookConcepts(theme, style);
+            const imageUrl = await generateColoringPage(prompt, style);
 
-            // Step 2: Convert to Pending Images
-            const newImages = concepts.map(prompt => ({
+            const newImage = {
                 id: crypto.randomUUID(),
                 prompt: prompt,
                 style: style,
-                bookId: bookId, // Attach Book ID
+                imageUrl: imageUrl,
                 createdAt: Date.now(),
-                status: 'pending'
-            }));
+                status: 'completed'
+            };
 
-            // Step 3: Save to DB & State
-            // We save individually to be safe
-            for (const img of newImages) {
-                await saveImage(img);
-            }
-
-            setImages(prev => [...newImages, ...prev]);
-            setIsQueuePaused(false); // Ensure queue runs
-
-            // Smooth scroll to gallery
-            setTimeout(() => {
-                const galleryElement = document.getElementById('gallery-section');
-                if (galleryElement) {
-                    galleryElement.scrollIntoView({ behavior: 'smooth' });
-                }
-            }, 500);
+            await saveImage(newImage);
+            setImages(prev => [newImage, ...prev]);
 
         } catch (err) {
-            console.error("Book Creation Error:", err);
-            setError(err.message || "Failed to create book concepts. Please try again.");
+            console.error("Image Creation Error:", err);
+            setError(err.message || "Failed to generate image. Please try again.");
         } finally {
-            setIsGeneratingConcepts(false);
+            setIsGenerating(false);
         }
     };
 
     const handleDelete = async (id) => {
-        const img = images.find(i => i.id === id);
-        // Allow deleting pending/error items without confirmation
-        if (img && (img.status === 'pending' || img.status === 'error')) {
-            await deleteImage(id);
-            setImages((prev) => prev.filter((i) => i.id !== id));
-            return;
-        }
-
         if (window.confirm("Are you sure you want to delete this page?")) {
             await deleteImage(id);
             setImages((prev) => prev.filter((i) => i.id !== id));
-        }
-    };
-
-    const handleClearQueue = async () => {
-        if (window.confirm("Remove all pending items from the queue?")) {
-            await clearPendingImages();
-            setImages(prev => prev.filter(img => img.status !== 'pending'));
         }
     };
 
@@ -133,7 +76,6 @@ const ColorCraft = () => {
             const uniqueImported = importedImages.filter(img => !existingIds.has(img.id));
             return [...uniqueImported, ...prev];
         });
-        setIsQueuePaused(false);
     };
 
     if (isLoadingDB) {
@@ -151,84 +93,22 @@ const ColorCraft = () => {
         <div className="cc-app-container">
             <Header onImportClick={() => setIsImportModalOpen(true)} />
 
-            {/* Queue Control Bar (Sticky) */}
-            {isProcessingBatch && (
-                <div className="cc-queue-bar">
-                    <div className="cc-queue-content">
-                        <div className="flex items-center gap-4">
-                            {isQueuePaused ? (
-                                <div style={{ padding: '0.5rem', backgroundColor: 'rgba(245, 158, 11, 0.2)', borderRadius: '0.5rem' }}>
-                                    <Pause style={{ width: '1.25rem', height: '1.25rem', color: '#fcd34d' }} />
-                                </div>
-                            ) : (
-                                <div style={{ padding: '0.5rem', backgroundColor: 'rgba(99, 102, 241, 0.2)', borderRadius: '0.5rem' }}>
-                                    <Loader2 className="cc-animate-spin" style={{ width: '1.25rem', height: '1.25rem', color: '#a5b4fc' }} />
-                                </div>
-                            )}
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <p style={{ fontSize: '0.875rem', fontWeight: 'bold', color: 'white' }}>
-                                        {isQueuePaused ? "Batch Paused" : "Producing Book..."}
-                                    </p>
-                                    <span style={{ fontSize: '0.75rem', backgroundColor: '#3730a3', padding: '0.125rem 0.5rem', borderRadius: '9999px', color: '#c7d2fe' }}>
-                                        {Math.max(0, batchTotal - activeCount)} / {batchTotal}
-                                    </span>
-                                </div>
-                                <p style={{ fontSize: '0.75rem', color: '#a5b4fc', marginTop: '0.125rem' }}>
-                                    {pendingCount} pending · {generatingCount} generating
-                                </p>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                            <button
-                                onClick={() => setIsQueuePaused(!isQueuePaused)}
-                                className="cc-btn cc-btn-primary cc-hidden-sm"
-                                style={{ backgroundColor: '#3730a3', borderColor: '#4338ca' }}
-                            >
-                                {isQueuePaused ? (
-                                    <> <Play style={{ width: '0.875rem', height: '0.875rem' }} /> Resume </>
-                                ) : (
-                                    <> <Pause style={{ width: '0.875rem', height: '0.875rem' }} /> Pause </>
-                                )}
-                            </button>
-                            <button
-                                onClick={handleClearQueue}
-                                className="cc-btn cc-flex-center"
-                                style={{ backgroundColor: 'rgba(55, 48, 163, 0.5)', color: '#c7d2fe' }}
-                            >
-                                <XCircle style={{ width: '0.875rem', height: '0.875rem' }} />
-                                <span className="cc-hidden-sm">Cancel</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Progress Bar Background */}
-                    <div className="cc-progress-bg">
-                        <div
-                            className="cc-progress-bar"
-                            style={{ width: `${batchProgress}%` }}
-                        />
-                    </div>
-                </div>
-            )}
-
             <main className="cc-main">
 
                 {/* Hero / Wizard Section */}
                 <div className="cc-hero-section">
                     <div className="cc-hero-text-center">
                         <h2 className="cc-hero-title">
-                            Auto <span style={{ color: '#4f46e5' }}>Coloring Book</span> Maker
+                            AI <span style={{ color: '#4f46e5' }}>Coloring Page</span> Maker
                         </h2>
                         <p className="cc-hero-subtitle">
-                            Generate a complete 30-page coloring book from a single theme.
+                            Generate beautiful coloring pages instantly.
                         </p>
                     </div>
 
                     <PromptInput
-                        onCreateBook={handleCreateBook}
-                        isGeneratingConcepts={isGeneratingConcepts}
+                        onCreateImage={handleCreateImage}
+                        isGenerating={isGenerating}
                         error={error}
                     />
                 </div>
@@ -238,7 +118,7 @@ const ColorCraft = () => {
                     <div id="gallery-section" className="cc-gallery-section" style={{ animation: 'cc-slide-in-top 0.7s ease-out' }}>
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
                             <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                Your Book Pages
+                                Your Coloring Pages
                                 <span style={{ backgroundColor: '#f1f5f9', color: '#475569', fontSize: '0.875rem', padding: '0.125rem 0.5rem', borderRadius: '9999px' }}>{images.length}</span>
                             </h3>
 
@@ -247,7 +127,7 @@ const ColorCraft = () => {
                                 className="cc-btn cc-btn-white"
                             >
                                 <FileText style={{ width: '1rem', height: '1rem' }} />
-                                Export Book
+                                Export History
                             </button>
                         </div>
 
@@ -259,9 +139,9 @@ const ColorCraft = () => {
                     </div>
                 )}
 
-                {images.length === 0 && !isGeneratingConcepts && (
+                {images.length === 0 && !isGenerating && (
                     <div className="text-center py-12 opacity-50">
-                        <p className="text-slate-400">Generated pages will appear here in real-time.</p>
+                        <p className="text-slate-400">Generated pages will appear here.</p>
                     </div>
                 )}
             </main>

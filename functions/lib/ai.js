@@ -579,41 +579,6 @@ export const formatMemeWithGemini = async (imageUrl, text, userId = 'system') =>
     };
 };
 
-// Helper for ColorCraft Concepts (using Vertex AI)
-export const generateColoringBookConcepts = async (theme, style) => {
-    const { VertexAI } = await import("@google-cloud/vertexai");
-    const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
-    const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-    const prompt = `
-        You are a professional children's book illustrator.
-        Generate a list of exactly 30 distinct, creative, and sequential coloring book page descriptions based on the theme: "${theme}".
-        The art style is: "${style}".
-        
-        Requirements:
-        - Each description must be a visual prompt suitable for generating an image.
-        - Vary the subjects (close-ups, wide shots, characters, objects).
-        - Maintain a cohesive narrative or thematic flow across the 30 pages.
-        - Keep descriptions concise (10-20 words).
-        - Do NOT include page numbers in the strings themselves.
-        - Return ONLY a valid JSON object with a "pages" property containing the array of strings.
-        `;
-
-    // Reverted to direct call
-    const result = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: "application/json" }
-    });
-
-    const responseText = (await result.response).candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!responseText) throw new Error("No text returned from AI");
-
-    const parsed = JSON.parse(responseText);
-    if (!parsed.pages || !Array.isArray(parsed.pages)) throw new Error("Invalid JSON structure");
-
-    return parsed.pages.slice(0, 30);
-};
-
 // Helper for ColorCraft Image Generation (using Vertex AI)
 export const generateColoringPageImage = async (prompt, style) => {
     // Construct Prompts

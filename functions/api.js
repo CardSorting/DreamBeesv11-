@@ -186,7 +186,6 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
             case 'analyzeProductImage': return Ecommerce.handleAnalyzeProductImage(request);
 
             // ColorCraft
-            case 'createBookConcepts': return ColorCraft.handleCreateBookConcepts(request);
             case 'createColoringPage': return ColorCraft.handleCreateColoringPage(request);
 
             // Avatar Forge
