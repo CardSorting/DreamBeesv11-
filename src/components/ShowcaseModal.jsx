@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, X, ThumbsUp, ThumbsDown, Sparkles, Flag } from 'lucide-react';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useModel } from '../contexts/ModelContext';
+import { useTwitch } from '../contexts/TwitchContext';
 import { getOptimizedImageUrl } from '../utils';
 import { trackLoopConversion } from '../utils/analytics';
 
 const ShowcaseModal = ({ image, onClose, model }) => {
     const { rateShowcaseImage } = useModel();
     const { hidePost, isHidden } = useUserInteractions();
+    const { personas } = useTwitch();
     const navigate = useNavigate();
 
     // Defensive check: If image is missing, don't render anything (or could render error state)
@@ -248,23 +250,47 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                                 >
                                     START CREATING
                                 </button>
-                                <button
-                                    onClick={() => {
-                                        onClose();
-                                        trackLoopConversion('showcase_talk_to_picture', model?.id);
-                                        navigate(`/channel/${image.id}`, { state: { imageItem: image } });
-                                    }}
-                                    className="btn w-full justify-center text-xs"
-                                    style={{
-                                        flex: 1,
-                                        background: '#a970ff',
-                                        color: 'white',
-                                        border: 'none',
-                                        fontWeight: '700'
-                                    }}
-                                >
-                                    TALK TO A PICTURE
-                                </button>
+                                {(() => {
+                                    const persona = personas.find(p => p.id === image.id);
+
+                                    // Threshold Logic (Matches Backend: 15 mins)
+                                    const ACTIVE_THRESHOLD_MS = 15 * 60 * 1000;
+                                    const activePersonas = personas.filter(p => {
+                                        const lastActivity = p.lastActivity?.toMillis?.() || p.lastActivity?.seconds * 1000 || 0;
+                                        return (Date.now() - lastActivity) < ACTIVE_THRESHOLD_MS;
+                                    });
+
+                                    const isSystemAtCapacity = activePersonas.length >= 5;
+                                    const isTargetPersonaActive = persona && (Date.now() - (persona.lastActivity?.toMillis?.() || persona.lastActivity?.seconds * 1000 || 0)) < ACTIVE_THRESHOLD_MS;
+
+                                    const shouldRedirectToBrowse = !isTargetPersonaActive && isSystemAtCapacity;
+
+                                    return (
+                                        <button
+                                            onClick={() => {
+                                                onClose();
+                                                if (shouldRedirectToBrowse) {
+                                                    navigate('/browse');
+                                                } else {
+                                                    trackLoopConversion('showcase_talk_to_picture', model?.id);
+                                                    navigate(`/channel/${image.id}`, { state: { imageItem: image } });
+                                                }
+                                            }}
+                                            className="btn w-full justify-center text-xs"
+                                            title={shouldRedirectToBrowse ? "System at capacity. View active channels." : ""}
+                                            style={{
+                                                flex: 1,
+                                                background: '#a970ff',
+                                                color: 'white',
+                                                border: 'none',
+                                                fontWeight: '700',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            {shouldRedirectToBrowse ? 'VIEW LIVE CHANNELS' : 'TALK TO A PICTURE'}
+                                        </button>
+                                    );
+                                })()}
                             </div>
                         </div>
                     </div>

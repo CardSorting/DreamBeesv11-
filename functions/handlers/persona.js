@@ -258,7 +258,25 @@ export const handleCreatePersona = async (request) => {
 
     const personaRef = db.collection('personas').doc(imageId);
     const doc = await personaRef.get();
-    if (doc.exists) return { success: true, persona: doc.data(), isNew: false };
+    if (doc.exists) {
+        // Even if it exists, update lastActivity to keep it "awake"
+        await personaRef.update({ lastActivity: FieldValue.serverTimestamp() });
+        return { success: true, persona: doc.data(), isNew: false };
+    }
+
+    // --- CHANNEL LIMITING ---
+    const MAX_ACTIVE_PERSONAS = 5;
+    const ACTIVE_THRESHOLD_MINS = 15;
+    const thresholdDate = new Date(Date.now() - ACTIVE_THRESHOLD_MINS * 60 * 1000);
+
+    const activePersonasSnap = await db.collection('personas')
+        .where('lastActivity', '>=', thresholdDate)
+        .limit(MAX_ACTIVE_PERSONAS + 1)
+        .get();
+
+    if (activePersonasSnap.size >= MAX_ACTIVE_PERSONAS) {
+        throw new HttpsError('resource-exhausted', 'The oracle is overextended. Too many characters are currently awake. Please wait for one to return to slumber.');
+    }
 
     const cost = await Billing.checkAndDeductZaps(userId, 'create');
 

@@ -505,8 +505,13 @@ const PersonaChat = () => {
             } catch (error) {
                 console.error("Persona Init Error:", error);
                 if (isMounted.current) {
-                    toast.error("Could not awaken character. Please try again.");
-                    setError("Failed to generate persona. The oracle is silent.");
+                    if (error.code === 'functions/resource-exhausted') {
+                        setError("The oracle is overextended. Too many characters are currently awake. Please wait for one to return to slumber.");
+                        toast.error("Channel limit reached. Try again later.");
+                    } else {
+                        toast.error("Could not awaken character. Please try again.");
+                        setError("Failed to generate persona. The oracle is silent.");
+                    }
                 }
             } finally {
                 if (isMounted.current) setIsLoading(false);

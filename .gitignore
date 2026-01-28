@@ -37,3 +37,6 @@ service-account.json
 # Test Artifacts
 test_output_*.png
 
+# Generated Assets
+functions/assets/images
+
