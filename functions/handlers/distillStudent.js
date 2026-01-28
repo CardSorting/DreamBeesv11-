@@ -54,13 +54,22 @@ export async function handleStudentComposeRequest(request) {
             }
         });
 
-        // 4. Construct Request for Prompt Composition
+        // 4. Enhanced Logic: Inject Variance and Mode selection
+        const modes = ["Stabilized", "Variant", "Strain", "Edge"];
+        const selectedMode = modes[Math.floor(Math.random() * modes.length)];
+        const variationSeed = seed || Math.floor(Math.random() * 1000000);
+
+        // 5. Construct Request for Prompt Composition
         const userPrompt = `
 AESTHETIC PACK:
 ${JSON.stringify(aestheticPack, null, 2)}
 
+INTERNAL DIRECTIVES:
+- MODE: ${selectedMode}
+- VARIATION_SEED: ${variationSeed}
+
 USER REQUEST:
-${userRequest || "Generate a canonical prompt for this aesthetic."}
+${userRequest || "Generate a high-fidelity instance of this aesthetic."}
 `;
 
         const genRequest = {

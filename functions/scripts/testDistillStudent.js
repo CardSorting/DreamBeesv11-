@@ -52,26 +52,23 @@ async function runTest() {
         }
     };
 
-    console.log(`\n--- Calling handleStudentComposeRequest with pack: ${packFile} ---`);
+    console.log(`\n--- Running 3 iterations of handleStudentComposeRequest to verify variance ---`);
 
-    try {
-        const result = await handleStudentComposeRequest(mockRequest);
-
-        if (result.success) {
-            console.log("✓ Student composition and generation trigger successful!");
-            console.log("\n--- Response JSON ---");
-            console.log(JSON.stringify(result, null, 2));
-            if (result.generation && result.generation.requestId) {
-                console.log(`\n✓ Generation enqueued with ID: ${result.generation.requestId}`);
+    for (let i = 1; i <= 3; i++) {
+        console.log(`\n[Iteration ${i}] Calling handleStudentComposeRequest...`);
+        try {
+            const result = await handleStudentComposeRequest(mockRequest);
+            if (result.success) {
+                console.log(`✓ Iteration ${i} successful:`);
+                console.log(`  Pack: ${result.composed.pack_name}`);
+                console.log(`  Prompt: ${result.composed.prompt}`);
+                console.log(`  Notes: ${result.composed.style_lock_notes.join(', ')}`);
+            } else {
+                console.warn(`⚠ Iteration ${i} refused/failed:`, result);
             }
-        } else {
-            console.error("✗ Student composition failed or was refused.");
-            console.log(JSON.stringify(result, null, 2));
+        } catch (e) {
+            console.error(`✗ Iteration ${i} threw an error:`, e.message);
         }
-    } catch (e) {
-        console.error("✗ Student composition threw an error:");
-        console.error(e);
-        if (e.message) console.error("Message:", e.message);
     }
 }
 

@@ -118,20 +118,41 @@ export const processImageTask = async (req) => {
         else if (modelId === 'flux-2-dev') {
             imageBuffer = await (async () => {
                 const cfUrl = ENDPOINTS.flux2dev.replace('CLOUDFLARE_ACCOUNT_ID', CLOUDFLARE_ACCOUNT_ID);
+                logger.info(`[${requestId}] Running flux-2-dev via Cloudflare. URL: ${cfUrl.substring(0, 50)}...`);
+
                 const formData = new FormData();
                 formData.append('prompt', prompt);
+                formData.append('steps', '25');
+                formData.append('width', String(resolution.width));
+                formData.append('height', String(resolution.height));
 
                 const cfRes = await fetch(cfUrl, {
                     method: "POST",
                     headers: { "Authorization": `Bearer ${CLOUDFLARE_API_TOKEN}` },
                     body: formData
                 });
-                if (!cfRes.ok) throw new Error(`Cloudflare Failed (${cfRes.status})`);
 
-                const cfJson = await cfRes.json();
-                const base64Img = cfJson.result?.image || cfJson.result;
-                if (!base64Img) throw new Error("No image data from Cloudflare");
-                return Buffer.from(base64Img, 'base64');
+                if (!cfRes.ok) {
+                    const errText = await cfRes.text();
+                    logger.error(`[${requestId}] Cloudflare Flux Failed (${cfRes.status})`, { error: errText });
+                    throw new Error(`Cloudflare Flux Failed (${cfRes.status}): ${errText.substring(0, 200)}`);
+                }
+
+                const contentType = cfRes.headers.get("content-type") || "";
+
+                if (contentType.includes("image/")) {
+                    logger.info(`[${requestId}] Flux: Received binary image response.`);
+                    return Buffer.from(await cfRes.arrayBuffer());
+                } else {
+                    const cfJson = await cfRes.json();
+                    const base64Img = cfJson.result?.image || cfJson.result;
+                    if (!base64Img || typeof base64Img !== 'string') {
+                        logger.error(`[${requestId}] Flux: No image data in JSON response.`, { response: cfJson });
+                        throw new Error("No image data from Cloudflare");
+                    }
+                    logger.info(`[${requestId}] Flux: Received Base64 image response.`);
+                    return Buffer.from(base64Img, 'base64');
+                }
             })();
         }
         else {
