@@ -120,7 +120,18 @@ ${userRequest || "Generate a canonical prompt for this aesthetic."}
         };
 
         logger.info(`[DistillStudent] Triggering generation with prompt: ${composedPrompt.substring(0, 50)}...`);
-        const generationResponse = await Generation.handleCreateGenerationRequest(generationRequest);
+        let generationResponse = null;
+        try {
+            generationResponse = await Generation.handleCreateGenerationRequest(generationRequest);
+        } catch (genError) {
+            logger.warn("[DistillStudent] Generation trigger failed, but composition was successful.", genError);
+            generationResponse = {
+                success: false,
+                error: genError.message,
+                code: genError.code || "unknown",
+                status: "composition_only"
+            };
+        }
 
         return {
             success: true,
