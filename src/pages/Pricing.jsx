@@ -159,7 +159,17 @@ export default function Pricing() {
                                 "price": "19.99",
                                 "priceCurrency": "USD",
                                 "availability": "https://schema.org/InStock",
-                                "priceValidUntil": "2027-12-31"
+                                "priceValidUntil": "2027-12-31",
+                                "priceSpecification": {
+                                    "@type": "UnitPriceSpecification",
+                                    "price": "19.99",
+                                    "priceCurrency": "USD",
+                                    "referenceQuantity": {
+                                        "@type": "QuantitativeValue",
+                                        "value": "1",
+                                        "unitCode": "MON"
+                                    }
+                                }
                             }
                         },
                         {
@@ -180,6 +190,17 @@ export default function Pricing() {
                             "offers": {
                                 "@type": "Offer",
                                 "price": "20.00",
+                                "priceCurrency": "USD",
+                                "availability": "https://schema.org/InStock"
+                            }
+                        },
+                        {
+                            "@type": "Product",
+                            "name": "DreamBeesAI Reels Starter",
+                            "description": "600 video generation credits for high-definition AI videos.",
+                            "offers": {
+                                "@type": "Offer",
+                                "price": "6.00",
                                 "priceCurrency": "USD",
                                 "availability": "https://schema.org/InStock"
                             }

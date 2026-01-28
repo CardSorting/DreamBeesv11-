@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://dreambeesai.com/model/galmix</loc>
+    <image:image>
+      <image:loc>https://dreambeesai.com/dreambees_icon.png</image:loc>
+      <image:title>DreamBees AI - Galmix Model</image:title>
+      <image:caption>High-fidelity AI generated anime art using the Galmix model.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://dreambeesai.com/model/zit-base-model</loc>
+    <image:image>
+      <image:loc>https://dreambeesai.com/showcase/zit-base-model/cover.png</image:loc>
+      <image:title>DreamBees AI - Z-Image Base</image:title>
+      <image:caption>Hyper-realistic cinematic generations featuring the Z-Image Base model.</image:caption>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://dreambeesai.com/model/wai-illustrious</loc>
+    <image:image>
+      <image:loc>https://cdn.dreambeesai.com/file/printeregg/assets/landing/wai_illustrious_preview.png</image:loc>
+      <image:title>DreamBees AI - Wai Illustrious</image:title>
+      <image:caption>High-quality anime illustrations with custom High-Res Fix workflows.</image:caption>
+    </image:image>
+  </url>
+</urlset>

@@ -438,8 +438,21 @@ export default function UserProfile() {
                 title={selectedImage ? `${selectedImage.prompt?.slice(0, 50)}...` : "My Studio - DreamBees"}
                 description={selectedImage ? selectedImage.prompt : "Manage your personal collection of AI generations and discoveries."}
                 image={selectedImage ? (selectedImage.thumbnailUrl || selectedImage.url) : undefined}
-                canonical={selectedImage?.isPublic ? `/discovery/${selectedImage.id}` : undefined}
+                canonical={selectedImage?.isPublic ? `/showcase/${selectedImage.id}` : undefined}
                 noindex={true}
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "ProfilePage",
+                            "name": userProfile?.username || "DreamBees User",
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "DreamBeesAI"
+                            }
+                        }
+                    ]
+                }}
             />
 
             {/* Header Section */}

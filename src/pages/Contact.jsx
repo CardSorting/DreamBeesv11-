@@ -14,7 +14,17 @@ export default function Contact() {
                         {
                             "@type": "ContactPage",
                             "name": "Contact DreamBeesAI Support",
-                            "description": "Get in touch with the DreamBeesAI support team for help and questions."
+                            "description": "Get in touch with the DreamBeesAI support team for technical help, billing inquiries, and feedback.",
+                            "mainEntity": {
+                                "@type": "Organization",
+                                "name": "DreamBeesAI",
+                                "contactPoint": {
+                                    "@type": "ContactPoint",
+                                    "contactType": "customer support",
+                                    "email": "support@dreambeesai.com",
+                                    "url": "https://dreambeesai.com/contact"
+                                }
+                            }
                         },
                         {
                             "@type": "BreadcrumbList",

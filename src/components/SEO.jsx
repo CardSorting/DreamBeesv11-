@@ -88,6 +88,10 @@ const SEO = ({ title, description, keywords, image, type = 'website', structured
             <meta property="og:title" content={metaTitle} />
             <meta property="og:description" content={metaDescription} />
             <meta property="og:image" content={metaImage} />
+            <meta property="og:image:width" content="1200" />
+            <meta property="og:image:height" content="630" />
+            <meta property="og:image:alt" content={title || "DreamBees AI Preview"} />
+            <meta property="og:locale" content="en_US" />
             <meta property="og:site_name" content="DreamBeesAI" />
 
             {/* Twitter */}
@@ -98,6 +102,7 @@ const SEO = ({ title, description, keywords, image, type = 'website', structured
             <meta name="twitter:title" content={metaTitle} />
             <meta name="twitter:description" content={metaDescription} />
             <meta name="twitter:image" content={metaImage} />
+            <meta name="twitter:image:alt" content={title || "DreamBees AI Preview"} />
             <meta name="twitter:site_name" content="DreamBeesAI" />
 
             {/* Structured Data (JSON-LD) */}

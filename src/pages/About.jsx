@@ -14,11 +14,14 @@ export default function About() {
                         {
                             "@type": "AboutPage",
                             "name": "About DreamBeesAI",
-                            "description": "DreamBeesAI is dedicated to democratizing creativity through artificial intelligence.",
+                            "description": "DreamBeesAI is a leading generative AI platform dedicated to democratizing creativity through state-of-the-art diffusion models.",
                             "mainEntity": {
                                 "@type": "Organization",
                                 "name": "DreamBeesAI",
-                                "url": "https://dreambeesai.com"
+                                "url": "https://dreambeesai.com",
+                                "logo": "https://dreambeesai.com/dreambees_icon.png",
+                                "foundingDate": "2025",
+                                "knowsAbout": ["Artificial Intelligence", "Generative Art", "Stable Diffusion", "Machine Learning"]
                             }
                         },
                         {
