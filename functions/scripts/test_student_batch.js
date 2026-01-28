@@ -25,11 +25,17 @@ async function testStudentBatch() {
 
     const { handleStudentBatchComposeRequest } = await import('../handlers/distillStudentBatch.js');
 
+    const args = process.argv.slice(2);
+    const packArg = args.find(arg => arg.startsWith("--pack="))?.split("=")[1];
+    const packId = packArg || "soft_focus_idol_portraiture";
+
+    console.log(`Using Pack ID: ${packId}`);
+
     const mockRequest = {
         data: {
-            packId: "digitally_enhanced_kawaii_cosplay_portrait",
-            batchCount: 3, // Smaller count for testing
-            userRequest: "A cute bunny girl in a futuristic gaming room.",
+            packId: packId,
+            batchCount: 10,
+            userRequest: "A diverse batch of high-fidelity prompts.",
             triggerGeneration: false // Don't trigger actual generations to save quota/time
         },
         auth: {

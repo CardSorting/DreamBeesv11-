@@ -39,7 +39,10 @@ Located in `functions/scripts/`:
 
 3.  **[test_student_batch.js](file:///Users/bozoegg/Desktop/DreamBeesv11/functions/scripts/test_student_batch.js)**
     - Tests the Batch Student handler.
-    - Generates 3 prompts from a sample pack and verifies internal mode diversity and JSON structure.
+    - **Usage**: `node functions/scripts/test_student_batch.js --pack=soft_focus_idol_portraiture`
+    - Defaults to `soft_focus_idol_portraiture` if no pack is specified.
+    - Generates 10 prompts and saves them to `functions/prompt_packs/`.
+
 4.  **[generate_kawaii_cosplay_showcase.js](file:///Users/bozoegg/Desktop/DreamBeesv11/functions/scripts/generate_kawaii_cosplay_showcase.js)**
     - Automates showcase image generation for the Kawaii Cosplay aesthetic.
     - **Automation**: Supports the `--pack` flag to load prompts from saved batch JSON files.

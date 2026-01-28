@@ -1,35 +1,125 @@
 {
-  "pack_name": "Digitally Enhanced Kawaii Cosplay Portrait",
+  "pack_name": "Soft Focus Idol Portraiture",
   "batch": [
     {
-      "prompt": "Full-body portrait, East Asian female, wearing a fluffy bunny costume, long dark hair styled in pigtails, oversized eyes, defined lips, seated on a sleek white chair in a futuristic gaming room, subtle neon blue and purple lights glowing from background panels, softbox lighting, frontal illumination, eye-level perspective, subject dominating 70% of frame, pastel pinks and whites, black costume accents, smooth skin, clean polished surfaces, direct gaze at camera.",
-      "negative_prompt": "Gritty realism, Grotesque imagery, Dark fantasy, Overt violence, Complex narrative scenes, Abstract art, Overt masculine themes, Excessive grunge, decay, Photorealism without digital enhancement, Monochrome, vintage filters, Overtly traditional East Asian costume, Overly simplistic, cartoonish, non-human anatomical features, harsh lighting, strong side light, unfiltered sunlight, dark colors, desaturated, rough texture, dirty, distressed, busy background, cluttered background, sharp features, angular face, mature face, complex pose, action pose, rough skin, unrefined features, multiple subjects, background dominant.",
+      "prompt": "A young woman with East Asian features, stylized makeup (large doll-like eyes, defined lips, soft blush), long wavy pastel pink hair, wearing a ribbed knit top, gently smiling at the camera, medium close-up, eye-level perspective, soft, diffused frontal lighting with a subtle glow, modern indoor setting with plain walls and soft focus background blur, soft pastels and warm neutrals, smooth skin, flowing hair.",
+      "negative_prompt": "gritty realism, dark fantasy, horror elements, overt sexuality, aged subjects, visible imperfections, harsh wrinkles, strong angular lines, harsh shadows, dirty environments, dilapidated environments, intense facial expressions, ugly photography, unflattering angles, candid shots that capture awkwardness, overly detailed background, sharp skin texture, high contrast, deep shadows, blown-out highlights, harsh overhead light, harsh side light, plain makeup, unenhanced eyes, industrial decay, gore, awkward pose, poorly drawn, bad anatomy, deformed, disfigured, low quality, bad hands, blurry, grainy, watermark, text, signature",
       "style_lock_notes": [
-        "Subject, costume, facial features, lighting, and color palette directly adhere to aesthetic pack's core principles.",
-        "Futuristic gaming room adapted through subtle, clean background elements and neon accents, maintaining subject dominance.",
-        "Motifs (fluffy bunny costume, pigtails, oversized eyes, defined lips) and recurrence pattern (direct gaze) are integrated."
+        "Adheres to 'Soft Focus Idol Portraiture' aesthetic with mandatory stylized makeup and hair.",
+        "Composition (medium close-up, eye-level, subject 70% frame) follows compositional_rules and subject_treatment.",
+        "Lighting is soft, diffused frontal with a subtle glow, as per lighting_logic and 'dreamy' user request.",
+        "Color behavior (soft pastels, warm neutrals, low contrast) and texture bias (smooth skin, soft fabrics) are maintained.",
+        "Recurrence pattern: Direct Gaze Portrait."
       ],
       "internal_mode": "Stabilized"
     },
     {
-      "prompt": "Close-up portrait, East Asian female, bunny girl costume, bangs, oversized eyes, defined lips, wearing a choker, hand near mouth, in a futuristic gaming room with blurred electric blue and purple neon light strips, ring light on subject, high-angle perspective, subject centered and dominating 90% of frame, vibrant reds and blacks, white costume accents, smooth synthetic leather texture, smooth skin, moderate saturation on clothing and makeup.",
-      "negative_prompt": "Gritty realism, Grotesque imagery, Dark fantasy, Overt violence, Complex narrative scenes, Abstract art, Overt masculine themes, Excessive grunge, decay, Photorealism without digital enhancement, Monochrome, vintage filters, Overtly traditional East Asian costume, Overly simplistic, cartoonish, non-human anatomical features, harsh lighting, strong side light, unfiltered sunlight, dark colors, desaturated, rough texture, dirty, distressed, busy background, cluttered background, sharp features, angular face, mature face, complex pose, action pose, rough skin, unrefined features, multiple subjects, background dominant.",
+      "prompt": "A young woman with East Asian features, stylized makeup (large doll-like eyes, defined lips, soft blush), short bob dark brown hair with bangs, wearing an off-shoulder top, playfully posing for a mirror selfie with a smartphone, medium close-up, slightly elevated perspective, soft, airy diffused lighting, modern indoor setting with subtle concrete texture and soft focus background blur, clean blacks and whites with soft pastel accents, smooth skin, flowing hair.",
+      "negative_prompt": "gritty realism, dark fantasy, horror elements, overt sexuality, aged subjects, visible imperfections, harsh wrinkles, strong angular lines, harsh shadows, dirty environments, dilapidated environments, intense facial expressions, ugly photography, unflattering angles, candid shots that capture awkwardness, overly detailed background, sharp skin texture, high contrast, deep shadows, blown-out highlights, harsh overhead light, harsh side light, plain makeup, unenhanced eyes, industrial decay, gore, awkward pose, poorly drawn, bad anatomy, deformed, disfigured, low quality, bad hands, blurry, grainy, watermark, text, signature",
       "style_lock_notes": [
-        "Focus on close-up composition, specific motifs (choker, bangs, oversized eyes), and color behavior (reds, blacks, neons) from the pack.",
-        "Futuristic gaming room serves as a secondary, blurred backdrop enhancing the subject without competing for focus.",
-        "Lighting (ring light) and texture bias (smooth synthetic leather, skin) are maintained."
+        "Expresses 'Soft Focus Idol Portraiture' with stylized makeup and specific hair style (short bob, bangs).",
+        "Composition (medium close-up, slightly elevated, subject 65% frame) aligns with compositional_rules.",
+        "Soft, airy diffused lighting matches lighting_logic and user's 'soft lighting' request.",
+        "Motifs include smartphone for selfie and off-shoulder top, consistent with motif_inventory and usage rules.",
+        "Recurrence pattern: Selfie View."
       ],
       "internal_mode": "Variant"
     },
     {
-      "prompt": "Half-body portrait, East Asian female, fluffy bunny costume with ribbon accents, long dark hair, oversized eyes, defined lips, seated at a minimalistic, glowing desk within a futuristic gaming room, large diffused light source overhead, eye-level perspective, subject slightly off-center, occupying 60% of frame, pastel mint, white, black, and subtle digital green hues in environment, faux fur trim, smooth skin, clean uniform surfaces, direct gaze at camera.",
-      "negative_prompt": "Gritty realism, Grotesque imagery, Dark fantasy, Overt violence, Complex narrative scenes, Abstract art, Overt masculine themes, Excessive grunge, decay, Photorealism without digital enhancement, Monochrome, vintage filters, Overtly traditional East Asian costume, Overly simplistic, cartoonish, non-human anatomical features, harsh lighting, strong side light, unfiltered sunlight, dark colors, desaturated, rough texture, dirty, distressed, busy background, cluttered background, sharp features, angular face, mature face, complex pose, action pose, rough skin, unrefined features, multiple subjects, background dominant.",
+      "prompt": "A young woman with East Asian features, stylized makeup (large doll-like eyes, defined lips, soft blush), long wavy dark hair with hair bows, wearing a casual sweater, gentle serene expression, head slightly tilted, medium shot, eye-level perspective, soft natural daylight with an ethereal quality, outdoor garden setting with lush green and soft focus background blur, warm neutrals and soft pastels, smooth skin, flowing hair.",
+      "negative_prompt": "gritty realism, dark fantasy, horror elements, overt sexuality, aged subjects, visible imperfections, harsh wrinkles, strong angular lines, harsh shadows, dirty environments, dilapidated environments, intense facial expressions, ugly photography, unflattering angles, candid shots that capture awkwardness, overly detailed background, sharp skin texture, high contrast, deep shadows, blown-out highlights, harsh overhead light, harsh side light, plain makeup, unenhanced eyes, industrial decay, gore, awkward pose, poorly drawn, bad anatomy, deformed, disfigured, low quality, bad hands, blurry, grainy, watermark, text, signature",
       "style_lock_notes": [
-        "Recurrence pattern (seated at table, direct gaze), motifs (fluffy bunny costume, ribbons, oversized eyes), and subject treatment are consistent.",
-        "The 'futuristic gaming room' is interpreted as a clean, minimalist environment with specific color hints, aligning with texture bias and color behavior.",
-        "Soft, overhead lighting ensures subject remains evenly lit and digitally enhanced."
+        "Represents 'Soft Focus Idol Portraiture' with idealized appearance and soft expression.",
+        "Composition (medium shot, eye-level, subject 60% frame) and pose conform to compositional_rules and subject_treatment.",
+        "Lighting (soft natural daylight, ethereal quality) is strictly from lighting_logic, fulfilling 'dreamy' and 'soft lighting' aspects.",
+        "Motifs (hair bows, casual sweater) and setting (outdoor garden, soft focus blur) are compatible with motif_inventory and rules.",
+        "Recurrence pattern: Environmental Portrait (Soft Focus)."
       ],
       "internal_mode": "Strain"
+    },
+    {
+      "prompt": "A young woman with East Asian features, stylized makeup (large doll-like eyes, defined lips, soft blush), long wavy pastel blonde hair, wearing a form-fitting top with a delicate necklace, calm and alluring gaze, medium close-up, eye-level perspective, diffused studio lighting with a soft glow, plain clean indoor background with soft focus blur, soft pastels and light neutrals, smooth skin, polished surfaces, flowing hair.",
+      "negative_prompt": "gritty realism, dark fantasy, horror elements, overt sexuality, aged subjects, visible imperfections, harsh wrinkles, strong angular lines, harsh shadows, dirty environments, dilapidated environments, intense facial expressions, ugly photography, unflattering angles, candid shots that capture awkwardness, overly detailed background, sharp skin texture, high contrast, deep shadows, blown-out highlights, harsh overhead light, harsh side light, plain makeup, unenhanced eyes, industrial decay, gore, awkward pose, poorly drawn, bad anatomy, deformed, disfigured, low quality, bad hands, blurry, grainy, watermark, text, signature",
+      "style_lock_notes": [
+        "Strongly locks to aesthetic with mandatory stylized makeup and pastel hair, reflecting 'idol' idealization.",
+        "Composition (medium close-up, eye-level, subject 75% frame) adheres to compositional_rules for subject dominance.",
+        "Lighting is diffused studio light with a soft glow, consistent with lighting_logic and user's 'soft lighting' request.",
+        "Motifs (delicate necklace, form-fitting top) align with motif_inventory and usage rules.",
+        "Recurrence pattern: Direct Gaze Portrait."
+      ],
+      "internal_mode": "Edge"
+    },
+    {
+      "prompt": "A young woman with East Asian features, stylized makeup (large doll-like eyes, defined lips, soft blush), short bob pastel pink hair with bangs, holding a smartphone for a mirror selfie, cute playful expression with a hand near face, wearing a ribbed knit top, medium close-up, slightly elevated perspective, bright, airy diffused lighting, minimalist indoor setting with soft focus background, soft pastels, warm neutrals, smooth skin, soft fabrics.",
+      "negative_prompt": "gritty realism, dark fantasy, horror elements, overt sexuality, aged subjects, visible imperfections, harsh wrinkles, strong angular lines, harsh shadows, dirty environments, dilapidated environments, intense facial expressions, ugly photography, unflattering angles, candid shots that capture awkwardness, overly detailed background, sharp skin texture, high contrast, deep shadows, blown-out highlights, harsh overhead light, harsh side light, plain makeup, unenhanced eyes, industrial decay, gore, awkward pose, poorly drawn, bad anatomy, deformed, disfigured, low quality, bad hands, blurry, grainy, watermark, text, signature",
+      "style_lock_notes": [
+        "Maintains core aesthetic with stylized makeup, pastel hair, and youthful expression.",
+        "Composition (medium close-up, slightly elevated, subject 68% frame) and pose (hand near face) conform to pack rules.",
+        "Lighting (bright, airy diffused) aligns with lighting_logic and 'soft lighting' user request.",
+        "Motifs (smartphone, ribbed knit top) and setting (minimalist indoor, soft focus) are compliant.",
+        "Recurrence pattern: Selfie View."
+      ],
+      "internal_mode": "Stabilized"
+    },
+    {
+      "prompt": "A young woman with East Asian features, stylized makeup (large doll-like eyes, defined lips, soft blush), long wavy dark brown hair, wearing an animal-themed headband and an off-shoulder top, dreamy and gentle look, medium shot, eye-level perspective, soft natural daylight with a subtle glow, outdoor park bench with soft bokeh background, warm neutrals, soft pastels, smooth skin, flowing hair.",
+      "negative_prompt": "gritty realism, dark fantasy, horror elements, overt sexuality, aged subjects, visible imperfections, harsh wrinkles, strong angular lines, harsh shadows, dirty environments, dilapidated environments, intense facial expressions, ugly photography, unflattering angles, candid shots that capture awkwardness, overly detailed background, sharp skin texture, high contrast, deep shadows, blown-out highlights, harsh overhead light, harsh side light, plain makeup, unenhanced eyes, industrial decay, gore, awkward pose, poorly drawn, bad anatomy, deformed, disfigured, low quality, bad hands, blurry, grainy, watermark, text, signature",
+      "style_lock_notes": [
+        "Adheres to aesthetic with stylized features, dreamy expression, and soft appearance.",
+        "Composition (medium shot, eye-level, subject 62% frame) respects compositional_rules.",
+        "Lighting (soft natural daylight, subtle glow) is consistent with lighting_logic and user's 'soft lighting' request.",
+        "Motifs (animal-themed headband, off-shoulder top) and setting (outdoor park, soft bokeh) are within motif_inventory and rules.",
+        "Recurrence pattern: Environmental Portrait (Soft Focus)."
+      ],
+      "internal_mode": "Variant"
+    },
+    {
+      "prompt": "A young woman with East Asian features, stylized makeup (large doll-like eyes, defined lips, soft blush), long wavy dark hair, wearing a casual sweater and a delicate necklace, inviting charming smile, medium close-up, eye-level perspective, soft, frontal, slightly ethereal lighting, modern indoor setting with a light concrete wall and soft focus background, clean blacks/whites, light neutrals, smooth skin, soft fabrics.",
+      "negative_prompt": "gritty realism, dark fantasy, horror elements, overt sexuality, aged subjects, visible imperfections, harsh wrinkles, strong angular lines, harsh shadows, dirty environments, dilapidated environments, intense facial expressions, ugly photography, unflattering angles, candid shots that capture awkwardness, overly detailed background, sharp skin texture, high contrast, deep shadows, blown-out highlights, harsh overhead light, harsh side light, plain makeup, unenhanced eyes, industrial decay, gore, awkward pose, poorly drawn, bad anatomy, deformed, disfigured, low quality, bad hands, blurry, grainy, watermark, text, signature",
+      "style_lock_notes": [
+        "Expresses 'Soft Focus Idol Portraiture' with idealized features and engaging expression.",
+        "Composition (medium close-up, eye-level, subject 72% frame) follows compositional_rules.",
+        "Lighting (soft, frontal, ethereal) aligns with lighting_logic and 'dreamy' user request.",
+        "Motifs (delicate necklace, casual sweater) and setting (modern indoor, soft focus) are compliant.",
+        "Recurrence pattern: Direct Gaze Portrait."
+      ],
+      "internal_mode": "Strain"
+    },
+    {
+      "prompt": "A young woman with East Asian features, stylized makeup (large doll-like eyes, defined lips, soft blush), short bob pastel blonde hair, holding a smartphone for a reflection selfie, confident playful expression, wearing a form-fitting top, medium close-up, slightly elevated perspective, softbox lighting, uniformly bright, plain indoor studio with soft focus background blur, soft pastels, warm neutrals, smooth skin, polished surfaces.",
+      "negative_prompt": "gritty realism, dark fantasy, horror elements, overt sexuality, aged subjects, visible imperfections, harsh wrinkles, strong angular lines, harsh shadows, dirty environments, dilapidated environments, intense facial expressions, ugly photography, unflattering angles, candid shots that capture awkwardness, overly detailed background, sharp skin texture, high contrast, deep shadows, blown-out highlights, harsh overhead light, harsh side light, plain makeup, unenhanced eyes, industrial decay, gore, awkward pose, poorly drawn, bad anatomy, deformed, disfigured, low quality, bad hands, blurry, grainy, watermark, text, signature",
+      "style_lock_notes": [
+        "Locks to aesthetic with stylized appearance and playful expression, adhering to 'idol' ideal.",
+        "Composition (medium close-up, slightly elevated, subject 70% frame) and pose are compliant.",
+        "Lighting (softbox, uniformly bright) matches lighting_logic and user's 'soft lighting' request.",
+        "Motifs (smartphone, form-fitting top) and setting (plain studio, soft focus) follow motif_inventory and rules.",
+        "Recurrence pattern: Selfie View."
+      ],
+      "internal_mode": "Edge"
+    },
+    {
+      "prompt": "A young woman with East Asian features, stylized makeup (large doll-like eyes, defined lips, soft blush), long wavy dark hair with hair bows, wearing a ribbed knit top, serene and gentle expression, head slightly tilted, medium shot, eye-level perspective, soft natural lighting with a subtle glow, outdoor garden with blurred flowers and soft focus, warm neutrals, soft pastels, smooth skin, flowing hair.",
+      "negative_prompt": "gritty realism, dark fantasy, horror elements, overt sexuality, aged subjects, visible imperfections, harsh wrinkles, strong angular lines, harsh shadows, dirty environments, dilapidated environments, intense facial expressions, ugly photography, unflattering angles, candid shots that capture awkwardness, overly detailed background, sharp skin texture, high contrast, deep shadows, blown-out highlights, harsh overhead light, harsh side light, plain makeup, unenhanced eyes, industrial decay, gore, awkward pose, poorly drawn, bad anatomy, deformed, disfigured, low quality, bad hands, blurry, grainy, watermark, text, signature",
+      "style_lock_notes": [
+        "Represents 'Soft Focus Idol Portraiture' aesthetic with idealized appearance and soft, gentle emotion.",
+        "Composition (medium shot, eye-level, subject 60% frame) and pose (head slightly tilted) conform to pack rules.",
+        "Lighting (soft natural, subtle glow) strictly follows lighting_logic and 'dreamy' user request.",
+        "Motifs (hair bows, ribbed knit top) and setting (outdoor garden, blurred flowers) are compliant.",
+        "Recurrence pattern: Environmental Portrait (Soft Focus)."
+      ],
+      "internal_mode": "Stabilized"
+    },
+    {
+      "prompt": "A young woman with East Asian features, stylized makeup (large doll-like eyes, defined lips, soft blush), short bob dark brown hair with bangs, wearing an off-shoulder top and a delicate necklace, charming direct gaze with a slight smile, medium close-up, eye-level perspective, soft, diffused frontal lighting, modern indoor setting with plain background and soft focus blur, soft pastels, warm neutrals, smooth skin, soft fabrics.",
+      "negative_prompt": "gritty realism, dark fantasy, horror elements, overt sexuality, aged subjects, visible imperfections, harsh wrinkles, strong angular lines, harsh shadows, dirty environments, dilapidated environments, intense facial expressions, ugly photography, unflattering angles, candid shots that capture awkwardness, overly detailed background, sharp skin texture, high contrast, deep shadows, blown-out highlights, harsh overhead light, harsh side light, plain makeup, unenhanced eyes, industrial decay, gore, awkward pose, poorly drawn, bad anatomy, deformed, disfigured, low quality, bad hands, blurry, grainy, watermark, text, signature",
+      "style_lock_notes": [
+        "Strongly locks to aesthetic with mandatory stylized makeup, specific hair, and idealized expression.",
+        "Composition (medium close-up, eye-level, slightly off-center, subject 70% frame) adheres to compositional_rules.",
+        "Lighting is soft, diffused frontal, consistent with lighting_logic and user's 'soft lighting' request.",
+        "Motifs (delicate necklace, off-shoulder top) and setting (modern indoor, plain background) follow motif_inventory and rules.",
+        "Recurrence pattern: Direct Gaze Portrait."
+      ],
+      "internal_mode": "Variant"
     }
   ]
 }
