@@ -773,9 +773,13 @@ const PersonaChatContent = () => {
     }, [messages, isLoading, isSending]);
 
     // Click-to-play audio handler with loading states and error recovery
-    const handlePlayAudio = (msgId) => {
-        const audioUrl = messageAudioMap[msgId];
-        if (!audioUrl) return;
+    const handlePlayAudio = (msgId, fallbackAudioUrl = null) => {
+        // Use map first, fallback to passed URL from message object
+        const audioUrl = messageAudioMap[msgId] || fallbackAudioUrl;
+        if (!audioUrl) {
+            console.warn("[AI Voice] No audio URL found for message:", msgId);
+            return;
+        }
 
         // Clear any previous error state for this message
         if (audioErrorMsgId === msgId) {
@@ -1142,10 +1146,10 @@ const PersonaChatContent = () => {
                                             )}
                                         </span>
                                         {/* Click-to-play audio button for AI messages */}
-                                        {msg.role === 'model' && messageAudioMap[msg.id] && (
+                                        {msg.role === 'model' && (messageAudioMap[msg.id] || msg.audioUrl) && (
                                             <button
                                                 className={`msg-audio-btn ${currentlyPlayingMsgId === msg.id ? 'playing' : ''} ${loadingAudioMsgId === msg.id ? 'loading' : ''} ${audioErrorMsgId === msg.id ? 'error' : ''}`}
-                                                onClick={() => handlePlayAudio(msg.id)}
+                                                onClick={() => handlePlayAudio(msg.id, msg.audioUrl)}
                                                 disabled={loadingAudioMsgId === msg.id}
                                                 title={
                                                     loadingAudioMsgId === msg.id ? 'Loading audio...' :
