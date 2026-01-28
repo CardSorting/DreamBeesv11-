@@ -115,6 +115,21 @@ export default function Models() {
                                 "description": "Browse our curated collection of fine-tuned Stable Diffusion models specialized for specific artistic styles."
                             },
                             {
+                                "@type": "ItemList",
+                                "name": "Top AI Generation Models",
+                                "itemListElement": availableModels.map((model, index) => ({
+                                    "@type": "ListItem",
+                                    "position": index + 1,
+                                    "item": {
+                                        "@type": "SoftwareApplication",
+                                        "name": model.name,
+                                        "url": `https://dreambeesai.com/model/${model.id}`,
+                                        "description": model.description,
+                                        "applicationCategory": "MultimediaApplication"
+                                    }
+                                }))
+                            },
+                            {
                                 "@type": "BreadcrumbList",
                                 "itemListElement": [
                                     { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
@@ -173,6 +188,7 @@ export default function Models() {
                                 <input
                                     type="text"
                                     placeholder="Search models..."
+                                    aria-label="Search AI Models"
                                     value={searchQuery}
                                     onChange={(e) => handleSearchChange(e.target.value)}
                                     style={{
@@ -204,6 +220,8 @@ export default function Models() {
                                     <button
                                         key={cat}
                                         onClick={() => handleCategoryChange(cat)}
+                                        aria-label={`Filter by ${cat}`}
+                                        aria-pressed={activeCategory === cat}
                                         style={{
                                             padding: '8px 16px',
                                             borderRadius: '100px',
@@ -259,6 +277,8 @@ export default function Models() {
                                         <img
                                             src={model.image || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80'}
                                             alt={`${model.name} - AI Model Preview`}
+                                            loading="lazy"
+                                            decoding="async"
                                             style={{
                                                 width: '100%',
                                                 height: '100%',
@@ -304,14 +324,14 @@ export default function Models() {
                                     {/* Info */}
                                     <div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                                            <h3 style={{
+                                            <h2 style={{
                                                 fontSize: '1.25rem',
                                                 fontWeight: '500',
                                                 color: 'var(--color-white)',
                                                 fontFamily: 'var(--font-display)'
                                             }}>
                                                 {model.name}
-                                            </h3>
+                                            </h2>
                                             <button
                                                 onClick={() => handleSelect(model)}
                                                 style={{

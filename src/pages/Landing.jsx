@@ -108,11 +108,24 @@ export default function Landing() {
                         },
                         {
                             "@type": "HowTo",
-                            "name": "How to Generate AI Art in 3 Steps",
+                            "name": "How to Generate AI characters in 3 Steps",
+                            "description": "Create stunning AI art and anime characters using the DreamBees AI generator.",
                             "step": [
-                                { "@type": "HowToStep", "name": "Prompt", "text": "Describe your vision in natural language using our semantic engine." },
-                                { "@type": "HowToStep", "name": "Refine", "text": "Adjust aspect ratio, step count, and guidance scale for granular control." },
-                                { "@type": "HowToStep", "name": "Synthesis", "text": "Generate high-fidelity assets in sub-second timeframes using H100 clusters." }
+                                {
+                                    "@type": "HowToStep",
+                                    "name": "Enter your prompt",
+                                    "text": "Describe your character vision in natural language. Use keywords like 'anime style', 'cinematic lighting', or 'hyper-realistic portrait' to guide our semantic engine."
+                                },
+                                {
+                                    "@type": "HowToStep",
+                                    "name": "Customize settings",
+                                    "text": "Adjust aspect ratio for social media or cinematic prints. Fine-tune your generation with advanced controls like seed locking and negative prompting."
+                                },
+                                {
+                                    "@type": "HowToStep",
+                                    "name": "Generate & Download",
+                                    "text": "Click generate to create high-fidelity AI art in sub-second timeframes using our H100 GPU clusters. Own 100% of your creations."
+                                }
                             ]
                         },
                         {
@@ -233,10 +246,10 @@ export default function Landing() {
             </section>
 
             {/* Bento Grid Features - "Why DreamBees?" */}
-            <section style={{ padding: '160px 0', background: 'var(--color-bg)' }}>
+            <section style={{ padding: '160px 0', background: 'var(--color-bg)' }} aria-labelledby="features-heading">
                 <div className="container">
                     <div style={{ textAlign: 'center', marginBottom: '80px' }}>
-                        <h2 style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', marginBottom: '16px' }}>Engineered for Excellence</h2>
+                        <h2 id="features-heading" style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', marginBottom: '16px' }}>Engineered for Excellence</h2>
                         <p style={{ color: 'var(--color-text-muted)', fontSize: '1.2rem' }}>State-of-the-art infrastructure meets intuitive design.</p>
                     </div>
 
@@ -297,10 +310,10 @@ export default function Landing() {
                 </div>
             </section>
             {/* How It Works */}
-            <section style={{ padding: '80px 0 160px' }}>
+            <section style={{ padding: '80px 0 160px' }} aria-labelledby="workflow-heading">
                 <div className="container">
                     <div style={{ padding: '0 20px', marginBottom: '60px' }}>
-                        <h2 style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', marginBottom: '16px' }}>Workflow</h2>
+                        <h2 id="workflow-heading" style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', marginBottom: '16px' }}>Workflow</h2>
                         <p style={{ color: 'var(--color-text-muted)', fontSize: '1.2rem' }}>From concept to masterpiece in three steps.</p>
                     </div>
 
@@ -688,6 +701,8 @@ function MarqueeImages() {
                         width="320"
                         height="240"
                         alt={altKeywords[i % altKeywords.length]}
+                        loading="lazy"
+                        decoding="async"
                         style={{
                             width: '100%',
                             height: '100%',
@@ -807,7 +822,7 @@ function InteractiveDemo() {
                     </div>
 
                     <div style={{ color: 'var(--color-zinc-400)', marginBottom: '12px', fontSize: '0.85rem' }}>// Weaving latent threads...</div>
-                    <div style={{ fontSize: '1.25rem', lineHeight: 1.6, minHeight: '80px', fontFamily: 'monospace', color: 'var(--color-text-main)' }}>
+                    <div style={{ fontSize: '1.25rem', lineHeight: 1.6, minHeight: '80px', fontFamily: 'monospace', color: 'var(--color-text-main)' }} aria-live="polite">
                         <span style={{ color: 'var(--color-accent-primary)', marginRight: '12px' }}>➜</span>
                         {displayedPrompt}<span className="typing-cursor"></span>
                     </div>

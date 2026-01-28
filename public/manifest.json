@@ -1,7 +1,13 @@
 {
     "name": "DreamBees AI",
     "short_name": "DreamBees",
-    "description": "Professional AI Image Generator - Text to Image Online",
+    "description": "Professional AI Image Generator - Text to Image Online. Create stunning AI art, generate memes, and explore advanced diffusion models like Flux and SDXL with ease.",
+    "categories": [
+        "design",
+        "photo",
+        "productivity",
+        "graphics & design"
+    ],
     "start_url": "/",
     "display": "standalone",
     "background_color": "#000000",
@@ -26,6 +32,44 @@
             "type": "image/png",
             "form_factor": "wide",
             "label": "Professional AI Art Generation"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Start Generating",
+            "short_name": "Generate",
+            "description": "Create new AI art instantly",
+            "url": "/generate",
+            "icons": [
+                {
+                    "src": "/dreambees_icon.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "Explore Models",
+            "short_name": "Models",
+            "description": "Browse all available AI models",
+            "url": "/models",
+            "icons": [
+                {
+                    "src": "/dreambees_icon.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "Read Insights",
+            "short_name": "Blog",
+            "description": "Latest AI news and research",
+            "url": "/blog",
+            "icons": [
+                {
+                    "src": "/dreambees_icon.png",
+                    "sizes": "192x192"
+                }
+            ]
         }
     ]
 }

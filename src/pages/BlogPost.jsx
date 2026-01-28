@@ -148,15 +148,35 @@ export default function BlogPost() {
                 type="article"
                 structuredData={{
                     "@context": "https://schema.org",
-                    "@type": "BlogPosting",
-                    "headline": post.title,
-                    "description": post.excerpt,
-                    "author": {
-                        "@type": "Person",
-                        "name": post.author
-                    },
-                    "datePublished": post.date,
-                    "image": post.image ? `https://dreambeesai.com${post.image}` : "https://dreambeesai.com/og-image.jpg"
+                    "@graph": [
+                        {
+                            "@type": "BlogPosting",
+                            "headline": post.title,
+                            "description": post.excerpt,
+                            "author": {
+                                "@type": "Person",
+                                "name": post.author
+                            },
+                            "publisher": {
+                                "@type": "Organization",
+                                "name": "DreamBeesAI",
+                                "logo": {
+                                    "@type": "ImageObject",
+                                    "url": "https://dreambeesai.com/dreambees_icon.png"
+                                }
+                            },
+                            "datePublished": post.date,
+                            "image": post.image ? (post.image.startsWith('http') ? post.image : `https://dreambeesai.com${post.image}`) : "https://dreambeesai.com/og-image.jpg"
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
+                                { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://dreambeesai.com/blog" },
+                                { "@type": "ListItem", "position": 3, "name": post.title, "item": `https://dreambeesai.com/blog/${post.slug || post.id}` }
+                            ]
+                        }
+                    ]
                 }}
             />
             {/* Hero / Header */}

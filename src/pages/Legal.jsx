@@ -4,7 +4,27 @@ import SEO from '../components/SEO';
 export function Privacy() {
     return (
         <div className="container" style={{ padding: '120px 20px 60px', maxWidth: '800px' }}>
-            <SEO title="Privacy Policy" description="DreamBeesAI Privacy Policy." />
+            <SEO
+                title="Privacy Policy"
+                description="DreamBeesAI Privacy Policy."
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "WebPage",
+                            "name": "Privacy Policy",
+                            "url": "https://dreambeesai.com/privacy"
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
+                                { "@type": "ListItem", "position": 2, "name": "Privacy", "item": "https://dreambeesai.com/privacy" }
+                            ]
+                        }
+                    ]
+                }}
+            />
             <h1 style={{ color: 'white', marginBottom: '30px' }}>Privacy Policy</h1>
             <div className="glass-panel" style={{ padding: '40px', color: 'var(--color-text-muted)', lineHeight: '1.8' }}>
                 <p>Last updated: January 2026</p>
@@ -24,7 +44,27 @@ export function Privacy() {
 export function Terms() {
     return (
         <div className="container" style={{ padding: '120px 20px 60px', maxWidth: '800px' }}>
-            <SEO title="Terms of Service" description="DreamBeesAI Terms of Service." />
+            <SEO
+                title="Terms of Service"
+                description="DreamBeesAI Terms of Service."
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "WebPage",
+                            "name": "Terms of Service",
+                            "url": "https://dreambeesai.com/terms"
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
+                                { "@type": "ListItem", "position": 2, "name": "Terms", "item": "https://dreambeesai.com/terms" }
+                            ]
+                        }
+                    ]
+                }}
+            />
             <h1 style={{ color: 'white', marginBottom: '30px' }}>Terms of Service</h1>
             <div className="glass-panel" style={{ padding: '40px', color: 'var(--color-text-muted)', lineHeight: '1.8' }}>
                 <p>Last updated: January 2026</p>
@@ -85,7 +125,27 @@ export function Terms() {
 export function Cookies() {
     return (
         <div className="container" style={{ padding: '120px 20px 60px', maxWidth: '800px' }}>
-            <SEO title="Cookie Policy" description="DreamBeesAI Cookie Policy." />
+            <SEO
+                title="Cookie Policy"
+                description="DreamBeesAI Cookie Policy."
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "WebPage",
+                            "name": "Cookie Policy",
+                            "url": "https://dreambeesai.com/cookies"
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dreambeesai.com" },
+                                { "@type": "ListItem", "position": 2, "name": "Cookies", "item": "https://dreambeesai.com/cookies" }
+                            ]
+                        }
+                    ]
+                }}
+            />
             <h1 style={{ color: 'white', marginBottom: '30px' }}>Cookie Policy</h1>
             <div className="glass-panel" style={{ padding: '40px', color: 'var(--color-text-muted)', lineHeight: '1.8' }}>
                 <p>We use cookies to enhance your experience on DreamBees.</p>

@@ -1,39 +1,40 @@
 User-agent: *
 Allow: /
-Allow: /discovery/
-Allow: /mockups/
-Allow: /models/
+Allow: /landing
+Allow: /models
 Allow: /model/
-Allow: /mockup-catalog/
+Allow: /mockups
+Allow: /mockup-catalog
+Allow: /blog
 Allow: /blog/
-Allow: /generate
-Allow: /pricing
-Allow: /apps
+Allow: /generations
+Allow: /memes
 Allow: /features
+Allow: /pricing
 Allow: /about
 Allow: /contact
 Allow: /privacy
 Allow: /terms
 Allow: /cookies
 Allow: /safety
-Allow: /generations
-Allow: /memes
 Allow: /slideshow
-Allow: /landing
+Allow: /apps
 
-# Block user-specific and transient state pages
+# Block transient/private/auth pages
 Disallow: /gallery/
+Disallow: /profile/
 Disallow: /studio/
 Disallow: /settings/
-Disallow: /login
-Disallow: /signup
+Disallow: /auth
+Disallow: /generate
+Disallow: /api/
 Disallow: /*?success=
 Disallow: /*?canceled=
 Disallow: /*?session_id=
-Disallow: /api/
 
 # Sitemap
 Sitemap: https://dreambeesai.com/sitemap.xml
 
-# Crawl-delay for politeness
+# Politeness
 Crawl-delay: 1
+

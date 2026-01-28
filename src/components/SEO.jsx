@@ -34,11 +34,42 @@ const SEO = ({ title, description, keywords, image, type = 'website', structured
 
     const baseSchema = {
         "@context": "https://schema.org",
-        "@type": schemaType,
-        "name": metaTitle,
-        "description": metaDescription,
-        "url": currentUrl,
-        "image": metaImage
+        "@graph": [
+            {
+                "@type": "Organization",
+                "@id": `${siteUrl}/#organization`,
+                "name": "DreamBeesAI",
+                "url": siteUrl,
+                "logo": {
+                    "@type": "ImageObject",
+                    "url": defaultImage,
+                    "width": "512",
+                    "height": "512"
+                },
+                "sameAs": []
+            },
+            {
+                "@type": "WebSite",
+                "@id": `${siteUrl}/#website`,
+                "url": siteUrl,
+                "name": "DreamBees AI",
+                "publisher": { "@id": `${siteUrl}/#organization` },
+                "potentialAction": {
+                    "@type": "SearchAction",
+                    "target": `${siteUrl}/models?q={search_term_string}`,
+                    "query-input": "required name=search_term_string"
+                }
+            },
+            {
+                "@type": schemaType,
+                "name": metaTitle,
+                "description": metaDescription,
+                "url": currentUrl,
+                "image": metaImage,
+                "applicationCategory": "MultimediaApplication",
+                "operatingSystem": "Any"
+            }
+        ]
     };
 
     return (
@@ -47,6 +78,7 @@ const SEO = ({ title, description, keywords, image, type = 'website', structured
             <title>{metaTitle}</title>
             <meta name="description" content={metaDescription} />
             <meta name="keywords" content={metaKeywords} />
+            <meta name="theme-color" content="#4f46e5" />
             <link rel="canonical" href={currentUrl} />
             {noindex && <meta name="robots" content="noindex" />}
 
@@ -66,6 +98,7 @@ const SEO = ({ title, description, keywords, image, type = 'website', structured
             <meta name="twitter:title" content={metaTitle} />
             <meta name="twitter:description" content={metaDescription} />
             <meta name="twitter:image" content={metaImage} />
+            <meta name="twitter:site_name" content="DreamBeesAI" />
 
             {/* Structured Data (JSON-LD) */}
             <script type="application/ld+json">

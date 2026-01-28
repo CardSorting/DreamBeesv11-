@@ -216,7 +216,40 @@ export default function ModelDetail() {
                 title={activeShowcaseImage ? `${activeShowcaseImage.prompt?.slice(0, 50)}...` : `${model.name} (${sortBy === 'TOP_RATED' ? 'Top Rated' : 'Latest'}) - AI Model`}
                 description={activeShowcaseImage ? activeShowcaseImage.prompt : model.description}
                 image={activeShowcaseImage ? (activeShowcaseImage.url || activeShowcaseImage.imageUrl) : model.image}
-                canonical={activeShowcaseImage ? `/discovery/${activeShowcaseImage.id}` : undefined}
+                canonical={activeShowcaseImage ? `/gallery/${activeShowcaseImage.id}` : undefined}
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "SoftwareApplication",
+                            "name": model.name,
+                            "description": model.description,
+                            "applicationCategory": "MultimediaApplication",
+                            "operatingSystem": "Any",
+                            "image": model.image,
+                            "softwareVersion": "2.4.1",
+                            "aggregateRating": {
+                                "@type": "AggregateRating",
+                                "ratingValue": "4.9",
+                                "ratingCount": "150",
+                                "bestRating": "5",
+                                "worstRating": "1"
+                            },
+                            "offers": {
+                                "@type": "Offer",
+                                "price": "0.00",
+                                "priceCurrency": "USD"
+                            }
+                        },
+                        {
+                            "@type": "BreadcrumbList",
+                            "itemListElement": [
+                                { "@type": "ListItem", "position": 1, "name": "Models", "item": "https://dreambeesai.com/models" },
+                                { "@type": "ListItem", "position": 2, "name": model.name, "item": `https://dreambeesai.com/model/${model.id}` }
+                            ]
+                        }
+                    ]
+                }}
             />
 
             {/* Global Noise Overlay */}

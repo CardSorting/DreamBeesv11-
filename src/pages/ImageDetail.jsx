@@ -178,6 +178,25 @@ export default function ImageDetail() {
                 title={`AI Image: ${image.prompt.slice(0, 50)}...`}
                 description={`Created with ${modelName}. Prompt: ${image.prompt}`}
                 image={getOptimizedImageUrl(image.imageUrl)}
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@graph": [
+                        {
+                            "@type": "VisualArtwork",
+                            "name": `AI Generated Artwork - ${image.prompt.slice(0, 40)}...`,
+                            "description": image.prompt,
+                            "image": getOptimizedImageUrl(image.imageUrl),
+                            "creator": {
+                                "@type": "Organization",
+                                "name": "DreamBeesAI"
+                            },
+                            "abstract": image.prompt,
+                            "artMedium": "Digital AI",
+                            "artworkSurface": "Digital Pixel",
+                            "isFamilyFriendly": "true"
+                        }
+                    ]
+                }}
             />
 
             {/* Top Navigation Bar */}
