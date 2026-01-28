@@ -99,6 +99,40 @@
     gap: 6px;
 }
 
+.connection-retry {
+    cursor: pointer;
+    text-decoration: underline;
+    color: #a970ff;
+    font-weight: bold;
+    transition: color 0.2s;
+}
+
+.connection-retry:hover {
+    color: #bf94ff;
+}
+
+.view-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #53535f;
+}
+
+.view-dot.online {
+    background: #eb0400;
+}
+
+.view-dot.connecting {
+    background: #ffd700;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    50% {
+        opacity: 0.5;
+    }
+}
+
 .view-dot {
     width: 6px;
     height: 6px;

@@ -253,6 +253,7 @@ const PersonaChat = () => {
             });
 
             pusher.connection.bind('state_change', (states) => {
+                if (!isMounted.current) return;
                 setConnectionStatus(states.current);
                 if (states.current === 'unavailable') {
                     toast.error("Stream connection lost. Retrying...", { id: 'pusher-reconnect' });
@@ -261,14 +262,22 @@ const PersonaChat = () => {
                 }
             });
 
+            pusher.connection.bind('error', (err) => {
+                console.error('[Soketi] Connection error:', err);
+                if (isMounted.current) {
+                    // toast.error("Live connection issue. Attempting to recover...");
+                }
+            });
+
             const channelName = `presence-chat-${id}`;
             const channel = pusher.subscribe(channelName);
 
             channel.bind('pusher:subscription_succeeded', (members) => {
-                setViewerCount(members.count);
+                if (isMounted.current) setViewerCount(members.count);
             });
 
             channel.bind('pusher:member_added', (member) => {
+                if (!isMounted.current) return;
                 setViewerCount(prev => prev + 1);
                 const newAlert = {
                     id: Date.now(),
@@ -277,15 +286,18 @@ const PersonaChat = () => {
                 };
                 setAlerts(prev => [...prev, newAlert]);
                 setTimeout(() => {
-                    setAlerts(prev => prev.filter(a => a.id !== newAlert.id));
+                    if (isMounted.current) {
+                        setAlerts(prev => prev.filter(a => a.id !== newAlert.id));
+                    }
                 }, 5000);
             });
 
             channel.bind('pusher:member_removed', (member) => {
-                setViewerCount(prev => Math.max(0, prev - 1));
+                if (isMounted.current) setViewerCount(prev => Math.max(0, prev - 1));
             });
 
             channel.bind('celebration', (data) => {
+                if (!isMounted.current) return;
                 triggerShake();
                 const newAlert = {
                     id: Date.now(),
@@ -294,36 +306,51 @@ const PersonaChat = () => {
                 };
                 setLatestZap(newAlert.text);
                 setAlerts(prev => [newAlert, ...prev]);
-                setTimeout(() => setAlerts(prev => prev.filter(a => a.id !== newAlert.id)), 5000);
+                setTimeout(() => {
+                    if (isMounted.current) {
+                        setAlerts(prev => prev.filter(a => a.id !== newAlert.id));
+                    }
+                }, 5000);
             });
 
             channel.bind('state-change', (data) => {
+                if (!isMounted.current) return;
                 const newAlert = {
                     id: Date.now(),
                     text: `COMMUNITY ACTION: ${data.from} triggered [${data.actionId}]!`,
                     type: 'action'
                 };
                 setAlerts(prev => [newAlert, ...prev]);
-                setTimeout(() => setAlerts(prev => prev.filter(a => a.id !== newAlert.id)), 5000);
+                setTimeout(() => {
+                    if (isMounted.current) {
+                        setAlerts(prev => prev.filter(a => a.id !== newAlert.id));
+                    }
+                }, 5000);
             });
 
             channel.bind('poll-started', (data) => {
+                if (!isMounted.current) return;
                 const newAlert = {
                     id: Date.now(),
                     text: `📊 NEW POLL: ${data.question}`,
                     type: 'poll'
                 };
                 setAlerts(prev => [newAlert, ...prev]);
-                setTimeout(() => setAlerts(prev => prev.filter(a => a.id !== newAlert.id)), 5000);
+                setTimeout(() => {
+                    if (isMounted.current) {
+                        setAlerts(prev => prev.filter(a => a.id !== newAlert.id));
+                    }
+                }, 5000);
             });
 
             channel.bind('pusher:member_removed', () => {
-                setViewerCount(prev => Math.max(1, prev - 1));
+                if (isMounted.current) setViewerCount(prev => Math.max(1, prev - 1));
             });
 
             // Site-Wide Notifications
             const globalChannel = pusher.subscribe('global-notifications');
             globalChannel.bind('big-zap', (data) => {
+                if (!isMounted.current) return;
                 if (data.personaId !== id) {
                     toast(`${data.message}`, {
                         icon: '🚀',
@@ -404,10 +431,53 @@ const PersonaChat = () => {
         };
 
         const cleanupPromise = initPusher();
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && isMounted.current) {
+                console.log("[Soketi] Tab focused - ensuring connection...");
+                // Pusher handles internal reconnection, but we can nudge it if needed
+                // or just let it do its thing. Checking state is helpful.
+            }
+        };
+
+        const handleOnline = () => {
+            if (isMounted.current) {
+                console.log("[Soketi] Network back online - ensuring connection...");
+                toast.success("Network restored.");
+            }
+        };
+
+        window.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('online', handleOnline);
+
         return () => {
             cleanupPromise.then(cleanup => cleanup?.());
+            window.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('online', handleOnline);
         };
     }, [id, currentUser?.uid, navigate]);
+
+    const handleManualReconnect = () => {
+        window.location.reload();
+    };
+
+    const handleAwakenPersona = async () => {
+        if (!id || !imageItem || isSending) return;
+        setIsLoading(true);
+        try {
+            const apiFn = httpsCallable(functions, 'api');
+            const result = await apiFn({ action: 'createPersona', imageId: id, imageUrl: imageItem.imageUrl });
+            if (result.data.success) {
+                setPersona(result.data.persona);
+                toast.success(`${result.data.persona.name} has been awakened!`);
+            }
+        } catch (err) {
+            console.error("Awaken Error:", err);
+            toast.error("Failed to awaken character.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
         const fetchImage = async () => {
@@ -790,8 +860,12 @@ const PersonaChat = () => {
                         <div className="stream-ui-overlay">
                             <div className="live-badge">LIVE</div>
                             <div className="viewer-count">
-                                <span className={`view-dot ${connectionStatus === 'connected' ? 'online' : 'offline'}`}></span>
-                                {connectionStatus === 'connected' ? `${viewerCount} viewers` : connectionStatus.toUpperCase()}
+                                <span className={`view-dot ${connectionStatus === 'connected' ? 'online' : (connectionStatus === 'connecting' ? 'connecting' : 'offline')}`}></span>
+                                {connectionStatus === 'connected' ? `${viewerCount} viewers` : (
+                                    <span className="connection-retry" onClick={handleManualReconnect}>
+                                        {connectionStatus.toUpperCase()} - RETRY?
+                                    </span>
+                                )}
                             </div>
 
                             {/* Floating Reactions Overlay */}
@@ -836,8 +910,17 @@ const PersonaChat = () => {
 
                         <div className="video-controls-overlay">
                             <div className="left-controls">
-                                <Send size={18} fill="white" />
-                                <RefreshCw size={18} />
+                                <button
+                                    className="player-control-btn"
+                                    title="Awaken Character (Force Re-initialize)"
+                                    onClick={handleAwakenPersona}
+                                    disabled={isLoading}
+                                >
+                                    <RefreshCw size={18} className={isLoading ? 'animate-spin' : ''} />
+                                </button>
+                                <button className="player-control-btn" title="Refresh Feed" onClick={() => window.location.reload()}>
+                                    <Send size={18} fill="white" />
+                                </button>
                             </div>
                             <div className="right-controls">
                                 <button
