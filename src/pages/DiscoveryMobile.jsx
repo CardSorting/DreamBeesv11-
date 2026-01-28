@@ -69,7 +69,7 @@ export default function DiscoveryMobile() {
     const hasReachedEndRef = useRef(false);
 
     // Configuration
-    const DEBOUNCE_MS = 800; // Minimum time between fetch attempts
+    const DEBOUNCE_MS = 200; // Minimum time between fetch attempts
     const PREFETCH_THRESHOLD = '600px'; // How far before sentinel to start loading
 
     // Sync loading state to ref for stable callback access
@@ -99,20 +99,15 @@ export default function DiscoveryMobile() {
         };
     }, [getGlobalShowcaseImages, globalShowcaseCache.length]);
 
-    // 2. Robust Infinite Scroll Handler - Debounced & Guarded
+    // 2. Robust Infinite Scroll Handler - Stabilized with refs to prevent observer recreation
     const handleLoadMore = useCallback(async () => {
-        const now = Date.now();
-        const timeSinceLastFetch = now - lastFetchTimeRef.current;
-
         if (isLoadingRef.current) return;
 
         const isEnd = activeModelId === 'all' ? hasGlobalFeedEnded : hasShowcaseEnded(activeModelId);
         if (isEnd) return;
 
-        if (timeSinceLastFetch < DEBOUNCE_MS) return;
-
-        const currentImages = activeModelId === 'all' ? globalShowcaseCache : (showcaseCache[activeModelId] || []);
-        if (currentImages.length === 0) return;
+        const now = Date.now();
+        if (now - lastFetchTimeRef.current < DEBOUNCE_MS) return;
 
         lastFetchTimeRef.current = now;
 
@@ -121,27 +116,32 @@ export default function DiscoveryMobile() {
         } else {
             await getShowcaseImages(activeModelId, true);
         }
-    }, [getGlobalShowcaseImages, getShowcaseImages, activeModelId, globalShowcaseCache, showcaseCache, hasGlobalFeedEnded, hasShowcaseEnded]);
+    }, [getGlobalShowcaseImages, getShowcaseImages, activeModelId, hasGlobalFeedEnded, hasShowcaseEnded]);
 
-    // 3. Intersection Observer Setup
+    // 3. Intersection Observer Setup - with force-check for already-visible sentinel
     useEffect(() => {
         if (observerRef.current) observerRef.current.disconnect();
 
         observerRef.current = new IntersectionObserver(
             (entries) => {
-                const [entry] = entries;
-                if (entry.isIntersecting) {
+                if (entries[0].isIntersecting) {
                     handleLoadMore();
                 }
             },
-            {
-                rootMargin: PREFETCH_THRESHOLD,
-                threshold: 0.1
-            }
+            { rootMargin: PREFETCH_THRESHOLD, threshold: 0.1 }
         );
 
         if (sentinelRef.current) {
             observerRef.current.observe(sentinelRef.current);
+
+            // Force-check: if sentinel is already visible, trigger load immediately
+            // This handles the case where observer recreation doesn't fire for already-visible elements
+            const rect = sentinelRef.current.getBoundingClientRect();
+            const prefetchOffset = parseInt(PREFETCH_THRESHOLD) || 600;
+            const isVisible = rect.top < window.innerHeight + prefetchOffset;
+            if (isVisible) {
+                handleLoadMore();
+            }
         }
 
         return () => {

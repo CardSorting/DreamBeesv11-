@@ -182,37 +182,26 @@ export default function DiscoveryDesktop() {
         };
     }, [getGlobalShowcaseImages]);
 
-    // 2. Robust Infinite Scroll Handler - Debounced & Guarded
+    // 2. Robust Infinite Scroll Handler - Stabilized with refs to prevent observer recreation
     const handleLoadMore = useCallback(async () => {
-        const now = Date.now();
-        const timeSinceLastFetch = now - lastFetchTimeRef.current;
-
-        // Guard conditions - all must pass to fetch
         if (isLoadingRef.current) {
             console.log('[Discovery] ⏳ Already loading, skipping...');
             return;
         }
 
-        // Check if we've reached the end for the current view
         const isEnd = activeModelId === 'all' ? hasGlobalFeedEnded : hasShowcaseEnded(activeModelId);
         if (isEnd) {
             console.log('[Discovery] ✅ Already at end of feed');
             return;
         }
 
-        if (timeSinceLastFetch < DEBOUNCE_MS) {
-            console.log(`[Discovery] ⏱ Debounce active (${timeSinceLastFetch}ms < ${DEBOUNCE_MS}ms)`);
+        const now = Date.now();
+        if (now - lastFetchTimeRef.current < DEBOUNCE_MS) {
+            console.log(`[Discovery] ⏱ Debounce active`);
             return;
         }
 
-        const currentImages = activeModelId === 'all' ? globalShowcaseCache : (showcaseCache[activeModelId] || []);
-        if (currentImages.length === 0) {
-            console.log('[Discovery] 📭 No initial content yet, skipping load more');
-            return;
-        }
-
-        // All guards passed - fetch more
-        console.log(`[Discovery] 📥 Loading more for ${activeModelId}... (current: ${currentImages.length} items)`);
+        console.log(`[Discovery] 📥 Loading more for ${activeModelId}...`);
         lastFetchTimeRef.current = now;
 
         if (activeModelId === 'all') {
@@ -220,40 +209,37 @@ export default function DiscoveryDesktop() {
         } else {
             await getShowcaseImages(activeModelId, true);
         }
-    }, [getGlobalShowcaseImages, getShowcaseImages, activeModelId, globalShowcaseCache, showcaseCache, hasGlobalFeedEnded, hasShowcaseEnded]);
+    }, [getGlobalShowcaseImages, getShowcaseImages, activeModelId, hasGlobalFeedEnded, hasShowcaseEnded]);
 
-    // 3. Intersection Observer Setup - Stable, no recreation on cache changes
+    // 3. Intersection Observer Setup - with force-check for already-visible sentinel
     useEffect(() => {
-        // Cleanup previous observer
-        if (observerRef.current) {
-            observerRef.current.disconnect();
-        }
+        if (observerRef.current) observerRef.current.disconnect();
 
-        // Create new observer with stable callback
         observerRef.current = new IntersectionObserver(
             (entries) => {
-                const [entry] = entries;
-                if (entry.isIntersecting) {
+                if (entries[0].isIntersecting) {
                     handleLoadMore();
                 }
             },
-            {
-                rootMargin: PREFETCH_THRESHOLD, // Pre-fetch before sentinel is visible
-                threshold: 0.1
-            }
+            { rootMargin: PREFETCH_THRESHOLD, threshold: 0.1 }
         );
 
-        // Observe sentinel when available
         if (sentinelRef.current) {
             observerRef.current.observe(sentinelRef.current);
+
+            // Force-check: if sentinel is already visible, trigger load immediately
+            const rect = sentinelRef.current.getBoundingClientRect();
+            const prefetchOffset = parseInt(PREFETCH_THRESHOLD) || 600;
+            const isVisible = rect.top < window.innerHeight + prefetchOffset;
+            if (isVisible) {
+                handleLoadMore();
+            }
         }
 
         return () => {
-            if (observerRef.current) {
-                observerRef.current.disconnect();
-            }
+            if (observerRef.current) observerRef.current.disconnect();
         };
-    }, [handleLoadMore]); // Only recreate when handler changes
+    }, [handleLoadMore]);
 
     // Derived state for UI
     const isInitialLoading = (activeModelId === 'all' && isGlobalFeedLoading && globalShowcaseCache.length === 0) ||
