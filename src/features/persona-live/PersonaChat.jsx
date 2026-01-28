@@ -4,7 +4,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { doc, getDoc, onSnapshot, collection, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../firebase';
-import { ArrowLeft, Send, Sparkles, Loader2, Info, MessageCircle, AlertCircle, RefreshCw, Zap, Maximize, Minimize, Settings } from 'lucide-react';
+import { ArrowLeft, Send, Sparkles, Loader2, Info, MessageCircle, AlertCircle, RefreshCw, Zap } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getOptimizedImageUrl } from '../../utils';
 import { getHypeMetadata } from '../../utils/twitchHelpers';
@@ -124,8 +124,6 @@ const PersonaChatContent = () => {
     const [isShaking, setIsShaking] = useState(false);
     const [showEmotes, setShowEmotes] = useState(false);
     const [showBitsModal, setShowBitsModal] = useState(false);
-    const [showZapActions, setShowZapActions] = useState(false);
-    const [isTheaterMode, setIsTheaterMode] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState('initialized'); // 'initialized', 'connecting', 'connected', 'disconnected', 'unavailable'
     const [isAiSpeaking, setIsAiSpeaking] = useState(false);
     const [isPersonaTyping, setIsPersonaTyping] = useState(false);
@@ -144,25 +142,6 @@ const PersonaChatContent = () => {
     const triggerShake = () => {
         setIsShaking(true);
         setTimeout(() => setIsShaking(false), 500);
-    };
-
-    const triggerZapAction = async (actionId, cost) => {
-        if (!currentUser) return toast.error("Please log in to use ZAPs!");
-        if (isSending) return;
-        triggerShake();
-        setIsSending(true);
-
-        try {
-            const apiFn = httpsCallable(functions, 'api');
-            await apiFn({ action: 'triggerAction', imageId: id, actionId, cost });
-            if (isMounted.current) setShowZapActions(false);
-            toast.success(`Action ${actionId} triggered!`);
-        } catch (e) {
-            console.error(e);
-            toast.error("Failed to trigger action.");
-        } finally {
-            if (isMounted.current) setIsSending(false);
-        }
     };
 
     const handleVote = async (optionId) => {
@@ -862,7 +841,7 @@ const PersonaChatContent = () => {
 
 
     return (
-        <div className={`persona-chat-container ${isTheaterMode ? 'mode-theater' : ''}`}>
+        <div className="persona-chat-container">
             <SEO title={persona ? `${persona.name} - AI Live Stream` : "AI Live Stream"} />
 
             <div className="twitch-stream-split">
@@ -985,13 +964,6 @@ const PersonaChatContent = () => {
                                 </button>
                             </div>
                             <div className="right-controls">
-                                <button
-                                    className="player-control-btn"
-                                    title="Theater Mode"
-                                    onClick={() => setIsTheaterMode(!isTheaterMode)}
-                                >
-                                    {isTheaterMode ? <Minimize size={18} /> : <Maximize size={18} />}
-                                </button>
                                 <Info size={18} />
                             </div>
                         </div>
@@ -1191,28 +1163,6 @@ const PersonaChatContent = () => {
                                 />
                                 <button className="emote-btn" onClick={() => setShowEmotes(!showEmotes)}>
                                     😀
-                                </button>
-                                {showZapActions && (
-                                    <div className="zap-actions-overlay">
-                                        <div className="zap-actions-header">ZAP ACTIONS</div>
-                                        <div className="zap-action-item" onClick={() => triggerZapAction('pose', 300)}>
-                                            <div className="action-info">
-                                                <span className="action-title">Pose Shift</span>
-                                                <span className="action-desc">Change character's pose/mood</span>
-                                            </div>
-                                            <div className="action-cost"><Zap size={10} /> 300</div>
-                                        </div>
-                                        <div className="zap-action-item" onClick={() => triggerZapAction('background', 500)}>
-                                            <div className="action-info">
-                                                <span className="action-title">Re-imagine World</span>
-                                                <span className="action-desc">Change the stream background</span>
-                                            </div>
-                                            <div className="action-cost"><Zap size={10} /> 500</div>
-                                        </div>
-                                    </div>
-                                )}
-                                <button className="bits-btn zap-action-btn" onClick={() => setShowZapActions(!showZapActions)}>
-                                    <Sparkles size={16} /> Actions
                                 </button>
                                 <button className="bits-btn" onClick={() => setShowBitsModal(!showBitsModal)}>
                                     <Zap size={16} /> Get ZAPs

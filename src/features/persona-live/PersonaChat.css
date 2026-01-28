@@ -691,28 +691,7 @@
 }
 
 
-/* Theater Mode */
-.persona-chat-container.mode-theater .twitch-stream-split {
-    max-width: 100%;
-    padding: 0;
-    gap: 0;
-    height: 100vh;
-}
 
-.persona-chat-container.mode-theater .video-section {
-    flex: 4;
-}
-
-.persona-chat-container.mode-theater .chat-section {
-    flex: 1;
-    min-width: 340px;
-    height: 100vh;
-}
-
-.persona-chat-container.mode-theater .video-player-mock {
-    border-radius: 0;
-    height: 100%;
-}
 
 /* Stream Ticker */
 .stream-ticker {
@@ -775,65 +754,7 @@
     color: #a970ff;
 }
 
-/* Zap Actions Modal/Dropdown */
-.zap-actions-overlay {
-    position: absolute;
-    bottom: 100%;
-    right: 0;
-    width: 280px;
-    background: #18181b;
-    border: 1px solid #a970ff;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    z-index: 100;
-}
 
-.zap-actions-header {
-    padding: 10px;
-    background: #26262c;
-    font-weight: 700;
-    font-size: 0.7rem;
-    color: #a970ff;
-    border-bottom: 1px solid #3c3c44;
-}
-
-.zap-action-item {
-    padding: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    border-bottom: 1px solid #26262c;
-    transition: background 0.2s;
-}
-
-.zap-action-item:hover {
-    background: rgba(169, 112, 255, 0.1);
-}
-
-.action-info .action-title {
-    font-weight: 600;
-    font-size: 0.85rem;
-    display: block;
-}
-
-.action-info .action-desc {
-    font-size: 0.7rem;
-    color: #adadb8;
-}
-
-.action-cost {
-    background: #ffd700;
-    color: black;
-    font-weight: 800;
-    font-size: 0.6rem;
-    padding: 2px 6px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    gap: 2px;
-}
 
 /* Live Poll Overlay */
 .live-poll-overlay {
@@ -985,6 +906,7 @@
         filter: hue-rotate(360deg);
     }
 }
+
 .error-boundary-content {
     height: 100vh;
     width: 100%;
