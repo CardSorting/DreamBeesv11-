@@ -7,6 +7,7 @@ import { db } from '../firebase';
 import AppCard from '../components/AppCard';
 import { ArrowLeft, Loader2, BadgeCheck, Zap, Settings, LayoutGrid, Music, Sparkles, Presentation, Hexagon, Home, ChevronDown, ChevronRight, LayoutTemplate, User, Film, Palette, Gamepad2, Star, Clock, Search, Heart, Smile } from 'lucide-react';
 import { getOptimizedImageUrl, preloadImage } from '../utils';
+import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 import FeedPost from '../components/FeedPost';
 import ShowcaseModal from '../components/ShowcaseModal';
 import SafeImage from '../components/SafeImage';
@@ -360,17 +361,34 @@ export default function ModelFeed() {
 
 
     // --- Infinite Scroll Logic (Robust Backend Fetching) ---
-    const handleLoadMore = async () => {
-        if (isFetchingMoreRef.current || hasGlobalFeedEndedRef.current || id) return; // Only global feed supports infinite scroll for now
+    const handleLoadMore = useCallback(async () => {
+        if (isFetchingMoreRef.current) return;
 
         try {
             setIsFetchingMore(true);
-            // Fetch next page from context
-            const allFetchedImages = await getGlobalShowcaseImages(true, 'infinite_scroll');
+            let allFetchedImages;
+
+            if (id) {
+                // Model Specific Feed
+                if (hasShowcaseEnded(id)) {
+                    setIsFetchingMore(false);
+                    return;
+                }
+                console.log(`[ModelFeed] Sentinel triggered: Loading more images for model: ${id}`);
+                allFetchedImages = await getShowcaseImages(id, true);
+            } else {
+                // Global Feed
+                if (hasGlobalFeedEnded) {
+                    setIsFetchingMore(false);
+                    return;
+                }
+                console.log("[ModelFeed] Sentinel triggered: Loading more global images");
+                allFetchedImages = await getGlobalShowcaseImages(true, 'infinite_scroll');
+            }
 
             // Calculate Diff (New Items Only)
-            // We use the raw count ref to know where we left off
-            const newImages = allFetchedImages.slice(fetchedCountRef.current);
+            const currentIds = new Set(feedItems.map(img => img.id));
+            const newImages = (allFetchedImages || []).filter(img => !currentIds.has(img.id));
 
             if (newImages.length > 0) {
                 console.log(`[Infinite Scroll] Found ${newImages.length} new items. Mixing and appending...`);
@@ -387,41 +405,24 @@ export default function ModelFeed() {
         } finally {
             setIsFetchingMore(false);
         }
-    };
+    }, [id, hasShowcaseEnded, hasGlobalFeedEnded, getShowcaseImages, getGlobalShowcaseImages, feedItems]);
 
-    useEffect(() => {
-        if (!model) return;
-        let timeoutId;
-        const handleScroll = () => {
-            if (timeoutId) return;
-            timeoutId = setTimeout(() => {
-                const scrollPos = window.innerHeight + window.scrollY;
-                const threshold = document.body.offsetHeight - 1200;
+    // Robust Infinite Scroll Observer
+    const sentinelRef = useIntersectionObserver({
+        onIntersect: () => {
+            // 1. Local Pagination (Reveal more of what we have)
+            if (visibleImages.length < imagesToRender.length) {
+                setDisplayPage(prev => prev + 1);
+            }
 
-                // 1. Local Pagination (Reveal more of what we have)
-                if (scrollPos >= threshold && visibleImages.length < imagesToRender.length) {
-                    setDisplayPage(prev => prev + 1);
-                }
-
-                // 2. Backend Fetch (Get more if we are running low)
-                // Trigger if we have shown almost everything we have
-                if (!id && scrollPos >= threshold && !isFetchingMoreRef.current && !hasGlobalFeedEndedRef.current) {
-                    // Check if we are near the end of the loaded buffer
-                    if (visibleImages.length >= imagesToRender.length - 12) { // 1 page buffer
-                        handleLoadMore();
-                    }
-                }
-
-                timeoutId = null;
-            }, 150);
-        };
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => {
-            window.removeEventListener('scroll', handleScroll);
-            if (timeoutId) clearTimeout(timeoutId);
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [visibleImages.length, imagesToRender.length, model]);
+            // 2. Backend Fetch (Get more if we are running low or hit the end of current buffer)
+            if (visibleImages.length >= imagesToRender.length - 8) {
+                handleLoadMore();
+            }
+        },
+        enabled: !isLoading && (!hasGlobalFeedEnded || !!id), // Keep enabled for model feeds to allow pagination check
+        rootMargin: '0px 0px 1200px 0px'
+    });
 
     if (!model) {
         return (
@@ -480,7 +481,10 @@ export default function ModelFeed() {
                         </div>
                     )}
 
-                    {!isLoading && visibleImages.length > 0 && visibleImages.length < imagesToRender.length && (
+                    {/* Sentinel for Infinite Scroll Trigger */}
+                    <div ref={sentinelRef} style={{ height: '20px', width: '100%', marginTop: '40px' }} aria-hidden="true" />
+
+                    {!isLoading && visibleImages.length > 0 && (visibleImages.length < imagesToRender.length || (id ? !hasShowcaseEnded(id) : !hasGlobalFeedEnded)) && (
                         <div className="feed-loader-skeletons">
                             {[...Array(1)].map((_, i) => <FeedPostSkeleton key={i} />)}
                         </div>

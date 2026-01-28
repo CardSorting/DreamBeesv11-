@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import SEO from '../components/SEO';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
+import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight, X, Copy, RefreshCw, ThumbsUp, ThumbsDown, Loader2, LayoutGrid, Square, Film, Heart, Share2, Bookmark, MoreHorizontal, BadgeCheck, Activity, Info } from 'lucide-react';
 import ShowcaseModal from '../components/ShowcaseModal';
 // eslint-disable-next-line no-unused-vars -- motion.div is used as JSX element
@@ -12,7 +13,7 @@ import { getOptimizedImageUrl, getImageSrcSet, preloadImage } from '../utils';
 export default function ModelDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { availableModels, setSelectedModel, selectedModel, rateShowcaseImage: _rateShowcaseImage } = useModel();
+    const { availableModels, setSelectedModel, selectedModel, rateShowcaseImage: _rateShowcaseImage, isModelShowcaseLoading, hasShowcaseEnded } = useModel();
     const [activeShowcaseImage, setActiveShowcaseImage] = useState(null);
     const imagesPerPage = 12;
 
@@ -174,33 +175,38 @@ export default function ModelDetail() {
         return imagesToRender.slice(0, displayPage * imagesPerPage);
     }, [imagesToRender, displayPage]);
 
-    // Infinite Scroll Logic with Throttled Scroll
-    useEffect(() => {
-        if (!model) return;
+    // Handle Load More from Backend
+    const handleLoadMore = useCallback(async () => {
+        if (!model || isModelShowcaseLoading || hasShowcaseEnded(model.id)) return;
 
-        let timeoutId;
-        const handleScroll = () => {
-            if (timeoutId) return; // Simple throttle
+        try {
+            console.log(`[ModelDetail] Sentinel triggered: Loading more images for ${model.id}`);
+            const updatedImages = await getShowcaseImages(model.id, true);
+            if (updatedImages && updatedImages.length > showcaseImages.length) {
+                setShowcaseImages(updatedImages);
+            }
+        } catch (error) {
+            console.error("Error loading more images:", error);
+        }
+    }, [model, isModelShowcaseLoading, hasShowcaseEnded, getShowcaseImages, showcaseImages.length]);
 
-            timeoutId = setTimeout(() => {
-                const scrollPos = window.innerHeight + window.scrollY;
-                const threshold = document.body.offsetHeight - 800; // Trigger earlier for smoother flow
+    // Robust Infinite Scroll Observer
+    const sentinelRef = useIntersectionObserver({
+        onIntersect: () => {
+            // 1. Reveal more local images if we have them but aren't showing them
+            if (visibleImages.length < imagesToRender.length) {
+                setDisplayPage(prev => prev + 1);
+            }
 
-                if (scrollPos >= threshold) {
-                    if (visibleImages.length < imagesToRender.length) {
-                        setDisplayPage(prev => prev + 1);
-                    }
-                }
-                timeoutId = null;
-            }, 100);
-        };
-
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => {
-            window.removeEventListener('scroll', handleScroll);
-            if (timeoutId) clearTimeout(timeoutId);
-        };
-    }, [visibleImages.length, imagesToRender.length, model]);
+            // 2. Fetch more from backend if we are running low on local images
+            // We trigger if we are showing everything OR nearly everything we have
+            if (visibleImages.length >= imagesToRender.length - 8) {
+                handleLoadMore();
+            }
+        },
+        enabled: !!model && (!hasShowcaseEnded(model?.id) || visibleImages.length < imagesToRender.length),
+        rootMargin: '0px 0px 800px 0px' // Trigger well before hitting the bottom
+    });
 
     if (!model) {
         return (
@@ -542,8 +548,11 @@ export default function ModelDetail() {
                     )}
                 </section>
 
+                {/* Sentinel for Infinite Scroll Trigger */}
+                <div ref={sentinelRef} style={{ height: '20px', width: '100%' }} aria-hidden="true" />
+
                 {/* Loading Indicator for Infinite Scroll */}
-                {visibleImages.length < imagesToRender.length && (
+                {(visibleImages.length < imagesToRender.length || (!hasShowcaseEnded(model.id) && showcaseImages.length > 0)) && (
                     <div style={{
                         display: 'flex',
                         justifyContent: 'center',
