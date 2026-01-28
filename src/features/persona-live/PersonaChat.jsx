@@ -181,6 +181,7 @@ const PersonaChatContent = () => {
     // Debugging dependency changes
     const prevDeps = useRef({ id, uid: currentUser?.uid });
     const initializingRef = useRef(false); // Prevent concurrent init attempts
+    const cleanupTimeoutRef = useRef(null); // For delayed cleanup (Strict Mode handling)
 
     useEffect(() => {
         console.log("[Soketi] PersonaChat MOUNTED/UPDATED");
@@ -191,6 +192,13 @@ const PersonaChatContent = () => {
         if (changed.length > 0) {
             console.log("[Soketi] Dependencies changed:", changed.join(', '));
             prevDeps.current = { id, uid: currentUser?.uid };
+        }
+
+        // Cancel any pending cleanup from Strict Mode's immediate re-run
+        if (cleanupTimeoutRef.current) {
+            console.log("[Soketi] Cancelling pending cleanup (Strict Mode re-run)");
+            clearTimeout(cleanupTimeoutRef.current);
+            cleanupTimeoutRef.current = null;
         }
 
         if (!id || !currentUser?.uid || !import.meta.env.VITE_SOKETI_APP_KEY) {
@@ -528,12 +536,17 @@ const PersonaChatContent = () => {
         return () => {
             // Set cleanup flag immediately (synchronously) to stop any pending async operations
             isCleanedUp = true;
-            initializingRef.current = false;
 
-            // Then handle the async cleanup promise
-            cleanupPromise.then(cleanup => cleanup?.());
             window.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('online', handleOnline);
+
+            // Use delayed cleanup to handle React Strict Mode
+            // If the effect re-runs immediately (Strict Mode), it will cancel this timeout
+            cleanupTimeoutRef.current = setTimeout(() => {
+                console.log("[Soketi] Executing delayed cleanup...");
+                cleanupPromise.then(cleanup => cleanup?.());
+                cleanupTimeoutRef.current = null;
+            }, 100); // 100ms delay - enough for Strict Mode re-run to cancel
         };
     }, [id, currentUser?.uid, navigate]);
 
