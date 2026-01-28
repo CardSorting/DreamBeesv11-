@@ -22,6 +22,8 @@ import * as Meme from "./handlers/meme.js";
 import * as Ecommerce from "./handlers/ecommerce.js";
 import * as Avatar from "./handlers/avatars.js";
 import * as ColorCraft from "./handlers/colorCraft.js";
+import * as Distill from "./handlers/distill.js";
+import * as DistillStudent from "./handlers/distillStudent.js";
 
 // ============================================================================
 
@@ -189,6 +191,10 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
             // Avatar Forge
             case 'generateAvatarCollection': return Avatar.handleGenerateAvatarCollection(request);
             case 'mintRandomAvatar': return Avatar.handleMintRandomAvatar(request);
+
+            // Distill
+            case 'distill': return Distill.handleDistillRequest(request);
+            case 'studentCompose': return DistillStudent.handleStudentComposeRequest(request);
 
             // Data & Ratings
             case 'getGenerationHistory': return Data.handleGetGenerationHistory(request);
