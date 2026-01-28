@@ -167,14 +167,8 @@ const AppsHub = () => {
     // Filter Logic
     const filteredApps = useMemo(() => {
         const query = searchQuery.toLowerCase();
-        let baseApps = apps;
 
-        // If not searching, we can split featured from explore
-        if (!query) {
-            baseApps = apps.filter(app => !app.isFeatured);
-        }
-
-        return baseApps.filter(app => (
+        return apps.filter(app => (
             app.title.toLowerCase().includes(query) ||
             app.description.toLowerCase().includes(query) ||
             app.tags.some(tag => tag.toLowerCase().includes(query))
@@ -248,23 +242,6 @@ const AppsHub = () => {
                     </div>
                 </div>
 
-                {/* Featured App Showcase */}
-                {!searchQuery && (
-                    <>
-                        <SectionHeader title="Featured" />
-                        <div className="play-grid-section featured-rail">
-                            {apps.filter(a => a.isFeatured).map((app) => (
-                                <AppCard
-                                    key={app.id}
-                                    {...app}
-                                    isLiked={isLiked(app.id)}
-                                    likeCount={app.likeCount || 0}
-                                    onToggleLike={() => toggleLike(app.id)}
-                                />
-                            ))}
-                        </div>
-                    </>
-                )}
 
                 {/* Explore Apps Grid */}
                 <SectionHeader title="Explore Apps" />
