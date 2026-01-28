@@ -154,6 +154,7 @@ const PersonaChatContent = () => {
     };
 
     const scrollRef = useRef(null);
+    const pusherRef = useRef(null);
     const isMounted = useRef(true);
     const lastSendTime = useRef(0);
     const functions = getFunctions();
@@ -233,8 +234,17 @@ const PersonaChatContent = () => {
         if (!id || !currentUser?.uid || !import.meta.env.VITE_SOKETI_APP_KEY) return;
 
         const initPusher = async () => {
+            // Prevent multiple initializations
+            if (pusherRef.current) return;
+
             const token = await currentUser.getIdToken();
             const authEndpoint = import.meta.env.VITE_SOKETI_AUTH_ENDPOINT || '/api/pusher/auth';
+            let authRetryCount = 0;
+            const MAX_AUTH_RETRIES = 5; // Increased for backoff strategy
+
+            // Helper for backoff delay
+            const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
 
             const pusher = new Pusher(import.meta.env.VITE_SOKETI_APP_KEY, {
                 wsHost: import.meta.env.VITE_SOKETI_HOST || "127.0.0.1",
@@ -250,19 +260,58 @@ const PersonaChatContent = () => {
                     return {
                         authorize: async (socketId, callback) => {
                             try {
-                                const freshToken = await currentUser.getIdToken(true);
-                                const response = await fetch(authEndpoint, {
+                                if (authRetryCount >= MAX_AUTH_RETRIES) {
+                                    console.warn(`[PusherAuth] Max retries reached for ${channel.name}. Aborting.`);
+                                    callback(new Error("Max auth retries reached"));
+                                    return;
+                                }
+
+                                // Exponential backoff: 0s, 1s, 2s, 4s...
+                                if (authRetryCount > 0) {
+                                    const delay = Math.pow(2, authRetryCount - 1) * 1000;
+                                    console.log(`[PusherAuth] Backing off for ${delay}ms before retry ${authRetryCount}...`);
+                                    await sleep(delay);
+                                }
+
+                                // 1. Try with cached token first (false)
+                                let token = await currentUser.getIdToken(false);
+
+                                let response = await fetch(authEndpoint, {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',
-                                        'Authorization': `Bearer ${freshToken}`
+                                        'Authorization': `Bearer ${token}`
                                     },
                                     body: JSON.stringify({
                                         socket_id: socketId,
                                         channel_name: channel.name
                                     })
                                 });
-                                if (!response.ok) throw new Error('Auth failed');
+
+                                // 2. If 401/403, force refresh and retry ONCE
+                                if (response.status === 401 || response.status === 403) {
+                                    console.log("[PusherAuth] Token expired/invalid. Refreshing...");
+                                    token = await currentUser.getIdToken(true);
+                                    response = await fetch(authEndpoint, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'Authorization': `Bearer ${token}`
+                                        },
+                                        body: JSON.stringify({
+                                            socket_id: socketId,
+                                            channel_name: channel.name
+                                        })
+                                    });
+                                }
+
+                                if (!response.ok) {
+                                    authRetryCount++;
+                                    throw new Error(`Auth failed with status: ${response.status}`);
+                                }
+
+                                // Reset retry count on success
+                                authRetryCount = 0;
                                 const data = await response.json();
                                 callback(null, data);
                             } catch (error) {
@@ -274,20 +323,26 @@ const PersonaChatContent = () => {
                 }
             });
 
+            pusherRef.current = pusher;
+
             pusher.connection.bind('state_change', (states) => {
                 if (!isMounted.current) return;
                 setConnectionStatus(states.current);
                 if (states.current === 'unavailable') {
-                    toast.error("Stream connection lost. Retrying...", { id: 'pusher-reconnect' });
+                    // Quietly retry, don't spam toast
+                    console.log("Stream connection lost. Retrying...");
                 } else if (states.current === 'connected') {
-                    toast.success("Connected to live stream!", { id: 'pusher-reconnect' });
+                    // Only toast on recovery if it was previously disconnected long enough to notice?
+                    // For now, keeping it simple or removing to reduce noise
+                    // toast.success("Connected to live stream!", { id: 'pusher-reconnect' });
                 }
             });
 
             pusher.connection.bind('error', (err) => {
                 console.error('[Soketi] Connection error:', err);
-                if (isMounted.current) {
-                    // toast.error("Live connection issue. Attempting to recover...");
+                if (err?.error?.data?.code === 4004) {
+                    console.warn("[Soketi] Over limit or subscription error. Stopping retries.");
+                    pusher.disconnect();
                 }
             });
 
@@ -296,7 +351,11 @@ const PersonaChatContent = () => {
 
             channel.bind('pusher:subscription_succeeded', (members) => {
                 if (isMounted.current) setViewerCount(members.count);
+                // Reset auth retries on successful subscription
+                authRetryCount = 0;
             });
+
+            // ... (rest of bindings remain the same)
 
             channel.bind('pusher:member_added', (member) => {
                 if (!isMounted.current) return;
@@ -365,9 +424,6 @@ const PersonaChatContent = () => {
                 }, 5000);
             });
 
-            channel.bind('pusher:member_removed', () => {
-                if (isMounted.current) setViewerCount(prev => Math.max(1, prev - 1));
-            });
 
             // Site-Wide Notifications
             const globalChannel = pusher.subscribe('global-notifications');
@@ -449,8 +505,14 @@ const PersonaChatContent = () => {
             return () => {
                 console.log("[Soketi] Cleaning up connection...");
                 channel.unbind_all();
-                pusher.unsubscribe(channelName);
-                pusher.disconnect();
+                try {
+                    pusher.unsubscribe(channelName);
+                    pusher.unsubscribe('global-notifications');
+                    pusher.disconnect();
+                } catch (e) {
+                    console.warn("Disconnect cleanup error:", e);
+                }
+                pusherRef.current = null;
             };
         };
 
@@ -900,10 +962,10 @@ const PersonaChatContent = () => {
                         <div className="stream-ui-overlay">
                             <div className="live-badge">LIVE</div>
                             <div className="viewer-count">
-                                <span className={`view-dot ${connectionStatus === 'connected' ? 'online' : (connectionStatus === 'connecting' ? 'connecting' : 'offline')}`}></span>
+                                <span className={`view-dot ${connectionStatus === 'connected' ? 'online' : (['connecting', 'unavailable'].includes(connectionStatus) ? 'connecting' : 'offline')}`}></span>
                                 {connectionStatus === 'connected' ? `${viewerCount} viewers` : (
                                     <span className="connection-retry" onClick={handleManualReconnect}>
-                                        {connectionStatus.toUpperCase()} - RETRY?
+                                        {connectionStatus === 'unavailable' ? 'RECONNECTING...' : (connectionStatus === 'connecting' ? 'CONNECTING...' : `${connectionStatus.toUpperCase()} - RETRY?`)}
                                     </span>
                                 )}
                             </div>

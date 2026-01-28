@@ -144,13 +144,19 @@
 }
 
 .view-dot {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
+    background: #adadb8;
     border-radius: 50%;
-    background: #53535f;
+    transition: background 0.3s ease;
 }
 
 .view-dot.online {
+    background: #00f593;
+    box-shadow: 0 0 8px #00f593;
+}
+
+.view-dot.offline {
     background: #eb0400;
 }
 
@@ -191,24 +197,6 @@
 .twitch-message.error {
     border-left: 2px solid #ff4d4d;
     background: rgba(255, 77, 77, 0.05);
-}
-
-.view-dot {
-    width: 6px;
-    height: 6px;
-    background: #adadb8;
-    /* Default grey */
-    border-radius: 50%;
-    transition: background 0.3s ease;
-}
-
-.view-dot.online {
-    background: #00f593;
-    box-shadow: 0 0 8px #00f593;
-}
-
-.view-dot.offline {
-    background: #eb0400;
 }
 
 /* Typing & Recovery UI */
