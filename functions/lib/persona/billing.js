@@ -1,6 +1,7 @@
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { HttpsError } from "firebase-functions/v2/https";
 import { logger } from "../utils.js";
+import { ZAP_COSTS } from "../costs.js";
 
 /**
  * Checks config and deducts zaps.
@@ -13,17 +14,20 @@ export const checkAndDeductZaps = async (uid, action, customAmount = null) => {
     const configDoc = await db.collection("sys_config").doc("persona").get();
     const config = configDoc.exists ? configDoc.data() : {};
 
-    // Default Costs: Create = 5, Chat = 0.25
+    // Default Costs
     let cost = 0;
-    if (customAmount !== null) {
-        cost = customAmount;
+    if (customAmount !== null && customAmount !== undefined) {
+        cost = Number(customAmount);
     } else if (action === 'create') {
-        cost = (config.cost_create !== undefined) ? Number(config.cost_create) : 5;
+        cost = (config.cost_create !== undefined) ? Number(config.cost_create) : ZAP_COSTS.PERSONA_CREATE;
     } else if (action === 'chat') {
-        cost = (config.cost_chat !== undefined) ? Number(config.cost_chat) : 0.25;
+        cost = (config.cost_chat !== undefined) ? Number(config.cost_chat) : ZAP_COSTS.PERSONA_CHAT;
     }
 
-    if (cost === 0) return 0;
+    if (isNaN(cost) || cost === 0) {
+        logger.info(`[Billing] Skipping deduction for ${uid} on Persona:${action} (cost is 0 or NaN: ${cost})`);
+        return 0;
+    }
 
     await db.runTransaction(async (t) => {
         const userRef = db.collection('users').doc(uid);

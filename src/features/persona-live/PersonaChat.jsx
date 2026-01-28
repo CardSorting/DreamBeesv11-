@@ -12,6 +12,7 @@ import SEO from '../../components/SEO';
 import toast from 'react-hot-toast';
 import Pusher from 'pusher-js';
 import { listAudioFiles } from '../../b2';
+import { ZAP_COSTS } from '../../constants/zapCosts';
 import './PersonaChat.css';
 
 const Typewriter = ({ text, onUpdate }) => {
@@ -80,6 +81,7 @@ const PersonaChat = () => {
     const [floatingReactions, setFloatingReactions] = useState([]);
     const [pinnedMessage, setPinnedMessage] = useState(null);
     const [topSupporters, setTopSupporters] = useState([]);
+    const [latestZap, setLatestZap] = useState(null);
     const [isShaking, setIsShaking] = useState(false);
     const [showEmotes, setShowEmotes] = useState(false);
     const [showBitsModal, setShowBitsModal] = useState(false);
@@ -271,6 +273,7 @@ const PersonaChat = () => {
                     text: data.message || `${data.from} gifted ZAPs!`,
                     type: data.type || 'gift'
                 };
+                setLatestZap(newAlert.text);
                 setAlerts(prev => [newAlert, ...prev]);
                 setTimeout(() => setAlerts(prev => prev.filter(a => a.id !== newAlert.id)), 5000);
             });
@@ -309,6 +312,7 @@ const PersonaChat = () => {
                         duration: 6000,
                         onClick: () => navigate(`/channel/${data.personaId}`)
                     });
+                    setLatestZap(data.message);
                 }
             });
 
@@ -625,8 +629,10 @@ const PersonaChat = () => {
         }
     };
 
-    const handleGift = async (amount = 100) => {
+    const handleGift = async (amountInput = 100) => {
         if (isSending) return;
+        const amount = Number(amountInput);
+        if (isNaN(amount) || amount <= 0) return toast.error("Invalid gift amount.");
         try {
             const apiFn = httpsCallable(functions, 'api');
             await apiFn({
@@ -720,13 +726,13 @@ const PersonaChat = () => {
                         {/* Stream Ticker (Marquee) */}
                         <div className="stream-ticker">
                             <div className="ticker-scroll">
-                                <span className="ticker-item">LATEST ZAP: {alerts[0]?.message || 'No recent Zaps'}</span>
+                                <span className="ticker-item">LATEST ZAP: {latestZap || 'No recent Zaps'}</span>
                                 <span className="ticker-spacer">•</span>
-                                <span className="ticker-item">TOP SUPPORTER: {topSupporters[0]?.displayName || 'Searching...'}</span>
+                                <span className="ticker-item">TOP SUPPORTER: {topSupporters[0]?.displayName || (isLoading ? 'Searching...' : 'No supporters yet')}</span>
                                 <span className="ticker-spacer">•</span>
                                 <span className="ticker-item">HYPE LEVEL: {persona?.hypeLevel || 1} ({getHypeMetadata(persona?.hypeLevel || 1).label})</span>
                                 <span className="ticker-spacer">•</span>
-                                <span className="ticker-item">LATEST ZAP: {alerts[0]?.message || 'No recent Zaps'}</span>
+                                <span className="ticker-item">LATEST ZAP: {latestZap || 'No recent Zaps'}</span>
                             </div>
                         </div>
 
@@ -1030,9 +1036,9 @@ const PersonaChat = () => {
                                 </button>
                             </div>
                             <div className="twitch-input-footer">
-                                <div className="zaps-info">
+                                <div className="zaps-info" title={`Standard chat costs ${ZAP_COSTS.PERSONA_CHAT} Zaps`}>
                                     <Sparkles size={12} color="#8b5cf6" />
-                                    <span>0.25 Zaps</span>
+                                    <span>Chat: {ZAP_COSTS.PERSONA_CHAT} ZAPs</span>
                                 </div>
                                 <div style={{ display: 'flex', gap: '8px' }}>
                                     <button className="bits-btn zap-btn-pulse" onClick={() => handleGift(100)}>

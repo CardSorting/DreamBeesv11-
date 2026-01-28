@@ -43,7 +43,8 @@ function Layout() {
     '/memes',
     '/filter',
     '/showcase',
-    '/mockup-catalog'
+    '/mockup-catalog',
+    '/channel'
   ];
 
   const shouldHideHeader = hideHeaderRoutes.some(route => pathname === route || pathname.startsWith(route + '/')) || pathname.startsWith('/model/');

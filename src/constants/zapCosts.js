@@ -16,6 +16,10 @@ export const ZAP_COSTS = {
     AVATAR_COLLECTION: 5.0,
     AVATAR_MINT: 2.0,
 
+    // Persona
+    PERSONA_CHAT: 0.25,
+    PERSONA_CREATE: 5.0,
+
     // Limits
     FREE_GENERATIONS_LIMIT: 5,
 };

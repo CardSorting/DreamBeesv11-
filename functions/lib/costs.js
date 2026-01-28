@@ -33,6 +33,10 @@ export const ZAP_COSTS = {
     // Avatar Forge
     AVATAR_COLLECTION: 5.0,
     AVATAR_MINT: 2.0,
+
+    // Persona
+    PERSONA_CHAT: 0.25,
+    PERSONA_CREATE: 5.0,
 };
 
 export const REEL_COSTS = {

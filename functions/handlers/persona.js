@@ -349,10 +349,15 @@ export const handleGiftPersona = async (request) => {
     const userId = request.auth.uid;
     const userName = request.auth.token.name || 'Anonymous';
 
-    if (!amount || amount <= 0) throw new HttpsError('invalid-argument', 'Invalid ZAP amount');
+    const giftAmount = Number(amount);
+    if (!giftAmount || isNaN(giftAmount) || giftAmount <= 0) {
+        throw new HttpsError('invalid-argument', 'Invalid ZAP amount');
+    }
+
+    logger.info(`[Persona] ${userName} (${userId}) gifting ${giftAmount} ZAPs to ${imageId}`);
 
     // Use unified billing
-    await Billing.checkAndDeductZaps(userId, 'gift', amount);
+    await Billing.checkAndDeductZaps(userId, 'gift', giftAmount);
 
     // Update Persona State
     const personaRef = db.collection('personas').doc(imageId);
@@ -363,9 +368,9 @@ export const handleGiftPersona = async (request) => {
         if (!pDoc.exists) throw new HttpsError('not-found', 'Persona not found');
         personaData = pDoc.data();
 
-        const newZapCurrent = (personaData.zapCurrent || 0) + amount;
+        const newZapCurrent = (personaData.zapCurrent || 0) + giftAmount;
         const zapGoal = personaData.zapGoal || 500;
-        const hypeBoost = Math.floor(amount / 10);
+        const hypeBoost = Math.floor(giftAmount / 10);
 
         const updateData = {
             zapCurrent: newZapCurrent,
@@ -386,19 +391,19 @@ export const handleGiftPersona = async (request) => {
     const giftMsg = {
         uid: userId,
         displayName: userName,
-        text: `gifted ${amount} ZAPs!`,
+        text: `gifted ${giftAmount} ZAPs!`,
         role: 'system',
         type: 'gift',
-        amount
+        amount: giftAmount
     };
     await Store.saveMessage(imageId, giftMsg);
 
     await Broadcaster.broadcastCelebration(imageId, {
         type: 'gift',
         from: userName,
-        amount,
-        message: `${userName} gifted ${amount} ZAPs! Hype is RISING!`,
-        newZapCurrent: (personaData.zapCurrent || 0) + amount,
+        amount: giftAmount,
+        message: `${userName} gifted ${giftAmount} ZAPs! Hype is RISING!`,
+        newZapCurrent: (personaData.zapCurrent || 0) + giftAmount,
         newZapGoal: personaData.zapGoal || 500
     });
 

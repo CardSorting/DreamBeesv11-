@@ -117,6 +117,11 @@ service cloud.firestore {
         allow create: if request.auth != null;
         allow update, delete: if false;
       }
+
+      match /top_supporters/{supporterId} {
+        allow read: if true;
+        allow write: if false;
+      }
     }
 
     match /categories/{id} {
