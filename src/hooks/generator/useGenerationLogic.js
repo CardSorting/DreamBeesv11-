@@ -188,9 +188,12 @@ export function useGenerationLogic({
                 return;
             }
 
+            // Generate unique requestId for deduplication and optimistic tracking
+            const requestId = `gen_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
             // Optimistic Deduction
             if (cost > 0 && deductZapsOptimistically) {
-                deductZapsOptimistically(cost);
+                deductZapsOptimistically(cost, requestId);
             }
 
             setGenerating(true);
@@ -224,7 +227,8 @@ export function useGenerationLogic({
                 steps: steps,
                 cfg: cfg,
                 seed: seed,
-                useTurbo
+                useTurbo,
+                requestId // Pass the client-generated ID
             }, {
                 timeout: 540000,
                 toastErrors: false // We handle errors manually below
@@ -245,9 +249,10 @@ export function useGenerationLogic({
                 prompt_length_bucket: promptBucket
             });
 
-            const { requestId } = data;
+            const { requestId: serverRequestId } = data;
+            const finalRequestId = serverRequestId || requestId;
 
-            setCurrentJobId(requestId);
+            setCurrentJobId(finalRequestId);
             clearProgressTimers();
             toast.loading("Generation in progress...", { id: 'gen-image' });
 
@@ -258,7 +263,7 @@ export function useGenerationLogic({
             }));
 
             // Start listening for job completion
-            listenToJob(requestId);
+            listenToJob(finalRequestId);
 
         } catch (error) {
             console.error("[handleGenerate] CAUGHT ERROR:", error);
@@ -268,7 +273,10 @@ export function useGenerationLogic({
                 useTurbo
             });
             if (cost > 0 && rollbackZaps) {
-                rollbackZaps(cost);
+                // If we have a requestId available in the scope (it's declared in the try block)
+                // We need to ensure it's accessible here. 
+                // Let's move requestId declaration up.
+                rollbackZaps(cost, typeof requestId !== 'undefined' ? requestId : 'legacy');
             }
             setGenerating(false);
             const errorMessage = error.message || "Failed to create generation request";

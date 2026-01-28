@@ -52,6 +52,8 @@ export function UserInteractionsProvider({ children }) {
         referralCount: 0
     });
     const [isProfileLoaded, setIsProfileLoaded] = useState(false);
+    const [pendingZaps, setPendingZaps] = useState({}); // { requestId: { amount, timestamp } }
+    const [pendingReels, setPendingReels] = useState({}); // { requestId: { amount, timestamp } }
 
     useEffect(() => {
         if (!currentUser?.uid) {
@@ -140,11 +142,37 @@ export function UserInteractionsProvider({ children }) {
             console.warn("Global memes listener failed:", error);
         });
 
-        // Listener for User Profile (Zaps, Credits, Subscription)
         const userDocRef = doc(db, 'users', uid);
         const unsubProfile = onSnapshot(userDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
+
+                // Clear pending zaps that are older than the server's last action
+                const serverLastAction = data.lastActionTime?.toMillis() || 0;
+                setPendingZaps(prev => {
+                    const next = { ...prev };
+                    let changed = false;
+                    Object.keys(next).forEach(rid => {
+                        if (next[rid].timestamp <= serverLastAction) {
+                            delete next[rid];
+                            changed = true;
+                        }
+                    });
+                    return changed ? next : prev;
+                });
+
+                setPendingReels(prev => {
+                    const next = { ...prev };
+                    let changed = false;
+                    Object.keys(next).forEach(rid => {
+                        if (next[rid].timestamp <= serverLastAction) {
+                            delete next[rid];
+                            changed = true;
+                        }
+                    });
+                    return changed ? next : prev;
+                });
+
                 setUserProfile({
                     zaps: data.zaps !== undefined ? data.zaps : (data.credits !== undefined ? data.credits : 5),
                     credits: data.credits !== undefined ? data.credits : 5,
@@ -604,20 +632,36 @@ export function UserInteractionsProvider({ children }) {
     // the client-side transaction logic here.
 
     // We need to import runTransaction for this.
-    const deductZapsOptimistically = (amount) => {
+    const deductZapsOptimistically = (amount, requestId = 'legacy') => {
         if (typeof amount !== 'number' || amount <= 0) return;
-        setUserProfile(prev => ({
+        setPendingZaps(prev => ({
             ...prev,
-            zaps: Math.max(0, prev.zaps - amount)
+            [requestId]: { amount, timestamp: Date.now() }
         }));
     };
 
-    const rollbackZaps = (amount) => {
+    const rollbackZaps = (amount, requestId = 'legacy') => {
+        setPendingZaps(prev => {
+            const next = { ...prev };
+            delete next[requestId];
+            return next;
+        });
+    };
+
+    const deductReelsOptimistically = (amount, requestId = 'legacy') => {
         if (typeof amount !== 'number' || amount <= 0) return;
-        setUserProfile(prev => ({
+        setPendingReels(prev => ({
             ...prev,
-            zaps: prev.zaps + amount
+            [requestId]: { amount, timestamp: Date.now() }
         }));
+    };
+
+    const rollbackReels = (amount, requestId = 'legacy') => {
+        setPendingReels(prev => {
+            const next = { ...prev };
+            delete next[requestId];
+            return next;
+        });
     };
 
     const toggleAppLike = async (appId) => {
@@ -709,7 +753,15 @@ export function UserInteractionsProvider({ children }) {
         isHidden,
         toggleLike,
         toggleBookmark,
-        userProfile, // Global Sync
+        userProfile: React.useMemo(() => {
+            const totalPendingZaps = Object.values(pendingZaps).reduce((acc, curr) => acc + curr.amount, 0);
+            const totalPendingReels = Object.values(pendingReels).reduce((acc, curr) => acc + curr.amount, 0);
+            return {
+                ...userProfile,
+                zaps: Math.max(0, (userProfile.zaps || 0) - totalPendingZaps),
+                reels: Math.max(0, (userProfile.reels || 0) - totalPendingReels)
+            };
+        }, [userProfile, pendingZaps, pendingReels]), // Global Sync
         // New App Likes
         likedAppIds,
         isAppLiked,
@@ -717,6 +769,8 @@ export function UserInteractionsProvider({ children }) {
         isProfileLoaded,
         deductZapsOptimistically,
         rollbackZaps,
+        deductReelsOptimistically,
+        rollbackReels,
         // Aligned/Legacy underscores
         _isLiked: isLiked,
         _toggleLike: toggleLike,

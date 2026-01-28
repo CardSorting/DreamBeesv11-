@@ -33,12 +33,13 @@ export default function AvatarForgeMint() {
             return;
         }
 
-        deductZapsOptimistically(cost);
+        const requestId = `mint_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        deductZapsOptimistically(cost, requestId);
         const toastId = toast.loading("Disconnecting Reality...");
 
         try {
             // Wait for at least 3 seconds for animation effect
-            const apiPromise = apiCall('api', { action: 'mintRandomAvatar' });
+            const apiPromise = apiCall('api', { action: 'mintRandomAvatar', requestId });
             const delayPromise = new Promise(resolve => setTimeout(resolve, 3000));
 
             const [result] = await Promise.all([apiPromise, delayPromise]);
@@ -52,7 +53,7 @@ export default function AvatarForgeMint() {
             }
         } catch (error) {
             console.error("Mint failed:", error);
-            rollbackZaps(2);
+            rollbackZaps(cost, requestId);
             setAppState('IDLE');
             toast.error(error.message || "Minting failed. Rollback applied.", { id: toastId });
         } finally {

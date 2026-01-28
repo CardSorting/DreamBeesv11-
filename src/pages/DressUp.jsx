@@ -298,9 +298,10 @@ export default function DressUp() {
         setGenerating(true);
 
         const cost = ZAP_COSTS.DRESS_UP || 0.5;
+        const requestId = `du_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
         try {
-            if (deductZapsOptimistically) deductZapsOptimistically(cost);
+            if (deductZapsOptimistically) deductZapsOptimistically(cost, requestId);
             // const api = httpsCallable(functions, 'api');
             let prompt = "";
 
@@ -358,7 +359,8 @@ export default function DressUp() {
             const result = await apiCall('api', {
                 action: 'dressUp',
                 image: currentImage,
-                prompt: prompt
+                prompt: prompt,
+                requestId
             });
 
             // Expect requestId from queue-based backend
@@ -384,7 +386,7 @@ export default function DressUp() {
         } catch (error) {
             console.error(error);
             const cost = ZAP_COSTS.DRESS_UP || 0.5;
-            if (rollbackZaps) rollbackZaps(cost);
+            if (rollbackZaps) rollbackZaps(cost, typeof requestId !== 'undefined' ? requestId : 'legacy');
 
             // Only stop generating if we didn't start a listener (listener handles it on success/fail)
             if (!error.message?.includes('No Request ID')) {

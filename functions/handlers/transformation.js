@@ -9,22 +9,28 @@ import { ZAP_COSTS } from "../lib/costs.js";
 export const handleCreateAnalysisRequest = async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
-    const { image, imageUrl } = request.data;
+    const { image, imageUrl, requestId } = request.data;
     if (!image && !imageUrl) throw new HttpsError('invalid-argument', "Image required");
 
     const COST = ZAP_COSTS.IMAGE_ANALYSIS;
 
     try {
+        const docRef = requestId ? db.collection('analysis_queue').doc(requestId) : db.collection('analysis_queue').doc();
+
         await db.runTransaction(async (t) => {
             const userRef = db.collection('users').doc(uid);
             const userDoc = await t.get(userRef);
             if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+
+            const existing = await t.get(docRef);
+            if (existing.exists) return;
+
             const zaps = userDoc.data().zaps || 0;
             if (zaps < COST) throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`);
-            t.update(userRef, { zaps: FieldValue.increment(-COST) });
-        });
 
-        const docRef = await db.collection('analysis_queue').add({ userId: uid, image: image || null, imageUrl: imageUrl || null, status: 'queued', createdAt: new Date() });
+            t.update(userRef, { zaps: FieldValue.increment(-COST) });
+            t.set(docRef, { userId: uid, image: image || null, imageUrl: imageUrl || null, status: 'queued', createdAt: FieldValue.serverTimestamp() });
+        });
 
         // Enqueue task to 'backgroundWorker'
         await getFunctions().taskQueue('locations/us-central1/functions/backgroundWorker').enqueue({
@@ -45,28 +51,35 @@ export const handleCreateAnalysisRequest = async (request) => {
 export const handleCreateEnhanceRequest = async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
-    if (!request.data.prompt) throw new HttpsError('invalid-argument', "Prompt required");
+    const { prompt, requestId } = request.data;
+    if (!prompt) throw new HttpsError('invalid-argument', "Prompt required");
 
     const COST = ZAP_COSTS.IMAGE_ENHANCE;
 
     try {
+        const docRef = requestId ? db.collection('enhance_queue').doc(requestId) : db.collection('enhance_queue').doc();
+
         await db.runTransaction(async (t) => {
             const userRef = db.collection('users').doc(uid);
             const userDoc = await t.get(userRef);
             if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+
+            const existing = await t.get(docRef);
+            if (existing.exists) return;
+
             const zaps = userDoc.data().zaps || 0;
             if (zaps < COST) throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`);
-            t.update(userRef, { zaps: FieldValue.increment(-COST) });
-        });
 
-        const docRef = await db.collection('enhance_queue').add({ userId: uid, originalPrompt: request.data.prompt, status: 'queued', createdAt: new Date() });
+            t.update(userRef, { zaps: FieldValue.increment(-COST) });
+            t.set(docRef, { userId: uid, originalPrompt: prompt, status: 'queued', createdAt: FieldValue.serverTimestamp() });
+        });
 
         // Enqueue task to 'urgentWorker'
         await getFunctions().taskQueue('locations/us-central1/functions/urgentWorker').enqueue({
             taskType: 'enhance',
             requestId: docRef.id,
             userId: uid,
-            originalPrompt: request.data.prompt,
+            originalPrompt: prompt,
             cost: COST
         });
 
@@ -86,18 +99,27 @@ export const handleTransformPrompt = async (request) => {
 };
 
 export const handleTransformImage = async (request) => {
-    const { imageUrl, styleName, instructions, intensity } = request.data;
+    const { imageUrl, styleName, instructions, intensity, requestId } = request.data;
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
     const COST = ZAP_COSTS.IMAGE_TRANSFORM;
     try {
+        const logRef = requestId ? db.collection('action_logs').doc(requestId) : null;
+
         await db.runTransaction(async (t) => {
+            if (logRef) {
+                const existing = await t.get(logRef);
+                if (existing.exists) return;
+            }
+
             const userRef = db.collection('users').doc(uid);
             const userDoc = await t.get(userRef);
             if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
             const zaps = userDoc.data().zaps || 0;
             if (zaps < COST) throw new HttpsError('resource-exhausted', "Insufficient Zaps.");
+
             t.update(userRef, { zaps: FieldValue.increment(-COST) });
+            if (logRef) t.set(logRef, { type: 'transform_image', userId: uid, createdAt: FieldValue.serverTimestamp() });
         });
         const result = await transformImageWithGemini(imageUrl, styleName, instructions, intensity, uid);
         return result;
@@ -116,18 +138,26 @@ export const handleMeowaccTransform = async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', "Auth required");
 
-    const { imageBase64, mimeType, mode, extraData } = request.data;
+    const { imageBase64, mimeType, mode, extraData, requestId } = request.data;
     if (!imageBase64) throw new HttpsError('invalid-argument', "Image data required");
 
     const COST = ZAP_COSTS.MEOWACC;
 
     try {
+        const queueRef = requestId ? db.collection('generation_queue').doc(requestId) : db.collection('generation_queue').doc();
         const userRef = db.collection('users').doc(uid);
         let userDisplayName = "DreamBees User";
 
+        let alreadyExists = false;
         await db.runTransaction(async (t) => {
             const userDoc = await t.get(userRef);
             if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+
+            const existing = await t.get(queueRef);
+            if (existing.exists) {
+                alreadyExists = true;
+                return;
+            }
 
             const userData = userDoc.data();
             const zaps = userData.zaps || 0;
@@ -136,9 +166,17 @@ export const handleMeowaccTransform = async (request) => {
             userDisplayName = userData.displayName || userData.username || "DreamBees User";
 
             t.update(userRef, { zaps: FieldValue.increment(-COST) });
+            // We'll set the initial doc to prevent double charging
+            t.set(queueRef, {
+                userId: uid,
+                status: 'processing',
+                type: 'meowacc',
+                createdAt: FieldValue.serverTimestamp()
+            });
         });
 
-        // Use the consolidated prompts
+        if (alreadyExists) return { success: true, idempotent: true };
+
         const {
             MEOWACC_PROMPT,
             MEOWACC_CARD_PROMPT,
@@ -165,12 +203,10 @@ export const handleMeowaccTransform = async (request) => {
         else if (mode === 'meowd') selectedPrompt = MEOWACC_MEOWD_PROMPT;
         else if (mode === 'poker_single') selectedPrompt = generatePokerPrompt(extraData);
 
-        // Call Vertex AI Gemeni 2.5 Flash Image via existing lib/ai.js or implement here
         const { VertexAI } = await import("@google-cloud/vertexai");
         const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
         const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
 
-        // Reverted to direct call
         const result = await model.generateContent({
             contents: [{
                 role: 'user',
@@ -187,7 +223,6 @@ export const handleMeowaccTransform = async (request) => {
         const generatedImageBase64 = response?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
         if (!generatedImageBase64) throw new Error("No image data returned from AI");
 
-        // --- Post-Processing & Feed Integration ---
         const { default: sharp } = await import("sharp");
         const { PutObjectCommand } = await import("@aws-sdk/client-s3");
         const { getS3Client } = await import("../lib/utils.js");
@@ -196,7 +231,6 @@ export const handleMeowaccTransform = async (request) => {
         const imageBuffer = Buffer.from(generatedImageBase64, 'base64');
         const sharpImg = sharp(imageBuffer);
 
-        // 1. Generate versions
         const [webpBuffer, thumbBuffer, lqipBuffer] = await Promise.all([
             sharpImg.webp({ quality: 90 }).toBuffer(),
             sharpImg.resize(512, 512, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 80 }).toBuffer(),
@@ -204,7 +238,6 @@ export const handleMeowaccTransform = async (request) => {
         ]);
         const lqip = `data:image/webp;base64,${lqipBuffer.toString('base64')}`;
 
-        // 2. Upload to B2
         const timestamp = Date.now();
         const baseFolder = `generated/${uid}/meowacc_${timestamp}`;
         const originalFilename = `${baseFolder}.webp`;
@@ -219,10 +252,7 @@ export const handleMeowaccTransform = async (request) => {
         const imageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalFilename}`;
         const thumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbFilename}`;
 
-        // 3. Save to Public Feed (generation_queue)
-        const docRef = db.collection('generation_queue').doc();
-        await docRef.set({
-            userId: uid,
+        await queueRef.update({
             userDisplayName,
             prompt: `[MEOWACC: ${mode}] ${selectedPrompt.substring(0, 100)}...`,
             modelId: 'meowacc',
@@ -230,7 +260,6 @@ export const handleMeowaccTransform = async (request) => {
             imageUrl,
             thumbnailUrl,
             lqip,
-            createdAt: FieldValue.serverTimestamp(),
             completedAt: FieldValue.serverTimestamp(),
             hidden: false
         });

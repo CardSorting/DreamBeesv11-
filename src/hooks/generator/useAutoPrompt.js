@@ -40,7 +40,9 @@ export function useAutoPrompt(prompt, setPrompt, referenceImage, setReferenceIma
 
         try {
             const cost = 0.5; // IMAGE_ANALYSIS
-            if (deductZapsOptimistically) deductZapsOptimistically(cost);
+            const requestId = `ap_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+            if (deductZapsOptimistically) deductZapsOptimistically(cost, requestId);
 
             toast.loading("Starting analysis...", { id: 'auto-prompt' });
 
@@ -54,12 +56,15 @@ export function useAutoPrompt(prompt, setPrompt, referenceImage, setReferenceIma
                 payload.imageUrl = referenceImage;
             }
 
-            const { data } = await apiCall('api', payload, {
+            const { data } = await apiCall('api', {
+                ...payload,
+                requestId
+            }, {
                 timeout: 540000,
                 toastErrors: true
             });
 
-            const requestId = data.requestId;
+            const finalRequestId = data.requestId || requestId;
 
             // Advanced Stability: Polling Fallback
             let fallbackTimer = null;
@@ -101,7 +106,7 @@ export function useAutoPrompt(prompt, setPrompt, referenceImage, setReferenceIma
 
             setTimeout(startFallback, 25000);
 
-            const unsub = onSnapshot(doc(db, "analysis_queue", requestId), (snapshot) => {
+            const unsub = onSnapshot(doc(db, "analysis_queue", finalRequestId), (snapshot) => {
                 if (snapshot.exists()) handleUpdate(snapshot.data());
             }, (err) => {
                 console.error("AutoPrompt listener err", err);
@@ -123,7 +128,7 @@ export function useAutoPrompt(prompt, setPrompt, referenceImage, setReferenceIma
 
         } catch (error) {
             const cost = 0.5;
-            if (rollbackZaps) rollbackZaps(cost);
+            if (rollbackZaps) rollbackZaps(cost, typeof requestId !== 'undefined' ? requestId : 'legacy');
 
             clearProgressTimers();
             console.error("Auto prompt error", error);

@@ -37,7 +37,7 @@ export default function Generator() {
 
     // 2. State Management (Inlined from useGeneratorState)
     const [searchParams, setSearchParams] = useSearchParams();
-    const { userProfile, deductZapsOptimistically, rollbackZaps } = useUserInteractions();
+    const { userProfile, deductZapsOptimistically, rollbackZaps, deductReelsOptimistically, rollbackReels } = useUserInteractions();
 
     const modeParam = searchParams.get('mode') || 'image';
     const tabParam = searchParams.get('tab') || 'simple';
@@ -191,7 +191,8 @@ export default function Generator() {
     const [analyzingImageId, setAnalyzingImageId] = useState(null);
     const { recentImages, triggerVideoAnimation: _triggerVideoAnimation, handleVideoAutoAnimate } = useVideoGeneration({
         currentUser, generating, setGenerating, setGeneratedImage, setReferenceImage, setPrompt, setCurrentJobType, setCurrentJobId,
-        setAnalyzingImageId, videoDuration, videoResolution, aspectRatio, reels
+        setAnalyzingImageId, videoDuration, videoResolution, aspectRatio, reels,
+        deductReelsOptimistically, rollbackReels
     });
 
 

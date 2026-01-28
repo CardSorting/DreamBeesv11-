@@ -4,12 +4,14 @@ import { logger } from "../utils.js";
 import { ZAP_COSTS } from "../costs.js";
 
 /**
- * Checks config and deducts zaps.
+ * Checks config and deducts zaps with idempotency support.
  * @param {string} uid 
- * @param {string} action 'create' | 'chat'
+ * @param {string} action 'create' | 'chat' | 'gift' | actionId
+ * @param {number} customAmount 
+ * @param {string} requestId Optional request ID for idempotency
  * @returns {Promise<number>} The amount of zaps deducted
  */
-export const checkAndDeductZaps = async (uid, action, customAmount = null) => {
+export const checkAndDeductZaps = async (uid, action, customAmount = null, requestId = null) => {
     const db = getFirestore();
     const configDoc = await db.collection("sys_config").doc("persona").get();
     const config = configDoc.exists ? configDoc.data() : {};
@@ -24,12 +26,23 @@ export const checkAndDeductZaps = async (uid, action, customAmount = null) => {
         cost = (config.cost_chat !== undefined) ? Number(config.cost_chat) : ZAP_COSTS.PERSONA_CHAT;
     }
 
-    if (isNaN(cost) || cost === 0) {
+    if (isNaN(cost) || (cost === 0 && !requestId)) {
         logger.info(`[Billing] Skipping deduction for ${uid} on Persona:${action} (cost is 0 or NaN: ${cost})`);
         return 0;
     }
 
+    const logRef = requestId ? db.collection('action_logs').doc(requestId) : null;
+
+    let alreadyDeducted = false;
     await db.runTransaction(async (t) => {
+        if (logRef) {
+            const existing = await t.get(logRef);
+            if (existing.exists) {
+                alreadyDeducted = true;
+                return;
+            }
+        }
+
         const userRef = db.collection('users').doc(uid);
         const userDoc = await t.get(userRef);
 
@@ -43,8 +56,24 @@ export const checkAndDeductZaps = async (uid, action, customAmount = null) => {
             throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${cost} Zaps.`);
         }
 
-        t.update(userRef, { zaps: FieldValue.increment(-cost) });
+        if (cost > 0) {
+            t.update(userRef, { zaps: FieldValue.increment(-cost) });
+        }
+
+        if (logRef) {
+            t.set(logRef, {
+                type: `persona_${action}`,
+                userId: uid,
+                cost,
+                createdAt: FieldValue.serverTimestamp()
+            });
+        }
     });
+
+    if (alreadyDeducted) {
+        logger.info(`[Billing] Idempotent request for ${uid} on Persona:${action}`);
+        return 0; // Or return original cost if needed, but 0 indicates no NEW deduction
+    }
 
     logger.info(`[Billing] Deducted ${cost} Zaps from ${uid} for Persona:${action}`);
     return cost;

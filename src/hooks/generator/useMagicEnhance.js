@@ -82,7 +82,8 @@ export function useMagicEnhance({
                 toast.loading(`✨ Starting ${styleObj.label} transformation...`, { id: 'style-magic' });
 
                 const cost = 0.5; // IMAGE_TRANSFORM
-                if (deductZapsOptimistically) deductZapsOptimistically(cost);
+                const requestId = `tr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+                if (deductZapsOptimistically) deductZapsOptimistically(cost, requestId);
 
                 try {
                     let processedImage = currentReferenceImage;
@@ -112,7 +113,8 @@ export function useMagicEnhance({
                         imageUrl: processedImage,
                         styleName: styleObj.label,
                         intensity: styleIntensity,
-                        instructions: styleObj.instruction
+                        instructions: styleObj.instruction,
+                        requestId
                     });
 
                     clearProgressTimers();
@@ -151,7 +153,7 @@ export function useMagicEnhance({
                     }
                 } catch (error) {
                     const cost = 0.5; // IMAGE_TRANSFORM
-                    if (rollbackZaps) rollbackZaps(cost);
+                    if (rollbackZaps) rollbackZaps(cost, typeof requestId !== 'undefined' ? requestId : 'legacy');
 
                     console.error("[handleMagicEnhance] transformImage error:", error);
                     let errorMessage = error.message || "Failed to transform image";
@@ -218,10 +220,11 @@ export function useMagicEnhance({
                 // 3. Standard Magic Enhance (No Style)
                 try {
                     const cost = 1.0; // IMAGE_ENHANCE
-                    if (deductZapsOptimistically) deductZapsOptimistically(cost);
+                    const requestId = `en_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+                    if (deductZapsOptimistically) deductZapsOptimistically(cost, requestId);
 
-                    const result = await api({ action: 'createEnhanceRequest', prompt: currentPrompt });
-                    const requestId = result.data.requestId;
+                    const result = await api({ action: 'createEnhanceRequest', prompt: currentPrompt, requestId });
+                    const finalRequestId = result.data.requestId || requestId;
 
                     // Set safety timeout (60s)
                     const timeoutId = setTimeout(() => {
@@ -237,7 +240,7 @@ export function useMagicEnhance({
                         fallbackTimer = setInterval(async () => {
                             try {
                                 const { getDoc, doc } = await import('firebase/firestore');
-                                const snap = await getDoc(doc(db, 'enhance_queue', requestId));
+                                const snap = await getDoc(doc(db, 'enhance_queue', finalRequestId));
                                 if (snap.exists()) {
                                     const data = snap.data();
                                     if (data.status === 'completed' || data.status === 'failed') {
@@ -275,7 +278,7 @@ export function useMagicEnhance({
 
                     setTimeout(startFallback, 25000);
 
-                    const unsubscribe = onSnapshot(doc(db, 'enhance_queue', requestId), (snapshot) => {
+                    const unsubscribe = onSnapshot(doc(db, 'enhance_queue', finalRequestId), (snapshot) => {
                         if (!snapshot.exists()) return;
                         handleStatus(snapshot.data());
                     }, (err) => {
@@ -285,7 +288,7 @@ export function useMagicEnhance({
                     listenerRef.current = unsubscribe;
                 } catch (error) {
                     const cost = 1.0; // IMAGE_ENHANCE
-                    if (rollbackZaps) rollbackZaps(cost);
+                    if (rollbackZaps) rollbackZaps(cost, typeof requestId !== 'undefined' ? requestId : 'legacy');
 
                     console.error("Enhance request error", error);
                     toast.error("Failed to enhance prompt", { id: 'style-magic' });

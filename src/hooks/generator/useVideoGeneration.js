@@ -18,7 +18,9 @@ export function useVideoGeneration({
     videoDuration,
     videoResolution,
     aspectRatio,
-    reels: _reels
+    reels: _reels,
+    deductReelsOptimistically,
+    rollbackReels
 }) {
     const [recentImages, setRecentImages] = useState([]);
 
@@ -77,13 +79,18 @@ export function useVideoGeneration({
 
             // const api = httpsCallable(functions, 'api', { timeout: 540000 });
             // Replaced with useApi call
+            const requestId = `vid_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+            const cost = 1; // Video generation costs 1 Reel
+            if (deductReelsOptimistically) deductReelsOptimistically(cost, requestId);
+
             const { data } = await apiCall('api', {
                 action: 'createVideoGenerationRequest',
                 autoPrompt: true,
                 image: processedImage,
                 duration: videoDuration,
                 resolution: videoResolution,
-                aspectRatio: imgAspectRatio || aspectRatio
+                aspectRatio: imgAspectRatio || aspectRatio,
+                requestId
             }, {
                 timeout: 540000,
                 toastErrors: false // We handle specific errors below
@@ -96,6 +103,9 @@ export function useVideoGeneration({
         } catch (error) {
             clearProgressTimers();
             console.error("Video generation error", error);
+
+            const cost = 1;
+            if (rollbackReels) rollbackReels(cost, typeof requestId !== 'undefined' ? requestId : 'legacy');
 
             let errorMessage = "Failed to animate image.";
             if (error.message?.includes('concurrency')) errorMessage = "Video generation already in progress.";

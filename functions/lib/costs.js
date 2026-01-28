@@ -39,8 +39,26 @@ export const ZAP_COSTS = {
     PERSONA_CREATE: 5.0,
 };
 
+
 export const REEL_COSTS = {
     VIDEO_4K: 50,
     VIDEO_2K: 26,
     VIDEO_SD: 12,
 };
+
+// Helper: Calculate Flux Cost
+export function calculateFluxCost(aspectRatio, steps) {
+    const tileMap = {
+        '1:1': 4, // 1024x1024
+        '2:3': 4, // 832x1216 ~4
+        '3:2': 4,
+        '9:16': 4,
+        '16:9': 4
+    };
+
+    const tiles = tileMap[aspectRatio] || 4;
+    const s = steps || 20;
+
+    // $0.00041 per tile per step
+    return tiles * s * 0.00041;
+}

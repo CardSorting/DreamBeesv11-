@@ -98,7 +98,8 @@ export default function Slideshow() {
             return;
         }
 
-        deductZapsOptimistically(cost);
+        const requestId = `ss_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        deductZapsOptimistically(cost, requestId);
         setCurrentStep('processing');
         setProgress(5);
         setResults([]);
@@ -116,21 +117,23 @@ export default function Slideshow() {
                 action: 'createSlideshowGeneration',
                 image: imageBase64,
                 mode: mode,
-                language: language
+                language: language,
+                requestId
             }, {
                 timeout: 540000,
                 toastErrors: true
             });
 
             if (isMounted.current) {
-                setRequestId(data.requestId);
-                localStorage.setItem('slideshowState', JSON.stringify({ requestId: data.requestId, mode }));
+                const finalRequestId = data.requestId || requestId;
+                setRequestId(finalRequestId);
+                localStorage.setItem('slideshowState', JSON.stringify({ requestId: finalRequestId, mode }));
             }
 
         } catch (error) {
             console.error("Generation failed:", error);
             const cost = mode === 'slideshow' ? 3 : 0.5;
-            rollbackZaps(cost);
+            rollbackZaps(cost, typeof requestId !== 'undefined' ? requestId : 'legacy');
             if (isMounted.current) {
                 // toast handled by useApi
                 setCurrentStep('upload');

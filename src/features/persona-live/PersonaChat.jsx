@@ -5,6 +5,7 @@ import { doc, getDoc, onSnapshot, collection, query, orderBy, limit } from 'fire
 import { db } from '../../firebase';
 import { ArrowLeft, Send, Sparkles, Loader2, Info, MessageCircle, AlertCircle, RefreshCw, Zap, VolumeX, Volume2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useUserInteractions } from '../../contexts/UserInteractionsContext';
 import { getOptimizedImageUrl } from '../../utils';
 import { getHypeMetadata } from '../../utils/twitchHelpers';
 import SEO from '../../components/SEO';
@@ -106,6 +107,7 @@ const PersonaChatContent = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { currentUser } = useAuth();
+    const { deductZapsOptimistically, rollbackZaps } = useUserInteractions();
 
     const [imageItem, setImageItem] = useState(location.state?.imageItem || null);
     const [persona, setPersona] = useState(null);
@@ -589,15 +591,20 @@ const PersonaChatContent = () => {
     const handleAwakenPersona = async () => {
         if (!id || !imageItem || isSending) return;
         setIsLoading(true);
+        const cost = ZAP_COSTS.PERSONA_CREATE || 0;
+        const requestId = `cp_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
         try {
+            if (cost > 0) deductZapsOptimistically(cost, requestId);
             const apiFn = httpsCallable(functions, 'api');
-            const result = await apiFn({ action: 'createPersona', imageId: id, imageUrl: imageItem.imageUrl });
+            const result = await apiFn({ action: 'createPersona', imageId: id, imageUrl: imageItem.imageUrl, requestId });
             if (result.data.success) {
                 setPersona(result.data.persona);
                 toast.success(`${result.data.persona.name} has been awakened!`);
             }
         } catch (err) {
             console.error("Awaken Error:", err);
+            if (cost > 0) rollbackZaps(cost, requestId);
             toast.error("Failed to awaken character.");
         } finally {
             setIsLoading(false);
@@ -700,7 +707,8 @@ const PersonaChatContent = () => {
                 if (isMounted.current && !persona) setIsLoading(true);
 
                 const apiFn = httpsCallable(functions, 'api');
-                const result = await apiFn({ action: 'createPersona', imageId: id, imageUrl: imageItem.imageUrl });
+                const requestId = `cp_init_${id}`; // Predictable for auto-init
+                const result = await apiFn({ action: 'createPersona', imageId: id, imageUrl: imageItem.imageUrl, requestId });
 
                 const data = result.data;
                 if (data.success && isMounted.current) {
@@ -858,14 +866,19 @@ const PersonaChatContent = () => {
         setIsSending(true);
         lastSendTime.current = now;
 
+        const cost = ZAP_COSTS.PERSONA_CHAT || 0.5;
+        const requestId = `chat_${msgId}`;
+
         try {
+            deductZapsOptimistically(cost, requestId);
             const apiFn = httpsCallable(functions, 'api');
 
             await apiFn({
                 action: 'chatPersona',
                 imageId: id,
                 message: userText,
-                chatHistory: messages.slice(-10).map(m => ({ role: m.role, text: m.text }))
+                chatHistory: messages.slice(-10).map(m => ({ role: m.role, text: m.text })),
+                requestId
             });
 
             // Upon success, keep it as is, Pusher will eventually provide the real one
@@ -874,6 +887,7 @@ const PersonaChatContent = () => {
 
         } catch (error) {
             console.error("Chat Error:", error);
+            rollbackZaps(cost, requestId);
             if (isMounted.current) {
                 toast.error("Failed to send message.");
                 setMessages(prev => prev.map(m => m.id === msgId ? { ...m, status: 'error' } : m));
@@ -894,13 +908,16 @@ const PersonaChatContent = () => {
         if (isSending) return;
         const amount = Number(amountInput);
         if (isNaN(amount) || amount <= 0) return toast.error("Invalid gift amount.");
+        const requestId = `gift_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
         try {
+            deductZapsOptimistically(amount, requestId);
             const apiFn = httpsCallable(functions, 'api');
             await apiFn({
                 action: 'giftPersona',
                 imageId: id,
                 amount: amount,
-                type: 'zaps'
+                type: 'zaps',
+                requestId
             });
             toast.success(`You gifted ${amount} ZAPs!`, { icon: '⚡' });
 
@@ -913,6 +930,7 @@ const PersonaChatContent = () => {
             }
         } catch (error) {
             console.error("Gift Error:", error);
+            rollbackZaps(amount, requestId);
             toast.error(error.message || "Failed to send ZAPs.");
         }
     };

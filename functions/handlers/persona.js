@@ -18,7 +18,7 @@ const db = getFirestore();
 
 // --- HANDLE CHAT PERSONA ---
 export const handleChatPersona = async (request) => {
-    const { imageId, message } = request.data;
+    const { imageId, message, requestId } = request.data;
     if (!request.auth) throw new HttpsError('unauthenticated', 'User must be logged in.');
 
     const userId = request.auth.uid;
@@ -31,7 +31,7 @@ export const handleChatPersona = async (request) => {
     const persona = personaDoc.data();
 
     // 1. Billing
-    const costDeducted = await Billing.checkAndDeductZaps(userId, 'chat');
+    const costDeducted = await Billing.checkAndDeductZaps(userId, 'chat', null, requestId);
 
     try {
         // 2. Broadcast User Message (Immediate)
@@ -252,7 +252,7 @@ export const handleCreatePersona = async (request) => {
     if (!request.data || !request.data.imageId || !request.data.imageUrl) {
         throw new HttpsError('invalid-argument', 'Missing parameters');
     }
-    const { imageId, imageUrl } = request.data;
+    const { imageId, imageUrl, requestId } = request.data;
     if (!request.auth) throw new HttpsError('unauthenticated', 'Login required');
     const userId = request.auth.uid;
 
@@ -278,7 +278,12 @@ export const handleCreatePersona = async (request) => {
         throw new HttpsError('resource-exhausted', 'The oracle is overextended. Too many characters are currently awake. Please wait for one to return to slumber.');
     }
 
-    const cost = await Billing.checkAndDeductZaps(userId, 'create');
+    const cost = await Billing.checkAndDeductZaps(userId, 'create', null, requestId);
+    if (requestId && cost === 0) {
+        // Idempotent: doc might already exist or be in progress
+        const existingDoc = await personaRef.get();
+        if (existingDoc.exists) return { success: true, persona: existingDoc.data(), isNew: false };
+    }
 
     try {
         let imageBuffer;
@@ -345,7 +350,7 @@ export const handleCreatePersona = async (request) => {
 
 // --- HANDLE GIFT PERSONA ---
 export const handleGiftPersona = async (request) => {
-    const { imageId, amount } = request.data;
+    const { imageId, amount, requestId } = request.data;
     if (!request.auth) throw new HttpsError('unauthenticated', 'Login required');
     const userId = request.auth.uid;
     const userName = request.auth.token.name || 'Anonymous';
@@ -358,7 +363,8 @@ export const handleGiftPersona = async (request) => {
     logger.info(`[Persona] ${userName} (${userId}) gifting ${giftAmount} ZAPs to ${imageId}`);
 
     // Use unified billing
-    await Billing.checkAndDeductZaps(userId, 'gift', giftAmount);
+    const deduced = await Billing.checkAndDeductZaps(userId, 'gift', giftAmount, requestId);
+    if (requestId && deduced === 0) return { success: true, idempotent: true };
 
     // Update Persona State
     const personaRef = db.collection('personas').doc(imageId);
@@ -413,13 +419,14 @@ export const handleGiftPersona = async (request) => {
 
 // --- HANDLE TRIGGER ACTION ---
 export const handleTriggerAction = async (request) => {
-    const { imageId, actionId, cost } = request.data;
+    const { imageId, actionId, cost, requestId } = request.data;
     if (!request.auth) throw new HttpsError('unauthenticated', 'Login required');
     const userId = request.auth.uid;
     const userName = request.auth.token.name || 'Anonymous';
 
     // Use unified billing
-    await Billing.checkAndDeductZaps(userId, actionId, cost);
+    const deduced = await Billing.checkAndDeductZaps(userId, actionId, cost, requestId);
+    if (requestId && deduced === 0) return { success: true, idempotent: true };
 
     // Process Action
     const update = {};

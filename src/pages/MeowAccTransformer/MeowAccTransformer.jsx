@@ -46,7 +46,8 @@ const MeowAccTransformer = () => {
                 return;
             }
 
-            deductZapsOptimistically(cost);
+            const requestId = `meow_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+            deductZapsOptimistically(cost, requestId);
             setAppState(AppState.LOADING);
             const originalUrl = URL.createObjectURL(file);
 
@@ -66,7 +67,8 @@ const MeowAccTransformer = () => {
                 imageBase64: base64,
                 mimeType: file.type,
                 mode: mode,
-                extraData: extraData
+                extraData: extraData,
+                requestId
             });
 
             if (response.data.imageBase64) {
@@ -84,7 +86,7 @@ const MeowAccTransformer = () => {
         } catch (err) {
             console.error(err);
             const cost = ZAP_COSTS.MEOWACC || 0.5;
-            if (rollbackZaps) rollbackZaps(cost);
+            if (rollbackZaps) rollbackZaps(cost, typeof requestId !== 'undefined' ? requestId : 'legacy');
 
             const msg = err.message || "Something went wrong while reimagining your image.";
             setError(msg);

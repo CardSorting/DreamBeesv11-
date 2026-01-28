@@ -11,24 +11,38 @@ export const handleGenerateAvatarCollection = async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
 
-    const { theme, style, referenceImage, referenceImageMimeType } = request.data;
+    const { theme, style, referenceImage, referenceImageMimeType, requestId } = request.data;
     if (!theme && !style) throw new HttpsError('invalid-argument', "Theme or Style required");
 
     const COST = ZAP_COSTS.AVATAR_COLLECTION;
     const TARGET_COUNT = 30;
 
     try {
+        const logRef = requestId ? db.collection('action_logs').doc(requestId) : null;
         const userRef = db.collection('users').doc(uid);
         let userDisplayName = "DreamBees User";
 
+        let alreadyExists = false;
         await db.runTransaction(async (t) => {
+            if (logRef) {
+                const existing = await t.get(logRef);
+                if (existing.exists) {
+                    alreadyExists = true;
+                    return;
+                }
+            }
+
             const userDoc = await t.get(userRef);
             if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
             const userData = userDoc.data();
             if ((userData.zaps || 0) < COST) throw new HttpsError('resource-exhausted', `Insufficient Zaps.`);
             userDisplayName = userData.displayName || userData.username || "DreamBees User";
+
             t.update(userRef, { zaps: FieldValue.increment(-COST) });
+            if (logRef) t.set(logRef, { type: 'avatar_forge', userId: uid, theme, style, createdAt: FieldValue.serverTimestamp() });
         });
+
+        if (alreadyExists) return { success: true, idempotent: true };
 
         const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
         const textModel = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -215,23 +229,28 @@ export const handleMintRandomAvatar = async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
 
-    const MINT_COST = ZAP_COSTS.AVATAR_MINT; // User didn't specify, but let's set a small cost for gachapon
+    const { requestId } = request.data;
+    const MINT_COST = ZAP_COSTS.AVATAR_MINT;
 
     try {
+        const logRef = requestId ? db.collection('action_logs').doc(requestId) : null;
         const userRef = db.collection('users').doc(uid);
         const poolRef = db.collection('community_avatar_pool');
 
         return await db.runTransaction(async (t) => {
+            if (logRef) {
+                const existing = await t.get(logRef);
+                if (existing.exists) return { success: true, idempotent: true };
+            }
+
             const userDoc = await t.get(userRef);
             if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
             if ((userDoc.data()?.zaps || 0) < MINT_COST) throw new HttpsError('resource-exhausted', "Insufficient Zaps");
 
-            // Efficient random selection: Pick a random float and find the first doc >= it
             const randomVal = Math.random();
             const q = poolRef.where('minted', '==', false).where('random', '>=', randomVal).limit(1);
             let poolSnap = await t.get(q);
 
-            // Fallback if no doc >= random (loop around)
             if (poolSnap.empty) {
                 const qFallback = poolRef.where('minted', '==', false).where('random', '<', randomVal).limit(1);
                 poolSnap = await t.get(qFallback);
@@ -244,14 +263,12 @@ export const handleMintRandomAvatar = async (request) => {
             const avatarDoc = poolSnap.docs[0];
             const avatarData = avatarDoc.data();
 
-            // 1. Update pool doc
             t.update(avatarDoc.ref, {
                 minted: true,
                 ownerId: uid,
                 mintedAt: FieldValue.serverTimestamp()
             });
 
-            // 2. Add to user's personal images collection
             const userImageRef = db.collection('images').doc();
             t.set(userImageRef, {
                 userId: uid,
@@ -260,13 +277,13 @@ export const handleMintRandomAvatar = async (request) => {
                 type: 'avatar',
                 rarity: avatarData.rarity,
                 syllables: avatarData.syllables,
-                collectionName: avatarData.theme, // Back-compat or display
+                collectionName: avatarData.theme,
                 minted: true,
                 createdAt: FieldValue.serverTimestamp()
             });
 
-            // 3. Deduct Zaps
             t.update(userRef, { zaps: FieldValue.increment(-MINT_COST) });
+            if (logRef) t.set(logRef, { type: 'avatar_mint', userId: uid, avatarId: avatarDoc.id, createdAt: FieldValue.serverTimestamp() });
 
             return {
                 success: true,

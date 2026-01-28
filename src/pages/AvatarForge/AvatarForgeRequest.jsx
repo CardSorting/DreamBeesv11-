@@ -50,7 +50,8 @@ export default function AvatarForgeRequest() {
             return;
         }
 
-        deductZapsOptimistically(cost);
+        const requestId = `af_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        deductZapsOptimistically(cost, requestId);
         setGenerating(true);
         const toastId = toast.loading("Forging your collection...");
 
@@ -59,7 +60,8 @@ export default function AvatarForgeRequest() {
                 action: 'generateAvatarCollection',
                 theme: prompt,
                 style: 'Matching established aesthetic',
-                referenceImage
+                referenceImage,
+                requestId
             });
             toast.success("Request sent to the forge! 30 avatars incoming.", { id: toastId });
             setPrompt('');
@@ -67,7 +69,7 @@ export default function AvatarForgeRequest() {
             setShowRefUpload(false);
         } catch (error) {
             console.error("Forge failed:", error);
-            rollbackZaps(5);
+            rollbackZaps(5, requestId);
             toast.error(error.message || "Forge failed. Rollback applied.", { id: toastId });
         } finally {
             setGenerating(false);

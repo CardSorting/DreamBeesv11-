@@ -49,6 +49,18 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://dreambeesai.com/generations</loc>
+    <lastmod>2026-01-28</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://dreambeesai.com/memes</loc>
+    <lastmod>2026-01-28</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://dreambeesai.com/pricing</loc>
     <lastmod>2026-01-28</lastmod>
     <changefreq>monthly</changefreq>

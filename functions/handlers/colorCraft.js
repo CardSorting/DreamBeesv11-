@@ -14,21 +14,35 @@ export const handleCreateBookConcepts = async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
 
-    const { theme, style } = request.data;
+    const { theme, style, requestId } = request.data;
     if (!theme || !style) throw new HttpsError('invalid-argument', "Theme and Style are required.");
 
-    // Cost: 1 Zap for the brainstorming session? Let's say 0.5 for text.
     const COST = ZAP_COSTS.BOOK_CONCEPTS;
 
     try {
+        const logRef = requestId ? db.collection('action_logs').doc(requestId) : null;
+        let alreadyExists = false;
+
         await db.runTransaction(async (t) => {
+            if (logRef) {
+                const existing = await t.get(logRef);
+                if (existing.exists) {
+                    alreadyExists = true;
+                    return;
+                }
+            }
+
             const userRef = db.collection('users').doc(uid);
             const userDoc = await t.get(userRef);
             if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
             const zaps = userDoc.data().zaps || 0;
             if (zaps < COST) throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`);
+
             t.update(userRef, { zaps: FieldValue.increment(-COST) });
+            if (logRef) t.set(logRef, { type: 'colorcraft_concepts', userId: uid, theme, style, createdAt: FieldValue.serverTimestamp() });
         });
+
+        if (alreadyExists) return { success: true, idempotent: true };
 
         const pages = await generateColoringBookConcepts(theme, style);
         logger.info(`[ColorCraft] Concepts generated for ${uid}`, { theme });
@@ -71,21 +85,35 @@ export const handleCreateColoringPage = async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
 
-    const { prompt, style } = request.data;
+    const { prompt, style, requestId } = request.data;
     if (!prompt) throw new HttpsError('invalid-argument', "Prompt is required.");
 
-    // Cost: 1 Zap per image
     const COST = ZAP_COSTS.COLORING_PAGE;
 
     try {
+        const logRef = requestId ? db.collection('action_logs').doc(requestId) : null;
+        let alreadyExists = false;
+
         await db.runTransaction(async (t) => {
+            if (logRef) {
+                const existing = await t.get(logRef);
+                if (existing.exists) {
+                    alreadyExists = true;
+                    return;
+                }
+            }
+
             const userRef = db.collection('users').doc(uid);
             const userDoc = await t.get(userRef);
             if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
             const zaps = userDoc.data().zaps || 0;
             if (zaps < COST) throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`);
+
             t.update(userRef, { zaps: FieldValue.increment(-COST) });
+            if (logRef) t.set(logRef, { type: 'colorcraft_page', userId: uid, prompt, createdAt: FieldValue.serverTimestamp() });
         });
+
+        if (alreadyExists) return { success: true, idempotent: true };
 
         const generatedImageBase64 = await generateColoringPageImage(prompt, style);
 

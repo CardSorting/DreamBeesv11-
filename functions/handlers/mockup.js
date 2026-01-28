@@ -11,6 +11,7 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { db, FieldValue } from "../firebaseInit.js";
 import { HttpsError } from "firebase-functions/v2/https";
 import { ZAP_COSTS } from "../lib/costs.js";
+import { deductZapsAtomic } from "../lib/credits.js";
 
 // ESM __dirname fix
 const __filename = fileURLToPath(import.meta.url);
@@ -22,38 +23,6 @@ const location = "us-central1";
 const vertexAI = new VertexAI({ project, location });
 
 const MODEL_NAME = "gemini-2.5-flash-image";
-
-/**
- * Checks config and deducts zaps.
- * Returns the cost that was deducted.
- * @param {string} uid 
- * @returns {Promise<number>} The amount of zaps deducted
- */
-const checkAndDeductZaps = async (uid) => {
-    // Default to centralized cost
-    const cost = ZAP_COSTS.MOCKUP_GEN || 0.25;
-
-    // 2. Deduct Zaps
-    await db.runTransaction(async (t) => {
-        const userRef = db.collection('users').doc(uid);
-        const userDoc = await t.get(userRef);
-
-        if (!userDoc.exists) {
-            throw new HttpsError('not-found', "User not found");
-        }
-
-        const zaps = userDoc.data().zaps || 0;
-
-        if (zaps < cost) {
-            throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${cost} Zaps.`);
-        }
-
-        t.update(userRef, { zaps: FieldValue.increment(-cost) });
-    });
-
-    logger.info(`[Billing] Deducted ${cost} Zaps from ${uid}`);
-    return cost;
-};
 
 const getModel = () => {
     return vertexAI.getGenerativeModel({ model: MODEL_NAME });
@@ -310,7 +279,10 @@ export const handleGachaSpin = async (request) => {
     }
 
     // Cost Check & Deduction
-    const costDeducted = await checkAndDeductZaps(uid);
+    const cost = ZAP_COSTS.MOCKUP_GEN || 0.25;
+    const requestId = request.data.requestId || `gacha_${Date.now()}`;
+    const billing = await deductZapsAtomic(uid, cost, requestId, 'action_logs');
+    if (billing.idempotent) return { success: true, idempotent: true };
 
     // Decode base64
     const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
@@ -358,16 +330,8 @@ export const handleGachaSpin = async (request) => {
         // Log the errors
         results.forEach(r => { if (!r.success) logger.error("Gacha Item Failed", r.error); });
 
-        // Refund if we took money and failed completely
-        if (costDeducted > 0) {
-            try {
-                await db.collection('users').doc(uid).update({ zaps: FieldValue.increment(costDeducted) });
-                logger.info(`[Billing] Refunded ${costDeducted} Zaps to ${uid} due to total failure.`);
-            } catch (e) {
-                logger.error(`[Billing] Failed to refund user ${uid}`, e);
-            }
-        }
-
+        // Note: No manual refund here. Idempotency protects the deduction.
+        // If it's a transient failure, user can retry with the same requestId.
         throw new Error("The machine jammed! No prizes were generated.");
     }
 
@@ -395,7 +359,10 @@ export const handleGenerateMockup = async (request) => {
     }
 
     // Cost Check
-    const costDeducted = await checkAndDeductZaps(uid);
+    const cost = ZAP_COSTS.MOCKUP_GEN || 0.25;
+    const requestId = request.data.requestId || `mockup_${Date.now()}`;
+    const billing = await deductZapsAtomic(uid, cost, requestId, 'action_logs');
+    if (billing.idempotent) return { success: true, idempotent: true };
 
     try {
         const generativeModel = getModel();
@@ -510,16 +477,7 @@ export const handleGenerateMockup = async (request) => {
         return result;
 
     } catch (error) {
-        // Refund on failure
-        if (costDeducted > 0) {
-            try {
-                await db.collection('users').doc(uid).update({ zaps: FieldValue.increment(costDeducted) });
-                logger.info(`[Billing] Refunded ${costDeducted} Zaps to ${uid} due to failure.`);
-            } catch (e) {
-                logger.error(`[Billing] Failed to refund user ${uid}`, e);
-            }
-        }
-
+        // No manual refund, use idempotent retries
         logger.error("Mockup Generation Error:", error);
         throw new Error(`Mockup generation failed: ${error.message}`);
     }
@@ -565,7 +523,10 @@ export const handleGenerateMockupItem = async (request) => {
     }
 
     // 2. Cost Check & Deduction
-    const costDeducted = await checkAndDeductZaps(uid);
+    const cost = ZAP_COSTS.MOCKUP_GEN || 0.25;
+    const requestId = request.data.requestId || `mockitem_${Date.now()}`;
+    const billing = await deductZapsAtomic(uid, cost, requestId, 'action_logs');
+    if (billing.idempotent) return { success: true, idempotent: true };
 
     try {
         // 3. Generate
@@ -609,15 +570,7 @@ export const handleGenerateMockupItem = async (request) => {
         return result;
 
     } catch (error) {
-        // Refund on failure
-        if (costDeducted > 0) {
-            try {
-                await db.collection('users').doc(uid).update({ zaps: FieldValue.increment(costDeducted) });
-                logger.info(`[Billing] Refunded ${costDeducted} Zaps to ${uid} due to failure.`);
-            } catch (e) {
-                logger.error(`[Billing] Failed to refund user ${uid}`, e);
-            }
-        }
+        // No manual refund, use idempotent retries
         logger.error(`Failed to generate item ${itemId}:`, error);
         throw new HttpsError('internal', `Generation failed: ${error.message}`);
     }
