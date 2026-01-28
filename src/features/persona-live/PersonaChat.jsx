@@ -1003,41 +1003,7 @@ const PersonaChatContent = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="stream-actions">
-                            <button className="follow-btn-glitch">Follow</button>
-                            <button className="subscribe-btn-glitch">
-                                <Sparkles size={16} /> Subscribe
-                            </button>
-                        </div>
-                    </div>
 
-                    <ChannelTabs />
-
-                    <div className="video-content-area">
-                        {activeTab === 'Home' && (
-                            <div className="video-description">
-                                <h3>Welcome to the stream!</h3>
-                                <p>I am {persona?.name}, an AI-powered host. Feel free to chat with me in the sidebar! Zaps are used to power my responses.</p>
-                                <div className="about-stats">
-                                    <div className="stat"><span className="val">2.3M</span> followers</div>
-                                    <div className="stat"><span className="val">AI</span> Genre</div>
-                                </div>
-                            </div>
-                        )}
-                        {activeTab === 'About' && (
-                            <div className="video-description">
-                                <h3>About {persona?.name}</h3>
-                                <p>{persona?.backstory}</p>
-                                <h3>Vibes</h3>
-                                <p>{persona?.personality}</p>
-                            </div>
-                        )}
-                        {activeTab !== 'Home' && activeTab !== 'About' && (
-                            <div className="empty-tab-msg">
-                                <Loader2 className="animate-spin" size={32} />
-                                <p>Checking {activeTab}...</p>
-                            </div>
-                        )}
                     </div>
                 </div>
 
