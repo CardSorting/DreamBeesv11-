@@ -43,8 +43,7 @@ function Layout() {
     '/memes',
     '/filter',
     '/showcase',
-    '/mockup-catalog',
-    '/channel'
+    '/mockup-catalog'
   ];
 
   const shouldHideHeader = hideHeaderRoutes.some(route => pathname === route || pathname.startsWith(route + '/')) || pathname.startsWith('/model/');
@@ -58,7 +57,7 @@ function Layout() {
 
         <AnimatedRoutes />
       </main>
-      {!isLanding && pathname !== '/generate' && !(pathname.startsWith('/mockup-catalog') && isMobile) && (
+      {!isLanding && pathname !== '/generate' && !pathname.startsWith('/channel') && !(pathname.startsWith('/mockup-catalog') && isMobile) && (
         <div className="app-footer">
           <Footer />
         </div>

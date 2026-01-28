@@ -1,3 +1,14 @@
+.persona-chat-container {
+    height: calc(100dvh - 72px);
+    /* Subtract header height */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    background: #0e0e10;
+    color: #efeff1;
+}
+
 .channel-page-content {
     height: 100%;
     display: flex;
@@ -8,15 +19,17 @@
     display: flex;
     flex: 1;
     overflow: hidden;
+    flex-direction: row;
+    /* Default to row (Desktop) */
 }
 
-.persona-chat-page.twitch-layout {
-    background: #0e0e10;
-    color: #efeff1;
-    height: 100vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
+@media (max-width: 768px) {
+    .twitch-stream-split {
+        flex-direction: column;
+        /* Stack vertically on mobile */
+        min-height: 0;
+        /* Critical for nested flex scrolling */
+    }
 }
 
 .twitch-container {
@@ -34,6 +47,23 @@
     padding: 20px;
     background: #000;
     overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+    .video-section {
+        padding: 0;
+        flex: 0 0 auto;
+        /* Only take 16:9 space */
+        height: auto;
+        background: black;
+    }
+
+    .video-player-mock {
+        border-radius: 0;
+        /* Full bleed */
+        width: 100%;
+        aspect-ratio: 16/9;
+    }
 }
 
 .video-player-mock {
@@ -570,6 +600,30 @@
     flex-shrink: 0;
 }
 
+@media (max-width: 768px) {
+    .chat-section {
+        width: 100%;
+        min-width: auto;
+        max-width: none;
+        height: auto;
+        flex: 1;
+        /* Take remaining vertical space */
+        min-height: 0;
+        /* Critically important for flex scrolling */
+        border-left: none;
+        border-top: 1px solid #26262c;
+        overflow: hidden;
+        /* Ensure messages stay inside */
+    }
+
+    /* Hide desktop details to focus on Chat */
+    .video-info-bar,
+    .channel-tabs-bar,
+    .video-content-area {
+        display: none !important;
+    }
+}
+
 .chat-header {
     padding: 15px;
     font-weight: 600;
@@ -629,6 +683,8 @@
 .chat-input-twitch {
     padding: 15px;
     background: #18181b;
+    /* Handle iPhone Safe Area */
+    padding-bottom: calc(15px + env(safe-area-inset-bottom));
 }
 
 .twitch-input-wrapper {

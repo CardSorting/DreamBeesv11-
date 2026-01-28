@@ -1043,49 +1043,7 @@ const PersonaChatContent = () => {
 
                 {/* Chat Section */}
                 <div className="chat-section">
-                    <div className="hype-meter-wrapper">
-                        <div className="hype-meter-header">
-                            <span className="hype-label">HYPE LEVEL {persona?.hypeLevel || 1}</span>
-                            <Zap size={12} className="hype-icon" />
-                        </div>
-                        <div className="hype-bar-container">
-                            <div
-                                className="hype-bar-fill"
-                                style={{ width: `${persona?.hypeScore || 10}%` }}
-                            ></div>
-                        </div>
 
-                        {/* Community Zap Goal */}
-                        <div className="community-goal-wrapper">
-                            <div className="goal-header">
-                                <span className="goal-label">COMMUNITY GOAL: SPECIAL GREETING</span>
-                                <span className="goal-stats">{persona?.zapCurrent || 0}/{persona?.zapGoal || 1000}</span>
-                            </div>
-                            <div className="goal-bar-container">
-                                <div
-                                    className="goal-bar-fill"
-                                    style={{ width: `${Math.min(100, ((persona?.zapCurrent || 0) / (persona?.zapGoal || 1000)) * 100)}%` }}
-                                ></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Top Supporters Widget */}
-                    {topSupporters.length > 0 && (
-                        <div className="top-supporters-widget">
-                            <div className="supporters-label">TOP SUPPORTERS</div>
-                            <div className="supporters-list-mini">
-                                {topSupporters.map((s, i) => (
-                                    <div key={s.id} className="mini-supporter-item" title={`${s.displayName}: ${s.totalZaps} ZAPs`}>
-                                        <div className="mini-avatar-wrap">
-                                            {s.photoURL ? <img src={s.photoURL} alt="" /> : <div className="avatar-placeholder">{s.displayName[0]}</div>}
-                                            <span className="rank-idx">{i + 1}</span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
 
                     <div className="chat-header">
                         STREAM CHAT
