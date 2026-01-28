@@ -36,7 +36,6 @@ const MinimalHeader = () => {
         { path: '/', label: 'Home', icon: Home, hideOnMobile: true },
         { path: '/discovery', label: 'Discovery', icon: Compass },
         { path: '/generate', label: 'Studio', icon: Zap, hideOnMobile: true },
-        { path: '/gallery', label: 'Gallery', icon: Image },
         { path: '/apps', label: 'Apps', icon: LayoutGrid },
         { path: '/profile', label: 'Profile', icon: User, hideOnMobile: true },
     ];

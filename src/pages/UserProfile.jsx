@@ -5,10 +5,14 @@ import SEO from '../components/SEO';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
-import { Loader2, Heart, Bookmark, AlertCircle, Zap, Layers, Search, Package, Lock, Image as ImageIcon, Sparkles } from 'lucide-react';
+import { Loader2, Heart, Bookmark, AlertCircle, Zap, Layers, Search, Package, Lock, Image as ImageIcon, Sparkles, Trash2, Check, ExternalLink, Download, Plus, Film, X } from 'lucide-react';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { isValidUsername } from '../utils/usernameValidation';
+import { functions } from '../firebase';
+import { httpsCallable } from 'firebase/functions';
+import { getOptimizedImageUrl, getLCPAttributes, getImageSrcSet, preloadImage } from '../utils';
+import { trackQualitySignal, trackSearchQuality } from '../utils/analytics';
 
 import ShowcaseModal from '../components/ShowcaseModal';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -59,6 +63,21 @@ export default function UserProfile() {
     const [selectedImage, setSelectedImage] = useState(null);
     const [selectedModel, setSelectedModel] = useState(null);
     const [usernameError, setUsernameError] = useState(null);
+
+    // --- Legacy Gallery State Integration ---
+    const [images, setImages] = useState([]);
+    const [isGalleryLoading, setIsGalleryLoading] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [isSelectionMode, setIsSelectionMode] = useState(false);
+
+    // Pagination
+    const [lastVisibleId, setLastVisibleId] = useState(null);
+    const [lastVisibleType, setLastVisibleType] = useState(null);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const LIMIT = 24;
+    // ----------------------------------------
 
     // Deep Linking for Lightbox Modal
     useEffect(() => {
@@ -133,6 +152,94 @@ export default function UserProfile() {
         });
     };
 
+    // --- Gallery Data Fetching Logic (Replaces Context for All/Productions) ---
+    useEffect(() => {
+        // Only fetch if tab implies we need paginated images
+        // "all" or "productions" -> use API
+        // "liked", "saved", "apps", "mockups" -> use Context (for now)
+        if (activeFilter === 'all' || activeFilter === 'productions') {
+            fetchGalleryImages();
+        }
+    }, [activeFilter, currentUser, searchQuery]);
+
+    async function fetchGalleryImages() {
+        if (!currentUser) return;
+        setIsGalleryLoading(true);
+        // Reset pagination
+        setImages([]);
+        setHasMore(true);
+        setLastVisibleId(null);
+
+        try {
+            const api = httpsCallable(functions, 'api');
+            const result = await api({
+                action: 'getUserImages',
+                limit: LIMIT,
+                searchQuery: searchQuery || undefined,
+                filter: activeFilter === 'productions' ? 'image' : 'all' // 'image' mostly maps to productions in backend logic often
+            });
+
+            const data = result.data;
+            const newImages = data.images || [];
+            setImages(newImages);
+            setLastVisibleId(data.lastVisibleId);
+            setLastVisibleType(data.lastVisibleType);
+            setHasMore(data.hasMore);
+
+            // Preload LCP
+            newImages.slice(0, 4).forEach(img => {
+                const preloadUrl = getOptimizedImageUrl(img.thumbnailUrl || img.imageUrl);
+                preloadImage(preloadUrl, 'high');
+            });
+
+            if (data.warnings) {
+                data.warnings.forEach(w => toast.error(w));
+            }
+
+            if (searchQuery) {
+                trackSearchQuality(searchQuery, newImages.length);
+            }
+
+        } catch (err) {
+            console.error("Error fetching gallery images:", err);
+            toast.error("Failed to load your gallery");
+        } finally {
+            setIsGalleryLoading(false);
+        }
+    }
+
+    const loadMoreImages = async () => {
+        if (!currentUser || !lastVisibleId || loadingMore || !hasMore) return;
+        setLoadingMore(true);
+        try {
+            const api = httpsCallable(functions, 'api');
+            const result = await api({
+                action: 'getUserImages',
+                limit: LIMIT,
+                startAfterId: lastVisibleId,
+                startAfterCollection: lastVisibleType,
+                searchQuery: searchQuery || undefined,
+                filter: activeFilter === 'productions' ? 'image' : 'all'
+            });
+
+            const data = result.data;
+            if (data.images && data.images.length > 0) {
+                setImages(prev => [...prev, ...data.images]);
+                setLastVisibleId(data.lastVisibleId);
+                setLastVisibleType(data.lastVisibleType);
+                setHasMore(data.hasMore);
+            } else {
+                setHasMore(false);
+            }
+        } catch (err) {
+            console.error("Error loading more:", err);
+            toast.error("Could not load more");
+        } finally {
+            setLoadingMore(false);
+        }
+    };
+    // -----------------------------------------------------------------------
+
     // Filter Logic
     const getFilteredItems = () => {
         switch (activeFilter) {
@@ -140,15 +247,13 @@ export default function UserProfile() {
             case 'saved': return bookmarks;
             case 'mockups': return mockups;
             case 'memes': return memes;
-            case 'productions': return productions;
+            // case 'productions': return productions; // Removed, using API images
             case 'apps': return appCreations;
+            case 'all':
+            case 'productions':
+                return images; // Use the API loaded images
             default:
-                // Combine relevant valid items for "All" view (Productions + Apps)
-                return [...productions, ...appCreations].sort((a, b) => {
-                    const dateA = a.createdAt?.seconds || (a.createdAt?.toMillis ? a.createdAt.toMillis() / 1000 : 0);
-                    const dateB = b.createdAt?.seconds || (b.createdAt?.toMillis ? b.createdAt.toMillis() / 1000 : 0);
-                    return dateB - dateA;
-                });
+                return images;
         }
     };
 
@@ -169,8 +274,97 @@ export default function UserProfile() {
     const emptyState = emptyStates[activeFilter] || emptyStates.all;
 
 
+
+    const executeDelete = async (toastId) => {
+        toast.dismiss(toastId);
+        const loadToast = toast.loading('Deleting...');
+        try {
+            const api = httpsCallable(functions, 'api');
+            const result = await api({ action: 'deleteImagesBatch', imageIds: selectedIds });
+
+            if (result.data.success) {
+                setImages(prev => prev.filter(img => !selectedIds.includes(img.id)));
+                trackQualitySignal('batch_delete', { count: selectedIds.length, filter: activeFilter });
+                setSelectedIds([]);
+                setIsSelectionMode(false);
+                toast.success(`Deleted ${result.data.deleted} image(s)`);
+            }
+        } catch (err) {
+            console.error("Error deleting images:", err);
+            const errorMessage = err.message || "Failed to delete images";
+            toast.error(errorMessage);
+        } finally {
+            toast.dismiss(loadToast);
+        }
+    };
+
+    const handleBatchDelete = () => {
+        toast.custom((t) => (
+            <div className={`${t.visible ? 'animate-enter' : 'animate-leave'}`} style={{
+                maxWidth: '350px',
+                width: '100%',
+                background: '#18181b',
+                color: '#fff',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '16px',
+                boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+                padding: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                        background: 'rgba(239, 68, 68, 0.2)',
+                        padding: '10px',
+                        borderRadius: '50%',
+                        color: '#ef4444'
+                    }}>
+                        <Trash2 size={20} />
+                    </div>
+                    <div>
+                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>Confirm Deletion</h4>
+                        <p style={{ margin: '4px 0 0', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
+                            Delete {selectedIds.length} image{selectedIds.length > 1 ? 's' : ''}?
+                        </p>
+                    </div>
+                </div>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                    <button
+                        onClick={() => toast.dismiss(t.id)}
+                        style={{
+                            flex: 1, padding: '10px', background: 'transparent',
+                            border: '1px solid var(--color-border)', borderRadius: '8px',
+                            color: '#fff', cursor: 'pointer'
+                        }}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={() => executeDelete(t.id)}
+                        style={{
+                            flex: 1, padding: '10px', background: '#ef4444',
+                            border: 'none', borderRadius: '8px', color: '#fff',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                        }}
+                    >
+                        <Trash2 size={16} /> Delete
+                    </button>
+                </div>
+            </div>
+        ), { duration: 8000, id: 'delete-toast' });
+    };
+
+    const toggleSelection = (id) => {
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    };
+
     const handleImageClick = (item) => {
-        openLightbox(item);
+        if (isSelectionMode) {
+            toggleSelection(item.id);
+        } else {
+            openLightbox(item);
+        }
     };
 
     // Load initial profile data
@@ -260,6 +454,22 @@ export default function UserProfile() {
                     </div>
 
                     <button
+                        onClick={() => {
+                            if (isSelectionMode) {
+                                // Finish selection
+                                setIsSelectionMode(false);
+                                setSelectedIds([]);
+                            } else {
+                                // Start selecting
+                                setIsSelectionMode(true);
+                            }
+                        }}
+                        className={`bee-btn ${isSelectionMode ? 'bg-zinc-800 border-zinc-700' : ''}`}
+                        style={{ padding: '10px 20px', fontSize: '0.9rem', marginRight: '10px' }}
+                    >
+                        {isSelectionMode ? 'Cancel Selection' : 'Select'}
+                    </button>
+                    <button
                         onClick={() => setIsEditing(true)}
                         className="bee-btn"
                         style={{ padding: '10px 20px', fontSize: '0.9rem' }}
@@ -270,15 +480,8 @@ export default function UserProfile() {
 
                 {/* Edit Profile Modal */}
                 {isEditing && (
-                    <div style={{
-                        position: 'fixed', inset: 0, zIndex: 100,
-                        background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(5px)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
-                    }}>
-                        <div style={{
-                            background: '#1a1a1a', border: '1px solid #333', borderRadius: '16px',
-                            padding: '30px', maxWidth: '400px', width: '100%', position: 'relative'
-                        }}>
+                    <div className="modal-overlay">
+                        <div className="modal-content">
                             <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '20px' }}>Edit Profile</h2>
 
                             <div style={{ marginBottom: '20px' }}>
@@ -485,7 +688,31 @@ export default function UserProfile() {
 
             {/* Main Grid content */}
             <div className="content-area">
-                {loading ? (
+                {/* Search Bar - only pertinent for API backed views mostly */}
+                {(activeFilter === 'all' || activeFilter === 'productions') && (
+                    <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+                        <div className="search-wrapper" style={{ position: 'relative', width: '300px' }}>
+                            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#666' }} />
+                            <input
+                                type="text"
+                                placeholder="Search..."
+                                value={searchQuery}
+                                onChange={e => setSearchQuery(e.target.value)}
+                                style={{
+                                    width: '100%', padding: '10px 10px 10px 36px',
+                                    background: '#1a1a1a', border: '1px solid #333', borderRadius: '8px', color: 'white'
+                                }}
+                            />
+                            {searchQuery && (
+                                <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#666' }}>
+                                    <X size={14} />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {(loading || isGalleryLoading) ? (
                     <div className="studio-grid">
                         {[...Array(8)].map((_, i) => (
                             <div key={i} className="aspect-square rounded-xl bg-zinc-900 border border-zinc-800 animate-pulse relative overflow-hidden">
@@ -504,38 +731,60 @@ export default function UserProfile() {
                                     exit={{ opacity: 0, scale: 0.9 }}
                                     transition={{ duration: 0.2, delay: i * 0.05 }}
                                     key={item.id}
-                                    className="studio-card group"
+                                    className={`studio-card group ${isSelectionMode && selectedIds.includes(item.id) ? 'ring-2 ring-indigo-500' : ''}`}
                                     onClick={() => handleImageClick(item)}
                                 >
                                     <div className="aspect-square relative overflow-hidden rounded-xl bg-zinc-900">
-                                        <img
-                                            src={item.thumbnailUrl || item.imageUrl || item.url}
-                                            alt={item.prompt}
-                                            loading="lazy"
-                                            style={{
-                                                width: '100%',
-                                                height: '100%',
-                                                objectFit: 'cover',
-                                                transition: 'transform 0.5s'
-                                            }}
-                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                        />
+                                        {/* Video Support */}
+                                        {item.type === 'video' ? (
+                                            <video
+                                                src={item.videoUrl || item.imageUrl}
+                                                muted loop playsInline
+                                                onMouseOver={e => e.target.play()}
+                                                onMouseOut={e => { e.target.pause(); e.target.currentTime = 0; }}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <img
+                                                src={getOptimizedImageUrl(item.thumbnailUrl || item.imageUrl || item.url)}
+                                                alt={item.prompt}
+                                                loading="lazy"
+                                                {...((activeFilter === 'all' || activeFilter === 'productions') ? getLCPAttributes(i, 4) : {})} // Apply LCP if relevant
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                            />
+                                        )}
 
                                         {/* Overlay Info */}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                        <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 ${isSelectionMode ? 'pointer-events-none' : ''}`}>
                                             <p className="text-white text-xs font-mono line-clamp-2 mb-2 opacity-90">
                                                 {item.prompt}
                                             </p>
                                             <div className="flex items-center justify-between">
                                                 <span className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold">
-                                                    SDXL 1.0 • {item.createdAt?.toDate ? item.createdAt.toDate().toLocaleDateString() : 'Just now'}
+                                                    {item.createdAt?.toDate ? item.createdAt.toDate().toLocaleDateString() : 'Recent'}
                                                 </span>
                                                 <div className="flex gap-2">
-                                                    {likes.find(l => l.id === item.id) && <Heart size={14} className="text-pink-500 fill-pink-500" />}
-                                                    {bookmarks.find(b => b.id === item.id) && <Bookmark size={14} className="text-blue-500 fill-blue-500" />}
+                                                    {likes.some(l => l.id === item.id) && <Heart size={14} className="text-pink-500 fill-pink-500" />}
+                                                    {bookmarks.some(b => b.id === item.id) && <Bookmark size={14} className="text-blue-500 fill-blue-500" />}
                                                 </div>
                                             </div>
                                         </div>
+
+                                        {/* Selection Checkbox Overlay */}
+                                        {isSelectionMode && (
+                                            <div style={{
+                                                position: 'absolute', inset: 0,
+                                                background: selectedIds.includes(item.id) ? 'rgba(79, 70, 229, 0.3)' : 'rgba(0,0,0,0.1)',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                                            }}>
+                                                {selectedIds.includes(item.id) && (
+                                                    <div className="bg-indigo-600 p-2 rounded-full">
+                                                        <Check size={20} color="white" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 </motion.div>
                             ))}
@@ -550,7 +799,30 @@ export default function UserProfile() {
                         <p className="text-zinc-500 max-w-sm text-center">{emptyState.subtitle}</p>
                     </div>
                 )}
+                {/* Load More Button - Only for API views */}
+                {(activeFilter === 'all' || activeFilter === 'productions') && !isGalleryLoading && hasMore && (
+                    <div className="flex justify-center mt-8">
+                        <button
+                            onClick={loadMoreImages}
+                            disabled={loadingMore}
+                            className="bee-btn btn-outline"
+                            style={{ minWidth: '150px' }}
+                        >
+                            {loadingMore ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Load More'}
+                        </button>
+                    </div>
+                )}
             </div>
+
+            {/* Batch Actions Float */}
+            {isSelectionMode && selectedIds.length > 0 && (
+                <div className="fixed bottom-32 md:bottom-8 left-1/2 -translate-x-1/2 bg-zinc-900 border border-zinc-700 rounded-full px-6 py-3 flex items-center gap-6 shadow-2xl z-50">
+                    <span className="font-semibold text-sm">{selectedIds.length} Selected</span>
+                    <div className="w-px h-5 bg-zinc-700" />
+                    <button onClick={handleBatchDelete} className="text-red-500 font-semibold text-sm hover:text-red-400">Delete</button>
+                    <button onClick={() => setSelectedIds([])} className="text-zinc-400 text-sm hover:text-white">Clear</button>
+                </div>
+            )}
 
             {/* Modal */}
             {selectedImage && selectedModel && (
@@ -732,16 +1004,70 @@ export default function UserProfile() {
 
                 @media (max-width: 768px) {
                     .dashboard-container {
-                        padding: 20px;
-                        padding-top: 100px; /* More space for fixed Mobile navbar if needed, or similar */
+                        padding: 16px;
+                        padding-top: 80px; 
+                        padding-bottom: 120px;
+                    }
+                    .dashboard-header {
+                        margin-bottom: 24px;
+                        padding-top: 20px;
+                    }
+                    .stats-grid {
+                        overflow-x: auto;
+                        scroll-snap-type: x mandatory;
+                        padding-bottom: 12px;
+                        gap: 12px;
+                        width: calc(100% + 32px); /* Break out of container padding */
+                        margin-left: -16px;
+                        padding-left: 16px;
+                        padding-right: 16px;
+                    }
+                    .stat-card {
+                        min-width: 140px; /* Smaller cards */
+                        scroll-snap-align: start;
+                        padding: 12px 16px;
+                    }
+                    .stat-value {
+                        font-size: 1.25rem;
+                    }
+                    .toolbar {
+                        flex-direction: column;
+                        gap: 16px;
+                        align-items: stretch;
+                    }
+                    .filter-group {
+                        width: 100%;
+                        overflow-x: auto;
+                        padding-bottom: 8px; /* Space for scrollbar */
+                        -webkit-overflow-scrolling: touch;
+                        scrollbar-width: none; /* Hide scrollbar for cleaner look */
+                    }
+                    .filter-group::-webkit-scrollbar {
+                        display: none;
+                    }
+                    .search-bar {
+                        display: flex; /* Show on mobile */
+                        width: 100%;
                     }
                     .studio-grid {
                         grid-template-columns: repeat(2, 1fr);
-                        gap: 12px;
+                        gap: 8px; /* Tighter gap for mobile */
                     }
-                    .search-bar {
-                        display: none;
+                    .modal-content {
+                        position: fixed;
+                        bottom: 0;
+                        left: 0;
+                        right: 0;
+                        max-width: 100%;
+                        border-radius: 20px 20px 0 0;
+                        border-bottom: none;
+                        padding-bottom: 40px; /* Safe area */
+                        animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
                     }
+                }
+                @keyframes slideUp {
+                    from { transform: translateY(100%); }
+                    to { transform: translateY(0); }
                 }
             `}</style>
         </div>

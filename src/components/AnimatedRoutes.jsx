@@ -5,11 +5,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import RouteErrorBoundary from './RouteErrorBoundary';
 
-// Import Pages (Re-importing essentially what was in App.jsx)
-// To avoid circular dependencies or massive imports, assuming we can just move the imports here 
-// OR we can make this component accept children routes, but that's harder with AnimatePresence.
-// Better to move the Route definitions here.
-
 // Import lazyRetry utility
 import { lazyRetry } from '../utils/lazyRetry';
 
@@ -18,7 +13,6 @@ const ModelFeed = lazyRetry(() => import('../pages/ModelFeed'));
 const Auth = lazyRetry(() => import('../pages/Auth'));
 const Generator = lazyRetry(() => import('../pages/Generator'));
 const MobileGenerator = lazyRetry(() => import('../pages/MobileGenerator'));
-const Gallery = lazyRetry(() => import('../pages/Gallery'));
 
 import { useIsMobile } from '../hooks/useIsMobile';
 const Models = lazyRetry(() => import('../pages/Models'));
@@ -117,7 +111,13 @@ const AnimatedRoutes = () => {
                             <Route path="/filter/:filter" element={<ModelFeed />} />
                             <Route path="/landing" element={<Landing />} />
                             <Route path="/auth" element={<Auth />} />
+
                             <Route path="/profile" element={
+                                <PrivateRoute>
+                                    <UserProfile />
+                                </PrivateRoute>
+                            } />
+                            <Route path="/profile/:tab" element={
                                 <PrivateRoute>
                                     <UserProfile />
                                 </PrivateRoute>
@@ -142,12 +142,10 @@ const AnimatedRoutes = () => {
                             <Route path="/generate" element={
                                 isMobile ? <MobileGenerator /> : <Generator />
                             } />
-                            <Route path="/gallery" element={
-                                <PrivateRoute><Gallery /></PrivateRoute>
-                            } />
-                            <Route path="/gallery/filter/:filterMode" element={
-                                <PrivateRoute><Gallery /></PrivateRoute>
-                            } />
+
+                            <Route path="/gallery" element={<Navigate to="/profile" replace />} />
+                            <Route path="/gallery/filter/:filterMode" element={<Navigate to="/profile" replace />} />
+
                             <Route path="/gallery/:id" element={
                                 <PrivateRoute><ImageDetail /></PrivateRoute>
                             } />

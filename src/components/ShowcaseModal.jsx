@@ -286,6 +286,26 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                     font-weight: 500;
                     color: white;
                 }
+                /* Mobile Responsiveness for Modal */
+                @media (max-width: 768px) {
+                    div[style*="display: flex; flex: 1"] {
+                        flex-direction: column;
+                        overflow-y: auto !important;
+                    }
+                    /* Image Container */
+                    div[style*="background: #050505"] {
+                        min-height: 400px;
+                        padding: 20px !important;
+                    }
+                    /* Info Panel */
+                    div[style*="width: 400px"] {
+                        width: 100% !important;
+                        border-left: none !important;
+                        border-top: 1px solid var(--color-border);
+                        padding: 20px !important;
+                        overflow-y: visible !important;
+                    }
+                }
                 @keyframes fadeIn {
                     from { opacity: 0; }
                     to { opacity: 1; }

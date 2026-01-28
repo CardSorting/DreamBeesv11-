@@ -102,6 +102,19 @@ export function ModelProvider({ children }) {
                     });
                 }
 
+                if (!models.find(m => m.id === 'wai-illustrious')) {
+                    models.push({
+                        id: 'wai-illustrious',
+                        name: 'Wai Illustrious',
+                        description: 'High-quality illustrations with enforced quality tags and custom High-Res Fix workflow.',
+                        type: 'Generator',
+                        order: 6, // Placed after zit-base-model
+                        isActive: true,
+                        image: 'https://cdn.dreambeesai.com/file/printeregg/assets/landing/wai_illustrious_preview.png',
+                        tags: ['illustration', 'high-quality', 'anime', 'base']
+                    });
+                }
+
                 console.log(`[ModelContext] Fetched ${models.length} models. Checked MeowAcc.`);
                 setAvailableModels(models);
 
