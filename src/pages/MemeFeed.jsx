@@ -21,6 +21,7 @@ export default function MemeFeed() {
     const [loading, setLoading] = useState(true);
     const lastDocRef = useRef(null);
     const [hasMore, setHasMore] = useState(true);
+    const hasMoreRef = useRef(true);
     const [focusImage, setFocusImage] = useState(null);
     const isFetchingRef = useRef(false);
 
@@ -42,6 +43,10 @@ export default function MemeFeed() {
     useEffect(() => {
         currentFilterRef.current = creatorFilter;
     }, [creatorFilter]);
+
+    useEffect(() => {
+        hasMoreRef.current = hasMore;
+    }, [hasMore]);
 
     // Sync with URL changes (avoid recursive loops)
     useEffect(() => {
@@ -133,7 +138,7 @@ export default function MemeFeed() {
 
     const fetchMemes = useCallback(async (isLoadMore = false) => {
         if (isFetchingRef.current) return;
-        if (isLoadMore && (!lastDocRef.current || !hasMore)) return;
+        if (isLoadMore && (!lastDocRef.current || !hasMoreRef.current)) return;
 
         try {
             isFetchingRef.current = true;
@@ -181,13 +186,14 @@ export default function MemeFeed() {
             isFetchingRef.current = false;
             setLoading(false);
         }
-    }, [creatorFilter, hasMore]);
+    }, [creatorFilter]);
 
     useEffect(() => {
         setImages([]); // Clear images when filter changes
         lastDocRef.current = null;
         isFetchingRef.current = false;
         setHasMore(true); // Assume more data for new query
+        hasMoreRef.current = true;
         fetchMemes();
         // Scroll logic moved to handleFilterChange
     }, [creatorFilter, fetchMemes]);
