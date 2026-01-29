@@ -28,8 +28,6 @@ export default defineConfig(({ mode }) => {
           manualChunks: {
             'react-vendor': ['react', 'react-dom', 'react-router-dom', 'react-helmet-async'],
             'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore', 'firebase/storage', 'firebase/functions'],
-            'three-core': ['three'],
-            'three-vendor': ['@react-three/fiber', '@react-three/drei'],
             'motion-vendor': ['framer-motion'],
             'lucide-vendor': ['lucide-react'],
             'ui-vendor': ['react-hot-toast', 'lenis'],
