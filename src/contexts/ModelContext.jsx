@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { collection, getDocs, query, orderBy, where, limit, startAfter } from 'firebase/firestore';
 import { useApi } from '../hooks/useApi';
 import { getOptimizedImageUrl } from '../utils';
+import { smartMix } from '../utils/feedHelpers'; // Helper for Feed Diversity
 import { useAuth } from './AuthContext';
 
 const ModelContext = createContext();
@@ -423,11 +424,15 @@ export function ModelProvider({ children }) {
             const existingIds = new Set(currentCache.map(i => i.id));
             const uniqueNewImages = newImages.filter(i => !existingIds.has(i.id));
 
+            // Apply Smart Mix to the NEW batch only
+            // (We preserve the order of the existing cache to not disjoint the user's current view)
+            const mixedNewImages = smartMix(uniqueNewImages);
+
             let finalImages;
             if (loadMore) {
-                finalImages = [...currentCache, ...uniqueNewImages];
+                finalImages = [...currentCache, ...mixedNewImages];
             } else {
-                finalImages = uniqueNewImages;
+                finalImages = mixedNewImages;
             }
 
             setGlobalShowcaseCache(finalImages);
@@ -435,7 +440,7 @@ export function ModelProvider({ children }) {
             globalFeedLoadingRef.current = false;
             setIsGlobalFeedLoading(false);
 
-            console.log(`[Global Feed] [from:${source}] Loaded ${uniqueNewImages.length} new images. Total: ${finalImages.length}`);
+            console.log(`[Global Feed] [from:${source}] Loaded ${mixedNewImages.length} new images (Mixed). Total: ${finalImages.length}`);
             return finalImages;
         } catch (err) {
             console.error(`[Global Feed] [from:${source}] Error fetching global showcase:`, err);
@@ -443,9 +448,7 @@ export function ModelProvider({ children }) {
             setIsGlobalFeedLoading(false);
             return currentCache;
         }
-    }, []); // EMPTY dependency array - function is now stable!
-
-
+    }, []); // Stable dependency - function exported from utility
 
     // --- High Velocity Rating Logic (Buffered) ---
     const ratingQueue = useRef(new Map()); // stores { jobId, rating, timestamp } by jobId

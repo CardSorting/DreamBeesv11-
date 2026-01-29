@@ -479,6 +479,13 @@ const FeedItem = React.memo(function FeedItem({ image, index, isActive, isLiked,
     const lastTap = useRef(0);
     const [showHeartAnim, setShowHeartAnim] = useState(false);
 
+    // Incremental Update Logic: Capture initial state to track local offsets
+    const [initialLiked] = useState(() => isLiked);
+    const [initialLikesCount] = useState(() => image.likesCount || image.likes || 0);
+
+    // Derived Display Count
+    const displayLikesCount = initialLikesCount + (isLiked ? 1 : 0) - (initialLiked ? 1 : 0);
+
     const handleImageClick = () => {
         const now = Date.now();
         if (now - lastTap.current < 300) {
@@ -561,7 +568,7 @@ const FeedItem = React.memo(function FeedItem({ image, index, isActive, isLiked,
                     }}>
                         <Heart size={26} className={isLiked ? 'fill-current' : ''} />
                     </button>
-                    <span className="action-label">{image.likesCount || image.likes || 0}</span>
+                    <span className="action-label">{displayLikesCount}</span>
                 </div>
 
                 <div className="action-btn-wrapper">

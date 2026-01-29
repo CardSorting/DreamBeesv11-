@@ -41,6 +41,7 @@ export function UserInteractionsProvider({ children }) {
 
     // App Likes Logic
     const [likedAppIds, setLikedAppIds] = useState(new Set());
+    const [viewedIds, setViewedIds] = useState(new Set());
 
 
     // User Profile Data (Centralized Sync)
@@ -358,6 +359,17 @@ export function UserInteractionsProvider({ children }) {
         }
     }, [currentUser, hiddenIds]);
 
+    // Track "Seen" posts in session
+    const markViewed = useCallback((id) => {
+        if (!id) return;
+        setViewedIds(prev => {
+            if (prev.has(id)) return prev;
+            const next = new Set(prev);
+            next.add(id);
+            return next;
+        });
+    }, []);
+
     const reportPost = useCallback(async (imgItem, reason = "user_flagged") => {
         if (!currentUser) { toast.error("Please log in to report content"); return false; }
         const id = imgItem.id;
@@ -532,6 +544,8 @@ export function UserInteractionsProvider({ children }) {
         isAppLiked,
         toggleAppLike,
         isProfileLoaded,
+        viewedIds,
+        markViewed,
         deductZapsOptimistically,
         rollbackZaps,
         deductReelsOptimistically,
@@ -548,7 +562,7 @@ export function UserInteractionsProvider({ children }) {
         hiddenIds, isHidden, toggleLike, toggleBookmark, optimizedUserProfile,
         likedAppIds, isAppLiked, toggleAppLike, isProfileLoaded,
         deductZapsOptimistically, rollbackZaps, deductReelsOptimistically, rollbackReels,
-        hidden
+        hidden, viewedIds, markViewed
     ]);
 
     return (

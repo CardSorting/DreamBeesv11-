@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import SEO from '../components/SEO';
 import { trackEvent } from '../utils/analytics';
 import { db } from '../firebase';
@@ -12,6 +12,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import FeedPost from '../components/FeedPost';
 import { getOptimizedImageUrl } from '../utils';
+import { smartMix } from '../utils/feedHelpers'; // Import smartMix
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { isOver18 } from '../utils/age';
 import CommunityConsentModal from '../components/CommunityConsentModal';
@@ -59,7 +60,7 @@ export default function PublicGenerationsFeed() {
     const navigate = useNavigate();
     const { availableModels } = useModel();
     const { currentUser } = useAuth();
-    const { userProfile, isProfileLoaded } = useUserInteractions();
+    const { userProfile, isProfileLoaded, hiddenIds, likes, bookmarks, viewedIds } = useUserInteractions();
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [lastDoc, setLastDoc] = useState(null);
@@ -97,6 +98,19 @@ export default function PublicGenerationsFeed() {
     const observer = useRef();
     const lastImageElementRef = useRef();
 
+    // Compute Affinity Map (Model Preferences)
+    const affinityMap = useMemo(() => {
+        const map = {};
+        // Weight: Like = 3, Bookmark = 5
+        likes.forEach(item => {
+            if (item.modelId) map[item.modelId] = (map[item.modelId] || 0) + 3;
+        });
+        bookmarks.forEach(item => {
+            if (item.modelId) map[item.modelId] = (map[item.modelId] || 0) + 5;
+        });
+        return map;
+    }, [likes, bookmarks]);
+
     // Deep Linking for Focus Modal
     useEffect(() => {
         const viewId = searchParams.get('view');
@@ -128,7 +142,7 @@ export default function PublicGenerationsFeed() {
         }
     }, [searchParams, images, focusImage]);
 
-    const openFocus = (img) => {
+    const openFocus = useCallback((img) => {
         setFocusImage(img);
         trackEvent('view_generation_detail', { image_id: img.id, model_id: img.modelId });
         setSearchParams(prev => {
@@ -136,7 +150,7 @@ export default function PublicGenerationsFeed() {
             newParams.set('view', img.id);
             return newParams;
         });
-    };
+    }, [setSearchParams]);
 
     const closeFocus = () => {
         setFocusImage(null);
@@ -170,7 +184,7 @@ export default function PublicGenerationsFeed() {
                     collection(db, 'coloring_books'),
                     where('status', '==', 'completed'),
                     orderBy('createdAt', 'desc'),
-                    limit(20)
+                    limit(60)
                 );
             } else {
                 // Query generation_queue for completed jobs
@@ -189,7 +203,7 @@ export default function PublicGenerationsFeed() {
                 }
 
                 // Final order and pagination
-                q = query(q, orderBy('createdAt', 'desc'), limit(20));
+                q = query(q, orderBy('createdAt', 'desc'), limit(60));
             }
 
             if (isLoadMore && lastDoc) {
@@ -213,13 +227,25 @@ export default function PublicGenerationsFeed() {
             }));
 
             // Filter out any hidden or potentially invalid images just in case
-            const validImages = newImages.filter(img => !img.hidden && (img.imageUrl || img.url || img.coverUrl));
+            const validImages = newImages.filter(img =>
+                !img.hidden &&
+                !hiddenIds.has(img.id) &&
+                (img.imageUrl || img.url || img.coverUrl)
+            );
 
             setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
 
             if (isLoadMore) {
                 setImages(prev => {
-                    const updatedImages = [...prev, ...validImages];
+                    // Smart Mix NEW items only
+                    const existingIds = new Set(prev.map(p => p.id));
+                    const uniqueNew = validImages.filter(img => !existingIds.has(img.id));
+
+                    if (uniqueNew.length === 0) return prev; // No new unique images
+
+                    const mixedNewImages = smartMix(uniqueNew, affinityMap, viewedIds);
+                    const updatedImages = [...prev, ...mixedNewImages];
+
                     // Memory Safety: Limit individual feed-length in cache
                     if (updatedImages.length <= 500) {
                         setFilterCache(cachePrev => ({
@@ -227,20 +253,23 @@ export default function PublicGenerationsFeed() {
                             [activeFilter]: {
                                 images: updatedImages,
                                 lastDoc: snapshot.docs[snapshot.docs.length - 1],
-                                hasMore: snapshot.docs.length === 20
+                                hasMore: snapshot.docs.length === 60,
+                                timestamp: Date.now() // Update timestamp
                             }
                         }));
                     }
                     return updatedImages;
                 });
             } else {
-                setImages(validImages);
+                const mixedImages = smartMix(validImages, affinityMap, viewedIds);
+                setImages(mixedImages);
                 setFilterCache(prev => ({
                     ...prev,
                     [activeFilter]: {
-                        images: validImages,
+                        images: mixedImages,
                         lastDoc: snapshot.docs[snapshot.docs.length - 1],
-                        hasMore: snapshot.docs.length === 20
+                        hasMore: snapshot.docs.length === 60,
+                        timestamp: Date.now() // Add timestamp
                     }
                 }));
             }
@@ -255,17 +284,20 @@ export default function PublicGenerationsFeed() {
                 setLoading(false);
             }
         }
-    }, [lastDoc, activeFilter]);
+    }, [lastDoc, activeFilter, hiddenIds, affinityMap, viewedIds]);
 
     useEffect(() => {
-        // Hydrate from cache if available
-        if (filterCache[activeFilter]) {
-            setImages(filterCache[activeFilter].images);
-            setLastDoc(filterCache[activeFilter].lastDoc);
-            setHasMore(filterCache[activeFilter].hasMore);
+        // Hydrate from cache if available AND fresh (< 5 mins)
+        const cachedData = filterCache[activeFilter];
+        const isFresh = cachedData && (Date.now() - cachedData.timestamp < 5 * 60 * 1000);
+
+        if (isFresh) {
+            setImages(cachedData.images);
+            setLastDoc(cachedData.lastDoc);
+            setHasMore(cachedData.hasMore);
             setLoading(false);
-            // Optionally: Could trigger a background update here
         } else {
+            // Cache miss
             setImages([]);
             setLastDoc(null);
             setHasMore(true);
@@ -282,7 +314,7 @@ export default function PublicGenerationsFeed() {
             if (entries[0].isIntersecting && hasMore) {
                 fetchGenerations(true);
             }
-        });
+        }, { rootMargin: '800px' });
 
         if (lastImageElementRef.current) {
             observer.current.observe(lastImageElementRef.current);

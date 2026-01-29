@@ -21,7 +21,7 @@ const FeedPost = ({
     onTagClick
 }) => {
     const { _currentUser } = useAuth();
-    const { isLiked, isBookmarked, toggleLike, toggleBookmark, unhidePost, reportPost, appealPost, isHidden } = useUserInteractions();
+    const { isLiked, isBookmarked, toggleLike, toggleBookmark, unhidePost, reportPost, appealPost, isHidden, markViewed } = useUserInteractions();
 
     const [activeSlide, setActiveSlide] = useState(0);
     const [showLargeHeart, setShowLargeHeart] = useState(false);
@@ -32,9 +32,20 @@ const FeedPost = ({
     const [dismissed, setDismissed] = useState(false);
     const timerRef = useRef(null);
     const videoRef = useRef(null);
+    const viewRef = useRef(null);
+
+    // Incremental Update Logic: Capture initial state to track local offsets
+    const [initialLiked] = useState(() => isLiked(imgItem?.id));
+    const [initialBookmarked] = useState(() => isBookmarked(imgItem?.id));
+    const [initialLikesCount] = useState(() => imgItem?.likesCount || imgItem?.likes || 0);
+    const [initialBookmarksCount] = useState(() => imgItem?.bookmarksCount || 0);
 
     const liked = isLiked(imgItem?.id);
     const bookmarked = isBookmarked(imgItem?.id);
+
+    // Derived Display Counts
+    const displayLikesCount = initialLikesCount + (liked ? 1 : 0) - (initialLiked ? 1 : 0);
+    const displayBookmarksCount = initialBookmarksCount + (bookmarked ? 1 : 0) - (initialBookmarked ? 1 : 0);
 
     const handleLike = useCallback(() => {
         if (imgItem) toggleLike(imgItem, model);
@@ -65,6 +76,39 @@ const FeedPost = ({
             if (timerRef.current) clearTimeout(timerRef.current);
         };
     }, []);
+
+    // Smart Visibility (Video & Views)
+    useEffect(() => {
+        const itemType = imgItem?.type;
+        const element = viewRef.current;
+        if (!element) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                entries.forEach(entry => {
+                    const isVisible = entry.isIntersecting;
+
+                    // Track Viewed
+                    if (isVisible) {
+                        markViewed(imgItem.id);
+                    }
+
+                    // Handle Video Autoplay
+                    if (itemType === 'video' && videoRef.current) {
+                        if (isVisible) {
+                            videoRef.current.play().catch(() => { });
+                        } else {
+                            videoRef.current.pause();
+                        }
+                    }
+                });
+            },
+            { threshold: 0.5 } // 50% visibility required
+        );
+
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, [imgItem?.id, imgItem?.type, markViewed]);
 
     // Resilience Guard: Prevent crash if critical data is missing
     if (!imgItem || !imgItem.id) {
@@ -377,6 +421,7 @@ const FeedPost = ({
 
             {/* Post Image Container */}
             <div
+                ref={viewRef}
                 onClick={() => {
                     handleDoubleTap();
                 }}
@@ -456,7 +501,6 @@ const FeedPost = ({
                                 ref={videoRef}
                                 src={imgItem.videoUrl}
                                 poster={imgItem.imageUrl}
-                                autoPlay
                                 muted={isMuted}
                                 loop
                                 playsInline
@@ -496,7 +540,7 @@ const FeedPost = ({
                         <SafeImage
                             src={getOptimizedImageUrl(imgItem.url || imgItem.imageUrl || (typeof imgItem === 'string' ? imgItem : ''))}
                             alt={imgItem.prompt || "Model Generation"}
-                            loading={index < 2 ? "eager" : "lazy"}
+                            loading={index < 4 ? "eager" : "lazy"}
                             className="feed-post-image"
                             style={{
                                 width: '100%',
@@ -685,10 +729,10 @@ const FeedPost = ({
 
                 <div style={{ display: 'flex', gap: '20px', marginBottom: '12px' }}>
                     <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'white', fontFamily: 'monospace' }}>
-                        {imgItem.likesCount || 0} VOTES
+                        {displayLikesCount} VOTES
                     </div>
                     <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}>
-                        {imgItem.bookmarksCount || 0} SAVES
+                        {displayBookmarksCount} SAVES
                     </div>
                 </div>
 
