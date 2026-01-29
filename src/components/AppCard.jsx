@@ -1,15 +1,15 @@
-import React, { memo } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Heart } from 'lucide-react';
 import './AppCard.css';
 
-const AppCard = memo(({ title, description, icon: AppIcon, path, tags = [], color = "violet", rating = "4.9", isCompact = false, previewImage, isLiked, onToggleLike, likeCount = 0, rank }) => {
+const AppCard = memo(function AppCard({ title, description, icon: AppIcon, path, tags = [], color = "violet", rating = "4.9", isCompact = false, previewImage, isLiked, onToggleLike, likeCount = 0, rank }) {
 
     // Optimistic like count
-    const [displayLikes, setDisplayLikes] = React.useState(likeCount);
+    const [displayLikes, setDisplayLikes] = useState(likeCount);
 
     // Sync if prop changes drastically (e.g. refresh), but prioritize local optimistic toggle
-    React.useEffect(() => {
+    useEffect(() => {
         setDisplayLikes(likeCount);
     }, [likeCount]);
 

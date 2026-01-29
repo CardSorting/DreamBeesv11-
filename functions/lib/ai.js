@@ -106,7 +106,7 @@ export async function generateVisionPrompt(imageUrl) {
             const arrayBuffer = await imgRes.arrayBuffer();
             imageBase64 = Buffer.from(arrayBuffer).toString('base64');
             const contentType = imgRes.headers.get('content-type');
-            if (contentType) mimeType = contentType;
+            if (contentType) {mimeType = contentType;}
         } catch (e) {
             console.error("Failed to fetch image for Vertex AI:", e);
             throw new Error("Could not retrieve image for analysis");
@@ -177,11 +177,11 @@ export const transformImageWithGemini = async (imageUrl, styleName, instructions
 
     try {
         const imgRes = await fetchWithTimeout(imageUrl);
-        if (!imgRes.ok) throw new Error(`Failed to fetch source image: ${imgRes.statusText}`);
+        if (!imgRes.ok) {throw new Error(`Failed to fetch source image: ${imgRes.statusText}`);}
         const arrayBuffer = await imgRes.arrayBuffer();
         inputBase64 = Buffer.from(arrayBuffer).toString('base64');
         const contentType = imgRes.headers.get('content-type');
-        if (contentType) mimeType = contentType;
+        if (contentType) {mimeType = contentType;}
     } catch (e) {
         console.error("[Transform] Failed to fetch source image:", e);
         throw new Error("Could not retrieve source image for transformation");
@@ -441,11 +441,11 @@ export const formatMemeWithGemini = async (imageUrl, text, userId = 'system') =>
 
     try {
         const imgRes = await fetchWithTimeout(imageUrl);
-        if (!imgRes.ok) throw new Error(`Failed to fetch source image: ${imgRes.statusText}`);
+        if (!imgRes.ok) {throw new Error(`Failed to fetch source image: ${imgRes.statusText}`);}
         const arrayBuffer = await imgRes.arrayBuffer();
         inputBase64 = Buffer.from(arrayBuffer).toString('base64');
         const contentType = imgRes.headers.get('content-type');
-        if (contentType) mimeType = contentType;
+        if (contentType) {mimeType = contentType;}
     } catch (e) {
         console.error("[Meme] Failed to fetch source image:", e);
         throw new Error("Could not retrieve source image for meme generation");
@@ -621,10 +621,10 @@ export const generateColoringPageImage = async (prompt, style) => {
     });
 
     const response = (await result.response).candidates?.[0];
-    if (response?.finishReason === 'SAFETY') throw new Error("Blocked by safety filter.");
+    if (response?.finishReason === 'SAFETY') {throw new Error("Blocked by safety filter.");}
 
     const generatedImageBase64 = response?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-    if (!generatedImageBase64) throw new Error("No image data returned from AI");
+    if (!generatedImageBase64) {throw new Error("No image data returned from AI");}
 
     return generatedImageBase64;
 };

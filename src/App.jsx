@@ -1,5 +1,4 @@
-import React, { Suspense } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import React, { useEffect } from 'react';
 import { setUserProperties, trackChurnSignal } from './utils/analytics';
 import { BrowserRouter as Router, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -16,7 +15,6 @@ import AnimatedRoutes from './components/AnimatedRoutes';
 import GoogleAnalyticsTracker from './components/GoogleAnalyticsTracker';
 import PerformanceTracker from './components/PerformanceTracker';
 import BehavioralTracker from './components/BehavioralTracker';
-// import PublicGenerationsFeed from './pages/PublicGenerationsFeed';
 import SmoothScroll from './components/SmoothScroll';
 import NetworkStatus from './components/NetworkStatus';
 import UsernameOnboarding from './components/UsernameOnboarding';
@@ -30,8 +28,6 @@ function Layout() {
 
   const { currentUser } = useAuth();
   const { userProfile, isProfileLoaded } = useUserInteractions();
-
-  const isShowcaseDetail = false; // Discovery routes removed
 
   // Check if we need to show onboarding
   const showOnboarding = currentUser && isProfileLoaded && !userProfile.username;
@@ -68,11 +64,12 @@ function Layout() {
     </div>
   );
 }
+Layout.displayName = 'Layout';
 
 import { TwitchProvider } from './contexts/TwitchContext';
 
 function App() {
-  React.useEffect(() => {
+  useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const utmSource = urlParams.get('utm_source');
     const utmMedium = urlParams.get('utm_medium');

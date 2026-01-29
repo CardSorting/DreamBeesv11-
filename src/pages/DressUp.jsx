@@ -9,7 +9,7 @@ import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { Upload, X, RotateCcw, Sparkles, Camera, ChevronLeft, ChevronRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { compressImage } from '../utils';
-import { calculateZapCost, formatZaps, ZAP_COSTS } from '../constants/zapCosts';
+import { formatZaps, ZAP_COSTS } from '../constants/zapCosts';
 import './DressUp.css';
 import SEO from '../components/SEO';
 
@@ -76,7 +76,7 @@ export default function DressUp() {
         if (viewParam !== viewMode) setViewMode(viewParam);
         if (tabParam !== activeTab) setActiveTab(tabParam);
         if (pageParam !== page) setPage(pageParam);
-    }, [viewParam, tabParam, pageParam]);
+    }, [viewParam, tabParam, pageParam, viewMode, activeTab, page]);
 
     const updateUrl = (v, t, p) => {
         setSearchParams(prev => {
@@ -135,7 +135,7 @@ export default function DressUp() {
     // Reset page when tab changes
     useEffect(() => {
         setPage(0);
-    }, [activeTab]);
+    }, [activeTab, setPage]);
 
     // Fetch user's recent images for "Stickers" (One-time Fetch)
     useEffect(() => {
@@ -164,9 +164,9 @@ export default function DressUp() {
                 listenerRef.current();
             }
         };
-    }, [currentUser?.uid]);
+    }, [currentUser]);
 
-    const startListening = (id) => {
+    const startListening = React.useCallback((id) => {
         // If we are already listening to THIS id, do nothing.
         // If we were listening to a different ID, stop that one first.
         if (listenerRef.current) {
@@ -213,7 +213,7 @@ export default function DressUp() {
             localStorage.removeItem('dressUpRequestId');
         });
         listenerRef.current = unsubscribe;
-    };
+    }, []);
 
     // Restore generation on mount
     useEffect(() => {
@@ -222,8 +222,7 @@ export default function DressUp() {
             console.log("Restoring active generation:", savedId);
             startListening(savedId);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [startListening]);
 
 
     const handleFileUpload = async (e) => {

@@ -32,6 +32,7 @@ export function useMagicEnhance({
 
     const handleMagicEnhance = async () => {
         if (isEnhancing) return;
+        let requestId = 'legacy';
 
         // Capture current values
         let currentReferenceImage = referenceImage;
@@ -82,7 +83,7 @@ export function useMagicEnhance({
                 toast.loading(`✨ Starting ${styleObj.label} transformation...`, { id: 'style-magic' });
 
                 const cost = 0.5; // IMAGE_TRANSFORM
-                const requestId = `tr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+                requestId = `tr_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
                 if (deductZapsOptimistically) deductZapsOptimistically(cost, requestId);
 
                 try {
@@ -153,7 +154,7 @@ export function useMagicEnhance({
                     }
                 } catch (error) {
                     const cost = 0.5; // IMAGE_TRANSFORM
-                    if (rollbackZaps) rollbackZaps(cost, typeof requestId !== 'undefined' ? requestId : 'legacy');
+                    if (rollbackZaps) rollbackZaps(cost, requestId);
 
                     console.error("[handleMagicEnhance] transformImage error:", error);
                     let errorMessage = error.message || "Failed to transform image";
@@ -220,7 +221,7 @@ export function useMagicEnhance({
                 // 3. Standard Magic Enhance (No Style)
                 try {
                     const cost = 1.0; // IMAGE_ENHANCE
-                    const requestId = `en_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+                    requestId = `en_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
                     if (deductZapsOptimistically) deductZapsOptimistically(cost, requestId);
 
                     const result = await api({ action: 'createEnhanceRequest', prompt: currentPrompt, requestId });
@@ -288,7 +289,7 @@ export function useMagicEnhance({
                     listenerRef.current = unsubscribe;
                 } catch (error) {
                     const cost = 1.0; // IMAGE_ENHANCE
-                    if (rollbackZaps) rollbackZaps(cost, typeof requestId !== 'undefined' ? requestId : 'legacy');
+                    if (rollbackZaps) rollbackZaps(cost, requestId);
 
                     console.error("Enhance request error", error);
                     toast.error("Failed to enhance prompt", { id: 'style-magic' });

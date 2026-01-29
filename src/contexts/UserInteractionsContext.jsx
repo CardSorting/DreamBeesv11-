@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { db } from '../firebase';
 import { collection, doc, setDoc, deleteDoc, onSnapshot, query, where, orderBy, runTransaction } from 'firebase/firestore';
 // import { httpsCallable } from 'firebase/functions'; // Removed, using useApi
@@ -39,6 +39,10 @@ export function UserInteractionsProvider({ children }) {
     const [mainstreamGenerations, setMainstreamGenerations] = useState([]);
     const [sessionGenerations, setSessionGenerations] = useState(0);
 
+    // App Likes Logic
+    const [likedAppIds, setLikedAppIds] = useState(new Set());
+
+
     // User Profile Data (Centralized Sync)
     const [userProfile, setUserProfile] = useState({
         zaps: 5,
@@ -55,34 +59,30 @@ export function UserInteractionsProvider({ children }) {
     const [pendingZaps, setPendingZaps] = useState({}); // { requestId: { amount, timestamp } }
     const [pendingReels, setPendingReels] = useState({}); // { requestId: { amount, timestamp } }
 
+    // Track previous creations length to detect new items without re-triggering effect
+    const prevCreationsLengthRef = useRef(0);
+
     useEffect(() => {
         if (!currentUser?.uid) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setLikedIds(new Set());
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setBookmarkedIds(new Set());
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setHiddenIds(new Set());
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setLikes([]);
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setBookmarks([]);
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setHidden([]);
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setMockups([]);
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setMemes([]);
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setAppGenerations([]);
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setPersonalCreations([]);
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setMainstreamGenerations([]);
-            setIsProfileLoaded(false);
+            // Defer resets to avoid cascading renders during mount/auth-change
+            setTimeout(() => {
+                setLikedIds(new Set());
+                setBookmarkedIds(new Set());
+                setHiddenIds(new Set());
+                setLikedAppIds(new Set());
+                setLikes([]);
+                setBookmarks([]);
+                setHidden([]);
+                setMockups([]);
+                setMemes([]);
+                setAppGenerations([]);
+                setPersonalCreations([]);
+                setMainstreamGenerations([]);
+                setIsProfileLoaded(false);
+                prevCreationsLengthRef.current = 0;
+            }, 0);
             return;
         }
-
 
         const uid = currentUser.uid;
 
@@ -92,8 +92,8 @@ export function UserInteractionsProvider({ children }) {
             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setLikes(data);
             setLikedIds(new Set(data.map(item => item.id)));
-        }, (error) => {
-            console.warn("Global likes listener failed:", error);
+        }, (_error) => {
+            console.warn("Global likes listener failed:", _error);
         });
 
         // Listener for Bookmarks
@@ -102,8 +102,8 @@ export function UserInteractionsProvider({ children }) {
             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setBookmarks(data);
             setBookmarkedIds(new Set(data.map(item => item.id)));
-        }, (error) => {
-            console.warn("Global bookmarks listener failed:", error);
+        }, (_error) => {
+            console.warn("Global bookmarks listener failed:", _error);
         });
 
         // Listener for Hidden Posts
@@ -117,11 +117,7 @@ export function UserInteractionsProvider({ children }) {
         });
 
         // Listener for Mockups
-        const mockupsQuery = query(
-            collection(db, 'mockups'),
-            where('userId', '==', uid),
-            orderBy('createdAt', 'desc')
-        );
+        const mockupsQuery = query(collection(db, 'mockups'), where('userId', '==', uid), orderBy('createdAt', 'desc'));
         const unsubMockups = onSnapshot(mockupsQuery, (snapshot) => {
             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setMockups(data);
@@ -130,11 +126,7 @@ export function UserInteractionsProvider({ children }) {
         });
 
         // Listener for Memes
-        const memesQuery = query(
-            collection(db, 'memes'),
-            where('userId', '==', uid),
-            orderBy('createdAt', 'desc')
-        );
+        const memesQuery = query(collection(db, 'memes'), where('userId', '==', uid), orderBy('createdAt', 'desc'));
         const unsubMemes = onSnapshot(memesQuery, (snapshot) => {
             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setMemes(data);
@@ -146,9 +138,8 @@ export function UserInteractionsProvider({ children }) {
         const unsubProfile = onSnapshot(userDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
-
-                // Clear pending zaps that are older than the server's last action
                 const serverLastAction = data.lastActionTime?.toMillis() || 0;
+
                 setPendingZaps(prev => {
                     const next = { ...prev };
                     let changed = false;
@@ -179,6 +170,9 @@ export function UserInteractionsProvider({ children }) {
                     reels: data.reels || 0,
                     subscriptionStatus: data.subscriptionStatus || 'inactive',
                     username: data.username || '',
+                    isPremium: data.isPremium || false,
+                    plan: data.plan || null,
+                    createdAt: data.createdAt,
                     displayPreference: data.displayPreference || 'name',
                     karma: data.karma !== undefined ? data.karma : 0,
                     birthday: data.birthday || null,
@@ -193,18 +187,10 @@ export function UserInteractionsProvider({ children }) {
             setIsProfileLoaded(true);
         });
 
-        // Listen to reels too? They are already in the profile doc.
-
-        // Listener for all completed generations in generation_queue
-        const gensQuery = query(
-            collection(db, 'generation_queue'),
-            where('userId', '==', uid),
-            where('status', '==', 'completed'),
-            orderBy('createdAt', 'desc')
-        );
+        // Listener for all completed generations
+        const gensQuery = query(collection(db, 'generation_queue'), where('userId', '==', uid), where('status', '==', 'completed'), orderBy('createdAt', 'desc'));
         const unsubGens = onSnapshot(gensQuery, (snapshot) => {
             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            // Separate app-specific vs mainstream
             const apps = data.filter(item => item.type === 'dress-up' || item.type === 'slideshow' || item.modelId === 'meowacc');
             const mainstream = data.filter(item => !item.type || (item.type !== 'dress-up' && item.type !== 'slideshow' && item.modelId !== 'meowacc'));
             setAppGenerations(apps);
@@ -213,77 +199,62 @@ export function UserInteractionsProvider({ children }) {
             console.warn("Global generation_queue listener failed:", error);
         });
 
-        // Listener for personal creations in 'images' collection
-        const personalQuery = query(
-            collection(db, 'images'),
-            where('userId', '==', uid),
-            orderBy('createdAt', 'desc')
-        );
+        // Listener for personal creations
+        const personalQuery = query(collection(db, 'images'), where('userId', '==', uid), orderBy('createdAt', 'desc'));
         const unsubPersonal = onSnapshot(personalQuery, (snapshot) => {
             const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const prevLen = prevCreationsLengthRef.current;
 
-            // AHA Moment: First successful generation
-            if (data.length === 1 && personalCreations.length === 0) {
+            if (data.length === 1 && prevLen === 0) {
                 trackAhaMoment('first_generation_success');
             }
 
-            if (data.length > personalCreations.length) {
-                setSessionGenerations(prev => prev + (data.length - personalCreations.length));
+            if (data.length > prevLen) {
+                setSessionGenerations(prev => prev + (data.length - prevLen));
             }
+
+            prevCreationsLengthRef.current = data.length;
             setPersonalCreations(data);
         }, (error) => {
             console.warn("Global images listener failed:", error);
         });
 
+        const likedAppsRef = collection(db, 'users', uid, 'likedApps');
+        const unsubLikedApps = onSnapshot(likedAppsRef, (snapshot) => {
+            const newSet = new Set();
+            snapshot.forEach((doc) => newSet.add(doc.id));
+            setLikedAppIds(newSet);
+        }, (error) => {
+            console.warn("Global likedApps listener failed:", error);
+        });
+
         return () => {
-            unsubLikes();
-            unsubBookmarks();
-            unsubHidden();
-            unsubMockups();
-            unsubMemes();
-            unsubProfile();
-            unsubGens();
-            unsubPersonal();
+            unsubLikes(); unsubBookmarks(); unsubHidden(); unsubMockups(); unsubMemes(); unsubProfile(); unsubGens(); unsubPersonal(); unsubLikedApps();
         };
     }, [currentUser?.uid]);
 
-    // Track Credit Lifecycle Lifecycle
-    const lastZapBalanceRef = React.useRef(null);
+    // Track Credit Lifecycle
+    const lastZapBalanceRef = useRef(null);
     useEffect(() => {
         if (isProfileLoaded && userProfile && userProfile.zaps !== undefined) {
             const zaps = userProfile.zaps;
-
-            // Initial check or balance change
             if (lastZapBalanceRef.current !== null && lastZapBalanceRef.current !== zaps) {
                 if (zaps < lastZapBalanceRef.current) {
                     const diff = lastZapBalanceRef.current - zaps;
-                    // Only show for significant drops or specific user actions to avoid noise
-                    // But for now, any drop is a "cost" confirm
                     toast(`-${Number(diff.toFixed(2))} Zaps`, {
                         icon: '⚡',
-                        style: {
-                            borderRadius: '10px',
-                            background: '#333',
-                            color: '#fff',
-                            fontSize: '0.8rem',
-                            fontWeight: '600'
-                        },
+                        style: { borderRadius: '10px', background: '#333', color: '#fff', fontSize: '0.8rem', fontWeight: '600' },
                         duration: 2000
                     });
                 }
-
-                if (zaps === 0) {
-                    trackCreditLifecycle('exhausted', zaps);
-                } else if (zaps <= 2 && lastZapBalanceRef.current > 2) {
-                    trackCreditLifecycle('low_balance', zaps);
-                }
+                if (zaps === 0) trackCreditLifecycle('exhausted', zaps);
+                else if (zaps <= 2 && lastZapBalanceRef.current > 2) trackCreditLifecycle('low_balance', zaps);
             }
-
             lastZapBalanceRef.current = zaps;
         }
-    }, [userProfile.zaps, isProfileLoaded]);
+    }, [userProfile, isProfileLoaded]);
 
-    // Sync user profile properties to GA
+    // Sync GA properties
     useEffect(() => {
         if (isProfileLoaded && userProfile) {
             const totalGens = personalCreations.length + mainstreamGenerations.length;
@@ -305,27 +276,22 @@ export function UserInteractionsProvider({ children }) {
     }, [userProfile, isProfileLoaded, personalCreations.length, mainstreamGenerations.length, sessionGenerations]);
 
     // Helpers
-    const isLiked = (id) => likedIds.has(id);
-    const isBookmarked = (id) => bookmarkedIds.has(id);
-    const isHidden = (id) => hiddenIds.has(id);
+    const isLiked = useCallback((id) => likedIds.has(id), [likedIds]);
+    const isBookmarked = useCallback((id) => bookmarkedIds.has(id), [bookmarkedIds]);
+    const isHidden = useCallback((id) => hiddenIds.has(id), [hiddenIds]);
 
     // Actions with debouncing/optimistic updates managed by the caller usually, 
     // but here we provide a verified function.
 
-    const toggleLike = async (imgItem, model) => {
-        if (!currentUser) {
-            toast.error("Please log in");
-            return false;
-        }
-
+    const toggleLike = useCallback(async (imgItem, model) => {
+        if (!currentUser) { toast.error("Please log in"); return false; }
         const id = imgItem.id;
         const currentlyLiked = likedIds.has(id);
-
-        // Optimistic update
-        const newSet = new Set(likedIds);
-        if (currentlyLiked) newSet.delete(id);
-        else newSet.add(id);
-        setLikedIds(newSet); // Update local state immediately
+        setLikedIds(prev => {
+            const next = new Set(prev);
+            if (currentlyLiked) next.delete(id); else next.add(id);
+            return next;
+        });
 
         try {
             await apiCall('api', {
@@ -333,50 +299,28 @@ export function UserInteractionsProvider({ children }) {
                 imageId: id,
                 modelId: model?.id || 'unknown',
                 isLiked: currentlyLiked,
-                imgData: {
-                    url: imgItem.url || imgItem.imageUrl,
-                    thumbnailUrl: imgItem.thumbnailUrl || imgItem.url,
-                    prompt: imgItem.prompt || "",
-                    aspectRatio: imgItem.aspectRatio || "1/1"
-                }
-            }, { toastErrors: true }); // Let useApi handle error toasts
-
-            if (currentlyLiked) {
-                // Was liked, so we unliked it
-                trackEvent('unlike_image', { image_id: id, model_id: model?.id });
-                // toast.success("Removed from likes"); // Optional: reduce noise
-            } else {
-                trackEvent('like_image', { image_id: id, model_id: model?.id });
-                toast.success("Added to likes");
-            }
-
-        } catch (error) {
-            console.error("Toggle like failed:", error);
-            // Revert on error
+                imgData: { url: imgItem.url || imgItem.imageUrl, thumbnailUrl: imgItem.thumbnailUrl || imgItem.url, prompt: imgItem.prompt || "", aspectRatio: imgItem.aspectRatio || "1/1" }
+            }, { toastErrors: true });
+            trackEvent(currentlyLiked ? 'unlike_image' : 'like_image', { image_id: id, model_id: model?.id });
+            if (!currentlyLiked) toast.success("Added to likes");
+        } catch {
             setLikedIds(prev => {
-                const revertSet = new Set(prev);
-                if (currentlyLiked) revertSet.add(id);
-                else revertSet.delete(id);
-                return revertSet;
+                const next = new Set(prev);
+                if (currentlyLiked) next.add(id); else next.delete(id);
+                return next;
             });
-            // Error toast handled by useApi
         }
-    };
+    }, [currentUser, likedIds, apiCall]);
 
-    const toggleBookmark = async (imgItem, model) => {
-        if (!currentUser) {
-            toast.error("Please log in");
-            return false;
-        }
-
+    const toggleBookmark = useCallback(async (imgItem, model) => {
+        if (!currentUser) { toast.error("Please log in"); return false; }
         const id = imgItem.id;
         const currentlySaved = bookmarkedIds.has(id);
-
-        // Optimistic update
-        const newSet = new Set(bookmarkedIds);
-        if (currentlySaved) newSet.delete(id);
-        else newSet.add(id);
-        setBookmarkedIds(newSet);
+        setBookmarkedIds(prev => {
+            const next = new Set(prev);
+            if (currentlySaved) next.delete(id); else next.add(id);
+            return next;
+        });
 
         try {
             await apiCall('api', {
@@ -384,245 +328,96 @@ export function UserInteractionsProvider({ children }) {
                 imageId: id,
                 modelId: model?.id || 'unknown',
                 isBookmarked: currentlySaved,
-                imgData: {
-                    url: imgItem.url || imgItem.imageUrl,
-                    thumbnailUrl: imgItem.thumbnailUrl || imgItem.url,
-                    prompt: imgItem.prompt || "",
-                    aspectRatio: imgItem.aspectRatio || "1/1"
-                }
+                imgData: { url: imgItem.url || imgItem.imageUrl, thumbnailUrl: imgItem.thumbnailUrl || imgItem.url, prompt: imgItem.prompt || "", aspectRatio: imgItem.aspectRatio || "1/1" }
             }, { toastErrors: true });
-
-            if (currentlySaved) {
-                trackEvent('unbookmark_image', { image_id: id, model_id: model?.id });
-                toast.success("Removed from bookmarks");
-            } else {
-                trackEvent('bookmark_image', { image_id: id, model_id: model?.id });
-                toast.success("Saved to bookmarks");
-            }
-        } catch (error) {
-            console.error("Toggle bookmark failed:", error);
-            // Revert on error
+            trackEvent(currentlySaved ? 'unbookmark_image' : 'bookmark_image', { image_id: id, model_id: model?.id });
+            toast.success(currentlySaved ? "Removed from bookmarks" : "Saved to bookmarks");
+        } catch {
             setBookmarkedIds(prev => {
-                const revertSet = new Set(prev);
-                if (currentlySaved) revertSet.add(id);
-                else revertSet.delete(id);
-                return revertSet;
+                const next = new Set(prev);
+                if (currentlySaved) next.add(id); else next.delete(id);
+                return next;
             });
-            // Error toast handled by useApi
         }
-    };
+    }, [currentUser, bookmarkedIds, apiCall]);
 
-    const hidePost = async (imgItem) => {
-        if (!currentUser) {
-            toast.error("Please log in to hide posts");
-            return false;
-        }
-
+    const hidePost = useCallback(async (imgItem) => {
+        if (!currentUser) { toast.error("Please log in to hide posts"); return false; }
         const id = imgItem.id;
-        if (hiddenIds.has(id)) return; // Already hidden
-
-        // Optimistic update
+        if (hiddenIds.has(id)) return;
         setHiddenIds(prev => new Set(prev).add(id));
-
         try {
             await setDoc(doc(db, `users/${currentUser.uid}/hidden`, id), {
-                imageId: id,
-                createdAt: new Date().toISOString(),
-                prompt: imgItem.prompt || "",
-                url: imgItem.url || imgItem.imageUrl || ""
+                imageId: id, createdAt: new Date().toISOString(), prompt: imgItem.prompt || "", url: imgItem.url || imgItem.imageUrl || ""
             });
             trackEvent('hide_post', { image_id: id });
             toast.success("Post hidden");
-        } catch (error) {
-            console.error("Hide post failed:", error);
-            // Revert
-            setHiddenIds(prev => {
-                const next = new Set(prev);
-                next.delete(id);
-                return next;
-            });
+        } catch {
+            setHiddenIds(prev => { const next = new Set(prev); next.delete(id); return next; });
             toast.error("Failed to hide post");
         }
-    };
+    }, [currentUser, hiddenIds]);
 
-    const reportPost = async (imgItem, reason = "user_flagged") => {
-        if (!currentUser) {
-            toast.error("Please log in to report content");
-            return false;
-        }
-
+    const reportPost = useCallback(async (imgItem, reason = "user_flagged") => {
+        if (!currentUser) { toast.error("Please log in to report content"); return false; }
         const id = imgItem.id;
-        if (hiddenIds.has(id)) {
-            toast('Content already hidden', { icon: 'check' });
-            return;
-        }
-
-        // 1. Immediate Personal Hide (Optimistic)
+        if (hiddenIds.has(id)) { toast('Content already hidden', { icon: 'check' }); return; }
         setHiddenIds(prev => new Set(prev).add(id));
-
         try {
-            // 2. Persist Personal Hide
             const hidePromise = setDoc(doc(db, `users/${currentUser.uid}/hidden`, id), {
-                imageId: id,
-                createdAt: new Date().toISOString(),
-                reason: reason,
-                type: 'report',
-                prompt: imgItem.prompt || "",
-                url: imgItem.url || imgItem.imageUrl || ""
+                imageId: id, createdAt: new Date().toISOString(), reason: reason, type: 'report', prompt: imgItem.prompt || "", url: imgItem.url || imgItem.imageUrl || ""
             });
-
-            // 3. Send Global Report
-            const reportPromise = apiCall('api', {
-                action: 'reportGeneration',
-                jobId: id, // Assuming imgItem.id IS the jobId for generations
-                reason: reason
-            }, { toastErrors: false });
-
+            const reportPromise = apiCall('api', { action: 'reportGeneration', jobId: id, reason: reason }, { toastErrors: false });
             await Promise.all([hidePromise, reportPromise]);
-
             trackEvent('report_post', { image_id: id, reason: reason });
             toast.success("Content flagged and hidden", { icon: '🚩' });
-        } catch (error) {
-            console.error("Report failed:", error);
-            // Don't revert the hide, assuming user wants it gone regardless of backend success
-            // But maybe show error toast
-            toast.error("Verified report failed, but hidden locally.");
+        } catch {
+            toast.error("Report failed, but hidden locally.");
         }
-    };
+    }, [currentUser, hiddenIds, apiCall]);
 
-    const unhidePost = async (imgItem) => {
+    const unhidePost = useCallback(async (imgItem) => {
         if (!currentUser) return false;
         const id = imgItem.id;
-
-        // Optimistic update
-        setHiddenIds(prev => {
-            const next = new Set(prev);
-            next.delete(id);
-            return next;
-        });
-
+        setHiddenIds(prev => { const next = new Set(prev); next.delete(id); return next; });
         try {
             await deleteDoc(doc(db, `users/${currentUser.uid}/hidden`, id));
             toast.success("Post unhidden");
-        } catch (error) {
-            console.error("Unhide post failed:", error);
-            // Revert
+        } catch {
             setHiddenIds(prev => new Set(prev).add(id));
             toast.error("Failed to unhide post");
         }
-    };
+    }, [currentUser]);
 
-    const voteOnSafety = async (imgItem, verdict) => {
-        if (!currentUser) {
-            toast.error("Please log in to vote");
-            return;
-        }
-
-        // Optimistic UI Removal happen in the component usually, 
-        // but here we just handle the API and global state sync.
-
+    const voteOnSafety = useCallback(async (imgItem, verdict) => {
+        if (!currentUser) { toast.error("Please log in to vote"); return; }
         try {
-            const result = await apiCall('api', {
-                action: 'moderationVote',
-                jobId: imgItem.id,
-                verdict: verdict
-            }, { toastErrors: true });
-
-            if (result.alreadyVoted) {
-                toast("Already voted on this card", { icon: '⚠️' });
-                return;
-            }
-
-            // Feedback based on result
-            if (verdict === 'skip') {
-                toast("Skipped", { icon: '⏭️' });
-                return result;
-            }
-
-            const karma = result.karmaAwarded || 0;
-            if (karma > 0) {
-                // We could show a custom toast or let the component do it
-                // toast.success(`Voted! +${karma} karma`);
-            }
-
-            if (verdict === 'unsafe') {
-                // If we voted unsafe, user probably expects it to be hidden from THEM at least
-                setHiddenIds(prev => new Set(prev).add(imgItem.id));
-            } else if (verdict === 'safe') {
-                // If it was locally hidden, maybe unhide?
-                if (hiddenIds.has(imgItem.id)) {
-                    unhidePost(imgItem);
-                }
-            }
-
+            const result = await apiCall('api', { action: 'moderationVote', jobId: imgItem.id, verdict: verdict }, { toastErrors: true });
+            if (result.alreadyVoted) { toast("Already voted on this card", { icon: '⚠️' }); return; }
+            if (verdict === 'skip') { toast("Skipped", { icon: '⏭️' }); return result; }
+            if (verdict === 'unsafe') setHiddenIds(prev => new Set(prev).add(imgItem.id));
+            else if (verdict === 'safe' && hiddenIds.has(imgItem.id)) unhidePost(imgItem);
             trackEvent('safety_vote', { image_id: imgItem.id, verdict: verdict });
             return result;
         } catch (error) {
             console.error("Safety vote failed:", error);
             throw error;
         }
-    };
+    }, [currentUser, apiCall, hiddenIds, unhidePost]);
 
-    const appealPost = async (imgItem) => {
+    const appealPost = useCallback(async (imgItem) => {
         if (!currentUser) return;
         const id = imgItem.id;
-
-        // Optimistic unhide locally
-        setHiddenIds(prev => {
-            const next = new Set(prev);
-            next.delete(id);
-            return next;
-        });
-
+        setHiddenIds(prev => { const next = new Set(prev); next.delete(id); return next; });
         try {
-            // Also ensure we remove from local hidden persistence if present
-            try {
-                await deleteDoc(doc(db, `users/${currentUser.uid}/hidden`, id));
-            } catch (_error) { /* ignore */ }
-
-            await apiCall('api', {
-                action: 'appealGeneration',
-                jobId: id
-            }, { toastErrors: true });
-
+            try { await deleteDoc(doc(db, `users/${currentUser.uid}/hidden`, id)); } catch { /* ignore */ }
+            await apiCall('api', { action: 'appealGeneration', jobId: id }, { toastErrors: true });
             trackEvent('appeal_post', { image_id: id });
             toast.success("Appeal submitted", { icon: '⚖️' });
-        } catch (error) {
-            console.error("Appeal failed:", error);
-            toast.error("Appeal failed");
-        }
-    };
+        } catch { toast.error("Appeal failed"); }
+    }, [currentUser, apiCall]);
 
-    // --- App Likes Logic (Moved from useAppLikes) ---
-    const [likedAppIds, setLikedAppIds] = useState(new Set());
-
-    useEffect(() => {
-        if (!currentUser?.uid) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setLikedAppIds(new Set());
-            return;
-        }
-
-
-        const uid = currentUser.uid;
-        const likedAppsRef = collection(db, 'users', uid, 'likedApps');
-
-        const unsubLikedApps = onSnapshot(likedAppsRef, (snapshot) => {
-            const newSet = new Set();
-            snapshot.forEach((doc) => {
-                newSet.add(doc.id);
-            });
-            setLikedAppIds(newSet);
-        }, (error) => {
-            console.warn("Global likedApps listener failed:", error);
-        });
-
-        return () => {
-            unsubLikedApps();
-        };
-    }, [currentUser?.uid]);
-
-    const isAppLiked = (appId) => likedAppIds.has(appId);
+    const isAppLiked = useCallback((appId) => likedAppIds.has(appId), [likedAppIds]);
 
     // Adapted from useAppLikes toggle logic but simplified for context
     // This uses Transaction in a cloud function ideally, but we'll port the client-side transaction logic 
@@ -632,115 +427,94 @@ export function UserInteractionsProvider({ children }) {
     // the client-side transaction logic here.
 
     // We need to import runTransaction for this.
-    const deductZapsOptimistically = (amount, requestId = 'legacy') => {
+    const deductZapsOptimistically = useCallback((amount, requestId = 'legacy') => {
         if (typeof amount !== 'number' || amount <= 0) return;
-        setPendingZaps(prev => ({
-            ...prev,
-            [requestId]: { amount, timestamp: Date.now() }
-        }));
-    };
+        setPendingZaps(prev => ({ ...prev, [requestId]: { amount, timestamp: Date.now() } }));
+    }, []);
 
-    const rollbackZaps = (amount, requestId = 'legacy') => {
-        setPendingZaps(prev => {
-            const next = { ...prev };
-            delete next[requestId];
-            return next;
-        });
-    };
+    const rollbackZaps = useCallback((_amount, requestId = 'legacy') => {
+        setPendingZaps(prev => { const next = { ...prev }; delete next[requestId]; return next; });
+    }, []);
 
-    const deductReelsOptimistically = (amount, requestId = 'legacy') => {
+    const deductReelsOptimistically = useCallback((amount, requestId = 'legacy') => {
         if (typeof amount !== 'number' || amount <= 0) return;
-        setPendingReels(prev => ({
-            ...prev,
-            [requestId]: { amount, timestamp: Date.now() }
-        }));
-    };
+        setPendingReels(prev => ({ ...prev, [requestId]: { amount, timestamp: Date.now() } }));
+    }, []);
 
-    const rollbackReels = (amount, requestId = 'legacy') => {
-        setPendingReels(prev => {
-            const next = { ...prev };
-            delete next[requestId];
-            return next;
-        });
-    };
+    const rollbackReels = useCallback((_amount, requestId = 'legacy') => {
+        setPendingReels(prev => { const next = { ...prev }; delete next[requestId]; return next; });
+    }, []);
 
-    const toggleAppLike = async (appId) => {
+    const toggleAppLike = useCallback(async (appId) => {
         if (!currentUser) return false;
-
         const uid = currentUser.uid;
-        // Optimistic update
         const currentlyLiked = likedAppIds.has(appId);
         setLikedAppIds(prev => {
             const next = new Set(prev);
-            if (currentlyLiked) next.delete(appId);
-            else next.add(appId);
+            if (currentlyLiked) next.delete(appId); else next.add(appId);
             return next;
         });
 
         try {
-            // Dynamic imports removed in favor of top-level imports
-            // const { runTransaction } = await import('firebase/firestore'); 
-            // const { doc } = await import('firebase/firestore');
-
             const appRef = doc(db, 'apps', appId);
             const userLikeRef = doc(db, 'users', uid, 'likedApps', appId);
-
             await runTransaction(db, async (transaction) => {
                 const likeDoc = await transaction.get(userLikeRef);
                 const exists = likeDoc.exists();
-
                 const appDoc = await transaction.get(appRef);
-                if (!appDoc.exists()) {
-                    throw new Error("App does not exist!");
-                }
-
+                if (!appDoc.exists()) throw new Error("App does not exist!");
                 const currentLikes = appDoc.data().likeCount || 0;
                 let newLikes = currentLikes;
-
                 if (exists) {
                     transaction.delete(userLikeRef);
                     newLikes = Math.max(0, currentLikes - 1);
                 } else {
-                    transaction.set(userLikeRef, {
-                        timestamp: new Date()
-                    });
+                    transaction.set(userLikeRef, { timestamp: new Date() });
                     newLikes = currentLikes + 1;
                 }
-
                 transaction.update(appRef, { likeCount: newLikes });
             });
             trackEvent(currentlyLiked ? 'unlike_app' : 'like_app', { app_id: appId });
             return true;
-        } catch (error) {
-            console.error("Error toggling app like:", error);
-            // Revert
+        } catch {
             setLikedAppIds(prev => {
                 const next = new Set(prev);
-                if (currentlyLiked) next.add(appId);
-                else next.delete(appId);
+                if (currentlyLiked) next.add(appId); else next.delete(appId);
                 return next;
             });
             return false;
         }
-    };
+    }, [currentUser, likedAppIds]);
 
-    const value = {
+    const appCreations = useMemo(() => [
+        ...mockups,
+        ...memes,
+        ...appGenerations,
+        ...personalCreations
+    ].sort((a, b) => {
+        const dateA = a.createdAt?.seconds || (a.createdAt?.toMillis ? a.createdAt.toMillis() / 1000 : (a.createdAt instanceof Date ? a.createdAt.getTime() / 1000 : 0));
+        const dateB = b.createdAt?.seconds || (b.createdAt?.toMillis ? b.createdAt.toMillis() / 1000 : (b.createdAt instanceof Date ? b.createdAt.getTime() / 1000 : 0));
+        return dateB - dateA;
+    }), [mockups, memes, appGenerations, personalCreations]);
+
+    const optimizedUserProfile = useMemo(() => {
+        const totalPendingZaps = Object.values(pendingZaps).reduce((acc, curr) => acc + curr.amount, 0);
+        const totalPendingReels = Object.values(pendingReels).reduce((acc, curr) => acc + curr.amount, 0);
+        return {
+            ...userProfile,
+            zaps: Math.max(0, (userProfile.zaps || 0) - totalPendingZaps),
+            reels: Math.max(0, (userProfile.reels || 0) - totalPendingReels)
+        };
+    }, [userProfile, pendingZaps, pendingReels]);
+
+    const value = useMemo(() => ({
         likedIds,
         bookmarkedIds,
         likes,
         bookmarks,
         mockups,
         memes,
-        appCreations: React.useMemo(() => [
-            ...mockups,
-            ...memes,
-            ...appGenerations,
-            ...personalCreations
-        ].sort((a, b) => {
-            const dateA = a.createdAt?.seconds || (a.createdAt?.toMillis ? a.createdAt.toMillis() / 1000 : (a.createdAt instanceof Date ? a.createdAt.getTime() / 1000 : 0));
-            const dateB = b.createdAt?.seconds || (b.createdAt?.toMillis ? b.createdAt.toMillis() / 1000 : (b.createdAt instanceof Date ? b.createdAt.getTime() / 1000 : 0));
-            return dateB - dateA;
-        }), [mockups, memes, appGenerations, personalCreations]),
+        appCreations,
         mainstreamGenerations,
         isLiked,
         isBookmarked,
@@ -753,16 +527,7 @@ export function UserInteractionsProvider({ children }) {
         isHidden,
         toggleLike,
         toggleBookmark,
-        userProfile: React.useMemo(() => {
-            const totalPendingZaps = Object.values(pendingZaps).reduce((acc, curr) => acc + curr.amount, 0);
-            const totalPendingReels = Object.values(pendingReels).reduce((acc, curr) => acc + curr.amount, 0);
-            return {
-                ...userProfile,
-                zaps: Math.max(0, (userProfile.zaps || 0) - totalPendingZaps),
-                reels: Math.max(0, (userProfile.reels || 0) - totalPendingReels)
-            };
-        }, [userProfile, pendingZaps, pendingReels]), // Global Sync
-        // New App Likes
+        userProfile: optimizedUserProfile,
         likedAppIds,
         isAppLiked,
         toggleAppLike,
@@ -771,14 +536,20 @@ export function UserInteractionsProvider({ children }) {
         rollbackZaps,
         deductReelsOptimistically,
         rollbackReels,
-        // Aligned/Legacy underscores
         _isLiked: isLiked,
         _toggleLike: toggleLike,
         _hidePost: hidePost,
         _reportPost: reportPost,
         _isHidden: isHidden,
         hidden
-    };
+    }), [
+        likedIds, bookmarkedIds, likes, bookmarks, mockups, memes, appCreations, mainstreamGenerations,
+        isLiked, isBookmarked, hidePost, unhidePost, reportPost, appealPost, voteOnSafety,
+        hiddenIds, isHidden, toggleLike, toggleBookmark, optimizedUserProfile,
+        likedAppIds, isAppLiked, toggleAppLike, isProfileLoaded,
+        deductZapsOptimistically, rollbackZaps, deductReelsOptimistically, rollbackReels,
+        hidden
+    ]);
 
     return (
         <UserInteractionsContext.Provider value={value}>

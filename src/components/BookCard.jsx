@@ -1,6 +1,6 @@
 import React from 'react';
 import { BookOpen, Layers } from 'lucide-react';
-// eslint-disable-next-line no-unused-vars
+ 
 import { motion } from 'framer-motion';
 
 const BookCard = ({ book, onClick, index }) => {

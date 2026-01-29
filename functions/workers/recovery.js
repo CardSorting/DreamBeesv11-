@@ -7,7 +7,7 @@ import { logger, retryOperation } from "../lib/utils.js";
  * for too long (e.g., due to worker crashes or transient infrastructure issues).
  * Runs every 10 minutes.
  */
-export const staleJobCleanup = onSchedule("every 10 minutes", async (event) => {
+export const staleJobCleanup = onSchedule("every 10 minutes", async (_event) => {
     logger.info("Starting scheduled stale job cleanup");
 
     const staleThreshold = new Date(Date.now() - 20 * 60 * 1000); // 20 minutes ago

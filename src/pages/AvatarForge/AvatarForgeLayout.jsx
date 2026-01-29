@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion'; // eslint-disable-line no-unused-vars
+import { motion, AnimatePresence } from 'framer-motion';  
 import { Sparkles, Zap, Layers } from 'lucide-react';
 import SEO from '../../components/SEO';
 import './AvatarForge.css';

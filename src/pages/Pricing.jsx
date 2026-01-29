@@ -79,10 +79,11 @@ export default function Pricing() {
     const [loading, setLoading] = useState(false);
     const [currencyType, setCurrencyType] = useState('membership'); // 'membership', 'zaps', 'reels'
 
-    let packs = [];
-    if (currencyType === 'membership') packs = SUBSCRIPTION_PLANS;
-    else if (currencyType === 'zaps') packs = ZAP_PACKS;
-    else packs = REEL_PACKS;
+    const packs = React.useMemo(() => {
+        if (currencyType === 'membership') return SUBSCRIPTION_PLANS;
+        if (currencyType === 'zaps') return ZAP_PACKS;
+        return REEL_PACKS;
+    }, [currencyType]);
 
     const location = useLocation();
     const { call: apiCall } = useApi();
@@ -92,7 +93,7 @@ export default function Pricing() {
         const fromPage = location.state?.from || 'direct';
         trackNavigationPath('/pricing', fromPage);
         trackFunnelStep('revenue', 'pricing_view', 1, { source: fromPage });
-    }, []);
+    }, [location.state?.from]);
 
     // Track view_item_list when the pack selection changes
     React.useEffect(() => {
@@ -104,7 +105,7 @@ export default function Pricing() {
         }));
         trackViewItemList(gaItems);
         trackFunnelStep('revenue', `tab_${currencyType}_view`, 2);
-    }, [currencyType]); // Re-track when user switches between membership, zaps, reels
+    }, [currencyType, packs]); // Re-track when user switches between membership, zaps, reels
 
     const handlePurchase = async (priceId) => {
         if (!currentUser) {

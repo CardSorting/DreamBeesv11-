@@ -20,7 +20,7 @@ const MemeFormatter = () => {
     // Sync text with URL
     useEffect(() => {
         if (textParam !== memeText) setMemeText(textParam);
-    }, [textParam]);
+    }, [textParam, memeText]);
 
     const handleTextChange = (val) => {
         setMemeText(val);

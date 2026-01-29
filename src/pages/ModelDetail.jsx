@@ -5,7 +5,7 @@ import { useModel } from '../contexts/ModelContext';
 import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight, X, Copy, RefreshCw, ThumbsUp, ThumbsDown, Loader2, LayoutGrid, Square, Film, Heart, Share2, Bookmark, MoreHorizontal, BadgeCheck, Activity, Info } from 'lucide-react';
 import ShowcaseModal from '../components/ShowcaseModal';
-// eslint-disable-next-line no-unused-vars -- motion.div is used as JSX element
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { getOptimizedImageUrl, getImageSrcSet, preloadImage } from '../utils';
 // import { db } from '../firebase'; // Unused in this component
@@ -102,7 +102,7 @@ export default function ModelDetail() {
                 setActiveShowcaseImage(typeof found === 'string' ? { url: getOptimizedImageUrl(found), id: viewId } : found); // eslint-disable-line react-hooks/set-state-in-effect
             } else if (viewId?.startsWith('http')) {
                 // Direct URL fallback if ID not found but it looks like a URL (legacy)
-                setActiveShowcaseImage({ url: viewId, id: viewId }); // eslint-disable-line react-hooks/set-state-in-effect
+                setActiveShowcaseImage({ url: viewId, id: viewId });
             }
         } else {
             setActiveShowcaseImage(null);
@@ -751,7 +751,7 @@ export default function ModelDetail() {
 }
 
 // Sub-component to handle individual image loading state
-const ShowcaseCard = React.memo(({ imgItem, index, ratio, onClick }) => {
+const ShowcaseCard = React.memo(function ShowcaseCard({ imgItem, index, ratio, onClick }) {
     const [isLoaded, setIsLoaded] = useState(false);
 
     return (

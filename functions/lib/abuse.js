@@ -48,7 +48,7 @@ export async function checkRateLimit(key, limit, windowSeconds) {
         });
     } catch (e) {
         // Re-throw our HttpsError, log others
-        if (e.code === 'resource-exhausted') throw e;
+        if (e.code === 'resource-exhausted') {throw e;}
         logger.error(`Rate limit system error for ${key}`, e);
         // Fail open if system errors (don't block user due to DB error)? 
         // Or fail closed? For security, maybe fail closed, but for UX, fail open is better.
@@ -62,7 +62,7 @@ export async function checkRateLimit(key, limit, windowSeconds) {
  * @param {string} ip - The client's IP address
  */
 export async function checkIpThrottle(ip) {
-    if (!ip) return; // Should not happen in cloud function context, but safe guard
+    if (!ip) {return;} // Should not happen in cloud function context, but safe guard
 
     const db = getFirestore();
     const cleanIp = ip.replace(/[:.]/g, '_');
@@ -88,13 +88,13 @@ export async function checkIpThrottle(ip) {
  * @param {string} uid - User ID
  */
 export async function checkUserAbuseStatus(uid) {
-    if (!uid) return;
+    if (!uid) {return;}
 
     const db = getFirestore();
     const userRef = db.collection('users').doc(uid);
     const userSnap = await userRef.get();
 
-    if (!userSnap.exists) return; // Should handle newUser logic elsewhere
+    if (!userSnap.exists) {return;} // Should handle newUser logic elsewhere
 
     const userData = userSnap.data();
 
@@ -160,7 +160,7 @@ export function getActionLimits(action, isPremium) {
  * @param {string} action - The action being performed
  */
 export async function checkUserQuota(uid, action) {
-    if (!uid) return;
+    if (!uid) {return;}
 
     // Different from rate limit (burst protection), this is cost protection.
     // Daily Window: Reset at UTC midnight or just sliding 24h.
@@ -193,7 +193,7 @@ export async function checkUserQuota(uid, action) {
  * @param {string} uid - User ID
  */
 export async function checkAbuseScore(uid) {
-    if (!uid) return;
+    if (!uid) {return;}
     const db = getFirestore();
     const scoreRef = db.collection('abuse_scores').doc(uid);
     const scoreDoc = await scoreRef.get();
@@ -252,7 +252,7 @@ export async function checkTokenBucket(key, cost, capacity, refillRate) {
  * @param {string} type 
  */
 export async function recordViolation(uid, type) {
-    if (!uid) return;
+    if (!uid) {return;}
     const db = getFirestore();
     await db.collection('abuse_logs').add({
         userId: uid,

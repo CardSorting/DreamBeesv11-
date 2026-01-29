@@ -13,7 +13,7 @@ export const fetchLore = async (imageId) => {
             .limit(5)
             .get();
 
-        if (snap.empty) return "";
+        if (snap.empty) {return "";}
 
         const facts = snap.docs.map(d => d.data().fact);
         return `SHARED MYTHOLOGY (LORE):\n${facts.map(f => `- ${f}`).join('\n')}`;

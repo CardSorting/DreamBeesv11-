@@ -4,13 +4,13 @@ import { handleError } from "../lib/utils.js";
 
 export const handleGetGenerationHistory = async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "Auth required");
+    if (!uid) {throw new HttpsError('unauthenticated', "Auth required");}
     const { limit: l = 20, startAfterId } = request.data;
     try {
         let q = db.collection('generation_queue').where('userId', '==', uid).where('status', '==', 'completed').orderBy('createdAt', 'desc').limit(l);
         if (startAfterId) {
             const doc = await db.collection('generation_queue').doc(startAfterId).get();
-            if (doc.exists) q = q.startAfter(doc);
+            if (doc.exists) {q = q.startAfter(doc);}
         }
         const snap = await q.get();
         const jobs = snap.docs.map(d => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate?.()?.toISOString() || d.data().createdAt })).filter(j => j.hidden !== true);
@@ -20,13 +20,13 @@ export const handleGetGenerationHistory = async (request) => {
 
 export const handleGetImageDetail = async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) throw new Error("Unauthenticated");
+    if (!uid) {throw new Error("Unauthenticated");}
     try {
         let doc = await db.collection('images').doc(request.data.imageId).get();
         let type = 'image';
         if (!doc.exists) { doc = await db.collection('videos').doc(request.data.imageId).get(); type = 'video'; }
-        if (!doc.exists) throw new Error("Not found");
-        if (doc.data().userId !== uid) throw new Error("Unauthorized");
+        if (!doc.exists) {throw new Error("Not found");}
+        if (doc.data().userId !== uid) {throw new Error("Unauthorized");}
         const d = doc.data();
         return { id: doc.id, ...d, type, imageUrl: type === 'video' ? (d.imageSnapshotUrl || d.thumbnailUrl || d.videoUrl) : d.imageUrl, createdAt: d.createdAt?.toDate?.()?.toISOString() || d.createdAt };
     } catch (e) { throw handleError(e, { uid }); }
@@ -34,7 +34,7 @@ export const handleGetImageDetail = async (request) => {
 
 export const handleGetUserImages = async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "Auth required");
+    if (!uid) {throw new HttpsError('unauthenticated', "Auth required");}
     const { limit: l = 24, startAfterId, filter = 'all' } = request.data;
     // filter: 'all', 'image', 'video', 'mockup'
 
@@ -83,17 +83,17 @@ export const handleGetUserImages = async (request) => {
                 // Mixed pagination (complex) - handled below
             } else if (iQ) {
                 const doc = await db.collection('images').doc(startAfterId).get();
-                if (doc.exists) iQ = iQ.startAfter(doc);
+                if (doc.exists) {iQ = iQ.startAfter(doc);}
             } else if (vQ) {
                 const doc = await db.collection('videos').doc(startAfterId).get();
-                if (doc.exists) vQ = vQ.startAfter(doc);
+                if (doc.exists) {vQ = vQ.startAfter(doc);}
             }
         }
 
         // Execute
         const promises = [];
-        if (iQ) promises.push(iQ.get());
-        if (vQ) promises.push(vQ.get());
+        if (iQ) {promises.push(iQ.get());}
+        if (vQ) {promises.push(vQ.get());}
 
         const results = await Promise.all(promises);
 
@@ -103,8 +103,8 @@ export const handleGetUserImages = async (request) => {
                 const data = d.data();
                 // Determine type more explicitly
                 let type = 'image';
-                if (d.ref.parent.id === 'videos') type = 'video';
-                else if (data.type === 'mockup') type = 'mockup';
+                if (d.ref.parent.id === 'videos') {type = 'video';}
+                else if (data.type === 'mockup') {type = 'mockup';}
 
                 // Post-fetch filter for 'image' (Art) only if needed?
                 // If filter=='image' and we got a mockup, skip it?
@@ -144,22 +144,22 @@ export const handleGetUserImages = async (request) => {
 
 export const handleRateGeneration = async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) throw new Error("Unauthenticated");
+    if (!uid) {throw new Error("Unauthenticated");}
     const { jobId, rating } = request.data;
     try {
         const jobRef = db.collection('generation_queue').doc(jobId);
         const job = await jobRef.get();
-        if (!job.exists || job.data().userId !== uid) throw new HttpsError('permission-denied', "Unauthorized");
+        if (!job.exists || job.data().userId !== uid) {throw new HttpsError('permission-denied', "Unauthorized");}
         const update = { rating: rating?.score || rating, rating_v2: typeof rating === 'object' ? rating : { score: rating }, hidden: rating === -1, ratedAt: FieldValue.serverTimestamp() };
         await jobRef.update(update);
-        if (job.data().resultImageId) await db.collection('images').doc(job.data().resultImageId).update(update);
+        if (job.data().resultImageId) {await db.collection('images').doc(job.data().resultImageId).update(update);}
         return { success: true };
     } catch (e) { throw handleError(e, { uid }); }
 };
 
 export const handleReportGeneration = async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "Auth required");
+    if (!uid) {throw new HttpsError('unauthenticated', "Auth required");}
     const { jobId, reason } = request.data;
     const REPORT_THRESHOLD = 3;
 
@@ -175,7 +175,7 @@ export const handleReportGeneration = async (request) => {
             }
 
             const jobDoc = await t.get(jobRef);
-            if (!jobDoc.exists) throw new HttpsError('not-found', "Job not found");
+            if (!jobDoc.exists) {throw new HttpsError('not-found', "Job not found");}
 
             const currentReports = (jobDoc.data().reportCount || 0) + 1;
             const shouldHide = currentReports >= REPORT_THRESHOLD;
@@ -208,7 +208,7 @@ export const handleReportGeneration = async (request) => {
 
 export const handleAppealGeneration = async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "Auth required");
+    if (!uid) {throw new HttpsError('unauthenticated', "Auth required");}
     const { jobId } = request.data;
 
     try {
@@ -216,7 +216,7 @@ export const handleAppealGeneration = async (request) => {
 
         await db.runTransaction(async (t) => {
             const jobDoc = await t.get(jobRef);
-            if (!jobDoc.exists) throw new HttpsError('not-found', "Job not found");
+            if (!jobDoc.exists) {throw new HttpsError('not-found', "Job not found");}
 
             if (jobDoc.data().userId !== uid) {
                 throw new HttpsError('permission-denied', "Only the owner can appeal");
@@ -254,7 +254,7 @@ export const handleAppealGeneration = async (request) => {
 
 export const handleModerationVote = async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "Auth required");
+    if (!uid) {throw new HttpsError('unauthenticated', "Auth required");}
     const { jobId, verdict, confidence = 1 } = request.data; // verdict: 'safe' | 'unsafe' | 'skip', confidence: 1-3
 
     if (!['safe', 'unsafe', 'skip'].includes(verdict)) {
@@ -273,7 +273,7 @@ export const handleModerationVote = async (request) => {
         const userRef = db.collection('users').doc(uid);
         const voteRef = jobRef.collection('votes').doc(uid);
 
-        let result = { consensus: 'pending', userPower: 1, karmaAwarded: 0, streakBonus: 0 };
+        const result = { consensus: 'pending', userPower: 1, karmaAwarded: 0, streakBonus: 0 };
 
         await db.runTransaction(async (t) => {
             const voteDoc = await t.get(voteRef);
@@ -284,7 +284,7 @@ export const handleModerationVote = async (request) => {
             const userDoc = await t.get(userRef);
             const jobDoc = await t.get(jobRef);
 
-            if (!jobDoc.exists) throw new HttpsError('not-found', "Job not found");
+            if (!jobDoc.exists) {throw new HttpsError('not-found', "Job not found");}
 
             // 1. Calculate Voting Power
             const karma = userDoc.data()?.karma || 0;
@@ -340,7 +340,7 @@ export const handleModerationVote = async (request) => {
             const newScore = currentScore + scoreChange;
 
             // 3. Determine Outcome
-            let updates = {
+            const updates = {
                 moderationScore: newScore,
                 lastModeratedAt: FieldValue.serverTimestamp()
             };
@@ -368,7 +368,7 @@ export const handleModerationVote = async (request) => {
             const resultImageId = jobDoc.data().resultImageId;
             if (resultImageId) {
                 const imgUpdates = {};
-                if (updates.hidden !== undefined) imgUpdates.hidden = updates.hidden;
+                if (updates.hidden !== undefined) {imgUpdates.hidden = updates.hidden;}
                 if (Object.keys(imgUpdates).length > 0) {
                     t.update(db.collection('images').doc(resultImageId), imgUpdates);
                 }
@@ -438,7 +438,7 @@ export const handleModerationVote = async (request) => {
 };
 
 export const handleRateShowcaseImage = async (request) => {
-    if (!request.auth?.uid) throw new HttpsError('unauthenticated', "Auth required");
+    if (!request.auth?.uid) {throw new HttpsError('unauthenticated', "Auth required");}
     try {
         await db.collection('model_showcase_images').doc(request.data.imageId).update({ likesCount: FieldValue.increment(request.data.rating), lastRatedAt: FieldValue.serverTimestamp() });
         return { success: true };
@@ -446,7 +446,7 @@ export const handleRateShowcaseImage = async (request) => {
 };
 
 export const handleDeleteImage = async (request) => {
-    if (!request.auth?.uid) throw new Error("Unauthenticated");
+    if (!request.auth?.uid) {throw new Error("Unauthenticated");}
     try {
         const doc = await db.collection('images').doc(request.data.imageId).get();
         if (doc.exists && doc.data().userId === request.auth.uid) {
@@ -470,10 +470,10 @@ export const handleDeleteImage = async (request) => {
 };
 
 export const handleDeleteImagesBatch = async (request) => {
-    if (!request.auth?.uid) throw new Error("Unauthenticated");
+    if (!request.auth?.uid) {throw new Error("Unauthenticated");}
     const { imageIds } = request.data;
     try {
-        if (imageIds.length > 50) throw new Error("Max 50");
+        if (imageIds.length > 50) {throw new Error("Max 50");}
         const batch = db.batch();
         const docs = await Promise.all(imageIds.map(id => db.collection('images').doc(id).get()));
         const vidDocs = await Promise.all(imageIds.map(id => db.collection('videos').doc(id).get()));
@@ -508,7 +508,7 @@ export const handleDeleteImagesBatch = async (request) => {
 };
 
 export const handleToggleBookmark = async (request) => {
-    if (!request.auth?.uid) throw new HttpsError('unauthenticated', "Auth required");
+    if (!request.auth?.uid) {throw new HttpsError('unauthenticated', "Auth required");}
     const { imageId, isBookmarked, imgData } = request.data;
     try {
         const ref = db.collection('users').doc(request.auth.uid).collection('bookmarks').doc(imageId);
@@ -524,7 +524,7 @@ export const handleToggleBookmark = async (request) => {
 
 export const handleToggleLike = async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "Auth required");
+    if (!uid) {throw new HttpsError('unauthenticated', "Auth required");}
     const { imageId, isLiked, imgData, modelId } = request.data;
 
     try {

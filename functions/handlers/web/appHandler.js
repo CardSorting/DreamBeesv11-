@@ -2,14 +2,14 @@ import { db } from "../../firebaseInit.js";
 import { logger } from "../../lib/utils.js";
 
 export const handleApp = async (req, res) => {
-    let path = req.path;
+    const path = req.path;
     const baseUrl = 'https://dreambeesai.com';
     let title = "AI Image Generator - Text to Image Online";
     let desc = "Generate high-quality AI art directly on the web. No Discord required. Fast, private, and powerful text-to-image creation.";
     let image = `${baseUrl}/dreambees_icon.png`;
-    let structuredData = [];
+    const structuredData = [];
     let statusCode = 200;
-    let canonicalUrl = `${baseUrl}${path}`;
+    const canonicalUrl = `${baseUrl}${path}`;
 
     // Skeleton Content
     let skeletonH1 = "DreamBeesAI: Professional AI Art Creation";

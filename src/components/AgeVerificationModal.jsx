@@ -174,7 +174,7 @@ export default function AgeVerificationModal() {
         const monthIndex = MONTH_NAMES.indexOf(month) + 1;
         const maxDays = new Date(year, monthIndex, 0).getDate();
         if (day > maxDays) {
-            setDay(maxDays);
+            setDay(maxDays); // eslint-disable-line react-hooks/set-state-in-effect
         }
     }, [month, year, day]);
 

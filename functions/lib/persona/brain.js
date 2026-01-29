@@ -153,7 +153,7 @@ export const extractMetadata = (rawText) => {
         poll: null
     };
 
-    if (metadata.title) metadata.title = metadata.title.replace(/["']/g, '');
+    if (metadata.title) {metadata.title = metadata.title.replace(/["']/g, '');}
 
     // Poll extraction
     if (rawText.toLowerCase().includes('poll:')) {

@@ -6,14 +6,14 @@ export const handleCreateStripeCheckout = async (request) => {
     const { priceId, successUrl, cancelUrl, mode } = request.data;
     const uid = request.auth.uid;
     const email = request.auth.token.email;
-    if (!uid) throw new Error("Unauthenticated");
+    if (!uid) {throw new Error("Unauthenticated");}
 
     const userRef = db.collection('users').doc(uid);
     const userDoc = await userRef.get();
     const user = userDoc.data() || {};
     const now = new Date();
     const lastCheckout = user.lastCheckoutSessionTime?.toDate ? user.lastCheckoutSessionTime.toDate() : new Date(0);
-    if (now - lastCheckout < 60000) throw new Error("Please wait a minute.");
+    if (now - lastCheckout < 60000) {throw new Error("Please wait a minute.");}
 
     await userRef.set({ lastCheckoutSessionTime: now }, { merge: true });
     try {
@@ -27,9 +27,9 @@ export const handleCreateStripeCheckout = async (request) => {
 export const handleCreateStripePortalSession = async (request) => {
     const { returnUrl } = request.data;
     const uid = request.auth.uid;
-    if (!uid) throw new Error("Unauthenticated");
+    if (!uid) {throw new Error("Unauthenticated");}
     const userDoc = await db.collection('users').doc(uid).get();
-    if (!userDoc.exists || !userDoc.data().stripeCustomerId) throw new Error("No subscription");
+    if (!userDoc.exists || !userDoc.data().stripeCustomerId) {throw new Error("No subscription");}
     try {
         const url = await createPortalSession(userDoc.data().stripeCustomerId, returnUrl || 'https://dreambees.app');
         return { url };

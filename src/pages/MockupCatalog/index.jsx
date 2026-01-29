@@ -34,7 +34,7 @@ const MockupCatalog = () => {
     useEffect(() => {
         const p = parseInt(searchParams.get('page')) || 1;
         if (p !== currentPage) setCurrentPage(p);
-    }, [searchParams]);
+    }, [searchParams, currentPage]);
 
     // Navigation State derived from URL Slugs
     const activeCategory = categorySlug ? unslugify(categorySlug, Object.keys(CATEGORY_MAPPING)) : null;
@@ -56,7 +56,7 @@ const MockupCatalog = () => {
             newParams.delete('page');
             return newParams;
         });
-    }, [activeCategory, activeSubcategory]);
+    }, [activeCategory, activeSubcategory, setSearchParams]);
 
     useEffect(() => {
         const fetchItems = async () => {

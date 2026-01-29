@@ -1,5 +1,4 @@
-import { HttpsError } from "firebase-functions/v2/https";
-import { db, FieldValue } from "../firebaseInit.js";
+// [REMOVED] import { db, FieldValue } from "../firebaseInit.js";
 import { logger } from "../lib/utils.js";
 import { ZAP_COSTS } from "../lib/costs.js";
 import { deductZapsAtomic } from "../lib/credits.js";
@@ -47,7 +46,7 @@ export const handleAnalyzeProductImage = async (request) => {
     const { imageBase64, mimeType } = request.data;
     const uid = request.auth?.uid;
 
-    if (!uid) throw new HttpsError('unauthenticated', 'User must be authenticated.');
+    if (!uid) { throw new HttpsError('unauthenticated', 'User must be authenticated.'); }
     if (!imageBase64 || !mimeType) {
         throw new HttpsError('invalid-argument', 'imageBase64 and mimeType are required.');
     }
@@ -58,7 +57,7 @@ export const handleAnalyzeProductImage = async (request) => {
     try {
         // Deduct Zaps with idempotency
         const billing = await deductZapsAtomic(uid, COST, requestId, 'action_logs');
-        if (billing.idempotent) return { success: true, idempotent: true };
+        if (billing.idempotent) { return { success: true, idempotent: true }; }
 
         const { VertexAI } = await import("@google-cloud/vertexai");
         const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
@@ -76,47 +75,42 @@ export const handleAnalyzeProductImage = async (request) => {
         logger.info(`[AutoCSV] Analyzing image for uid=${uid}`);
 
         let textOutput;
-        try {
-            // Reverted to direct call
-            const result = await model.generateContent({
-                contents: [
-                    {
-                        role: 'user',
-                        parts: [
-                            { text: "Analyze this product image and generate e-commerce data." },
-                            {
-                                inlineData: {
-                                    mimeType: mimeType,
-                                    data: imageBase64
-                                }
+        // Generate direct
+        const result = await model.generateContent({
+            contents: [
+                {
+                    role: 'user',
+                    parts: [
+                        { text: "Analyze this product image and generate e-commerce data." },
+                        {
+                            inlineData: {
+                                mimeType: mimeType,
+                                data: imageBase64
                             }
-                        ]
-                    }
-                ]
-            });
+                        }
+                    ]
+                }
+            ]
+        });
 
-            const response = await result.response;
-            const candidate = response.candidates?.[0];
+        const response = await result.response;
+        const candidate = response.candidates?.[0];
 
-            if (candidate?.finishReason === 'SAFETY') {
-                throw new HttpsError('permission-denied', 'Blocked by Safety Filter');
-            }
+        if (candidate?.finishReason === 'SAFETY') {
+            throw new HttpsError('permission-denied', 'Blocked by Safety Filter');
+        }
 
-            textOutput = candidate?.content?.parts?.[0]?.text;
+        textOutput = candidate?.content?.parts?.[0]?.text;
 
-            if (!textOutput) {
-                throw new HttpsError('internal', 'No data returned from Vertex AI');
-            }
-        } catch (aiError) {
-            // Note: No manual refund here. Idempotency protects the deduction.
-            throw aiError;
+        if (!textOutput) {
+            throw new HttpsError('internal', 'No data returned from Vertex AI');
         }
 
         return JSON.parse(textOutput);
 
     } catch (error) {
         logger.error(`[AutoCSV] Error:`, error);
-        if (error instanceof HttpsError) throw error;
+        if (error instanceof HttpsError) { throw error; }
         throw new HttpsError('internal', `Failed to analyze product image: ${error.message}`);
     }
 };

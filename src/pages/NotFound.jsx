@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { Home, Compass, Box, Image as ImageIcon, ArrowLeft, Search } from 'lucide-react';

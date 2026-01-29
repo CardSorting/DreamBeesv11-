@@ -186,7 +186,7 @@ ${userRequest || "Generate a high-fidelity batch of instances for this aesthetic
 
     } catch (error) {
         logger.error("[StudentBatch] Critical Error:", error);
-        if (error instanceof HttpsError) throw error;
+        if (error instanceof HttpsError) {throw error;}
         throw new HttpsError("internal", error.message || "Failed to compose batch prompts.");
     }
 }

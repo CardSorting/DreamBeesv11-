@@ -5,7 +5,7 @@ import { db } from '../../firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
-import { ArrowLeft, Upload, Loader2, Image as ImageIcon, Download, ChevronLeft } from 'lucide-react';
+import { ArrowLeft, Upload, Loader2, Image as ImageIcon, Download, ChevronLeft, Sparkles } from 'lucide-react';
 import SEO from '../../components/SEO';
 import './QuickMockups.css';
 import '../MockupCatalog/MockupProductPage.css'; // Reuse some layout styles but we'll override as needed

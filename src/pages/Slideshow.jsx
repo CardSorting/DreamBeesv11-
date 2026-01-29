@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import SEO from '../components/SEO';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 // import { httpsCallable } from 'firebase/functions'; // Removed
@@ -11,7 +12,6 @@ import { Sparkles, Download, Languages, Presentation, Image as ImageIcon, Loader
 import { Link } from 'react-router-dom';
 import { compressImage } from '../utils';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
-import { calculateZapCost } from '../constants/zapCosts';
 import './Slideshow.css';
 
 const LOADING_MESSAGES = [

@@ -12,10 +12,10 @@ import sharp from "sharp";
  */
 export const handleCreateColoringPage = async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
+    if (!uid) {throw new HttpsError('unauthenticated', "User must be authenticated");}
 
     const { prompt, style, requestId } = request.data;
-    if (!prompt) throw new HttpsError('invalid-argument', "Prompt is required.");
+    if (!prompt) {throw new HttpsError('invalid-argument', "Prompt is required.");}
 
     const COST = ZAP_COSTS.COLORING_PAGE;
 
@@ -34,15 +34,15 @@ export const handleCreateColoringPage = async (request) => {
 
             const userRef = db.collection('users').doc(uid);
             const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+            if (!userDoc.exists) {throw new HttpsError('not-found', "User not found");}
             const zaps = userDoc.data().zaps || 0;
-            if (zaps < COST) throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`);
+            if (zaps < COST) {throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`);}
 
             t.update(userRef, { zaps: FieldValue.increment(-COST) });
-            if (logRef) t.set(logRef, { type: 'colorcraft_page', userId: uid, prompt, createdAt: FieldValue.serverTimestamp() });
+            if (logRef) {t.set(logRef, { type: 'colorcraft_page', userId: uid, prompt, createdAt: FieldValue.serverTimestamp() });}
         });
 
-        if (alreadyExists) return { success: true, idempotent: true };
+        if (alreadyExists) {return { success: true, idempotent: true };}
 
         const generatedImageBase64 = await generateColoringPageImage(prompt, style);
 

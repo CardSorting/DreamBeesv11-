@@ -38,9 +38,10 @@ export function useAutoPrompt(prompt, setPrompt, referenceImage, setReferenceIma
 
         const clearProgressTimers = () => progressTimers.forEach(timer => clearTimeout(timer));
 
+        let requestId = 'legacy';
         try {
             const cost = 0.5; // IMAGE_ANALYSIS
-            const requestId = `ap_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+            requestId = `ap_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
             if (deductZapsOptimistically) deductZapsOptimistically(cost, requestId);
 
@@ -128,7 +129,7 @@ export function useAutoPrompt(prompt, setPrompt, referenceImage, setReferenceIma
 
         } catch (error) {
             const cost = 0.5;
-            if (rollbackZaps) rollbackZaps(cost, typeof requestId !== 'undefined' ? requestId : 'legacy');
+            if (rollbackZaps) rollbackZaps(cost, requestId);
 
             clearProgressTimers();
             console.error("Auto prompt error", error);

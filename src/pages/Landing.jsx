@@ -821,7 +821,7 @@ function InteractiveDemo() {
                         <div style={{ fontSize: '0.75rem', color: 'var(--color-zinc-700)', letterSpacing: '0.1em' }}>DREAM_CORE_V1.0</div>
                     </div>
 
-                    <div style={{ color: 'var(--color-zinc-400)', marginBottom: '12px', fontSize: '0.85rem' }}>// Weaving latent threads...</div>
+                    <div style={{ color: 'var(--color-zinc-400)', marginBottom: '12px', fontSize: '0.85rem' }}>{'// Weaving latent threads...'}</div>
                     <div style={{ fontSize: '1.25rem', lineHeight: 1.6, minHeight: '80px', fontFamily: 'monospace', color: 'var(--color-text-main)' }} aria-live="polite">
                         <span style={{ color: 'var(--color-accent-primary)', marginRight: '12px' }}>➜</span>
                         {displayedPrompt}<span className="typing-cursor"></span>

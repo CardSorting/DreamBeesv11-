@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 
 /**
  * A custom hook that triggers a callback when a target element intersects with the viewport.
@@ -41,12 +41,12 @@ export function useIntersectionObserver({
             }
         );
 
-        observer.observe(targetRef.current);
+        const currentTarget = targetRef.current;
+        if (currentTarget) observer.observe(currentTarget);
 
         return () => {
-            if (targetRef.current) {
-                observer.unobserve(targetRef.current);
-            }
+            if (currentTarget) observer.unobserve(currentTarget);
+            observer.disconnect();
         };
     }, [threshold, rootMargin, enabled]);
 

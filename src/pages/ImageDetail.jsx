@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import { functions } from '../firebase';
 import { httpsCallable } from 'firebase/functions';
 import { useAuth } from '../contexts/AuthContext';
-import { Trash2, ArrowLeft, Loader2, RefreshCw, Link as LinkIcon, Info, Sliders, Layers, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, ArrowLeft, Loader2, RefreshCw, Link as LinkIcon, Info, Sliders, Layers, X, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useModel } from '../contexts/ModelContext';
 import toast from 'react-hot-toast';
 import { getOptimizedImageUrl } from '../utils';

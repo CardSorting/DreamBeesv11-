@@ -238,82 +238,18 @@ async function fetchWithRetry(url, options, retries = 3) {
     }
 }
 
-async function generateWithLoadBalancer(modelId, prompt) {
+async function generateWithDirectCall(modelId, prompt) {
+    const { GalmixClient } = await import('../lib/GalmixClient.js');
+    const client = new GalmixClient();
     const modelType = modelId.includes('zit') ? 'zit' : 'sdxl';
 
-    // 1. Select endpoints
-    const candidates = loadBalancer.selectEndpoints(modelType, {
-        useTurbo: true, // For scale testing, prioritize performance
-        jobComplexity: 0.6
-    });
-
-    if (candidates.length === 0) throw new Error(`No endpoints available for ${modelType}`);
-
-    const body = {
-        prompt,
-        model: modelId,
+    // We'll use the client directly to poll for result
+    return client.generateImage(prompt, {
+        model: modelType,
         steps: 30,
-        width: 1024,
-        height: 1024
-    };
-
-    let resultBuffer = null;
-    let lastError = null;
-
-    // Try candidates in order
-    for (const endpoint of candidates) {
-        let startTime = null;
-        try {
-            if (loadBalancer.shouldThrottle(endpoint.key)) {
-                console.warn(`   [LoadBalancer] ${endpoint.key} throttled, trying next...`);
-                continue;
-            }
-
-            startTime = loadBalancer.recordJobStart(endpoint.key);
-            console.log(`   [LoadBalancer] Using ${endpoint.key} for ${modelId}...`);
-
-            // Poll for result
-            const pollUrl = `${endpoint.url}`;
-
-            const submitResponse = await fetchWithRetry(`${pollUrl}/generate`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body)
-            });
-
-            const submitJson = await submitResponse.json();
-            if (!submitJson.job_id) throw new Error(submitJson.detail || "No job_id");
-            const jobId = submitJson.job_id;
-
-            for (let poll = 0; poll < 90; poll++) {
-                await sleep(2000);
-                let resultRes = await fetch(`${pollUrl}/result/${jobId}`);
-                if (resultRes.status === 404) resultRes = await fetch(`${pollUrl}/jobs/${jobId}`);
-
-                if (resultRes.status === 202) continue;
-
-                if (resultRes.ok) {
-                    const ct = resultRes.headers.get("content-type") || "";
-                    if (ct.includes("image/")) {
-                        resultBuffer = Buffer.from(await resultRes.arrayBuffer());
-                        loadBalancer.recordSuccess(endpoint.key, startTime);
-                        return resultBuffer;
-                    }
-                }
-
-                const errJson = await resultRes.json().catch(() => ({}));
-                if (errJson.status === "failed") throw new Error(errJson.error || "Generation failed");
-            }
-            throw new Error("Timeout");
-
-        } catch (err) {
-            if (startTime) loadBalancer.recordFailure(endpoint.key, startTime, err);
-            lastError = err;
-            console.warn(`   [LoadBalancer] ${endpoint.key} failed: ${err.message}`);
-        }
-    }
-
-    throw lastError || new Error("All endpoints failed");
+        height: 1024,
+        width: 1024
+    });
 }
 
 async function processAndUpload(imageBuffer, modelId, index, prompt) {

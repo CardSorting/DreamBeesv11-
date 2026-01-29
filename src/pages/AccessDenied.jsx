@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
+import { motion } from 'framer-motion';  
 import { ShieldAlert, Home, LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ForbiddenBg from '../assets/forbidden-bg.png';

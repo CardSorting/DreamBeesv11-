@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import SEO from '../components/SEO';
@@ -11,7 +11,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { isValidUsername } from '../utils/usernameValidation';
 import { functions } from '../firebase';
 import { httpsCallable } from 'firebase/functions';
-import { getOptimizedImageUrl, getLCPAttributes, getImageSrcSet, preloadImage } from '../utils';
+import { getOptimizedImageUrl, getLCPAttributes, preloadImage } from '../utils';
 import { trackQualitySignal, trackSearchQuality } from '../utils/analytics';
 
 import ShowcaseModal from '../components/ShowcaseModal';
@@ -131,7 +131,7 @@ export default function UserProfile() {
             };
             fetchImage();
         }
-    }, [searchParams, mockups, bookmarks, likes, memes, selectedImage, availableModels]);
+    }, [searchParams, mockups, bookmarks, likes, memes, appCreations, productions, selectedImage, availableModels]);
 
     const openLightbox = (item) => {
         setSelectedImage(item);
@@ -161,9 +161,9 @@ export default function UserProfile() {
         if (activeFilter === 'all' || activeFilter === 'productions') {
             fetchGalleryImages();
         }
-    }, [activeFilter, currentUser, searchQuery]);
+    }, [activeFilter, currentUser, searchQuery, fetchGalleryImages]);
 
-    async function fetchGalleryImages() {
+    const fetchGalleryImages = useCallback(async () => {
         if (!currentUser) return;
         setIsGalleryLoading(true);
         // Reset pagination
@@ -177,37 +177,38 @@ export default function UserProfile() {
                 action: 'getUserImages',
                 limit: LIMIT,
                 searchQuery: searchQuery || undefined,
-                filter: activeFilter === 'productions' ? 'image' : 'all' // 'image' mostly maps to productions in backend logic often
+                filter: activeFilter === 'productions' ? 'image' : 'all'
             });
 
             const data = result.data;
-            const newImages = data.images || [];
-            setImages(newImages);
-            setLastVisibleId(data.lastVisibleId);
-            setLastVisibleType(data.lastVisibleType);
-            setHasMore(data.hasMore);
+            if (data.success) {
+                const newImages = data.images || [];
+                setImages(newImages);
+                setLastVisibleId(data.lastVisibleId);
+                setLastVisibleType(data.lastVisibleType);
+                setHasMore(data.hasMore);
 
-            // Preload LCP
-            newImages.slice(0, 4).forEach(img => {
-                const preloadUrl = getOptimizedImageUrl(img.thumbnailUrl || img.imageUrl);
-                preloadImage(preloadUrl, 'high');
-            });
+                // Preload LCP
+                newImages.slice(0, 4).forEach(img => {
+                    const preloadUrl = getOptimizedImageUrl(img.thumbnailUrl || img.imageUrl);
+                    preloadImage(preloadUrl, 'high');
+                });
 
-            if (data.warnings) {
-                data.warnings.forEach(w => toast.error(w));
+                if (data.warnings) {
+                    data.warnings.forEach(w => toast.error(w));
+                }
+
+                if (searchQuery) {
+                    trackSearchQuality(searchQuery, newImages.length);
+                }
             }
-
-            if (searchQuery) {
-                trackSearchQuality(searchQuery, newImages.length);
-            }
-
         } catch (err) {
             console.error("Error fetching gallery images:", err);
             toast.error("Failed to load your gallery");
         } finally {
             setIsGalleryLoading(false);
         }
-    }
+    }, [currentUser, searchQuery, activeFilter]);
 
     const loadMoreImages = async () => {
         if (!currentUser || !lastVisibleId || loadingMore || !hasMore) return;

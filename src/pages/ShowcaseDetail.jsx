@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Share2, Sparkles, Heart, RefreshCw, MoreHorizontal, Shuffle, Flag } from 'lucide-react';
-// eslint-disable-next-line no-unused-vars
+
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { useModel } from '../contexts/ModelContext';
@@ -24,7 +24,7 @@ const SHOWCASE_PAGE_SIZE = 12;
 const CACHE_TARGET = 150;
 const HISTORY_CAP = 100; // Max history items to track
 
-const ShowcaseDetail = () => {
+const ShowcaseDetail = React.memo(function ShowcaseDetail() {
     const { id: rawId } = useParams();
     // Support robust ID extraction: 
     // 1. Double hyphen separator (new standard) 
@@ -71,7 +71,7 @@ const ShowcaseDetail = () => {
     useEffect(() => {
         const initFeed = async () => {
             if (!isInitialMount.current && images.length > 0) return;
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+
             setLoading(true);
 
             // Ensure we have some global cache
@@ -256,7 +256,7 @@ const ShowcaseDetail = () => {
         }
 
         showToast(`🎲 ${explorationPicks.length} fresh picks!`, "shuffle");
-    }, [currentIndex, images, globalShowcaseCache, hasMoreGlobal, getGlobalShowcaseImages, showToast]);
+    }, [currentIndex, images, visibleGlobalCache, globalShowcaseCache.length, hasMoreGlobal, getGlobalShowcaseImages, showToast]);
 
 
     // 5. Balanced Mode - More similar but still diverse
@@ -298,7 +298,7 @@ const ShowcaseDetail = () => {
         }
 
         showToast(`✨ ${similarPicks.length} similar picks!`, "sparkles");
-    }, [currentIndex, images, globalShowcaseCache, hasMoreGlobal, getGlobalShowcaseImages, showToast]);
+    }, [currentIndex, images, visibleGlobalCache, globalShowcaseCache.length, hasMoreGlobal, getGlobalShowcaseImages, showToast]);
 
 
     // 6. Aggressive Preloading
@@ -466,11 +466,11 @@ const ShowcaseDetail = () => {
             </div>
         </div>
     );
-};
+});
 
 
 // Sub-component for individual feed pages
-const FeedItem = React.memo(({ image, index, isActive, isLiked, onToggleLike, onHide, onMoreLikeThis, modelName, navigate }) => {
+const FeedItem = React.memo(function FeedItem({ image, index, isActive, isLiked, onToggleLike, onHide, onMoreLikeThis, modelName, navigate }) {
     // Generate deterministic slug for this specific item
     const currentSlug = slugify(image.prompt?.slice(0, 40) || 'artwork');
     const deterministicUrl = `${window.location.origin}/discovery/${currentSlug}-${image.id}`;

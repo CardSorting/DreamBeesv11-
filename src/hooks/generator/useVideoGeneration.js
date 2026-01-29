@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect } from 'react';
 // import { httpsCallable } from 'firebase/functions'; // Removed
 import { db } from '../../firebase';
 import { useApi } from '../../hooks/useApi';
@@ -39,7 +39,7 @@ export function useVideoGeneration({
             });
             return () => unsubscribe();
         }
-    }, [currentUser?.uid]);
+    }, [currentUser]);
 
     const { call: apiCall } = useApi();
 
@@ -69,6 +69,7 @@ export function useVideoGeneration({
 
         toast.loading("Starting video animation...", { id: 'video-animate' });
 
+        let requestId = 'legacy';
         try {
             let processedImage = imageUrl;
 
@@ -79,7 +80,7 @@ export function useVideoGeneration({
 
             // const api = httpsCallable(functions, 'api', { timeout: 540000 });
             // Replaced with useApi call
-            const requestId = `vid_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+            requestId = `vid_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
             const cost = 1; // Video generation costs 1 Reel
             if (deductReelsOptimistically) deductReelsOptimistically(cost, requestId);
 
@@ -105,7 +106,7 @@ export function useVideoGeneration({
             console.error("Video generation error", error);
 
             const cost = 1;
-            if (rollbackReels) rollbackReels(cost, typeof requestId !== 'undefined' ? requestId : 'legacy');
+            if (rollbackReels) rollbackReels(cost, requestId);
 
             let errorMessage = "Failed to animate image.";
             if (error.message?.includes('concurrency')) errorMessage = "Video generation already in progress.";

@@ -14,16 +14,16 @@ export const processCleanupTasks = async (req) => {
     if (cleanupType === 'image') {
         const { imageId, imageUrl, thumbnailUrl } = data;
         const filesToDelete = [];
-        if (imageUrl) filesToDelete.push(imageUrl);
-        if (thumbnailUrl) filesToDelete.push(thumbnailUrl);
+        if (imageUrl) {filesToDelete.push(imageUrl);}
+        if (thumbnailUrl) {filesToDelete.push(thumbnailUrl);}
 
-        if (filesToDelete.length === 0) return;
+        if (filesToDelete.length === 0) {return;}
 
         try {
             const s3 = await getS3Client();
             const deletePromises = filesToDelete.map(url => {
                 const parts = url.split(`${B2_BUCKET}/`);
-                if (parts.length < 2) return Promise.resolve();
+                if (parts.length < 2) {return Promise.resolve();}
                 const key = parts[1];
                 return s3.send(new DeleteObjectCommand({ Bucket: B2_BUCKET, Key: key }));
             });
@@ -36,12 +36,12 @@ export const processCleanupTasks = async (req) => {
         }
     } else if (cleanupType === 'video') {
         const { videoId, videoUrl } = data;
-        if (!videoUrl) return;
+        if (!videoUrl) {return;}
 
         try {
             const s3 = await getS3Client();
             const parts = videoUrl.split(`${B2_BUCKET}/`);
-            if (parts.length < 2) return;
+            if (parts.length < 2) {return;}
             const key = parts[1];
 
             await s3.send(new DeleteObjectCommand({ Bucket: B2_BUCKET, Key: key }));

@@ -27,7 +27,7 @@ export const REACTIONS = {
  * @returns {object|null} The reaction object or null.
  */
 export const getReaction = (text) => {
-    if (!text) return null;
+    if (!text) {return null;}
     const lower = text.toLowerCase().trim();
 
     for (const [key, data] of Object.entries(REACTIONS)) {

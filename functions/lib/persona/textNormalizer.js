@@ -1,5 +1,5 @@
 export const normalizeForTts = (text) => {
-    if (!text) return "";
+    if (!text) { return ""; }
 
     let normalized = text;
 
@@ -28,7 +28,7 @@ export const normalizeForTts = (text) => {
 
     // 3. Strip Text Emoticons (keepingojis usually ignored or handled by brain.js cleaning, but just in case)
     // Common ASCII art that ruins TTS reading
-    const emoticonRegex = /[:;=][\-]?[)D(|\/\\pP3]/g;
+    const emoticonRegex = /[:;=]-?[)D(|/\\pP3]/g;
     normalized = normalized.replace(emoticonRegex, "");
 
     // 4. Repeated Punctuation Cleanup

@@ -50,8 +50,8 @@ export default function StatsHUD({
                     <button
                         onClick={onToggleQuickVote}
                         className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-colors ${quickVoteMode
-                                ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                                : 'bg-white/5 text-zinc-400 border border-white/10'
+                            ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                            : 'bg-white/5 text-zinc-400 border border-white/10'
                             }`}
                         title="Quick Vote Mode"
                     >
@@ -97,9 +97,9 @@ export default function StatsHUD({
                     <div className="flex items-center gap-1 px-2">
                         {voteHistory.map((v, i) => (
                             <div
-                                key={i}
+                                key={v.id || i}
                                 className={`w-2 h-2 rounded-full ${v.verdict === 'safe' ? 'bg-green-500' :
-                                        v.verdict === 'unsafe' ? 'bg-red-500' : 'bg-zinc-500'
+                                    v.verdict === 'unsafe' ? 'bg-red-500' : 'bg-zinc-500'
                                     }`}
                             />
                         ))}
@@ -119,8 +119,8 @@ export default function StatsHUD({
                         key={mode}
                         onClick={() => onSortChange(mode)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors ${sortMode === mode
-                                ? 'bg-purple-500/20 border-purple-500/50 text-purple-400'
-                                : 'bg-white/5 border-white/10 text-zinc-400 hover:text-white'
+                            ? 'bg-purple-500/20 border-purple-500/50 text-purple-400'
+                            : 'bg-white/5 border-white/10 text-zinc-400 hover:text-white'
                             }`}
                     >
                         <Icon size={12} />
@@ -131,8 +131,8 @@ export default function StatsHUD({
                 <button
                     onClick={onToggleAppealsOnly}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors ${showAppealsOnly
-                            ? 'bg-blue-500/20 border-blue-500/50 text-blue-400'
-                            : 'bg-white/5 border-white/10 text-zinc-400 hover:text-white'
+                        ? 'bg-blue-500/20 border-blue-500/50 text-blue-400'
+                        : 'bg-white/5 border-white/10 text-zinc-400 hover:text-white'
                         }`}
                 >
                     <Filter size={12} />

@@ -49,14 +49,14 @@ export async function handleDistillRequest(request) {
                 if (typeof imageInput === "string" && imageInput.startsWith("http")) {
                     // It's a URL
                     const imgRes = await fetchWithTimeout(imageInput);
-                    if (!imgRes.ok) throw new Error(`HTTP ${imgRes.status}`);
+                    if (!imgRes.ok) {throw new Error(`HTTP ${imgRes.status}`);}
                     const arrayBuffer = await imgRes.arrayBuffer();
                     buffer = Buffer.from(arrayBuffer);
                     mimeType = imgRes.headers.get("content-type") || "image/png";
                 } else if (typeof imageInput === "string" && imageInput.startsWith("data:image")) {
                     // It's a data URL
                     const match = imageInput.match(/^data:(image\/[a-z]+);base64,(.+)$/);
-                    if (!match) throw new Error("Invalid base64 format");
+                    if (!match) {throw new Error("Invalid base64 format");}
                     mimeType = match[1];
                     buffer = Buffer.from(match[2], "base64");
                 } else {
@@ -68,9 +68,9 @@ export async function handleDistillRequest(request) {
                     if (fs.existsSync(absolutePath)) {
                         buffer = fs.readFileSync(absolutePath);
                         const ext = path.extname(absolutePath).toLowerCase();
-                        if (ext === ".jpg" || ext === ".jpeg") mimeType = "image/jpeg";
-                        else if (ext === ".png") mimeType = "image/png";
-                        else if (ext === ".webp") mimeType = "image/webp";
+                        if (ext === ".jpg" || ext === ".jpeg") {mimeType = "image/jpeg";}
+                        else if (ext === ".png") {mimeType = "image/png";}
+                        else if (ext === ".webp") {mimeType = "image/webp";}
                     } else {
                         throw new Error(`File not found: ${absolutePath}`);
                     }

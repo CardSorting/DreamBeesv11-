@@ -24,7 +24,7 @@ export class EndpointHealthMonitor {
      * Start periodic health monitoring
      */
     start() {
-        if (this.intervalId) return;
+        if (this.intervalId) {return;}
 
         logger.info("[HealthMonitor] Starting endpoint health monitoring", {
             intervalMs: this.checkIntervalMs

@@ -9,13 +9,13 @@ const RATE_LIMIT_DELAY = 6000;
 
 export const handleGenerateAvatarCollection = async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
+    if (!uid) { throw new HttpsError('unauthenticated', "User must be authenticated"); }
 
     const { theme, style, referenceImage, referenceImageMimeType, requestId } = request.data;
-    if (!theme && !style) throw new HttpsError('invalid-argument', "Theme or Style required");
+    if (!theme && !style) { throw new HttpsError('invalid-argument', "Theme or Style required"); }
 
     const COST = ZAP_COSTS.AVATAR_COLLECTION;
-    const TARGET_COUNT = 30;
+    // const TARGET_COUNT = 30;
 
     try {
         const logRef = requestId ? db.collection('action_logs').doc(requestId) : null;
@@ -33,16 +33,16 @@ export const handleGenerateAvatarCollection = async (request) => {
             }
 
             const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+            if (!userDoc.exists) { throw new HttpsError('not-found', "User not found"); }
             const userData = userDoc.data();
-            if ((userData.zaps || 0) < COST) throw new HttpsError('resource-exhausted', `Insufficient Zaps.`);
+            if ((userData.zaps || 0) < COST) { throw new HttpsError('resource-exhausted', `Insufficient Zaps.`); }
             userDisplayName = userData.displayName || userData.username || "DreamBees User";
 
             t.update(userRef, { zaps: FieldValue.increment(-COST) });
-            if (logRef) t.set(logRef, { type: 'avatar_forge', userId: uid, theme, style, createdAt: FieldValue.serverTimestamp() });
+            if (logRef) { t.set(logRef, { type: 'avatar_forge', userId: uid, theme, style, createdAt: FieldValue.serverTimestamp() }); }
         });
 
-        if (alreadyExists) return { success: true, idempotent: true };
+        if (alreadyExists) { return { success: true, idempotent: true }; }
 
         const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
         const textModel = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -227,7 +227,7 @@ export const handleGenerateAvatarCollection = async (request) => {
 
 export const handleMintRandomAvatar = async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
+    if (!uid) { throw new HttpsError('unauthenticated', "User must be authenticated"); }
 
     const { requestId } = request.data;
     const MINT_COST = ZAP_COSTS.AVATAR_MINT;
@@ -240,12 +240,12 @@ export const handleMintRandomAvatar = async (request) => {
         return await db.runTransaction(async (t) => {
             if (logRef) {
                 const existing = await t.get(logRef);
-                if (existing.exists) return { success: true, idempotent: true };
+                if (existing.exists) { return { success: true, idempotent: true }; }
             }
 
             const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
-            if ((userDoc.data()?.zaps || 0) < MINT_COST) throw new HttpsError('resource-exhausted', "Insufficient Zaps");
+            if (!userDoc.exists) { throw new HttpsError('not-found', "User not found"); }
+            if ((userDoc.data()?.zaps || 0) < MINT_COST) { throw new HttpsError('resource-exhausted', "Insufficient Zaps"); }
 
             const randomVal = Math.random();
             const q = poolRef.where('minted', '==', false).where('random', '>=', randomVal).limit(1);
@@ -283,7 +283,7 @@ export const handleMintRandomAvatar = async (request) => {
             });
 
             t.update(userRef, { zaps: FieldValue.increment(-MINT_COST) });
-            if (logRef) t.set(logRef, { type: 'avatar_mint', userId: uid, avatarId: avatarDoc.id, createdAt: FieldValue.serverTimestamp() });
+            if (logRef) { t.set(logRef, { type: 'avatar_mint', userId: uid, avatarId: avatarDoc.id, createdAt: FieldValue.serverTimestamp() }); }
 
             return {
                 success: true,

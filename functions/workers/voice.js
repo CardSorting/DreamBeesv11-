@@ -71,8 +71,8 @@ export const processVoiceTask = async (req) => {
 
         // 2. Update Firestore Message
         const updateData = { updatedAt: FieldValue.serverTimestamp() };
-        if (audioJobId) updateData.audioJobId = audioJobId;
-        if (audioUrl) updateData.audioUrl = audioUrl;
+        if (audioJobId) {updateData.audioJobId = audioJobId;}
+        if (audioUrl) {updateData.audioUrl = audioUrl;}
 
         const msgRef = db.collection('personas').doc(imageId).collection('messages').doc(messageId);
         await msgRef.update(updateData);

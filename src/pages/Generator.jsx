@@ -86,7 +86,7 @@ export default function Generator() {
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         if (modeParam !== generationMode) setGenerationMode(modeParam);
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         if (tabParam !== activeTab) setActiveTab(tabParam);
     }, [modeParam, tabParam, generationMode, activeTab]);
 
@@ -143,7 +143,7 @@ export default function Generator() {
         if (!generating) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             _setElapsedTime(prev => (prev !== 0 ? 0 : prev));
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+             
             _setProgress(prev => (prev !== 0 ? 0 : prev));
             return;
         }

@@ -6,10 +6,10 @@ import { ZAP_COSTS } from "../lib/costs.js";
 
 export const handleFormatMeme = async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
+    if (!uid) {throw new HttpsError('unauthenticated', "User must be authenticated");}
 
     const { image, imageUrl, text, requestId } = request.data;
-    if (!image && !imageUrl) throw new HttpsError('invalid-argument', "Image required");
+    if (!image && !imageUrl) {throw new HttpsError('invalid-argument', "Image required");}
 
     const COST = ZAP_COSTS.MEME_FORMAT;
 
@@ -28,15 +28,15 @@ export const handleFormatMeme = async (request) => {
 
             const userRef = db.collection('users').doc(uid);
             const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+            if (!userDoc.exists) {throw new HttpsError('not-found', "User not found");}
             const zaps = userDoc.data().zaps || 0;
-            if (zaps < COST) throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`);
+            if (zaps < COST) {throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`);}
 
             t.update(userRef, { zaps: FieldValue.increment(-COST) });
-            if (logRef) t.set(logRef, { type: 'meme_format', userId: uid, text, createdAt: FieldValue.serverTimestamp() });
+            if (logRef) {t.set(logRef, { type: 'meme_format', userId: uid, text, createdAt: FieldValue.serverTimestamp() });}
         });
 
-        if (alreadyDeducted) return { success: true, idempotent: true };
+        if (alreadyDeducted) {return { success: true, idempotent: true };}
 
         // 2. Call Helper
         // Determine image URL or passed base64. Helper expects URL currently?

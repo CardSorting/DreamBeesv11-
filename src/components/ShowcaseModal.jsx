@@ -13,6 +13,12 @@ const ShowcaseModal = ({ image, onClose, model }) => {
     const { personas } = useTwitch();
     const navigate = useNavigate();
 
+    // Stability: Threshold logic and stable timestamp for render-pure calculations
+    const ACTIVE_THRESHOLD_MS = 15 * 60 * 1000;
+    // eslint-disable-next-line react-hooks/purity
+    const nowRef = React.useRef(Date.now());
+    const now = nowRef.current;
+
     // Defensive check: If image is missing, don't render anything (or could render error state)
     if (!image) return null;
 
@@ -254,14 +260,13 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                                     const persona = personas.find(p => p.id === image.id);
 
                                     // Threshold Logic (Matches Backend: 15 mins)
-                                    const ACTIVE_THRESHOLD_MS = 15 * 60 * 1000;
                                     const activePersonas = personas.filter(p => {
                                         const lastActivity = p.lastActivity?.toMillis?.() || p.lastActivity?.seconds * 1000 || 0;
-                                        return (Date.now() - lastActivity) < ACTIVE_THRESHOLD_MS;
+                                        return (now - lastActivity) < ACTIVE_THRESHOLD_MS;
                                     });
 
                                     const isSystemAtCapacity = activePersonas.length >= 5;
-                                    const isTargetPersonaActive = persona && (Date.now() - (persona.lastActivity?.toMillis?.() || persona.lastActivity?.seconds * 1000 || 0)) < ACTIVE_THRESHOLD_MS;
+                                    const isTargetPersonaActive = persona && (now - (persona.lastActivity?.toMillis?.() || persona.lastActivity?.seconds * 1000 || 0)) < ACTIVE_THRESHOLD_MS;
 
                                     const shouldRedirectToBrowse = !isTargetPersonaActive && isSystemAtCapacity;
 
@@ -340,5 +345,7 @@ const ShowcaseModal = ({ image, onClose, model }) => {
         </div>
     );
 };
+
+ShowcaseModal.displayName = 'ShowcaseModal';
 
 export default ShowcaseModal;

@@ -21,7 +21,7 @@ export default function Models() {
     React.useEffect(() => {
         if (queryParam !== searchQuery) setSearchQuery(queryParam);
         if (categoryParam !== activeCategory) setActiveCategory(categoryParam);
-    }, [queryParam, categoryParam]);
+    }, [queryParam, categoryParam, searchQuery, activeCategory]);
 
     const handleSearchChange = (val) => {
         setSearchQuery(val);
@@ -42,6 +42,9 @@ export default function Models() {
             return next;
         }, { replace: true });
     };
+
+
+
 
     const categories = useMemo(() => {
         const tags = new Set(['All']);

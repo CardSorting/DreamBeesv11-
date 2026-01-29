@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Zap } from 'lucide-react';
-import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
+import { motion } from 'framer-motion';  
 
 // Format elapsed time: 0s, 1s, ..., 1:00, 1:01, etc.
 const formatTime = (seconds) => {

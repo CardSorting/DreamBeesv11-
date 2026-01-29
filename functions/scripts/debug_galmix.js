@@ -24,7 +24,7 @@ async function debugGalmix() {
 
     try {
         console.log("Submitting request...");
-        const result = await client.generateImage("A cute glowing futuristic bee, 8k resolution, cinematic lighting", {
+        const _result = await client.generateImage("A cute glowing futuristic bee, 8k resolution, cinematic lighting", {
             steps: 20,
             poll_interval: 2000
         });

@@ -38,7 +38,7 @@ const MockupStudio = () => {
         if (modeParam !== mode) {
             setMode(modeParam);
         }
-    }, [modeParam]);
+    }, [modeParam, mode]);
 
     const handleModeChange = (newMode) => {
         setMode(newMode);

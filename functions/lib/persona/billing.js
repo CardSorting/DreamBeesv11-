@@ -85,7 +85,7 @@ export const checkAndDeductZaps = async (uid, action, customAmount = null, reque
  * @param {number} amount 
  */
 export const refundZaps = async (uid, amount) => {
-    if (amount <= 0) return;
+    if (amount <= 0) {return;}
     const db = getFirestore();
     try {
         await db.collection('users').doc(uid).update({ zaps: FieldValue.increment(amount) });

@@ -1,4 +1,4 @@
-import { db, FieldValue } from "../firebaseInit.js";
+import { db } from "../firebaseInit.js";
 import { fetchWithRetry, logger } from "../lib/utils.js";
 import { VertexAI, SchemaType } from "@google-cloud/vertexai";
 // [REMOVED] import { vertexFlow } from "../lib/vertexFlow.js";
@@ -210,7 +210,7 @@ export const processShowcaseTask = async (req) => {
         // Strict Scoping: Only match if category ALSO matches
         if (!idQuery.empty) {
             const match = idQuery.docs.find(d => d.data().showcaseCategory === categoryName);
-            if (match) existingDocSnapshot = match;
+            if (match) { existingDocSnapshot = match; }
         }
     } else {
         // Fallback checks
@@ -218,7 +218,7 @@ export const processShowcaseTask = async (req) => {
             .where("imageUrl", "==", imageUrl)
             .limit(1)
             .get();
-        if (!urlQuery.empty) existingDocSnapshot = urlQuery.docs[0];
+        if (!urlQuery.empty) { existingDocSnapshot = urlQuery.docs[0]; }
     }
 
     if (existingDocSnapshot) {
@@ -249,14 +249,8 @@ export const processShowcaseTask = async (req) => {
         const arrayBuffer = await response.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        // 2. Analyze with automatic retry (handled by VertexFlowProcessor)
-        let aiData = null;
-
-        try {
-            aiData = await analyzeImage(buffer, "image/png");
-        } catch (err) {
-            throw err; // Let it bubble up if VertexFlowProcessor permanent fail
-        }
+        // 2. Analyze with automatic retry
+        const aiData = await analyzeImage(buffer, "image/png");
 
         if (!aiData) {
             throw new Error("AI Analysis returned null.");

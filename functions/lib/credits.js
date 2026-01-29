@@ -11,8 +11,8 @@ import { logger } from "./utils.js";
  * @returns {Promise<{success: true, idempotent: boolean}>}
  */
 export async function deductZapsAtomic(uid, amount, requestId, queueCollection = 'generation_queue') {
-    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
-    if (amount <= 0) return { success: true, idempotent: false };
+    if (!uid) {throw new HttpsError('unauthenticated', "User must be authenticated");}
+    if (amount <= 0) {return { success: true, idempotent: false };}
 
     const userRef = db.collection('users').doc(uid);
     const queueRef = db.collection(queueCollection).doc(requestId);
@@ -27,7 +27,7 @@ export async function deductZapsAtomic(uid, amount, requestId, queueCollection =
 
         // 2. Check Balance
         const userDoc = await t.get(userRef);
-        if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+        if (!userDoc.exists) {throw new HttpsError('not-found', "User not found");}
 
         const userData = userDoc.data();
         const currentBalance = userData.zaps || 0;
@@ -54,21 +54,21 @@ export async function deductZapsAtomic(uid, amount, requestId, queueCollection =
  * @param {string} queueCollection - Default 'video_queue'
  */
 export async function deductReelsAtomic(uid, amount, requestId, queueCollection = 'video_queue') {
-    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
-    if (amount <= 0) return { success: true, idempotent: false };
+    if (!uid) {throw new HttpsError('unauthenticated', "User must be authenticated");}
+    if (amount <= 0) {return { success: true, idempotent: false };}
 
     const userRef = db.collection('users').doc(uid);
     const queueRef = db.collection(queueCollection).doc(requestId);
 
     return await db.runTransaction(async (t) => {
         const existingJob = await t.get(queueRef);
-        if (existingJob.exists) return { success: true, idempotent: true };
+        if (existingJob.exists) {return { success: true, idempotent: true };}
 
         const userDoc = await t.get(userRef);
-        if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+        if (!userDoc.exists) {throw new HttpsError('not-found', "User not found");}
 
         const reels = userDoc.data().reels || 0;
-        if (reels < amount) throw new HttpsError('resource-exhausted', "Insufficient Reels.");
+        if (reels < amount) {throw new HttpsError('resource-exhausted', "Insufficient Reels.");}
 
         t.update(userRef, { reels: FieldValue.increment(-amount) });
         return { success: true, idempotent: false };

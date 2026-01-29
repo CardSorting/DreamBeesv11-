@@ -1,13 +1,14 @@
 import { HttpsError } from "firebase-functions/v2/https";
 import { db, FieldValue, getFunctions } from "../firebaseInit.js";
 import { handleError, logger, getPromptHash, getPromptMetadata } from "../lib/utils.js";
-import { generateVisionPrompt, SLIDESHOW_MASTER_PROMPT } from "../lib/ai.js";
+import { generateVisionPrompt } from "../lib/ai.js";
 import { VALID_MODELS } from "../lib/constants.js";
 import { ZAP_COSTS, REEL_COSTS } from "../lib/costs.js";
 import { randomUUID } from 'crypto';
+import { checkCumulativeLimit } from "../lib/abuse.js";
 
 export const handleCreateGenerationRequest = async (request) => {
-    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) logger.warn("App Check verification failed (Warn Mode)");
+    if (!process.env.FUNCTIONS_EMULATOR && request.app === undefined) { logger.warn("App Check verification failed (Warn Mode)"); }
     let uid = request.auth?.uid;
     const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler, useTurbo, requestId } = request.data;
 
@@ -16,10 +17,10 @@ export const handleCreateGenerationRequest = async (request) => {
         uid = `anonymous-galmix-${randomUUID()}`;
     }
 
-    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
+    if (!uid) { throw new HttpsError('unauthenticated', "User must be authenticated"); }
 
-    if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 5) throw new HttpsError('invalid-argument', "Prompt is required");
-    if (modelId && !VALID_MODELS.includes(modelId)) throw new HttpsError('invalid-argument', `Invalid model ID.`);
+    if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 5) { throw new HttpsError('invalid-argument', "Prompt is required"); }
+    if (modelId && !VALID_MODELS.includes(modelId)) { throw new HttpsError('invalid-argument', `Invalid model ID.`); }
 
     let cleanPrompt = prompt.trim();
     cleanPrompt = cleanPrompt.replace(/([^a-zA-Z0-9\s])\1{2,}/g, '$1').replace(/\d{5,}/g, '').trim();
@@ -38,8 +39,6 @@ export const handleCreateGenerationRequest = async (request) => {
 
         // --- Cloudflare Cost Control ---
         if (modelId === 'flux-2-dev') {
-            const { calculateFluxCost } = await import("../lib/costs.js"); // Moved to costs.js or keep local
-            const { checkCumulativeLimit } = await import("../lib/abuse.js");
             const estimatedCost = calculateFluxCost(safeAspectRatio, safeSteps);
             const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
@@ -66,7 +65,7 @@ export const handleCreateGenerationRequest = async (request) => {
 
             await db.runTransaction(async (t) => {
                 const userDoc = await t.get(userRef);
-                if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+                if (!userDoc.exists) { throw new HttpsError('not-found', "User not found"); }
 
                 // Idempotency check
                 const existingJob = await t.get(queueRef);
@@ -79,20 +78,20 @@ export const handleCreateGenerationRequest = async (request) => {
                 const isSubscriber = userData.subscriptionStatus === 'active';
 
                 const activeJobs = await t.get(db.collection('generation_queue').where('userId', '==', uid).where('status', 'in', ['queued', 'processing']).limit(11));
-                if (activeJobs.size >= 10) throw new HttpsError('resource-exhausted', "Too many pending generations.");
+                if (activeJobs.size >= 10) { throw new HttpsError('resource-exhausted', "Too many pending generations."); }
 
                 let cost = 0;
                 const isPremiumModel = ['zit-model', 'zit-base-model'].includes(modelId);
                 const isFreeModel = ['galmix'].includes(modelId);
 
-                if (isFreeModel) cost = ZAP_COSTS.IMAGE_GENERATION_FREE;
-                else if (useTurbo || isPremiumModel) cost = ZAP_COSTS.IMAGE_GENERATION_TURBO;
-                else if (!isSubscriber) cost = ZAP_COSTS.IMAGE_GENERATION;
+                if (isFreeModel) { cost = ZAP_COSTS.IMAGE_GENERATION_FREE; }
+                else if (useTurbo || isPremiumModel) { cost = ZAP_COSTS.IMAGE_GENERATION_TURBO; }
+                else if (!isSubscriber) { cost = ZAP_COSTS.IMAGE_GENERATION; }
 
                 const effectiveZaps = (userData.zaps || 0);
-                if (effectiveZaps < cost && cost > 0) throw new HttpsError('resource-exhausted', `Insufficient Zaps.`);
+                if (effectiveZaps < cost && cost > 0) { throw new HttpsError('resource-exhausted', `Insufficient Zaps.`); }
 
-                if (cost > 0) t.update(userRef, { zaps: FieldValue.increment(-cost), lastGenerationTime: FieldValue.serverTimestamp() });
+                if (cost > 0) { t.update(userRef, { zaps: FieldValue.increment(-cost), lastGenerationTime: FieldValue.serverTimestamp() }); }
 
                 t.set(queueRef, {
                     userId: uid, prompt: cleanPrompt, negative_prompt: negative_prompt || "", modelId: modelId || "wai-illustrious",
@@ -139,15 +138,12 @@ function calculateFluxCost(aspectRatio, steps) {
     return tiles * s * 0.00041;
 }
 
-import { checkCumulativeLimit } from "../lib/abuse.js";
-
-
 export const handleCreateVideoGenerationRequest = async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
+    if (!uid) { throw new HttpsError('unauthenticated', "User must be authenticated"); }
 
     const { prompt, image, duration, resolution, aspectRatio, requestId: existingRequestId } = request.data;
-    if ((!prompt || prompt.length < 5) && !image) throw new HttpsError('invalid-argument', "Prompt or Image required");
+    if ((!prompt || prompt.length < 5) && !image) { throw new HttpsError('invalid-argument', "Prompt or Image required"); }
 
     const safeDuration = [6, 8, 10].includes(parseInt(duration)) ? parseInt(duration) : 6;
     const safeResolution = ['720p', '1080p', '2k', '4k'].includes(resolution) ? resolution : '1080p';
@@ -160,18 +156,18 @@ export const handleCreateVideoGenerationRequest = async (request) => {
         const userRef = db.collection('users').doc(uid);
         const requestId = await db.runTransaction(async (t) => {
             const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+            if (!userDoc.exists) { throw new HttpsError('not-found', "User not found"); }
 
             const newDocRef = existingRequestId ? db.collection('video_queue').doc(existingRequestId) : db.collection('video_queue').doc();
 
             const existingJob = await t.get(newDocRef);
-            if (existingJob.exists) return newDocRef.id;
+            if (existingJob.exists) { return newDocRef.id; }
 
             const activeJobs = await t.get(db.collection('video_queue').where('userId', '==', uid).where('status', 'in', ['queued', 'processing', 'pending']).limit(1));
-            if (!activeJobs.empty) throw new HttpsError('failed-precondition', "Video generation in progress.");
+            if (!activeJobs.empty) { throw new HttpsError('failed-precondition', "Video generation in progress."); }
 
             const reels = userDoc.data().reels || 0;
-            if (reels < totalCost) throw new HttpsError('resource-exhausted', "Insufficient Reels.");
+            if (reels < totalCost) { throw new HttpsError('resource-exhausted', "Insufficient Reels."); }
 
             t.update(userRef, { reels: FieldValue.increment(-totalCost) });
             t.set(newDocRef, {
@@ -191,7 +187,7 @@ export const handleCreateVideoGenerationRequest = async (request) => {
 export const handleCreateDressUpRequest = async (request) => {
     const { image, prompt, requestId } = request.data;
     const uid = request.auth.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "Auth required");
+    if (!uid) { throw new HttpsError('unauthenticated', "Auth required"); }
 
     const COST = ZAP_COSTS.DRESS_UP;
 
@@ -200,15 +196,15 @@ export const handleCreateDressUpRequest = async (request) => {
         await db.runTransaction(async (t) => {
             const userRef = db.collection('users').doc(uid);
             const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+            if (!userDoc.exists) { throw new HttpsError('not-found', "User not found"); }
 
             const existingJob = await t.get(queueRef);
-            if (existingJob.exists) return;
+            if (existingJob.exists) { return; }
 
             const userData = userDoc.data();
             const userDisplayName = userData.displayName || "Explorer";
 
-            if ((userData.zaps || 0) < COST) throw new HttpsError('resource-exhausted', "Insufficient Zaps");
+            if ((userData.zaps || 0) < COST) { throw new HttpsError('resource-exhausted', "Insufficient Zaps"); }
 
             t.update(userRef, { zaps: FieldValue.increment(-COST) });
             t.set(queueRef, {
@@ -239,7 +235,7 @@ export const handleCreateDressUpRequest = async (request) => {
 export const handleCreateSlideshowGeneration = async (request) => {
     const { image, mode, language, requestId } = request.data;
     const uid = request.auth.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "Auth required");
+    if (!uid) { throw new HttpsError('unauthenticated', "Auth required"); }
     const safeMode = mode || 'poster';
     const COST = safeMode === 'slideshow' ? ZAP_COSTS.SLIDESHOW : ZAP_COSTS.POSTER;
     try {
@@ -247,15 +243,15 @@ export const handleCreateSlideshowGeneration = async (request) => {
         await db.runTransaction(async (t) => {
             const userRef = db.collection('users').doc(uid);
             const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+            if (!userDoc.exists) { throw new HttpsError('not-found', "User not found"); }
 
             const existingJob = await t.get(queueRef);
-            if (existingJob.exists) return;
+            if (existingJob.exists) { return; }
 
             const userData = userDoc.data();
             const userDisplayName = userData.displayName || "Explorer";
 
-            if ((userData.zaps || 0) < COST) throw new HttpsError('resource-exhausted', "Insufficient Zaps");
+            if ((userData.zaps || 0) < COST) { throw new HttpsError('resource-exhausted', "Insufficient Zaps"); }
 
             t.update(userRef, { zaps: FieldValue.increment(-COST) });
             t.set(queueRef, {
@@ -287,7 +283,7 @@ export const handleCreateSlideshowGeneration = async (request) => {
 export const handleGenerateVideoPrompt = async (request) => {
     const { image, imageUrl, requestId } = request.data;
     const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
+    if (!uid) { throw new HttpsError('unauthenticated', "User must be authenticated"); }
 
     const COST = ZAP_COSTS.VIDEO_PROMPT;
 
@@ -298,17 +294,17 @@ export const handleGenerateVideoPrompt = async (request) => {
         await db.runTransaction(async (t) => {
             if (logRef) {
                 const existing = await t.get(logRef);
-                if (existing.exists) return;
+                if (existing.exists) { return; }
             }
 
             const userRef = db.collection('users').doc(uid);
             const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+            if (!userDoc.exists) { throw new HttpsError('not-found', "User not found"); }
             const zaps = userDoc.data().zaps || 0;
-            if (zaps < COST) throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`);
+            if (zaps < COST) { throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`); }
 
             t.update(userRef, { zaps: FieldValue.increment(-COST) });
-            if (logRef) t.set(logRef, { type: 'video_prompt', userId: uid, createdAt: FieldValue.serverTimestamp() });
+            if (logRef) { t.set(logRef, { type: 'video_prompt', userId: uid, createdAt: FieldValue.serverTimestamp() }); }
         });
 
         const prompt = await generateVisionPrompt(imageUrl || image);

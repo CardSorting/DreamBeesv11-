@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
 import toast from 'react-hot-toast';
 import BeeCrateScene from '../MockupStudio/BeeCrateScene';
 import { useUserInteractions } from '../../contexts/UserInteractionsContext';
-import { calculateZapCost } from '../../constants/zapCosts';
+
 
 export default function AvatarForgeMint() {
     const { currentUser } = useAuth();

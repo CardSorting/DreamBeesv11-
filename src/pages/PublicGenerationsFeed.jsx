@@ -218,23 +218,21 @@ export default function PublicGenerationsFeed() {
             setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
 
             if (isLoadMore) {
-                const updatedImages = [...images, ...validImages];
-
-                // Memory Safety: Limit individual feed-length in cache
-                if (updatedImages.length > 500) {
-                    // If feed gets too long, stop caching to prevent memory overflow
-                    setImages(updatedImages);
-                } else {
-                    setImages(updatedImages);
-                    setFilterCache(prev => ({
-                        ...prev,
-                        [activeFilter]: {
-                            images: updatedImages,
-                            lastDoc: snapshot.docs[snapshot.docs.length - 1],
-                            hasMore: snapshot.docs.length === 20
-                        }
-                    }));
-                }
+                setImages(prev => {
+                    const updatedImages = [...prev, ...validImages];
+                    // Memory Safety: Limit individual feed-length in cache
+                    if (updatedImages.length <= 500) {
+                        setFilterCache(cachePrev => ({
+                            ...cachePrev,
+                            [activeFilter]: {
+                                images: updatedImages,
+                                lastDoc: snapshot.docs[snapshot.docs.length - 1],
+                                hasMore: snapshot.docs.length === 20
+                            }
+                        }));
+                    }
+                    return updatedImages;
+                });
             } else {
                 setImages(validImages);
                 setFilterCache(prev => ({
@@ -257,7 +255,7 @@ export default function PublicGenerationsFeed() {
                 setLoading(false);
             }
         }
-    }, [lastDoc, activeFilter, images]);
+    }, [lastDoc, activeFilter]);
 
     useEffect(() => {
         // Hydrate from cache if available
@@ -273,7 +271,7 @@ export default function PublicGenerationsFeed() {
             setHasMore(true);
             fetchGenerations();
         }
-    }, [activeFilter]); // Run on mount and filter change
+    }, [activeFilter, fetchGenerations, filterCache]); // Run on mount and filter change
 
     // Intersection Observer for Infinite Scroll
     useEffect(() => {

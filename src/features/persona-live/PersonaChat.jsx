@@ -21,7 +21,7 @@ class PersonaErrorBoundary extends React.Component {
         this.state = { hasError: false };
     }
 
-    static getDerivedStateFromError(error) {
+    static getDerivedStateFromError(_error) {
         return { hasError: true };
     }
 
@@ -125,7 +125,6 @@ const PersonaChatContent = () => {
     const [isShaking, setIsShaking] = useState(false);
     const [showEmotes, setShowEmotes] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState('initialized'); // 'initialized', 'connecting', 'connected', 'disconnected', 'unavailable'
-    const [isAiSpeaking, setIsAiSpeaking] = useState(false);
     const [isPersonaTyping, setIsPersonaTyping] = useState(false);
     const audioVoiceRef = useRef(null);
 
@@ -179,7 +178,6 @@ const PersonaChatContent = () => {
         setLoadingAudioMsgId(null);
         setAudioErrorMsgId(null);
         pendingAudioUpdates.current = {};
-        setIsAiSpeaking(false);
         setIsPersonaTyping(false);
         setError(null);
 
@@ -191,12 +189,13 @@ const PersonaChatContent = () => {
 
     useEffect(() => {
         isMounted.current = true;
+        const currentAudio = audioVoiceRef.current;
         return () => {
             isMounted.current = false;
             // Cleanup audio on unmount
-            if (audioVoiceRef.current) {
-                audioVoiceRef.current.pause();
-                audioVoiceRef.current.src = '';
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.src = '';
             }
         };
     }, []);
@@ -273,7 +272,7 @@ const PersonaChatContent = () => {
                 activityTimeout: 30000,
                 pongTimeout: 10000,
                 authEndpoint: authEndpoint,
-                authorizer: (channel, options) => {
+                authorizer: (channel, _options) => {
                     return {
                         authorize: async (socketId, callback) => {
                             if (isCleanedUp) return; // Stop if unmounted
@@ -410,7 +409,7 @@ const PersonaChatContent = () => {
                 }, 5000);
             });
 
-            bindSafe('pusher:member_removed', (member) => {
+            bindSafe('pusher:member_removed', (_member) => {
                 setViewerCount(prev => Math.max(0, prev - 1));
             });
 
@@ -582,7 +581,7 @@ const PersonaChatContent = () => {
                 cleanupTimeoutRef.current = null;
             }, 100); // 100ms delay - enough for Strict Mode re-run to cancel
         };
-    }, [id, currentUser?.uid, navigate]);
+    }, [id, currentUser, navigate]);
 
     const handleManualReconnect = () => {
         window.location.reload();
@@ -800,7 +799,6 @@ const PersonaChatContent = () => {
             audioVoiceRef.current.currentTime = 0;
             setCurrentlyPlayingMsgId(null);
             setLoadingAudioMsgId(null);
-            setIsAiSpeaking(false);
             return;
         }
 
@@ -820,7 +818,6 @@ const PersonaChatContent = () => {
                 if (isMounted.current) {
                     setCurrentlyPlayingMsgId(msgId);
                     setLoadingAudioMsgId(null);
-                    setIsAiSpeaking(true);
                 }
             }).catch(e => {
                 console.error("Audio playback error:", e);
@@ -836,7 +833,6 @@ const PersonaChatContent = () => {
 
 
     const handleAiAudioEnded = () => {
-        setIsAiSpeaking(false);
         setCurrentlyPlayingMsgId(null);
         setLoadingAudioMsgId(null);
     };

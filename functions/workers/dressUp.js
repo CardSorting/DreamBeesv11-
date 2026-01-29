@@ -40,7 +40,7 @@ export const processDressUpTask = async (req) => {
         const response = await result.response;
         const generatedImageBase64 = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || null;
 
-        if (!generatedImageBase64) throw new Error("No image data returned from Gemini");
+        if (!generatedImageBase64) {throw new Error("No image data returned from Gemini");}
 
         const imageBuffer = Buffer.from(generatedImageBase64, 'base64');
         const { default: sharp } = await import("sharp");

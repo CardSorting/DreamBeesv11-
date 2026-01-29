@@ -155,7 +155,7 @@ ${userRequest || "Generate a high-fidelity instance of this aesthetic."}
 
     } catch (error) {
         logger.error("[DistillStudent] Critical Error:", error);
-        if (error instanceof HttpsError) throw error;
+        if (error instanceof HttpsError) {throw error;}
         throw new HttpsError("internal", error.message || "Failed to compose prompts.");
     }
 }

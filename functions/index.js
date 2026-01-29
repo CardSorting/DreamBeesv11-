@@ -4,7 +4,7 @@ import { api } from "./api.js";
 import { web } from "./web.js";
 import { urgentWorker, backgroundWorker, voiceWorker } from "./workers/queues.js";
 import { staleJobCleanup } from "./workers/recovery.js";
-import { onCall } from "firebase-functions/v2/https";
+// [REMOVED] import { onCall } from "firebase-functions/v2/https";
 // Main API entry point handles all onCall persona actions
 
 // Export the main services

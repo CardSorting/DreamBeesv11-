@@ -1,5 +1,5 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
-import { db, FieldValue } from "./firebaseInit.js";
+import { db } from "./firebaseInit.js";
 import { handleError, logger } from "./lib/utils.js";
 
 import {
@@ -35,7 +35,7 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
     logger.info(`[API] Incoming request: action=${request.data?.action}, uid=${request.auth?.uid}`);
 
     // Basic App Check logging (Warn Mode)
-    if (!process.env.FUNCTIONS_EMULATOR && request.app == undefined) {
+    if (!process.env.FUNCTIONS_EMULATOR && request.app === undefined) {
         logger.warn("App Check verification failed. Proceeding (Warn Mode).", { uid: request.auth?.uid });
     }
 
@@ -48,7 +48,7 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
     try {
         // --- 0. Pre-Flight Actions (Bypass Abuse Checks) ---
         if (action === 'initializeUser') {
-            if (!uid) throw new HttpsError('unauthenticated', 'User must be logged in.');
+            if (!uid) { throw new HttpsError('unauthenticated', 'User must be logged in.'); }
 
             try {
                 console.log(`[INIT_DEBUG] Step 1: Creating reference to users/${uid}`);

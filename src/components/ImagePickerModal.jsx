@@ -15,7 +15,7 @@ export default function ImagePickerModal({ isOpen, onClose, onSelect }) {
 
     const fetchGalleryImages = useCallback(async () => {
         if (!currentUser) return;
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         setLoading(true);
         try {
             const q = query(

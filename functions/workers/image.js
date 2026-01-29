@@ -1,17 +1,13 @@
 import { db, FieldValue } from "../firebaseInit.js";
-import { getS3Client, fetchWithTimeout, readFirstBytes, detectImageFormat, logger, retryOperation } from "../lib/utils.js";
+import { getS3Client, fetchWithTimeout, logger, retryOperation } from "../lib/utils.js";
 import { B2_BUCKET, B2_PUBLIC_URL, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN } from "../lib/constants.js";
 // [REMOVED] import { vertexFlow } from "../lib/vertexFlow.js";
 import { GalmixClient } from "../lib/GalmixClient.js";
 
 const galmixClient = new GalmixClient();
 
-// Local helper
-const looksLikeJSON = (buffer) => {
-    if (!buffer || buffer.length === 0) return false;
-    const firstChar = String.fromCharCode(buffer[0]);
-    return firstChar === '{' || firstChar === '[' || firstChar === '"';
-};
+// Local helpers removed (unused)
+
 
 // Simplified Endpoints
 const ENDPOINTS = {
@@ -67,7 +63,7 @@ export const processImageTask = async (req) => {
         const resolution = resolutionMap[aspectRatio] || resolutionMap['1:1'];
 
         // --- MODEL EXECUTION ---
-        let response;
+
 
         if (modelId === 'zit-model' || modelId === 'zit-base-model') {
             imageBuffer = await (async () => {
@@ -88,7 +84,7 @@ export const processImageTask = async (req) => {
                     body: JSON.stringify(body)
                 });
 
-                if (!submitResponse.ok) throw new Error(`${modelId} Submission Failed (${submitResponse.status})`);
+                if (!submitResponse.ok) { throw new Error(`${modelId} Submission Failed (${submitResponse.status})`); }
 
                 const { job_id } = await submitResponse.json();
 
@@ -96,10 +92,10 @@ export const processImageTask = async (req) => {
                 for (let poll = 0; poll < 120; poll++) {
                     await new Promise(r => setTimeout(r, 4000));
                     let resultRes = await fetch(`${endpoint}/result/${job_id}`);
-                    if (resultRes.status === 404) resultRes = await fetch(`${endpoint}/jobs/${job_id}`);
+                    if (resultRes.status === 404) { resultRes = await fetch(`${endpoint}/jobs/${job_id}`); }
 
-                    if (resultRes.status === 202) continue;
-                    if (!resultRes.ok) throw new Error(`${modelId} Polling Error (${resultRes.status})`);
+                    if (resultRes.status === 202) { continue; }
+                    if (!resultRes.ok) { throw new Error(`${modelId} Polling Error (${resultRes.status})`); }
 
                     const ct = resultRes.headers.get('content-type') || '';
                     if (ct.includes('image/')) {
@@ -179,7 +175,7 @@ export const processImageTask = async (req) => {
                     timeout: 120000
                 });
 
-                if (!submitResponse.ok) throw new Error(`SDXL Submission Failed (${submitResponse.status})`);
+                if (!submitResponse.ok) { throw new Error(`SDXL Submission Failed (${submitResponse.status})`); }
 
                 const { job_id } = await submitResponse.json();
 
@@ -187,10 +183,10 @@ export const processImageTask = async (req) => {
                 for (let poll = 0; poll < 120; poll++) {
                     await new Promise(r => setTimeout(r, 4000));
                     let resultRes = await fetch(`${ENDPOINTS.sdxl_a10g}/result/${job_id}`);
-                    if (resultRes.status === 404) resultRes = await fetch(`${ENDPOINTS.sdxl_a10g}/jobs/${job_id}`);
+                    if (resultRes.status === 404) { resultRes = await fetch(`${ENDPOINTS.sdxl_a10g}/jobs/${job_id}`); }
 
-                    if (resultRes.status === 202) continue;
-                    if (!resultRes.ok) throw new Error(`SDXL Polling Error (${resultRes.status})`);
+                    if (resultRes.status === 202) { continue; }
+                    if (!resultRes.ok) { throw new Error(`SDXL Polling Error (${resultRes.status})`); }
 
                     if (resultRes.headers.get('content-type')?.includes('image/')) {
                         return Buffer.from(await resultRes.arrayBuffer());

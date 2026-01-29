@@ -7,7 +7,7 @@ import Sidebar from '../components/Sidebar';
 import FeedSwitcher from '../components/FeedSwitcher';
 import SuggestedPanel from '../components/SuggestedPanel';
 import { useModel } from '../contexts/ModelContext';
-// eslint-disable-next-line no-unused-vars -- motion.div is used as JSX element
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { slugify, unslugify } from '../utils/urlHelpers';
@@ -34,11 +34,11 @@ export default function MockupFeed() {
     const [searchParams, setSearchParams] = useSearchParams();
 
     // Derived initial filter state
-    const getInitialFilter = () => {
+    const getInitialFilter = React.useCallback(() => {
         if (tag) return { type: 'tag', value: unslugify(tag), slug: tag };
         if (userId) return { id: userId, name: 'Creator' };
         return null;
-    };
+    }, [tag, userId]);
 
     const [creatorFilter, setCreatorFilter] = useState(getInitialFilter());
 
@@ -49,7 +49,7 @@ export default function MockupFeed() {
         if (JSON.stringify(newFilter) !== JSON.stringify(creatorFilter)) {
             setCreatorFilter(newFilter);
         }
-    }, [tag, userId]);
+    }, [getInitialFilter, creatorFilter]);
 
     // Deep Linking for Focus Modal
     useEffect(() => {
@@ -132,7 +132,7 @@ export default function MockupFeed() {
         }, 300);
     };
 
-    const fetchMockups = async (isLoadMore = false) => {
+    const fetchMockups = React.useCallback(async (isLoadMore = false) => {
         try {
             if (!isLoadMore) setLoading(true);
 
@@ -183,7 +183,7 @@ export default function MockupFeed() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [lastDoc, creatorFilter]);
 
     useEffect(() => {
         setImages([]); // Clear images when filter changes
@@ -191,7 +191,7 @@ export default function MockupFeed() {
         setHasMore(true); // Assume more data for new query
         fetchMockups();
         // Scroll logic moved to handleFilterChange
-    }, [creatorFilter]);
+    }, [creatorFilter, fetchMockups]);
 
     // Intersection Observer for Infinite Scroll
     useEffect(() => {
@@ -211,7 +211,7 @@ export default function MockupFeed() {
         return () => {
             if (observer.current) observer.current.disconnect();
         };
-    }, [loading, hasMore]);
+    }, [loading, hasMore, fetchMockups]);
 
     return (
         <div className="feed-layout-wrapper">

@@ -7,7 +7,7 @@ import Sidebar from '../components/Sidebar';
 import FeedSwitcher from '../components/FeedSwitcher';
 import SuggestedPanel from '../components/SuggestedPanel';
 import { useModel } from '../contexts/ModelContext';
-// eslint-disable-next-line no-unused-vars -- motion.div is used as JSX element
+ 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import FeedPost from '../components/FeedPost';

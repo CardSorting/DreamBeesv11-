@@ -1,7 +1,10 @@
 {
   "functions": {
     "source": "functions",
-    "codebase": "default"
+    "codebase": "default",
+    "predeploy": [
+      "npm --prefix functions run lint"
+    ]
   },
   "firestore": {
     "database": "(default)",
@@ -12,6 +15,10 @@
   "hosting": {
     "site": "dreambees-alchemist",
     "public": "dist",
+    "predeploy": [
+      "npm run lint",
+      "npm run test"
+    ],
     "ignore": [
       "firebase.json",
       "**/.*",

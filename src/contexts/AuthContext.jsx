@@ -1,5 +1,4 @@
-/* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import { auth } from "../firebase";
 import {
     onAuthStateChanged,
@@ -18,6 +17,7 @@ import { identifyUser } from "../utils/analytics";
 
 const AuthContext = createContext();
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
     return useContext(AuthContext);
 }
@@ -27,7 +27,7 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
     const [pendingBirthday, setPendingBirthday] = useState(null);
 
-    function signup(email, password, birthday = null) {
+    const signup = useCallback((email, password, birthday = null) => {
         if (birthday) setPendingBirthday(birthday);
         const referralCode = localStorage.getItem('referralCode');
         return createUserWithEmailAndPassword(auth, email, password).then((userCredential) => {
@@ -37,25 +37,25 @@ export function AuthProvider({ children }) {
             }
             return userCredential;
         });
-    }
+    }, []);
 
-    function login(email, password) {
+    const login = useCallback((email, password) => {
         return signInWithEmailAndPassword(auth, email, password);
-    }
+    }, []);
 
-    function loginWithGoogle() {
+    const loginWithGoogle = useCallback(() => {
         const provider = new GoogleAuthProvider();
         return signInWithPopup(auth, provider);
-    }
+    }, []);
 
-    function logout() {
+    const logout = useCallback(() => {
         return signOut(auth);
-    }
+    }, []);
 
 
     const { call: apiCall } = useApi();
 
-    async function ensureUserInitialized(user) {
+    const ensureUserInitialized = useCallback(async (user) => {
         if (!user) return;
 
         try {
@@ -91,7 +91,7 @@ export function AuthProvider({ children }) {
             console.error("Critical: Failed to ensure user initialization:", error);
             // Optionally set global error state here if strict blocking is needed
         }
-    }
+    }, [apiCall, pendingBirthday]);
 
     useEffect(() => {
         // Handle redirect result first?
@@ -139,13 +139,13 @@ export function AuthProvider({ children }) {
         return unsubscribe;
     }, [ensureUserInitialized]);
 
-    const value = {
+    const value = useMemo(() => ({
         currentUser,
         signup,
         login,
         loginWithGoogle,
         logout
-    };
+    }), [currentUser, signup, login, loginWithGoogle, logout]);
 
     return (
         <AuthContext.Provider value={value}>

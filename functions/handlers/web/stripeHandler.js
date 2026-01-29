@@ -35,16 +35,16 @@ export const handleStripeWebhook = async (req, res) => {
                 let zapsToAdd = 0;
                 let reelsToAdd = 0;
 
-                if (amount === 500) zapsToAdd = 50;
-                else if (amount === 2000) zapsToAdd = 250;
-                else if (amount === 499) zapsToAdd = 20;
-                else if (amount === 1999) zapsToAdd = 80;
-                else if (amount === 4999) zapsToAdd = 200;
-                else if (amount === 999) zapsToAdd = 100;
-                else if (amount === 600) reelsToAdd = 600;
-                else if (amount === 1500) reelsToAdd = 1500;
-                else if (amount === 3500) reelsToAdd = 3600;
-                else if (amount === 8500) reelsToAdd = 9000;
+                if (amount === 500) {zapsToAdd = 50;}
+                else if (amount === 2000) {zapsToAdd = 250;}
+                else if (amount === 499) {zapsToAdd = 20;}
+                else if (amount === 1999) {zapsToAdd = 80;}
+                else if (amount === 4999) {zapsToAdd = 200;}
+                else if (amount === 999) {zapsToAdd = 100;}
+                else if (amount === 600) {reelsToAdd = 600;}
+                else if (amount === 1500) {reelsToAdd = 1500;}
+                else if (amount === 3500) {reelsToAdd = 3600;}
+                else if (amount === 8500) {reelsToAdd = 9000;}
 
                 if (zapsToAdd > 0) {
                     await db.collection('users').doc(userId).update({ zaps: FieldValue.increment(zapsToAdd), stripeCustomerId: customerId });

@@ -2,15 +2,15 @@ import { HttpsError } from "firebase-functions/v2/https";
 import { db, FieldValue, getFunctions } from "../firebaseInit.js";
 import { handleError, logger, retryOperation } from "../lib/utils.js";
 import { enhancePromptWithGemini, transformImageWithGemini } from "../lib/ai.js";
-import { VertexAI } from "@google-cloud/vertexai";
+// [REMOVED] import { HarmCategory, HarmBlockThreshold } from "@google-cloud/vertexai";
 import { ZAP_COSTS } from "../lib/costs.js";
 // [REMOVED] import { vertexFlow } from "../lib/vertexFlow.js";
 
 export const handleCreateAnalysisRequest = async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
+    if (!uid) { throw new HttpsError('unauthenticated', "User must be authenticated"); }
     const { image, imageUrl, requestId } = request.data;
-    if (!image && !imageUrl) throw new HttpsError('invalid-argument', "Image required");
+    if (!image && !imageUrl) { throw new HttpsError('invalid-argument', "Image required"); }
 
     const COST = ZAP_COSTS.IMAGE_ANALYSIS;
 
@@ -20,13 +20,13 @@ export const handleCreateAnalysisRequest = async (request) => {
         await db.runTransaction(async (t) => {
             const userRef = db.collection('users').doc(uid);
             const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+            if (!userDoc.exists) { throw new HttpsError('not-found', "User not found"); }
 
             const existing = await t.get(docRef);
-            if (existing.exists) return;
+            if (existing.exists) { return; }
 
             const zaps = userDoc.data().zaps || 0;
-            if (zaps < COST) throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`);
+            if (zaps < COST) { throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`); }
 
             t.update(userRef, { zaps: FieldValue.increment(-COST) });
             t.set(docRef, { userId: uid, image: image || null, imageUrl: imageUrl || null, status: 'queued', createdAt: FieldValue.serverTimestamp() });
@@ -50,9 +50,9 @@ export const handleCreateAnalysisRequest = async (request) => {
 
 export const handleCreateEnhanceRequest = async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
+    if (!uid) { throw new HttpsError('unauthenticated', "User must be authenticated"); }
     const { prompt, requestId } = request.data;
-    if (!prompt) throw new HttpsError('invalid-argument', "Prompt required");
+    if (!prompt) { throw new HttpsError('invalid-argument', "Prompt required"); }
 
     const COST = ZAP_COSTS.IMAGE_ENHANCE;
 
@@ -62,13 +62,13 @@ export const handleCreateEnhanceRequest = async (request) => {
         await db.runTransaction(async (t) => {
             const userRef = db.collection('users').doc(uid);
             const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+            if (!userDoc.exists) { throw new HttpsError('not-found', "User not found"); }
 
             const existing = await t.get(docRef);
-            if (existing.exists) return;
+            if (existing.exists) { return; }
 
             const zaps = userDoc.data().zaps || 0;
-            if (zaps < COST) throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`);
+            if (zaps < COST) { throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`); }
 
             t.update(userRef, { zaps: FieldValue.increment(-COST) });
             t.set(docRef, { userId: uid, originalPrompt: prompt, status: 'queued', createdAt: FieldValue.serverTimestamp() });
@@ -89,7 +89,7 @@ export const handleCreateEnhanceRequest = async (request) => {
 
 export const handleTransformPrompt = async (request) => {
     const { prompt, styleName, intensity, instructions } = request.data;
-    if (!prompt) throw new HttpsError('invalid-argument', "Prompt required");
+    if (!prompt) { throw new HttpsError('invalid-argument', "Prompt required"); }
     try {
         const enhanced = await enhancePromptWithGemini(
             `${prompt}. Style: ${styleName}. Intensity: ${intensity}. ${instructions || ""}`
@@ -101,7 +101,7 @@ export const handleTransformPrompt = async (request) => {
 export const handleTransformImage = async (request) => {
     const { imageUrl, styleName, instructions, intensity, requestId } = request.data;
     const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
+    if (!uid) { throw new HttpsError('unauthenticated', "User must be authenticated"); }
     const COST = ZAP_COSTS.IMAGE_TRANSFORM;
     try {
         const logRef = requestId ? db.collection('action_logs').doc(requestId) : null;
@@ -109,17 +109,17 @@ export const handleTransformImage = async (request) => {
         await db.runTransaction(async (t) => {
             if (logRef) {
                 const existing = await t.get(logRef);
-                if (existing.exists) return;
+                if (existing.exists) { return; }
             }
 
             const userRef = db.collection('users').doc(uid);
             const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+            if (!userDoc.exists) { throw new HttpsError('not-found', "User not found"); }
             const zaps = userDoc.data().zaps || 0;
-            if (zaps < COST) throw new HttpsError('resource-exhausted', "Insufficient Zaps.");
+            if (zaps < COST) { throw new HttpsError('resource-exhausted', "Insufficient Zaps."); }
 
             t.update(userRef, { zaps: FieldValue.increment(-COST) });
-            if (logRef) t.set(logRef, { type: 'transform_image', userId: uid, createdAt: FieldValue.serverTimestamp() });
+            if (logRef) { t.set(logRef, { type: 'transform_image', userId: uid, createdAt: FieldValue.serverTimestamp() }); }
         });
         const result = await transformImageWithGemini(imageUrl, styleName, instructions, intensity, uid);
         return result;
@@ -136,10 +136,10 @@ export const handleTransformImage = async (request) => {
 
 export const handleMeowaccTransform = async (request) => {
     const uid = request.auth?.uid;
-    if (!uid) throw new HttpsError('unauthenticated', "Auth required");
+    if (!uid) { throw new HttpsError('unauthenticated', "Auth required"); }
 
     const { imageBase64, mimeType, mode, extraData, requestId } = request.data;
-    if (!imageBase64) throw new HttpsError('invalid-argument', "Image data required");
+    if (!imageBase64) { throw new HttpsError('invalid-argument', "Image data required"); }
 
     const COST = ZAP_COSTS.MEOWACC;
 
@@ -151,7 +151,7 @@ export const handleMeowaccTransform = async (request) => {
         let alreadyExists = false;
         await db.runTransaction(async (t) => {
             const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+            if (!userDoc.exists) { throw new HttpsError('not-found', "User not found"); }
 
             const existing = await t.get(queueRef);
             if (existing.exists) {
@@ -161,7 +161,7 @@ export const handleMeowaccTransform = async (request) => {
 
             const userData = userDoc.data();
             const zaps = userData.zaps || 0;
-            if (zaps < COST) throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`);
+            if (zaps < COST) { throw new HttpsError('resource-exhausted', `Insufficient Zaps. Requires ${COST} Zaps.`); }
 
             userDisplayName = userData.displayName || userData.username || "DreamBees User";
 
@@ -175,7 +175,7 @@ export const handleMeowaccTransform = async (request) => {
             });
         });
 
-        if (alreadyExists) return { success: true, idempotent: true };
+        if (alreadyExists) { return { success: true, idempotent: true }; }
 
         const {
             MEOWACC_PROMPT,
@@ -192,16 +192,16 @@ export const handleMeowaccTransform = async (request) => {
         } = await import("../lib/meowaccPrompts.js");
 
         let selectedPrompt = MEOWACC_PROMPT;
-        if (mode === 'card') selectedPrompt = MEOWACC_CARD_PROMPT;
-        else if (mode === 'sports') selectedPrompt = MEOWACC_SPORTS_PROMPT;
-        else if (mode === 'sports_pro') selectedPrompt = MEOWACC_SPORTS_PRO_PROMPT;
-        else if (mode === 'fifa') selectedPrompt = MEOWACC_FIFA_PROMPT;
-        else if (mode === 'poster') selectedPrompt = MEOWACC_POSTER_PROMPT;
-        else if (mode === 'ensemble') selectedPrompt = MEOWACC_ENSEMBLE_PROMPT;
-        else if (mode === 'comic') selectedPrompt = MEOWACC_COMIC_PROMPT;
-        else if (mode === 'tarot') selectedPrompt = MEOWACC_TAROT_PROMPT(extraData);
-        else if (mode === 'meowd') selectedPrompt = MEOWACC_MEOWD_PROMPT;
-        else if (mode === 'poker_single') selectedPrompt = generatePokerPrompt(extraData);
+        if (mode === 'card') { selectedPrompt = MEOWACC_CARD_PROMPT; }
+        else if (mode === 'sports') { selectedPrompt = MEOWACC_SPORTS_PROMPT; }
+        else if (mode === 'sports_pro') { selectedPrompt = MEOWACC_SPORTS_PRO_PROMPT; }
+        else if (mode === 'fifa') { selectedPrompt = MEOWACC_FIFA_PROMPT; }
+        else if (mode === 'poster') { selectedPrompt = MEOWACC_POSTER_PROMPT; }
+        else if (mode === 'ensemble') { selectedPrompt = MEOWACC_ENSEMBLE_PROMPT; }
+        else if (mode === 'comic') { selectedPrompt = MEOWACC_COMIC_PROMPT; }
+        else if (mode === 'tarot') { selectedPrompt = MEOWACC_TAROT_PROMPT(extraData); }
+        else if (mode === 'meowd') { selectedPrompt = MEOWACC_MEOWD_PROMPT; }
+        else if (mode === 'poker_single') { selectedPrompt = generatePokerPrompt(extraData); }
 
         const { VertexAI } = await import("@google-cloud/vertexai");
         const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
@@ -218,10 +218,10 @@ export const handleMeowaccTransform = async (request) => {
         });
 
         const response = (await result.response).candidates?.[0];
-        if (response?.finishReason === 'SAFETY') throw new HttpsError('failed-precondition', "Blocked by safety filter.");
+        if (response?.finishReason === 'SAFETY') { throw new HttpsError('failed-precondition', "Blocked by safety filter."); }
 
         const generatedImageBase64 = response?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
-        if (!generatedImageBase64) throw new Error("No image data returned from AI");
+        if (!generatedImageBase64) { throw new Error("No image data returned from AI"); }
 
         const { default: sharp } = await import("sharp");
         const { PutObjectCommand } = await import("@aws-sdk/client-s3");

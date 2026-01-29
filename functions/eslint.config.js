@@ -17,7 +17,7 @@ export default [
         rules: {
             "no-undef": "error",
             "no-unused-vars": [
-                "warn",
+                "error",
                 {
                     "argsIgnorePattern": "^_",
                     "varsIgnorePattern": "^_"
@@ -25,9 +25,11 @@ export default [
             ],
             "no-constant-condition": "warn",
             "no-debugger": "error",
-            "no-console": "off",
+            "no-console": ["warn", { allow: ["warn", "error"] }],
             "prefer-const": "error",
-            "no-var": "error"
+            "no-var": "error",
+            "eqeqeq": ["error", "always"],
+            "curly": ["error", "all"]
         }
     }
 ];

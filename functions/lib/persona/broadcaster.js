@@ -3,8 +3,8 @@ import { logger } from "../utils.js";
 let pusherInstance = null;
 
 export const initPusher = async () => {
-    if (pusherInstance) return pusherInstance;
-    if (!process.env.SOKETI_APP_ID) return null;
+    if (pusherInstance) {return pusherInstance;}
+    if (!process.env.SOKETI_APP_ID) {return null;}
 
     try {
         const Pusher = (await import("pusher")).default;
@@ -26,7 +26,7 @@ export const initPusher = async () => {
 
 const trigger = async (channel, event, data) => {
     const pusher = await initPusher();
-    if (!pusher) return;
+    if (!pusher) {return;}
 
     // We use retryOperation to handle transient network issues or Soketi restarts
     const { retryOperation } = await import("../utils.js");

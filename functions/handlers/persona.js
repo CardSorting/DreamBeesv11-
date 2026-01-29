@@ -10,7 +10,7 @@ import * as Context from "../lib/persona/context.js";
 import * as Broadcaster from "../lib/persona/broadcaster.js";
 import * as Brain from "../lib/persona/brain.js";
 import * as Store from "../lib/persona/store.js";
-import * as Voice from "../lib/persona/voice.js";
+// [REMOVED] import * as Voice from "../lib/persona/voice.js";
 import { VertexAI } from "@google-cloud/vertexai";
 
 const vertexAI = new VertexAI({ project: process.env.GCLOUD_PROJECT, location: "us-central1" });
@@ -19,7 +19,7 @@ const db = getFirestore();
 // --- HANDLE CHAT PERSONA ---
 export const handleChatPersona = async (request) => {
     const { imageId, message, requestId } = request.data;
-    if (!request.auth) throw new HttpsError('unauthenticated', 'User must be logged in.');
+    if (!request.auth) { throw new HttpsError('unauthenticated', 'User must be logged in.'); }
 
     const userId = request.auth.uid;
     const userName = request.auth.token.name || 'Anonymous';
@@ -27,7 +27,7 @@ export const handleChatPersona = async (request) => {
 
     // 0. Load Persona
     const personaDoc = await db.collection('personas').doc(imageId).get();
-    if (!personaDoc.exists) throw new HttpsError('not-found', 'Persona not found.');
+    if (!personaDoc.exists) { throw new HttpsError('not-found', 'Persona not found.'); }
     const persona = personaDoc.data();
 
     // 1. Billing
@@ -61,11 +61,11 @@ export const handleChatPersona = async (request) => {
             // "The Nod" (Instant Reaction)
             const lowerMsg = message.toLowerCase();
             let reactionEmoji = null;
-            if (lowerMsg.includes('lol') || lowerMsg.includes('lmao')) reactionEmoji = '😂';
-            else if (lowerMsg === 'w') reactionEmoji = '🔥';
-            else if (lowerMsg === 'l') reactionEmoji = '💀';
-            else if (lowerMsg.includes('love') || lowerMsg.includes('<3')) reactionEmoji = '💜';
-            else if (lowerMsg.includes('?')) reactionEmoji = '🤔';
+            if (lowerMsg.includes('lol') || lowerMsg.includes('lmao')) { reactionEmoji = '😂'; }
+            else if (lowerMsg === 'w') { reactionEmoji = '🔥'; }
+            else if (lowerMsg === 'l') { reactionEmoji = '💀'; }
+            else if (lowerMsg.includes('love') || lowerMsg.includes('<3')) { reactionEmoji = '💜'; }
+            else if (lowerMsg.includes('?')) { reactionEmoji = '🤔'; }
 
             if (reactionEmoji) {
                 await Broadcaster.broadcastReaction(imageId, reactionEmoji);
@@ -126,8 +126,8 @@ export const handleChatPersona = async (request) => {
 
         // 8. Execute Side Effects
         const updates = {};
-        if (metadata.title) await Store.updatePersonaState(imageId, { streamTitle: metadata.title });
-        if (metadata.poll) await Store.updatePersonaState(imageId, { activePoll: metadata.poll });
+        if (metadata.title) { await Store.updatePersonaState(imageId, { streamTitle: metadata.title }); }
+        if (metadata.poll) { await Store.updatePersonaState(imageId, { activePoll: metadata.poll }); }
         if (metadata.vibe) {
             await Store.updatePersonaState(imageId, { currentVibe: metadata.vibe });
             // Alert chat that the "vibe" has shifted
@@ -135,9 +135,9 @@ export const handleChatPersona = async (request) => {
         }
 
         if (metadata.action) {
-            if (metadata.action.startsWith('pose_')) updates.currentPose = metadata.action;
-            if (metadata.action.startsWith('bg_')) updates.currentBackground = metadata.action;
-            if (Object.keys(updates).length > 0) await Store.updatePersonaState(imageId, updates);
+            if (metadata.action.startsWith('pose_')) { updates.currentPose = metadata.action; }
+            if (metadata.action.startsWith('bg_')) { updates.currentBackground = metadata.action; }
+            if (Object.keys(updates).length > 0) { await Store.updatePersonaState(imageId, updates); }
 
             await Broadcaster.broadcastStateChange(imageId, metadata.action, 'AI Director');
         }
@@ -179,8 +179,8 @@ export const handleChatPersona = async (request) => {
             logger.info(`[Persona] Voice Task Enqueued for msg: ${msgRef.id}`);
         }
 
-        if (metadata.reaction) await Broadcaster.broadcastReaction(imageId, metadata.reaction);
-        if (metadata.poll) await Broadcaster.broadcastPoll(imageId, metadata.poll);
+        if (metadata.reaction) { await Broadcaster.broadcastReaction(imageId, metadata.reaction); }
+        if (metadata.poll) { await Broadcaster.broadcastPoll(imageId, metadata.poll); }
 
         // 10. Hype Management
         const hypeIncrement = 2;
@@ -208,7 +208,7 @@ export const handleChatPersona = async (request) => {
     } catch (e) {
         logger.error("Chat Error", e);
         await Broadcaster.broadcastTyping(imageId, false).catch(() => { });
-        if (costDeducted > 0) await Billing.refundZaps(userId, costDeducted);
+        if (costDeducted > 0) { await Billing.refundZaps(userId, costDeducted); }
         throw new HttpsError('internal', "Failed to get character response.");
     }
 };
@@ -253,7 +253,7 @@ export const handleCreatePersona = async (request) => {
         throw new HttpsError('invalid-argument', 'Missing parameters');
     }
     const { imageId, imageUrl, requestId } = request.data;
-    if (!request.auth) throw new HttpsError('unauthenticated', 'Login required');
+    if (!request.auth) { throw new HttpsError('unauthenticated', 'Login required'); }
     const userId = request.auth.uid;
 
     const personaRef = db.collection('personas').doc(imageId);
@@ -282,19 +282,17 @@ export const handleCreatePersona = async (request) => {
     if (requestId && cost === 0) {
         // Idempotent: doc might already exist or be in progress
         const existingDoc = await personaRef.get();
-        if (existingDoc.exists) return { success: true, persona: existingDoc.data(), isNew: false };
+        if (existingDoc.exists) { return { success: true, persona: existingDoc.data(), isNew: false }; }
     }
 
     try {
-        let imageBuffer;
-        let mimeType = 'image/webp';
-
         const response = await fetchWithRetry(imageUrl, { timeout: 15000, retries: 3 });
-        if (!response.ok) throw new Error("Image fetch failed");
+        if (!response.ok) { throw new Error("Image fetch failed"); }
         const arrayBuffer = await response.arrayBuffer();
-        imageBuffer = Buffer.from(arrayBuffer);
+        const imageBuffer = Buffer.from(arrayBuffer);
+        let mimeType = 'image/webp';
         const contentType = response.headers.get('content-type');
-        if (contentType) mimeType = contentType;
+        if (contentType) { mimeType = contentType; }
 
         const generated = await generatePersonaFromImage(imageBuffer, mimeType);
 
@@ -343,7 +341,7 @@ export const handleCreatePersona = async (request) => {
 
     } catch (e) {
         logger.error("Create persona failed", e);
-        if (cost > 0) await Billing.refundZaps(userId, cost);
+        if (cost > 0) { await Billing.refundZaps(userId, cost); }
         throw new HttpsError('internal', "Failed to create persona.");
     }
 };
@@ -351,7 +349,7 @@ export const handleCreatePersona = async (request) => {
 // --- HANDLE GIFT PERSONA ---
 export const handleGiftPersona = async (request) => {
     const { imageId, amount, requestId } = request.data;
-    if (!request.auth) throw new HttpsError('unauthenticated', 'Login required');
+    if (!request.auth) { throw new HttpsError('unauthenticated', 'Login required'); }
     const userId = request.auth.uid;
     const userName = request.auth.token.name || 'Anonymous';
 
@@ -364,7 +362,7 @@ export const handleGiftPersona = async (request) => {
 
     // Use unified billing
     const deduced = await Billing.checkAndDeductZaps(userId, 'gift', giftAmount, requestId);
-    if (requestId && deduced === 0) return { success: true, idempotent: true };
+    if (requestId && deduced === 0) { return { success: true, idempotent: true }; }
 
     // Update Persona State
     const personaRef = db.collection('personas').doc(imageId);
@@ -372,7 +370,7 @@ export const handleGiftPersona = async (request) => {
 
     await db.runTransaction(async (t) => {
         const pDoc = await t.get(personaRef);
-        if (!pDoc.exists) throw new HttpsError('not-found', 'Persona not found');
+        if (!pDoc.exists) { throw new HttpsError('not-found', 'Persona not found'); }
         personaData = pDoc.data();
 
         const newZapCurrent = (personaData.zapCurrent || 0) + giftAmount;
@@ -420,18 +418,18 @@ export const handleGiftPersona = async (request) => {
 // --- HANDLE TRIGGER ACTION ---
 export const handleTriggerAction = async (request) => {
     const { imageId, actionId, cost, requestId } = request.data;
-    if (!request.auth) throw new HttpsError('unauthenticated', 'Login required');
+    if (!request.auth) { throw new HttpsError('unauthenticated', 'Login required'); }
     const userId = request.auth.uid;
     const userName = request.auth.token.name || 'Anonymous';
 
     // Use unified billing
     const deduced = await Billing.checkAndDeductZaps(userId, actionId, cost, requestId);
-    if (requestId && deduced === 0) return { success: true, idempotent: true };
+    if (requestId && deduced === 0) { return { success: true, idempotent: true }; }
 
     // Process Action
     const update = {};
-    if (actionId === 'pose') update.currentPose = `pose_${Date.now()}`;
-    if (actionId === 'background') update.currentBackground = `bg_${Date.now()}`;
+    if (actionId === 'pose') { update.currentPose = `pose_${Date.now()}`; }
+    if (actionId === 'background') { update.currentBackground = `bg_${Date.now()}`; }
 
     await Store.updatePersonaState(imageId, update);
     await Broadcaster.broadcastStateChange(imageId, actionId, userName);
@@ -442,18 +440,18 @@ export const handleTriggerAction = async (request) => {
 // --- HANDLE VOTE POLL ---
 export const handleVotePoll = async (request) => {
     const { imageId, optionId } = request.data;
-    if (!request.auth) throw new HttpsError('unauthenticated', 'Login required');
+    if (!request.auth) { throw new HttpsError('unauthenticated', 'Login required'); }
 
     const personaRef = db.collection('personas').doc(imageId);
 
     await db.runTransaction(async (t) => {
         const pDoc = await t.get(personaRef);
-        if (!pDoc.exists) return;
+        if (!pDoc.exists) { return; }
         const poll = pDoc.data().activePoll;
-        if (!poll) return;
+        if (!poll) { return; }
 
         const newOptions = poll.options.map(opt => {
-            if (opt.id === optionId) return { ...opt, votes: (opt.votes || 0) + 1 };
+            if (opt.id === optionId) { return { ...opt, votes: (opt.votes || 0) + 1 }; }
             return opt;
         });
 

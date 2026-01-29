@@ -282,7 +282,7 @@ export const handleGachaSpin = async (request) => {
     const cost = ZAP_COSTS.MOCKUP_GEN || 0.25;
     const requestId = request.data.requestId || `gacha_${Date.now()}`;
     const billing = await deductZapsAtomic(uid, cost, requestId, 'action_logs');
-    if (billing.idempotent) return { success: true, idempotent: true };
+    if (billing.idempotent) { return { success: true, idempotent: true }; }
 
     // Decode base64
     const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
@@ -328,7 +328,7 @@ export const handleGachaSpin = async (request) => {
 
     if (successfulPrizes.length === 0) {
         // Log the errors
-        results.forEach(r => { if (!r.success) logger.error("Gacha Item Failed", r.error); });
+        results.forEach(r => { if (!r.success) { logger.error("Gacha Item Failed", r.error); } });
 
         // Note: No manual refund here. Idempotency protects the deduction.
         // If it's a transient failure, user can retry with the same requestId.
@@ -362,7 +362,7 @@ export const handleGenerateMockup = async (request) => {
     const cost = ZAP_COSTS.MOCKUP_GEN || 0.25;
     const requestId = request.data.requestId || `mockup_${Date.now()}`;
     const billing = await deductZapsAtomic(uid, cost, requestId, 'action_logs');
-    if (billing.idempotent) return { success: true, idempotent: true };
+    if (billing.idempotent) { return { success: true, idempotent: true }; }
 
     try {
         const generativeModel = getModel();
@@ -418,11 +418,9 @@ export const handleGenerateMockup = async (request) => {
             }],
         };
 
-        // Wrap Vertex AI call with [MODIFIED] VertexFlow
-        const response = await vertexFlow.execute('MOCKUP_GEN', async () => {
-            const result = await generativeModel.generateContent(requestPayload);
-            return result.response;
-        }, vertexFlow.constructor.PRIORITY.HIGH);
+        // Generate direct
+        const genResult = await generativeModel.generateContent(requestPayload);
+        const response = genResult.response;
 
         // Extract the First Candidate
         const candidates = response.candidates;
@@ -526,7 +524,7 @@ export const handleGenerateMockupItem = async (request) => {
     const cost = ZAP_COSTS.MOCKUP_GEN || 0.25;
     const requestId = request.data.requestId || `mockitem_${Date.now()}`;
     const billing = await deductZapsAtomic(uid, cost, requestId, 'action_logs');
-    if (billing.idempotent) return { success: true, idempotent: true };
+    if (billing.idempotent) { return { success: true, idempotent: true }; }
 
     try {
         // 3. Generate

@@ -132,7 +132,7 @@ export default function AutoCSV() {
     };
 
     processNextItem();
-  }, [queue, processingState.status]);
+  }, [queue, processingState]);
 
   const handleUpload = useCallback((files) => {
     const costForNewFiles = files.length * ZAP_COSTS.AUTO_CSV_IMAGE;

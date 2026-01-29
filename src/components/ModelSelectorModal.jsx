@@ -10,14 +10,14 @@ export default function ModelSelectorModal({ isOpen, onClose, selectedModel, onS
     const ITEMS_PER_PAGE = 2;
 
     // Reset search, errors, and page when modal opens/closes
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     useEffect(() => {
         if (isOpen) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setSearchQuery('');
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+             
             setImageErrors({});
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+             
             setCurrentPage(1);
             // Lock body scroll
             document.documentElement.style.overflow = 'hidden';

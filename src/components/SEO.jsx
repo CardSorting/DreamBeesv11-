@@ -146,7 +146,7 @@ const SEO = ({
 
             {/* Alternates / Hreflang */}
             {alternates.map(alt => (
-                <link key={`alt-${alt.hreflang}`} rel="alternate" href={alt.href.startsWith('http') ? alt.href : `${siteUrl}${alt.href}`} hreflang={alt.hreflang} />
+                <link key={`alt-${alt.hreflang}`} rel="alternate" href={alt.href.startsWith('http') ? alt.href : `${siteUrl}${alt.href}`} hrefLang={alt.hreflang} />
             ))}
 
             {/* Structured Data (JSON-LD) */}

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { db } from '../../firebase';
 import { collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
-import { Layers, Search, User, Filter, SlidersHorizontal } from 'lucide-react';
-import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion'; // eslint-disable-line no-unused-vars
+import { Layers, Search, User, Filter, SlidersHorizontal, Zap, Sparkles } from 'lucide-react';
+import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
 
 const TiltCard = ({ item, rarityScale = 1 }) => {
     const x = useMotionValue(0);

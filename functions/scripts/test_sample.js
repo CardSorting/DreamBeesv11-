@@ -16,7 +16,7 @@ try {
             process.env[key.trim()] = value.trim();
         }
     });
-} catch (e) {
+} catch {
     console.warn("Could not read .env file, assuming env vars are set.");
 }
 

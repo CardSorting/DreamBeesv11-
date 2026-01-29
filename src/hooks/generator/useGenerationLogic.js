@@ -155,6 +155,7 @@ export function useGenerationLogic({
     };
 
     const handleGenerate = async (promptOverride = null) => {
+        let requestId = 'legacy';
         try {
             // Debounce Guard: Prevent rapid duplicate submissions
             const now = Date.now();
@@ -189,7 +190,7 @@ export function useGenerationLogic({
             }
 
             // Generate unique requestId for deduplication and optimistic tracking
-            const requestId = `gen_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+            requestId = `gen_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
             // Optimistic Deduction
             if (cost > 0 && deductZapsOptimistically) {
@@ -258,7 +259,7 @@ export function useGenerationLogic({
 
             // Persist
             localStorage.setItem('activeGenerationJob', JSON.stringify({
-                requestId,
+                requestId: finalRequestId,
                 jobType: generationMode
             }));
 
@@ -273,10 +274,7 @@ export function useGenerationLogic({
                 useTurbo
             });
             if (cost > 0 && rollbackZaps) {
-                // If we have a requestId available in the scope (it's declared in the try block)
-                // We need to ensure it's accessible here. 
-                // Let's move requestId declaration up.
-                rollbackZaps(cost, typeof requestId !== 'undefined' ? requestId : 'legacy');
+                rollbackZaps(cost, requestId);
             }
             setGenerating(false);
             const errorMessage = error.message || "Failed to create generation request";

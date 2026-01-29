@@ -8,6 +8,7 @@ export const processSlideshowTask = async (req) => {
     const { requestId, userId, image, mode, language, cost } = req.data;
     const docRef = db.collection("generation_queue").doc(requestId);
 
+    let slideError = null;
     try {
         const snap = await docRef.get();
         if (snap.exists && ['processing', 'completed'].includes(snap.data().status)) {
@@ -47,7 +48,7 @@ export const processSlideshowTask = async (req) => {
         const cleanBase64 = image.includes('base64,') ? image.split('base64,')[1] : image;
 
         for (let i = 0; i < prompts.length; i++) {
-            if (results[i]?.status === 'completed' || results[i]?.imageUrl || results[i]?.status === 'failed') continue;
+            if (results[i]?.status === 'completed' || results[i]?.imageUrl || results[i]?.status === 'failed') {continue;}
 
             const prompt = prompts[i];
             let generatedImageBase64 = null;
@@ -59,7 +60,7 @@ export const processSlideshowTask = async (req) => {
                 const result = await model.generateContent(request);
 
                 generatedImageBase64 = (await result.response).candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || null;
-                if (!generatedImageBase64) throw new Error("No image data");
+                if (!generatedImageBase64) {throw new Error("No image data");}
             } catch (genError) {
                 slideError = genError.message;
                 // If safety block or permanent error, we just leave generatedImageBase64 as null and it will be handled below
@@ -68,7 +69,7 @@ export const processSlideshowTask = async (req) => {
             if (!generatedImageBase64) {
                 results[i] = { ...results[i], status: 'failed', error: slideError };
                 await docRef.update({ results });
-                if (resultImageId) await db.collection("images").doc(resultImageId).update({ slides: results });
+                if (resultImageId) {await db.collection("images").doc(resultImageId).update({ slides: results });}
                 continue;
             }
 
@@ -105,7 +106,7 @@ export const processSlideshowTask = async (req) => {
                 }
                 await db.collection("images").doc(resultImageId).update(updateData);
             }
-            if (i < prompts.length - 1) await new Promise(resolve => setTimeout(resolve, 3000));
+            if (i < prompts.length - 1) {await new Promise(resolve => setTimeout(resolve, 3000));}
         }
 
         await docRef.update({ status: "completed", results: results, completedAt: FieldValue.serverTimestamp() });

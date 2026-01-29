@@ -4,7 +4,7 @@ import Sidebar from '../../components/Sidebar';
 import { useUserInteractions } from '../../contexts/UserInteractionsContext';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useSwipeable } from 'react-swipeable';
-import { Loader2, Inbox, CheckCircle, Shield, Sparkles, Clock, Gavel, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, Inbox, CheckCircle, Shield, Sparkles, Clock, Gavel, Info, ChevronDown, ChevronUp, AlertTriangle, Users } from 'lucide-react';
 import { getOptimizedImageUrl } from '../../utils';
 
 // Hooks
