@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dreambees-v1';
+const CACHE_NAME = 'dreambees-v2';
 const ASSETS_TO_CACHE = [
     '/',
     '/index.html',
@@ -6,7 +6,10 @@ const ASSETS_TO_CACHE = [
     '/manifest.json'
 ];
 
+// Network First strategy for index.html and root
+// Stale-While-Revalidate for other assets
 self.addEventListener('install', (event) => {
+    self.skipWaiting();
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
             return cache.addAll(ASSETS_TO_CACHE);
@@ -14,19 +17,54 @@ self.addEventListener('install', (event) => {
     );
 });
 
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((cacheName) => {
+                    if (cacheName !== CACHE_NAME) {
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        }).then(() => self.clients.claim())
+    );
+});
+
 self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        caches.match(event.request).then((response) => {
-            return response || fetch(event.request).then((fetchResponse) => {
-                // Only cache successful GET requests from our origin
-                if (event.request.method === 'GET' && fetchResponse.status === 200 && event.request.url.startsWith(self.location.origin)) {
-                    const responseToCache = fetchResponse.clone();
+    const url = new URL(event.request.url);
+
+    // Use Network First for navigation requests (HTML)
+    if (event.request.mode === 'navigate' || (event.request.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html'))) {
+        event.respondWith(
+            fetch(event.request)
+                .then((response) => {
+                    const responseClone = response.clone();
                     caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, responseToCache);
+                        cache.put(event.request, responseClone);
+                    });
+                    return response;
+                })
+                .catch(() => caches.match(event.request))
+        );
+        return;
+    }
+
+    // Default: Stale-While-Revalidate
+    event.respondWith(
+        caches.match(event.request).then((cachedResponse) => {
+            const fetchPromise = fetch(event.request).then((networkResponse) => {
+                if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
+                    const responseClone = networkResponse.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, responseClone);
                     });
                 }
-                return fetchResponse;
-            });
+                return networkResponse;
+            }).catch(() => null);
+
+            return cachedResponse || fetchPromise;
         })
     );
 });
+
