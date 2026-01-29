@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import SEO from '../components/SEO';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';

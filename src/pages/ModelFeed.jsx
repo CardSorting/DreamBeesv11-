@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import SEO from '../components/SEO';
 import { useParams, useNavigate, Link, useLocation, useSearchParams } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
@@ -38,7 +38,7 @@ const SuggestedPanelMemo = SuggestedPanel;
 export default function ModelFeed() {
     const { id, filter } = useParams();
     const navigate = useNavigate();
-    const { availableModels, getShowcaseImages, getGlobalShowcaseImages, rateShowcaseImage, globalShowcaseCache, showcaseCache, hasGlobalFeedEnded } = useModel();
+    const { availableModels, getShowcaseImages, getGlobalShowcaseImages, rateShowcaseImage, globalShowcaseCache, showcaseCache, hasGlobalFeedEnded, hasShowcaseEnded } = useModel();
 
     // "feedItems" is the master list of all content, shuffled or sorted
     // Initialize from cache if available to prevent flash of loading
