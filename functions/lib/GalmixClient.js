@@ -43,7 +43,7 @@ export class GalmixClient {
                 'User-Agent': 'DreamBees/1.1'
             },
             body: JSON.stringify(payload),
-            timeout: 30000 // 30s timeout for initial submission
+            timeout: 60000 // 60s timeout for initial submission
         });
 
         if (submitResp.status !== 202) {
@@ -67,7 +67,7 @@ export class GalmixClient {
             console.log(`[Galmix] Polling status for ${jobId}...`);
             const pollResp = await fetchWithTimeout(`${pollUrl}?t=${Date.now()}`, {
                 headers: { 'User-Agent': 'DreamBees/1.1' },
-                timeout: 15000 // 15s timeout for polling calls
+                timeout: 45000 // 45s timeout for polling calls
             });
             if (pollResp.status !== 200) {
                 console.error(`[Galmix] Polling failed with status ${pollResp.status}`);
