@@ -1,0 +1,123 @@
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/App.jsx
+  34:9  error  'isShowcaseDetail' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/AppCard.jsx
+  6:17  error  Component definition is missing display name  react/display-name
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/PerformanceTracker.jsx
+  71:18  error  'error' is defined but never used  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/ShowcaseModal.jsx
+  260:49  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  258 |                                     const activePersonas = personas.filter(p => {
+  259 |                                         const lastActivity = p.lastActivity?.toMillis?.() || p.lastActivity?.seconds * 1000 || 0;
+> 260 |                                         return (Date.now() - lastActivity) < ACTIVE_THRESHOLD_MS;
+      |                                                 ^^^^^^^^^^ Cannot call impure function
+  261 |                                     });
+  262 |
+  263 |                                     const isSystemAtCapacity = activePersonas.length >= 5;  react-hooks/purity
+  264:79  error  Error: Cannot call impure function during render
+
+`Date.now` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+  262 |
+  263 |                                     const isSystemAtCapacity = activePersonas.length >= 5;
+> 264 |                                     const isTargetPersonaActive = persona && (Date.now() - (persona.lastActivity?.toMillis?.() || persona.lastActivity?.seconds * 1000 || 0)) < ACTIVE_THRESHOLD_MS;
+      |                                                                               ^^^^^^^^^^ Cannot call impure function
+  265 |
+  266 |                                     const shouldRedirectToBrowse = !isTargetPersonaActive && isSystemAtCapacity;
+  267 |            react-hooks/purity
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/contexts/AuthContext.jsx
+  20:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components                                                                                                        react-refresh/only-export-components
+  52:8   error  React Hook useCallback has an unnecessary dependency: 'signOut'. Either exclude it or remove the dependency array. Outer scope values like 'signOut' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/contexts/UserInteractionsContext.jsx
+   66:13  error  Error: Cannot access variable before it is declared
+
+`setLikedAppIds` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+  64 |             setBookmarkedIds(new Set());
+  65 |             setHiddenIds(new Set());
+> 66 |             setLikedAppIds(new Set());
+     |             ^^^^^^^^^^^^^^ `setLikedAppIds` accessed before it is declared
+  67 |             setLikes([]);
+  68 |             setBookmarks([]);
+  69 |             setHidden([]);
+
+  409 |
+  410 |     // App Likes Logic
+> 411 |     const [likedAppIds, setLikedAppIds] = useState(new Set());
+      |                         ^^^^^^^^^^^^^^ `setLikedAppIds` is declared here
+  412 |     const isAppLiked = useCallback((appId) => likedAppIds.has(appId), [likedAppIds]);
+  413 |
+  414 |     // Adapted from useAppLikes toggle logic but simplified for context  react-hooks/immutability
+  248:8   error  React Hook useEffect has a missing dependency: 'userProfile'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react-hooks/exhaustive-deps
+  299:18  error  'error' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       no-unused-vars
+  328:18  error  'error' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       no-unused-vars
+  348:18  error  'error' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       no-unused-vars
+  367:18  error  'error' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       no-unused-vars
+  379:18  error  'error' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       no-unused-vars
+  387:9   error  Unnecessary try/catch wrapper                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           no-useless-catch
+  403:93  error  '_error' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      no-unused-vars
+  407:18  error  'error' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       no-unused-vars
+  471:18  error  'error' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/features/persona-live/PersonaChat.jsx
+  128:12  error  'isAiSpeaking' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/hooks/generator/useVideoGeneration.js
+  42:8  error  React Hook useEffect has a missing dependency: 'currentUser'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/hooks/useIntersectionObserver.js
+   1:29  error  'useCallback' is defined but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                 no-unused-vars
+  48:46  error  The ref value 'targetRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'targetRef.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AutoCSV/AutoCSV.jsx
+  135:6  error  React Hook useEffect has a missing dependency: 'processingState'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AvatarForge/AvatarForgeMint.jsx
+  9:10  error  'calculateZapCost' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AvatarForge/AvatarForgeRequest.jsx
+  7:10  error  'calculateZapCost' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/DressUp.jsx
+  167:8  error  React Hook useEffect has an unnecessary dependency: 'db'. Either exclude it or remove the dependency array. Outer scope values like 'db' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MemeFormatter/index.jsx
+  23:8  error  React Hook useEffect has a missing dependency: 'memeText'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MockupFeed.jsx
+  84:8  error  React Hook useEffect has an unnecessary dependency: 'db'. Either exclude it or remove the dependency array. Outer scope values like 'db' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MockupStudio/index.jsx
+  41:8  error  React Hook useEffect has a missing dependency: 'mode'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/NotFound.jsx
+  1:17  error  'useEffect' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Pricing.jsx
+   95:8  error  React Hook React.useEffect has a missing dependency: 'location.state?.from'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  107:8  error  React Hook React.useEffect has a missing dependency: 'packs'. Either include it or remove the dependency array                 react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/PublicGenerationsFeed.jsx
+  129:8  error  React Hook useEffect has an unnecessary dependency: 'db'. Either exclude it or remove the dependency array. Outer scope values like 'db' aren't valid dependencies because mutating them doesn't re-render the component  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/ShowcaseDetail.jsx
+  259:8   error  React Hook useCallback has a missing dependency: 'globalShowcaseCache.length'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  301:8   error  React Hook useCallback has a missing dependency: 'visibleGlobalCache'. Either include it or remove the dependency array          react-hooks/exhaustive-deps
+  473:18  error  Component definition is missing display name                                                                                     react/display-name
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/UserProfile.jsx
+  166:5  error  The 'fetchGalleryImages' function makes the dependencies of useEffect Hook (at line 164) change on every render. Move it inside the useEffect callback. Alternatively, wrap the definition of 'fetchGalleryImages' in its own useCallback() Hook  react-hooks/exhaustive-deps
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/safety/components/KarmaToast.jsx
+  1:17  error  'useState' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+
+✖ 38 problems (38 errors, 0 warnings)
+

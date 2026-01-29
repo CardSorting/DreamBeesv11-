@@ -1,3 +1,4 @@
+import { HttpsError } from "firebase-functions/v2/https";
 // [REMOVED] import { db, FieldValue } from "../firebaseInit.js";
 import { logger } from "../lib/utils.js";
 import { ZAP_COSTS } from "../lib/costs.js";
@@ -74,7 +75,6 @@ export const handleAnalyzeProductImage = async (request) => {
 
         logger.info(`[AutoCSV] Analyzing image for uid=${uid}`);
 
-        let textOutput;
         // Generate direct
         const result = await model.generateContent({
             contents: [
@@ -100,7 +100,7 @@ export const handleAnalyzeProductImage = async (request) => {
             throw new HttpsError('permission-denied', 'Blocked by Safety Filter');
         }
 
-        textOutput = candidate?.content?.parts?.[0]?.text;
+        const textOutput = candidate?.content?.parts?.[0]?.text;
 
         if (!textOutput) {
             throw new HttpsError('internal', 'No data returned from Vertex AI');

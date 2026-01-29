@@ -1,0 +1,48 @@
+
+> lint
+> eslint .
+
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/api.js
+  46:5   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  54:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  57:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  59:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  62:21  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  75:21  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  77:21  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/firebaseInit.js
+  12:1  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/handlers/web/stripeHandler.js
+  26:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/lib/GalmixClient.js
+  67:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  78:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  80:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  83:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/lib/ai.js
+  196:5   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  219:9   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  288:28  error    'db' is not defined                                                                no-undef
+  464:9   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  467:9   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  559:28  error    'db' is not defined                                                                no-undef
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/lib/utils.js
+   12:9  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  266:9  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/test_import.js
+   5:1  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+   8:5  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  10:5  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  16:5  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  20:5  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  25:1  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+✖ 27 problems (2 errors, 25 warnings)
+
