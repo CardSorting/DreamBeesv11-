@@ -131,19 +131,27 @@ export default function ModelFeed() {
     const imagesPerPage = 12;
 
     const location = useLocation();
+    const currentFilterRef = useRef(); // To track filter without causing dependency loops
 
     // Use URL param for filter if present, otherwise default to 'All'
     // This allows deep linking to filters (e.g. /filter/Videos)
-    const [activeFilter, setActiveFilter] = useState(filter || 'All');
+    const [activeFilter, setActiveFilter] = useState(() => filter || 'All');
 
-    // Sync state with URL param
+    // Update ref when filter changes
     useEffect(() => {
-        if (filter) {
-            setActiveFilter(filter);
-        } else {
-            setActiveFilter('All');
+        currentFilterRef.current = activeFilter;
+    }, [activeFilter]);
+
+    // Sync state with URL param - only when URL actually changes
+    useEffect(() => {
+        const currentFilterFromUrl = filter || 'All';
+
+        // Only update if URL filter is different from current state
+        // Use ref to avoid dependency on activeFilter state which causes loops
+        if (currentFilterFromUrl !== currentFilterRef.current) {
+            setActiveFilter(currentFilterFromUrl);
         }
-    }, [filter]);
+    }, [filter]); // Only depend on the URL param, not on activeFilter to avoid loops
 
 
 

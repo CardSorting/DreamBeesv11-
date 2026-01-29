@@ -27,29 +27,39 @@ export default function MockupFeed() {
 
     const observer = useRef();
     const lastImageElementRef = useRef();
+    const currentFilterRef = useRef(); // To track filter without causing dependency loops
     const [isTransitioning, setIsTransitioning] = useState(false);
 
     // Routing Params
     const { tag, userId } = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
 
-    // Derived initial filter state
-    const getInitialFilter = React.useCallback(() => {
+    // Initialize filter state from URL - only on first mount
+    const [creatorFilter, setCreatorFilter] = useState(() => {
         if (tag) return { type: 'tag', value: unslugify(tag), slug: tag };
         if (userId) return { id: userId, name: 'Creator' };
         return null;
-    }, [tag, userId]);
+    });
 
-    const [creatorFilter, setCreatorFilter] = useState(getInitialFilter());
-
-    // Sync with URL changes
+    // Update ref when filter changes
     useEffect(() => {
-        const newFilter = getInitialFilter();
-        // Only update if actually different to avoid cycles
-        if (JSON.stringify(newFilter) !== JSON.stringify(creatorFilter)) {
-            setCreatorFilter(newFilter);
+        currentFilterRef.current = creatorFilter;
+    }, [creatorFilter]);
+
+    // Sync URL changes back to state - but only when URL actually changes, not on state changes
+    useEffect(() => {
+        const currentTagFromUrl = tag ? { type: 'tag', value: unslugify(tag), slug: tag } : null;
+        const currentUserFromUrl = userId ? { id: userId, name: 'Creator' } : null;
+        const urlFilter = currentTagFromUrl || currentUserFromUrl;
+
+        // Only update state if URL and current filter are different
+        // Use ref to avoid dependency on creatorFilter state which causes loops
+        const isDifferent = JSON.stringify(urlFilter) !== JSON.stringify(currentFilterRef.current);
+        if (isDifferent) {
+            setCreatorFilter(urlFilter);
+            // Note: pagination reset is handled by the filter change effect below
         }
-    }, [getInitialFilter, creatorFilter]);
+    }, [tag, userId]); // Only depend on URL params, not on creatorFilter state
 
     // Deep Linking for Focus Modal
     useEffect(() => {

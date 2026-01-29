@@ -31,25 +31,25 @@ export default function MemeFeed() {
     const { userId } = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
 
-    // Derived initial filter state
-    const getInitialFilter = useCallback(() => {
-        if (userId) return { id: userId, name: 'Creator' };
-        return null;
-    }, [userId]);
-
+    // Initialize from URL params on first render
     const [creatorFilter, setCreatorFilter] = useState(() => {
         if (userId) return { id: userId, name: 'Creator' };
         return null;
     });
+    const currentFilterRef = useRef();
 
-    // Sync with URL changes
     useEffect(() => {
-        const newFilter = getInitialFilter();
-        // Only update if actually different to avoid cycles
-        if (JSON.stringify(newFilter) !== JSON.stringify(creatorFilter)) {
-            setCreatorFilter(newFilter);
+        currentFilterRef.current = creatorFilter;
+    }, [creatorFilter]);
+
+    // Sync with URL changes (avoid recursive loops)
+    useEffect(() => {
+        const urlFilter = userId ? { id: userId, name: 'Creator' } : null;
+
+        if (JSON.stringify(urlFilter) !== JSON.stringify(currentFilterRef.current)) {
+            setCreatorFilter(urlFilter);
         }
-    }, [userId, getInitialFilter, creatorFilter]);
+    }, [userId]);
 
     // Deep Linking for Focus Modal
     useEffect(() => {
