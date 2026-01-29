@@ -216,6 +216,7 @@ export default function ModelFeed() {
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const isFetchingMoreRef = useRef(false);
     const hasGlobalFeedEndedRef = useRef(false);
+    const hasShowcaseEndedRef = useRef(false);
 
     // Sync refs for stable callback access
     useEffect(() => {
@@ -225,6 +226,10 @@ export default function ModelFeed() {
     useEffect(() => {
         hasGlobalFeedEndedRef.current = hasGlobalFeedEnded;
     }, [hasGlobalFeedEnded]);
+
+    useEffect(() => {
+        hasShowcaseEndedRef.current = id ? hasShowcaseEnded(id) : false;
+    }, [id, hasShowcaseEnded]);
 
     // --- Data Loading Effect ---
     useEffect(() => {
@@ -378,7 +383,7 @@ export default function ModelFeed() {
 
             if (id) {
                 // Model Specific Feed
-                if (hasShowcaseEnded(id)) {
+                if (hasShowcaseEndedRef.current) {
                     setIsFetchingMore(false);
                     return;
                 }
@@ -386,7 +391,7 @@ export default function ModelFeed() {
                 allFetchedImages = await getShowcaseImages(id, true);
             } else {
                 // Global Feed
-                if (hasGlobalFeedEnded) {
+                if (hasGlobalFeedEndedRef.current) {
                     setIsFetchingMore(false);
                     return;
                 }
@@ -413,7 +418,7 @@ export default function ModelFeed() {
         } finally {
             setIsFetchingMore(false);
         }
-    }, [id, hasShowcaseEnded, hasGlobalFeedEnded, getShowcaseImages, getGlobalShowcaseImages, feedItems]);
+    }, [id, getShowcaseImages, getGlobalShowcaseImages, feedItems]);
 
     // Robust Infinite Scroll Observer
     const sentinelRef = useIntersectionObserver({

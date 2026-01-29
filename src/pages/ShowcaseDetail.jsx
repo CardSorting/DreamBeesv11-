@@ -47,6 +47,7 @@ const ShowcaseDetail = React.memo(function ShowcaseDetail() {
     const [loading, setLoading] = useState(true);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [shuffleToast, setShuffleToast] = useState(null);
+    const isFetchingMoreRef = useRef(false);
 
     // Filter hidden images from global cache initially but keep local management
     const visibleGlobalCache = useMemo(() => globalShowcaseCache.filter(img => !isHidden(img.id)), [globalShowcaseCache, isHidden]);
@@ -75,8 +76,11 @@ const ShowcaseDetail = React.memo(function ShowcaseDetail() {
             setLoading(true);
 
             // Ensure we have some global cache
-            if (visibleGlobalCache.length < CACHE_TARGET && hasMoreGlobal) {
-                getGlobalShowcaseImages(true, 'showcasedetail_init');
+            if (visibleGlobalCache.length < CACHE_TARGET && hasMoreGlobal && !isFetchingMoreRef.current) {
+                isFetchingMoreRef.current = true;
+                getGlobalShowcaseImages(true, 'showcasedetail_init').finally(() => {
+                    isFetchingMoreRef.current = false;
+                });
             }
 
             let startImage = visibleGlobalCache.find(img => img.id === id || img.id === rawId);
@@ -161,7 +165,12 @@ const ShowcaseDetail = React.memo(function ShowcaseDetail() {
 
         if (freshRecs.length === 0 && hasMoreGlobal) {
             console.log("[Feed] Cache exhausted, fetching more...");
-            getGlobalShowcaseImages(true, 'feed_scroll_replenish');
+            if (!isFetchingMoreRef.current) {
+                isFetchingMoreRef.current = true;
+                getGlobalShowcaseImages(true, 'feed_scroll_replenish').finally(() => {
+                    isFetchingMoreRef.current = false;
+                });
+            }
             return;
         }
 
@@ -236,8 +245,11 @@ const ShowcaseDetail = React.memo(function ShowcaseDetail() {
         if (explorationPicks.length < 3) {
             // Not enough fresh content
             showToast("🔄 Loading fresh content...", "refresh");
-            if (hasMoreGlobal) {
-                getGlobalShowcaseImages(true, 'shuffle_fetch');
+            if (hasMoreGlobal && !isFetchingMoreRef.current) {
+                isFetchingMoreRef.current = true;
+                getGlobalShowcaseImages(true, 'shuffle_fetch').finally(() => {
+                    isFetchingMoreRef.current = false;
+                });
             }
             return;
         }
@@ -279,8 +291,11 @@ const ShowcaseDetail = React.memo(function ShowcaseDetail() {
 
         if (similarPicks.length < 3) {
             showToast("🔍 Finding more similar...", "search");
-            if (hasMoreGlobal) {
-                getGlobalShowcaseImages(true, 'similar_fetch');
+            if (hasMoreGlobal && !isFetchingMoreRef.current) {
+                isFetchingMoreRef.current = true;
+                getGlobalShowcaseImages(true, 'similar_fetch').finally(() => {
+                    isFetchingMoreRef.current = false;
+                });
             }
             return;
         }

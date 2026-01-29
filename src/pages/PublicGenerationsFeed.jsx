@@ -67,6 +67,7 @@ export default function PublicGenerationsFeed() {
     const [hasMore, setHasMore] = useState(true);
     const [focusImage, setFocusImage] = useState(null);
     const [activeBook, setActiveBook] = useState(null);
+    const isFetchingRef = useRef(false);
 
     // Filter Cache for instantaneous switching
     const [filterCache, setFilterCache] = useState({});
@@ -169,9 +170,13 @@ export default function PublicGenerationsFeed() {
     }, [activeFilter]);
 
     const fetchGenerations = useCallback(async (isLoadMore = false) => {
+        if (isFetchingRef.current) return;
+        if (isLoadMore && (!lastDoc || !hasMore)) return;
+
         const currentFilter = activeFilter; // Capture filter at start of request
 
         try {
+            isFetchingRef.current = true;
             if (!isLoadMore) {
                 setLoading(true);
                 setError(null);
@@ -280,11 +285,12 @@ export default function PublicGenerationsFeed() {
                 setError("Failed to load feed. Please try again.");
             }
         } finally {
+            isFetchingRef.current = false;
             if (currentFilter === activeFilterRef.current) {
                 setLoading(false);
             }
         }
-    }, [lastDoc, activeFilter, hiddenIds, affinityMap, viewedIds]);
+    }, [lastDoc, activeFilter, hiddenIds, affinityMap, viewedIds, hasMore]);
 
     useEffect(() => {
         // Hydrate from cache if available AND fresh (< 5 mins)
@@ -300,6 +306,7 @@ export default function PublicGenerationsFeed() {
             // Cache miss
             setImages([]);
             setLastDoc(null);
+            isFetchingRef.current = false;
             setHasMore(true);
             fetchGenerations();
         }

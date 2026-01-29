@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
@@ -51,6 +51,7 @@ export default function UserProfile() {
     // Pagination/Lazy Load state
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     const visibleItems = displayedItems.slice(0, visibleCount);
+    const isPagingRef = useRef(false);
 
     // Setup intersection observer for "Load More"
     const { ref: loadMoreRef, entry } = useIntersectionObserver({
@@ -59,9 +60,16 @@ export default function UserProfile() {
     });
 
     useEffect(() => {
-        if (entry?.isIntersecting && visibleCount < displayedItems.length) {
-            setVisibleCount(prev => prev + PAGE_SIZE);
+        if (!entry?.isIntersecting) {
+            isPagingRef.current = false;
+            return;
         }
+
+        if (isPagingRef.current) return;
+        if (visibleCount >= displayedItems.length) return;
+
+        isPagingRef.current = true;
+        setVisibleCount(prev => prev + PAGE_SIZE);
     }, [entry?.isIntersecting, displayedItems.length, visibleCount]);
 
     useEffect(() => {

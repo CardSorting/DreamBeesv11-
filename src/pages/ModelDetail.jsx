@@ -22,6 +22,7 @@ export default function ModelDetail() {
     const [showcaseImages, setShowcaseImages] = useState(() => {
         return (id && showcaseCache[id]) ? showcaseCache[id] : [];
     });
+    const isFetchingRef = useRef(false);
 
     // Ensure displayPage is sufficient for deep-linked items (not strictly necessary but helpful if we were scrolling)
     const [displayPage, setDisplayPage] = useState(2);
@@ -72,7 +73,7 @@ export default function ModelDetail() {
 
     useEffect(() => {
         if (sortParam && ['TOP_RATED', 'LATEST'].includes(sortParam)) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+             
             setSortBy(prev => (prev !== sortParam ? sortParam : prev));
         }
     }, [sortParam]);
@@ -99,7 +100,7 @@ export default function ModelDetail() {
                 (model?.previewImages?.find(img => img.id === viewId || getOptimizedImageUrl(img) === viewId)); // Fallback logic
 
             if (found) {
-                setActiveShowcaseImage(typeof found === 'string' ? { url: getOptimizedImageUrl(found), id: viewId } : found); // eslint-disable-line react-hooks/set-state-in-effect
+                setActiveShowcaseImage(typeof found === 'string' ? { url: getOptimizedImageUrl(found), id: viewId } : found);  
             } else if (viewId?.startsWith('http')) {
                 // Direct URL fallback if ID not found but it looks like a URL (legacy)
                 setActiveShowcaseImage({ url: viewId, id: viewId });
@@ -178,8 +179,10 @@ export default function ModelDetail() {
     // Handle Load More from Backend
     const handleLoadMore = useCallback(async () => {
         if (!model || isModelShowcaseLoading || hasShowcaseEnded(model.id)) return;
+        if (isFetchingRef.current) return;
 
         try {
+            isFetchingRef.current = true;
             console.log(`[ModelDetail] Sentinel triggered: Loading more images for ${model.id}`);
             const updatedImages = await getShowcaseImages(model.id, true);
             if (updatedImages && updatedImages.length > showcaseImages.length) {
@@ -187,6 +190,8 @@ export default function ModelDetail() {
             }
         } catch (error) {
             console.error("Error loading more images:", error);
+        } finally {
+            isFetchingRef.current = false;
         }
     }, [model, isModelShowcaseLoading, hasShowcaseEnded, getShowcaseImages, showcaseImages.length]);
 

@@ -19,9 +19,10 @@ export default function MemeFeed() {
     const { availableModels } = useModel();
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [lastDoc, setLastDoc] = useState(null);
+    const lastDocRef = useRef(null);
     const [hasMore, setHasMore] = useState(true);
     const [focusImage, setFocusImage] = useState(null);
+    const isFetchingRef = useRef(false);
 
     const observer = useRef();
     const lastImageElementRef = useRef();
@@ -131,7 +132,11 @@ export default function MemeFeed() {
     };
 
     const fetchMemes = useCallback(async (isLoadMore = false) => {
+        if (isFetchingRef.current) return;
+        if (isLoadMore && (!lastDocRef.current || !hasMore)) return;
+
         try {
+            isFetchingRef.current = true;
             if (!isLoadMore) setLoading(true);
 
             let q = query(
@@ -141,8 +146,9 @@ export default function MemeFeed() {
                 limit(20)
             );
 
-            if (isLoadMore && lastDoc) {
-                q = query(q, startAfter(lastDoc));
+            const paginationDoc = lastDocRef.current;
+            if (isLoadMore && paginationDoc) {
+                q = query(q, startAfter(paginationDoc));
             }
 
             if (creatorFilter && creatorFilter.id) {
@@ -162,7 +168,7 @@ export default function MemeFeed() {
                 ...doc.data()
             }));
 
-            setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+            lastDocRef.current = snapshot.docs[snapshot.docs.length - 1];
 
             if (isLoadMore) {
                 setImages(prev => [...prev, ...newImages]);
@@ -172,13 +178,15 @@ export default function MemeFeed() {
         } catch (error) {
             console.error("Error fetching memes:", error);
         } finally {
+            isFetchingRef.current = false;
             setLoading(false);
         }
-    }, [creatorFilter, lastDoc]);
+    }, [creatorFilter, hasMore]);
 
     useEffect(() => {
         setImages([]); // Clear images when filter changes
-        setLastDoc(null); // Reset lastDoc for new query
+        lastDocRef.current = null;
+        isFetchingRef.current = false;
         setHasMore(true); // Assume more data for new query
         fetchMemes();
         // Scroll logic moved to handleFilterChange
