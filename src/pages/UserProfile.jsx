@@ -1,86 +1,57 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import SEO from '../components/SEO';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
-import { Loader2, Heart, Bookmark, AlertCircle, Zap, Layers, Search, Package, Lock, Image as ImageIcon, Sparkles, Trash2, Check, ExternalLink, Download, Plus, Film, X } from 'lucide-react';
+import { Heart, Bookmark, AlertCircle, Lock, Edit2, X } from 'lucide-react';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { isValidUsername } from '../utils/usernameValidation';
-import { functions } from '../firebase';
-import { httpsCallable } from 'firebase/functions';
-import { getOptimizedImageUrl, getLCPAttributes, preloadImage } from '../utils';
-import { trackQualitySignal, trackSearchQuality } from '../utils/analytics';
-
+import { getOptimizedImageUrl } from '../utils';
 import ShowcaseModal from '../components/ShowcaseModal';
 import { AnimatePresence, motion } from 'framer-motion';
-import './UserProfile.css';
 
 export default function UserProfile() {
     const { currentUser } = useAuth();
-    const { availableModels: contextModels } = useModel();
-    const availableModels = React.useMemo(() => contextModels || [], [contextModels]);
-
-    const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState({ username: '', displayPreference: 'name' }); // 'name' or 'username'
-    const [savingProfile, setSavingProfile] = useState(false);
-    const { userProfile } = useUserInteractions();
-
+    const { availableModels } = useModel();
     const {
         likes: ctxLikes,
         bookmarks: ctxBookmarks,
-        mockups: ctxMockups,
-        memes: ctxMemes,
-        appCreations: ctxAppCreations,
-        mainstreamGenerations: ctxMainstream
+        userProfile
     } = useUserInteractions();
 
-    // Defensive Fallbacks
-    const likes = React.useMemo(() => ctxLikes || [], [ctxLikes]);
-    const bookmarks = React.useMemo(() => ctxBookmarks || [], [ctxBookmarks]);
-    const mockups = React.useMemo(() => ctxMockups || [], [ctxMockups]);
-    const memes = React.useMemo(() => ctxMemes || [], [ctxMemes]);
-    const appCreations = React.useMemo(() => ctxAppCreations || [], [ctxAppCreations]);
-    const productions = React.useMemo(() => ctxMainstream || [], [ctxMainstream]);
+    const likes = useMemo(() => ctxLikes || [], [ctxLikes]);
+    const bookmarks = useMemo(() => ctxBookmarks || [], [ctxBookmarks]);
 
-
-    // Routing Params
+    // Routing
     const { tab } = useParams();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
+    const activeTab = tab === 'saved' ? 'saved' : 'liked'; // Default to 'liked'
 
-    // Sync state with URL param
-    const [activeFilter, setActiveFilter] = useState(tab || 'all');
-
-    useEffect(() => {
-        if (tab) {
-            setActiveFilter(tab);
-        } else {
-            setActiveFilter('all');
-        }
-    }, [tab]);
+    // Deep Linking State
     const [selectedImage, setSelectedImage] = useState(null);
     const [selectedModel, setSelectedModel] = useState(null);
+
+    // Profile Editing State
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState({ username: '', displayPreference: 'name' });
     const [usernameError, setUsernameError] = useState(null);
+    const [savingProfile, setSavingProfile] = useState(false);
 
-    // --- Legacy Gallery State Integration ---
-    const [images, setImages] = useState([]);
-    const [isGalleryLoading, setIsGalleryLoading] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedIds, setSelectedIds] = useState([]);
-    const [isSelectionMode, setIsSelectionMode] = useState(false);
+    // Initialize Edit Form
+    useEffect(() => {
+        if (userProfile) {
+            setEditForm({
+                username: userProfile.username || '',
+                displayPreference: userProfile.displayPreference || 'name'
+            });
+        }
+    }, [userProfile]);
 
-    // Pagination
-    const [lastVisibleId, setLastVisibleId] = useState(null);
-    const [lastVisibleType, setLastVisibleType] = useState(null);
-    const [hasMore, setHasMore] = useState(true);
-    const [loadingMore, setLoadingMore] = useState(false);
-    const LIMIT = 24;
-    // ----------------------------------------
-
-    // Deep Linking for Lightbox Modal
+    // --- Deep Link Handling ---
     useEffect(() => {
         const viewId = searchParams.get('view');
         if (!viewId) {
@@ -93,29 +64,26 @@ export default function UserProfile() {
 
         if (selectedImage && selectedImage.id === viewId) return;
 
-        // 1. Try to find in currently loaded lists
-        const allItems = [...mockups, ...bookmarks, ...likes, ...memes, ...appCreations, ...productions];
+        // Try finding in local lists first
+        const allItems = [...likes, ...bookmarks];
         const found = allItems.find(img => img.id === viewId);
 
         if (found) {
             setSelectedImage(found);
             setSelectedModel(availableModels?.find(m => m.id === found.modelId) || { name: 'Unknown Model', id: 'unknown' });
         } else {
-            // 2. Fetch directly from Firestore (Crucial for deep link sharing)
+            // Fetch if not found locally
             const fetchImage = async () => {
                 try {
-                    // Start with official showcase
+                    // Try showcase first
                     let docRef = doc(db, 'model_showcase_images', viewId);
                     let snapshot = await getDoc(docRef);
 
                     if (!snapshot.exists()) {
-                        // Falling back to user generations
                         docRef = doc(db, 'generations', viewId);
                         snapshot = await getDoc(docRef);
                     }
-
                     if (!snapshot.exists()) {
-                        // Falling back to memes collection
                         docRef = doc(db, 'memes', viewId);
                         snapshot = await getDoc(docRef);
                     }
@@ -126,12 +94,12 @@ export default function UserProfile() {
                         setSelectedModel(availableModels?.find(m => m.id === data.modelId) || { name: 'Unknown Model', id: 'unknown' });
                     }
                 } catch (err) {
-                    console.error("Error fetching studio deep-linked image:", err);
+                    console.error("Error fetching deep-linked image:", err);
                 }
             };
             fetchImage();
         }
-    }, [searchParams, mockups, bookmarks, likes, memes, appCreations, productions, selectedImage, availableModels]);
+    }, [searchParams, likes, bookmarks, availableModels, selectedImage]);
 
     const openLightbox = (item) => {
         setSelectedImage(item);
@@ -153,268 +121,26 @@ export default function UserProfile() {
         });
     };
 
-    // --- Gallery Data Fetching Logic (Replaces Context for All/Productions) ---
-    useEffect(() => {
-        // Only fetch if tab implies we need paginated images
-        // "all" or "productions" -> use API
-        // "liked", "saved", "apps", "mockups" -> use Context (for now)
-        if (activeFilter === 'all' || activeFilter === 'productions') {
-            fetchGalleryImages();
-        }
-    }, [activeFilter, currentUser, searchQuery, fetchGalleryImages]);
-
-    const fetchGalleryImages = useCallback(async () => {
-        if (!currentUser) return;
-        setIsGalleryLoading(true);
-        // Reset pagination
-        setImages([]);
-        setHasMore(true);
-        setLastVisibleId(null);
-
-        try {
-            const api = httpsCallable(functions, 'api');
-            const result = await api({
-                action: 'getUserImages',
-                limit: LIMIT,
-                searchQuery: searchQuery || undefined,
-                filter: activeFilter === 'productions' ? 'image' : 'all'
-            });
-
-            const data = result.data;
-            if (data.success) {
-                const newImages = data.images || [];
-                setImages(newImages);
-                setLastVisibleId(data.lastVisibleId);
-                setLastVisibleType(data.lastVisibleType);
-                setHasMore(data.hasMore);
-
-                // Preload LCP
-                newImages.slice(0, 4).forEach(img => {
-                    const preloadUrl = getOptimizedImageUrl(img.thumbnailUrl || img.imageUrl);
-                    preloadImage(preloadUrl, 'high');
-                });
-
-                if (data.warnings) {
-                    data.warnings.forEach(w => toast.error(w));
-                }
-
-                if (searchQuery) {
-                    trackSearchQuality(searchQuery, newImages.length);
-                }
-            }
-        } catch (err) {
-            console.error("Error fetching gallery images:", err);
-            toast.error("Failed to load your gallery");
-        } finally {
-            setIsGalleryLoading(false);
-        }
-    }, [currentUser, searchQuery, activeFilter]);
-
-    const loadMoreImages = async () => {
-        if (!currentUser || !lastVisibleId || loadingMore || !hasMore) return;
-        setLoadingMore(true);
-        try {
-            const api = httpsCallable(functions, 'api');
-            const result = await api({
-                action: 'getUserImages',
-                limit: LIMIT,
-                startAfterId: lastVisibleId,
-                startAfterCollection: lastVisibleType,
-                searchQuery: searchQuery || undefined,
-                filter: activeFilter === 'productions' ? 'image' : 'all'
-            });
-
-            const data = result.data;
-            if (data.images && data.images.length > 0) {
-                setImages(prev => [...prev, ...data.images]);
-                setLastVisibleId(data.lastVisibleId);
-                setLastVisibleType(data.lastVisibleType);
-                setHasMore(data.hasMore);
-            } else {
-                setHasMore(false);
-            }
-        } catch (err) {
-            console.error("Error loading more:", err);
-            toast.error("Could not load more");
-        } finally {
-            setLoadingMore(false);
-        }
-    };
-    // -----------------------------------------------------------------------
-
-    // Filter Logic
-    const getFilteredItems = () => {
-        switch (activeFilter) {
-            case 'liked': return likes;
-            case 'saved': return bookmarks;
-            case 'mockups': return mockups;
-            case 'memes': return memes;
-            // case 'productions': return productions; // Removed, using API images
-            case 'apps': return appCreations;
-            case 'all':
-            case 'productions':
-                return images; // Use the API loaded images
-            default:
-                return images;
-        }
-    };
-
-    const displayedItems = getFilteredItems();
-    const loading = false; // derive from context normally
-
-    // Empty State Config
-    const emptyStates = {
-        all: { title: "Your Studio is Empty", subtitle: "Start creating to fill your personal gallery." },
-        liked: { title: "No Favorites Yet", subtitle: "Tap the heart on images you love to save them here." },
-        saved: { title: "No Saved Items", subtitle: "Bookmark generations to access them later." },
-        mockups: { title: "No Mockups Created", subtitle: "Head to the Mockup Studio to create your first product mockup." },
-        memes: { title: "No Memes Created", subtitle: "Head to the Meme Formatter to create your first meme." },
-        productions: { title: "No Productions Yet", subtitle: "Mainstream generations from the studio will appear here." },
-        apps: { title: "No App Creations", subtitle: "Creations from mini-apps like Dress Up or MeowAcc will appear here." }
-    };
-
-    const emptyState = emptyStates[activeFilter] || emptyStates.all;
-
-
-
-    const executeDelete = async (toastId) => {
-        toast.dismiss(toastId);
-        const loadToast = toast.loading('Deleting...');
-        try {
-            const api = httpsCallable(functions, 'api');
-            const result = await api({ action: 'deleteImagesBatch', imageIds: selectedIds });
-
-            if (result.data.success) {
-                setImages(prev => prev.filter(img => !selectedIds.includes(img.id)));
-                trackQualitySignal('batch_delete', { count: selectedIds.length, filter: activeFilter });
-                setSelectedIds([]);
-                setIsSelectionMode(false);
-                toast.success(`Deleted ${result.data.deleted} image(s)`);
-            }
-        } catch (err) {
-            console.error("Error deleting images:", err);
-            const errorMessage = err.message || "Failed to delete images";
-            toast.error(errorMessage);
-        } finally {
-            toast.dismiss(loadToast);
-        }
-    };
-
-    const handleBatchDelete = () => {
-        toast.custom((t) => (
-            <div className={`${t.visible ? 'animate-enter' : 'animate-leave'}`} style={{
-                maxWidth: '350px',
-                width: '100%',
-                background: '#18181b',
-                color: '#fff',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '16px',
-                boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-                padding: '20px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{
-                        background: 'rgba(239, 68, 68, 0.2)',
-                        padding: '10px',
-                        borderRadius: '50%',
-                        color: '#ef4444'
-                    }}>
-                        <Trash2 size={20} />
-                    </div>
-                    <div>
-                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>Confirm Deletion</h4>
-                        <p style={{ margin: '4px 0 0', fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>
-                            Delete {selectedIds.length} image{selectedIds.length > 1 ? 's' : ''}?
-                        </p>
-                    </div>
-                </div>
-                <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                    <button
-                        onClick={() => toast.dismiss(t.id)}
-                        style={{
-                            flex: 1, padding: '10px', background: 'transparent',
-                            border: '1px solid var(--color-border)', borderRadius: '8px',
-                            color: '#fff', cursor: 'pointer'
-                        }}
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={() => executeDelete(t.id)}
-                        style={{
-                            flex: 1, padding: '10px', background: '#ef4444',
-                            border: 'none', borderRadius: '8px', color: '#fff',
-                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
-                        }}
-                    >
-                        <Trash2 size={16} /> Delete
-                    </button>
-                </div>
-            </div>
-        ), { duration: 8000, id: 'delete-toast' });
-    };
-
-    const toggleSelection = (id) => {
-        setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-    };
-
-    const handleImageClick = (item) => {
-        if (isSelectionMode) {
-            toggleSelection(item.id);
-        } else {
-            openLightbox(item);
-        }
-    };
-
-    // Load initial profile data
-    useEffect(() => {
-        if (userProfile) {
-            setEditForm({
-                username: userProfile.username || '',
-                displayPreference: userProfile.displayPreference || 'name'
-            });
-        }
-    }, [userProfile]);
-
     const handleSaveProfile = async () => {
         if (!currentUser) return;
-
-        // If username is changing (meaning it wasn't set before, or we are allowing changes)
-        // Check validation
         if (!userProfile?.username && editForm.username) {
             const validation = isValidUsername(editForm.username);
             if (!validation.valid) {
                 setUsernameError(validation.error);
-                toast.error(validation.error);
                 return;
             }
         }
-
         setSavingProfile(true);
-        setUsernameError(null);
-
         try {
-            // const { doc, setDoc } = await import('firebase/firestore'); // Removed dynamic import
             const userRef = doc(db, 'users', currentUser.uid);
-
-            const updateData = {
-                displayPreference: editForm.displayPreference
-            };
-
-            // Only update username if it wasn't set before
+            const updateData = { displayPreference: editForm.displayPreference };
             if (!userProfile?.username && editForm.username) {
                 updateData.username = editForm.username;
             }
-
             await setDoc(userRef, updateData, { merge: true });
-
             toast.success("Profile updated");
             setIsEditing(false);
-        } catch (error) {
-            console.error("Error saving profile:", error);
+        } catch {
             toast.error("Failed to update profile");
         } finally {
             setSavingProfile(false);
@@ -423,9 +149,9 @@ export default function UserProfile() {
 
     if (!currentUser) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-black text-white">
-                <div className="text-center p-8 bg-zinc-900 rounded-2xl border border-zinc-800">
-                    <AlertCircle size={48} className="mx-auto text-zinc-500 mb-4" />
+            <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
+                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center max-w-md">
+                    <AlertCircle className="mx-auto text-zinc-500 mb-4" size={48} />
                     <h2 className="text-2xl font-bold mb-2">Access Restricted</h2>
                     <p className="text-zinc-400">Please sign in to view your personal studio.</p>
                 </div>
@@ -433,413 +159,182 @@ export default function UserProfile() {
         );
     }
 
+    const displayedItems = activeTab === 'saved' ? bookmarks : likes;
+
     return (
-        <div className="dashboard-container">
-            <SEO
-                title={selectedImage ? `${selectedImage.prompt?.slice(0, 50)}...` : "My Studio - DreamBees"}
-                description={selectedImage ? selectedImage.prompt : "Manage your personal collection of AI generations and discoveries."}
-                image={selectedImage ? (selectedImage.thumbnailUrl || selectedImage.url) : undefined}
-                canonical={selectedImage?.isPublic ? `/showcase/${selectedImage.id}` : undefined}
-                noindex={true}
-                structuredData={{
-                    "@context": "https://schema.org",
-                    "@graph": [
-                        {
-                            "@type": "ProfilePage",
-                            "name": userProfile?.username || "DreamBees User",
-                            "publisher": {
-                                "@type": "Organization",
-                                "name": "DreamBeesAI"
-                            }
-                        }
-                    ]
-                }}
-            />
+        <div className="min-h-screen bg-black text-white pb-20 pt-24 px-4 md:px-12 max-w-[1600px] mx-auto">
+            <SEO title="My Studio" noindex={true} />
 
-            {/* Header Section */}
-            <div className="dashboard-header">
-                <div className="header-content">
-                    <div>
-                        <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
-                            My Studio
-                        </h1>
-                        <p className="text-zinc-400 mt-2 text-lg">
-                            Manage your personal collection of generations and discoveries.
-                        </p>
-                    </div>
-
-                    <button
-                        onClick={() => {
-                            if (isSelectionMode) {
-                                // Finish selection
-                                setIsSelectionMode(false);
-                                setSelectedIds([]);
-                            } else {
-                                // Start selecting
-                                setIsSelectionMode(true);
-                            }
-                        }}
-                        className={`bee-btn ${isSelectionMode ? 'bg-zinc-800 border-zinc-700' : ''}`}
-                        style={{ padding: '10px 20px', fontSize: '0.9rem', marginRight: '10px' }}
-                    >
-                        {isSelectionMode ? 'Cancel Selection' : 'Select'}
-                    </button>
-                    <button
-                        onClick={() => setIsEditing(true)}
-                        className="bee-btn"
-                        style={{ padding: '10px 20px', fontSize: '0.9rem' }}
-                    >
-                        Edit Profile
-                    </button>
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
+                <div>
+                    <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
+                        My Studio
+                    </h1>
+                    <p className="text-zinc-500 mt-2 text-lg">
+                        Your personal collection.
+                    </p>
                 </div>
+                <button
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg transition-colors text-sm font-medium"
+                >
+                    <Edit2 size={16} /> Edit Profile
+                </button>
+            </div>
 
-                {/* Edit Profile Modal */}
+            {/* Tabs */}
+            <div className="flex gap-4 mb-8 border-b border-zinc-800 pb-1">
+                <button
+                    onClick={() => navigate('/profile/liked')}
+                    className={`pb-3 px-2 text-lg font-medium transition-colors relative ${activeTab === 'liked' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >
+                    <div className="flex items-center gap-2">
+                        <Heart size={20} className={activeTab === 'liked' ? "fill-pink-500 text-pink-500" : ""} />
+                        Favorites
+                        <span className="text-xs bg-zinc-900 px-2 py-0.5 rounded-full text-zinc-400">{likes.length}</span>
+                    </div>
+                    {activeTab === 'liked' && (
+                        <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />
+                    )}
+                </button>
+                <button
+                    onClick={() => navigate('/profile/saved')}
+                    className={`pb-3 px-2 text-lg font-medium transition-colors relative ${activeTab === 'saved' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >
+                    <div className="flex items-center gap-2">
+                        <Bookmark size={20} className={activeTab === 'saved' ? "fill-blue-500 text-blue-500" : ""} />
+                        Saved
+                        <span className="text-xs bg-zinc-900 px-2 py-0.5 rounded-full text-zinc-400">{bookmarks.length}</span>
+                    </div>
+                    {activeTab === 'saved' && (
+                        <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />
+                    )}
+                </button>
+            </div>
+
+            {/* Content Grid */}
+            {displayedItems.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
+                    <AnimatePresence mode='popLayout'>
+                        {displayedItems.map((item) => (
+                            <motion.div
+                                layout
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                transition={{ duration: 0.2 }} // Removed staggered delay for snappiness
+                                key={item.id}
+                                className="group cursor-pointer relative aspect-square rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50"
+                                onClick={() => openLightbox(item)}
+                            >
+                                <img
+                                    src={getOptimizedImageUrl(item.thumbnailUrl || item.imageUrl || item.url)}
+                                    alt={item.prompt}
+                                    loading="lazy"
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                    <p className="text-white text-xs font-mono line-clamp-2 opacity-90">
+                                        {item.prompt}
+                                    </p>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                </div>
+            ) : (
+                <div className="flex flex-col items-center justify-center py-20 text-zinc-500 border-2 border-dashed border-zinc-900 rounded-3xl">
+                    {activeTab === 'liked' ? <Heart size={48} className="mb-4 opacity-20" /> : <Bookmark size={48} className="mb-4 opacity-20" />}
+                    <h3 className="text-xl font-bold text-zinc-400 mb-2">
+                        {activeTab === 'liked' ? "No Favorites Yet" : "No Saved Items"}
+                    </h3>
+                    <p className="max-w-sm text-center opacity-60">
+                        {activeTab === 'liked'
+                            ? "Tap the heart on images you love to find them here."
+                            : "Bookmark generations to build your personal collection."}
+                    </p>
+                </div>
+            )}
+
+            {/* Edit Profile Modal */}
+            <AnimatePresence>
                 {isEditing && (
-                    <div className="modal-overlay">
-                        <div className="modal-content">
-                            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '20px' }}>Edit Profile</h2>
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl relative"
+                        >
+                            <button
+                                onClick={() => setIsEditing(false)}
+                                className="absolute top-4 right-4 text-zinc-500 hover:text-white"
+                            >
+                                <X size={20} />
+                            </button>
 
-                            <div style={{ marginBottom: '20px' }}>
-                                <label style={{ display: 'block', fontSize: '0.85rem', color: '#888', marginBottom: '8px' }}>Username</label>
-                                <div style={{ position: 'relative' }}>
-                                    <span style={{ position: 'absolute', left: '12px', top: '12px', color: userProfile?.username ? '#444' : '#666' }}>@</span>
-                                    <input
-                                        type="text"
-                                        value={editForm.username}
-                                        onChange={e => {
-                                            if (!userProfile?.username) {
-                                                const val = e.target.value.replace(/\s+/g, '').toLowerCase();
-                                                setEditForm({ ...editForm, username: val });
-                                                setUsernameError(null);
-                                            }
-                                        }}
-                                        placeholder="username"
-                                        disabled={!!userProfile?.username}
-                                        style={{
-                                            width: '100%',
-                                            background: userProfile?.username ? '#111' : '#0a0a0a',
-                                            border: usernameError ? '1px solid #ef4444' : '1px solid #333',
-                                            padding: '12px 12px 12px 30px',
-                                            borderRadius: '8px',
-                                            color: userProfile?.username ? '#666' : 'white',
-                                            outline: 'none',
-                                            cursor: userProfile?.username ? 'not-allowed' : 'text'
-                                        }}
-                                    />
-                                    {userProfile?.username && (
-                                        <Lock size={14} style={{ position: 'absolute', right: '12px', top: '14px', color: '#444' }} />
-                                    )}
+                            <h2 className="text-xl font-bold mb-6">Edit Profile</h2>
+
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-sm text-zinc-400 mb-2">Username</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-3 text-zinc-500">@</span>
+                                        <input
+                                            type="text"
+                                            value={editForm.username}
+                                            onChange={e => {
+                                                if (!userProfile?.username) {
+                                                    const val = e.target.value.replace(/\s+/g, '').toLowerCase();
+                                                    setEditForm({ ...editForm, username: val });
+                                                    setUsernameError(null);
+                                                }
+                                            }}
+                                            disabled={!!userProfile?.username}
+                                            className={`w-full bg-black border ${usernameError ? 'border-red-500' : 'border-zinc-800'} rounded-lg py-2.5 pl-8 pr-10 text-white outline-none focus:border-purple-500 transition-colors ${userProfile?.username ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            placeholder="username"
+                                        />
+                                        {userProfile?.username && <Lock className="absolute right-3 top-3 text-zinc-600" size={14} />}
+                                    </div>
+                                    {usernameError && <p className="text-red-500 text-xs mt-1.5">{usernameError}</p>}
+                                    {userProfile?.username && <p className="text-zinc-600 text-xs mt-1.5">Username cannot be changed.</p>}
                                 </div>
-                                {usernameError && (
-                                    <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '6px' }}>{usernameError}</p>
-                                )}
-                                {userProfile?.username && (
-                                    <p style={{ color: '#666', fontSize: '0.8rem', marginTop: '6px' }}>Username cannot be changed once set.</p>
-                                )}
-                            </div>
 
-                            <div style={{ marginBottom: '24px' }}>
-                                <label style={{ display: 'block', fontSize: '0.85rem', color: '#888', marginBottom: '12px' }}>Display Preference</label>
-                                <div style={{ display: 'flex', gap: '10px' }}>
-                                    <button
-                                        onClick={() => setEditForm({ ...editForm, displayPreference: 'name' })}
-                                        style={{
-                                            flex: 1, padding: '10px', borderRadius: '8px',
-                                            border: editForm.displayPreference === 'name' ? '1px solid #a855f7' : '1px solid #333',
-                                            background: editForm.displayPreference === 'name' ? 'rgba(168, 85, 247, 0.1)' : 'transparent',
-                                            color: editForm.displayPreference === 'name' ? 'white' : '#666',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        Use Name
-                                        <div style={{ fontSize: '0.7em', marginTop: '4px', opacity: 0.7 }}>{currentUser?.displayName}</div>
-                                    </button>
-                                    <button
-                                        onClick={() => setEditForm({ ...editForm, displayPreference: 'username' })}
-                                        style={{
-                                            flex: 1, padding: '10px', borderRadius: '8px',
-                                            border: editForm.displayPreference === 'username' ? '1px solid #a855f7' : '1px solid #333',
-                                            background: editForm.displayPreference === 'username' ? 'rgba(168, 85, 247, 0.1)' : 'transparent',
-                                            color: editForm.displayPreference === 'username' ? 'white' : '#666',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        Use Username
-                                        <div style={{ fontSize: '0.7em', marginTop: '4px', opacity: 0.7 }}>@{editForm.username || '...'}</div>
-                                    </button>
+                                <div>
+                                    <label className="block text-sm text-zinc-400 mb-2">Display Name Preference</label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <button
+                                            onClick={() => setEditForm({ ...editForm, displayPreference: 'name' })}
+                                            className={`p-3 rounded-lg border text-left transition-all ${editForm.displayPreference === 'name' ? 'bg-purple-500/10 border-purple-500 text-white' : 'bg-transparent border-zinc-800 text-zinc-500 hover:border-zinc-700'}`}
+                                        >
+                                            <div className="font-medium text-sm">Use Name</div>
+                                            <div className="text-xs opacity-60 mt-1 truncate">{currentUser?.displayName}</div>
+                                        </button>
+                                        <button
+                                            onClick={() => setEditForm({ ...editForm, displayPreference: 'username' })}
+                                            className={`p-3 rounded-lg border text-left transition-all ${editForm.displayPreference === 'username' ? 'bg-purple-500/10 border-purple-500 text-white' : 'bg-transparent border-zinc-800 text-zinc-500 hover:border-zinc-700'}`}
+                                        >
+                                            <div className="font-medium text-sm">Use Username</div>
+                                            <div className="text-xs opacity-60 mt-1 truncate">@{editForm.username || '...'}</div>
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <button
-                                    onClick={() => {
-                                        setIsEditing(false);
-                                        setUsernameError(null);
-                                        // Reset form to current profile
-                                        if (userProfile) {
-                                            setEditForm({
-                                                username: userProfile.username || '',
-                                                displayPreference: userProfile.displayPreference || 'name'
-                                            });
-                                        }
-                                    }}
-                                    className="btn-secondary"
-                                    style={{ flex: 1, padding: '12px', borderRadius: '8px', cursor: 'pointer' }}
-                                >
-                                    Cancel
-                                </button>
                                 <button
                                     onClick={handleSaveProfile}
-                                    className="bee-btn"
                                     disabled={savingProfile}
-                                    style={{ flex: 1 }}
+                                    className="w-full bg-white text-black font-bold py-3 rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                                 >
                                     {savingProfile ? 'Saving...' : 'Save Changes'}
                                 </button>
                             </div>
-                        </div>
+                        </motion.div>
                     </div>
                 )}
+            </AnimatePresence>
 
-                {/* Stats Cards Row */}
-                <div className="stats-grid">
-                    <div className="stat-card">
-                        <div className="stat-icon bg-pink-500/10 text-pink-500">
-                            <Heart size={24} fill="currentColor" />
-                        </div>
-                        <div>
-                            <div className="stat-value">{likes.length}</div>
-                            <div className="stat-label">Favorites</div>
-                        </div>
-                    </div>
-
-                    <div className="stat-card">
-                        <div className="stat-icon bg-blue-500/10 text-blue-400">
-                            <Bookmark size={24} fill="currentColor" />
-                        </div>
-                        <div>
-                            <div className="stat-value">{bookmarks.length}</div>
-                            <div className="stat-label">Saved</div>
-                        </div>
-                    </div>
-
-                    <div className="stat-card">
-                        <div className="stat-icon bg-purple-500/10 text-purple-400">
-                            <Package size={24} />
-                        </div>
-                        <div>
-                            <div className="stat-value">{mockups.length}</div>
-                            <div className="stat-label">Mockups</div>
-                        </div>
-                    </div>
-
-                    <div className="stat-card">
-                        <div className="stat-icon bg-orange-500/10 text-orange-400">
-                            <Sparkles size={24} />
-                        </div>
-                        <div>
-                            <div className="stat-value">{productions.length}</div>
-                            <div className="stat-label">Productions</div>
-                        </div>
-                    </div>
-
-                    <div className="stat-card">
-                        <div className="stat-icon bg-indigo-500/10 text-indigo-400">
-                            <Layers size={24} />
-                        </div>
-                        <div>
-                            <div className="stat-value">{appCreations.length}</div>
-                            <div className="stat-label">App Creations</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Toolbar / Filters */}
-            <div className="toolbar">
-                <div className="filter-group">
-                    {[
-                        { id: 'all', label: 'All Media', icon: Layers },
-                        { id: 'productions', label: 'Productions', icon: Sparkles },
-                        { id: 'apps', label: 'App Creations', icon: Package },
-                        { id: 'liked', label: 'Liked', icon: Heart },
-                        { id: 'saved', label: 'Saved', icon: Bookmark },
-                    ].map(filter => (
-                        <button
-                            key={filter.id}
-                            onClick={() => {
-                                if (filter.id === 'all') navigate('/profile');
-                                else navigate(`/profile/${filter.id}`);
-                            }}
-                            className={`filter-btn ${activeFilter === filter.id ? 'active' : ''}`}
-                            style={{ position: 'relative' }}
-                        >
-                            {activeFilter === filter.id && (
-                                <motion.div
-                                    layoutId="activeFilter"
-                                    style={{
-                                        position: 'absolute',
-                                        inset: 0,
-                                        background: 'rgba(255,255,255,0.1)',
-                                        borderRadius: '8px',
-                                        zIndex: 0
-                                    }}
-                                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                                />
-                            )}
-                            <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <filter.icon size={16} className={activeFilter === filter.id && filter.id === 'liked' ? 'fill-current' : ''} />
-                                {filter.label}
-                            </span>
-                        </button>
-                    ))}
-                </div>
-
-                <div className="search-bar hidden-mobile">
-                    <Search size={16} className="text-zinc-500" />
-                    <input type="text" placeholder="Search prompts..." />
-                </div>
-            </div>
-
-            {/* Main Grid content */}
-            <div className="content-area">
-                {/* Search Bar - only pertinent for API backed views mostly */}
-                {(activeFilter === 'all' || activeFilter === 'productions') && (
-                    <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'flex-end' }}>
-                        <div className="search-wrapper" style={{ position: 'relative', width: '300px' }}>
-                            <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#666' }} />
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                value={searchQuery}
-                                onChange={e => setSearchQuery(e.target.value)}
-                                style={{
-                                    width: '100%', padding: '10px 10px 10px 36px',
-                                    background: '#1a1a1a', border: '1px solid #333', borderRadius: '8px', color: 'white'
-                                }}
-                            />
-                            {searchQuery && (
-                                <button onClick={() => setSearchQuery('')} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#666' }}>
-                                    <X size={14} />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {(loading || isGalleryLoading) ? (
-                    <div className="studio-grid">
-                        {[...Array(8)].map((_, i) => (
-                            <div key={i} className="aspect-square rounded-xl bg-zinc-900 border border-zinc-800 animate-pulse relative overflow-hidden">
-                                <div className="absolute inset-0 bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 skeleton-shimmer" />
-                            </div>
-                        ))}
-                    </div>
-                ) : displayedItems.length > 0 ? (
-                    <div className="studio-grid">
-                        <AnimatePresence mode='popLayout'>
-                            {displayedItems.map((item, i) => (
-                                <motion.div
-                                    layout
-                                    initial={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.9 }}
-                                    transition={{ duration: 0.2, delay: i * 0.05 }}
-                                    key={item.id}
-                                    className={`studio-card group ${isSelectionMode && selectedIds.includes(item.id) ? 'ring-2 ring-indigo-500' : ''}`}
-                                    onClick={() => handleImageClick(item)}
-                                >
-                                    <div className="aspect-square relative overflow-hidden rounded-xl bg-zinc-900">
-                                        {/* Video Support */}
-                                        {item.type === 'video' ? (
-                                            <video
-                                                src={item.videoUrl || item.imageUrl}
-                                                muted loop playsInline
-                                                onMouseOver={e => e.target.play()}
-                                                onMouseOut={e => { e.target.pause(); e.target.currentTime = 0; }}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        ) : (
-                                            <img
-                                                src={getOptimizedImageUrl(item.thumbnailUrl || item.imageUrl || item.url)}
-                                                alt={item.prompt}
-                                                loading="lazy"
-                                                {...((activeFilter === 'all' || activeFilter === 'productions') ? getLCPAttributes(i, 4) : {})} // Apply LCP if relevant
-                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                            />
-                                        )}
-
-                                        {/* Overlay Info */}
-                                        <div className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4 ${isSelectionMode ? 'pointer-events-none' : ''}`}>
-                                            <p className="text-white text-xs font-mono line-clamp-2 mb-2 opacity-90">
-                                                {item.prompt}
-                                            </p>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[10px] text-zinc-400 uppercase tracking-wider font-bold">
-                                                    {item.createdAt?.toDate ? item.createdAt.toDate().toLocaleDateString() : 'Recent'}
-                                                </span>
-                                                <div className="flex gap-2">
-                                                    {likes.some(l => l.id === item.id) && <Heart size={14} className="text-pink-500 fill-pink-500" />}
-                                                    {bookmarks.some(b => b.id === item.id) && <Bookmark size={14} className="text-blue-500 fill-blue-500" />}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Selection Checkbox Overlay */}
-                                        {isSelectionMode && (
-                                            <div style={{
-                                                position: 'absolute', inset: 0,
-                                                background: selectedIds.includes(item.id) ? 'rgba(79, 70, 229, 0.3)' : 'rgba(0,0,0,0.1)',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center'
-                                            }}>
-                                                {selectedIds.includes(item.id) && (
-                                                    <div className="bg-indigo-600 p-2 rounded-full">
-                                                        <Check size={20} color="white" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
-                    </div>
-                ) : (
-                    <div className="empty-zone">
-                        <div className="w-16 h-16 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-4">
-                            <Layers size={24} className="text-zinc-600" />
-                        </div>
-                        <h3 className="text-xl font-bold text-white mb-2">{emptyState.title}</h3>
-                        <p className="text-zinc-500 max-w-sm text-center">{emptyState.subtitle}</p>
-                    </div>
-                )}
-                {/* Load More Button - Only for API views */}
-                {(activeFilter === 'all' || activeFilter === 'productions') && !isGalleryLoading && hasMore && (
-                    <div className="flex justify-center mt-8">
-                        <button
-                            onClick={loadMoreImages}
-                            disabled={loadingMore}
-                            className="bee-btn btn-outline"
-                            style={{ minWidth: '150px' }}
-                        >
-                            {loadingMore ? <Loader2 className="animate-spin mx-auto" size={20} /> : 'Load More'}
-                        </button>
-                    </div>
-                )}
-            </div>
-
-            {/* Batch Actions Float */}
-            {isSelectionMode && selectedIds.length > 0 && (
-                <div className="fixed bottom-32 md:bottom-8 left-1/2 -translate-x-1/2 bg-zinc-900 border border-zinc-700 rounded-full px-6 py-3 flex items-center gap-6 shadow-2xl z-50">
-                    <span className="font-semibold text-sm">{selectedIds.length} Selected</span>
-                    <div className="w-px h-5 bg-zinc-700" />
-                    <button onClick={handleBatchDelete} className="text-red-500 font-semibold text-sm hover:text-red-400">Delete</button>
-                    <button onClick={() => setSelectedIds([])} className="text-zinc-400 text-sm hover:text-white">Clear</button>
-                </div>
-            )}
-
-            {/* Modal */}
+            {/* Lightbox */}
             {selectedImage && selectedModel && (
                 <ShowcaseModal
                     image={selectedImage}
@@ -847,253 +342,6 @@ export default function UserProfile() {
                     onClose={closeLightbox}
                 />
             )}
-
-            <style>{`
-                .dashboard-container {
-                    min-height: 100vh;
-                    background: #000;
-                    color: #fff;
-                    padding: 40px 60px;
-                    width: 100%;
-                    max-width: 1600px;
-                    margin: 0 auto;
-                }
-
-                /* Header & Stats */
-                .dashboard-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: flex-end;
-                    margin-bottom: 40px;
-                    gap: 40px;
-                    padding-top: 60px; /* Space for Navbar */
-                }
-
-                .stats-grid {
-                    display: flex;
-                    gap: 16px;
-                }
-
-                .stat-card {
-                    background: rgba(255,255,255,0.03);
-                    border: 1px solid rgba(255,255,255,0.05);
-                    backdrop-filter: blur(10px);
-                    padding: 16px 20px;
-                    border-radius: 16px;
-                    display: flex;
-                    align-items: center;
-                    gap: 16px;
-                    min-width: 180px;
-                    transition: all 0.2s ease;
-                }
-
-                .stat-card:hover {
-                    background: rgba(255,255,255,0.05);
-                    transform: translateY(-2px);
-                    border-color: rgba(255,255,255,0.1);
-                }
-
-                .stat-icon {
-                    width: 48px;
-                    height: 48px;
-                    border-radius: 12px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-
-                .stat-value {
-                    font-size: 1.5rem;
-                    font-weight: 700;
-                    line-height: 1;
-                    margin-bottom: 4px;
-                }
-
-                .stat-label {
-                    font-size: 0.75rem;
-                    color: rgba(255,255,255,0.5);
-                    font-weight: 500;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                }
-
-                /* Toolbar */
-                .toolbar {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 30px;
-                    border-bottom: 1px solid rgba(255,255,255,0.05);
-                    padding-bottom: 20px;
-                }
-
-                .filter-group {
-                    display: flex;
-                    gap: 8px;
-                    background: rgba(255,255,255,0.03);
-                    padding: 4px;
-                    border-radius: 12px;
-                }
-
-                .filter-btn {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    padding: 8px 16px;
-                    border-radius: 8px;
-                    font-size: 0.9rem;
-                    font-weight: 500;
-                    color: rgba(255,255,255,0.6);
-                    transition: all 0.2s;
-                    cursor: pointer;
-                    border: none;
-                    background: transparent;
-                }
-
-                .filter-btn:hover {
-                    color: white;
-                    background: rgba(255,255,255,0.05);
-                }
-
-                .filter-btn.active {
-                    background: rgba(255,255,255,0.1);
-                    color: white;
-                    font-weight: 600;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                }
-
-                .search-bar {
-                    background: rgba(255,255,255,0.03);
-                    border: 1px solid rgba(255,255,255,0.05);
-                    padding: 10px 16px;
-                    border-radius: 12px;
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    width: 300px;
-                }
-
-                .search-bar input {
-                    background: transparent;
-                    border: none;
-                    outline: none;
-                    color: white;
-                    font-size: 0.9rem;
-                    width: 100%;
-                }
-
-                /* Grid */
-                .studio-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-                    gap: 24px;
-                }
-
-                .studio-card {
-                    cursor: pointer;
-                }
-
-                .empty-zone {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    height: 400px;
-                    color: rgba(255,255,255,0.4);
-                    border: 2px dashed rgba(255,255,255,0.05);
-                    border-radius: 24px;
-                }
-
-                .header-content {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    width: 100%;
-                    flex-wrap: wrap;
-                    gap: 20px;
-                }
-
-                @media (max-width: 1024px) {
-                    .header-content {
-                        flex-direction: column;
-                        align-items: flex-start;
-                        gap: 16px;
-                    }
-                    .stats-grid {
-                        width: 100%;
-                        overflow-x: auto;
-                        padding-bottom: 4px;
-                    }
-                }
-
-                @media (max-width: 768px) {
-                    .dashboard-container {
-                        padding: 16px;
-                        padding-top: 80px; 
-                        padding-bottom: 120px;
-                    }
-                    .dashboard-header {
-                        margin-bottom: 24px;
-                        padding-top: 20px;
-                    }
-                    .stats-grid {
-                        overflow-x: auto;
-                        scroll-snap-type: x mandatory;
-                        padding-bottom: 12px;
-                        gap: 12px;
-                        width: calc(100% + 32px); /* Break out of container padding */
-                        margin-left: -16px;
-                        padding-left: 16px;
-                        padding-right: 16px;
-                    }
-                    .stat-card {
-                        min-width: 140px; /* Smaller cards */
-                        scroll-snap-align: start;
-                        padding: 12px 16px;
-                    }
-                    .stat-value {
-                        font-size: 1.25rem;
-                    }
-                    .toolbar {
-                        flex-direction: column;
-                        gap: 16px;
-                        align-items: stretch;
-                    }
-                    .filter-group {
-                        width: 100%;
-                        overflow-x: auto;
-                        padding-bottom: 8px; /* Space for scrollbar */
-                        -webkit-overflow-scrolling: touch;
-                        scrollbar-width: none; /* Hide scrollbar for cleaner look */
-                    }
-                    .filter-group::-webkit-scrollbar {
-                        display: none;
-                    }
-                    .search-bar {
-                        display: flex; /* Show on mobile */
-                        width: 100%;
-                    }
-                    .studio-grid {
-                        grid-template-columns: repeat(2, 1fr);
-                        gap: 8px; /* Tighter gap for mobile */
-                    }
-                    .modal-content {
-                        position: fixed;
-                        bottom: 0;
-                        left: 0;
-                        right: 0;
-                        max-width: 100%;
-                        border-radius: 20px 20px 0 0;
-                        border-bottom: none;
-                        padding-bottom: 40px; /* Safe area */
-                        animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-                    }
-                }
-                @keyframes slideUp {
-                    from { transform: translateY(100%); }
-                    to { transform: translateY(0); }
-                }
-            `}</style>
         </div>
     );
 }
