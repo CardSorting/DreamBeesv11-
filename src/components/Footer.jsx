@@ -102,9 +102,15 @@ export default function Footer() {
 
 
 
-                        <div>
-                            &copy; {new Date().getFullYear()} DreamBees Inc.
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                            <div>
+                                &copy; {new Date().getFullYear()} DreamBees Inc.
+                            </div>
+                            <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>
+                                v1.0.1
+                            </div>
                         </div>
+
                     </div>
                 </div>
 
