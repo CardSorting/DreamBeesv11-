@@ -12,6 +12,8 @@ import { isValidUsername } from '../utils/usernameValidation';
 import { getOptimizedImageUrl } from '../utils';
 import ShowcaseModal from '../components/ShowcaseModal';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
+import { Loader2 } from 'lucide-react';
 
 export default function UserProfile() {
     const { currentUser } = useAuth();
@@ -147,6 +149,31 @@ export default function UserProfile() {
         }
     };
 
+    const displayedItems = activeTab === 'saved' ? bookmarks : likes;
+
+    // --- Pagination for Large Datasets ---
+    const PAGE_SIZE = 15;
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+    // Reset visible count when switching tabs or items change
+    useEffect(() => {
+        setVisibleCount(PAGE_SIZE);
+    }, [activeTab, displayedItems.length]);
+
+    const visibleItems = useMemo(() => {
+        return displayedItems.slice(0, visibleCount);
+    }, [displayedItems, visibleCount]);
+
+    const sentinelRef = useIntersectionObserver({
+        onIntersect: () => {
+            if (visibleCount < displayedItems.length) {
+                setVisibleCount(prev => prev + PAGE_SIZE);
+            }
+        },
+        enabled: visibleCount < displayedItems.length,
+        rootMargin: '0px 0px 800px 0px'
+    });
+
     if (!currentUser) {
         return (
             <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
@@ -159,7 +186,6 @@ export default function UserProfile() {
         );
     }
 
-    const displayedItems = activeTab === 'saved' ? bookmarks : likes;
 
     return (
         <div className="min-h-screen bg-black text-white pb-20 pt-24 px-4 md:px-12 max-w-[1600px] mx-auto">
@@ -215,34 +241,56 @@ export default function UserProfile() {
 
             {/* Content Grid */}
             {displayedItems.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-                    <AnimatePresence mode='popLayout'>
-                        {displayedItems.map((item) => (
-                            <motion.div
-                                layout
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                transition={{ duration: 0.2 }} // Removed staggered delay for snappiness
-                                key={item.id}
-                                className="group cursor-pointer relative aspect-square rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800/50"
-                                onClick={() => openLightbox(item)}
-                            >
-                                <img
-                                    src={getOptimizedImageUrl(item.thumbnailUrl || item.imageUrl || item.url)}
-                                    alt={item.prompt}
-                                    loading="lazy"
-                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                                    <p className="text-white text-xs font-mono line-clamp-2 opacity-90">
-                                        {item.prompt}
-                                    </p>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </AnimatePresence>
-                </div>
+                <section className="profile-gallery">
+                    <div className="masonry-grid">
+                        <AnimatePresence mode='popLayout'>
+                            {visibleItems.map((item, index) => {
+                                // Deterministic ratio calculation if not present
+                                const ratios = ['1/1', '3/4', '4/5', '2/3', '1/1', '3/5'];
+                                const ratio = item.aspectRatio || ratios[index % ratios.length];
+
+                                return (
+                                    <motion.div
+                                        layout
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.9 }}
+                                        transition={{ duration: 0.3, delay: (index % PAGE_SIZE) * 0.05 }}
+                                        key={item.id}
+                                        className="masonry-item group"
+                                        onClick={() => openLightbox(item)}
+                                    >
+                                        <div className="image-card">
+                                            <div className="image-wrapper" style={{ aspectRatio: ratio }}>
+                                                <img
+                                                    src={getOptimizedImageUrl(item.thumbnailUrl || item.imageUrl || item.url)}
+                                                    alt={item.prompt}
+                                                    loading={index < 10 ? "eager" : "lazy"}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                                    <p className="text-white text-[10px] font-mono line-clamp-2 opacity-90 leading-tight">
+                                                        {item.prompt}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
+                        </AnimatePresence>
+                    </div>
+
+                    {/* Sentinel for Infinite Scroll */}
+                    <div ref={sentinelRef} className="h-20 w-full flex items-center justify-center">
+                        {visibleCount < displayedItems.length && (
+                            <div className="flex items-center gap-2 text-zinc-500 text-sm font-medium animate-pulse">
+                                <Loader2 size={16} className="animate-spin" />
+                                Loading more creations...
+                            </div>
+                        )}
+                    </div>
+                </section>
             ) : (
                 <div className="flex flex-col items-center justify-center py-20 text-zinc-500 border-2 border-dashed border-zinc-900 rounded-3xl">
                     {activeTab === 'liked' ? <Heart size={48} className="mb-4 opacity-20" /> : <Bookmark size={48} className="mb-4 opacity-20" />}
