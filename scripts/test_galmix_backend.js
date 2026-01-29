@@ -1,4 +1,4 @@
-/* global process */
+
 import fetch from 'node-fetch';
 
 async function testGalmixUnauthenticated() {

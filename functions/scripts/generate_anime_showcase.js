@@ -219,24 +219,7 @@ const PROMPTS_PER_MODEL = {
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-async function fetchWithRetry(url, options, retries = 3) {
-    for (let i = 0; i < retries; i++) {
-        try {
-            const res = await fetch(url, options);
-            if (res.status === 429) {
-                const waitTime = Math.pow(2, i) * 2000 + Math.random() * 1000;
-                console.warn(`   [Rate Limit] 429. Backing off for ${Math.round(waitTime / 1000)}s...`);
-                await sleep(waitTime);
-                continue;
-            }
-            if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-            return res;
-        } catch (e) {
-            if (i === retries - 1) throw e;
-            await sleep(1000 * (i + 1));
-        }
-    }
-}
+
 
 async function generateWithDirectCall(modelId, prompt) {
     const { GalmixClient } = await import('../lib/GalmixClient.js');

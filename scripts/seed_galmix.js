@@ -1,4 +1,4 @@
-/* global process */
+
 import admin from 'firebase-admin';
 
 // Initialize Admin SDK (assuming service account or default credentials)

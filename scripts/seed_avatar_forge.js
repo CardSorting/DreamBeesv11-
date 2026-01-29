@@ -1,4 +1,4 @@
-/* global process */
+
 import admin from 'firebase-admin';
 
 // Note: This script assumes you are authenticated via Firebase CLI or have GOOGLE_APPLICATION_CREDENTIALS set.
