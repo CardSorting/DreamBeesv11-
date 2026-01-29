@@ -19,7 +19,7 @@ const getTimeAgo = (timestamp) => {
     const days = Math.floor(hours / 24);
     return `${days}d ago`;
 };
- 
+
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt, onRestyle }) {
@@ -107,12 +107,12 @@ export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt
 
     return (
 
-        <div className="history-filmstrip-container" style={{ marginTop: '24px', position: 'relative' }}>
+        <div className="history-filmstrip-container" style={{ marginTop: '16px', position: 'relative' }}>
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: '12px',
+                marginBottom: '8px',
                 padding: '0 4px'
             }}>
                 <div style={{
@@ -136,10 +136,10 @@ export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt
                 ref={scrollContainerRef}
                 style={{
                     display: 'flex',
-                    gap: '12px',
+                    gap: '8px',
                     overflowX: 'auto',
                     padding: '4px',
-                    paddingBottom: '12px',
+                    paddingBottom: '8px',
                     width: '100%',
                     scrollBehavior: 'smooth',
                     maskImage: 'linear-gradient(to right, black 90%, transparent 100%)' // Fade out edge
@@ -156,21 +156,7 @@ export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt
                             exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
                             className={`history-item ${selectedJobId === job.id ? 'active' : ''}`}
                             onClick={() => onSelect(job)}
-                            style={{
-                                minWidth: '110px',
-                                width: '110px',
-                                height: '110px',
-                                borderRadius: '16px',
-                                overflow: 'hidden',
-                                position: 'relative',
-                                cursor: 'pointer',
-                                border: selectedJobId === job.id ? '2px solid var(--color-accent-primary)' : '1px solid rgba(255,255,255,0.08)',
-                                background: '#111',
-                                flexShrink: 0,
-                                boxShadow: selectedJobId === job.id ? '0 0 20px rgba(var(--color-accent-rgb), 0.3)' : 'none',
-                                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
-                            }}
-                            whileHover={{ y: -4, boxShadow: '0 10px 20px rgba(0,0,0,0.5)' }}
+                            whileHover={{ y: -4 }}
                         >
                             <div style={{
                                 width: '100%',
@@ -182,7 +168,8 @@ export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt
                             }}>
                                 <img
                                     src={getOptimizedImageUrl(job.thumbnailUrl || job.imageUrl)}
-                                    alt={`Previously generated image: ${job.prompt}`}
+                                    alt={`Previously generated image: ${job.prompt?.substring(0, 100)}${job.prompt?.length > 100 ? '...' : ''}`}
+                                    title={job.prompt?.length > 100 ? job.prompt.substring(0, 100) + '...' : job.prompt}
                                     {...getLCPAttributes(history.indexOf(job), 5)}
                                     style={{
                                         width: '100%',
@@ -309,22 +296,75 @@ export default function GenerationHistory({ onSelect, selectedJobId, onUsePrompt
                     opacity: 1;
                 }
                 
+                .history-item {
+                    min-width: 96px;
+                    width: 96px;
+                    height: 96px;
+                    border-radius: 12px;
+                    overflow: hidden;
+                    position: relative;
+                    cursor: pointer;
+                    border: 1px solid rgba(255,255,255,0.08);
+                    background: #111;
+                    flex-shrink: 0;
+                    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+
+                .history-item.active {
+                    border: 2px solid #fff;
+                    box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+                    transform: scale(0.95);
+                }
+
+                .history-item:hover {
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+                    border-color: rgba(255,255,255,0.2);
+                }
+
+                .history-item:hover img {
+                    transform: scale(1.1);
+                }
+
+                .history-item.active::after {
+                    content: 'VIEWING';
+                    position: absolute;
+                    inset: 0;
+                    background: rgba(0,0,0,0.6);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 0.6rem;
+                    font-weight: 800;
+                    letter-spacing: 0.1em;
+                    color: white;
+                    z-index: 5;
+                }
+                
                 .btn-mini-action {
-                    height: 24px;
-                    border-radius: 6px;
-                    border: 1px solid rgba(255,255,255,0.2);
-                    background: rgba(0,0,0,0.4);
+                    height: 28px;
+                    border-radius: 8px;
+                    border: 1px solid rgba(255,255,255,0.15);
+                    background: rgba(0,0,0,0.8);
                     color: white;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     cursor: pointer;
                     transition: all 0.2s;
-                    backdrop-filter: blur(4px);
+                    backdrop-filter: blur(8px);
                 }
                 .btn-mini-action:hover {
                     background: white;
                     color: black;
+                }
+
+                @media (max-width: 768px) {
+                    .history-item {
+                        min-width: 80px;
+                        width: 80px;
+                        height: 80px;
+                        border-radius: 10px;
+                    }
                 }
 
                 .no-scrollbar::-webkit-scrollbar { height: 0px; display: none; }

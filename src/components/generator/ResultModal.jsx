@@ -1,8 +1,8 @@
-import React, { useRef, useEffect, useState } from 'react';
-import html2canvas from 'html2canvas';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Loader2, Check } from 'lucide-react';
+import { Download, Loader2, Check, X, RefreshCw, Copy, Sparkles, Sliders, Box } from 'lucide-react';
 import toast from 'react-hot-toast';
+import './ResultModal.css';
 
 export default function ResultModal({
     isOpen,
@@ -10,22 +10,22 @@ export default function ResultModal({
     generatedImage,
     generationMode,
     prompt,
-    downloadUrl
+    metadata = {},
+    onReuseSettings
 }) {
-    const imageRef = useRef(null);
     const [isImageLoaded, setIsImageLoaded] = useState(false);
     const [isDownloadSuccess, setIsDownloadSuccess] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [isPromptExpanded, setIsPromptExpanded] = useState(false);
 
-    // Reset states when opening new result
     useEffect(() => {
         if (isOpen) {
             setIsImageLoaded(false);
             setIsDownloadSuccess(false);
+            setIsPromptExpanded(false);
         }
-    }, [isOpen, generatedImage]);
+    }, [isOpen, generatedImage, prompt]);
 
-    // Keyboard shortcut: Escape to close
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.key === 'Escape' && isOpen) onClose();
@@ -37,45 +37,25 @@ export default function ResultModal({
     const handleDownload = async () => {
         if (isDownloading || isDownloadSuccess) return;
         setIsDownloading(true);
-
-        const downloadFilename = generationMode === 'video' ? 'dreambees-video.mp4' : 'dreambees-creation.png';
-
-        await new Promise(r => setTimeout(r, 100));
+        const filename = generationMode === 'video' ? 'dreambees-video.mp4' : 'dreambees-creation.png';
 
         try {
-            if (generationMode === 'video') {
-                const a = document.createElement('a');
-                a.href = downloadUrl;
-                a.download = downloadFilename;
-                a.target = "_blank";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            } else if (imageRef.current) {
-                const canvas = await html2canvas(imageRef.current, {
-                    useCORS: true,
-                    allowTaint: true,
-                    backgroundColor: null,
-                    scale: 2,
-                    logging: false
-                });
-                const data = canvas.toDataURL('image/png', 1.0);
-                const link = document.createElement('a');
-                link.href = data;
-                link.download = downloadFilename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            } else {
-                window.open(downloadUrl, '_blank');
-            }
+            const response = await fetch(generatedImage);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
             setIsDownloadSuccess(true);
             toast.success("Saved!");
             setTimeout(() => setIsDownloadSuccess(false), 2000);
         } catch (error) {
             console.error("Download failed", error);
-            toast.error("Download failed, opening in new tab...");
-            window.open(downloadUrl, '_blank');
+            window.open(generatedImage, '_blank');
         } finally {
             setIsDownloading(false);
         }
@@ -87,170 +67,114 @@ export default function ResultModal({
         <AnimatePresence>
             {isOpen && (
                 <motion.div
+                    className="rm-overlay"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
                     onClick={onClose}
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        zIndex: 9999,
-                        background: '#000',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer'
-                    }}
                 >
-                    {/* Subtle vignette effect */}
-                    <div style={{
-                        position: 'absolute',
-                        inset: 0,
-                        background: 'radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.4) 100%)',
-                        pointerEvents: 'none'
-                    }} />
-
-                    {/* Loading spinner before image loads */}
-                    {!isImageLoaded && generationMode !== 'video' && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            style={{
-                                position: 'absolute',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}
-                        >
-                            <Loader2 size={40} className="animate-spin" style={{ color: 'rgba(255,255,255,0.3)' }} />
-                        </motion.div>
-                    )}
-
-                    {/* Main Image/Video with cinematic reveal */}
                     <motion.div
-                        initial={{ scale: 1.02, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.98, opacity: 0 }}
-                        transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                        className="rm-content"
+                        initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0.95, opacity: 0, y: 20 }}
                         onClick={(e) => e.stopPropagation()}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            width: '100%',
-                            height: '100%',
-                            padding: '40px',
-                            cursor: 'default'
-                        }}
                     >
-                        {generationMode === 'video' ? (
-                            <video
-                                src={generatedImage}
-                                controls
-                                autoPlay
-                                loop
-                                style={{
-                                    maxWidth: '100%',
-                                    maxHeight: '100%',
-                                    objectFit: 'contain'
-                                }}
-                            />
-                        ) : (
-                            <motion.img
-                                ref={imageRef}
-                                src={generatedImage}
-                                crossOrigin="anonymous"
-                                alt={prompt || "AI Generated Artwork"}
-                                onLoad={() => setIsImageLoaded(true)}
-                                initial={{ opacity: 0, filter: 'blur(10px)' }}
-                                animate={{
-                                    opacity: isImageLoaded ? 1 : 0,
-                                    filter: isImageLoaded ? 'blur(0px)' : 'blur(10px)'
-                                }}
-                                transition={{ duration: 0.6, ease: 'easeOut' }}
-                                style={{
-                                    maxWidth: '100%',
-                                    maxHeight: '100%',
-                                    objectFit: 'contain'
-                                }}
-                            />
-                        )}
-                    </motion.div>
+                        <button className="rm-close-btn" onClick={onClose}>
+                            <X size={24} />
+                        </button>
 
-                    {/* Minimal download button - bottom center */}
-                    <motion.button
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 20 }}
-                        transition={{ delay: 0.2, duration: 0.3 }}
-                        onClick={(e) => { e.stopPropagation(); handleDownload(); }}
-                        disabled={isDownloading}
-                        style={{
-                            position: 'absolute',
-                            bottom: '32px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            background: isDownloadSuccess ? 'rgba(34, 197, 94, 0.9)' : 'rgba(255,255,255,0.1)',
-                            backdropFilter: 'blur(12px)',
-                            border: '1px solid rgba(255,255,255,0.2)',
-                            color: 'white',
-                            padding: '12px 24px',
-                            borderRadius: '50px',
-                            fontSize: '0.9rem',
-                            fontWeight: '600',
-                            cursor: isDownloading ? 'wait' : 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            transition: 'all 0.2s ease',
-                            zIndex: 10
-                        }}
-                        onMouseOver={(e) => {
-                            if (!isDownloading && !isDownloadSuccess) {
-                                e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-                            }
-                        }}
-                        onMouseOut={(e) => {
-                            if (!isDownloadSuccess) {
-                                e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                            }
-                        }}
-                    >
-                        {isDownloading ? (
-                            <Loader2 size={18} className="animate-spin" />
-                        ) : isDownloadSuccess ? (
-                            <Check size={18} />
-                        ) : (
-                            <Download size={18} />
-                        )}
-                        {isDownloading ? 'Saving...' : isDownloadSuccess ? 'Saved!' : 'Download'}
-                    </motion.button>
+                        <div className="rm-image-area">
+                            {!isImageLoaded && generationMode !== 'video' && (
+                                <Loader2 className="animate-spin" size={40} style={{ color: 'rgba(255,255,255,0.2)' }} />
+                            )}
+                            {generationMode === 'video' ? (
+                                <video
+                                    src={generatedImage}
+                                    controls autoPlay loop
+                                    className="rm-main-img"
+                                />
+                            ) : (
+                                <img
+                                    src={generatedImage}
+                                    alt={prompt}
+                                    onLoad={() => setIsImageLoaded(true)}
+                                    className="rm-main-img"
+                                    style={{ opacity: isImageLoaded ? 1 : 0 }}
+                                />
+                            )}
+                        </div>
 
-                    {/* Click anywhere hint - fades after 2s */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 0.4 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ delay: 0.5 }}
-                        style={{
-                            position: 'absolute',
-                            top: '24px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            color: 'white',
-                            fontSize: '0.8rem',
-                            fontWeight: '500',
-                            pointerEvents: 'none'
-                        }}
-                    >
-                        <motion.span
-                            animate={{ opacity: [0.4, 0] }}
-                            transition={{ delay: 2, duration: 1 }}
-                        >
-                            Click anywhere to close
-                        </motion.span>
+                        <div className="rm-sidebar">
+                            <h2>Creation Inspector</h2>
+
+                            <div className="rm-section">
+                                <label>Prompt</label>
+                                <div className="rm-prompt-wrapper">
+                                    <div className={`rm-prompt ${isPromptExpanded ? 'expanded' : ''}`}>
+                                        {prompt}
+                                    </div>
+                                    {!isPromptExpanded && prompt.length > 60 && <div className="rm-prompt-fade" />}
+                                </div>
+                                {prompt.length > 60 && (
+                                    <button
+                                        className="rm-prompt-toggle"
+                                        onClick={() => setIsPromptExpanded(!isPromptExpanded)}
+                                    >
+                                        {isPromptExpanded ? 'Show less' : 'Show more'}
+                                    </button>
+                                )}
+                            </div>
+
+                            {metadata && (
+                                <div className="rm-section">
+                                    <label>Technical Details</label>
+                                    <div className="rm-tech-grid">
+                                        <div className="rm-tech-item">
+                                            <span>Model</span>
+                                            <p>{metadata.model || 'Standard'}</p>
+                                        </div>
+                                        <div className="rm-tech-item">
+                                            <span>Seed</span>
+                                            <p>{metadata.seed || 'Auto'}</p>
+                                        </div>
+                                        <div className="rm-tech-item">
+                                            <span>CFG Scale</span>
+                                            <p>{metadata.cfg || '7.5'}</p>
+                                        </div>
+                                        <div className="rm-tech-item">
+                                            <span>Steps</span>
+                                            <p>{metadata.steps || '20'}</p>
+                                        </div>
+                                        <div className="rm-tech-item">
+                                            <span>Aspect Ratio</span>
+                                            <p>{metadata.aspectRatio || '1:1'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="rm-actions">
+                                <button className="rm-btn rm-btn-primary" onClick={() => { onReuseSettings?.(); toast.success("Settings applied!"); }}>
+                                    <RefreshCw size={18} />
+                                    Reuse Settings
+                                </button>
+                                <button className="rm-btn rm-btn-secondary" onClick={handleDownload}>
+                                    {isDownloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                                    {isDownloading ? 'Saving...' : 'Download High-Res'}
+                                </button>
+                                <button
+                                    className="rm-btn rm-btn-secondary"
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(prompt);
+                                        toast.success("Prompt copied!");
+                                    }}
+                                >
+                                    <Copy size={18} />
+                                    Copy Prompt
+                                </button>
+                            </div>
+                        </div>
                     </motion.div>
                 </motion.div>
             )}

@@ -24,7 +24,7 @@
   138:38  warning  Do not use Array index in keys  react/no-array-index-key
 
 /Users/bozoegg/Desktop/DreamBeesv11/src/components/generator/ResultModal.jsx
-  16:11  error  'imageRef' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
+  1:17  error  'useRef' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  no-unused-vars
 
 /Users/bozoegg/Desktop/DreamBeesv11/src/contexts/AuthContext.jsx
    67:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console

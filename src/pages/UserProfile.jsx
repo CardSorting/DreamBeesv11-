@@ -1,49 +1,69 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import toast from 'react-hot-toast';
-import SEO from '../components/SEO';
-import { useUserInteractions } from '../contexts/UserInteractionsContext';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useModel } from '../contexts/ModelContext';
-import { Heart, Bookmark, AlertCircle, Lock, Edit2, X } from 'lucide-react';
 import { db } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { isValidUsername } from '../utils/usernameValidation';
-import { getOptimizedImageUrl } from '../utils';
-import ShowcaseModal from '../components/ShowcaseModal';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    Heart,
+    Bookmark,
+    Edit2,
+    AlertCircle,
+    ChevronLeft,
+    X,
+    Lock,
+    ExternalLink,
+    Grid,
+    Layout,
+    ArrowRight,
+    Sparkles,
+    RefreshCw,
+    Copy,
+    Share2
+} from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import SEO from '../components/SEO';
+import { useUserInteractions } from '../contexts/UserInteractionsContext';
+import { useModel } from '../contexts/ModelContext';
 import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
-import { Loader2 } from 'lucide-react';
+import './UserProfile.css';
+
+const PAGE_SIZE = 20;
 
 export default function UserProfile() {
     const { currentUser } = useAuth();
-    const { availableModels } = useModel();
-    const {
-        likes: ctxLikes,
-        bookmarks: ctxBookmarks,
-        userProfile
-    } = useUserInteractions();
-
-    const likes = useMemo(() => ctxLikes || [], [ctxLikes]);
-    const bookmarks = useMemo(() => ctxBookmarks || [], [ctxBookmarks]);
-
-    // Routing
-    const { tab } = useParams();
+    const { likes, bookmarks, userProfile } = useUserInteractions();
     const navigate = useNavigate();
-    const [searchParams, setSearchParams] = useSearchParams();
-    const activeTab = tab === 'saved' ? 'saved' : 'liked'; // Default to 'liked'
+    const location = useLocation();
 
-    // Deep Linking State
-    const [selectedImage, setSelectedImage] = useState(null);
-    const [selectedModel, setSelectedModel] = useState(null);
-
-    // Profile Editing State
     const [isEditing, setIsEditing] = useState(false);
-    const [editForm, setEditForm] = useState({ username: '', displayPreference: 'name' });
-    const [usernameError, setUsernameError] = useState(null);
     const [savingProfile, setSavingProfile] = useState(false);
+    const [usernameError, setUsernameError] = useState(null);
+    const [editForm, setEditForm] = useState({
+        username: '',
+        displayPreference: 'name'
+    });
 
-    // Initialize Edit Form
+    // Determine active tab from URL path
+    const activeTab = location.pathname.includes('/saved') ? 'saved' : 'liked';
+    const displayedItems = activeTab === 'liked' ? likes : bookmarks;
+
+    // Pagination/Lazy Load state
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+    const visibleItems = displayedItems.slice(0, visibleCount);
+
+    // Setup intersection observer for "Load More"
+    const { ref: loadMoreRef, entry } = useIntersectionObserver({
+        threshold: 0.1,
+        rootMargin: '200px',
+    });
+
+    useEffect(() => {
+        if (entry?.isIntersecting && visibleCount < displayedItems.length) {
+            setVisibleCount(prev => prev + PAGE_SIZE);
+        }
+    }, [entry?.isIntersecting, displayedItems.length, visibleCount]);
+
     useEffect(() => {
         if (userProfile) {
             setEditForm({
@@ -53,282 +73,242 @@ export default function UserProfile() {
         }
     }, [userProfile]);
 
-    // --- Deep Link Handling ---
-    useEffect(() => {
-        const viewId = searchParams.get('view');
-        if (!viewId) {
-            if (selectedImage) {
-                setSelectedImage(null);
-                setSelectedModel(null);
-            }
+    const handleSaveProfile = async () => {
+        if (!editForm.username) {
+            setUsernameError('Username is required');
             return;
         }
 
-        if (selectedImage && selectedImage.id === viewId) return;
-
-        // Try finding in local lists first
-        const allItems = [...likes, ...bookmarks];
-        const found = allItems.find(img => img.id === viewId);
-
-        if (found) {
-            setSelectedImage(found);
-            setSelectedModel(availableModels?.find(m => m.id === found.modelId) || { name: 'Unknown Model', id: 'unknown' });
-        } else {
-            // Fetch if not found locally
-            const fetchImage = async () => {
-                try {
-                    // Try showcase first
-                    let docRef = doc(db, 'model_showcase_images', viewId);
-                    let snapshot = await getDoc(docRef);
-
-                    if (!snapshot.exists()) {
-                        docRef = doc(db, 'generations', viewId);
-                        snapshot = await getDoc(docRef);
-                    }
-                    if (!snapshot.exists()) {
-                        docRef = doc(db, 'memes', viewId);
-                        snapshot = await getDoc(docRef);
-                    }
-
-                    if (snapshot.exists()) {
-                        const data = snapshot.data();
-                        setSelectedImage({ id: snapshot.id, ...data });
-                        setSelectedModel(availableModels?.find(m => m.id === data.modelId) || { name: 'Unknown Model', id: 'unknown' });
-                    }
-                } catch (err) {
-                    console.error("Error fetching deep-linked image:", err);
-                }
-            };
-            fetchImage();
+        if (editForm.username.length < 3) {
+            setUsernameError('Username must be at least 3 characters');
+            return;
         }
-    }, [searchParams, likes, bookmarks, availableModels, selectedImage]);
 
-    const openLightbox = (item) => {
-        setSelectedImage(item);
-        setSelectedModel(availableModels?.find(m => m.id === item.modelId) || { name: 'Unknown Model', id: 'unknown' });
-        setSearchParams(prev => {
-            const newParams = new URLSearchParams(prev);
-            newParams.set('view', item.id);
-            return newParams;
-        });
-    };
-
-    const closeLightbox = () => {
-        setSelectedImage(null);
-        setSelectedModel(null);
-        setSearchParams(prev => {
-            const newParams = new URLSearchParams(prev);
-            newParams.delete('view');
-            return newParams;
-        });
-    };
-
-    const handleSaveProfile = async () => {
-        if (!currentUser) return;
-        if (!userProfile?.username && editForm.username) {
-            const validation = isValidUsername(editForm.username);
-            if (!validation.valid) {
-                setUsernameError(validation.error);
-                return;
-            }
-        }
         setSavingProfile(true);
         try {
-            const userRef = doc(db, 'users', currentUser.uid);
-            const updateData = { displayPreference: editForm.displayPreference };
-            if (!userProfile?.username && editForm.username) {
-                updateData.username = editForm.username;
+            // Check if username is taken (if it changed)
+            if (editForm.username !== userProfile?.username) {
+                const usernameDoc = await getDoc(doc(db, 'usernames', editForm.username));
+                if (usernameDoc.exists()) {
+                    setUsernameError('Username is already taken');
+                    setSavingProfile(false);
+                    return;
+                }
             }
-            await setDoc(userRef, updateData, { merge: true });
-            toast.success("Profile updated");
+
+            // Update profile
+            await setDoc(doc(db, 'profiles', currentUser.uid), {
+                ...editForm,
+                updatedAt: new Date().toISOString()
+            }, { merge: true });
+
+            // Update username mapping
+            if (editForm.username !== userProfile?.username) {
+                await setDoc(doc(db, 'usernames', editForm.username), {
+                    uid: currentUser.uid
+                });
+            }
+
+            toast.success('Profile updated successfully');
             setIsEditing(false);
-        } catch {
-            toast.error("Failed to update profile");
+        } catch (error) {
+            console.error('Error saving profile:', error);
+            toast.error('Failed to update profile');
         } finally {
             setSavingProfile(false);
         }
     };
 
-    const displayedItems = activeTab === 'saved' ? bookmarks : likes;
+    const { availableModels } = useModel();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [selectedImage, setSelectedImage] = useState(null);
 
-    // --- Pagination for Large Datasets ---
-    const PAGE_SIZE = 15;
-    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-
-    // Reset visible count when switching tabs or items change
+    // Filter focus logic: Handle deep linking ?view=ID
     useEffect(() => {
-        setVisibleCount(PAGE_SIZE);
-    }, [activeTab, displayedItems.length]);
-
-    const visibleItems = useMemo(() => {
-        return displayedItems.slice(0, visibleCount);
-    }, [displayedItems, visibleCount]);
-
-    const sentinelRef = useIntersectionObserver({
-        onIntersect: () => {
-            if (visibleCount < displayedItems.length) {
-                setVisibleCount(prev => prev + PAGE_SIZE);
+        const viewId = searchParams.get('view');
+        if (viewId) {
+            // Find in current items or fetch if needed
+            const found = displayedItems.find(img => img.id === viewId || img.id.replace('show_', '') === viewId);
+            if (found) {
+                setSelectedImage(found);
             }
-        },
-        enabled: visibleCount < displayedItems.length,
-        rootMargin: '0px 0px 800px 0px'
-    });
+        } else {
+            setSelectedImage(null);
+        }
+    }, [searchParams, displayedItems]);
+
+    const openLightbox = (item) => {
+        const id = item.id.replace('show_', '');
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            next.set('view', id);
+            return next;
+        });
+    };
+
+    const closeLightbox = () => {
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev);
+            next.delete('view');
+            return next;
+        });
+    };
+
+    const getOptimizedImageUrl = (url) => {
+        if (!url) return '';
+        if (url.includes('firebasestorage.googleapis.com')) return url;
+        // Logic for Cloudflare image re-optimization if needed
+        return url;
+    };
 
     if (!currentUser) {
         return (
-            <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
-                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center max-w-md">
-                    <AlertCircle className="mx-auto text-zinc-500 mb-4" size={48} />
-                    <h2 className="text-2xl font-bold mb-2">Access Restricted</h2>
-                    <p className="text-zinc-400">Please sign in to view your personal studio.</p>
+            <div className="up-page-restricted">
+                <div className="up-modal text-center">
+                    <AlertCircle className="mx-auto" size={48} style={{ color: 'var(--studio-text-muted)', marginBottom: '24px' }} />
+                    <h2 style={{ marginBottom: '8px' }}>Access Restricted</h2>
+                    <p style={{ color: 'var(--studio-text-muted)' }}>Please sign in to view your personal studio.</p>
                 </div>
             </div>
         );
     }
 
-
     return (
-        <div className="min-h-screen bg-black text-white pb-20 pt-24 px-4 md:px-12 max-w-[1600px] mx-auto">
+        <div className="up-page">
             <SEO title="My Studio" noindex={true} />
 
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
-                <div>
-                    <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-zinc-400">
+            {/* Header Section */}
+            <header className="up-header">
+                <div className="up-title-block">
+                    <motion.h1
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                    >
                         My Studio
-                    </h1>
-                    <p className="text-zinc-500 mt-2 text-lg">
-                        Your personal collection.
-                    </p>
+                    </motion.h1>
+                    <motion.p
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.1 }}
+                    >
+                        Your curated collection of creative generations.
+                    </motion.p>
                 </div>
-                <button
+                <motion.button
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
                     onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 rounded-lg transition-colors text-sm font-medium"
+                    className="up-btn-edit"
                 >
-                    <Edit2 size={16} /> Edit Profile
-                </button>
-            </div>
+                    <Edit2 size={16} />
+                    <span>Edit Profile</span>
+                </motion.button>
+            </header>
 
-            {/* Tabs */}
-            <div className="flex gap-4 mb-8 border-b border-zinc-800 pb-1">
+            {/* Navigation Tabs */}
+            <nav className="up-nav">
                 <button
                     onClick={() => navigate('/profile/liked')}
-                    className={`pb-3 px-2 text-lg font-medium transition-colors relative ${activeTab === 'liked' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    className={`up-tab ${activeTab === 'liked' ? 'active' : ''}`}
                 >
-                    <div className="flex items-center gap-2">
-                        <Heart size={20} className={activeTab === 'liked' ? "fill-pink-500 text-pink-500" : ""} />
+                    <div className="flex items-center">
+                        <Heart size={18} style={{ marginRight: '8px' }} className={activeTab === 'liked' ? "fill-pink-500 text-pink-500" : ""} />
                         Favorites
-                        <span className="text-xs bg-zinc-900 px-2 py-0.5 rounded-full text-zinc-400">{likes.length}</span>
+                        <span className="up-tab-count">{likes.length}</span>
                     </div>
-                    {activeTab === 'liked' && (
-                        <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />
-                    )}
                 </button>
                 <button
                     onClick={() => navigate('/profile/saved')}
-                    className={`pb-3 px-2 text-lg font-medium transition-colors relative ${activeTab === 'saved' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    className={`up-tab ${activeTab === 'saved' ? 'active' : ''}`}
                 >
-                    <div className="flex items-center gap-2">
-                        <Bookmark size={20} className={activeTab === 'saved' ? "fill-blue-500 text-blue-500" : ""} />
+                    <div className="flex items-center">
+                        <Bookmark size={18} style={{ marginRight: '8px' }} className={activeTab === 'saved' ? "fill-blue-500 text-blue-500" : ""} />
                         Saved
-                        <span className="text-xs bg-zinc-900 px-2 py-0.5 rounded-full text-zinc-400">{bookmarks.length}</span>
+                        <span className="up-tab-count">{bookmarks.length}</span>
                     </div>
-                    {activeTab === 'saved' && (
-                        <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />
-                    )}
                 </button>
-            </div>
+            </nav>
 
-            {/* Content Grid */}
-            {displayedItems.length > 0 ? (
-                <section className="profile-gallery">
-                    <div className="masonry-grid">
-                        <AnimatePresence mode='popLayout'>
-                            {visibleItems.map((item, index) => {
-                                // Deterministic ratio calculation if not present
-                                const ratios = ['1/1', '3/4', '4/5', '2/3', '1/1', '3/5'];
-                                const ratio = item.aspectRatio || ratios[index % ratios.length];
-
-                                return (
+            {/* Gallery Content */}
+            <section className="up-gallery">
+                {displayedItems.length > 0 ? (
+                    <>
+                        <div className="up-grid">
+                            <AnimatePresence mode='popLayout'>
+                                {visibleItems.map((item, index) => (
                                     <motion.div
                                         layout
-                                        initial={{ opacity: 0, y: 20 }}
+                                        initial={{ opacity: 0, y: 30 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, scale: 0.9 }}
-                                        transition={{ duration: 0.3, delay: (index % PAGE_SIZE) * 0.05 }}
+                                        transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1], delay: (index % PAGE_SIZE) * 0.04 }}
                                         key={item.id}
-                                        className="masonry-item group"
+                                        className="up-card"
                                         onClick={() => openLightbox(item)}
                                     >
-                                        <div className="image-card">
-                                            <div className="image-wrapper" style={{ aspectRatio: ratio }}>
-                                                <img
-                                                    src={getOptimizedImageUrl(item.thumbnailUrl || item.imageUrl || item.url)}
-                                                    alt={item.prompt}
-                                                    loading={index < 10 ? "eager" : "lazy"}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                                                    <p className="text-white text-[10px] font-mono line-clamp-2 opacity-90 leading-tight">
-                                                        {item.prompt}
-                                                    </p>
-                                                </div>
+                                        <div className="up-img-wrapper">
+                                            <img
+                                                src={getOptimizedImageUrl(item.thumbnailUrl || item.imageUrl || item.url)}
+                                                alt={item.prompt}
+                                                loading={index < 8 ? "eager" : "lazy"}
+                                            />
+                                            <div className="up-card-overlay">
+                                                <p className="up-card-prompt">{item.prompt}</p>
+                                                <div className="up-badge">View Creation</div>
                                             </div>
                                         </div>
                                     </motion.div>
-                                );
-                            })}
-                        </AnimatePresence>
-                    </div>
+                                ))}
+                            </AnimatePresence>
+                        </div>
 
-                    {/* Sentinel for Infinite Scroll */}
-                    <div ref={sentinelRef} className="h-20 w-full flex items-center justify-center">
+                        {/* Pagination Sentinel */}
                         {visibleCount < displayedItems.length && (
-                            <div className="flex items-center gap-2 text-zinc-500 text-sm font-medium animate-pulse">
-                                <Loader2 size={16} className="animate-spin" />
-                                Loading more creations...
+                            <div ref={loadMoreRef} className="flex justify-center py-12">
+                                <div className="text-muted animate-pulse">Loading more...</div>
                             </div>
                         )}
-                    </div>
-                </section>
-            ) : (
-                <div className="flex flex-col items-center justify-center py-20 text-zinc-500 border-2 border-dashed border-zinc-900 rounded-3xl">
-                    {activeTab === 'liked' ? <Heart size={48} className="mb-4 opacity-20" /> : <Bookmark size={48} className="mb-4 opacity-20" />}
-                    <h3 className="text-xl font-bold text-zinc-400 mb-2">
-                        {activeTab === 'liked' ? "No Favorites Yet" : "No Saved Items"}
-                    </h3>
-                    <p className="max-w-sm text-center opacity-60">
-                        {activeTab === 'liked'
-                            ? "Tap the heart on images you love to find them here."
-                            : "Bookmark generations to build your personal collection."}
-                    </p>
-                </div>
-            )}
+                    </>
+                ) : (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="up-empty"
+                    >
+                        <div className="up-empty-icon">
+                            {activeTab === 'liked' ? <Heart size={64} /> : <Bookmark size={64} />}
+                        </div>
+                        <h3>Your collection is empty</h3>
+                        <p>
+                            {activeTab === 'liked'
+                                ? "Favorite images in the explore feed to see them appear here."
+                                : "Bookmark generations you'd like to revisit later."}
+                        </p>
+                    </motion.div>
+                )}
+            </section>
 
             {/* Edit Profile Modal */}
             <AnimatePresence>
                 {isEditing && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                    <div className="up-modal-backdrop">
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl relative"
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="up-modal"
                         >
-                            <button
-                                onClick={() => setIsEditing(false)}
-                                className="absolute top-4 right-4 text-zinc-500 hover:text-white"
-                            >
-                                <X size={20} />
+                            <button onClick={() => setIsEditing(false)} className="up-modal-close">
+                                <X size={24} />
                             </button>
 
-                            <h2 className="text-xl font-bold mb-6">Edit Profile</h2>
+                            <h2>Edit Profile</h2>
 
-                            <div className="space-y-6">
-                                <div>
-                                    <label className="block text-sm text-zinc-400 mb-2">Username</label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-3 text-zinc-500">@</span>
+                            <div className="up-form">
+                                <div className="up-form-group">
+                                    <label className="up-label">Username</label>
+                                    <div className="up-input-container">
+                                        <span className="up-input-prefix">@</span>
                                         <input
                                             type="text"
                                             value={editForm.username}
@@ -340,31 +320,32 @@ export default function UserProfile() {
                                                 }
                                             }}
                                             disabled={!!userProfile?.username}
-                                            className={`w-full bg-black border ${usernameError ? 'border-red-500' : 'border-zinc-800'} rounded-lg py-2.5 pl-8 pr-10 text-white outline-none focus:border-purple-500 transition-colors ${userProfile?.username ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            className="up-input"
                                             placeholder="username"
+                                            style={{ paddingLeft: '40px', opacity: userProfile?.username ? 0.6 : 1 }}
                                         />
-                                        {userProfile?.username && <Lock className="absolute right-3 top-3 text-zinc-600" size={14} />}
+                                        {userProfile?.username && <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600" size={14} />}
                                     </div>
-                                    {usernameError && <p className="text-red-500 text-xs mt-1.5">{usernameError}</p>}
-                                    {userProfile?.username && <p className="text-zinc-600 text-xs mt-1.5">Username cannot be changed.</p>}
+                                    {usernameError && <p className="up-error">{usernameError}</p>}
+                                    {userProfile?.username && <p className="up-error" style={{ color: 'var(--studio-text-dim)' }}>Username cannot be changed.</p>}
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm text-zinc-400 mb-2">Display Name Preference</label>
-                                    <div className="grid grid-cols-2 gap-3">
+                                <div className="up-form-group">
+                                    <label className="up-label">Display Name Preference</label>
+                                    <div className="up-choice-grid">
                                         <button
                                             onClick={() => setEditForm({ ...editForm, displayPreference: 'name' })}
-                                            className={`p-3 rounded-lg border text-left transition-all ${editForm.displayPreference === 'name' ? 'bg-purple-500/10 border-purple-500 text-white' : 'bg-transparent border-zinc-800 text-zinc-500 hover:border-zinc-700'}`}
+                                            className={`up-choice-btn ${editForm.displayPreference === 'name' ? 'active' : ''}`}
                                         >
-                                            <div className="font-medium text-sm">Use Name</div>
-                                            <div className="text-xs opacity-60 mt-1 truncate">{currentUser?.displayName}</div>
+                                            <div className="up-choice-name">Use Name</div>
+                                            <div className="up-choice-sub">{currentUser?.displayName}</div>
                                         </button>
                                         <button
                                             onClick={() => setEditForm({ ...editForm, displayPreference: 'username' })}
-                                            className={`p-3 rounded-lg border text-left transition-all ${editForm.displayPreference === 'username' ? 'bg-purple-500/10 border-purple-500 text-white' : 'bg-transparent border-zinc-800 text-zinc-500 hover:border-zinc-700'}`}
+                                            className={`up-choice-btn ${editForm.displayPreference === 'username' ? 'active' : ''}`}
                                         >
-                                            <div className="font-medium text-sm">Use Username</div>
-                                            <div className="text-xs opacity-60 mt-1 truncate">@{editForm.username || '...'}</div>
+                                            <div className="up-choice-name">Use Username</div>
+                                            <div className="up-choice-sub">@{editForm.username || '...'}</div>
                                         </button>
                                     </div>
                                 </div>
@@ -372,24 +353,98 @@ export default function UserProfile() {
                                 <button
                                     onClick={handleSaveProfile}
                                     disabled={savingProfile}
-                                    className="w-full bg-white text-black font-bold py-3 rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                                    className="up-btn-primary"
                                 >
-                                    {savingProfile ? 'Saving...' : 'Save Changes'}
+                                    {savingProfile ? 'Saving Changes...' : 'Save Profile'}
                                 </button>
                             </div>
                         </motion.div>
                     </div>
                 )}
             </AnimatePresence>
+            {/* Lightbox Modal */}
+            <AnimatePresence>
+                {selectedImage && (
+                    <motion.div
+                        className="up-lightbox"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={closeLightbox}
+                    >
+                        <motion.div
+                            className="up-lightbox-content"
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <button className="up-close-btn" onClick={closeLightbox}>
+                                <X size={24} />
+                            </button>
 
-            {/* Lightbox */}
-            {selectedImage && selectedModel && (
-                <ShowcaseModal
-                    image={selectedImage}
-                    model={selectedModel}
-                    onClose={closeLightbox}
-                />
-            )}
+                            <div className="up-lightbox-grid">
+                                <div className="up-lightbox-image-area">
+                                    <img
+                                        src={getOptimizedImageUrl(selectedImage.imageUrl || selectedImage.url)}
+                                        alt={selectedImage.prompt}
+                                        className="up-lightbox-img"
+                                    />
+                                </div>
+
+                                <div className="up-lightbox-sidebar">
+                                    <div className="up-sidebar-header">
+                                        <div className="up-model-badge">
+                                            <Sparkles size={14} />
+                                            <span>{availableModels.find(m => m.id === selectedImage.modelId)?.name || 'Studio Model'}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="up-sidebar-section">
+                                        <label>Prompt</label>
+                                        <p>{selectedImage.prompt}</p>
+                                    </div>
+
+                                    <div className="up-sidebar-actions">
+                                        <button
+                                            className="up-action-btn up-btn-primary"
+                                            onClick={() => {
+                                                const params = new URLSearchParams();
+                                                params.set('prompt', selectedImage.prompt);
+                                                if (selectedImage.modelId) params.set('model', selectedImage.modelId);
+                                                navigate(`/generate?${params.toString()}`);
+                                            }}
+                                        >
+                                            <RefreshCw size={18} />
+                                            Remix in Studio
+                                        </button>
+                                        <button
+                                            className="up-action-btn"
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(selectedImage.prompt);
+                                                // toast helper could be used here
+                                            }}
+                                        >
+                                            <Copy size={18} />
+                                            Copy Prompt
+                                        </button>
+                                        <button
+                                            className="up-action-btn"
+                                            onClick={() => {
+                                                const url = `${window.location.origin}${window.location.pathname}?view=${selectedImage.id.replace('show_', '')}`;
+                                                navigator.clipboard.writeText(url);
+                                            }}
+                                        >
+                                            <Share2 size={18} />
+                                            Copy Link
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

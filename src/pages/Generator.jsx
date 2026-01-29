@@ -33,7 +33,7 @@ import { useGenerationLogic } from '../hooks/generator/useGenerationLogic';
 export default function Generator() {
     // 1. Global Contexts
     const { currentUser } = useAuth();
-    const { selectedModel, setSelectedModel, availableModels, loading: _modelLoading, getShowcaseImages, rateGeneration } = useModel();
+    const { selectedModel, setSelectedModel, availableModels, loading: _modelLoading, getShowcaseImages } = useModel();
 
     // 2. State Management (Inlined from useGeneratorState)
     const [searchParams, setSearchParams] = useSearchParams();
@@ -86,7 +86,7 @@ export default function Generator() {
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         if (modeParam !== generationMode) setGenerationMode(modeParam);
-         
+
         if (tabParam !== activeTab) setActiveTab(tabParam);
     }, [modeParam, tabParam, generationMode, activeTab]);
 
@@ -143,7 +143,7 @@ export default function Generator() {
         if (!generating) {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             _setElapsedTime(prev => (prev !== 0 ? 0 : prev));
-             
+
             _setProgress(prev => (prev !== 0 ? 0 : prev));
             return;
         }
@@ -322,11 +322,11 @@ export default function Generator() {
             <Toaster position="bottom-center" toastOptions={{ style: { background: '#333', color: '#fff', borderRadius: '12px' } }} />
 
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', height: 'calc(100vh - 64px)', maxWidth: '1800px', margin: '0 auto' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', height: 'calc(100vh - 64px)', maxWidth: '1600px', margin: '0 auto' }}>
 
                 {/* 2. CENTER STAGE (Canvas & Controls) */}
-                <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '12px 16px', gap: '12px' }}>
-                    <div className="glass-panel custom-scrollbar" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px', overflowY: 'auto' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '8px 12px', gap: '8px' }}>
+                    <div className="glass-panel custom-scrollbar" style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '12px', overflowY: 'auto' }}>
                         {/* GeneratorCanvas removed. Showing placeholder or just controls container */}
 
 
@@ -453,8 +453,15 @@ export default function Generator() {
                         generatedImage={generatedImage}
                         generationMode={generationMode}
                         prompt={prompt}
-                        onRate={(rating) => currentJobId && rateGeneration(currentJobId, rating)}
-                        downloadUrl={generatedImage}
+                        metadata={{
+                            jobId: currentJobId,
+                            model: selectedModel?.name,
+                            seed: seed,
+                            cfg: cfg,
+                            steps: steps,
+                            aspectRatio: aspectRatio,
+                            negativePrompt: negPrompt
+                        }}
                     />
                 )}
                 {/* Fullscreen handled by result modal mostly, keeping this if needed for other contexts or removing if redundant. Keeping for now as fallback */}

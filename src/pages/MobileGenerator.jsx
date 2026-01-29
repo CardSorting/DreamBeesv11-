@@ -10,6 +10,7 @@ import { Toaster, toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import html2canvas from 'html2canvas';
 import SEO from '../components/SEO';
+import ResultModal from '../components/generator/ResultModal';
 
 // Format elapsed time helper
 const formatElapsedTime = (seconds) => {
@@ -33,7 +34,7 @@ export default function MobileGenerator() {
 
     const { isLiked: _isLiked, toggleLike: _toggleLike, isHidden: _isHidden, hidePost: _hidePost } = useUserInteractions();
     // UX State
-    const [expandedImage, setExpandedImage] = useState(null);
+    const [selectedMessage, setSelectedMessage] = useState(null);
     const [showModelSelector, setShowModelSelector] = useState(false);
 
     // Generation state
@@ -424,40 +425,19 @@ export default function MobileGenerator() {
                 </div>
             )}
 
-            {/* Lightbox */}
-            {expandedImage && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'black',
-                    zIndex: 100,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    animation: 'fadeIn 0.2s ease'
-                }} onClick={() => setExpandedImage(null)}>
-                    <button style={{
-                        position: 'absolute', top: '20px', right: '20px',
-                        background: 'rgba(255,255,255,0.1)',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '40px', height: '40px',
-                        color: 'white',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        cursor: 'pointer'
-                    }}>
-                        <X size={24} />
-                    </button>
-                    <img
-                        src={expandedImage}
-                        alt="Full View"
-                        style={{
-                            maxWidth: '100%', maxHeight: '100%',
-                            objectFit: 'contain',
-                            boxShadow: '0 0 50px rgba(0,0,0,0.5)'
-                        }}
-                        crossOrigin="anonymous"
-                    />
-                </div>
-            )}
+            {/* Replacement Lightbox with ResultModal */}
+            <ResultModal
+                isOpen={!!selectedMessage}
+                onClose={() => setSelectedMessage(null)}
+                generatedImage={selectedMessage?.content}
+                generationMode={selectedMessage?.type === 'video' ? 'video' : 'image'}
+                prompt={selectedMessage?.prompt}
+                metadata={{
+                    jobId: selectedMessage?.jobId,
+                    model: selectedMessage?.model,
+                    ...selectedMessage?.metadata
+                }}
+            />
 
 
             {/* Chat Area */}
@@ -569,7 +549,7 @@ export default function MobileGenerator() {
                                         <div
                                             id={`msg-image-${msg.id}`} // Target for screenshot
                                             style={{ position: 'relative', borderRadius: '20px 20px 0 0', overflow: 'hidden', borderBottom: '1px solid rgba(255,255,255,0.1)' }}
-                                            onClick={() => setExpandedImage(msg.content)}
+                                            onClick={() => setSelectedMessage(msg)}
                                         >
                                             <img
                                                 src={msg.content}
