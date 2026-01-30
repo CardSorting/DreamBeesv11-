@@ -16,7 +16,7 @@ import { fileURLToPath } from "url";
 // [REMOVED] const loadBalancer = new LoadBalancer();
 
 const ENDPOINT = 'https://mariecoderinc--sdxl-multi-model-a10g-model-web.modal.run';
-const DEFAULT_MODEL_ID = 'wai-illustrious';
+const DEFAULT_MODEL_ID = 'rin-anime-blend';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

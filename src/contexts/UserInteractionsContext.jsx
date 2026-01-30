@@ -51,7 +51,7 @@ export function UserInteractionsProvider({ children }) {
         credits: 5,
         subscriptionStatus: 'inactive',
         username: '',
-        displayPreference: 'name',
+        displayPreference: 'username',
         referralCode: '',
         referredBy: '',
         referralCount: 0
@@ -174,7 +174,7 @@ export function UserInteractionsProvider({ children }) {
                     isPremium: data.isPremium || false,
                     plan: data.plan || null,
                     createdAt: data.createdAt,
-                    displayPreference: data.displayPreference || 'name',
+                    displayPreference: data.displayPreference || 'username',
                     karma: data.karma !== undefined ? data.karma : 0,
                     birthday: data.birthday || null,
                     referralCode: data.referralCode || '',

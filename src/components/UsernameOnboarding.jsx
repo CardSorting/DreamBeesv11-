@@ -9,7 +9,7 @@ import './UsernameOnboarding.css';
 export default function UsernameOnboarding() {
     const { currentUser } = useAuth();
     const [username, setUsername] = useState('');
-    const [displayPreference, setDisplayPreference] = useState('name'); // 'name' or 'username'
+    const [displayPreference, setDisplayPreference] = useState('username'); // 'name' or 'username'
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
 

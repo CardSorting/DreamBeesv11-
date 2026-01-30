@@ -41,7 +41,7 @@ export default function UserProfile() {
     const [usernameError, setUsernameError] = useState(null);
     const [editForm, setEditForm] = useState({
         username: '',
-        displayPreference: 'name'
+        displayPreference: 'username'
     });
 
     // Determine active tab from URL path
@@ -76,7 +76,7 @@ export default function UserProfile() {
         if (userProfile) {
             setEditForm({
                 username: userProfile.username || '',
-                displayPreference: userProfile.displayPreference || 'name'
+                displayPreference: userProfile.displayPreference || 'username'
             });
         }
     }, [userProfile]);
