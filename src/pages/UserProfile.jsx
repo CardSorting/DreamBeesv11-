@@ -226,30 +226,38 @@ export default function UserProfile() {
 
             {/* Header Section */}
             <header className="up-header">
-                <div className="up-title-block">
-                    <motion.h1
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                    >
-                        My Studio
-                    </motion.h1>
-                    <motion.p
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 }}
-                    >
-                        Your curated collection of creative generations.
-                    </motion.p>
+                <div className="up-header-left">
+                    <div className="up-profile-visual">
+                        <Sparkles size={24} className="text-purple-500" />
+                    </div>
+                    <div className="up-title-block">
+                        <motion.h1
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                        >
+                            {userProfile?.username ? `${userProfile.username}'s Studio` : 'My Studio'}
+                        </motion.h1>
+                        <motion.p
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 }}
+                        >
+                            {activeTab === 'liked' ? 'Your favorite masterpieces' : 'Securely preserved generations'}
+                        </motion.p>
+                    </div>
                 </div>
-                <motion.button
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    onClick={() => setIsEditing(true)}
-                    className="up-btn-edit"
-                >
-                    <Edit2 size={16} />
-                    <span>Edit Profile</span>
-                </motion.button>
+
+                <div className="up-header-right">
+                    <motion.button
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        onClick={() => setIsEditing(true)}
+                        className="up-btn-edit"
+                    >
+                        <Edit2 size={16} />
+                        <span>Customize Studio</span>
+                    </motion.button>
+                </div>
             </header>
 
             {/* Navigation Tabs */}
