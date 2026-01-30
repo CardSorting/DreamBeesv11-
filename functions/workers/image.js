@@ -13,6 +13,7 @@ const ENDPOINTS = {
     'zit_base': 'https://mariecoderinc--zit-h100-stable-base-fastapi-app.modal.run',
     'sdxl_a10g': 'https://mariecoderinc--sdxl-multi-model-a10g-model-web.modal.run',
     'sdxl_h100': 'https://mariecoderinc--sdxl-multi-model-h100-model-web.modal.run',
+    'flux_klein': 'https://mariecoderinc--flux-klein-4b-flux-fastapi-app.modal.run',
     'flux2dev': 'https://api.cloudflare.com/client/v4/accounts/CLOUDFLARE_ACCOUNT_ID/ai/run/@cf/black-forest-labs/flux-2-dev'
 };
 
@@ -62,7 +63,51 @@ export const processImageTask = async (req) => {
         // --- MODEL EXECUTION ---
 
 
-        if (modelId === 'zit-model' || modelId === 'zit-base-model') {
+        if (modelId === 'flux-klein-4b') {
+            imageBuffer = await (async () => {
+                const endpoint = ENDPOINTS.flux_klein;
+                const body = {
+                    prompt,
+                    image: req.data.image, // Base64 input
+                    strength: 0.75, // Default strength
+                    steps: 4, // Fast 4-step
+                    width: resolution.width,
+                    height: resolution.height
+                };
+
+                logger.info(`[${requestId}] Running Flux Klein Edit`);
+                const submitResponse = await fetch(`${endpoint}/edit`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body)
+                });
+
+                if (!submitResponse.ok) {
+                    const e = await submitResponse.text();
+                    throw new Error(`Flux Klein Submission Failed (${submitResponse.status}): ${e}`);
+                }
+
+                const { job_id } = await submitResponse.json();
+
+                // Poll for result
+                for (let poll = 0; poll < 60; poll++) {
+                    await new Promise(r => setTimeout(r, 2000));
+                    let resultRes = await fetch(`${endpoint}/result/${job_id}`);
+
+                    if (resultRes.status === 200) {
+                        const ct = resultRes.headers.get('content-type') || '';
+                        if (ct.includes('image/')) {
+                            return Buffer.from(await resultRes.arrayBuffer());
+                        }
+                        // Check if JSON says still generating
+                        const json = await resultRes.json().catch(() => ({}));
+                        if (json.status === 'failed') throw new Error(json.error || "Flux Klein Generation Failed");
+                    }
+                }
+                throw new Error("Flux Klein generation timed out");
+            })();
+        }
+        else if (modelId === 'zit-model' || modelId === 'zit-base-model') {
             imageBuffer = await (async () => {
                 const endpoint = modelId === 'zit-base-model' ? ENDPOINTS.zit_base : ENDPOINTS.zit_h100;
                 const defaultSteps = modelId === 'zit-base-model' ? 28 : 9;

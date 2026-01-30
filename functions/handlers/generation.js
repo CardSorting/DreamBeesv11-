@@ -9,7 +9,7 @@ import { checkCumulativeLimit } from "../lib/abuse.js";
 export const handleCreateGenerationRequest = async (request) => {
     if (!process.env.FUNCTIONS_EMULATOR && request.app === undefined) { logger.warn("App Check verification failed (Warn Mode)"); }
     const uid = request.auth?.uid;
-    const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler, useTurbo, requestId } = request.data;
+    const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler, useTurbo, requestId, image } = request.data;
 
 
     if (!uid) { throw new HttpsError('unauthenticated', "User must be authenticated"); }
@@ -90,7 +90,8 @@ export const handleCreateGenerationRequest = async (request) => {
         await queue.enqueue({
             taskType: 'image',
             requestId: queueRef.id, userId: uid, prompt: cleanPrompt, negative_prompt, modelId, steps: safeSteps,
-            cfg: safeCfg, aspectRatio: safeAspectRatio, scheduler, useTurbo: !!useTurbo, promptHash, promptMetadata
+            cfg: safeCfg, aspectRatio: safeAspectRatio, scheduler, useTurbo: !!useTurbo, promptHash, promptMetadata,
+            image // Pass base64 image if present
         });
         return { requestId: queueRef.id };
     } catch (error) {

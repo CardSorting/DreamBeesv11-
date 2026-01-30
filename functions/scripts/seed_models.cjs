@@ -111,7 +111,8 @@ const MODELS = [
         description: 'Fast and efficient FLUX model variant (4B parameters).',
         type: 'Flux',
         order: 14,
-        isActive: true
+        isActive: true,
+        hideFromGenerator: true // Hidden from manual selection, used for Remix/Edit only
     },
     {
         id: 'gemini-2.5-flash-image',

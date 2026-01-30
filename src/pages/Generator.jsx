@@ -136,7 +136,7 @@ export default function Generator() {
     }, [selectedModel]);
 
     // Reference Image
-    const [referenceImage, setReferenceImage] = useState(null);
+    const [referenceImage, setReferenceImage] = useState(searchParams.get('image') || null);
 
     // Timer Logic
     useEffect(() => {
@@ -172,6 +172,7 @@ export default function Generator() {
     const { handleGenerate, cancelGeneration } = useGenerationLogic({
         prompt, selectedModel, generationMode,
         negPrompt, aspectRatio, steps, cfg, seed, useTurbo,
+        referenceImage, // Pass state to hook
         zaps,
         reels, subscriptionStatus,
         setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId, setActiveJob,

@@ -419,7 +419,7 @@ export default function ImageDetail() {
                     </div>
 
                     <div style={{ marginTop: '60px' }}>
-                        <Link to={`/?prompt=${encodeURIComponent(image.prompt)}&seed=${image.seed}&steps=${image.steps}&cfg=${image.cfg}`} className="btn btn-outline" style={{ width: '100%', justifyContent: 'center' }}>
+                        <Link to={`/generate?prompt=${encodeURIComponent(image.prompt)}&image=${encodeURIComponent(image.imageUrl)}&model=flux-klein-4b&seed=${image.seed}&steps=${image.steps}&cfg=${image.cfg}`} className="btn btn-outline" style={{ width: '100%', justifyContent: 'center' }}>
                             <RefreshCw size={16} style={{ marginRight: '8px' }} /> Remix in Studio
                         </Link>
                     </div>

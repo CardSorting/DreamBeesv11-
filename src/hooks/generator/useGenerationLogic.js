@@ -21,6 +21,7 @@ export function useGenerationLogic({
     setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId, setActiveJob,
     deductZapsOptimistically,
     rollbackZaps,
+    referenceImage, // Added to support img2img
     currentUser // Added to support auth check
 }) {
     const navigate = useNavigate();
@@ -238,7 +239,8 @@ export function useGenerationLogic({
                 cfg: cfg,
                 seed: seed,
                 useTurbo,
-                requestId // Pass the client-generated ID
+                requestId, // Pass the client-generated ID
+                image: referenceImage // Pass the reference image for img2img
             }, {
                 timeout: 540000,
                 toastErrors: false // We handle errors manually below
