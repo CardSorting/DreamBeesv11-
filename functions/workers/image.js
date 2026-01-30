@@ -2,9 +2,6 @@ import { db, FieldValue } from "../firebaseInit.js";
 import { getS3Client, fetchWithTimeout, logger, retryOperation } from "../lib/utils.js";
 import { B2_BUCKET, B2_PUBLIC_URL, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN } from "../lib/constants.js";
 // [REMOVED] import { vertexFlow } from "../lib/vertexFlow.js";
-import { GalmixClient } from "../lib/GalmixClient.js";
-
-const galmixClient = new GalmixClient();
 
 // Local helpers removed (unused)
 
@@ -103,12 +100,6 @@ export const processImageTask = async (req) => {
                     }
                 }
                 throw new Error(`${modelId} generation timed out`);
-            })();
-        }
-        else if (modelId === 'galmix') {
-            imageBuffer = await (async () => {
-                const galmixResult = await galmixClient.generateImage(prompt, { negative_prompt, steps });
-                return Buffer.from(galmixResult.result, 'base64');
             })();
         }
         else if (modelId === 'flux-2-dev') {

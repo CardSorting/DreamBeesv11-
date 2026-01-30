@@ -172,7 +172,7 @@ export default function Generator() {
     const { handleGenerate, cancelGeneration } = useGenerationLogic({
         prompt, selectedModel, generationMode,
         negPrompt, aspectRatio, steps, cfg, seed, useTurbo,
-        zaps: selectedModel?.id === 'galmix' ? 999 : zaps, // bypass local check
+        zaps,
         reels, subscriptionStatus,
         setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId, setActiveJob,
         deductZapsOptimistically,
@@ -405,7 +405,7 @@ export default function Generator() {
                     generationMode={generationMode} setGenerationMode={handleModeChange}
                     selectedModel={selectedModel}
                     setSelectedModel={setSelectedModel}
-                    availableModels={currentUser ? availableModels.filter(m => !m.hideFromGenerator) : availableModels.filter(m => m.id === 'galmix')}
+                    availableModels={availableModels.filter(m => !m.hideFromGenerator)}
                     setIsModelModalOpen={setIsModelModalOpen}
                     aspectRatio={aspectRatio} setAspectRatio={(val) => { setAspectRatio(val); updateParam('aspectRatio', val); }}
                     showcaseImages={showcaseImages} setPrompt={setPrompt} setGeneratedImage={setGeneratedImage}
@@ -433,7 +433,7 @@ export default function Generator() {
                     <ModelSelectorModal
                         isOpen={isModelModalOpen}
                         onClose={() => setIsModelModalOpen(false)}
-                        models={currentUser ? availableModels.filter(m => !m.hideFromGenerator) : availableModels.filter(m => m.id === 'galmix')}
+                        models={availableModels.filter(m => !m.hideFromGenerator)}
                         selectedModel={selectedModel}
                         onSelectModel={setSelectedModel}
                     />

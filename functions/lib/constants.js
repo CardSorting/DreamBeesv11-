@@ -5,7 +5,7 @@ export const VALID_MODELS = [
     'rin-anime-blend', 'rin-anime-popcute',
     'crystal-cuteness', 'veretoon-v10',
     'meowacc', 'dressup', 'flux-2-dev',
-    'galmix', 'gemini-2.5-flash-image'
+    'gemini-2.5-flash-image'
 ];
 
 export const B2_ENDPOINT = process.env.B2_ENDPOINT;

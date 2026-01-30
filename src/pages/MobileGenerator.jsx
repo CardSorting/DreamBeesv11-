@@ -20,7 +20,7 @@ const formatElapsedTime = (seconds) => {
 };
 
 export default function MobileGenerator() {
-    const { currentUser } = useAuth();
+    const { currentUser, zaps, subscriptionStatus } = useAuth();
     const { selectedModel, availableModels, setSelectedModel } = useModel();
 
     // Remote state
@@ -162,9 +162,9 @@ export default function MobileGenerator() {
         cfg: 7.0,
         seed: -1,
         useTurbo: false,
-        zaps: 999,
+        zaps,
         reels: 0,
-        subscriptionStatus: 'active',
+        subscriptionStatus,
         setGenerating,
         setGeneratedImage: (img) => {
             setGeneratedImage(img);
@@ -393,7 +393,6 @@ export default function MobileGenerator() {
                         </div>
                         {(availableModels || [])
                             .filter(m => m.isActive !== false && m.hideFromGenerator !== true)
-                            .filter(m => currentUser ? true : m.id === 'galmix')
                             .map(model => (
                                 <button
                                     key={model.id}

@@ -5,8 +5,6 @@ import { collection, getDocs, query, orderBy, where, limit, startAfter } from 'f
 import { useApi } from '../hooks/useApi';
 import { getOptimizedImageUrl } from '../utils';
 import { smartMix } from '../utils/feedHelpers'; // Helper for Feed Diversity
-import { useAuth } from './AuthContext';
-
 const ModelContext = createContext();
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -19,7 +17,6 @@ export function useModel() {
 }
 
 export function ModelProvider({ children }) {
-    const { currentUser } = useAuth();
     const [availableModels, setAvailableModels] = useState([]); // Models should always be an array
     const [selectedModel, setSelectedModel] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -132,24 +129,16 @@ export function ModelProvider({ children }) {
                 if (models.length > 0) {
                     let targetModel = null;
 
-                    // CHECK AUTH STATUS: Unauthenticated users MUST start with galmix
-                    if (!currentUser) {
-                        targetModel = models.find(m => m.id === 'galmix');
-                        if (targetModel) {
-                            console.log(`[ModelContext] Unauthenticated user. Enforcing default: ${targetModel.id}`);
-                        }
-                    }
-
-                    // If authenticated (or galmix not found for some reason), try saved model
-                    if (!targetModel && savedModelId) {
+                    // If authenticated, try saved model
+                    if (savedModelId) {
                         targetModel = models.find(m => m.id === savedModelId);
                     }
 
                     // Only set default if no saved model and no current selection
                     // Use a ref to check current state without causing dependency issues
                     if (!targetModel && !selectedModel) {
-                        // Default to galmix if not saved, fallback to wai-illustrious
-                        targetModel = models.find(m => m.id === 'galmix') || models.find(m => m.id === 'wai-illustrious') || models[0];
+                        // Default to zit-base-model if not saved, fallback to wai-illustrious
+                        targetModel = models.find(m => m.id === 'zit-base-model') || models.find(m => m.id === 'wai-illustrious') || models[0];
                         console.log(`[ModelContext] Defaulting to: ${targetModel?.id}`);
                     }
 
@@ -173,16 +162,6 @@ export function ModelProvider({ children }) {
     }, []); // Intentionally empty - only run on mount (currentUser is captured as initial value, which is fine due to AuthProvider blocking)
 
 
-    // Enforce Galmix for unauthenticated users (e.g. on logout)
-    useEffect(() => {
-        if (!loading && !currentUser && selectedModel && selectedModel.id !== 'galmix') {
-            const galmix = availableModels.find(m => m.id === 'galmix');
-            if (galmix) {
-                console.log("[ModelContext] User unauthenticated and on restricted model. Switching to galmix.");
-                setSelectedModel(galmix);
-            }
-        }
-    }, [currentUser, selectedModel, availableModels, loading]);
 
     // Persist selection
     useEffect(() => {

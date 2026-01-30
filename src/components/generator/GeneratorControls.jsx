@@ -130,17 +130,6 @@ export default function GeneratorControls({
                     </div>
 
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        {selectedModel?.id === 'galmix' && (
-                            <div className="pulse-glow" style={{
-                                display: 'flex', alignItems: 'center', gap: '6px',
-                                padding: '6px 12px', borderRadius: '20px',
-                                background: 'rgba(16, 185, 129, 0.15)',
-                                color: '#10b981', fontSize: '0.75rem', fontWeight: '700'
-                            }}>
-                                <Sparkles size={12} fill="currentColor" />
-                                <span>FREE GENERATION</span>
-                            </div>
-                        )}
 
                         <button
                             onClick={() => {
@@ -174,16 +163,16 @@ export default function GeneratorControls({
                             title={hasInsufficientZaps ? "Insufficient Zaps ⚡" : ""}
                             style={{
                                 padding: '10px 24px', fontSize: '1rem', fontWeight: '600',
-                                background: generating ? 'var(--color-surface-hover)' : (selectedModel?.id === 'galmix' ? '#10b981' : 'var(--color-accent-primary)'),
+                                background: generating ? 'var(--color-surface-hover)' : 'var(--color-accent-primary)',
                                 border: 'none', borderRadius: '10px', color: 'white',
                                 cursor: (generating || (!prompt && !referenceImage) || hasInsufficientZaps) ? 'not-allowed' : 'pointer',
                                 opacity: (generating || (!prompt && !referenceImage) || hasInsufficientZaps) ? 0.7 : 1,
-                                boxShadow: selectedModel?.id === 'galmix' ? '0 0 20px rgba(16, 185, 129, 0.4)' : '0 0 20px rgba(var(--color-accent-rgb), 0.3)',
+                                boxShadow: '0 0 20px rgba(var(--color-accent-rgb), 0.3)',
                                 display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.3s'
                             }}
                         >
                             {generating ? <Loader2 className="animate-spin" size={18} /> : (
-                                <> <Sparkles size={18} style={{ fill: 'currentColor' }} /> {selectedModel?.id === 'galmix' ? 'Generate Free' : 'Generate'} </>
+                                <> <Sparkles size={18} style={{ fill: 'currentColor' }} /> Generate </>
                             )}
                         </button>
                     </div>

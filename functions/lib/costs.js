@@ -8,7 +8,6 @@ export const ZAP_COSTS = {
     IMAGE_GENERATION: 0.5,           // Standard (non-subscriber)
     IMAGE_GENERATION_TURBO: 1.0,     // Turbo Mode
     IMAGE_GENERATION_PREMIUM: 1.0,   // Premium Models (e.g. ZIT)
-    IMAGE_GENERATION_FREE: 0.0,      // Free Models (e.g. Galmix)
 
     DRESS_UP: 0.5,
     SLIDESHOW: 3.0,

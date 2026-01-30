@@ -4,18 +4,13 @@ import { handleError, logger, getPromptHash, getPromptMetadata } from "../lib/ut
 import { generateVisionPrompt } from "../lib/ai.js";
 import { VALID_MODELS } from "../lib/constants.js";
 import { ZAP_COSTS, REEL_COSTS } from "../lib/costs.js";
-import { randomUUID } from 'crypto';
 import { checkCumulativeLimit } from "../lib/abuse.js";
 
 export const handleCreateGenerationRequest = async (request) => {
     if (!process.env.FUNCTIONS_EMULATOR && request.app === undefined) { logger.warn("App Check verification failed (Warn Mode)"); }
-    let uid = request.auth?.uid;
+    const uid = request.auth?.uid;
     const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler, useTurbo, requestId } = request.data;
 
-    // Allow unauthenticated GalMix requests
-    if (!uid && modelId === 'galmix') {
-        uid = `anonymous-galmix-${randomUUID()}`;
-    }
 
     if (!uid) { throw new HttpsError('unauthenticated', "User must be authenticated"); }
 
@@ -52,55 +47,43 @@ export const handleCreateGenerationRequest = async (request) => {
         }
         // -------------------------------
 
-        if (uid.startsWith('anonymous-galmix')) {
-            // Anonymous Path: No Zap deduction, no user doc optimization
-            await queueRef.set({
-                userId: uid, prompt: cleanPrompt, negative_prompt: negative_prompt || "", modelId: modelId || "galmix",
+        // Authenticated Path: Transaction for Zaps
+        const userRef = db.collection('users').doc(uid);
+
+        await db.runTransaction(async (t) => {
+            const userDoc = await t.get(userRef);
+            if (!userDoc.exists) { throw new HttpsError('not-found', "User not found"); }
+
+            // Idempotency check
+            const existingJob = await t.get(queueRef);
+            if (existingJob.exists) {
+                logger.info("Idempotent generation request", { uid, requestId });
+                return;
+            }
+
+            const userData = userDoc.data();
+            const isSubscriber = userData.subscriptionStatus === 'active';
+
+            const activeJobs = await t.get(db.collection('generation_queue').where('userId', '==', uid).where('status', 'in', ['queued', 'processing']).limit(11));
+            if (activeJobs.size >= 10) { throw new HttpsError('resource-exhausted', "Too many pending generations."); }
+
+            let cost = 0;
+            const isPremiumModel = ['zit-model', 'zit-base-model'].includes(modelId);
+
+            if (useTurbo || isPremiumModel) { cost = ZAP_COSTS.IMAGE_GENERATION_TURBO; }
+            else if (!isSubscriber) { cost = ZAP_COSTS.IMAGE_GENERATION; }
+
+            const effectiveZaps = (userData.zaps || 0);
+            if (effectiveZaps < cost && cost > 0) { throw new HttpsError('resource-exhausted', `Insufficient Zaps.`); }
+
+            if (cost > 0) { t.update(userRef, { zaps: FieldValue.increment(-cost), lastGenerationTime: FieldValue.serverTimestamp() }); }
+
+            t.set(queueRef, {
+                userId: uid, prompt: cleanPrompt, negative_prompt: negative_prompt || "", modelId: modelId || "wai-illustrious",
                 status: 'queued', aspectRatio: safeAspectRatio, steps: safeSteps, cfg: safeCfg, seed: seed || -1,
                 scheduler: scheduler || 'DPM++ 2M Karras', promptHash, promptMetadata, createdAt: FieldValue.serverTimestamp()
-            }, { merge: true }); // Merge in case it already exists but we want to be safe
-        } else {
-            // Authenticated Path: Transaction for Zaps
-            const userRef = db.collection('users').doc(uid);
-
-            await db.runTransaction(async (t) => {
-                const userDoc = await t.get(userRef);
-                if (!userDoc.exists) { throw new HttpsError('not-found', "User not found"); }
-
-                // Idempotency check
-                const existingJob = await t.get(queueRef);
-                if (existingJob.exists) {
-                    logger.info("Idempotent generation request", { uid, requestId });
-                    return;
-                }
-
-                const userData = userDoc.data();
-                const isSubscriber = userData.subscriptionStatus === 'active';
-
-                const activeJobs = await t.get(db.collection('generation_queue').where('userId', '==', uid).where('status', 'in', ['queued', 'processing']).limit(11));
-                if (activeJobs.size >= 10) { throw new HttpsError('resource-exhausted', "Too many pending generations."); }
-
-                let cost = 0;
-                const isPremiumModel = ['zit-model', 'zit-base-model'].includes(modelId);
-                const isFreeModel = ['galmix'].includes(modelId);
-
-                if (isFreeModel) { cost = ZAP_COSTS.IMAGE_GENERATION_FREE; }
-                else if (useTurbo || isPremiumModel) { cost = ZAP_COSTS.IMAGE_GENERATION_TURBO; }
-                else if (!isSubscriber) { cost = ZAP_COSTS.IMAGE_GENERATION; }
-
-                const effectiveZaps = (userData.zaps || 0);
-                if (effectiveZaps < cost && cost > 0) { throw new HttpsError('resource-exhausted', `Insufficient Zaps.`); }
-
-                if (cost > 0) { t.update(userRef, { zaps: FieldValue.increment(-cost), lastGenerationTime: FieldValue.serverTimestamp() }); }
-
-                t.set(queueRef, {
-                    userId: uid, prompt: cleanPrompt, negative_prompt: negative_prompt || "", modelId: modelId || "wai-illustrious",
-                    status: 'queued', aspectRatio: safeAspectRatio, steps: safeSteps, cfg: safeCfg, seed: seed || -1,
-                    scheduler: scheduler || 'DPM++ 2M Karras', promptHash, promptMetadata, createdAt: FieldValue.serverTimestamp()
-                });
             });
-        }
-
+        });
         const LOCATION = "us-central1";
         const queue = getFunctions().taskQueue(`locations/${LOCATION}/functions/urgentWorker`);
 

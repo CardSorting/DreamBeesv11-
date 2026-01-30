@@ -50,13 +50,7 @@ export const staleJobCleanup = onSchedule("every 10 minutes", async (_event) => 
                 });
 
                 // 2. Queue refund if applicable
-                if (userId && !userId.startsWith('anonymous-galmix')) {
-                    // We attempt refund during the cleanup run, or we could just log it. 
-                    // To keep the batch atomic, we'll do the updates first, then try refunds.
-                    // Actually, let's try to refund immediately for authenticated users.
-                    // Most generation tasks cost 0.5 or 1 or reels.
-                    // This is complex because we don't know the exact cost here without reading or having it in the doc.
-
+                if (userId && !userId.startsWith('anonymous')) {
                     const cost = data.cost || 0;
                     if (cost > 0) {
                         refundPromises.push(
@@ -69,7 +63,7 @@ export const staleJobCleanup = onSchedule("every 10 minutes", async (_event) => 
                                 }
                             }, { context: `Refund stale job ${requestId}` })
                         );
-                    } else if (collectionName === 'generation_queue' && data.modelId !== 'galmix') {
+                    } else if (collectionName === 'generation_queue') {
                         // fallback for missing cost in older docs or standard gen
                         const fallbackCost = 1.0;
                         refundPromises.push(
