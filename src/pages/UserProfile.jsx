@@ -224,6 +224,21 @@ export default function UserProfile() {
         <div className="up-page">
             <SEO title="My Studio" noindex={true} />
 
+            {/* Immersive Atmosphere */}
+            <div className="up-bg-atmosphere">
+                {[...Array(12)].map((_, i) => (
+                    <div
+                        key={i}
+                        className="up-dust"
+                        style={{
+                            left: `${Math.random() * 100}%`,
+                            animationDelay: `${Math.random() * 20}s`,
+                            opacity: Math.random() * 0.4
+                        }}
+                    />
+                ))}
+            </div>
+
             {/* Header Section */}
             <header className="up-header">
                 <div className="up-header-left">
@@ -244,6 +259,17 @@ export default function UserProfile() {
                         >
                             {activeTab === 'liked' ? 'Your favorite masterpieces' : 'Securely preserved generations'}
                         </motion.p>
+
+                        <div className="up-studio-stats">
+                            <div className="up-stat-item">
+                                <Heart size={12} className="text-pink-500 fill-pink-500" />
+                                <span>{likes.length} Favorite{likes.length !== 1 ? 's' : ''}</span>
+                            </div>
+                            <div className="up-stat-item">
+                                <Bookmark size={12} className="text-blue-500 fill-blue-500" />
+                                <span>{bookmarks.length} Saved</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -266,21 +292,15 @@ export default function UserProfile() {
                     onClick={() => navigate('/profile/liked')}
                     className={`up-tab ${activeTab === 'liked' ? 'active' : ''}`}
                 >
-                    <div className="flex items-center">
-                        <Heart size={18} style={{ marginRight: '8px' }} className={activeTab === 'liked' ? "fill-pink-500 text-pink-500" : ""} />
-                        Favorites
-                        <span className="up-tab-count">{likes.length}</span>
-                    </div>
+                    <Heart size={18} />
+                    Favorites
                 </button>
                 <button
                     onClick={() => navigate('/profile/saved')}
                     className={`up-tab ${activeTab === 'saved' ? 'active' : ''}`}
                 >
-                    <div className="flex items-center">
-                        <Bookmark size={18} style={{ marginRight: '8px' }} className={activeTab === 'saved' ? "fill-blue-500 text-blue-500" : ""} />
-                        Saved
-                        <span className="up-tab-count">{bookmarks.length}</span>
-                    </div>
+                    <Bookmark size={18} />
+                    Saved
                 </button>
             </nav>
 
