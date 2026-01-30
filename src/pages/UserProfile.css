@@ -455,7 +455,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 60px;
+    padding: 20px;
     animation: upFadeIn 0.3s ease;
 }
 
@@ -470,29 +470,31 @@
 }
 
 .up-lightbox-content {
-    width: 100%;
-    max-width: 1100px;
-    height: 90vh;
-    max-height: 800px;
-    background: rgba(10, 10, 12, 0.75);
+    width: 95vw;
+    max-width: 1600px;
+    height: 95vh;
+    max-height: none;
+    background: #000;
     border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 24px;
+    border-radius: 12px;
     overflow: hidden;
     position: relative;
     box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.05),
-        0 40px 80px -20px rgba(0, 0, 0, 0.9),
-        0 0 100px -20px rgba(147, 51, 234, 0.15);
-    /* Subtle purple glow */
+        0 40px 100px -20px rgba(0, 0, 0, 1),
+        0 0 100px -20px rgba(147, 51, 234, 0.2);
     backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    display: flex;
+    /* Stack image area and sidebar */
 }
 
+/* Ensure controls are visible over floating sidebar if needed, 
+   but usually they are in the image area center/edges */
 .up-close-btn {
     position: absolute;
     top: 24px;
-    right: 24px;
-    z-index: 10;
+    left: 24px;
+    /* Move to left to avoid sidebar clash */
+    z-index: 20;
     background: rgba(0, 0, 0, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #fff;
@@ -511,22 +513,18 @@
     color: #000;
 }
 
-.up-lightbox-grid {
-    display: grid;
-    grid-template-columns: 1.5fr 1fr;
-    height: 100%;
-}
-
 .up-lightbox-image-area {
+    flex: 1;
+    height: 100%;
     background: #000;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 0;
     overflow: auto;
-    /* Allow scrolling when zoomed */
     position: relative;
     cursor: zoom-in;
+    z-index: 1;
 }
 
 .up-nav-btn {
@@ -574,10 +572,10 @@
 }
 
 .up-lightbox-img {
-    max-width: 100%;
-    max-height: 100%;
+    width: 100%;
+    height: 100%;
     object-fit: contain;
-    border-radius: 4px;
+    border-radius: 0;
     /* Sharper corners for focus */
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
     /* Subtle rim */
@@ -594,12 +592,60 @@
 }
 
 .up-lightbox-sidebar {
-    padding: 48px 40px;
-    background: rgba(255, 255, 255, 0.02);
-    border-left: 1px solid rgba(255, 255, 255, 0.06);
+    width: 380px;
+    background: rgba(10, 10, 12, 0.8);
+    backdrop-filter: blur(40px) saturate(160%);
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 10;
+    padding: 32px;
     display: flex;
     flex-direction: column;
+    gap: 24px;
     overflow-y: auto;
+    box-shadow: -20px 0 60px rgba(0, 0, 0, 0.9);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 1;
+    visibility: visible;
+}
+
+.up-lightbox-sidebar.hidden {
+    width: 0;
+    padding: 0;
+    margin: 0;
+    opacity: 0;
+    visibility: hidden;
+    border-left: none;
+    pointer-events: none;
+}
+
+.up-sidebar-toggle-btn {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    z-index: 20;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.up-sidebar-toggle-btn:hover {
+    background: #fff;
+    color: #000;
+    transform: scale(1.05);
+}
+
+.up-sidebar-toggle-btn.collapsed {
+    background: #9333ea;
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 20px rgba(147, 51, 234, 0.3);
 }
 
 .up-sidebar-header {

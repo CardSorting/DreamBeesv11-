@@ -17,8 +17,9 @@ import {
     ArrowRight,
     Sparkles,
     RefreshCw,
-    Copy,
-    Download
+    Download,
+    PanelRightClose,
+    PanelRightOpen
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import html2canvas from 'html2canvas';
@@ -131,6 +132,7 @@ export default function UserProfile() {
     const [searchParams, setSearchParams] = useSearchParams();
     const [selectedImage, setSelectedImage] = useState(null);
     const [isZoomed, setIsZoomed] = useState(false);
+    const [showSidebar, setShowSidebar] = useState(true);
     const imageAreaRef = useRef(null);
 
     // Reset zoom when image changes
@@ -430,31 +432,53 @@ export default function UserProfile() {
                                 <X size={24} />
                             </button>
 
-                            <div className="up-lightbox-grid">
-                                <div
-                                    className="up-lightbox-image-area"
-                                    ref={imageAreaRef}
-                                    onClick={() => setIsZoomed(!isZoomed)}
-                                    style={{ cursor: isZoomed ? 'zoom-out' : 'zoom-in' }}
+                            <button
+                                className={`up-sidebar-toggle-btn ${!showSidebar ? 'collapsed' : ''}`}
+                                onClick={() => setShowSidebar(!showSidebar)}
+                                title={showSidebar ? "Hide Metadata" : "Show Metadata"}
+                            >
+                                {showSidebar ? <PanelRightClose size={24} /> : <PanelRightOpen size={24} />}
+                            </button>
+
+                            <div
+                                className="up-lightbox-image-area"
+                                ref={imageAreaRef}
+                                onClick={() => setIsZoomed(!isZoomed)}
+                                style={{ cursor: isZoomed ? 'zoom-out' : 'zoom-in' }}
+                            >
+                                {/* Navigation Buttons */}
+                                <button
+                                    className="up-nav-btn up-nav-prev"
+                                    onClick={(e) => { e.stopPropagation(); handleNavigate(-1); }}
+                                    title="Previous Image (Left Arrow)"
                                 >
-                                    <img
-                                        src={getOptimizedImageUrl(selectedImage.imageUrl || selectedImage.url)}
-                                        alt={selectedImage.prompt}
-                                        className={`up-lightbox-img ${isZoomed ? 'zoomed' : ''}`}
-                                    />
-                                </div>
+                                    <ChevronLeft size={32} />
+                                </button>
+                                <button
+                                    className="up-nav-btn up-nav-next"
+                                    onClick={(e) => { e.stopPropagation(); handleNavigate(1); }}
+                                    title="Next Image (Right Arrow)"
+                                >
+                                    <ChevronRight size={32} />
+                                </button>
 
-                                <div className="up-lightbox-sidebar">
-                                    <div className="up-sidebar-header">
-                                        <div className="up-model-badge">
-                                            <Sparkles size={14} />
-                                            <span>{availableModels.find(m => m.id === selectedImage.modelId)?.name || 'Studio Model'}</span>
-                                        </div>
+                                <img
+                                    src={getOptimizedImageUrl(selectedImage.imageUrl || selectedImage.url)}
+                                    alt={selectedImage.prompt}
+                                    className={`up-lightbox-img ${isZoomed ? 'zoomed' : ''}`}
+                                />
+                            </div>
+
+                            <div className={`up-lightbox-sidebar ${!showSidebar ? 'hidden' : ''}`}>
+                                <div className="up-sidebar-header">
+                                    <div className="up-model-badge">
+                                        <Sparkles size={14} />
+                                        <span>{availableModels.find(m => m.id === selectedImage.modelId)?.name || 'Studio Model'}</span>
                                     </div>
-
-                                    <label>Prompt</label>
-                                    <p>{selectedImage.prompt}</p>
                                 </div>
+
+                                <label>Prompt</label>
+                                <p>{selectedImage.prompt}</p>
 
                                 <div className="up-sidebar-section">
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -510,15 +534,14 @@ export default function UserProfile() {
                                             try {
                                                 const canvas = await html2canvas(imageAreaRef.current, {
                                                     useCORS: true,
-                                                    backgroundColor: '#1a1a1a', // Match studio-like dark bg
-                                                    scale: 2, // High res capture
+                                                    backgroundColor: '#1a1a1a',
+                                                    scale: 2,
                                                 });
 
                                                 const link = document.createElement('a');
                                                 link.download = `dreambees-studio-${selectedImage.id}.png`;
                                                 link.href = canvas.toDataURL('image/png');
                                                 link.click();
-
                                                 toast.success("Studio capture downloaded", { id: toastId });
                                             } catch (err) {
                                                 console.error("Capture failed", err);
@@ -529,16 +552,6 @@ export default function UserProfile() {
                                         <Download size={18} />
                                         Download Capture
                                     </button>
-                                    <button
-                                        className="up-action-btn"
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(selectedImage.prompt);
-                                            toast.success("Prompt copied to clipboard");
-                                        }}
-                                    >
-                                        <Copy size={18} />
-                                        Copy Prompt
-                                    </button>
                                 </div>
                             </div>
                         </motion.div>
@@ -548,3 +561,5 @@ export default function UserProfile() {
         </div>
     );
 }
+
+// No extra export needed as it is at the top
