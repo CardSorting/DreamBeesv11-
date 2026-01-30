@@ -1,13 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, X, ThumbsUp, ThumbsDown, Sparkles, Flag } from 'lucide-react';
+import { ArrowLeft, X, ThumbsUp, ThumbsDown, Sparkles, Flag, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useModel } from '../contexts/ModelContext';
 import { useTwitch } from '../contexts/TwitchContext';
 import { getOptimizedImageUrl } from '../utils';
 import { trackLoopConversion } from '../utils/analytics';
 
-const ShowcaseModal = ({ image, onClose, model }) => {
+const ShowcaseModal = ({ image, onClose, model, onNext, onPrev, hasNext, hasPrev }) => {
     const { rateShowcaseImage } = useModel();
     const { hidePost, isHidden } = useUserInteractions();
     const { personas } = useTwitch();
@@ -15,7 +15,7 @@ const ShowcaseModal = ({ image, onClose, model }) => {
 
     // Stability: Threshold logic and stable timestamp for render-pure calculations
     const ACTIVE_THRESHOLD_MS = 15 * 60 * 1000;
-    // eslint-disable-next-line react-hooks/purity
+     
     const nowRef = React.useRef(Date.now());
     const now = nowRef.current;
 
@@ -31,6 +31,18 @@ const ShowcaseModal = ({ image, onClose, model }) => {
         onClose();
         return null;
     }
+
+    // Keyboard Navigation
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    React.useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'ArrowRight' && hasNext) onNext();
+            if (e.key === 'ArrowLeft' && hasPrev) onPrev();
+            if (e.key === 'Escape') onClose();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onNext, onPrev, hasNext, hasPrev, onClose]);
 
     return (
         <div style={{
@@ -82,6 +94,41 @@ const ShowcaseModal = ({ image, onClose, model }) => {
                     padding: '40px',
                     position: 'relative'
                 }}>
+                    {/* Navigation Buttons (Overlay) */}
+                    {hasPrev && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onPrev(); }}
+                            className="nav-btn-prev"
+                            style={{
+                                position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)',
+                                background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '50%', width: '48px', height: '48px',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: 'white', cursor: 'pointer', zIndex: 10,
+                                transition: 'all 0.2s hover:bg-white/20'
+                            }}
+                        >
+                            <ChevronLeft size={28} />
+                        </button>
+                    )}
+
+                    {hasNext && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onNext(); }}
+                            className="nav-btn-next"
+                            style={{
+                                position: 'absolute', right: '20px', top: '50%', transform: 'translateY(-50%)',
+                                background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '50%', width: '48px', height: '48px',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: 'white', cursor: 'pointer', zIndex: 10,
+                                transition: 'all 0.2s hover:bg-white/20'
+                            }}
+                        >
+                            <ChevronRight size={28} />
+                        </button>
+                    )}
+
                     <img
                         src={getOptimizedImageUrl(image.imageUrl || image.url || image)}
                         alt={image.prompt ? `Showcase: ${image.prompt}` : "Model Showcase Detail"}

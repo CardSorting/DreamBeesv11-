@@ -128,7 +128,7 @@ export default function ModelFeed() {
             return next;
         });
     };
-    const imagesPerPage = 12;
+    const imagesPerPage = 24;
 
     const location = useLocation();
     const currentFilterRef = useRef(); // To track filter without causing dependency loops
@@ -218,6 +218,10 @@ export default function ModelFeed() {
     const hasGlobalFeedEndedRef = useRef(false);
     const hasShowcaseEndedRef = useRef(false);
 
+    // HYBRID SCROLL: Count auto-fetches to require manual interaction eventually
+    const autoLoadCountRef = useRef(0);
+    const [manualLoadNeeded, setManualLoadNeeded] = useState(false);
+
     // Sync refs for stable callback access
     useEffect(() => {
         isFetchingMoreRef.current = isFetchingMore;
@@ -237,7 +241,10 @@ export default function ModelFeed() {
         if (lastIdRef.current !== id) {
             hasInitializedRef.current = false;
             lastIdRef.current = id;
+            lastIdRef.current = id;
             fetchedCountRef.current = 0; // Reset raw count
+            autoLoadCountRef.current = 0; // Reset scroll bursts
+            setManualLoadNeeded(false);
         }
 
         // Skip if already initialized for this id to prevent double-fetching
@@ -261,11 +268,11 @@ export default function ModelFeed() {
                 if (id) {
                     // Single Model Mode - Fetch using ID directly (don't wait for model metadata)
                     console.log(`[ModelFeed] Loading showcase for model: ${id}`);
-                    images = await getShowcaseImages(id);
+                    images = await getShowcaseImages(id, false, 60);
                 } else {
                     // Global Feed Mode - use context's robust fetcher
                     console.log("[ModelFeed] Loading global showcase");
-                    images = await getGlobalShowcaseImages(false, 'modelfeed_init');
+                    images = await getGlobalShowcaseImages(false, 'modelfeed_init', 75);
                 }
 
                 if (images && images.length > 0) {
@@ -276,7 +283,8 @@ export default function ModelFeed() {
                     fetchedCountRef.current = processedImages.length;
 
                     // Default to smart mix for diversity
-                    processedImages = smartMix(processedImages);
+                    // For single models, we want strictly chronological order (no shuffle)
+                    processedImages = id ? processedImages : smartMix(processedImages);
 
                     setFeedItems(processedImages);
 
@@ -322,16 +330,23 @@ export default function ModelFeed() {
         // SELECT SOURCE
         let sourceData = feedItems;
 
+        const seenIds = new Set();
         const seenUrls = new Set();
         let filtered = (Array.isArray(sourceData) ? sourceData : [])
             .filter(img => {
                 if (!img) return false;
 
+                // Strong Dedupe by ID
+                if (img.id) {
+                    if (seenIds.has(img.id)) return false;
+                    seenIds.add(img.id);
+                }
+
                 // Check for a valid URL in either url or imageUrl field
                 const primaryUrl = img.url || img.imageUrl;
                 if (!isValidImageUrl(primaryUrl)) return false;
 
-                // Dedupe by URL
+                // Dedupe by URL (fallback)
                 if (seenUrls.has(primaryUrl)) return false;
                 seenUrls.add(primaryUrl);
                 return true;
@@ -373,52 +388,105 @@ export default function ModelFeed() {
     }, [imagesToRender, displayPage]);
 
 
-    // --- Infinite Scroll Logic (Robust Backend Fetching) ---
+    // --- Infinite Scroll Logic (Robust Backend Fetching & Adaptive Sizing) ---
     const handleLoadMore = useCallback(async () => {
         if (isFetchingMoreRef.current) return;
 
-        try {
-            setIsFetchingMore(true);
-            let allFetchedImages;
+        setIsFetchingMore(true);
+        const currentFilter = activeFilter; // Capture current filter for check
+        let retryCount = 0;
+        const maxRetries = 3;
+        let fetchedIdsThisSession = new Set();
 
-            if (id) {
-                // Model Specific Feed
-                if (hasShowcaseEndedRef.current) {
-                    setIsFetchingMore(false);
-                    return;
+        // Adaptive Batch Sizing: Start with base, then expand if yield is low
+        const baseLimit = id ? 60 : 75;
+
+        const fetchStep = async (currentLimit) => {
+            try {
+                // Check end conditions
+                if (id && hasShowcaseEndedRef.current) return;
+                if (!id && hasGlobalFeedEndedRef.current) return;
+
+                let allFetchedImages;
+                if (id) {
+                    console.log(`[ModelFeed] Loading more images for model: ${id} (Attempt ${retryCount + 1}, Limit: ${currentLimit})`);
+                    allFetchedImages = await getShowcaseImages(id, true, currentLimit);
+                } else {
+                    console.log(`[ModelFeed] Loading more global images (Attempt ${retryCount + 1}, Limit: ${currentLimit})`);
+                    allFetchedImages = await getGlobalShowcaseImages(true, 'infinite_scroll', currentLimit);
                 }
-                console.log(`[ModelFeed] Sentinel triggered: Loading more images for model: ${id}`);
-                allFetchedImages = await getShowcaseImages(id, true);
-            } else {
-                // Global Feed
-                if (hasGlobalFeedEndedRef.current) {
-                    setIsFetchingMore(false);
-                    return;
+
+                // Calculate Diff (New Items Only) against current state
+                const currentIds = new Set(feedItems.map(img => img.id));
+
+                const newImages = (allFetchedImages || []).filter(img =>
+                    !currentIds.has(img.id) && !fetchedIdsThisSession.has(img.id)
+                );
+
+                let displayableCount = 0;
+
+                if (newImages.length > 0) {
+                    // Mix (Shuffle) the new batch (Global only)
+                    // For single models, keep chronological to prevent confusing jumps/dupes
+                    const itemsToAppend = id ? newImages : smartMix(newImages);
+
+                    // Track newly fetched IDs to prevent dupe processing in recursion
+                    itemsToAppend.forEach(img => fetchedIdsThisSession.add(img.id));
+
+                    // Append to Feed
+                    setFeedItems(prev => [...prev, ...itemsToAppend]);
+                    fetchedCountRef.current = allFetchedImages.length;
+
+                    // Stagnation Check: How many of these actually pass the filter?
+                    displayableCount = itemsToAppend.filter(img => {
+                        // Attach model if needed for check
+                        let itemToCheck = img;
+                        if (!id && img.modelId && !img._model) {
+                            const m = availableModels?.find(mod => mod.id === img.modelId);
+                            if (m) itemToCheck = { ...img, _model: m };
+                        }
+
+                        // Just check if valid filtered
+                        if (!id && currentFilter !== 'All') {
+                            const mTags = itemToCheck?._model?.tags || [];
+                            const iTags = itemToCheck.tags || [];
+                            if (!mTags.includes(currentFilter) && !iTags.includes(currentFilter)) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    }).length;
+
+                    console.log(`[Infinite Scroll] Fetched ${newImages.length} new. Displayable: ${displayableCount} (Yield Rate: ${((displayableCount / newImages.length) * 100).toFixed(1)}%)`);
                 }
-                console.log("[ModelFeed] Sentinel triggered: Loading more global images");
-                allFetchedImages = await getGlobalShowcaseImages(true, 'infinite_scroll');
+
+                // Recursive Retry if Stagnated
+                const hasMore = id ? !hasShowcaseEndedRef.current : !hasGlobalFeedEndedRef.current;
+
+                // If we found too few displayable items...
+                if (displayableCount < 6 && hasMore && retryCount < maxRetries) {
+                    // ADAPTIVE SIZING: Expand limit for next try
+                    // If yield was very low (0-2), double it. If 'meh' (3-5), 1.5x it.
+                    const multiplier = displayableCount <= 2 ? 2.0 : 1.5;
+                    let nextLimit = Math.floor(currentLimit * multiplier);
+
+                    // Hard cap to prevent massive queries
+                    if (nextLimit > 200) nextLimit = 200;
+
+                    console.log(`[Infinite Scroll] Stagnation detected (${displayableCount} visible). Retrying with expanded limit: ${nextLimit}...`);
+                    retryCount++;
+                    await fetchStep(nextLimit);
+                }
+
+            } catch (err) {
+                console.error("Error loading more images:", err);
             }
+        };
 
-            // Calculate Diff (New Items Only)
-            const currentIds = new Set(feedItems.map(img => img.id));
-            const newImages = (allFetchedImages || []).filter(img => !currentIds.has(img.id));
+        await fetchStep(baseLimit);
+        setIsFetchingMore(false);
 
-            if (newImages.length > 0) {
-                console.log(`[Infinite Scroll] Found ${newImages.length} new items. Mixing and appending...`);
-
-                // Mix ONLY the new batch to preserve history
-                const mixedNewImages = smartMix(newImages);
-
-                // Append
-                setFeedItems(prev => [...prev, ...mixedNewImages]);
-                fetchedCountRef.current = allFetchedImages.length;
-            }
-        } catch (err) {
-            console.error("Error loading more images:", err);
-        } finally {
-            setIsFetchingMore(false);
-        }
-    }, [id, getShowcaseImages, getGlobalShowcaseImages, feedItems]);
+    }, [id, getShowcaseImages, getGlobalShowcaseImages, feedItems, activeFilter, availableModels]);
 
     // Robust Infinite Scroll Observer
     const sentinelRef = useIntersectionObserver({
@@ -430,12 +498,24 @@ export default function ModelFeed() {
 
             // 2. Backend Fetch (Get more if we are running low or hit the end of current buffer)
             if (visibleImages.length >= imagesToRender.length - 8) {
-                handleLoadMore();
+                // HYBRID LOGIC: Only auto-load if under the burst limit
+                if (autoLoadCountRef.current < 3) {
+                    handleLoadMore();
+                    autoLoadCountRef.current += 1;
+                } else {
+                    setManualLoadNeeded(true);
+                }
             }
         },
-        enabled: !isLoading && (!hasGlobalFeedEnded || !!id), // Keep enabled for model feeds to allow pagination check
-        rootMargin: '0px 0px 1200px 0px'
+        enabled: !isLoading && !manualLoadNeeded && (!hasGlobalFeedEnded || !!id), // Disable observer when waiting for manual click
+        rootMargin: '0px 0px 2500px 0px'
     });
+
+    const triggerManualLoad = () => {
+        setManualLoadNeeded(false);
+        autoLoadCountRef.current = 0; // Reset burst counter for another flow
+        handleLoadMore();
+    };
 
     if (!model) {
         return (
@@ -463,7 +543,7 @@ export default function ModelFeed() {
 
 
 
-                <div className="feed-posts-container">
+                <div className="feed-posts-container masonry-feed">
                     {visibleImages.map((imgItem, index) => (
                         <FeedPost
                             key={imgItem.id || index}
@@ -474,6 +554,7 @@ export default function ModelFeed() {
                             rateShowcaseImage={rateShowcaseImage}
                             navigate={navigate}
                             setActiveShowcaseImage={openShowcase}
+                            variant="masonry"
                         />
                     ))}
 
@@ -494,8 +575,25 @@ export default function ModelFeed() {
                         </div>
                     )}
 
-                    {/* Sentinel for Infinite Scroll Trigger */}
-                    <div ref={sentinelRef} style={{ height: '20px', width: '100%', marginTop: '40px' }} aria-hidden="true" />
+                    {/* Sentinel for Infinite Scroll Trigger OR Manual Load Button */}
+                    {!isLoading && manualLoadNeeded && (visibleImages.length < imagesToRender.length || (id ? !hasShowcaseEnded(id) : !hasGlobalFeedEnded)) ? (
+                        <div style={{ padding: '40px 0', textAlign: 'center', width: '100%' }}>
+                            <button
+                                onClick={triggerManualLoad}
+                                className="reset-filter-btn" // Reusing verify clean white pill style
+                                style={{
+                                    fontSize: '1rem',
+                                    padding: '12px 32px',
+                                    fontWeight: '700',
+                                    boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+                                }}
+                            >
+                                Load More
+                            </button>
+                        </div>
+                    ) : (
+                        <div ref={sentinelRef} style={{ height: '20px', width: '100%', marginTop: '40px' }} aria-hidden="true" />
+                    )}
 
                     {!isLoading && visibleImages.length > 0 && (visibleImages.length < imagesToRender.length || (id ? !hasShowcaseEnded(id) : !hasGlobalFeedEnded)) && (
                         <div className="feed-loader-skeletons">
@@ -522,6 +620,32 @@ export default function ModelFeed() {
                     image={activeShowcaseImage}
                     model={model}
                     onClose={closeShowcase}
+                    onNext={() => {
+                        const currentIndex = imagesToRender.findIndex(img => img.id === activeShowcaseImage.id);
+                        if (currentIndex !== -1 && currentIndex < imagesToRender.length - 1) {
+                            openShowcase(imagesToRender[currentIndex + 1]);
+                            // Pre-fetch if near end (within 5 items)
+                            if (currentIndex >= imagesToRender.length - 5) {
+                                handleLoadMore();
+                            }
+                        }
+                    }}
+                    onPrev={() => {
+                        const currentIndex = imagesToRender.findIndex(img => img.id === activeShowcaseImage.id);
+                        if (currentIndex > 0) {
+                            openShowcase(imagesToRender[currentIndex - 1]);
+                        }
+                    }}
+                    hasNext={(() => {
+                        if (!activeShowcaseImage) return false;
+                        const idx = imagesToRender.findIndex(img => img.id === activeShowcaseImage.id);
+                        return idx !== -1 && idx < imagesToRender.length - 1;
+                    })()}
+                    hasPrev={(() => {
+                        if (!activeShowcaseImage) return false;
+                        const idx = imagesToRender.findIndex(img => img.id === activeShowcaseImage.id);
+                        return idx > 0;
+                    })()}
                 />
             )}
 

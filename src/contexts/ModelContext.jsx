@@ -186,7 +186,7 @@ export function ModelProvider({ children }) {
     const lastShowcaseDocRef = useRef({}); // { modelId: lastDoc }
     const hasShowcaseEndedRef = useRef({}); // { modelId: boolean }
 
-    const getShowcaseImages = useCallback(async (modelId, loadMore = false) => {
+    const getShowcaseImages = useCallback(async (modelId, loadMore = false, limitCount = 50) => {
         // 1. Check cache and guards
         const currentImages = showcaseCacheRef.current[modelId] || [];
 
@@ -200,15 +200,14 @@ export function ModelProvider({ children }) {
 
         // 3. Fetch from Firestore
         try {
-            console.log(`[Firestore] Fetching showcase for ${modelId} (Load More: ${loadMore})`);
+            console.log(`[Firestore] Fetching showcase for ${modelId} (Load More: ${loadMore}, Limit: ${limitCount})`);
             setIsModelShowcaseLoading(true);
 
-            const pageSize = 50;
             let q = query(
                 collection(db, 'model_showcase_images'),
                 where('modelId', '==', modelId),
                 orderBy('createdAt', 'desc'),
-                limit(pageSize)
+                limit(limitCount)
             );
 
             if (loadMore && lastShowcaseDocRef.current[modelId]) {
@@ -217,7 +216,7 @@ export function ModelProvider({ children }) {
                     where('modelId', '==', modelId),
                     orderBy('createdAt', 'desc'),
                     startAfter(lastShowcaseDocRef.current[modelId]),
-                    limit(pageSize)
+                    limit(limitCount)
                 );
             }
 
@@ -303,7 +302,7 @@ export function ModelProvider({ children }) {
 
     // Fetch aggregated global showcase (All Models) - PAGINATED & ROBUST
     // Using refs inside callback to keep the function reference STABLE
-    const getGlobalShowcaseImages = useCallback(async (loadMore = false, source = 'unknown') => {
+    const getGlobalShowcaseImages = useCallback(async (loadMore = false, source = 'unknown', limitCount = 75) => {
         // Read from refs for stable access
         const currentCache = globalShowcaseCacheRef.current;
         const currentLastDoc = lastGlobalDocRef.current;
@@ -330,15 +329,14 @@ export function ModelProvider({ children }) {
             // Set loading guards IMMEDIATELY
             globalFeedLoadingRef.current = true;
             setIsGlobalFeedLoading(true);
-            console.log(`[Global Feed] [from:${source}] Fetching... (Load More: ${loadMore})`);
+            console.log(`[Global Feed] [from:${source}] Fetching... (Load More: ${loadMore}, Limit: ${limitCount})`);
 
             // Fetch a larger pool to allow for "Smart Mixing" (Diversity) client-side
             // If we only fetch 24 and they are all from the same model, no amount of shuffling helps.
-            const pageSize = 75;
             let q = query(
                 collection(db, 'model_showcase_images'),
                 orderBy('createdAt', 'desc'),
-                limit(pageSize)
+                limit(limitCount)
             );
 
             // Pagination: start after the last doc we have
@@ -347,7 +345,7 @@ export function ModelProvider({ children }) {
                     collection(db, 'model_showcase_images'),
                     orderBy('createdAt', 'desc'),
                     startAfter(currentLastDoc),
-                    limit(pageSize)
+                    limit(limitCount)
                 );
             }
 
