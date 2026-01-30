@@ -42,7 +42,7 @@ function Layout() {
     '/mockup-catalog'
   ];
 
-  const shouldHideHeader = hideHeaderRoutes.some(route => pathname === route || pathname.startsWith(route + '/')) || pathname.startsWith('/model/');
+  const shouldHideHeader = hideHeaderRoutes.some(route => pathname === route || pathname.startsWith(route + '/')) || pathname.startsWith('/model/') || pathname.startsWith('/generations');
 
   return (
     <div className="app-layout">

@@ -461,23 +461,29 @@
 }
 
 /* MASONRY OVERRIDE */
-.feed-posts-container.masonry-feed {
+.feed-posts-container.masonry-feed,
+.masonry-grid-view {
     display: block;
     /* Required for columns */
     column-count: 3;
     column-gap: 16px;
     max-width: 1200px;
     /* Wider container for grid */
+    width: 100%;
 }
 
 @media (max-width: 1100px) {
-    .feed-posts-container.masonry-feed {
+
+    .feed-posts-container.masonry-feed,
+    .masonry-grid-view {
         column-count: 2;
     }
 }
 
 @media (max-width: 600px) {
-    .feed-posts-container.masonry-feed {
+
+    .feed-posts-container.masonry-feed,
+    .masonry-grid-view {
         column-count: 1;
         display: flex;
         /* Revert to flex stack on mobile */

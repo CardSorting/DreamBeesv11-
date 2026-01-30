@@ -4,7 +4,7 @@ import { trackEvent } from '../utils/analytics';
 import { db } from '../firebase';
 import { collection, query, where, orderBy, limit, getDocs, startAfter, doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
-import { Loader2, Zap, ShieldAlert, HelpCircle } from 'lucide-react';
+import { Loader2, Zap, ShieldAlert } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import SuggestedPanel from '../components/SuggestedPanel';
 import { useModel } from '../contexts/ModelContext';
@@ -16,9 +16,7 @@ import { smartMix } from '../utils/feedHelpers'; // Import smartMix
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { isOver18 } from '../utils/age';
 import CommunityConsentModal from '../components/CommunityConsentModal';
-
-import BookCard from '../components/BookCard';
-import BookReaderModal from '../components/BookReaderModal';
+import './ModelFeed.css'; // Import shared styles
 
 const FeedSkeleton = () => (
     <div className="animate-pulse space-y-4 mb-8">
@@ -66,35 +64,10 @@ export default function PublicGenerationsFeed() {
     const [lastDoc, setLastDoc] = useState(null);
     const [hasMore, setHasMore] = useState(true);
     const [focusImage, setFocusImage] = useState(null);
-    const [activeBook, setActiveBook] = useState(null);
     const isFetchingRef = useRef(false);
-
-    // Filter Cache for instantaneous switching
-    const [filterCache, setFilterCache] = useState({});
 
     // Routing Params
     const [searchParams, setSearchParams] = useSearchParams();
-    const activeFilter = searchParams.get('filter') || 'all';
-
-    const setActiveFilter = (newFilter) => {
-        trackEvent('change_discovery_filter', { filter: newFilter });
-        setSearchParams(prev => {
-            const next = new URLSearchParams(prev);
-            if (newFilter === 'all') next.delete('filter');
-            else next.set('filter', newFilter);
-            return next;
-        }, { replace: true });
-        // Scroll to top of feed container when filter changes
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
-    const FILTERS = [
-        { id: 'all', label: 'All', icon: '✨' },
-        { id: 'coloring-books', label: 'Coloring Books', icon: '🎨' },
-        { id: 'slideshow', label: 'Slideshows', icon: '📽️' },
-        { id: 'meowacc', label: 'MeowAcc', icon: '🐱' },
-        { id: 'dress-up', label: 'Dress Up', icon: '👗' },
-    ];
 
     const observer = useRef();
     const lastImageElementRef = useRef();
@@ -130,7 +103,7 @@ export default function PublicGenerationsFeed() {
             // Fetch directly from Firestore if not in cache
             const fetchImage = async () => {
                 try {
-                    const docRef = doc(db, 'generation_queue', viewId);
+                    const docRef = doc(db, 'generations', viewId);
                     const snapshot = await getDoc(docRef);
                     if (snapshot.exists()) {
                         setFocusImage({ id: snapshot.id, ...snapshot.data() });
@@ -163,17 +136,10 @@ export default function PublicGenerationsFeed() {
     };
 
     const [error, setError] = useState(null);
-    const activeFilterRef = useRef(activeFilter);
-
-    useEffect(() => {
-        activeFilterRef.current = activeFilter;
-    }, [activeFilter]);
 
     const fetchGenerations = useCallback(async (isLoadMore = false) => {
         if (isFetchingRef.current) return;
         if (isLoadMore && (!lastDoc || !hasMore)) return;
-
-        const currentFilter = activeFilter; // Capture filter at start of request
 
         try {
             isFetchingRef.current = true;
@@ -182,43 +148,21 @@ export default function PublicGenerationsFeed() {
                 setError(null);
             }
 
-            let q;
-
-            if (activeFilter === 'coloring-books') {
-                q = query(
-                    collection(db, 'coloring_books'),
-                    where('status', '==', 'completed'),
-                    orderBy('createdAt', 'desc'),
-                    limit(60)
-                );
-            } else {
-                // Query generation_queue for completed jobs
-                q = query(
-                    collection(db, 'generation_queue'),
-                    where('status', '==', 'completed')
-                );
-
-                // Apply filter
-                if (activeFilter === 'slideshow') {
-                    q = query(q, where('type', '==', 'slideshow'));
-                } else if (activeFilter === 'dress-up') {
-                    q = query(q, where('type', '==', 'dress-up'));
-                } else if (activeFilter === 'meowacc') {
-                    q = query(q, where('modelId', '==', 'meowacc'));
-                }
-
-                // Final order and pagination
-                q = query(q, orderBy('createdAt', 'desc'), limit(60));
-            }
+            // Simple direct query: Get public generations, sorted by date
+            // We switch to 'generations' collection which is public-readable (with isPublic=true)
+            // 'generation_queue' is strictly private.
+            let q = query(
+                collection(db, 'generations'),
+                where('isPublic', '==', true),
+                orderBy('createdAt', 'desc'),
+                limit(60)
+            );
 
             if (isLoadMore && lastDoc) {
                 q = query(q, startAfter(lastDoc));
             }
 
             const snapshot = await getDocs(q);
-
-            // Race Condition Check: If filter changed while fetching, discard results
-            if (currentFilter !== activeFilterRef.current) return;
 
             if (snapshot.empty) {
                 setHasMore(false);
@@ -231,9 +175,11 @@ export default function PublicGenerationsFeed() {
                 ...doc.data()
             }));
 
-            // Filter out any hidden or potentially invalid images just in case
+            // Filter out any hidden or potentially invalid images
+            // IMPORTANT: Client-side check for 'completed' status
             const validImages = newImages.filter(img =>
                 !img.hidden &&
+                img.status === 'completed' &&
                 !hiddenIds.has(img.id) &&
                 (img.imageUrl || img.url || img.coverUrl)
             );
@@ -249,68 +195,25 @@ export default function PublicGenerationsFeed() {
                     if (uniqueNew.length === 0) return prev; // No new unique images
 
                     const mixedNewImages = smartMix(uniqueNew, affinityMap, viewedIds);
-                    const updatedImages = [...prev, ...mixedNewImages];
-
-                    // Memory Safety: Limit individual feed-length in cache
-                    if (updatedImages.length <= 500) {
-                        setFilterCache(cachePrev => ({
-                            ...cachePrev,
-                            [activeFilter]: {
-                                images: updatedImages,
-                                lastDoc: snapshot.docs[snapshot.docs.length - 1],
-                                hasMore: snapshot.docs.length === 60,
-                                timestamp: Date.now() // Update timestamp
-                            }
-                        }));
-                    }
-                    return updatedImages;
+                    return [...prev, ...mixedNewImages];
                 });
             } else {
                 const mixedImages = smartMix(validImages, affinityMap, viewedIds);
                 setImages(mixedImages);
-                setFilterCache(prev => ({
-                    ...prev,
-                    [activeFilter]: {
-                        images: mixedImages,
-                        lastDoc: snapshot.docs[snapshot.docs.length - 1],
-                        hasMore: snapshot.docs.length === 60,
-                        timestamp: Date.now() // Add timestamp
-                    }
-                }));
             }
         } catch (error) {
             console.error("Error fetching generations:", error);
-            // Only set error if we are on the same filter
-            if (currentFilter === activeFilterRef.current) {
-                setError("Failed to load feed. Please try again.");
-            }
+            setError("Failed to load feed. Please try again.");
         } finally {
             isFetchingRef.current = false;
-            if (currentFilter === activeFilterRef.current) {
-                setLoading(false);
-            }
+            setLoading(false);
         }
-    }, [lastDoc, activeFilter, hiddenIds, affinityMap, viewedIds, hasMore]);
+    }, [lastDoc, hiddenIds, affinityMap, viewedIds, hasMore]);
 
     useEffect(() => {
-        // Hydrate from cache if available AND fresh (< 5 mins)
-        const cachedData = filterCache[activeFilter];
-        const isFresh = cachedData && (Date.now() - cachedData.timestamp < 5 * 60 * 1000);
-
-        if (isFresh) {
-            setImages(cachedData.images);
-            setLastDoc(cachedData.lastDoc);
-            setHasMore(cachedData.hasMore);
-            setLoading(false);
-        } else {
-            // Cache miss
-            setImages([]);
-            setLastDoc(null);
-            isFetchingRef.current = false;
-            setHasMore(true);
-            fetchGenerations();
-        }
-    }, [activeFilter, fetchGenerations, filterCache]); // Run on mount and filter change
+        fetchGenerations();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Run ONCE on mount
 
     // Intersection Observer for Infinite Scroll
     useEffect(() => {
@@ -334,10 +237,9 @@ export default function PublicGenerationsFeed() {
 
     return (
         <div className="feed-layout-wrapper">
-            <BookReaderModal book={activeBook} onClose={() => setActiveBook(null)} />
             <SEO
-                title={focusImage ? `${focusImage.prompt?.slice(0, 50)}... | Generations - DreamBees` : `${FILTERS.find(f => f.id === activeFilter)?.label || 'Recent'} Generations - DreamBees`}
-                description={focusImage ? focusImage.prompt : `Explore the latest ${activeFilter !== 'all' ? activeFilter : ''} AI generations from the DreamBees community.`}
+                title={focusImage ? `${focusImage.prompt?.slice(0, 50)}... | Generations - DreamBees` : `Generations - DreamBees`}
+                description={focusImage ? focusImage.prompt : `Explore the latest AI generations from the DreamBees community.`}
                 image={focusImage ? (focusImage.thumbnailUrl || focusImage.imageUrl) : undefined}
                 canonical={focusImage ? `/generations?view=${focusImage.id}` : undefined}
                 structuredData={{
@@ -352,7 +254,7 @@ export default function PublicGenerationsFeed() {
                         },
                         {
                             "@type": "ItemList",
-                            "name": `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)} AI Generations`,
+                            "name": "All AI Generations",
                             "numberOfItems": images.length,
                             "itemListElement": images.slice(0, 10).map((img, idx) => ({
                                 "@type": "ListItem",
@@ -376,7 +278,6 @@ export default function PublicGenerationsFeed() {
                 }}
                 mentions={["Stable Diffusion", "SDXL", "Generative Art", "Latent Diffusion Models"]}
             />
-            Kushal 2026-01-28 13:52:42-07:00
 
             <Sidebar activeId="/generations" />
 
@@ -385,49 +286,7 @@ export default function PublicGenerationsFeed() {
             <main className="feed-main-content">
                 <div className="discovery-container">
 
-                    {/* Header specific to this feed */}
-                    <div style={{ maxWidth: '600px', margin: '0 auto 10px', padding: '0 20px' }}>
-                        <div className="flex items-center gap-2 mb-1">
-                            <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', margin: 0 }}>Community Feed</h1>
-                            <div className="group relative">
-                                <HelpCircle size={14} className="text-zinc-600 cursor-help hover:text-zinc-400 transition-colors" />
-                                <div className="absolute left-6 top-1/2 -translate-y-1/2 w-64 p-3 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl opacity-0 translate-x-4 pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all z-50 text-[11px] leading-relaxed text-zinc-300">
-                                    <div className="font-bold text-white mb-1">About this experiment</div>
-                                    This feed explores community annotation and context, not algorithmic ranking. Content is provided "as is" by users.
-                                </div>
-                            </div>
-                        </div>
-                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '8px' }}>Live stream of creations from all users.</p>
-
-                        <div className="flex items-center gap-2 py-1 px-3 bg-zinc-800/30 border border-white/5 rounded-full w-fit">
-                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
-                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-tight">
-                                Community-Moderated Feed · Experimental
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Filter Slider */}
-                    <div className="models-header-bar" style={{ maxWidth: '600px', padding: '0 20px 16px', margin: '0 auto 10px', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            {FILTERS.map(f => (
-                                <button
-                                    key={f.id}
-                                    className={`model-pill ${activeFilter === f.id ? 'active' : ''}`}
-                                    onClick={() => setActiveFilter(f.id)}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '6px',
-                                        whiteSpace: 'nowrap'
-                                    }}
-                                >
-                                    <span>{f.icon}</span>
-                                    <span>{f.label}</span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                    {/* Filter Slider Removed - Single Stream */}
 
                     {/* Age Restriction Check */}
                     {isProfileLoaded && currentUser && !isOver18(userProfile.birthday) ? (
@@ -447,7 +306,7 @@ export default function PublicGenerationsFeed() {
                             </button>
                         </div>
                     ) : (
-                        <section className="feed-posts-container" style={{ maxWidth: '600px', margin: '0 auto', paddingBottom: '60px', minHeight: '80vh' }}>
+                        <section className="feed-posts-container">
                             {error && (
                                 <div className="flex flex-col items-center justify-center py-10 text-center">
                                     <ShieldAlert className="text-red-400 mb-2" size={32} />
@@ -476,45 +335,34 @@ export default function PublicGenerationsFeed() {
                                         </motion.div>
                                     ) : (
                                         <motion.div
-                                            key={activeFilter}
+                                            key="feed-content"
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -10 }}
                                             transition={{ duration: 0.3, ease: 'easeOut' }}
+                                            className="masonry-grid-view"
                                         >
-                                            {activeFilter === 'coloring-books' ? (
-                                                <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 px-4">
-                                                    {images.map((book, index) => (
-                                                        <BookCard
-                                                            key={book.id}
-                                                            book={book}
-                                                            index={index}
-                                                            onClick={setActiveBook}
-                                                        />
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                images.map((imgItem, index) => {
-                                                    const itemModel = availableModels.find(m => m.id === imgItem.modelId) || { name: 'Unknown Model', image: '/dreambees_icon.png' };
-                                                    const creatorName = imgItem.userDisplayName || "DreamBees User";
+                                            {images.map((imgItem, index) => {
+                                                const itemModel = availableModels.find(m => m.id === imgItem.modelId) || { name: 'Unknown Model', image: '/dreambees_icon.png' };
+                                                const creatorName = imgItem.userDisplayName || "DreamBees User";
 
-                                                    return (
-                                                        <FeedItemErrorBoundary key={imgItem.id}>
-                                                            <FeedPost
-                                                                imgItem={imgItem}
-                                                                index={index}
-                                                                model={itemModel}
-                                                                getOptimizedImageUrl={getOptimizedImageUrl}
-                                                                navigate={navigate}
-                                                                setActiveShowcaseImage={openFocus}
-                                                                headerTitle={creatorName}
-                                                                headerSubtitle={itemModel.name}
-                                                                avatarImage="/dreambees_icon.png"
-                                                            />
-                                                        </FeedItemErrorBoundary>
-                                                    );
-                                                })
-                                            )}
+                                                return (
+                                                    <FeedItemErrorBoundary key={imgItem.id}>
+                                                        <FeedPost
+                                                            imgItem={imgItem}
+                                                            index={index}
+                                                            model={itemModel}
+                                                            getOptimizedImageUrl={getOptimizedImageUrl}
+                                                            navigate={navigate}
+                                                            setActiveShowcaseImage={openFocus}
+                                                            headerTitle={creatorName}
+                                                            headerSubtitle={itemModel.name}
+                                                            avatarImage="/dreambees_icon.png"
+                                                            variant="masonry"
+                                                        />
+                                                    </FeedItemErrorBoundary>
+                                                );
+                                            })}
                                         </motion.div>
                                     )}
                                 </AnimatePresence>
