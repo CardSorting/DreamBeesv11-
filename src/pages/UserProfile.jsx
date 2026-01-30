@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
@@ -10,11 +10,10 @@ import {
     Edit2,
     AlertCircle,
     ChevronLeft,
+    ChevronRight,
     X,
     Lock,
     ExternalLink,
-    Grid,
-    Layout,
     ArrowRight,
     Sparkles,
     RefreshCw,
@@ -131,7 +130,13 @@ export default function UserProfile() {
     const { availableModels } = useModel();
     const [searchParams, setSearchParams] = useSearchParams();
     const [selectedImage, setSelectedImage] = useState(null);
+    const [isZoomed, setIsZoomed] = useState(false);
     const imageAreaRef = useRef(null);
+
+    // Reset zoom when image changes
+    useEffect(() => {
+        setIsZoomed(false);
+    }, [selectedImage]);
 
     // Filter focus logic: Handle deep linking ?view=ID
     useEffect(() => {
@@ -147,22 +152,52 @@ export default function UserProfile() {
         }
     }, [searchParams, displayedItems]);
 
-    const openLightbox = (item) => {
+    const openLightbox = useCallback((item) => {
         const id = item.id.replace('show_', '');
         setSearchParams(prev => {
             const next = new URLSearchParams(prev);
             next.set('view', id);
             return next;
         });
-    };
+    }, [setSearchParams]);
 
-    const closeLightbox = () => {
+    const closeLightbox = useCallback(() => {
         setSearchParams(prev => {
             const next = new URLSearchParams(prev);
             next.delete('view');
             return next;
         });
-    };
+    }, [setSearchParams]);
+
+    const handleNavigate = useCallback((direction) => {
+        if (!selectedImage || displayedItems.length === 0) return;
+
+        const currentIndex = displayedItems.findIndex(item => item.id === selectedImage.id);
+        if (currentIndex === -1) return;
+
+        let nextIndex = currentIndex + direction;
+
+        // Wrap around
+        if (nextIndex >= displayedItems.length) nextIndex = 0;
+        if (nextIndex < 0) nextIndex = displayedItems.length - 1;
+
+        const nextItem = displayedItems[nextIndex];
+        openLightbox(nextItem);
+    }, [selectedImage, displayedItems, openLightbox]);
+
+    // Keyboard navigation
+    useEffect(() => {
+        if (!selectedImage) return;
+
+        const handleKeyDown = (e) => {
+            if (e.key === 'ArrowRight') handleNavigate(1);
+            if (e.key === 'ArrowLeft') handleNavigate(-1);
+            if (e.key === 'Escape') closeLightbox();
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [selectedImage, handleNavigate, closeLightbox]); // Re-bind when selection or list changes
 
     const getOptimizedImageUrl = (url) => {
         if (!url) return '';
@@ -396,11 +431,16 @@ export default function UserProfile() {
                             </button>
 
                             <div className="up-lightbox-grid">
-                                <div className="up-lightbox-image-area" ref={imageAreaRef}>
+                                <div
+                                    className="up-lightbox-image-area"
+                                    ref={imageAreaRef}
+                                    onClick={() => setIsZoomed(!isZoomed)}
+                                    style={{ cursor: isZoomed ? 'zoom-out' : 'zoom-in' }}
+                                >
                                     <img
                                         src={getOptimizedImageUrl(selectedImage.imageUrl || selectedImage.url)}
                                         alt={selectedImage.prompt}
-                                        className="up-lightbox-img"
+                                        className={`up-lightbox-img ${isZoomed ? 'zoomed' : ''}`}
                                     />
                                 </div>
 
