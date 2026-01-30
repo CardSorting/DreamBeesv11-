@@ -17,7 +17,7 @@ const MinimalHeader = () => {
     const [imageError, setImageError] = useState(false);
 
     // Reset image error state when user photo URL changes
-     
+
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setImageError(false);
@@ -93,7 +93,9 @@ const MinimalHeader = () => {
                                     </div>
                                 )}
                                 <span className="user-name">
-                                    {currentUser.displayName || currentUser.email?.split('@')[0] || 'User'}
+                                    {(userProfile?.displayPreference === 'username' && userProfile?.username)
+                                        ? `@${userProfile.username}`
+                                        : (currentUser.displayName || currentUser.email?.split('@')[0] || 'User')}
                                 </span>
                             </div>
 

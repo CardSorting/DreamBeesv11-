@@ -107,7 +107,7 @@ const PersonaChatContent = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { currentUser } = useAuth();
-    const { deductZapsOptimistically, rollbackZaps } = useUserInteractions();
+    const { deductZapsOptimistically, rollbackZaps, userProfile } = useUserInteractions();
 
     const [imageItem, setImageItem] = useState(location.state?.imageItem || null);
     const [persona, setPersona] = useState(null);
@@ -920,7 +920,9 @@ const PersonaChatContent = () => {
             if (amount >= 500) {
                 setPinnedMessage({
                     id: Date.now(),
-                    author: currentUser.displayName || 'You',
+                    author: (userProfile?.displayPreference === 'username' && userProfile?.username)
+                        ? `@${userProfile.username}`
+                        : (currentUser.displayName || 'You'),
                     text: `gifted ${amount} ZAPs for a Priestess' blessing!`
                 });
             }
@@ -1148,7 +1150,11 @@ const PersonaChatContent = () => {
                                         <span className="message-author">
                                             {getSupporterBadge(msg.uid)}
                                             {msg.role === 'model' && <span className="chat-badge ai-badge">AI</span>}
-                                            {msg.displayName || (msg.role === 'user' ? (currentUser?.displayName || 'You') : 'System')}:
+                                            {msg.displayName || (msg.role === 'user' ? (
+                                                (userProfile?.displayPreference === 'username' && userProfile?.username)
+                                                    ? `@${userProfile.username}`
+                                                    : (currentUser?.displayName || 'You')
+                                            ) : 'System')}:
                                         </span>
                                         <span className="message-body">
                                             {msg.text}
