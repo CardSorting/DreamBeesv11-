@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 // import { httpsCallable } from 'firebase/functions'; // Removed
 import { db } from '../../firebase';
 import { useApi } from '../../hooks/useApi';
@@ -42,9 +43,16 @@ export function useVideoGeneration({
     }, [currentUser]);
 
     const { call: apiCall } = useApi();
+    const navigate = useNavigate();
 
     const triggerVideoAnimation = async (imageUrl, imageId = null, imgAspectRatio = null) => {
         if (generating) return;
+
+        if (!currentUser) {
+            toast.error("Please log in to animate images");
+            navigate('/auth');
+            return;
+        }
 
         if (imageId) setAnalyzingImageId(imageId);
         setGenerating(true);

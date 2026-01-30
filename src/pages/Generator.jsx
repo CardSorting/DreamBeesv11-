@@ -176,7 +176,8 @@ export default function Generator() {
         reels, subscriptionStatus,
         setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId, setActiveJob,
         deductZapsOptimistically,
-        rollbackZaps
+        rollbackZaps,
+        currentUser
     });
 
     const [isResultModalOpen, setIsResultModalOpen] = useState(false);

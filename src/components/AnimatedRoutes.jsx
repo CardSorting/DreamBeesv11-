@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
- 
+
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import RouteErrorBoundary from './RouteErrorBoundary';
@@ -135,7 +135,9 @@ const AnimatedRoutes = () => {
 
                             {/* Admin Only Routes */}
                             <Route path="/generate" element={
-                                isMobile ? <MobileGenerator /> : <Generator />
+                                <PrivateRoute>
+                                    {isMobile ? <MobileGenerator /> : <Generator />}
+                                </PrivateRoute>
                             } />
 
                             <Route path="/gallery" element={<Navigate to="/profile" replace />} />

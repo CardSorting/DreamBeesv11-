@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApi } from '../../hooks/useApi';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase';
@@ -19,8 +20,10 @@ export function useGenerationLogic({
     zaps, reels: _reels, subscriptionStatus,
     setGenerating, setGeneratedImage, setCurrentJobType, setCurrentJobId, setActiveJob,
     deductZapsOptimistically,
-    rollbackZaps
+    rollbackZaps,
+    currentUser // Added to support auth check
 }) {
+    const navigate = useNavigate();
     // Track timing
     const startTimeRef = useRef(null);
     // Track the current job listener
@@ -164,6 +167,12 @@ export function useGenerationLogic({
                 return;
             }
             lastRequestTimeRef.current = now;
+
+            if (!currentUser) {
+                toast.error("Please log in to generate images");
+                navigate('/auth');
+                return;
+            }
 
             const effectivePrompt = (typeof promptOverride === 'string' ? promptOverride : prompt);
 

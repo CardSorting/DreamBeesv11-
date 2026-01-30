@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useModel } from '../contexts/ModelContext';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
@@ -176,7 +177,8 @@ export default function MobileGenerator() {
         },
         setCurrentJobType: () => { },
         setCurrentJobId,
-        setActiveJob
+        setActiveJob,
+        currentUser
     });
 
     const scrollToBottom = () => {
@@ -196,9 +198,17 @@ export default function MobileGenerator() {
         scrollToBottom();
     }, [displayMessages.length, loadingStatus, generating]);
 
+    const navigate = useNavigate();
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!inputValue.trim() || generating) return;
+
+        if (!currentUser) {
+            toast.error("Please log in to generate images");
+            navigate('/auth');
+            return;
+        }
 
         const prompt = inputValue;
         setInputValue('');
