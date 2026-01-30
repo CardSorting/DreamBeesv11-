@@ -688,17 +688,15 @@ const FeedPost = ({
                                 border: '1px solid rgba(169, 112, 255, 0.4)',
                                 color: '#a970ff',
                                 cursor: 'pointer',
-                                padding: '6px 12px',
-                                borderRadius: '20px',
+                                padding: '8px',
+                                borderRadius: '50%',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '6px',
-                                fontSize: '0.8rem',
-                                fontWeight: 700
+                                justifyContent: 'center'
                             }}
                             title="Talk to this character"
                         >
-                            <MessageCircle size={16} /> Talk to a picture
+                            <MessageCircle size={20} />
                         </motion.button>
                     </div>
 

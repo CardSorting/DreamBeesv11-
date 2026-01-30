@@ -19,9 +19,10 @@ import {
     Sparkles,
     RefreshCw,
     Copy,
-    Share2
+    Download
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import html2canvas from 'html2canvas';
 import SEO from '../components/SEO';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useModel } from '../contexts/ModelContext';
@@ -130,6 +131,7 @@ export default function UserProfile() {
     const { availableModels } = useModel();
     const [searchParams, setSearchParams] = useSearchParams();
     const [selectedImage, setSelectedImage] = useState(null);
+    const imageAreaRef = useRef(null);
 
     // Filter focus logic: Handle deep linking ?view=ID
     useEffect(() => {
@@ -262,7 +264,9 @@ export default function UserProfile() {
                                             />
                                             <div className="up-card-overlay">
                                                 <p className="up-card-prompt">{item.prompt}</p>
-                                                <div className="up-badge">View Creation</div>
+                                                <div className="up-badge">
+                                                    {availableModels.find(m => m.id === item.modelId)?.name || 'Studio Creation'}
+                                                </div>
                                             </div>
                                         </div>
                                     </motion.div>
@@ -392,7 +396,7 @@ export default function UserProfile() {
                             </button>
 
                             <div className="up-lightbox-grid">
-                                <div className="up-lightbox-image-area">
+                                <div className="up-lightbox-image-area" ref={imageAreaRef}>
                                     <img
                                         src={getOptimizedImageUrl(selectedImage.imageUrl || selectedImage.url)}
                                         alt={selectedImage.prompt}
@@ -408,45 +412,93 @@ export default function UserProfile() {
                                         </div>
                                     </div>
 
-                                    <div className="up-sidebar-section">
-                                        <label>Prompt</label>
-                                        <p>{selectedImage.prompt}</p>
-                                    </div>
+                                    <label>Prompt</label>
+                                    <p>{selectedImage.prompt}</p>
+                                </div>
 
-                                    <div className="up-sidebar-actions">
-                                        <button
-                                            className="up-action-btn up-btn-primary"
-                                            onClick={() => {
-                                                const params = new URLSearchParams();
-                                                params.set('prompt', selectedImage.prompt);
-                                                if (selectedImage.modelId) params.set('model', selectedImage.modelId);
-                                                navigate(`/generate?${params.toString()}`);
-                                            }}
-                                        >
-                                            <RefreshCw size={18} />
-                                            Remix in Studio
-                                        </button>
-                                        <button
-                                            className="up-action-btn"
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(selectedImage.prompt);
-                                                // toast helper could be used here
-                                            }}
-                                        >
-                                            <Copy size={18} />
-                                            Copy Prompt
-                                        </button>
-                                        <button
-                                            className="up-action-btn"
-                                            onClick={() => {
-                                                const url = `${window.location.origin}${window.location.pathname}?view=${selectedImage.id.replace('show_', '')}`;
-                                                navigator.clipboard.writeText(url);
-                                            }}
-                                        >
-                                            <Share2 size={18} />
-                                            Copy Link
-                                        </button>
+                                <div className="up-sidebar-section">
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                        {selectedImage.steps && (
+                                            <div>
+                                                <label>Steps</label>
+                                                <div style={{ color: '#fff', fontSize: '0.95rem', fontFamily: 'monospace' }}>{selectedImage.steps}</div>
+                                            </div>
+                                        )}
+                                        {selectedImage.guidanceScale && (
+                                            <div>
+                                                <label>Guidance</label>
+                                                <div style={{ color: '#fff', fontSize: '0.95rem', fontFamily: 'monospace' }}>{selectedImage.guidanceScale}</div>
+                                            </div>
+                                        )}
+                                        {selectedImage.seed && (
+                                            <div style={{ gridColumn: 'span 2' }}>
+                                                <label>Seed</label>
+                                                <div style={{ color: '#fff', fontSize: '0.95rem', fontFamily: 'monospace', wordBreak: 'break-all' }}>{selectedImage.seed}</div>
+                                            </div>
+                                        )}
+                                        {selectedImage.scheduler && (
+                                            <div style={{ gridColumn: 'span 2' }}>
+                                                <label>Sampler</label>
+                                                <div style={{ color: '#fff', fontSize: '0.95rem' }}>{selectedImage.scheduler}</div>
+                                            </div>
+                                        )}
                                     </div>
+                                </div>
+
+                                <div className="up-sidebar-actions">
+                                    <button
+                                        className="up-action-btn up-btn-primary"
+                                        onClick={() => {
+                                            const params = new URLSearchParams();
+                                            params.set('prompt', selectedImage.prompt);
+                                            if (selectedImage.modelId) params.set('model', selectedImage.modelId);
+                                            if (selectedImage.seed) params.set('seed', selectedImage.seed);
+                                            if (selectedImage.steps) params.set('steps', selectedImage.steps);
+                                            if (selectedImage.guidanceScale) params.set('guidance', selectedImage.guidanceScale);
+                                            if (selectedImage.scheduler) params.set('scheduler', selectedImage.scheduler);
+                                            navigate(`/generate?${params.toString()}`);
+                                        }}
+                                    >
+                                        <RefreshCw size={18} />
+                                        Remix with Settings
+                                    </button>
+                                    <button
+                                        className="up-action-btn"
+                                        onClick={async () => {
+                                            if (!imageAreaRef.current) return;
+                                            const toastId = toast.loading('Capturing studio image...');
+                                            try {
+                                                const canvas = await html2canvas(imageAreaRef.current, {
+                                                    useCORS: true,
+                                                    backgroundColor: '#1a1a1a', // Match studio-like dark bg
+                                                    scale: 2, // High res capture
+                                                });
+
+                                                const link = document.createElement('a');
+                                                link.download = `dreambees-studio-${selectedImage.id}.png`;
+                                                link.href = canvas.toDataURL('image/png');
+                                                link.click();
+
+                                                toast.success("Studio capture downloaded", { id: toastId });
+                                            } catch (err) {
+                                                console.error("Capture failed", err);
+                                                toast.error("Failed to capture image", { id: toastId });
+                                            }
+                                        }}
+                                    >
+                                        <Download size={18} />
+                                        Download Capture
+                                    </button>
+                                    <button
+                                        className="up-action-btn"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(selectedImage.prompt);
+                                            toast.success("Prompt copied to clipboard");
+                                        }}
+                                    >
+                                        <Copy size={18} />
+                                        Copy Prompt
+                                    </button>
                                 </div>
                             </div>
                         </motion.div>
