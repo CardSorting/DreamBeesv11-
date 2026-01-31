@@ -54,7 +54,11 @@ export function useMockupData(creatorFilter) {
             lastDocRef.current = snapshot.docs[snapshot.docs.length - 1];
 
             if (isLoadMore) {
-                setImages(prev => [...prev, ...newImages]);
+                setImages(prev => {
+                    const existingIds = new Set(prev.map(p => p.id));
+                    const uniqueNew = newImages.filter(img => !existingIds.has(img.id));
+                    return [...prev, ...uniqueNew];
+                });
             } else {
                 setImages(newImages);
             }
