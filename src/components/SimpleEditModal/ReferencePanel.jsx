@@ -7,7 +7,8 @@ const ReferencePanel = ({
     isGenerating,
     isMobile
 }) => {
-    const imageUrl = referenceImage ? getOptimizedImageUrl(referenceImage.imageUrl || referenceImage.url || referenceImage) : '';
+    const rawImageUrl = referenceImage?.imageUrl || referenceImage?.url || referenceImage;
+    const imageUrl = rawImageUrl ? getOptimizedImageUrl(rawImageUrl) : null;
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '8px' : '12px' }}>

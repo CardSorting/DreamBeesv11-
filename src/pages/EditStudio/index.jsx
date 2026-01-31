@@ -66,11 +66,14 @@ const EditStudio = () => {
     useEffect(() => {
         const normalizeReference = (data, sourceCollection) => {
             if (!data) return null;
-            const imageUrl = data.imageUrl || data.url || data.thumbnailUrl;
+            const rawImageUrl = data.imageUrl || data.url || data.thumbnailUrl;
+            const imageUrl = rawImageUrl && rawImageUrl.trim() ? rawImageUrl : null;
+            const rawUrl = data.url || data.imageUrl || imageUrl;
+            const url = rawUrl && rawUrl.trim() ? rawUrl : null;
             return {
                 ...data,
                 imageUrl,
-                url: data.url || data.imageUrl || imageUrl,
+                url,
                 aspectRatio: data.aspectRatio || '1:1',
                 _collection: sourceCollection
             };
@@ -188,9 +191,20 @@ const EditStudio = () => {
                         reason: 'not_found'
                     });
                 } else {
+                    const normalized = normalizeReference(resolved.data, resolved.source);
+                    if (!normalized?.imageUrl) {
+                        setReferenceImage(null);
+                        setError('This generation is missing an image reference.');
+                        trackEvent('edit_load_failed', {
+                            generation_id: generationId,
+                            collection_hint: hintedCollection || 'none',
+                            reason: 'missing_image'
+                        });
+                        return;
+                    }
                     setReferenceImage({
                         id: resolved.id,
-                        ...normalizeReference(resolved.data, resolved.source)
+                        ...normalized
                     });
                 }
             } catch (err) {
