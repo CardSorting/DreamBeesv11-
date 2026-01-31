@@ -17,7 +17,7 @@ export const processDressUpTask = async (req) => {
         }
 
         await docRef.update({ status: "processing" });
-        const cleanBase64 = image.includes('base64,') ? image.split('base64,')[1] : image;
+
 
         const imageRef = await db.collection("images").add({
             userId, prompt, modelId: "dressup",
@@ -28,22 +28,14 @@ export const processDressUpTask = async (req) => {
         await docRef.update({ resultImageId: imageRef.id, status: 'processing' });
 
 
-
-        const { VertexAI } = await import("@google-cloud/vertexai");
-        const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
-        const model = vertexAI.getGenerativeModel({ model: "gemini-2.5-flash-image" });
-
-        const request = { contents: [{ role: 'user', parts: [{ inlineData: { mimeType: "image/png", data: cleanBase64 } }, { text: prompt }] }] };
-
-        // Reverted to direct call
-        const result = await model.generateContent(request);
-
-        const response = await result.response;
-        const generatedImageBase64 = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || null;
-
-        if (!generatedImageBase64) { throw new Error("No image data returned from Gemini"); }
-
-        const imageBuffer = Buffer.from(generatedImageBase64, 'base64');
+        const { modalAPI } = await import("../lib/modal.js");
+        const imageBuffer = await modalAPI.editAndWait({
+            prompt,
+            image: image, // Use original input (URL or Base64)
+            num_steps: 4,
+            width: 1024,
+            height: 1024
+        });
         const { default: sharp } = await import("sharp");
         const sharpImg = sharp(imageBuffer);
         const webpBuffer = await sharpImg.webp({ quality: 90 }).toBuffer();

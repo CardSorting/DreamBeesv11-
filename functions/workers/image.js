@@ -66,48 +66,23 @@ export const processImageTask = async (req) => {
 
         if (modelId === 'flux-klein-4b') {
             imageBuffer = await (async () => {
-                const endpoint = ENDPOINTS.flux_klein;
-                const body = {
-                    prompt,
-                    image: req.data.image, // Base64 input
-                    strength: 0.75, // Default strength
-                    steps: 4, // Fast 4-step
-                    width: resolution.width,
-                    height: resolution.height
-                };
+                const { modalAPI } = await import("../lib/modal.js");
+                logger.info(`[${requestId}] Running Flux Klein Edit via ModalAPI`, { userId, modelId });
 
-                logger.info(`[${requestId}] Running Flux Klein Edit`);
-                const submitResponse = await fetch(`${endpoint}/edit`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(body)
-                });
-
-                if (!submitResponse.ok) {
-                    const e = await submitResponse.text();
-                    throw new Error(`Flux Klein Submission Failed (${submitResponse.status}): ${e}`);
+                try {
+                    const result = await modalAPI.editAndWait({
+                        prompt,
+                        image: req.data.image, // Base64 input
+                        num_steps: 4, // Fast 4-step as per spec
+                        width: resolution.width,
+                        height: resolution.height
+                    });
+                    logger.info(`[${requestId}] Flux Klein Edit completed successfully`);
+                    return result;
+                } catch (error) {
+                    logger.error(`[${requestId}] Flux Klein Edit failed`, error);
+                    throw error;
                 }
-
-                const { job_id } = await submitResponse.json();
-
-                // Poll for result
-                for (let poll = 0; poll < 60; poll++) {
-                    await new Promise(r => setTimeout(r, 2000));
-                    const resultRes = await fetch(`${endpoint}/result/${job_id}`);
-
-                    if (resultRes.status === 200) {
-                        const ct = resultRes.headers.get('content-type') || '';
-                        if (ct.includes('image/')) {
-                            return Buffer.from(await resultRes.arrayBuffer());
-                        }
-                        // Check if JSON says still generating
-                        const json = await resultRes.json().catch(() => ({}));
-                        if (json.status === 'failed') {
-                            throw new Error(json.error || "Flux Klein Generation Failed");
-                        }
-                    }
-                }
-                throw new Error("Flux Klein generation timed out");
             })();
         }
         else if (modelId === 'zit-model' || modelId === 'zit-base-model') {

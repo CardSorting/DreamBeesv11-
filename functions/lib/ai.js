@@ -169,7 +169,97 @@ export const enhancePromptWithGemini = async (prompt) => {
 };
 
 // Helper for Vision-based Style Transformation (using Vertex AI)
+// Helper for Flux-based Style Transformation (using Modal API)
+export const transformImageWithFlux = async (imageUrl, styleName, instructions, intensity = 'medium', userId = 'system') => {
+    const { modalAPI } = await import("./modal.js");
+
+    const prompt = `Analyze the subject, composition, and mood of the input image and recreate it in the "${styleName}" style. ${instructions}. Match the subject and composition exactly but apply the visual aesthetics of ${styleName}. Intensity: ${intensity}.`;
+
+    logger.info(`[TransformFlux] Calling Modal API with style: ${styleName}, intensity: ${intensity}`);
+
+    try {
+        const imageBuffer = await modalAPI.editAndWait({
+            prompt,
+            image: imageUrl, // Can be URL as per API spec
+            num_steps: 4,
+            width: 1024,
+            height: 1024
+        });
+
+        // 4. Process Output (Buffer -> Sharp)
+        const { default: sharp } = await import("sharp");
+        const sharpImg = sharp(imageBuffer);
+        const webpBuffer = await sharpImg.webp({ quality: 90 }).toBuffer();
+
+        // Create Thumbnail
+        const thumbBuffer = await sharpImg
+            .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
+            .webp({ quality: 80 })
+            .toBuffer();
+
+        // Create LQIP
+        const lqipBuffer = await sharpImg
+            .resize(20, 20, { fit: 'inside' })
+            .webp({ quality: 20 })
+            .toBuffer();
+        const lqip = `data:image/webp;base64,${lqipBuffer.toString('base64')}`;
+
+        // Upload to B2
+        const baseFolder = `generated/${userId}/transformed_${Date.now()}`;
+        const originalFilename = `${baseFolder}.webp`;
+        const thumbFilename = `${baseFolder}_thumb.webp`;
+
+        const { PutObjectCommand } = await import("@aws-sdk/client-s3");
+        const s3 = await getS3Client();
+
+        await Promise.all([
+            s3.send(new PutObjectCommand({
+                Bucket: B2_BUCKET,
+                Key: originalFilename,
+                Body: webpBuffer,
+                ContentType: "image/webp"
+            })),
+            s3.send(new PutObjectCommand({
+                Bucket: B2_BUCKET,
+                Key: thumbFilename,
+                Body: thumbBuffer,
+                ContentType: "image/webp"
+            }))
+        ]);
+
+        const finalImageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalFilename}`;
+        const finalThumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbFilename}`;
+
+        // Save to Firestore 'images' collection
+        const imageRef = await db.collection("images").add({
+            userId,
+            prompt: prompt,
+            aspectRatio: "match_input_image",
+            modelId: "flux-klein-4b",
+            imageUrl: finalImageUrl,
+            thumbnailUrl: finalThumbnailUrl,
+            lqip,
+            isPublic: true,
+            createdAt: new Date(),
+            type: 'restyled'
+        });
+
+        return {
+            imageUrl: finalImageUrl,
+            thumbnailUrl: finalThumbnailUrl,
+            lqip,
+            imageId: imageRef.id
+        };
+    } catch (error) {
+        logger.error(`[TransformFlux] Modal API error:`, error);
+        throw new Error(`Flux transformation failed: ${error.message}`);
+    }
+};
+
 export const transformImageWithGemini = async (imageUrl, styleName, instructions, intensity = 'medium', userId = 'system') => {
+    // Optionally redirect to Flux if requested or as a default
+    // For now, let's keep Gemini as is but keep the Flux option available
+
     // 1. Fetch Input Image & Convert to Base64
     let inputBase64 = null;
     let mimeType = "image/png";

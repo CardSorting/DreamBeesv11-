@@ -37,7 +37,7 @@ export const useEditLogic = ({ isOpen, onClose, referenceImage }) => {
     useEffect(() => {
         if (!currentJobId) return;
 
-        const jobRef = doc(db, 'jobs', currentJobId);
+        const jobRef = doc(db, 'generation_queue', currentJobId);
         const unsubscribe = onSnapshot(jobRef, (snapshot) => {
             if (!snapshot.exists()) return;
 

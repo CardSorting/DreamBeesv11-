@@ -112,6 +112,7 @@ const PersonaChatContent = () => {
     const [imageItem, setImageItem] = useState(location.state?.imageItem || null);
     const [persona, setPersona] = useState(null);
     const [messages, setMessages] = useState([]);
+    const messagesRef = useRef([]);
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSending, setIsSending] = useState(false);
@@ -201,6 +202,10 @@ const PersonaChatContent = () => {
             }
         };
     }, []);
+
+    useEffect(() => {
+        messagesRef.current = messages;
+    }, [messages]);
 
     // Debugging dependency changes
     const prevDeps = useRef({ id, uid: currentUser?.uid });
@@ -491,6 +496,21 @@ const PersonaChatContent = () => {
 
             bindSafe('new-message', (data) => {
                 console.warn("[Chat] Received new-message:", data);
+                if (data.audioUrl && data.id) {
+                    setMessageAudioMap(prev => ({
+                        ...prev,
+                        [data.id]: data.audioUrl
+                    }));
+                }
+
+                if (data.id && pendingAudioUpdates.current[data.id]) {
+                    setMessageAudioMap(prev => ({
+                        ...prev,
+                        [data.id]: pendingAudioUpdates.current[data.id]
+                    }));
+                    delete pendingAudioUpdates.current[data.id];
+                }
+
                 setMessages(prev => {
                     const isDuplicate = prev.some(m =>
                         m.id === data.id || (
@@ -513,13 +533,27 @@ const PersonaChatContent = () => {
                     }
 
                     console.warn("[Chat] Adding message to chat:", data.id || Date.now().toString());
-                    return [...prev, { ...data, id: data.id || Date.now().toString() }];
+                    const nextMessages = [...prev, { ...data, id: data.id || Date.now().toString() }];
+                    if (data.role === 'model') {
+                        pendingAiMessageIdRef.current = null;
+                        return nextMessages.filter(m => m.status !== 'pending_ai');
+                    }
+                    return nextMessages;
                 });
+
+                if (data.role === 'model') {
+                    setIsPersonaTyping(false);
+                }
             });
 
             bindSafe('audio-update', (data) => {
                 if (data.audioUrl && data.messageId) {
                     console.warn("[AI Voice] Received audio for message:", data.messageId);
+                    const hasMessage = messagesRef.current.some(msg => msg.id === data.messageId);
+                    if (!hasMessage) {
+                        pendingAudioUpdates.current[data.messageId] = data.audioUrl;
+                        return;
+                    }
                     setMessageAudioMap(prev => ({
                         ...prev,
                         [data.messageId]: data.audioUrl
@@ -712,8 +746,15 @@ const PersonaChatContent = () => {
 
             const audioMap = {};
             liveMessages.forEach(msg => {
-                if (msg.audioUrl && msg.id) {
+                if (!msg.id) return;
+                if (msg.audioUrl) {
                     audioMap[msg.id] = msg.audioUrl;
+                    return;
+                }
+                const queuedAudio = pendingAudioUpdates.current[msg.id];
+                if (queuedAudio) {
+                    audioMap[msg.id] = queuedAudio;
+                    delete pendingAudioUpdates.current[msg.id];
                 }
             });
             if (Object.keys(audioMap).length > 0) {
@@ -1271,7 +1312,7 @@ const PersonaChatContent = () => {
                                 )}
                             </div>
                         ))}
-                        {(isPersonaTyping || isSending) && (
+                        {((isPersonaTyping || isSending) && !messages.some(msg => msg.status === 'pending_ai')) && (
                             <div className="twitch-message ai-typing-msg">
                                 <span className="message-author ai-author">
                                     <span className="chat-badge ai-badge">AI</span>

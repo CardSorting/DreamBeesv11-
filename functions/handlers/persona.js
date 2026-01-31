@@ -178,7 +178,12 @@ export const handleChatPersona = async (request) => {
 
         // 10. Hype Management
         const hypeIncrement = 2;
-        const newScore = Math.min(100, (persona.hypeScore || 0) + hypeIncrement);
+        const currentHypeScore = persona.hypeScore || 0;
+        const hasZapSupport = (persona.zapCurrent || 0) > 0;
+        const shouldBoostHype = hasZapSupport || currentHypeScore >= 20;
+        const newScore = shouldBoostHype
+            ? Math.min(100, currentHypeScore + hypeIncrement)
+            : currentHypeScore;
         const newLevel = Math.ceil(newScore / 20) || 1;
         await Store.updatePersonaState(imageId, {
             hypeScore: newScore,

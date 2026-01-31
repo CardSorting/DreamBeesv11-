@@ -1,7 +1,7 @@
 import { HttpsError } from "firebase-functions/v2/https";
 import { db, FieldValue, getFunctions } from "../firebaseInit.js";
 import { handleError } from "../lib/utils.js";
-import { enhancePromptWithGemini, transformImageWithGemini } from "../lib/ai.js";
+import { enhancePromptWithGemini } from "../lib/ai.js";
 // [REMOVED] import { HarmCategory, HarmBlockThreshold } from "@google-cloud/vertexai";
 import { CostManager } from "../lib/costs.js";
 import { Billing } from "../lib/billing.js";
@@ -88,14 +88,11 @@ export const handleTransformImage = async (request) => {
     try {
         if (requestId) { db.collection('action_logs').doc(requestId); }
 
-
-        const result = await transformImageWithGemini(imageUrl, styleName, instructions, intensity, uid);
+        const { transformImageWithFlux } = await import("../lib/ai.js");
+        const result = await transformImageWithFlux(imageUrl, styleName, instructions, intensity, uid);
         return result;
         // Uses 'runAsync' for the Debit -> Action -> Refund cycle
         // We drop explicit 'action_logs' write as 'wallet_transactions' covers the audit trail.
-
-
-
     } catch (error) {
         throw handleError(error, { uid });
     }
