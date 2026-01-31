@@ -480,8 +480,8 @@ export default function Landing() {
                                     { feature: "Ownership", us: "100% Commercial Rights", them: "Varies / Subscription Locked" },
                                     { feature: "Cost", us: "Flexible Credit Packs", them: "Expensive Monthly Subs" },
                                     { feature: "Speed", us: "Real-time (Turbo)", them: "Queue / Wait Times" }
-                                ].map((row, i) => (
-                                    <tr key={i} style={{ borderBottom: i === 4 ? 'none' : '1px solid var(--color-border-subtle)' }}>
+                                ].map((row) => (
+                                    <tr key={`comparison-${row.feature.replace(/\s+/g, '-').toLowerCase()}`} style={{ borderBottom: row.feature === 'Speed' ? 'none' : '1px solid var(--color-border-subtle)' }}>
                                         <td style={{ padding: '24px 20px', fontWeight: '500' }}>{row.feature}</td>
                                         <td style={{ padding: '24px 20px', textAlign: 'center', color: 'var(--color-text-main)', fontWeight: '600' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
@@ -677,8 +677,8 @@ function MarqueeImages() {
             width: 'max-content',
             gap: '32px'
         }} className="animate-marquee">
-            {displayImages.map((src, i) => (
-                <div key={i} style={{
+            {displayImages.map((src, i) => ({ src, mIdx: i })).map(mItem => (
+                <div key={`marquee-p-${mItem.mIdx}`} style={{
                     flex: '0 0 320px',
                     height: '240px',
                     borderRadius: '12px',
@@ -697,10 +697,10 @@ function MarqueeImages() {
                     }}
                 >
                     <img
-                        src={src}
+                        src={mItem.src}
                         width="320"
                         height="240"
-                        alt={altKeywords[i % altKeywords.length]}
+                        alt={altKeywords[mItem.mIdx % altKeywords.length]}
                         loading="lazy"
                         decoding="async"
                         style={{

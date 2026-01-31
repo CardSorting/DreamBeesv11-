@@ -3,7 +3,7 @@ import { doc, writeBatch } from 'firebase/firestore';
 
 export const seedService = {
     seedMockupItems: async () => {
-        console.log('[SeedService] Starting client-side seed...');
+        console.warn('[SeedService] Starting client-side seed...');
 
         // Items definition copy-pasted from server script but for client usage
         const ITEMS = [
@@ -128,7 +128,7 @@ export const seedService = {
         });
 
         await batch.commit();
-        console.log('[SeedService] Database populated successfully!');
+        console.warn('[SeedService] Database populated successfully!');
         return true;
     }
 };

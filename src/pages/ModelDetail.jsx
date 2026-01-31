@@ -73,7 +73,7 @@ export default function ModelDetail() {
 
     useEffect(() => {
         if (sortParam && ['TOP_RATED', 'LATEST'].includes(sortParam)) {
-             
+
             setSortBy(prev => (prev !== sortParam ? sortParam : prev));
         }
     }, [sortParam]);
@@ -100,7 +100,7 @@ export default function ModelDetail() {
                 (model?.previewImages?.find(img => img.id === viewId || getOptimizedImageUrl(img) === viewId)); // Fallback logic
 
             if (found) {
-                setActiveShowcaseImage(typeof found === 'string' ? { url: getOptimizedImageUrl(found), id: viewId } : found);  
+                setActiveShowcaseImage(typeof found === 'string' ? { url: getOptimizedImageUrl(found), id: viewId } : found);
             } else if (viewId?.startsWith('http')) {
                 // Direct URL fallback if ID not found but it looks like a URL (legacy)
                 setActiveShowcaseImage({ url: viewId, id: viewId });
@@ -183,7 +183,7 @@ export default function ModelDetail() {
 
         try {
             isFetchingRef.current = true;
-            console.log(`[ModelDetail] Sentinel triggered: Loading more images for ${model.id}`);
+            console.warn(`[ModelDetail] Sentinel triggered: Loading more images for ${model.id}`);
             const updatedImages = await getShowcaseImages(model.id, true);
             if (updatedImages && updatedImages.length > showcaseImages.length) {
                 setShowcaseImages(updatedImages);
@@ -538,7 +538,7 @@ export default function ModelDetail() {
                             {Array.from({ length: 12 }).map((_, idx) => {
                                 const ratios = ['1/1', '3/4', '4/5', '2/3', '1/1', '3/5'];
                                 return (
-                                    <div key={idx} className="masonry-item" style={{ marginBottom: '4px' }}>
+                                    <div key={`skeleton-${idx}`} className="masonry-item" style={{ marginBottom: '4px' }}>
                                         <div className="image-card" style={{
                                             aspectRatio: ratios[idx % ratios.length],
                                             background: 'rgba(255,255,255,0.03)',

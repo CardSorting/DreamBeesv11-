@@ -278,18 +278,18 @@ export default function ImageDetail() {
 
                             {/* Thumbnail Strip */}
                             <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', maxWidth: '100%', padding: '10px' }}>
-                                {image.slides.map((slide, idx) => (
+                                {image.slides.map((slide, idx) => ({ ...slide, originalIndex: idx })).map((slide) => (
                                     <div
-                                        key={idx}
-                                        onClick={() => setActiveSlideIndex(idx)}
+                                        key={`slide-ref-${slide.id || slide.imageUrl}`}
+                                        onClick={() => setActiveSlideIndex(slide.originalIndex)}
                                         style={{
                                             width: '60px', height: '60px',
                                             borderRadius: '8px', overflow: 'hidden',
-                                            border: (activeSlideIndex || 0) === idx ? '2px solid var(--color-accent-primary)' : '2px solid transparent',
-                                            cursor: 'pointer', opacity: (activeSlideIndex || 0) === idx ? 1 : 0.6
+                                            border: (activeSlideIndex || 0) === slide.originalIndex ? '2px solid var(--color-accent-primary)' : '2px solid transparent',
+                                            cursor: 'pointer', opacity: (activeSlideIndex || 0) === slide.originalIndex ? 1 : 0.6
                                         }}
                                     >
-                                        <img src={slide.thumbnailUrl || slide.imageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <img src={slide.thumbnailUrl || slide.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     </div>
                                 ))}
                             </div>

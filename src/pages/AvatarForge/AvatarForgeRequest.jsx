@@ -116,9 +116,9 @@ export default function AvatarForgeRequest() {
                         <div className="tools-divider" />
 
                         <div className="inspirations-scroll">
-                            {INSPIRATIONS.map((insp, i) => (
+                            {INSPIRATIONS.map((insp) => (
                                 <button
-                                    key={i}
+                                    key={insp}
                                     className="inspiration-chip"
                                     onClick={() => setPrompt(insp)}
                                 >

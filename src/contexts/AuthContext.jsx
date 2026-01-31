@@ -64,11 +64,11 @@ export function AuthProvider({ children }) {
             const userSnap = await getDoc(userRef);
 
             if (userSnap.exists()) {
-                console.log("User document verified exist.");
+                console.warn("User document verified exist.");
                 return;
             }
 
-            console.log("User document missing, initializing...");
+            console.warn("User document missing, initializing...");
 
             // 2. Retry Logic for Creation (Handled by useApi)
             await apiCall('api', {
@@ -85,7 +85,7 @@ export function AuthProvider({ children }) {
             localStorage.removeItem('referralCode'); // Clear after use
 
             setPendingBirthday(null);
-            console.log("User initialization successful via useApi");
+            console.warn("User initialization successful via useApi");
 
         } catch (error) {
             console.error("Critical: Failed to ensure user initialization:", error);
@@ -104,7 +104,7 @@ export function AuthProvider({ children }) {
         // Note: onAuthStateChanged fires with null initially, then user if found.
 
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
-            console.log("Auth State Changed:", user ? "User logged in" : "No user");
+            console.warn("Auth State Changed:", user ? "User logged in" : "No user");
 
             // If we are coming back from a redirect, sometimes we want to check getRedirectResult
             // just to clear the pending state or get additional info (like OAuth tokens).
@@ -115,11 +115,11 @@ export function AuthProvider({ children }) {
             // the definitive signal for "initialization complete".
 
             if (user) {
-                console.log(`[Auth] User detected: ${user.uid}. Ensuring initialization...`);
+                console.warn(`[Auth] User detected: ${user.uid}. Ensuring initialization...`);
                 identifyUser(user.uid);
                 try {
                     await ensureUserInitialized(user);
-                    console.log("[Auth] User initialization flow complete.");
+                    console.warn("[Auth] User initialization flow complete.");
                 } catch (err) {
                     console.error("[Auth] User initialization flow failed:", err);
                 }

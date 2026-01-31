@@ -1,0 +1,148 @@
+
+/Users/bozoegg/Desktop/DreamBeesv11/functions/lib/utils.js
+  12:9  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/AgeVerificationModal.jsx
+  115:38  warning  Do not use Array index in keys                                                     react/no-array-index-key
+  185:40  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/BookReaderModal.jsx
+  102:46  warning  Do not use Array index in keys  react/no-array-index-key
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/FeedPost.jsx
+  488:55  warning  Do not use Array index in keys  react/no-array-index-key
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/ShowcaseModal.jsx
+  223:55  warning  Do not use Array index in keys  react/no-array-index-key
+  235:52  warning  Do not use Array index in keys  react/no-array-index-key
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/Sidebar.jsx
+  114:44  warning  Do not use Array index in keys  react/no-array-index-key
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/SuggestedPanel.jsx
+  138:38  warning  Do not use Array index in keys  react/no-array-index-key
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/contexts/AuthContext.jsx
+   67:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+   71:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+   88:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  107:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  118:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  122:21  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/contexts/ModelContext.jsx
+  125:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  142:25  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  203:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  226:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  312:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  318:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  324:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  332:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  355:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  420:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  442:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  461:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  481:9   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  490:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/features/persona-live/BrowsePage.jsx
+  78:39  warning  Do not use Array index in keys  react/no-array-index-key
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/features/persona-live/FollowingPage.jsx
+  32:66  warning  Do not use Array index in keys  react/no-array-index-key
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/features/persona-live/PersonaChat.jsx
+  209:9   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  215:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  221:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  227:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  233:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  238:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  248:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  252:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  290:37  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  322:37  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  363:21  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  491:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  503:25  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  509:25  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  513:21  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  520:21  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  534:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  553:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  561:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  579:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/firebase.js
+  38:5  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  43:7  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/hooks/generator/useGenerationLogic.js
+   75:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  305:21  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/hooks/generator/useMagicEnhance.js
+  44:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  49:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  56:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/hooks/generator/useVideoGeneration.js
+  85:17  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/main.jsx
+  30:19  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  32:19  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AvatarForge/AvatarForgeFloor.jsx
+  274:39  warning  Do not use Array index in keys  react/no-array-index-key
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/AvatarForge/AvatarForgeRequest.jsx
+  121:42  warning  Do not use Array index in keys  react/no-array-index-key
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/DressUp.jsx
+  222:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  590:39  warning  Do not use Array index in keys                                                     react/no-array-index-key
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Features.jsx
+  94:31  warning  Do not use Array index in keys  react/no-array-index-key
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/ImageDetail.jsx
+  283:46  warning  Do not use Array index in keys  react/no-array-index-key
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Landing.jsx
+  484:46  warning  Do not use Array index in keys  react/no-array-index-key
+  681:27  warning  Do not use Array index in keys  react/no-array-index-key
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/MobileGenerator.jsx
+  490:42  warning  Do not use Array index in keys  react/no-array-index-key
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/ModelDetail.jsx
+  186:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  541:47  warning  Do not use Array index in keys                                                     react/no-array-index-key
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Pricing.jsx
+  278:51  warning  Do not use Array index in keys  react/no-array-index-key
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/ShowcaseDetail.jsx
+  167:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  448:30  warning  Do not use Array index in keys                                                     react/no-array-index-key
+  638:38  warning  Do not use Array index in keys                                                     react/no-array-index-key
+  650:46  warning  Do not use Array index in keys                                                     react/no-array-index-key
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/Slideshow.jsx
+  151:21  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  167:9   warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  231:13  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  516:50  warning  Do not use Array index in keys                                                     react/no-array-index-key
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/pages/UserProfile.jsx
+  231:30  warning  Do not use Array index in keys  react/no-array-index-key
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/services/seedService.js
+    6:9  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  131:9  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+✖ 84 problems (0 errors, 84 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+

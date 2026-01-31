@@ -90,8 +90,8 @@ export default function Features() {
                 gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
                 gap: '30px'
             }}>
-                {features.map((feature, index) => (
-                    <div key={index} className="glass-panel" style={{ padding: '30px', transition: 'transform 0.2s' }}
+                {features.map((feature) => (
+                    <div key={feature.title} className="glass-panel" style={{ padding: '30px', transition: 'transform 0.2s' }}
                         onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
                         onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
                         <div style={{

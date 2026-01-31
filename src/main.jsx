@@ -27,9 +27,9 @@ if ('serviceWorker' in navigator) {
             installingWorker.onstatechange = () => {
               if (installingWorker.state === 'installed') {
                 if (navigator.serviceWorker.controller) {
-                  console.log('[SW] New content is available; please refresh.');
+                  console.warn('[SW] New content is available; please refresh.');
                 } else {
-                  console.log('[SW] Content is cached for offline use.');
+                  console.warn('[SW] Content is cached for offline use.');
                 }
               }
             };

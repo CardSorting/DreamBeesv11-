@@ -219,7 +219,7 @@ export default function DressUp() {
     useEffect(() => {
         const savedId = localStorage.getItem('dressUpRequestId');
         if (savedId) {
-            console.log("Restoring active generation:", savedId);
+            console.warn("Restoring active generation:", savedId);
             startListening(savedId);
         }
     }, [startListening]);
@@ -586,8 +586,8 @@ export default function DressUp() {
                     </button>
 
                     <div className="page-dots">
-                        {Array.from({ length: Math.max(1, Math.ceil((getCurrentItems().length || 0) / 6)) }).map((_, i) => (
-                            <div key={i} className={`page-dot ${i === page ? 'active' : ''}`} />
+                        {Array.from({ length: Math.max(1, Math.ceil((getCurrentItems().length || 0) / 6)) }).map((_, i) => i).map(pIndex => (
+                            <div key={`page-${activeTab}-${pIndex}`} className={`page-dot ${pIndex === page ? 'active' : ''}`} />
                         ))}
                     </div>
 

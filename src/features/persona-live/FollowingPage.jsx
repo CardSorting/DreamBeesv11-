@@ -29,7 +29,7 @@ const FollowingPage = () => {
                 <h2>Live Channels</h2>
                 <div className="streams-grid">
                     {loading ? (
-                        Array(4).fill(0).map((_, i) => <div key={i} className="stream-skeleton"></div>)
+                        [1, 2, 3, 4].map(n => <div key={`following-sk-${n}`} className="stream-skeleton"></div>)
                     ) : (
                         personas.map(p => (
                             <div key={p.id} className="stream-card-twitch" onClick={() => navigate(`/channel/${p.id}`)}>

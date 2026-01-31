@@ -270,8 +270,8 @@ export default function AvatarForgeFloor() {
             <div className="museum-content-v3">
                 {loading ? (
                     <div className="floor-grid-skeleton-v3">
-                        {[...Array(12)].map((_, i) => (
-                            <div key={i} className="skeleton-card-v3 animate-pulse" />
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => (
+                            <div key={`forge-sk-${n}`} className="skeleton-card-v3 animate-pulse" />
                         ))}
                     </div>
                 ) : filteredItems.length === 0 ? (

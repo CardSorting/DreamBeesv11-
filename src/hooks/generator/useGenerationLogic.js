@@ -72,7 +72,7 @@ export function useGenerationLogic({
         // If onSnapshot stalls or Firestore stream breaks, this ensures we eventually get the result.
         const startFallback = () => {
             if (fallbackTimer) return;
-            console.log(`[useGenerationLogic] Initializing backup polling for ${requestId}`);
+            console.warn(`[useGenerationLogic] Initializing backup polling for ${requestId}`);
             fallbackTimer = setInterval(async () => {
                 try {
                     const { getDoc, doc } = await import('firebase/firestore');
@@ -302,7 +302,7 @@ export function useGenerationLogic({
             try {
                 const { requestId, jobType } = JSON.parse(saved);
                 if (requestId) {
-                    console.log("Restoring active generation job:", requestId);
+                    console.warn("Restoring active generation job:", requestId);
                     // We need these setters to handle the restored state
                     if (setGenerating) setGenerating(true);
                     if (setCurrentJobId) setCurrentJobId(requestId);

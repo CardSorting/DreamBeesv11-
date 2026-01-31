@@ -1,5 +1,5 @@
 import { db } from "../firebaseInit.js";
-import { getS3Client, fetchWithTimeout } from "./utils.js";
+import { getS3Client, fetchWithTimeout, logger } from "./utils.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "./constants.js";
 // [REMOVED] import { vertexFlow } from "./vertexFlow.js";
 
@@ -107,7 +107,7 @@ export async function generateVisionPrompt(imageUrl) {
             const contentType = imgRes.headers.get('content-type');
             if (contentType) { mimeType = contentType; }
         } catch (e) {
-            console.error("Failed to fetch image for Vertex AI:", e);
+            logger.error("Failed to fetch image for Vertex AI:", e);
             throw new Error("Could not retrieve image for analysis");
         }
     }
@@ -182,7 +182,7 @@ export const transformImageWithGemini = async (imageUrl, styleName, instructions
         const contentType = imgRes.headers.get('content-type');
         if (contentType) { mimeType = contentType; }
     } catch (e) {
-        console.error("[Transform] Failed to fetch source image:", e);
+        logger.error("[Transform] Failed to fetch source image:", e);
         throw new Error("Could not retrieve source image for transformation");
     }
 
@@ -194,7 +194,7 @@ export const transformImageWithGemini = async (imageUrl, styleName, instructions
     // 3. Construct Prompt
     const prompt = `Analyze the subject, composition, and mood of the input image and recreate it in the "${styleName}" style. ${instructions}. Match the subject and composition exactly but apply the visual aesthetics of ${styleName}. Intensity: ${intensity}.`;
 
-    console.log(`[Transform] Calling Vertex AI with style: ${styleName}, intensity: ${intensity}`);
+    logger.info(`[Transform] Calling Vertex AI with style: ${styleName}, intensity: ${intensity}`);
 
     const request = {
         contents: [
@@ -217,7 +217,7 @@ export const transformImageWithGemini = async (imageUrl, styleName, instructions
 
     try {
         // Reverted to direct call
-        console.log(`[Transform] Executing Vertex AI call for ${styleName}...`);
+        logger.info(`[Transform] Executing Vertex AI call for ${styleName}...`);
         const result = await model.generateContent(request);
 
         const response = await result.response;
@@ -236,7 +236,7 @@ export const transformImageWithGemini = async (imageUrl, styleName, instructions
         }
 
     } catch (error) {
-        console.error(`[Transform] Vertex AI API error:`, error);
+        logger.error(`[Transform] Vertex AI API error:`, error);
         throw new Error(`Vertex AI call failed: ${error.message}`);
     }
 
@@ -447,7 +447,7 @@ export const formatMemeWithGemini = async (imageUrl, text, userId = 'system') =>
         const contentType = imgRes.headers.get('content-type');
         if (contentType) { mimeType = contentType; }
     } catch (e) {
-        console.error("[Meme] Failed to fetch source image:", e);
+        logger.error("[Meme] Failed to fetch source image:", e);
         throw new Error("Could not retrieve source image for meme generation");
     }
 
@@ -463,10 +463,10 @@ export const formatMemeWithGemini = async (imageUrl, text, userId = 'system') =>
     let prompt;
     if (text && text.trim()) {
         prompt = `Format this image as a meme with the text: "${text}". Return only the image.`;
-        console.log(`[Meme] Calling Vertex AI with text: ${text}`);
+        logger.info(`[Meme] Calling Vertex AI with text: ${text}`);
     } else {
         prompt = `Analyze this image. INVENT a funny, internet-style meme caption for it that fits the image context perfectly. Then, FORMAT the image as a meme with that caption. You have permission to invent the text. Return only the final meme image.`;
-        console.log(`[Meme] Calling Vertex AI with AUTO-GEN mode`);
+        logger.info(`[Meme] Calling Vertex AI with AUTO-GEN mode`);
     }
 
     const request = {
@@ -508,7 +508,7 @@ export const formatMemeWithGemini = async (imageUrl, text, userId = 'system') =>
         }
 
     } catch (error) {
-        console.error(`[Meme] Vertex AI API error:`, error);
+        logger.error(`[Meme] Vertex AI API error:`, error);
         throw new Error(`Vertex AI call failed: ${error.message}`);
     }
 

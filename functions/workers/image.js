@@ -92,7 +92,7 @@ export const processImageTask = async (req) => {
                 // Poll for result
                 for (let poll = 0; poll < 60; poll++) {
                     await new Promise(r => setTimeout(r, 2000));
-                    let resultRes = await fetch(`${endpoint}/result/${job_id}`);
+                    const resultRes = await fetch(`${endpoint}/result/${job_id}`);
 
                     if (resultRes.status === 200) {
                         const ct = resultRes.headers.get('content-type') || '';
@@ -101,7 +101,9 @@ export const processImageTask = async (req) => {
                         }
                         // Check if JSON says still generating
                         const json = await resultRes.json().catch(() => ({}));
-                        if (json.status === 'failed') throw new Error(json.error || "Flux Klein Generation Failed");
+                        if (json.status === 'failed') {
+                            throw new Error(json.error || "Flux Klein Generation Failed");
+                        }
                     }
                 }
                 throw new Error("Flux Klein generation timed out");

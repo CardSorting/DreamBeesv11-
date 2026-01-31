@@ -484,8 +484,8 @@ const FeedPost = ({
                                         position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)',
                                         display: 'flex', gap: '6px', zIndex: 10
                                     }}>
-                                        {imgItem.results.map((_, i) => (
-                                            <div key={i} style={{
+                                        {imgItem.results.map((res, i) => (
+                                            <div key={res.id || `${imgItem.id}-indicator-${i}`} style={{
                                                 width: '6px', height: '6px', borderRadius: '50%',
                                                 background: i === activeSlide ? 'white' : 'rgba(255,255,255,0.4)',
                                                 transition: 'all 0.3s ease'

@@ -9,7 +9,8 @@ const app = initializeApp({
     projectId: process.env.GCLOUD_PROJECT || process.env.GCP_PROJECT || "dreambees-alchemist"
 });
 
-console.log("[FirebaseInit] Initialized with project:", app.options.projectId);
+import { logger } from "./lib/utils.js";
+logger.info(`[FirebaseInit] Initialized with project:`, { projectId: app.options.projectId });
 
 import { getStorage } from "firebase-admin/storage";
 

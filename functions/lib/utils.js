@@ -98,7 +98,7 @@ export async function retryOperation(operation, options = {}) {
             return await operation();
         } catch (error) {
             attempt++;
-            if (attempt > retries) {throw error;}
+            if (attempt > retries) { throw error; }
 
             error.code === 'esockettimedout' ||
                 (error.message && (
@@ -142,7 +142,7 @@ export async function fetchWithRetry(resource, options = {}) {
  * Returns the successful response and the URL that succeeded.
  */
 export async function fetchWithFallback(urls, options = {}) {
-    if (!urls || !urls.length) {throw new Error("No URLs provided for fallback");}
+    if (!urls || !urls.length) { throw new Error("No URLs provided for fallback"); }
 
     const { retries = 3, ...fetchOptions } = options;
     let lastErr;
@@ -190,7 +190,7 @@ export async function verifyB2FilesExist(originalFilename, thumbFilename) {
 }
 
 export const detectImageFormat = (buffer) => {
-    if (buffer.length < 4) {return null;}
+    if (buffer.length < 4) { return null; }
     // PNG: 89 50 4E 47
     if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
         return 'image/png';
@@ -234,7 +234,7 @@ export function getPromptMetadata(prompt) {
 }
 
 export function findPrimaryUrl(output) {
-    if (!output) {return null;}
+    if (!output) { return null; }
 
     // 1. Direct string
     if (typeof output === 'string') {
@@ -254,7 +254,7 @@ export function findPrimaryUrl(output) {
     if (Array.isArray(output) && output.length > 0) {
         for (const item of output) {
             const found = findPrimaryUrl(item);
-            if (found) {return found;}
+            if (found) { return found; }
         }
         return null; // None found in array
     }
@@ -263,14 +263,14 @@ export function findPrimaryUrl(output) {
     if (typeof output === 'object') {
         // Detailed logging for debugging unknown objects
         const keys = Object.keys(output);
-        console.log(`Parsing output object. Type: ${output.constructor?.name || 'Object'}, Keys: ${keys.join(', ')}`);
+        logger.info(`Parsing output object. Type: ${output.constructor?.name || 'Object'}, Keys: ${keys.join(', ')}`);
 
         // Known keys strategy (prioritize common keys)
         const priorityKeys = ['video', 'output', 'url', 'video_url', 'result', 'data'];
         for (const key of priorityKeys) {
             if (output[key]) {
                 const found = findPrimaryUrl(output[key]);
-                if (found) {return found;}
+                if (found) { return found; }
             }
         }
 
@@ -280,7 +280,7 @@ export function findPrimaryUrl(output) {
                 // Avoid recursion loops or massive objects?
                 // Replicate outputs are usually JSON, so it's safe.
                 const found = findPrimaryUrl(output[key]);
-                if (found) {return found;}
+                if (found) { return found; }
             }
         }
     }
@@ -288,7 +288,7 @@ export function findPrimaryUrl(output) {
     return null;
 }
 export function slugify(text) {
-    if (!text) {return "";}
+    if (!text) { return ""; }
     return text.toString().toLowerCase()
         .replace(/\s+/g, '-')
         .replace(/[^\w-]+/g, '')

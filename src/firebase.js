@@ -35,12 +35,12 @@ try {
     dbInstance = initializeFirestore(app, {
       localCache: memoryLocalCache(),
     });
-    console.log("[Firebase] Firestore initialized (Memory Cache Mode).");
+    console.warn("[Firebase] Firestore initialized (Memory Cache Mode).");
   } catch (firestoreError) {
     console.warn("[Firebase] Primary Firestore initialization failed. Attempting fallback...", firestoreError);
     try {
       dbInstance = getFirestore(app);
-      console.log("[Firebase] Firestore initialized with default settings (Fallback).");
+      console.warn("[Firebase] Firestore initialized with default settings (Fallback).");
     } catch (fallbackError) {
       console.error("[Firebase] CRITICAL: Firestore initialization completely failed.", fallbackError);
       // dbInstance remains undefined

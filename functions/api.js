@@ -43,7 +43,7 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
     const uid = request.auth?.uid;
     const clientIp = request.rawRequest?.ip || "unknown";
 
-    console.log(`[API_DEBUG] action=${action}, uid=${uid}, IP=${clientIp}`);
+    logger.info(`[API_DEBUG] action=${action}, uid=${uid}, IP=${clientIp}`);
 
     try {
         // --- 0. Pre-Flight Actions (Bypass Abuse Checks) ---
@@ -51,15 +51,15 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
             if (!uid) { throw new HttpsError('unauthenticated', 'User must be logged in.'); }
 
             try {
-                console.log(`[INIT_DEBUG] Step 1: Creating reference to users/${uid}`);
+                logger.info(`[INIT_DEBUG] Step 1: Creating reference to users/${uid}`);
                 const userRef = db.collection('users').doc(uid);
 
-                console.log(`[INIT_DEBUG] Step 2: Attempting to read document...`);
+                logger.info(`[INIT_DEBUG] Step 2: Attempting to read document...`);
                 const userSnap = await userRef.get();
-                console.log(`[INIT_DEBUG] Step 3: Read successful. Exists: ${userSnap.exists}`);
+                logger.info(`[INIT_DEBUG] Step 3: Read successful. Exists: ${userSnap.exists}`);
 
                 if (!userSnap.exists) {
-                    console.log(`[INIT_DEBUG] Step 4: Creating user doc for ${uid}`);
+                    logger.info(`[INIT_DEBUG] Step 4: Creating user doc for ${uid}`);
                     await userRef.set({
                         uid,
                         email: request.auth.token.email || "",
@@ -72,9 +72,9 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
                         subscriptionStatus: 'inactive',
                         role: 'user'
                     });
-                    console.log(`[INIT_DEBUG] Step 5: User doc created successfully`);
+                    logger.info(`[INIT_DEBUG] Step 5: User doc created successfully`);
                 } else {
-                    console.log(`[INIT_DEBUG] User doc already exists for ${uid}`);
+                    logger.info(`[INIT_DEBUG] User doc already exists for ${uid}`);
                 }
                 return { success: true };
             } catch (initError) {
@@ -220,12 +220,11 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
                 throw new HttpsError('invalid-argument', `Unknown action: ${action}`);
         }
     } catch (error) {
-        console.error("[CRITICAL_BACKEND_ERROR]", {
-            message: error.message,
-            code: error.code,
+        logger.error("[CRITICAL_BACKEND_ERROR]", error, {
+            action,
+            uid,
             details: error.details,
-            metadata: error.metadata ? error.metadata.getMap() : null,
-            stack: error.stack
+            metadata: error.metadata ? error.metadata.getMap() : null
         });
         if (error.code === 'resource-exhausted' && uid) {
             recordViolation(uid, 'rate_limit_exceeded').catch(e => logger.error("Failed to record violation", e));

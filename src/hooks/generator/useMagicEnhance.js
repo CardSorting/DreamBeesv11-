@@ -41,19 +41,19 @@ export function useMagicEnhance({
         // Fallback Logic
         if (activeStyleId) {
             if (!currentReferenceImage && activeJob && (activeJob.imageUrl || activeJob.thumbnailUrl)) {
-                console.log("[handleMagicEnhance] ReferenceImage is null, using activeJob image as fallback");
+                console.warn("[handleMagicEnhance] ReferenceImage is null, using activeJob image as fallback");
                 currentReferenceImage = activeJob.imageUrl || activeJob.thumbnailUrl;
                 setReferenceImage(currentReferenceImage);
             }
             if (!currentReferenceImage && generatedImage) {
-                console.log("[handleMagicEnhance] ReferenceImage is null, using generatedImage as fallback");
+                console.warn("[handleMagicEnhance] ReferenceImage is null, using generatedImage as fallback");
                 currentReferenceImage = generatedImage;
                 setReferenceImage(currentReferenceImage);
             }
         }
 
         if (!currentPrompt && !currentReferenceImage) {
-            console.log("[handleMagicEnhance] Early return: no prompt and no referenceImage");
+            console.warn("[handleMagicEnhance] Early return: no prompt and no referenceImage");
             return;
         }
 

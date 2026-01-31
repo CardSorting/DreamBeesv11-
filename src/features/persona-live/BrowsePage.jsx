@@ -74,8 +74,8 @@ const BrowsePage = () => {
             <section className="live-streams-grid">
                 <div className="streams-grid">
                     {loading ? (
-                        Array(8).fill(0).map((_, i) => (
-                            <div key={i} className="stream-skeleton"></div>
+                        [1, 2, 3, 4, 5, 6, 7, 8].map(n => (
+                            <div key={`browse-sk-${n}`} className="stream-skeleton"></div>
                         ))
                     ) : (
                         personas.sort((a, b) => (b.hypeScore || 0) - (a.hypeScore || 0)).map(p => (

@@ -110,8 +110,8 @@ const Sidebar = ({ activeId }) => {
                 </div>
 
                 {/* Groups */}
-                {visibleGroups.map((group, idx) => (
-                    <CollapsibleGroup key={idx} title={group.title}>
+                {visibleGroups.map((group) => (
+                    <CollapsibleGroup key={group.title} title={group.title}>
                         {group.items.map(link => (
                             <Link
                                 key={link.path}

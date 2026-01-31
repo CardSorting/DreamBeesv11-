@@ -15,7 +15,7 @@ const ShowcaseModal = ({ image, onClose, model, onNext, onPrev, hasNext, hasPrev
 
     // Stability: Threshold logic and stable timestamp for render-pure calculations
     const ACTIVE_THRESHOLD_MS = 15 * 60 * 1000;
-     
+
     const nowRef = React.useRef(Date.now());
     const now = nowRef.current;
 
@@ -219,8 +219,8 @@ const ShowcaseModal = ({ image, onClose, model, onNext, onPrev, hasNext, hasPrev
                                 <div className="meta-value flex items-center gap-2">
                                     {image.colors.paletteName}
                                     <div style={{ display: 'flex', gap: '4px', marginLeft: '8px' }}>
-                                        {image.colors.dominant?.map((c, i) => (
-                                            <div key={i} style={{ width: '12px', height: '12px', borderRadius: '50%', background: c, border: '1px solid rgba(255,255,255,0.2)' }} />
+                                        {image.colors.dominant?.map((c) => (
+                                            <div key={`dominant-color-${c}-${parseFloat(c.replace('#', ''), 16)}`} style={{ width: '12px', height: '12px', borderRadius: '50%', background: c, border: '1px solid rgba(255,255,255,0.2)' }} />
                                         ))}
                                     </div>
                                 </div>
@@ -231,8 +231,8 @@ const ShowcaseModal = ({ image, onClose, model, onNext, onPrev, hasNext, hasPrev
                             <div className="col-span-2" style={{ gridColumn: 'span 2' }}>
                                 <label className="meta-label">VIBE TAGS</label>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                    {image.discovery.vibeTags.map((tag, i) => (
-                                        <span key={i} style={{
+                                    {image.discovery.vibeTags.map((tag) => (
+                                        <span key={tag} style={{
                                             background: 'rgba(255,255,255,0.1)',
                                             padding: '4px 8px',
                                             borderRadius: '4px',

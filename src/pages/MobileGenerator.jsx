@@ -485,9 +485,9 @@ export default function MobileGenerator() {
                         </div>
 
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', maxWidth: '340px' }}>
-                            {starterPrompts.map((prompt, idx) => (
+                            {starterPrompts.map((prompt) => (
                                 <button
-                                    key={idx}
+                                    key={prompt}
                                     onClick={() => handleStarterClick(prompt)}
                                     style={{
                                         background: 'rgba(255,255,255,0.05)',

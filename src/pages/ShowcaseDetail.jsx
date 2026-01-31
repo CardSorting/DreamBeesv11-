@@ -164,7 +164,7 @@ const ShowcaseDetail = React.memo(function ShowcaseDetail() {
         );
 
         if (freshRecs.length === 0 && hasMoreGlobal) {
-            console.log("[Feed] Cache exhausted, fetching more...");
+            console.warn("[Feed] Cache exhausted, fetching more...");
             if (!isFetchingMoreRef.current) {
                 isFetchingMoreRef.current = true;
                 getGlobalShowcaseImages(true, 'feed_scroll_replenish').finally(() => {
@@ -445,7 +445,7 @@ const ShowcaseDetail = React.memo(function ShowcaseDetail() {
             >
                 {images.map((img, idx) => (
                     <FeedItem
-                        key={`${img.id}-${idx}`}
+                        key={`${img.id}`}
                         image={img}
                         index={idx}
                         isActive={idx === currentIndex}
@@ -633,9 +633,9 @@ const FeedItem = React.memo(function FeedItem({ image, index, isActive, isLiked,
 
                     {/* Enhanced Tags Display */}
                     <div className="tags-row">
-                        {displayTags.map((tag, i) => (
+                        {displayTags.map((tag) => (
                             <span
-                                key={`${tag.label}-${i}`}
+                                key={`tag-${tag.type}-${tag.label}`}
                                 className={`feed-tag feed-tag-${tag.type}`}
                             >
                                 #{tag.label.replace(/\s+/g, '')}
@@ -645,9 +645,9 @@ const FeedItem = React.memo(function FeedItem({ image, index, isActive, isLiked,
                         {/* Color palette indicator */}
                         {image.colors?.dominant && (
                             <div className="palette-dots">
-                                {(image.colors?.dominant || []).slice(0, 3).map((color, i) => (
+                                {(image.colors?.dominant || []).slice(0, 3).map((color) => (
                                     <span
-                                        key={i}
+                                        key={`palette-dot-${color}`}
                                         className="palette-dot"
                                         style={{ backgroundColor: color }}
                                     />

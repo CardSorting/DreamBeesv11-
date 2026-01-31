@@ -1,25 +1,25 @@
 
-import { getS3Client } from './lib/utils.js';
+import { getS3Client, logger } from './lib/utils.js';
 import { VertexAI } from '@google-cloud/vertexai';
 
-console.log("Starting runtime checks...");
+logger.info("Starting runtime checks...");
 
 try {
-    console.log("Testing getS3Client...");
+    logger.info("Testing getS3Client...");
     const s3 = await getS3Client();
-    console.log("S3 Client initialized:", !!s3);
+    logger.info("S3 Client initialized:", { initialized: !!s3 });
 } catch (e) {
-    console.error("S3 Client Failed:", e);
+    logger.error("S3 Client Failed:", e);
 }
 
 try {
-    console.log("Testing VertexAI init...");
+    logger.info("Testing VertexAI init...");
     const project = process.env.GCLOUD_PROJECT || "dreambees-alchemist";
     const vertexAI = new VertexAI({ project, location: 'us-central1' });
     const model = vertexAI.getGenerativeModel({ model: 'gemini-pro-vision' });
-    console.log("VertexAI Model initialized:", !!model);
+    logger.info("VertexAI Model initialized:", { initialized: !!model });
 } catch (e) {
-    console.error("VertexAI Failed:", e);
+    logger.error("VertexAI Failed:", e);
 }
 
-console.log("Runtime checks complete.");
+logger.info("Runtime checks complete.");

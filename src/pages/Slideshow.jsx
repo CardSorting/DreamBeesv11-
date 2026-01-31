@@ -148,7 +148,7 @@ export default function Slideshow() {
             try {
                 const { requestId: savedId, mode: savedMode } = JSON.parse(saved);
                 if (savedId) {
-                    console.log("Restoring slideshow session:", savedId);
+                    console.warn("Restoring slideshow session:", savedId);
                     setRequestId(savedId);
                     setMode(savedMode || 'poster'); // Restore mode if saved
                     setCurrentStep('processing');
@@ -164,7 +164,7 @@ export default function Slideshow() {
     useEffect(() => {
         if (!requestId) return;
 
-        console.log("[Slideshow] Starting listener for ID:", requestId);
+        console.warn("[Slideshow] Starting listener for ID:", requestId);
 
         const unsubscribe = onSnapshot(doc(db, 'generation_queue', requestId), (snapshot) => {
             if (!snapshot.exists()) return;
@@ -228,7 +228,7 @@ export default function Slideshow() {
         });
 
         return () => {
-            console.log("[Slideshow] Unsubscribing listener for ID:", requestId);
+            console.warn("[Slideshow] Unsubscribing listener for ID:", requestId);
             unsubscribe();
         };
     }, [requestId]); // Only depend on requestId
@@ -513,7 +513,7 @@ export default function Slideshow() {
                                 <div className="thumbnails-track">
                                     {results.map((res, idx) => (
                                         <div
-                                            key={idx}
+                                            key={`slide-thumb-${res.id || idx}`}
                                             className={`thumbnail-btn ${activeSlideIndex === idx ? 'active' : ''}`}
                                             onClick={() => setActiveSlideIndex(idx)}
                                         >

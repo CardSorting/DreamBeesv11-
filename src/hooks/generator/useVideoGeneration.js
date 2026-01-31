@@ -82,7 +82,7 @@ export function useVideoGeneration({
             let processedImage = imageUrl;
 
             if (imageUrl && imageUrl.startsWith('data:')) {
-                console.log(`[Video] Compressing input image...`);
+                console.warn(`[Video] Compressing input image...`);
                 processedImage = await compressImage(imageUrl, 1024, 0.7);
             }
 

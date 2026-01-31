@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
- 
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, BookOpen, Download } from 'lucide-react';
 
@@ -99,7 +99,7 @@ const BookReaderModal = ({ book, onClose }) => {
                             <div className="grid grid-cols-3 gap-2">
                                 {book.pages.map((p, idx) => (
                                     <button
-                                        key={idx}
+                                        key={p.id || `${idx}-${p.imageUrl || p.url}`}
                                         onClick={() => setCurrentIndex(idx)}
                                         className={`aspect-[3/4] rounded-lg overflow-hidden border transition-all
                                     ${idx === currentIndex ? 'border-indigo-500 ring-2 ring-indigo-500/20 opacity-100' : 'border-transparent opacity-60 hover:opacity-100'}

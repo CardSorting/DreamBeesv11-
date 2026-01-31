@@ -110,9 +110,9 @@ function ScrollPicker({ items, value, onChange, label, width = 'w-20' }) {
                         className="h-full overflow-y-scroll scrollbar-hide snap-y snap-mandatory py-12"
                         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                     >
-                        {items.map((item, i) => (
+                        {items.map((item) => (
                             <div
-                                key={i}
+                                key={item}
                                 onClick={() => {
                                     onChange(item);
                                     scrollToValue(item);
@@ -182,7 +182,6 @@ export default function AgeVerificationModal() {
     const isVisible = useMemo(() => {
         const needsVerification = !!(currentUser && isProfileLoaded && !userProfile?.birthday);
         const result = (needsVerification || isSuccess) && !dismissed;
-        if (result && isProfileLoaded) console.log("[AgeVerification] Modal is active", { needsVerification, isSuccess, dismissed });
         return result;
     }, [currentUser, isProfileLoaded, userProfile?.birthday, dismissed, isSuccess]);
 

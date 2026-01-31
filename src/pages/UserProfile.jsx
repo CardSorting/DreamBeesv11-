@@ -226,9 +226,9 @@ export default function UserProfile() {
 
             {/* Immersive Atmosphere */}
             <div className="up-bg-atmosphere">
-                {[...Array(12)].map((_, i) => (
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
                     <div
-                        key={i}
+                        key={`profile-dust-${n}`}
                         className="up-dust"
                         style={{
                             left: `${Math.random() * 100}%`,

@@ -206,36 +206,36 @@ const PersonaChatContent = () => {
     const cleanupTimeoutRef = useRef(null); // For delayed cleanup (Strict Mode handling)
 
     useEffect(() => {
-        console.log("[Soketi] PersonaChat MOUNTED/UPDATED");
+        console.warn("[Soketi] PersonaChat MOUNTED/UPDATED");
         const changed = [];
         if (prevDeps.current.id !== id) changed.push(`id: ${prevDeps.current.id} -> ${id}`);
         if (prevDeps.current.uid !== currentUser?.uid) changed.push(`uid: ${prevDeps.current.uid} -> ${currentUser?.uid}`);
 
         if (changed.length > 0) {
-            console.log("[Soketi] Dependencies changed:", changed.join(', '));
+            console.warn("[Soketi] Dependencies changed:", changed.join(', '));
             prevDeps.current = { id, uid: currentUser?.uid };
         }
 
         // Cancel any pending cleanup from Strict Mode's immediate re-run
         if (cleanupTimeoutRef.current) {
-            console.log("[Soketi] Cancelling pending cleanup (Strict Mode re-run)");
+            console.warn("[Soketi] Cancelling pending cleanup (Strict Mode re-run)");
             clearTimeout(cleanupTimeoutRef.current);
             cleanupTimeoutRef.current = null;
         }
 
         if (!id || !currentUser?.uid || !import.meta.env.VITE_SOKETI_APP_KEY) {
-            console.log("[Soketi] Skipping init - missing deps");
+            console.warn("[Soketi] Skipping init - missing deps");
             return;
         }
 
         // SYNCHRONOUS guard - check BEFORE async code
         if (pusherRef.current) {
-            console.log("[Soketi] Pusher already initialized, skipping.");
+            console.warn("[Soketi] Pusher already initialized, skipping.");
             return;
         }
 
         if (initializingRef.current) {
-            console.log("[Soketi] Initialization already in progress, skipping.");
+            console.warn("[Soketi] Initialization already in progress, skipping.");
             return;
         }
 
@@ -245,11 +245,11 @@ const PersonaChatContent = () => {
         let isCleanedUp = false;
 
         const initPusher = async () => {
-            console.log("[Soketi] Initializing connection...");
+            console.warn("[Soketi] Initializing connection...");
 
             // Check if we were cleaned up before starting
             if (isCleanedUp) {
-                console.log("[Soketi] Aborting init - already cleaned up");
+                console.warn("[Soketi] Aborting init - already cleaned up");
                 initializingRef.current = false;
                 return null;
             }
@@ -287,7 +287,7 @@ const PersonaChatContent = () => {
                                 // Exponential backoff: 0s, 1s, 2s, 4s...
                                 if (authRetryCount > 0) {
                                     const delay = Math.pow(2, authRetryCount - 1) * 1000;
-                                    console.log(`[PusherAuth] Backing off for ${delay}ms before retry ${authRetryCount}...`);
+                                    console.warn(`[PusherAuth] Backing off for ${delay}ms before retry ${authRetryCount}...`);
                                     await sleep(delay);
                                 }
 
@@ -319,7 +319,7 @@ const PersonaChatContent = () => {
 
                                 // 2. If 401/403, force refresh and retry ONCE
                                 if (response.status === 401 || response.status === 403) {
-                                    console.log("[PusherAuth] Token expired/invalid. Refreshing...");
+                                    console.warn("[PusherAuth] Token expired/invalid. Refreshing...");
                                     token = await currentUser.getIdToken(true);
                                     response = await fetch(authEndpoint, {
                                         method: 'POST',
@@ -360,7 +360,7 @@ const PersonaChatContent = () => {
                 setConnectionStatus(states.current);
                 if (states.current === 'unavailable') {
                     // Quietly retry, don't spam toast
-                    console.log("Stream connection lost. Retrying...", states);
+                    console.warn("Stream connection lost. Retrying...", states);
                 } else if (states.current === 'connected') {
                     // Only toast on recovery if it was previously disconnected long enough to notice?
                     // For now, keeping it simple or removing to reduce noise
@@ -488,7 +488,7 @@ const PersonaChatContent = () => {
             });
 
             bindSafe('new-message', (data) => {
-                console.log("[Chat] Received new-message:", data);
+                console.warn("[Chat] Received new-message:", data);
                 setMessages(prev => {
                     const isDuplicate = prev.some(m =>
                         m.id === data.id || (
@@ -500,24 +500,24 @@ const PersonaChatContent = () => {
 
                     // Only skip if it's the CURRENT user's own message that they sent (to avoid double-add)
                     if (isDuplicate && data.role === 'user' && data.uid === currentUser?.uid) {
-                        console.log("[Chat] Skipping duplicate user message");
+                        console.warn("[Chat] Skipping duplicate user message");
                         return prev;
                     }
 
                     // If it's a duplicate from someone else or AI, still skip
                     if (isDuplicate && data.role !== 'user') {
-                        console.log("[Chat] Skipping duplicate AI/system message");
+                        console.warn("[Chat] Skipping duplicate AI/system message");
                         return prev;
                     }
 
-                    console.log("[Chat] Adding message to chat:", data.id || Date.now().toString());
+                    console.warn("[Chat] Adding message to chat:", data.id || Date.now().toString());
                     return [...prev, { ...data, id: data.id || Date.now().toString() }];
                 });
             });
 
             bindSafe('audio-update', (data) => {
                 if (data.audioUrl && data.messageId) {
-                    console.log("[AI Voice] Received audio for message:", data.messageId);
+                    console.warn("[AI Voice] Received audio for message:", data.messageId);
                     setMessageAudioMap(prev => ({
                         ...prev,
                         [data.messageId]: data.audioUrl
@@ -531,7 +531,7 @@ const PersonaChatContent = () => {
 
             return () => {
                 isCleanedUp = true;
-                console.log("[Soketi] Cleaning up connection...");
+                console.warn("[Soketi] Cleaning up connection...");
                 channel.unbind_all();
                 globalChannel.unbind_all(); // also unbind global
                 try {
@@ -550,7 +550,7 @@ const PersonaChatContent = () => {
 
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible' && isMounted.current) {
-                console.log("[Soketi] Tab focused - ensuring connection...");
+                console.warn("[Soketi] Tab focused - ensuring connection...");
                 // Pusher handles internal reconnection, but we can nudge it if needed
                 // or just let it do its thing. Checking state is helpful.
             }
@@ -558,7 +558,7 @@ const PersonaChatContent = () => {
 
         const handleOnline = () => {
             if (isMounted.current) {
-                console.log("[Soketi] Network back online - ensuring connection...");
+                console.warn("[Soketi] Network back online - ensuring connection...");
                 toast.success("Network restored.");
             }
         };
@@ -576,7 +576,7 @@ const PersonaChatContent = () => {
             // Use delayed cleanup to handle React Strict Mode
             // If the effect re-runs immediately (Strict Mode), it will cancel this timeout
             cleanupTimeoutRef.current = setTimeout(() => {
-                console.log("[Soketi] Executing delayed cleanup...");
+                console.warn("[Soketi] Executing delayed cleanup...");
                 cleanupPromise.then(cleanup => cleanup?.());
                 cleanupTimeoutRef.current = null;
             }, 100); // 100ms delay - enough for Strict Mode re-run to cancel
@@ -1142,7 +1142,7 @@ const PersonaChatContent = () => {
                             Welcome to the chat room!
                         </div>
                         {messages.map((msg, idx) => (
-                            <div key={msg.id || idx} className={`twitch-message ${msg.role === 'model' ? 'ai-msg' : ''} ${msg.status || ''}`}>
+                            <div key={msg.id || `msg-${idx}`} className={`twitch-message ${msg.role === 'model' ? 'ai-msg' : ''} ${msg.status || ''}`}>
                                 {msg.role === 'system' ? (
                                     <span className="system-msg">{msg.text}</span>
                                 ) : (

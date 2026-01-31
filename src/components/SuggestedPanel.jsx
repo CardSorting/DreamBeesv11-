@@ -135,7 +135,7 @@ const SuggestedPanel = ({ currentModel, availableModels }) => {
                     {featuredApps.length > 0 ? (
                         featuredApps.map((app, idx) => (
                             <AppCard
-                                key={idx}
+                                key={app.id}
                                 {...app}
                                 isCompact={true}
                                 isLiked={isLiked(app.id)}
@@ -146,7 +146,7 @@ const SuggestedPanel = ({ currentModel, availableModels }) => {
                         ))
                     ) : (
                         [1, 2, 3].map(i => (
-                            <div key={i} style={{
+                            <div key={`skeleton-${i}`} style={{
                                 height: '60px',
                                 background: 'rgba(255,255,255,0.03)',
                                 borderRadius: '12px',

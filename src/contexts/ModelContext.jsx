@@ -122,7 +122,7 @@ export function ModelProvider({ children }) {
                     }
                 }
 
-                console.log(`[ModelContext] Fetched ${models.length} models. Checked MeowAcc.`);
+                console.warn(`[ModelContext] Fetched ${models.length} models. Checked MeowAcc.`);
                 setAvailableModels(models);
 
                 // Prioritize saved model, then current selection (if any), then ZIT-model, then first available
@@ -139,7 +139,7 @@ export function ModelProvider({ children }) {
                     if (!targetModel && !selectedModel) {
                         // Default to zit-base-model if not saved, fallback to wai-illustrious
                         targetModel = models.find(m => m.id === 'zit-base-model') || models.find(m => m.id === 'wai-illustrious') || models[0];
-                        console.log(`[ModelContext] Defaulting to: ${targetModel?.id}`);
+                        console.warn(`[ModelContext] Defaulting to: ${targetModel?.id}`);
                     }
 
                     if (targetModel && (!selectedModel || selectedModel.id !== targetModel.id)) {
@@ -200,7 +200,7 @@ export function ModelProvider({ children }) {
 
         // 3. Fetch from Firestore
         try {
-            console.log(`[Firestore] Fetching showcase for ${modelId} (Load More: ${loadMore}, Limit: ${limitCount})`);
+            console.warn(`[Firestore] Fetching showcase for ${modelId} (Load More: ${loadMore}, Limit: ${limitCount})`);
             setIsModelShowcaseLoading(true);
 
             let q = query(
@@ -223,7 +223,7 @@ export function ModelProvider({ children }) {
             const snapshot = await getDocs(q);
 
             if (snapshot.empty) {
-                console.log(`[Firestore] End of showcase reached for ${modelId}`);
+                console.warn(`[Firestore] End of showcase reached for ${modelId}`);
                 hasShowcaseEndedRef.current = { ...hasShowcaseEndedRef.current, [modelId]: true };
                 setIsModelShowcaseLoading(false);
                 return currentImages;
@@ -309,19 +309,19 @@ export function ModelProvider({ children }) {
 
         // Prevent duplicate fetches - check ref immediately
         if (globalFeedLoadingRef.current) {
-            console.log(`[Global Feed] [from:${source}] Already loading, skipping duplicate call.`);
+            console.warn(`[Global Feed] [from:${source}] Already loading, skipping duplicate call.`);
             return currentCache;
         }
 
         // If not loading more and we have cache, return immediately
         if (!loadMore && currentCache.length > 0) {
-            console.log(`[Global Feed] [from:${source}] Returning cached data: ${currentCache.length}`);
+            console.warn(`[Global Feed] [from:${source}] Returning cached data: ${currentCache.length}`);
             return currentCache;
         }
 
         // If loading more but we've already reached the end, skip
         if (loadMore && hasEndedRef.current) {
-            console.log(`[Global Feed] [from:${source}] Already at end of feed, skipping.`);
+            console.warn(`[Global Feed] [from:${source}] Already at end of feed, skipping.`);
             return currentCache;
         }
 
@@ -329,7 +329,7 @@ export function ModelProvider({ children }) {
             // Set loading guards IMMEDIATELY
             globalFeedLoadingRef.current = true;
             setIsGlobalFeedLoading(true);
-            console.log(`[Global Feed] [from:${source}] Fetching... (Load More: ${loadMore}, Limit: ${limitCount})`);
+            console.warn(`[Global Feed] [from:${source}] Fetching... (Load More: ${loadMore}, Limit: ${limitCount})`);
 
             // Fetch a larger pool to allow for "Smart Mixing" (Diversity) client-side
             // If we only fetch 24 and they are all from the same model, no amount of shuffling helps.
@@ -352,7 +352,7 @@ export function ModelProvider({ children }) {
             const snapshot = await getDocs(q);
 
             if (snapshot.empty) {
-                console.log(`[Global Feed] [from:${source}] No more images found - end of feed reached.`);
+                console.warn(`[Global Feed] [from:${source}] No more images found - end of feed reached.`);
                 hasEndedRef.current = true; // Mark as ended
                 setHasGlobalFeedEnded(true); // Reactive state update
                 globalFeedLoadingRef.current = false;
@@ -417,7 +417,7 @@ export function ModelProvider({ children }) {
             globalFeedLoadingRef.current = false;
             setIsGlobalFeedLoading(false);
 
-            console.log(`[Global Feed] [from:${source}] Loaded ${mixedNewImages.length} new images (Mixed). Total: ${finalImages.length}`);
+            console.warn(`[Global Feed] [from:${source}] Loaded ${mixedNewImages.length} new images (Mixed). Total: ${finalImages.length}`);
             return finalImages;
         } catch (err) {
             console.error(`[Global Feed] [from:${source}] Error fetching global showcase:`, err);
@@ -439,7 +439,7 @@ export function ModelProvider({ children }) {
             const queueSnapshot = new Map(ratingQueue.current);
             ratingQueue.current.clear(); // Clear immediately to allow potentially new fast updates
 
-            console.log(`[Batch] Flushing ${queueSnapshot.size} ratings...`);
+            console.warn(`[Batch] Flushing ${queueSnapshot.size} ratings...`);
 
             // Process each rating through cloud function
             // Process each rating through cloud function
@@ -458,7 +458,7 @@ export function ModelProvider({ children }) {
 
             try {
                 await Promise.all(promises);
-                console.log("[Batch] Successfully processed ratings.");
+                console.warn("[Batch] Successfully processed ratings.");
             } catch (err) {
                 console.error("[Batch] Failed to process ratings:", err);
             }
@@ -478,7 +478,7 @@ export function ModelProvider({ children }) {
 
         // Add to queue (Debounces automatically by Map key)
         ratingQueue.current.set(job.id, { jobId: job.id, rating, timestamp: Date.now() });
-        console.log(`[Rate] Queued rating ${rating} for ${job.id}`);
+        console.warn(`[Rate] Queued rating ${rating} for ${job.id}`);
         return true;
     };
 
@@ -487,7 +487,7 @@ export function ModelProvider({ children }) {
         if (!imageId || !modelId) return;
 
         try {
-            console.log(`[Rate Showcase] Rating ${rating} for ${imageId}`);
+            console.warn(`[Rate Showcase] Rating ${rating} for ${imageId}`);
             await apiCall('api', { action: 'rateShowcaseImage', imageId, rating }, { toastErrors: true });
 
             // Optimistically update cache
