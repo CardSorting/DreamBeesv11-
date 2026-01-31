@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Sparkles, Info, Image as ImageIcon, Wand2, Layers, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Sparkles, Info, Image as ImageIcon, Wand2, Layers, RefreshCw, Maximize2, Minimize2 } from 'lucide-react';
 import {
     collection,
     doc,
@@ -40,6 +40,7 @@ const EditStudio = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showHowItWorks, setShowHowItWorks] = useState(!isMobile);
+    const [compactMode, setCompactMode] = useState(isMobile);
     const [showReference, setShowReference] = useState(true);
     const [isComparing, setIsComparing] = useState(false);
 
@@ -246,6 +247,14 @@ const EditStudio = () => {
     }, [isMobile]);
 
     useEffect(() => {
+        if (isMobile) {
+            setCompactMode(true);
+        } else {
+            setCompactMode(false);
+        }
+    }, [isMobile]);
+
+    useEffect(() => {
         const guard = (event) => {
             if (!isGenerating) return;
             event.preventDefault();
@@ -270,7 +279,7 @@ const EditStudio = () => {
 
     if (loading) {
         return (
-            <div className={`edit-studio-page ${isMobile ? 'is-mobile' : ''}`}>
+            <div className={`edit-studio-page ${isMobile ? 'is-mobile' : ''} ${compactMode ? 'edit-studio-compact' : ''}`}>
                 <div className="edit-studio-loading">
                     <div className="edit-studio-skeleton-header" />
                     <div className="edit-studio-skeleton-body">
@@ -284,7 +293,7 @@ const EditStudio = () => {
 
     if (error || !referenceImage) {
         return (
-            <div className={`edit-studio-page ${isMobile ? 'is-mobile' : ''}`}>
+            <div className={`edit-studio-page ${isMobile ? 'is-mobile' : ''} ${compactMode ? 'edit-studio-compact' : ''}`}>
                 <div className="edit-studio-error">
                     <div className="edit-studio-error-card">
                         <h2>Unable to open Edit Studio</h2>
@@ -304,7 +313,7 @@ const EditStudio = () => {
     }
 
     return (
-        <div className={`edit-studio-page ${isMobile ? 'is-mobile' : ''}`}>
+        <div className={`edit-studio-page ${isMobile ? 'is-mobile' : ''} ${compactMode ? 'edit-studio-compact' : ''}`}>
             <header className="edit-studio-header">
                 <div className="edit-studio-header-left">
                     <button className="edit-studio-back" onClick={() => navigate(-1)}>
@@ -319,6 +328,18 @@ const EditStudio = () => {
                     </div>
                 </div>
                 <div className="edit-studio-header-actions">
+                    {isMobile && (
+                        <button
+                            className="edit-studio-header-pill"
+                            onClick={() => setCompactMode((prev) => !prev)}
+                            title={compactMode ? 'Expand layout' : 'Compact layout'}
+                        >
+                            {compactMode ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
+                            <span className="edit-studio-pill-text">
+                                {compactMode ? 'Expand' : 'Compact'}
+                            </span>
+                        </button>
+                    )}
                     <button className="edit-studio-header-pill" onClick={() => setShowHowItWorks((prev) => !prev)}>
                         <Info size={14} />
                         <span className="edit-studio-pill-text">{showHowItWorks ? 'Hide Tips' : 'Show Tips'}</span>
@@ -371,6 +392,7 @@ const EditStudio = () => {
                                 generatedImage={generatedImage}
                                 isGenerating={isGenerating}
                                 isMobile={isMobile}
+                                isCompact={compactMode}
                             />
                         </div>
                     )}
@@ -390,6 +412,7 @@ const EditStudio = () => {
                                 onIterate={promoteToReference}
                                 prompt={prompt}
                                 isMobile={isMobile}
+                                isCompact={compactMode}
                             />
                         ) : (
                             <EditControls
@@ -401,6 +424,7 @@ const EditStudio = () => {
                                 setActiveCategoryIndex={setActiveCategoryIndex}
                                 activePresetIndex={activePresetIndex}
                                 isMobile={isMobile}
+                                isCompact={compactMode}
                             />
                         )}
                     </div>

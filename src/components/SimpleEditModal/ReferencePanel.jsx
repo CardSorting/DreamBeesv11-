@@ -5,7 +5,8 @@ const ReferencePanel = ({
     referenceImage,
     generatedImage,
     isGenerating,
-    isMobile
+    isMobile,
+    isCompact
 }) => {
     const rawImageUrl = referenceImage?.imageUrl || referenceImage?.url || referenceImage;
     const imageUrl = rawImageUrl ? getOptimizedImageUrl(rawImageUrl) : null;
@@ -54,12 +55,12 @@ const ReferencePanel = ({
             <div style={{
                 position: 'relative',
                 aspectRatio: '1/1',
-                borderRadius: isMobile ? '14px' : '20px',
+                borderRadius: isMobile ? (isCompact ? '14px' : '16px') : '20px',
                 overflow: 'hidden',
                 background: 'rgba(255, 255, 255, 0.02)',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
-                maxWidth: isMobile ? '190px' : 'none',
+                maxWidth: isMobile ? (isCompact ? '190px' : '240px') : 'none',
                 margin: isMobile ? '0 auto' : '0',
                 width: isMobile ? '100%' : 'auto'
             }}>

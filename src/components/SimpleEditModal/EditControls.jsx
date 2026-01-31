@@ -12,7 +12,8 @@ const EditControls = ({
     activeCategoryIndex,
     setActiveCategoryIndex,
     activePresetIndex,
-    isMobile
+    isMobile,
+    isCompact
 }) => {
     const [appendMode, setAppendMode] = useState(true);
     const presetsScrollRef = useRef(null);
@@ -167,6 +168,17 @@ const EditControls = ({
                 </div>
             )}
 
+            {isMobile && !isCompact && (
+                <div style={{
+                    fontSize: '0.65rem',
+                    color: 'rgba(255, 255, 255, 0.45)',
+                    fontWeight: '500',
+                    lineHeight: '1.5'
+                }}>
+                    Tip: be specific about what to change, like “add soft lighting” or “swap the background to a city”.
+                </div>
+            )}
+
             {/* Append Mode Toggle */}
             <div style={{
                 display: 'flex',
@@ -227,6 +239,16 @@ const EditControls = ({
             {!isMobile && (
                 <div style={{
                     fontSize: '0.7rem',
+                    color: 'rgba(255, 255, 255, 0.35)',
+                    fontWeight: '500'
+                }}>
+                    Add = append to your instructions. Replace = swap the entire prompt.
+                </div>
+            )}
+
+            {isMobile && !isCompact && (
+                <div style={{
+                    fontSize: '0.65rem',
                     color: 'rgba(255, 255, 255, 0.35)',
                     fontWeight: '500'
                 }}>

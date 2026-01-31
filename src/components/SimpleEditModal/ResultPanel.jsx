@@ -14,7 +14,8 @@ const ResultPanel = ({
     onReset,
     onIterate,
     prompt,
-    isMobile
+    isMobile,
+    isCompact
 }) => {
     const resultRef = useRef(null);
     const [isDownloading, setIsDownloading] = useState(false);
@@ -70,6 +71,15 @@ const ResultPanel = ({
                     {!isMobile && (
                         <div style={{
                             fontSize: '0.7rem',
+                            color: 'rgba(255, 255, 255, 0.45)',
+                            fontWeight: '500'
+                        }}>
+                            Preview your final edit or compare to the original.
+                        </div>
+                    )}
+                    {isMobile && !isCompact && (
+                        <div style={{
+                            fontSize: '0.65rem',
                             color: 'rgba(255, 255, 255, 0.45)',
                             fontWeight: '500'
                         }}>
@@ -193,7 +203,7 @@ const ResultPanel = ({
                     bottom: 0,
                     left: 0,
                     right: 0,
-                    padding: isMobile ? '10px 12px 12px' : '24px 24px 32px',
+                    padding: isMobile ? (isCompact ? '10px 12px 12px' : '14px 16px 16px') : '24px 24px 32px',
                     background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)',
                     backdropFilter: 'blur(2px)',
                     zIndex: 10,
@@ -201,7 +211,7 @@ const ResultPanel = ({
                 }}>
                     <p style={{
                         color: 'white',
-                        fontSize: isMobile ? '0.75rem' : '0.9rem',
+                        fontSize: isMobile ? (isCompact ? '0.75rem' : '0.85rem') : '0.9rem',
                         fontWeight: '500',
                         margin: 0,
                         lineHeight: '1.4',
@@ -210,7 +220,7 @@ const ResultPanel = ({
                         <span style={{
                             color: 'rgba(255, 255, 255, 0.5)',
                             fontSize: isMobile ? '0.6rem' : '0.75rem',
-                            display: isMobile ? 'none' : 'block',
+                            display: isMobile && isCompact ? 'none' : 'block',
                             marginBottom: isMobile ? 0 : '4px',
                             textTransform: 'uppercase',
                             fontWeight: '700',
@@ -326,6 +336,19 @@ const ResultPanel = ({
                 <div style={{
                     textAlign: 'center',
                     fontSize: '0.7rem',
+                    color: 'rgba(255, 255, 255, 0.4)',
+                    fontWeight: '500',
+                    lineHeight: '1.5'
+                }}>
+                    <span style={{ color: '#a855f7' }}>Keep & Continue</span> uses this result as your new reference.
+                    <br />
+                    <span style={{ color: 'rgba(255, 255, 255, 0.6)' }}>Edit Original</span> goes back to the starting image.
+                </div>
+            )}
+            {isMobile && !isCompact && (
+                <div style={{
+                    textAlign: 'center',
+                    fontSize: '0.65rem',
                     color: 'rgba(255, 255, 255, 0.4)',
                     fontWeight: '500',
                     lineHeight: '1.5'

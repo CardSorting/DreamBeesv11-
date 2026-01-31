@@ -292,31 +292,8 @@
         display: none;
     }
 
-    .edit-studio-back-text {
-        display: none;
-    }
-
     .edit-studio-header-pill {
         padding: 8px 10px;
-    }
-
-    .edit-studio-pill-text {
-        display: none;
-    }
-
-    .edit-studio-stepper {
-        grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
-        gap: 8px;
-    }
-
-    .edit-studio-step {
-        justify-content: center;
-        padding: 8px 10px;
-        gap: 6px;
-    }
-
-    .edit-studio-step-label {
-        display: none;
     }
 
     .edit-studio-tips {
@@ -335,5 +312,30 @@
 
     .edit-studio-panel-main {
         min-height: 360px;
+    }
+}
+
+@media (max-width: 640px) {
+    .edit-studio-page.edit-studio-compact .edit-studio-back-text {
+        display: none;
+    }
+
+    .edit-studio-page.edit-studio-compact .edit-studio-pill-text {
+        display: none;
+    }
+
+    .edit-studio-page.edit-studio-compact .edit-studio-stepper {
+        grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+        gap: 8px;
+    }
+
+    .edit-studio-page.edit-studio-compact .edit-studio-step {
+        justify-content: center;
+        padding: 8px 10px;
+        gap: 6px;
+    }
+
+    .edit-studio-page.edit-studio-compact .edit-studio-step-label {
+        display: none;
     }
 }
