@@ -57,7 +57,7 @@ const AvatarForgeFloor = lazyRetry(() => import('../pages/AvatarForge/AvatarForg
 // Twitch Platform Components
 const TwitchLayout = lazyRetry(() => import('../features/persona-live/TwitchLayout'));
 const BrowsePage = lazyRetry(() => import('../features/browse/Browse'));
-const FollowingPage = lazyRetry(() => import('../features/persona-live/FollowingPage'));
+
 const CategoryDirectory = lazyRetry(() => import('../features/persona-live/CategoryDirectory'));
 
 import { Privacy, Terms, Cookies } from '../pages/Legal';
@@ -214,7 +214,7 @@ const AnimatedRoutes = () => {
                             <Route element={<TwitchLayout />}>
                                 {/* <Route path="/browse" element={<BrowsePage />} />  MOVED OUT */}
                                 <Route path="/directory" element={<CategoryDirectory />} />
-                                <Route path="/following" element={<PrivateRoute><FollowingPage /></PrivateRoute>} />
+
                                 <Route path="/channel/:id" element={<PrivateRoute><PersonaChat /></PrivateRoute>} />
                             </Route>
 

@@ -199,6 +199,32 @@
     background: rgba(255, 77, 77, 0.05);
 }
 
+.twitch-message.pending_ai .message-body {
+    color: #adadb8;
+    font-style: italic;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.twitch-message.pending_ai .message-body::after {
+    content: '...';
+    letter-spacing: 2px;
+    display: inline-block;
+    overflow: hidden;
+    animation: pending-dots 1.2s steps(4, end) infinite;
+}
+
+@keyframes pending-dots {
+    0% {
+        width: 0;
+    }
+
+    100% {
+        width: 18px;
+    }
+}
+
 /* Typing & Recovery UI */
 .ai-typing-msg .thinking-dots {
     color: #adadb8;
@@ -765,10 +791,30 @@
     flex: 1;
     background: transparent;
     border: none;
-    color: white;
+    color: #efeff1;
+    background-color: transparent;
     resize: none;
     min-height: 40px;
     font-family: inherit;
+    caret-color: #efeff1;
+    -webkit-text-fill-color: #efeff1;
+    cursor: text;
+    position: relative;
+    z-index: 10;
+    pointer-events: auto;
+}
+
+.chat-input-twitch textarea::placeholder {
+    color: #adadb8;
+    opacity: 1;
+}
+
+.chat-input-twitch textarea:disabled {
+    color: #c9c9d1;
+    -webkit-text-fill-color: #c9c9d1;
+    caret-color: transparent;
+    cursor: not-allowed;
+    opacity: 1;
 }
 
 .chat-input-twitch textarea:focus {

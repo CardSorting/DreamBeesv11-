@@ -127,6 +127,8 @@ const PersonaChatContent = () => {
     const [connectionStatus, setConnectionStatus] = useState('initialized'); // 'initialized', 'connecting', 'connected', 'disconnected', 'unavailable'
     const [isPersonaTyping, setIsPersonaTyping] = useState(false);
     const audioVoiceRef = useRef(null);
+    const isChatDisabled = isSending || !persona;
+    const pendingAiMessageIdRef = useRef(null);
 
     // Audio stored per message ID (click-to-play)
     const [messageAudioMap, setMessageAudioMap] = useState({});
@@ -678,6 +680,60 @@ const PersonaChatContent = () => {
 
     useEffect(() => {
         if (!id) return;
+
+        const historyQuery = query(
+            collection(db, 'personas', id, 'shared_messages'),
+            orderBy('timestamp', 'desc'),
+            limit(50)
+        );
+
+        const unsub = onSnapshot(historyQuery, (snapshot) => {
+            const liveMessages = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .sort((a, b) => (a.timestamp?.toMillis() || 0) - (b.timestamp?.toMillis() || 0));
+
+            setMessages(prev => {
+                const pending = prev.filter(msg => msg.status === 'sending' || msg.status === 'error');
+                const hasLiveAi = liveMessages.some(msg => msg.role === 'model' && msg.text);
+                const pendingAi = hasLiveAi ? [] : prev.filter(msg => msg.status === 'pending_ai');
+                const merged = [...liveMessages, ...pending, ...pendingAi];
+                const seen = new Set();
+                return merged.filter(msg => {
+                    const key = msg.id || `${msg.uid || 'anon'}:${msg.text}:${msg.timestamp?.toMillis?.() || msg.timestamp || ''}`;
+                    if (seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
+            });
+
+            if (liveMessages.some(msg => msg.role === 'model' && msg.text)) {
+                pendingAiMessageIdRef.current = null;
+            }
+
+            const audioMap = {};
+            liveMessages.forEach(msg => {
+                if (msg.audioUrl && msg.id) {
+                    audioMap[msg.id] = msg.audioUrl;
+                }
+            });
+            if (Object.keys(audioMap).length > 0) {
+                setMessageAudioMap(prev => ({ ...prev, ...audioMap }));
+            }
+        }, (err) => {
+            console.error("[PersonaChat] shared_messages listener error:", err);
+        });
+
+        return () => unsub();
+    }, [id]);
+
+    useEffect(() => {
+        if (persona && isMounted.current) {
+            setIsLoading(false);
+        }
+    }, [persona]);
+
+    useEffect(() => {
+        if (!id) return;
         const supporterQuery = query(
             collection(db, 'personas', id, 'top_supporters'),
             orderBy('totalZaps', 'desc'),
@@ -703,55 +759,59 @@ const PersonaChatContent = () => {
     };
 
     useEffect(() => {
+        const fetchHistory = async (fallbackPersona = null) => {
+            const { collection, query, orderBy, limit, getDocs } = await import("firebase/firestore");
+            const historyQuery = query(
+                collection(db, 'personas', id, 'shared_messages'),
+                orderBy('timestamp', 'desc'),
+                limit(50)
+            );
+            const historySnap = await getDocs(historyQuery);
+            const historicalMessages = historySnap.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .sort((a, b) => (a.timestamp?.toMillis() || 0) - (b.timestamp?.toMillis() || 0));
+
+            if (historicalMessages.length > 0) {
+                setMessages(historicalMessages);
+
+                const audioMap = {};
+                historicalMessages.forEach(msg => {
+                    if (msg.audioUrl && msg.id) {
+                        audioMap[msg.id] = msg.audioUrl;
+                    }
+                });
+                if (Object.keys(audioMap).length > 0) {
+                    setMessageAudioMap(prev => ({ ...prev, ...audioMap }));
+                }
+            } else if (fallbackPersona?.greeting) {
+                setMessages([{
+                    id: 'greeting-' + Date.now(),
+                    role: 'model',
+                    text: fallbackPersona.greeting,
+                    displayName: fallbackPersona.name,
+                    timestamp: Date.now()
+                }]);
+            }
+        };
+
         const initPersona = async () => {
-            if (!id || !imageItem || persona) return;
+            if (!id || !imageItem) return;
 
             try {
-                if (isMounted.current && !persona) setIsLoading(true);
+                if (isMounted.current) setIsLoading(true);
 
-                const apiFn = httpsCallable(functions, 'api');
-                const requestId = `cp_init_${id}`; // Predictable for auto-init
-                const result = await apiFn({ action: 'createPersona', imageId: id, imageUrl: imageItem.imageUrl, requestId });
+                if (!persona) {
+                    const apiFn = httpsCallable(functions, 'api');
+                    const requestId = `cp_init_${id}`; // Predictable for auto-init
+                    const result = await apiFn({ action: 'createPersona', imageId: id, imageUrl: imageItem.imageUrl, requestId });
+                    const data = result.data;
 
-                const data = result.data;
-                if (data.success && isMounted.current) {
-                    setPersona(data.persona);
-
-                    // Fetch Global History from shared_messages subcollection
-                    const { collection, query, orderBy, limit, getDocs } = await import("firebase/firestore");
-                    const historyQuery = query(
-                        collection(db, 'personas', id, 'shared_messages'),
-                        orderBy('timestamp', 'desc'),
-                        limit(50)
-                    );
-                    const historySnap = await getDocs(historyQuery);
-                    const historicalMessages = historySnap.docs
-                        .map(doc => ({ id: doc.id, ...doc.data() }))
-                        .sort((a, b) => (a.timestamp?.toMillis() || 0) - (b.timestamp?.toMillis() || 0));
-
-                    if (historicalMessages.length > 0) {
-                        setMessages(historicalMessages);
-
-                        // Pre-populate audio map from historical messages
-                        const audioMap = {};
-                        historicalMessages.forEach(msg => {
-                            if (msg.audioUrl && msg.id) {
-                                audioMap[msg.id] = msg.audioUrl;
-                            }
-                        });
-                        if (Object.keys(audioMap).length > 0) {
-                            setMessageAudioMap(prev => ({ ...prev, ...audioMap }));
-                        }
-                    } else if (data.persona.greeting) {
-                        setMessages([{
-                            id: 'greeting-' + Date.now(),
-                            role: 'model',
-                            text: data.persona.greeting,
-                            displayName: data.persona.name,
-                            timestamp: Date.now()
-                        }]);
+                    if (data.success && isMounted.current) {
+                        setPersona(data.persona);
+                        await fetchHistory(data.persona);
                     }
-
+                } else {
+                    await fetchHistory(persona);
                 }
             } catch (error) {
                 console.error("Persona Init Error:", error);
@@ -861,7 +921,18 @@ const PersonaChatContent = () => {
             status: 'sending'
         };
 
-        setMessages(prev => [...prev, userMsg]);
+        const pendingAiId = `pending-ai-${msgId}`;
+        const pendingAiMsg = {
+            id: pendingAiId,
+            role: 'model',
+            text: 'Thinking…',
+            displayName: persona?.name || 'Persona',
+            timestamp: now + 1,
+            status: 'pending_ai'
+        };
+
+        pendingAiMessageIdRef.current = pendingAiId;
+        setMessages(prev => [...prev, userMsg, pendingAiMsg]);
         setInputValue('');
         setIsSending(true);
         lastSendTime.current = now;
@@ -890,7 +961,11 @@ const PersonaChatContent = () => {
             rollbackZaps(cost, requestId);
             if (isMounted.current) {
                 toast.error("Failed to send message.");
-                setMessages(prev => prev.map(m => m.id === msgId ? { ...m, status: 'error' } : m));
+                setMessages(prev => prev.map(m => {
+                    if (m.id === msgId) return { ...m, status: 'error' };
+                    if (m.id === pendingAiId) return { ...m, text: 'Response failed. Tap retry.', status: 'error' };
+                    return m;
+                }));
             }
         } finally {
             if (isMounted.current) {
@@ -1222,7 +1297,7 @@ const PersonaChatContent = () => {
                                     onChange={(e) => setInputValue(e.target.value)}
                                     onKeyDown={handleKeyDown}
                                     placeholder="Send a message"
-                                    disabled={isLoading || isSending}
+                                    disabled={isChatDisabled}
                                 />
                                 <button className="emote-btn" onClick={() => setShowEmotes(!showEmotes)}>
                                     😀
@@ -1239,7 +1314,7 @@ const PersonaChatContent = () => {
                                     </button>
                                     <button
                                         onClick={handleSend}
-                                        disabled={!inputValue.trim() || isLoading || isSending}
+                                        disabled={!inputValue.trim() || isChatDisabled}
                                         className="twitch-chat-btn"
                                     >
                                         Chat

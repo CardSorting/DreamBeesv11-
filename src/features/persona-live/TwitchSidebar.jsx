@@ -25,9 +25,7 @@ const TwitchSidebar = ({ isCollapsed, onToggle }) => {
                         <div className={`nav-item-sidebar ${location.pathname === '/directory' ? 'active' : ''}`} onClick={() => navigate('/directory')}>
                             <MessageCircle size={20} /> <span>Directory</span>
                         </div>
-                        <div className={`nav-item-sidebar ${location.pathname === '/following' ? 'active' : ''}`} onClick={() => navigate('/following')}>
-                            <Heart size={20} /> <span>Following</span>
-                        </div>
+
                     </div>
                 </div>
             )}
