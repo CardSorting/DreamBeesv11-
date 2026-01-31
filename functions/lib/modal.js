@@ -89,15 +89,17 @@ export class ModalAPI {
 
                 if (data.status === "generating" || data.status === "queued") {
                     // Continue polling
-                    if (i % 5 === 0) logger.info(`[ModalAPI] Job ${jobId} status: ${data.status}...`);
+                    if (i % 5 === 0) {
+                        logger.info(`[ModalAPI] Job ${jobId} status: ${data.status}...`);
+                    }
                 } else {
                     logger.warn(`[ModalAPI] Unexpected response status 200 with JSON:`, data);
                 }
-            } else if (response.status === 200) {
-                // Duplicate handling just in case, though handled above
             } else if (response.status === 404) {
                 // Job might not be in the results DB yet if just submitted
-                if (i % 5 === 0) logger.info(`[ModalAPI] Job ${jobId} not found (404), continuing poll...`);
+                if (i % 5 === 0) {
+                    logger.info(`[ModalAPI] Job ${jobId} not found (404), continuing poll...`);
+                }
             } else if (!response.ok) {
                 const errorText = await response.text();
                 logger.error(`[ModalAPI] Polling error for job ${jobId}`, null, { status: response.status, errorText });
