@@ -317,10 +317,7 @@ export const handleGenerateVideoPrompt = async (request) => {
             // If the AI generation failed, we should refund.
             // But we need a unique ID for the refund to be safe.
             // Using `${requestId}_refund`
-            const rId = requestId || `vp_${Date.now()}`; // Re-derive isn't safe if not preserved.
-            // Since we generated rId above if missing, we need to ensure we use the same one.
-            // Actually, if we generated it, we can use it.
-            const finalRequestId = request.data.requestId || `vp_${Date.now()}`; // Re-calc is dangerous if Date changes? 
+
             // Ideally we capture `rId` from above scope if possible.
             // But checking the catch block scope...
             // Let's just catch generic errors.

@@ -34,7 +34,7 @@ export const handleChatPersona = async (request) => {
     return await Billing.runAsync(userId, 'PERSONA_CHAT', requestId, {
         type: 'persona_chat',
         personaId: imageId
-    }, async (cost) => {
+    }, async (_cost) => {
         // 2. Broadcast User Message (Immediate)
         const userMsgData = {
             uid: userId,
@@ -268,7 +268,7 @@ export const handleCreatePersona = async (request) => {
     }
 
     // Use Billing Wrapper (Async with Retries)
-    return await Billing.runAsync(userId, 'PERSONA_CREATE', requestId, { type: 'persona_create' }, async (cost) => {
+    return await Billing.runAsync(userId, 'PERSONA_CREATE', requestId, { type: 'persona_create' }, async (_cost) => {
         const response = await fetchWithRetry(imageUrl, { timeout: 15000, retries: 3 });
         if (!response.ok) { throw new Error("Image fetch failed"); }
         const arrayBuffer = await response.arrayBuffer();
@@ -344,7 +344,7 @@ export const handleGiftPersona = async (request) => {
     await Billing.runAtomic(userId, giftAmount, requestId, {
         type: 'persona_gift',
         personaId: imageId
-    }, async (t, cost) => {
+    }, async (t, _cost) => {
         // Update Persona State (Inside Transaction)
         const pDoc = await t.get(personaRef);
         if (!pDoc.exists) { throw new HttpsError('not-found', 'Persona not found'); }
@@ -406,7 +406,7 @@ export const handleTriggerAction = async (request) => {
 
     // Use unified billing
     // Use unified billing (Atomic)
-    await Billing.runAtomic(userId, cost, requestId, { type: 'persona_action', actionId }, async (t) => {
+    await Billing.runAtomic(userId, cost, requestId, { type: 'persona_action', actionId }, async (_t) => {
         // Nothing complex in transaction, just the cost deduction was the gate.
         // We could move the state update here if we want it to be strictly atomic with payment.
         // But Store.updatePersonaState doesn't accept a transaction object yet? 

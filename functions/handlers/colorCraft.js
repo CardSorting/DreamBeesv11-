@@ -1,6 +1,6 @@
 import { HttpsError } from "firebase-functions/v2/https";
 import { db, FieldValue } from "../firebaseInit.js";
-import { handleError, logger, retryOperation, getS3Client } from "../lib/utils.js";
+import { handleError, getS3Client } from "../lib/utils.js";
 import { generateColoringPageImage } from "../lib/ai.js";
 import { CostManager } from "../lib/costs.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";

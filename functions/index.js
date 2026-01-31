@@ -15,7 +15,7 @@ export {
     urgentWorker,
     backgroundWorker,
     voiceWorker,
-    voiceWorker,
+
     staleJobCleanup,
     walletGuard
 };

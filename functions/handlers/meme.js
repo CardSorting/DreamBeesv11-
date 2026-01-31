@@ -1,6 +1,6 @@
 import { HttpsError } from "firebase-functions/v2/https";
-import { db, FieldValue } from "../firebaseInit.js";
-import { handleError, logger, retryOperation } from "../lib/utils.js";
+import { FieldValue } from "../firebaseInit.js";
+import { handleError, logger } from "../lib/utils.js";
 import { formatMemeWithGemini } from "../lib/ai.js";
 import { CostManager } from "../lib/costs.js";
 import { Billing } from "../lib/billing.js";

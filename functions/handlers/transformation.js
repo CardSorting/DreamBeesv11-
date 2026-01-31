@@ -1,6 +1,6 @@
 import { HttpsError } from "firebase-functions/v2/https";
 import { db, FieldValue, getFunctions } from "../firebaseInit.js";
-import { handleError, logger, retryOperation } from "../lib/utils.js";
+import { handleError } from "../lib/utils.js";
 import { enhancePromptWithGemini, transformImageWithGemini } from "../lib/ai.js";
 // [REMOVED] import { HarmCategory, HarmBlockThreshold } from "@google-cloud/vertexai";
 import { CostManager } from "../lib/costs.js";
@@ -86,7 +86,7 @@ export const handleTransformImage = async (request) => {
     if (!uid) { throw new HttpsError('unauthenticated', "User must be authenticated"); }
     const COST = ZAP_COSTS.IMAGE_TRANSFORM;
     try {
-        const logRef = requestId ? db.collection('action_logs').doc(requestId) : null;
+        if (requestId) { db.collection('action_logs').doc(requestId); }
 
 
         const result = await transformImageWithGemini(imageUrl, styleName, instructions, intensity, uid);
