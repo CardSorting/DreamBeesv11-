@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 
 import SEO from '../../components/SEO';
 import { Play } from 'lucide-react';
-import './BrowsePage.css'; // Reusing styles
+import './FollowingPage.css'; // Reusing styles
 
 import { useTwitch } from '../../hooks/useTwitch';
 

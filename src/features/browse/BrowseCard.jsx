@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 // Images for offline fallback if needed, matching existing BrowsePage logic
 import lunaImg from '/assets/personas/luna.png';
 import roxieImg from '/assets/personas/roxie.png';
-// Default avatar
-import defaultAvatar from '/assets/default-avatar.png'; // Assuming this exists, or use a placeholder
+import defaultAvatar from '/assets/personas/nova.png'; // Fallback to Nova if no avatar
 
 const BrowseCard = ({ persona }) => {
     const navigate = useNavigate();
