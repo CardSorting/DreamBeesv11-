@@ -32,7 +32,7 @@ const EditHeader = ({ onClose, isMobile }) => {
                         letterSpacing: '-0.01em',
                         lineHeight: 1.2
                     }}>
-                        Edit with Klein 4B
+                        Edit and Remix Images
                     </h3>
                     {!isMobile && (
                         <p style={{
