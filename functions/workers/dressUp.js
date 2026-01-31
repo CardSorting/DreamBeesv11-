@@ -1,6 +1,7 @@
 
 import { db, FieldValue } from "../firebaseInit.js";
 import { getS3Client, logger, retryOperation } from "../lib/utils.js";
+import { Wallet } from "../lib/wallet.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
 // [REMOVED] import { vertexFlow } from "../lib/vertexFlow.js";
 
@@ -40,7 +41,7 @@ export const processDressUpTask = async (req) => {
         const response = await result.response;
         const generatedImageBase64 = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || null;
 
-        if (!generatedImageBase64) {throw new Error("No image data returned from Gemini");}
+        if (!generatedImageBase64) { throw new Error("No image data returned from Gemini"); }
 
         const imageBuffer = Buffer.from(generatedImageBase64, 'base64');
         const { default: sharp } = await import("sharp");
@@ -70,7 +71,9 @@ export const processDressUpTask = async (req) => {
 
     } catch (error) {
         logger.error(`[processDressUpTask] Failed`, error);
-        await retryOperation(() => db.collection('users').doc(userId).update({ zaps: FieldValue.increment(cost) }), { context: 'Refund DressUp Task' })
+        await retryOperation(async () => {
+            await Wallet.credit(userId, cost, `refund_dressup_${requestId}`, { reason: 'dressup_failed', originalRequestId: requestId });
+        }, { context: 'Refund DressUp Task' })
             .catch(e => logger.error("DressUp Refund Error", e, { userId }));
         await docRef.update({ status: "failed", error: error.message });
     }

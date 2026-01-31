@@ -5,7 +5,7 @@ import { logger, fetchWithRetry } from "../lib/utils.js";
 // [REMOVED] import { vertexFlow } from "../lib/vertexFlow.js";
 
 // Import new modules
-import * as Billing from "../lib/persona/billing.js";
+import { Billing } from "../lib/billing.js";
 import * as Context from "../lib/persona/context.js";
 import * as Broadcaster from "../lib/persona/broadcaster.js";
 import * as Brain from "../lib/persona/brain.js";
@@ -30,10 +30,11 @@ export const handleChatPersona = async (request) => {
     if (!personaDoc.exists) { throw new HttpsError('not-found', 'Persona not found.'); }
     const persona = personaDoc.data();
 
-    // 1. Billing
-    const costDeducted = await Billing.checkAndDeductZaps(userId, 'chat', null, requestId);
-
-    try {
+    // 1. Billing Wrapper (Async)
+    return await Billing.runAsync(userId, 'PERSONA_CHAT', requestId, {
+        type: 'persona_chat',
+        personaId: imageId
+    }, async (cost) => {
         // 2. Broadcast User Message (Immediate)
         const userMsgData = {
             uid: userId,
@@ -70,10 +71,10 @@ export const handleChatPersona = async (request) => {
             if (reactionEmoji) {
                 await Broadcaster.broadcastReaction(imageId, reactionEmoji);
             }
+            // Rate limit acts as "Success" (no refund needed, just no reply)
             return { reply: null, status: 'listening' };
         }
 
-        // 4. Gather Context
         // 4. Gather Context
         const [serverHistory, supporterData, relationshipContext, loreContext] = await Promise.all([
             Context.fetchServerHistory(imageId),
@@ -110,12 +111,6 @@ export const handleChatPersona = async (request) => {
             loreContext
         });
 
-        // Engagement Hook
-        // Engagement Hook (MOVED TO BRAIN.JS via CURRENT MISSION)
-        // We still keep the CRITICAL instructions for formatting relative to tool usage instructions,
-        // although brain.js output format should cover it. Let's keep the tool instructions just in case
-        // but remove the "Ask a provocative question" part since the MicroGoal covers it.
-
         systemPrompt += "\n\nCRITICAL: Occasionally include a line starting with 'TITLE:' followed by a new creative stream title. Also, occasionally include a line starting with 'REACTION:' followed by a single emoji.";
 
         // 6. Generate (The Brain)
@@ -151,14 +146,13 @@ export const handleChatPersona = async (request) => {
         }
 
         // 9. Persist & Broadcast AI Reply
-        // DECOUPLED: Voice generation is now an async background task (VoiceWorker)
         const aiMsgData = {
             uid: 'ai-persona',
             displayName: persona.name,
             photoURL: persona.photoURL || '',
             text: cleanText,
             role: 'model',
-            audioJobId: null // Client waits for update
+            audioJobId: null
         };
 
         const msgRef = await Store.saveMessage(imageId, aiMsgData);
@@ -202,15 +196,10 @@ export const handleChatPersona = async (request) => {
 
         // End Typing Indicator
         await Broadcaster.broadcastTyping(imageId, false);
-
         return { reply: cleanText };
 
-    } catch (e) {
-        logger.error("Chat Error", e);
-        await Broadcaster.broadcastTyping(imageId, false).catch(() => { });
-        if (costDeducted > 0) { await Billing.refundZaps(userId, costDeducted); }
-        throw new HttpsError('internal', "Failed to get character response.");
-    }
+    }, { retries: 0 }); // No retries for Chat to avoid double-posting or expensive loops. Or set to 1? 0 is safer for Chat.
+
 };
 
 // --- HANDLE CREATE PERSONA ---
@@ -278,14 +267,8 @@ export const handleCreatePersona = async (request) => {
         throw new HttpsError('resource-exhausted', 'The oracle is overextended. Too many characters are currently awake. Please wait for one to return to slumber.');
     }
 
-    const cost = await Billing.checkAndDeductZaps(userId, 'create', null, requestId);
-    if (requestId && cost === 0) {
-        // Idempotent: doc might already exist or be in progress
-        const existingDoc = await personaRef.get();
-        if (existingDoc.exists) { return { success: true, persona: existingDoc.data(), isNew: false }; }
-    }
-
-    try {
+    // Use Billing Wrapper (Async with Retries)
+    return await Billing.runAsync(userId, 'PERSONA_CREATE', requestId, { type: 'persona_create' }, async (cost) => {
         const response = await fetchWithRetry(imageUrl, { timeout: 15000, retries: 3 });
         if (!response.ok) { throw new Error("Image fetch failed"); }
         const arrayBuffer = await response.arrayBuffer();
@@ -326,24 +309,17 @@ export const handleCreatePersona = async (request) => {
         };
         await Store.saveMessage(imageId, welcomeMsg);
 
-        // 3. Seed Creator as VIP (First Supporter)
-        // We write to 'top_supporters' manually to seed the collection
+        // 3. Seed Creator as VIP
         await personaRef.collection('top_supporters').doc(userId).set({
-            displayName: 'Creator', // Request didn't provide creator name, default to Creator or fetch from auth if available? 
-            // Actually, we don't have creator name easily here without parsing header token again or passing it. 
-            // Let's skip name update since fetchSupporters handles it, or just set it to 'Creator' for now.
-            // Better: 'Stream God' (Flavor).
+            displayName: 'Creator',
             totalZaps: 0,
             lastZap: FieldValue.serverTimestamp()
         });
 
         return { success: true, persona: personaData, isNew: true };
 
-    } catch (e) {
-        logger.error("Create persona failed", e);
-        if (cost > 0) { await Billing.refundZaps(userId, cost); }
-        throw new HttpsError('internal', "Failed to create persona.");
-    }
+    }, { retries: 1 }); // Retry creation once if AI fails
+
 };
 
 // --- HANDLE GIFT PERSONA ---
@@ -360,18 +336,19 @@ export const handleGiftPersona = async (request) => {
 
     logger.info(`[Persona] ${userName} (${userId}) gifting ${giftAmount} ZAPs to ${imageId}`);
 
-    // Use unified billing
-    const deduced = await Billing.checkAndDeductZaps(userId, 'gift', giftAmount, requestId);
-    if (requestId && deduced === 0) { return { success: true, idempotent: true }; }
-
-    // Update Persona State
+    // Use unified billing (Atomic Transaction)
+    // Use unified billing (Atomic Transaction)
     const personaRef = db.collection('personas').doc(imageId);
-    let personaData;
+    let finalZapCurrent = 0, finalZapGoal = 0;
 
-    await db.runTransaction(async (t) => {
+    await Billing.runAtomic(userId, giftAmount, requestId, {
+        type: 'persona_gift',
+        personaId: imageId
+    }, async (t, cost) => {
+        // Update Persona State (Inside Transaction)
         const pDoc = await t.get(personaRef);
         if (!pDoc.exists) { throw new HttpsError('not-found', 'Persona not found'); }
-        personaData = pDoc.data();
+        const personaData = pDoc.data();
 
         const newZapCurrent = (personaData.zapCurrent || 0) + giftAmount;
         const zapGoal = personaData.zapGoal || 500;
@@ -390,9 +367,13 @@ export const handleGiftPersona = async (request) => {
 
         updateData.hypeLevel = Math.ceil(updateData.hypeScore / 20) || 1;
         t.update(personaRef, updateData);
+
+        // Capture for broadcast
+        finalZapCurrent = updateData.zapCurrent;
+        finalZapGoal = updateData.zapGoal || zapGoal;
     });
 
-    // Log & Broadcast
+    // Post-Transaction: Log & Broadcast (Best Effort)
     const giftMsg = {
         uid: userId,
         displayName: userName,
@@ -408,11 +389,12 @@ export const handleGiftPersona = async (request) => {
         from: userName,
         amount: giftAmount,
         message: `${userName} gifted ${giftAmount} ZAPs! Hype is RISING!`,
-        newZapCurrent: (personaData.zapCurrent || 0) + giftAmount,
-        newZapGoal: personaData.zapGoal || 500
+        newZapCurrent: finalZapCurrent,
+        newZapGoal: finalZapGoal
     });
 
     return { success: true };
+
 };
 
 // --- HANDLE TRIGGER ACTION ---
@@ -423,8 +405,15 @@ export const handleTriggerAction = async (request) => {
     const userName = request.auth.token.name || 'Anonymous';
 
     // Use unified billing
-    const deduced = await Billing.checkAndDeductZaps(userId, actionId, cost, requestId);
-    if (requestId && deduced === 0) { return { success: true, idempotent: true }; }
+    // Use unified billing (Atomic)
+    await Billing.runAtomic(userId, cost, requestId, { type: 'persona_action', actionId }, async (t) => {
+        // Nothing complex in transaction, just the cost deduction was the gate.
+        // We could move the state update here if we want it to be strictly atomic with payment.
+        // But Store.updatePersonaState doesn't accept a transaction object yet? 
+        // Checking Store... we don't know. 
+        // For now, atomic payment is enough gatekeeping. 
+        // Actually, let's keep it safe: if payment succeeds, we do the action.
+    });
 
     // Process Action
     const update = {};
@@ -435,6 +424,7 @@ export const handleTriggerAction = async (request) => {
     await Broadcaster.broadcastStateChange(imageId, actionId, userName);
 
     return { success: true };
+
 };
 
 // --- HANDLE VOTE POLL ---

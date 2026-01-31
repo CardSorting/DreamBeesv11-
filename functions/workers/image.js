@@ -1,4 +1,5 @@
 import { db, FieldValue } from "../firebaseInit.js";
+import { Wallet } from "../lib/wallet.js";
 import { getS3Client, fetchWithTimeout, logger, retryOperation } from "../lib/utils.js";
 import { B2_BUCKET, B2_PUBLIC_URL, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN } from "../lib/constants.js";
 // [REMOVED] import { vertexFlow } from "../lib/vertexFlow.js";
@@ -291,9 +292,15 @@ export const processImageTask = async (req) => {
 
         // Refund if not anonymous
         if (userId && !userId.startsWith('anonymous')) {
-            await db.collection('users').doc(userId).update({
-                zaps: FieldValue.increment(1)
-            }).catch(e => logger.error("Refund Error", e));
+            try {
+                await Wallet.credit(userId, 1, `refund_worker_${requestId}`, {
+                    type: 'refund_worker_failure',
+                    originalRequestId: requestId,
+                    reason: error.message
+                });
+            } catch (refundError) {
+                logger.error("Refund Error", refundError);
+            }
         }
 
         await docRef.update({

@@ -2,6 +2,8 @@
  * Centralized Zap and Reel costs for backend handlers.
  * Ensure these stay in sync with frontend constants.
  */
+import { getFirestore } from 'firebase-admin/firestore';
+import { logger } from './utils.js';
 
 export const ZAP_COSTS = {
     // Generation
@@ -61,3 +63,73 @@ export function calculateFluxCost(aspectRatio, steps) {
     // $0.00041 per tile per step
     return tiles * s * 0.00041;
 }
+
+/**
+ * CostManager
+ * Handles dynamic pricing overrides from Firestore.
+ * Caches config for performance (TTL: 5 minutes).
+ */
+class CostManagerService {
+    constructor() {
+        this.cache = null;
+        this.lastFetch = 0;
+        this.TTL = 5 * 60 * 1000; // 5 minutes
+    }
+
+    async _fetchConfig() {
+        const now = Date.now();
+        if (this.cache && (now - this.lastFetch < this.TTL)) {
+            return this.cache;
+        }
+
+        try {
+            const db = getFirestore();
+            // Fetch centralized pricing AND legacy persona config in parallel
+            const [pricingDoc, personaDoc] = await Promise.all([
+                db.collection('sys_config').doc('pricing').get(),
+                db.collection('sys_config').doc('persona').get()
+            ]);
+
+            const pricing = pricingDoc.exists ? pricingDoc.data() : {};
+            const personaConfig = personaDoc.exists ? personaDoc.data() : {};
+
+            // Map legacy persona keys to ZAP_COSTS keys format if needed
+            // Legacy persona config uses 'cost_chat', 'cost_create'
+            // We want to map them to 'PERSONA_CHAT', 'PERSONA_CREATE'
+            if (personaConfig.cost_chat !== undefined) pricing.PERSONA_CHAT = Number(personaConfig.cost_chat);
+            if (personaConfig.cost_create !== undefined) pricing.PERSONA_CREATE = Number(personaConfig.cost_create);
+
+            this.cache = pricing;
+            this.lastFetch = now;
+            // logger.info("[CostManager] Config refreshed", this.cache);
+        } catch (e) {
+            logger.error("[CostManager] Failed to fetch config, using defaults", e);
+            this.cache = {}; // Fallback to empty overrides
+        }
+        return this.cache;
+    }
+
+    /**
+     * Get the cost for a specific key.
+     * @param {keyof typeof ZAP_COSTS} key 
+     * @returns {Promise<number>}
+     */
+    async get(key) {
+        const overrides = await this._fetchConfig();
+        const overrideValue = overrides[key];
+
+        if (overrideValue !== undefined && overrideValue !== null) {
+            return Number(overrideValue);
+        }
+
+        const defaultCost = ZAP_COSTS[key];
+        if (defaultCost === undefined) {
+            logger.warn(`[CostManager] Unknown cost key: ${key}, defaulting to 0`);
+            return 0;
+        }
+
+        return defaultCost;
+    }
+}
+
+export const CostManager = new CostManagerService();

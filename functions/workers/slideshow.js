@@ -1,5 +1,6 @@
 import { db, FieldValue } from "../firebaseInit.js";
 import { getS3Client, logger, retryOperation } from "../lib/utils.js";
+import { Wallet } from "../lib/wallet.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
 import { SLIDESHOW_MASTER_PROMPT, getSlidePrompts } from "../lib/ai.js";
 // [REMOVED] import { vertexFlow } from "../lib/vertexFlow.js";
@@ -115,7 +116,9 @@ export const processSlideshowTask = async (req) => {
 
     } catch (error) {
         logger.error(`[processSlideshowTask] Failed`, error);
-        await retryOperation(() => db.collection('users').doc(userId).update({ zaps: FieldValue.increment(cost) }), { context: 'Refund Slideshow Task' })
+        await retryOperation(async () => {
+            await Wallet.credit(userId, cost, `refund_slideshow_${requestId}`, { reason: 'slideshow_failed', originalRequestId: requestId });
+        }, { context: 'Refund Slideshow Task' })
             .catch(e => logger.error("Slideshow Refund Error", e, { userId }));
         await docRef.update({ status: "failed", error: error.message });
     }

@@ -1,6 +1,7 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { db, FieldValue } from "../firebaseInit.js";
 import { logger, retryOperation } from "../lib/utils.js";
+import { Wallet } from "../lib/wallet.js";
 
 /**
  * Scheduled function to clean up stale jobs that have been stuck in 'processing' or 'queued' 
@@ -53,22 +54,28 @@ export const staleJobCleanup = onSchedule("every 10 minutes", async (_event) => 
                 if (userId && !userId.startsWith('anonymous')) {
                     const cost = data.cost || 0;
                     if (cost > 0) {
+                        const currency = collectionName === 'video_queue' ? 'reels' : 'zaps';
                         refundPromises.push(
-                            retryOperation(() => {
-                                const userRef = db.collection('users').doc(userId);
-                                if (collectionName === 'video_queue') {
-                                    return userRef.update({ reels: FieldValue.increment(cost) });
-                                } else {
-                                    return userRef.update({ zaps: FieldValue.increment(cost) });
-                                }
+                            retryOperation(async () => {
+                                await Wallet.credit(userId, cost, `refund_stale_${requestId}`, {
+                                    type: 'refund_stale_job',
+                                    originalRequestId: requestId,
+                                    collection: collectionName,
+                                    reason: 'stale_job_recovery'
+                                }, currency);
                             }, { context: `Refund stale job ${requestId}` })
                         );
                     } else if (collectionName === 'generation_queue') {
                         // fallback for missing cost in older docs or standard gen
                         const fallbackCost = 1.0;
                         refundPromises.push(
-                            retryOperation(() => db.collection('users').doc(userId).update({ zaps: FieldValue.increment(fallbackCost) }),
-                                { context: `Refund fallback for ${requestId}` })
+                            retryOperation(async () => {
+                                await Wallet.credit(userId, fallbackCost, `refund_stale_fallback_${requestId}`, {
+                                    type: 'refund_stale_job_fallback',
+                                    originalRequestId: requestId,
+                                    reason: 'stale_job_recovery_fallback'
+                                });
+                            }, { context: `Refund fallback for ${requestId}` })
                         );
                     }
                 }

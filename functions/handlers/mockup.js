@@ -10,8 +10,8 @@ import { MOCKUP_ITEMS, MOCKUP_PRESETS, TCG_ITEMS, TCG_PRESETS, DOLL_ITEMS, DOLL_
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { db, FieldValue } from "../firebaseInit.js";
 import { HttpsError } from "firebase-functions/v2/https";
-import { ZAP_COSTS } from "../lib/costs.js";
-import { deductZapsAtomic } from "../lib/credits.js";
+import { CostManager } from "../lib/costs.js";
+import { Billing } from "../lib/billing.js";
 
 // ESM __dirname fix
 const __filename = fileURLToPath(import.meta.url);
@@ -278,67 +278,71 @@ export const handleGachaSpin = async (request) => {
         throw new Error("No image token provided.");
     }
 
-    // Cost Check & Deduction
-    const cost = ZAP_COSTS.MOCKUP_GEN || 0.25;
-    const requestId = request.data.requestId || `gacha_${Date.now()}`;
-    const billing = await deductZapsAtomic(uid, cost, requestId, 'action_logs');
-    if (billing.idempotent) { return { success: true, idempotent: true }; }
+    // NOTE: Gacha is a synchronous long-running operation. 
+    // We cannot wrap Vertex AI in a Firestore Transaction.
+    // Instead, we Debit first, then Refund if ALL fail.
 
-    // Decode base64
-    const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
+    // Using runAsync with a custom wrapper logic because Gacha has "partial success" logic.
+    // However, runAsync refunds on ANY error.
+    // Gacha throws only if ALL fail.
+    // So we can wrap the Gacha logic in the callback. If it finishes (even with 0 prizes? No, it throws if 0), return.
 
-    // Select items based on mode
-    let sourceItems = MOCKUP_ITEMS;
-    let sourcePresets = MOCKUP_PRESETS;
+    return await Billing.runAsync(uid, 'MOCKUP_GEN', requestId, { type: 'gacha_spin', mode: request.data.mode }, async () => {
+        // Decode base64
+        const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
 
-    if (request.data.mode === 'tcg') {
-        sourceItems = TCG_ITEMS;
-        sourcePresets = TCG_PRESETS;
-        logger.info("[Gacha] Mode: TCG/CCG Active");
-    } else if (request.data.mode === 'doll') {
-        sourceItems = DOLL_ITEMS;
-        sourcePresets = DOLL_PRESETS;
-        logger.info("[Gacha] Mode: Doll Reskin Active");
-    } else if (request.data.mode === 'reskin') {
-        sourceItems = RESKIN_ITEMS;
-        sourcePresets = RESKIN_PRESETS;
-        logger.info("[Gacha] Mode: General Reskin Active");
-    }
+        // Select items based on mode
+        let sourceItems = MOCKUP_ITEMS;
+        let sourcePresets = MOCKUP_PRESETS;
 
-    // Select random unique items (currently just 1 for cost saving/speed as per user pref)
-    const shuffledItems = [...sourceItems].sort(() => 0.5 - Math.random());
-    const selectedItems = shuffledItems.slice(0, 1);
-    logger.info(`[Gacha] Selected items: ${selectedItems.map(i => i.label).join(', ')}`);
+        if (request.data.mode === 'tcg') {
+            sourceItems = TCG_ITEMS;
+            sourcePresets = TCG_PRESETS;
+            logger.info("[Gacha] Mode: TCG/CCG Active");
+        } else if (request.data.mode === 'doll') {
+            sourceItems = DOLL_ITEMS;
+            sourcePresets = DOLL_PRESETS;
+            logger.info("[Gacha] Mode: Doll Reskin Active");
+        } else if (request.data.mode === 'reskin') {
+            sourceItems = RESKIN_ITEMS;
+            sourcePresets = RESKIN_PRESETS;
+            logger.info("[Gacha] Mode: General Reskin Active");
+        }
 
-    // Parallel Generation
-    logger.info("[Gacha] Starting parallel generation...");
-    const promises = selectedItems.map((item, idx) => {
-        // Random Preset for each
-        const randomPreset = sourcePresets[Math.floor(Math.random() * sourcePresets.length)];
-        logger.info(`[Gacha] Item ${idx + 1}: ${item.label} with preset ${randomPreset.label}`);
-        return generateSingleMockup(base64Data, item, randomPreset, uid);
+        // Select random unique items (currently just 1 for cost saving/speed as per user pref)
+        const shuffledItems = [...sourceItems].sort(() => 0.5 - Math.random());
+        const selectedItems = shuffledItems.slice(0, 1);
+        logger.info(`[Gacha] Selected items: ${selectedItems.map(i => i.label).join(', ')}`);
+
+        // Parallel Generation
+        logger.info("[Gacha] Starting parallel generation...");
+        const promises = selectedItems.map((item, idx) => {
+            // Random Preset for each
+            const randomPreset = sourcePresets[Math.floor(Math.random() * sourcePresets.length)];
+            logger.info(`[Gacha] Item ${idx + 1}: ${item.label} with preset ${randomPreset.label}`);
+            return generateSingleMockup(base64Data, item, randomPreset, uid);
+        });
+
+        // Wait all
+        const results = await Promise.all(promises);
+        logger.info("[Gacha] All generations completed/failed.");
+
+        const successfulPrizes = results.filter(r => r.success);
+        logger.info(`[Gacha] Success count: ${successfulPrizes.length}/${results.length}`);
+
+        if (successfulPrizes.length === 0) {
+            // Log the errors
+            results.forEach(r => { if (!r.success) { logger.error("Gacha Item Failed", r.error); } });
+
+            // Throwing here triggers Billing.runAsync to Refund automatically.
+            throw new Error("The machine jammed! No prizes were generated. Refund processed.");
+        }
+
+        return {
+            success: true,
+            prizes: successfulPrizes
+        };
     });
-
-    // Wait all (we want to return what succeeds)
-    const results = await Promise.all(promises);
-    logger.info("[Gacha] All generations completed/failed.");
-
-    const successfulPrizes = results.filter(r => r.success);
-    logger.info(`[Gacha] Success count: ${successfulPrizes.length}/${results.length}`);
-
-    if (successfulPrizes.length === 0) {
-        // Log the errors
-        results.forEach(r => { if (!r.success) { logger.error("Gacha Item Failed", r.error); } });
-
-        // Note: No manual refund here. Idempotency protects the deduction.
-        // If it's a transient failure, user can retry with the same requestId.
-        throw new Error("The machine jammed! No prizes were generated.");
-    }
-
-    return {
-        success: true,
-        prizes: successfulPrizes
-    };
 };
 
 /**
@@ -358,13 +362,9 @@ export const handleGenerateMockup = async (request) => {
         throw new Error("No image data provided.");
     }
 
-    // Cost Check
-    const cost = ZAP_COSTS.MOCKUP_GEN || 0.25;
     const requestId = request.data.requestId || `mockup_${Date.now()}`;
-    const billing = await deductZapsAtomic(uid, cost, requestId, 'action_logs');
-    if (billing.idempotent) { return { success: true, idempotent: true }; }
 
-    try {
+    return await Billing.runAsync(uid, 'MOCKUP_GEN', requestId, { type: 'mockup_generation' }, async () => {
         const generativeModel = getModel();
 
         // Decode base64 image (remove header if present)
@@ -473,12 +473,7 @@ export const handleGenerateMockup = async (request) => {
         }
 
         return result;
-
-    } catch (error) {
-        // No manual refund, use idempotent retries
-        logger.error("Mockup Generation Error:", error);
-        throw new Error(`Mockup generation failed: ${error.message}`);
-    }
+    });
 };
 
 /**
@@ -520,13 +515,9 @@ export const handleGenerateMockupItem = async (request) => {
         preset = MOCKUP_PRESETS.find(p => p.id === 'studio') || MOCKUP_PRESETS[0];
     }
 
-    // 2. Cost Check & Deduction
-    const cost = ZAP_COSTS.MOCKUP_GEN || 0.25;
     const requestId = request.data.requestId || `mockitem_${Date.now()}`;
-    const billing = await deductZapsAtomic(uid, cost, requestId, 'action_logs');
-    if (billing.idempotent) { return { success: true, idempotent: true }; }
 
-    try {
+    return await Billing.runAsync(uid, 'MOCKUP_GEN', requestId, { type: 'mockup_item', itemId, presetId }, async () => {
         // 3. Generate
         // Decode base64
         const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
@@ -566,10 +557,5 @@ export const handleGenerateMockupItem = async (request) => {
         }
 
         return result;
-
-    } catch (error) {
-        // No manual refund, use idempotent retries
-        logger.error(`Failed to generate item ${itemId}:`, error);
-        throw new HttpsError('internal', `Generation failed: ${error.message}`);
-    }
+    });
 };

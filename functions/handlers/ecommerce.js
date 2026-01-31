@@ -1,8 +1,8 @@
 import { HttpsError } from "firebase-functions/v2/https";
 // [REMOVED] import { db, FieldValue } from "../firebaseInit.js";
 import { logger } from "../lib/utils.js";
-import { ZAP_COSTS } from "../lib/costs.js";
-import { deductZapsAtomic } from "../lib/credits.js";
+import { CostManager } from "../lib/costs.js";
+import { Billing } from "../lib/billing.js";
 
 const SYSTEM_INSTRUCTION = `
 You are an expert e-commerce product manager and SEO specialist.
@@ -52,61 +52,40 @@ export const handleAnalyzeProductImage = async (request) => {
         throw new HttpsError('invalid-argument', 'imageBase64 and mimeType are required.');
     }
 
-    const COST = ZAP_COSTS.AUTO_CSV_IMAGE;
-    const requestId = request.data.requestId || `ecommerce_${Date.now()}`;
-
     try {
-        // Deduct Zaps with idempotency
-        const billing = await deductZapsAtomic(uid, COST, requestId, 'action_logs');
-        if (billing.idempotent) { return { success: true, idempotent: true }; }
+        const requestId = request.data.requestId || `ecommerce_${Date.now()}`;
 
-        const { VertexAI } = await import("@google-cloud/vertexai");
-        const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
-        const model = vertexAI.getGenerativeModel({
-            model: "gemini-2.5-flash",
-            systemInstruction: {
-                parts: [{ text: SYSTEM_INSTRUCTION }]
-            },
-            generationConfig: {
-                responseMimeType: "application/json",
-                responseSchema: RESPONSE_SCHEMA
-            }
-        });
+        return await Billing.runAsync(uid, 'AUTO_CSV_IMAGE', requestId, { type: 'auto_csv' }, async () => {
+            const { VertexAI } = await import("@google-cloud/vertexai");
+            const vertexAI = new VertexAI({ project: 'dreambees-alchemist', location: 'us-central1' });
+            const model = vertexAI.getGenerativeModel({
+                model: "gemini-2.5-flash",
+                systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+                generationConfig: { responseMimeType: "application/json", responseSchema: RESPONSE_SCHEMA }
+            });
 
-        logger.info(`[AutoCSV] Analyzing image for uid=${uid}`);
+            logger.info(`[AutoCSV] Analyzing image for uid=${uid}`);
 
-        // Generate direct
-        const result = await model.generateContent({
-            contents: [
-                {
+            const result = await model.generateContent({
+                contents: [{
                     role: 'user',
                     parts: [
                         { text: "Analyze this product image and generate e-commerce data." },
-                        {
-                            inlineData: {
-                                mimeType: mimeType,
-                                data: imageBase64
-                            }
-                        }
+                        { inlineData: { mimeType: mimeType, data: imageBase64 } }
                     ]
-                }
-            ]
+                }]
+            });
+
+            const response = await result.response;
+            const candidate = response.candidates?.[0];
+
+            if (candidate?.finishReason === 'SAFETY') { throw new HttpsError('permission-denied', 'Blocked by Safety Filter'); }
+
+            const textOutput = candidate?.content?.parts?.[0]?.text;
+            if (!textOutput) { throw new HttpsError('internal', 'No data returned from Vertex AI'); }
+
+            return JSON.parse(textOutput);
         });
-
-        const response = await result.response;
-        const candidate = response.candidates?.[0];
-
-        if (candidate?.finishReason === 'SAFETY') {
-            throw new HttpsError('permission-denied', 'Blocked by Safety Filter');
-        }
-
-        const textOutput = candidate?.content?.parts?.[0]?.text;
-
-        if (!textOutput) {
-            throw new HttpsError('internal', 'No data returned from Vertex AI');
-        }
-
-        return JSON.parse(textOutput);
 
     } catch (error) {
         logger.error(`[AutoCSV] Error:`, error);

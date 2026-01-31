@@ -1,5 +1,6 @@
 
 import { db, FieldValue } from "../firebaseInit.js";
+import { Wallet } from "../lib/wallet.js";
 import { getS3Client, fetchWithRetry, logger, retryOperation, findPrimaryUrl } from "../lib/utils.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
 import { generateVisionPrompt } from "../lib/ai.js";
@@ -76,7 +77,13 @@ export const processVideoTask = async (request) => {
 
     } catch (error) {
         logger.error(`Task Failed for ${requestId}`, error);
-        await retryOperation(() => db.collection('users').doc(data.userId).update({ reels: FieldValue.increment(data.cost) }), { context: 'Refund Video Task' })
+        await retryOperation(async () => {
+            await Wallet.credit(data.userId, data.cost, `refund_video_${requestId}`, {
+                type: 'refund_video_failure',
+                originalRequestId: requestId,
+                reason: error.message
+            }, 'reels');
+        }, { context: 'Refund Video Task' })
             .catch(e => logger.error("Video Refund Error", e, { userId: data.userId }));
         await docRef.update({ status: "failed", error: error.message });
     }
