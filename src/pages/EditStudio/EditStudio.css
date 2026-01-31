@@ -278,14 +278,62 @@
 
 @media (max-width: 640px) {
     .edit-studio-page {
-        padding: 16px 16px 40px;
+        padding: 12px 14px 32px;
+        gap: 16px;
     }
 
     .edit-studio-header {
         position: static;
+        padding: 12px 14px;
+        gap: 12px;
     }
 
     .edit-studio-title-sub {
         display: none;
+    }
+
+    .edit-studio-back-text {
+        display: none;
+    }
+
+    .edit-studio-header-pill {
+        padding: 8px 10px;
+    }
+
+    .edit-studio-pill-text {
+        display: none;
+    }
+
+    .edit-studio-stepper {
+        grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+        gap: 8px;
+    }
+
+    .edit-studio-step {
+        justify-content: center;
+        padding: 8px 10px;
+        gap: 6px;
+    }
+
+    .edit-studio-step-label {
+        display: none;
+    }
+
+    .edit-studio-tips {
+        padding: 10px 12px;
+        font-size: 0.75rem;
+    }
+
+    .edit-studio-body {
+        gap: 16px;
+    }
+
+    .edit-studio-panel {
+        padding: 14px;
+        border-radius: 16px;
+    }
+
+    .edit-studio-panel-main {
+        min-height: 360px;
     }
 }

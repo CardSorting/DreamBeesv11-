@@ -39,7 +39,7 @@ const EditStudio = () => {
     const [referenceImage, setReferenceImage] = useState(location.state?.referenceImage || null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [showHowItWorks, setShowHowItWorks] = useState(true);
+    const [showHowItWorks, setShowHowItWorks] = useState(!isMobile);
     const [showReference, setShowReference] = useState(true);
     const [isComparing, setIsComparing] = useState(false);
 
@@ -240,6 +240,12 @@ const EditStudio = () => {
     }, [prompt, storageKey]);
 
     useEffect(() => {
+        if (isMobile) {
+            setShowHowItWorks(false);
+        }
+    }, [isMobile]);
+
+    useEffect(() => {
         const guard = (event) => {
             if (!isGenerating) return;
             event.preventDefault();
@@ -264,7 +270,7 @@ const EditStudio = () => {
 
     if (loading) {
         return (
-            <div className="edit-studio-page">
+            <div className={`edit-studio-page ${isMobile ? 'is-mobile' : ''}`}>
                 <div className="edit-studio-loading">
                     <div className="edit-studio-skeleton-header" />
                     <div className="edit-studio-skeleton-body">
@@ -278,7 +284,7 @@ const EditStudio = () => {
 
     if (error || !referenceImage) {
         return (
-            <div className="edit-studio-page">
+            <div className={`edit-studio-page ${isMobile ? 'is-mobile' : ''}`}>
                 <div className="edit-studio-error">
                     <div className="edit-studio-error-card">
                         <h2>Unable to open Edit Studio</h2>
@@ -298,12 +304,12 @@ const EditStudio = () => {
     }
 
     return (
-        <div className="edit-studio-page">
+        <div className={`edit-studio-page ${isMobile ? 'is-mobile' : ''}`}>
             <header className="edit-studio-header">
                 <div className="edit-studio-header-left">
                     <button className="edit-studio-back" onClick={() => navigate(-1)}>
                         <ArrowLeft size={18} />
-                        Back
+                        <span className="edit-studio-back-text">Back</span>
                     </button>
                     <div className="edit-studio-title">
                         <span className="edit-studio-title-label">Edit Studio</span>
@@ -315,11 +321,11 @@ const EditStudio = () => {
                 <div className="edit-studio-header-actions">
                     <button className="edit-studio-header-pill" onClick={() => setShowHowItWorks((prev) => !prev)}>
                         <Info size={14} />
-                        {showHowItWorks ? 'Hide Tips' : 'Show Tips'}
+                        <span className="edit-studio-pill-text">{showHowItWorks ? 'Hide Tips' : 'Show Tips'}</span>
                     </button>
                     <button className="edit-studio-header-pill" onClick={handleReset}>
                         <RefreshCw size={14} />
-                        Reset
+                        <span className="edit-studio-pill-text">Reset</span>
                     </button>
                 </div>
             </header>
@@ -334,7 +340,7 @@ const EditStudio = () => {
                             <div className="edit-studio-step-icon">
                                 <Icon size={14} />
                             </div>
-                            <span>{step.label}</span>
+                            <span className="edit-studio-step-label">{step.label}</span>
                         </div>
                     );
                 })}
@@ -401,20 +407,6 @@ const EditStudio = () => {
                 </div>
             </div>
 
-            {isMobile && !generatedImage && (
-                <div className="edit-studio-mobile-bar">
-                    <button
-                        onClick={handleEdit}
-                        disabled={isGenerating || !prompt.trim()}
-                        className="edit-studio-mobile-cta"
-                    >
-                        {isGenerating ? 'Generating...' : 'Generate Edit'}
-                    </button>
-                    <span className="edit-studio-mobile-hint">
-                        {prompt.trim() ? 'Ready to generate' : 'Add instructions to continue'}
-                    </span>
-                </div>
-            )}
         </div>
     );
 };

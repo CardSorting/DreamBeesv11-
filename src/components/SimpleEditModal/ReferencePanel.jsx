@@ -46,7 +46,7 @@ const ReferencePanel = ({
                             borderRadius: '50%',
                             animation: 'pulse-dot 1.5s ease-in-out infinite'
                         }} />
-                        Processing
+                        {!isMobile && 'Processing'}
                     </span>
                 )}
             </div>
@@ -54,12 +54,12 @@ const ReferencePanel = ({
             <div style={{
                 position: 'relative',
                 aspectRatio: '1/1',
-                borderRadius: isMobile ? '16px' : '20px',
+                borderRadius: isMobile ? '14px' : '20px',
                 overflow: 'hidden',
                 background: 'rgba(255, 255, 255, 0.02)',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
                 boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
-                maxWidth: isMobile ? '200px' : 'none',
+                maxWidth: isMobile ? '190px' : 'none',
                 margin: isMobile ? '0 auto' : '0',
                 width: isMobile ? '100%' : 'auto'
             }}>
@@ -125,20 +125,22 @@ const ReferencePanel = ({
                                 <p style={{
                                     color: 'white',
                                     fontWeight: '700',
-                                    fontSize: isMobile ? '0.9rem' : '1rem',
+                                    fontSize: isMobile ? '0.85rem' : '1rem',
                                     margin: 0,
                                     letterSpacing: '0.02em'
                                 }}>
                                     Creating...
                                 </p>
-                                <p style={{
-                                    fontSize: isMobile ? '0.7rem' : '0.8rem',
-                                    color: 'rgba(255, 255, 255, 0.5)',
-                                    marginTop: '4px',
-                                    fontWeight: '500'
-                                }}>
-                                    {isMobile ? '~10-20s' : 'This usually takes 10-20 seconds'}
-                                </p>
+                                {!isMobile && (
+                                    <p style={{
+                                        fontSize: '0.8rem',
+                                        color: 'rgba(255, 255, 255, 0.5)',
+                                        marginTop: '4px',
+                                        fontWeight: '500'
+                                    }}>
+                                        This usually takes 10-20 seconds
+                                    </p>
+                                )}
                             </div>
 
                             {/* Progress Steps - Hidden on mobile */}

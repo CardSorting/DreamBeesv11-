@@ -156,14 +156,16 @@ const EditControls = ({
                 )}
             </div>
 
-            <div style={{
-                fontSize: isMobile ? '0.7rem' : '0.75rem',
-                color: 'rgba(255, 255, 255, 0.45)',
-                fontWeight: '500',
-                lineHeight: '1.5'
-            }}>
-                Tip: be specific about what to change, like “add soft lighting” or “swap the background to a city”.
-            </div>
+            {!isMobile && (
+                <div style={{
+                    fontSize: '0.75rem',
+                    color: 'rgba(255, 255, 255, 0.45)',
+                    fontWeight: '500',
+                    lineHeight: '1.5'
+                }}>
+                    Tip: be specific about what to change, like “add soft lighting” or “swap the background to a city”.
+                </div>
+            )}
 
             {/* Append Mode Toggle */}
             <div style={{
@@ -222,13 +224,15 @@ const EditControls = ({
                 </div>
             </div>
 
-            <div style={{
-                fontSize: isMobile ? '0.65rem' : '0.7rem',
-                color: 'rgba(255, 255, 255, 0.35)',
-                fontWeight: '500'
-            }}>
-                Add = append to your instructions. Replace = swap the entire prompt.
-            </div>
+            {!isMobile && (
+                <div style={{
+                    fontSize: '0.7rem',
+                    color: 'rgba(255, 255, 255, 0.35)',
+                    fontWeight: '500'
+                }}>
+                    Add = append to your instructions. Replace = swap the entire prompt.
+                </div>
+            )}
 
             {/* Category Tabs - Horizontal scroll on mobile */}
             <div style={{
