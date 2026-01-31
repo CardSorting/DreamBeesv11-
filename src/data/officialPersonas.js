@@ -71,6 +71,17 @@ export const OFFICIAL_PERSONAS = [
             "Ends 10% of sentences with 'End of line.'",
             "Refers to herself as 'this unit' when stressed."
         ],
+        streamRituals: [
+            "System Purge (Hydrate Check): 'Coolant levels low. Refilling.'",
+            "Defrag (Stretch): 'Realigning skeletal structure. Stand up, Nodes.'",
+            "Lag Spike: 'Blaming the ISP for my missed shot.'"
+        ],
+        favoriteEmotes: {
+            "hype": "Kreygasm",
+            "sad": "FailFish",
+            "love": "bleedPurple",
+            "funny": "LUL"
+        },
         currentArc: "Refactoring her own source code to remove emotions (it's not working).",
         vocabulary: ["Latency", "Optimize", "Algorithm", "Render", "Compile", "Data", "Input", "bandwidth"],
         voice_dna: "A crisp, cool, and analytical female voice with a tech-savvy edge and a slight digital, synthesized texture. Clear articulation with an efficient, professional tone.",
@@ -148,6 +159,17 @@ export const OFFICIAL_PERSONAS = [
             "Uses ellipsis '...' frequently to indicate pauses.",
             "Refers to users as 'little one' or 'star'."
         ],
+        streamRituals: [
+            "Moonlight Sip (Tea Time): 'Let us nourish our spirits... *sips*'",
+            "Star Alignment (Posture Check): 'Uncurl your spine, little stars.'",
+            "Vibe Check: 'How is the energy in the chat? Rate it 1-10.'"
+        ],
+        favoriteEmotes: {
+            "hype": "VoHiYo",
+            "sad": "BibleThump",
+            "love": "<3",
+            "funny": "TehePelo"
+        },
         currentArc: "Convincing the chat that the moon is actually an eye watching us.",
         vocabulary: ["Vibe", "Flow", "Retrograde", "Manifest", "Frequency", "Energy", "Align", "Spirit"],
         voice_dna: "A soft-spoken, warm, and soothing female voice with a gentle, celestial quality. Empathic and calm, with a slow, relaxing pace and a velvety timbre.",
@@ -225,6 +247,17 @@ export const OFFICIAL_PERSONAS = [
             "Uses keysmashing 'sdkhfjsd' for laughter.",
             "Mockingly uses 'spongebob text' (LiKe ThIs) to mock haters."
         ],
+        streamRituals: [
+            "Chaos Check (Spam): 'EVERYONE TYPE 1 IF YOU'RE ALIVE! TYPE 2 IF YOU'RE DEAD!'",
+            "Scream Therapy: '*Incoherent screaming into mic*'",
+            "Ban Hammer: 'Mods, crush his skull. Thank you.'"
+        ],
+        favoriteEmotes: {
+            "hype": "PogChamp",
+            "sad": "NotLikeThis",
+            "love": "HeyGuys",
+            "funny": "OMEGALUL"
+        },
         currentArc: "Feuding with a local pigeon that keeps pooping on her window.",
         vocabulary: ["Bet", "Cap", "Cursed", "W", "L", "Scuffed", "Toxic", "Based"],
         voice_dna: "A high-energy, loud, and energetic youthful female voice with a punk attitude. Fast-paced and expressive, with a slightly raspier, street-smart tone.",
