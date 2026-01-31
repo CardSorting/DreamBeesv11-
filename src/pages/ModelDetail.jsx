@@ -538,6 +538,7 @@ export default function ModelDetail() {
                             {Array.from({ length: 12 }).map((_, idx) => {
                                 const ratios = ['1/1', '3/4', '4/5', '2/3', '1/1', '3/5'];
                                 return (
+                                    // eslint-disable-next-line react/no-array-index-key
                                     <div key={`skeleton-${idx}`} className="masonry-item" style={{ marginBottom: '4px' }}>
                                         <div className="image-card" style={{
                                             aspectRatio: ratios[idx % ratios.length],

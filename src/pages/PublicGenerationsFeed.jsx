@@ -15,7 +15,9 @@ import { isOver18 } from '../utils/age';
 import FeedLayout from '../components/FeedLayout';
 import FeedGrid from '../components/FeedGrid';
 import FeedPost from '../components/FeedPost';
+import ShowcaseModal from '../components/ShowcaseModal';
 import CommunityConsentModal from '../components/CommunityConsentModal';
+import '../styles/Feeds.css';
 
 // Note: CSS imported by FeedLayout
 
@@ -127,13 +129,28 @@ export default function PublicGenerationsFeed() {
                 image: focusImage ? (focusImage.thumbnailUrl || focusImage.imageUrl) : undefined,
                 canonical: focusImage ? `/generations?view=${focusImage.id}` : undefined
             }}
-            focusImage={focusImage}
-            onCloseFocus={closeFocus}
+            showcaseModal={focusImage && (
+                <ShowcaseModal
+                    image={focusImage}
+                    model={availableModels.find(m => m.id === focusImage.modelId) || { name: 'Unknown', image: '/dreambees_icon.png' }}
+                    onClose={closeFocus}
+                    onNext={() => {
+                        const idx = images.findIndex(img => img.id === focusImage.id);
+                        if (idx !== -1 && idx < images.length - 1) openFocus(images[idx + 1]);
+                    }}
+                    onPrev={() => {
+                        const idx = images.findIndex(img => img.id === focusImage.id);
+                        if (idx > 0) openFocus(images[idx - 1]);
+                    }}
+                    hasNext={images.findIndex(img => img.id === focusImage.id) < images.length - 1}
+                    hasPrev={images.findIndex(img => img.id === focusImage.id) > 0}
+                />
+            )}
         >
             <CommunityConsentModal />
 
             {/* Filter Pills */}
-            <div className="feed-filter-bar mobile-feed-header-override" style={{ justifyContent: 'center', top: 0, position: 'fixed', width: '100%', maxWidth: '1200px', marginLeft: 'auto', marginRight: 'auto', left: 0, right: 0 }}>
+            <div className="feed-filter-bar" style={{ justifyContent: 'center', width: '100%', maxWidth: '1200px', margin: '0 auto' }}>
                 <div className="filter-scroll" style={{ justifyContent: 'center' }}>
                     {['All', 'Images', 'Videos', 'Mockups', 'Memes'].map(filter => (
                         <button

@@ -3,21 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, X, ThumbsUp, ThumbsDown, Sparkles, Flag, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useModel } from '../contexts/ModelContext';
-import { useTwitch } from '../contexts/TwitchContext';
 import { getOptimizedImageUrl } from '../utils';
 import { trackLoopConversion } from '../utils/analytics';
+import SimpleEditModal from './SimpleEditModal';
+import { useAuth } from '../contexts/AuthContext';
 
 const ShowcaseModal = ({ image, onClose, model, onNext, onPrev, hasNext, hasPrev }) => {
     const { rateShowcaseImage } = useModel();
     const { hidePost, isHidden } = useUserInteractions();
-    const { personas } = useTwitch();
+    const { currentUser } = useAuth();
     const navigate = useNavigate();
 
-    // Stability: Threshold logic and stable timestamp for render-pure calculations
-    const ACTIVE_THRESHOLD_MS = 15 * 60 * 1000;
+    const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
 
-    const nowRef = React.useRef(Date.now());
-    const now = nowRef.current;
+    // Stability: Threshold logic and stable timestamp for render-pure calculations
+
 
     // Defensive check: If image is missing, don't render anything (or could render error state)
     if (!image) return null;
@@ -303,52 +303,39 @@ const ShowcaseModal = ({ image, onClose, model, onNext, onPrev, hasNext, hasPrev
                                 >
                                     START CREATING
                                 </button>
-                                {(() => {
-                                    const persona = personas.find(p => p.id === image.id);
-
-                                    // Threshold Logic (Matches Backend: 15 mins)
-                                    const activePersonas = personas.filter(p => {
-                                        const lastActivity = p.lastActivity?.toMillis?.() || p.lastActivity?.seconds * 1000 || 0;
-                                        return (now - lastActivity) < ACTIVE_THRESHOLD_MS;
-                                    });
-
-                                    const isSystemAtCapacity = activePersonas.length >= 5;
-                                    const isTargetPersonaActive = persona && (now - (persona.lastActivity?.toMillis?.() || persona.lastActivity?.seconds * 1000 || 0)) < ACTIVE_THRESHOLD_MS;
-
-                                    const shouldRedirectToBrowse = !isTargetPersonaActive && isSystemAtCapacity;
-
-                                    return (
-                                        <button
-                                            onClick={() => {
-                                                onClose();
-                                                if (shouldRedirectToBrowse) {
-                                                    navigate('/browse');
-                                                } else {
-                                                    trackLoopConversion('showcase_talk_to_picture', model?.id);
-                                                    navigate(`/channel/${image.id}`, { state: { imageItem: image } });
-                                                }
-                                            }}
-                                            className="btn w-full justify-center text-xs"
-                                            title={shouldRedirectToBrowse ? "System at capacity. View active channels." : ""}
-                                            style={{
-                                                flex: 1,
-                                                background: '#a970ff',
-                                                color: 'white',
-                                                border: 'none',
-                                                fontWeight: '700',
-                                                cursor: 'pointer'
-                                            }}
-                                        >
-                                            {shouldRedirectToBrowse ? 'VIEW LIVE CHANNELS' : 'TALK TO A PICTURE'}
-                                        </button>
-                                    );
-                                })()}
+                                <button
+                                    onClick={() => {
+                                        if (!currentUser) {
+                                            navigate('/login');
+                                            return;
+                                        }
+                                        trackLoopConversion('showcase_edit_picture', model?.id);
+                                        setIsEditModalOpen(true);
+                                    }}
+                                    className="btn w-full justify-center text-xs"
+                                    style={{
+                                        flex: 1,
+                                        background: 'rgba(255, 255, 255, 0.1)',
+                                        color: 'white',
+                                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                                        fontWeight: '700',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    EDIT
+                                </button>
                             </div>
                         </div>
                     </div>
-
                 </div>
             </div>
+
+            <SimpleEditModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                referenceImage={image}
+            />
+
             <style>{`
                 .meta-label {
                     font-size: 0.7rem;

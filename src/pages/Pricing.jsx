@@ -274,8 +274,8 @@ export default function Pricing() {
                         </div>
 
                         <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '32px', padding: 0 }}>
-                            {pack.features.map((feature, fIdx) => (
-                                <FeatureItem key={`feature-${pack.id}-${fIdx}`} text={feature} highlight={pack.isPopular} accentColor={currencyType === 'reels' ? 'var(--color-accent-primary)' : 'var(--color-primary)'} />
+                            {pack.features.map((feature) => (
+                                <FeatureItem key={`${pack.id}-${feature}`} text={feature} highlight={pack.isPopular} accentColor={currencyType === 'reels' ? 'var(--color-accent-primary)' : 'var(--color-primary)'} />
                             ))}
                         </ul>
                         <div style={{ flex: 1 }}></div>

@@ -11,8 +11,8 @@ import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 import FeedPost from '../components/FeedPost';
 import ShowcaseModal from '../components/ShowcaseModal';
 import SafeImage from '../components/SafeImage';
-// Using shared FeedLayout CSS for consistency across all feeds
-import '../components/FeedLayout/FeedLayout.css';
+import FeedLayout from '../components/FeedLayout';
+import '../styles/Feeds.css';
 
 const FeedPostSkeleton = () => (
     <div className="post-skeleton animate-pulse">
@@ -538,98 +538,26 @@ export default function ModelFeed() {
     }
 
     return (
-        <div className="feed-layout-wrapper">
-            <SEO
-                title={activeShowcaseImage ? `${activeShowcaseImage.prompt?.slice(0, 50)}...` : `${model.name} Feed - DreamBees`}
-                description={activeShowcaseImage ? activeShowcaseImage.prompt : `Instagram-style showcase feed for the ${model.name} AI model.`}
-                image={activeShowcaseImage ? (activeShowcaseImage.url || activeShowcaseImage.imageUrl) : model.image}
-                canonical={activeShowcaseImage ? `/model/${model.id || 'global'}/image/${activeShowcaseImage.id}` : undefined}
-            />
-
-            <Sidebar activeId={id ? `/models` : location.pathname} /> {/* Dynamic active ID */}
-
-            <main className="feed-main-content">
-
-                <FeedSwitcher />
-
-
-
-
-                <div className="feed-posts-container masonry-feed">
-                    {visibleImages.map((imgItem, index) => (
-                        <FeedPost
-                            key={imgItem.id || index}
-                            imgItem={imgItem}
-                            index={index}
-                            model={model.name === "Global" ? (imgItem._model || availableModels?.find(m => m.id === imgItem.modelId) || model) : model}
-                            getOptimizedImageUrl={getOptimizedImageUrl}
-                            rateShowcaseImage={rateShowcaseImage}
-                            navigate={navigate}
-                            setActiveShowcaseImage={openShowcase}
-                            variant="masonry"
-                        />
-                    ))}
-
-                    {isLoading && (
-                        <div className="feed-loader-skeletons">
-                            {/* eslint-disable-next-line react/no-array-index-key */}
-                            {[...Array(3)].map((_, i) => <FeedPostSkeleton key={i} />)}
-                        </div>
-                    )}
-
-                    {!isLoading && visibleImages.length === 0 && (
-                        <div className="empty-feed-state">
-                            <Sparkles size={48} />
-                            <h3>No posts found</h3>
-                            <p>Try adjusting your filters or check back later.</p>
-                            <button onClick={() => setActiveFilter('All')} className="reset-filter-btn">
-                                Clear Filters
-                            </button>
-                        </div>
-                    )}
-
-                    {/* Sentinel for Infinite Scroll Trigger OR Manual Load Button */}
-                    {!isLoading && manualLoadNeeded && (visibleImages.length < imagesToRender.length || (id ? !hasShowcaseEnded(id) : !hasGlobalFeedEnded)) ? (
-                        <div style={{ padding: '40px 0', textAlign: 'center', width: '100%' }}>
-                            <button
-                                onClick={triggerManualLoad}
-                                className="reset-filter-btn" // Reusing verify clean white pill style
-                                style={{
-                                    fontSize: '1rem',
-                                    padding: '12px 32px',
-                                    fontWeight: '700',
-                                    boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
-                                }}
-                            >
-                                Load More
-                            </button>
-                        </div>
-                    ) : (
-                        <div ref={sentinelRef} style={{ height: '20px', width: '100%', marginTop: '40px' }} aria-hidden="true" />
-                    )}
-
-                    {!isLoading && visibleImages.length > 0 && (visibleImages.length < imagesToRender.length || (id ? !hasShowcaseEnded(id) : !hasGlobalFeedEnded)) && (
-                        <div className="feed-loader-skeletons">
-                            {/* eslint-disable-next-line react/no-array-index-key */}
-                            {[...Array(1)].map((_, i) => <FeedPostSkeleton key={i} />)}
-                        </div>
-                    )}
-                </div>
-            </main>
-
-            <SuggestedPanelMemo
-                currentModel={model}
-                availableModels={availableModels}
-                setActiveFilter={(newFilter) => {
+        <FeedLayout
+            activeSidebarId={id ? `/models` : location.pathname}
+            seoProps={{
+                title: activeShowcaseImage ? `${activeShowcaseImage.prompt?.slice(0, 50)}...` : `${model.name} Feed - DreamBees`,
+                description: activeShowcaseImage ? activeShowcaseImage.prompt : `Instagram-style showcase feed for the ${model.name} AI model.`,
+                image: activeShowcaseImage ? (activeShowcaseImage.url || activeShowcaseImage.imageUrl) : model.image,
+                canonical: activeShowcaseImage ? `/model/${model.id || 'global'}/image/${activeShowcaseImage.id}` : undefined
+            }}
+            suggestedPanelProps={{
+                currentModel: model,
+                availableModels: availableModels,
+                setActiveFilter: (newFilter) => {
                     if (id) {
                         navigate(`/model/${id}/feed/filter/${newFilter}`);
                     } else {
                         navigate(`/filter/${newFilter}`);
                     }
-                }}
-            />
-
-            {activeShowcaseImage && (
+                }
+            }}
+            showcaseModal={activeShowcaseImage && (
                 <ShowcaseModal
                     image={activeShowcaseImage}
                     model={model}
@@ -638,7 +566,6 @@ export default function ModelFeed() {
                         const currentIndex = imagesToRender.findIndex(img => img.id === activeShowcaseImage.id);
                         if (currentIndex !== -1 && currentIndex < imagesToRender.length - 1) {
                             openShowcase(imagesToRender[currentIndex + 1]);
-                            // Pre-fetch if near end (within 5 items)
                             if (currentIndex >= imagesToRender.length - 5) {
                                 handleLoadMore();
                             }
@@ -662,8 +589,68 @@ export default function ModelFeed() {
                     })()}
                 />
             )}
+        >
+            <FeedSwitcher />
+            <div className="feed-posts-container masonry-feed">
+                {visibleImages.map((imgItem, index) => (
+                    <FeedPost
+                        key={imgItem.id || index}
+                        imgItem={imgItem}
+                        index={index}
+                        model={model.name === "Global" ? (imgItem._model || availableModels?.find(m => m.id === imgItem.modelId) || model) : model}
+                        getOptimizedImageUrl={getOptimizedImageUrl}
+                        rateShowcaseImage={rateShowcaseImage}
+                        navigate={navigate}
+                        setActiveShowcaseImage={openShowcase}
+                        variant="masonry"
+                    />
+                ))}
 
+                {isLoading && (
+                    <div className="feed-loader-skeletons">
+                        {/* eslint-disable-next-line react/no-array-index-key */}
+                        {[...Array(3)].map((_, i) => <FeedPostSkeleton key={i} />)}
+                    </div>
+                )}
 
-        </div>
+                {!isLoading && visibleImages.length === 0 && (
+                    <div className="empty-feed-state">
+                        <Sparkles size={48} />
+                        <h3>No posts found</h3>
+                        <p>Try adjusting your filters or check back later.</p>
+                        <button onClick={() => setActiveFilter('All')} className="reset-filter-btn">
+                            Clear Filters
+                        </button>
+                    </div>
+                )}
+
+                {/* Sentinel for Infinite Scroll Trigger OR Manual Load Button */}
+                {!isLoading && manualLoadNeeded && (visibleImages.length < imagesToRender.length || (id ? !hasShowcaseEnded(id) : !hasGlobalFeedEnded)) ? (
+                    <div style={{ padding: '40px 0', textAlign: 'center', width: '100%' }}>
+                        <button
+                            onClick={triggerManualLoad}
+                            className="reset-filter-btn" // Reusing verify clean white pill style
+                            style={{
+                                fontSize: '1rem',
+                                padding: '12px 32px',
+                                fontWeight: '700',
+                                boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+                            }}
+                        >
+                            Load More
+                        </button>
+                    </div>
+                ) : (
+                    <div ref={sentinelRef} style={{ height: '20px', width: '100%', marginTop: '40px' }} aria-hidden="true" />
+                )}
+
+                {!isLoading && visibleImages.length > 0 && (visibleImages.length < imagesToRender.length || (id ? !hasShowcaseEnded(id) : !hasGlobalFeedEnded)) && (
+                    <div className="feed-loader-skeletons">
+                        {/* eslint-disable-next-line react/no-array-index-key */}
+                        {[...Array(1)].map((_, i) => <FeedPostSkeleton key={i} />)}
+                    </div>
+                )}
+            </div>
+        </FeedLayout>
     );
 }

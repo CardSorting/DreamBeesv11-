@@ -243,6 +243,36 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "generations",
+      "queryScope": "COLLECTION",
+      "densityOverride": "SPARSE_ALL",
+      "fields": [
+        {
+          "fieldPath": "isPublic",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "mockups",
+      "queryScope": "COLLECTION",
+      "densityOverride": "SPARSE_ALL",
+      "fields": [
+        {
+          "fieldPath": "isPublic",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [

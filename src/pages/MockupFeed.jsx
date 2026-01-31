@@ -11,7 +11,9 @@ import { slugify, unslugify } from '../utils/urlHelpers';
 
 import FeedLayout from '../components/FeedLayout';
 import FeedGrid from '../components/FeedGrid';
+import ShowcaseModal from '../components/ShowcaseModal';
 import { useMockupData } from '../hooks/useMockupData';
+import '../styles/Feeds.css';
 
 export default function MockupFeed() {
     const navigate = useNavigate();
@@ -20,7 +22,6 @@ export default function MockupFeed() {
 
     // Local State
     const [focusImage, setFocusImage] = useState(null);
-    const [isTransitioning, setIsTransitioning] = useState(false);
 
     // Initial Filter from URL
     const creatorFilter = useMemo(() => {
@@ -84,7 +85,6 @@ export default function MockupFeed() {
 
     const handleFilterChange = (newFilter) => {
         if (creatorFilter?.id === newFilter?.id && creatorFilter?.value === newFilter?.value) return;
-        setIsTransitioning(true);
 
         setTimeout(() => {
             if (!newFilter) {
@@ -102,7 +102,7 @@ export default function MockupFeed() {
             }
 
             setTimeout(() => {
-                setIsTransitioning(false);
+                // setIsTransitioning(false);
             }, 100);
         }, 300);
     };
@@ -116,127 +116,105 @@ export default function MockupFeed() {
                 image: focusImage ? (focusImage.thumbnailUrl || focusImage.imageUrl) : undefined,
                 canonical: focusImage ? `/discovery/${focusImage.id}` : undefined
             }}
-            focusImage={focusImage}
-            onCloseFocus={closeFocus}
-            isTransitioning={isTransitioning}
+            showcaseModal={focusImage && (
+                <ShowcaseModal
+                    image={focusImage}
+                    model={{ name: "Studio", image: "/dreambees_icon.png" }}
+                    onClose={closeFocus}
+                    onNext={() => {
+                        const idx = images.findIndex(img => img.id === focusImage.id);
+                        if (idx !== -1 && idx < images.length - 1) openFocus(images[idx + 1]);
+                    }}
+                    onPrev={() => {
+                        const idx = images.findIndex(img => img.id === focusImage.id);
+                        if (idx > 0) openFocus(images[idx - 1]);
+                    }}
+                    hasNext={images.findIndex(img => img.id === focusImage.id) < images.length - 1}
+                    hasPrev={images.findIndex(img => img.id === focusImage.id) > 0}
+                />
+            )}
         >
-            <div className="discovery-container">
-                <FeedSwitcher />
+            <FeedSwitcher />
 
-                {/* Tag Filters */}
+            {/* Filter Indicator */}
+            {creatorFilter && creatorFilter.type !== 'tag' && (
                 <div style={{
-                    maxWidth: '600px',
                     margin: '0 auto 20px',
+                    padding: '0 20px',
                     display: 'flex',
-                    gap: '10px',
-                    justifyContent: 'center',
-                    flexWrap: 'wrap'
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: 'rgba(168, 85, 247, 0.1)',
+                    border: '1px solid rgba(168, 85, 247, 0.3)',
+                    borderRadius: '8px',
+                    height: '50px',
+                    width: 'calc(100% - 32px)',
+                    maxWidth: '800px'
                 }}>
-                    {['All', 'AI', 'DreamBees'].map(tag => {
-                        const isSelected = (creatorFilter?.type === 'tag' && creatorFilter.value === tag)
-                            || (!creatorFilter && tag === 'All')
-                            || (creatorFilter?.type === 'tag' && slugify(tag) === creatorFilter.slug);
-
-                        return (
-                            <button
-                                key={tag}
-                                onClick={() => handleFilterChange(tag === 'All' ? null : { type: 'tag', value: tag })}
-                                style={{
-                                    padding: '8px 16px',
-                                    borderRadius: '20px',
-                                    background: isSelected ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
-                                    border: '1px solid rgba(255,255,255,0.1)',
-                                    color: 'white',
-                                    fontSize: '0.9rem',
-                                    fontWeight: 500,
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s ease'
-                                }}
-                            >
-                                {tag === 'All' ? 'All' : '#' + tag}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* Filter Indicator */}
-                {creatorFilter && creatorFilter.type !== 'tag' && (
-                    <div style={{
-                        maxWidth: '600px',
-                        margin: '0 auto 20px',
-                        padding: '0 20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        background: 'rgba(168, 85, 247, 0.1)',
-                        border: '1px solid rgba(168, 85, 247, 0.3)',
-                        borderRadius: '8px',
-                        height: '50px'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span style={{ fontSize: '0.9rem', color: '#d8b4fe' }}>
-                                Filtering by <strong>{creatorFilter.name}</strong>
-                            </span>
-                        </div>
-                        <button
-                            onClick={() => handleFilterChange(null)}
-                            style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}
-                        >
-                            Clear Filter
-                        </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '0.9rem', color: '#d8b4fe' }}>
+                            Filtering by <strong>{creatorFilter.name}</strong>
+                        </span>
                     </div>
-                )}
-
-                <div style={{ maxWidth: '600px', margin: '0 auto', paddingBottom: '60px' }}>
-                    <FeedGrid
-                        items={images}
-                        loading={loading}
-                        hasMore={hasMore}
-                        onLoadMore={fetchMockups}
-                        layoutClass="feed-posts-container" // Linear list for consistency
-                        renderItem={(imgItem, index) => {
-                            const mockModel = { name: "Studio", image: "/dreambees_icon.png" };
-                            const creatorName = imgItem.userDisplayName || "Creator";
-                            return (
-                                <FeedPost
-                                    key={imgItem.id}
-                                    imgItem={imgItem}
-                                    index={index}
-                                    model={mockModel}
-                                    getOptimizedImageUrl={getOptimizedImageUrl}
-                                    navigate={navigate}
-                                    setActiveShowcaseImage={openFocus}
-                                    headerTitle={creatorName}
-                                    headerSubtitle="Mockup Studio"
-                                    avatarImage="/dreambees_icon.png"
-                                    onCreatorClick={() => {
-                                        if (imgItem.userId) {
-                                            handleFilterChange({ id: imgItem.userId, name: creatorName });
-                                        }
-                                    }}
-                                    onTagClick={(tag) => handleFilterChange({ type: 'tag', value: tag })}
-                                />
-                            );
-                        }}
-                        emptyState={
-                            <div className="empty-feed-state">
-                                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
-                                    <Palette size={40} style={{ opacity: 0.8 }} />
-                                </div>
-                                <h3>No mockups yet</h3>
-                                <p style={{ maxWidth: '300px', margin: '0 auto' }}>Be the first to share your designs with the community.</p>
-                                <button
-                                    onClick={() => navigate('/mockup-studio')}
-                                    style={{ marginTop: '10px', padding: '12px 24px', borderRadius: '30px', background: 'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)', color: 'white', border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: '1rem', boxShadow: '0 4px 15px rgba(168, 85, 247, 0.4)', transition: 'transform 0.2s ease' }}
-                                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
-                                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                                >
-                                    Create Mockup
-                                </button>
-                            </div>
-                        }
-                    />
+                    <button
+                        onClick={() => handleFilterChange(null)}
+                        style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                        Clear Filter
+                    </button>
                 </div>
+            )}
+
+            <div style={{ width: '100%', paddingBottom: '60px' }}>
+                <FeedGrid
+                    items={images}
+                    loading={loading}
+                    hasMore={hasMore}
+                    onLoadMore={fetchMockups}
+                    layoutClass="feed-posts-container masonry-feed" // Use masonry-feed for grid layout
+                    renderItem={(imgItem, index) => {
+                        const mockModel = { name: "Studio", image: "/dreambees_icon.png" };
+                        const creatorName = imgItem.userDisplayName || "Creator";
+                        return (
+                            <FeedPost
+                                key={imgItem.id}
+                                imgItem={imgItem}
+                                index={index}
+                                model={mockModel}
+                                getOptimizedImageUrl={getOptimizedImageUrl}
+                                navigate={navigate}
+                                setActiveShowcaseImage={openFocus}
+                                headerTitle={creatorName}
+                                headerSubtitle="Mockup Studio"
+                                avatarImage="/dreambees_icon.png"
+                                variant="masonry" // Set to masonry variant
+                                onCreatorClick={() => {
+                                    if (imgItem.userId) {
+                                        handleFilterChange({ id: imgItem.userId, name: creatorName });
+                                    }
+                                }}
+                                onTagClick={(tag) => handleFilterChange({ type: 'tag', value: tag })}
+                            />
+                        );
+                    }}
+                    emptyState={
+                        <div className="empty-feed-state">
+                            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                                <Palette size={40} style={{ opacity: 0.8 }} />
+                            </div>
+                            <h3>No mockups yet</h3>
+                            <p style={{ maxWidth: '300px', margin: '0 auto' }}>Be the first to share your designs with the community.</p>
+                            <button
+                                onClick={() => navigate('/mockup-studio')}
+                                style={{ marginTop: '10px', padding: '12px 24px', borderRadius: '30px', background: 'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)', color: 'white', border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: '1rem', boxShadow: '0 4px 15px rgba(168, 85, 247, 0.4)', transition: 'transform 0.2s ease' }}
+                                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+                                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                            >
+                                Create Mockup
+                            </button>
+                        </div>
+                    }
+                />
             </div>
         </FeedLayout>
     );

@@ -2,15 +2,15 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Smile } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
-
 import { db } from '../firebase';
 import FeedPost from '../components/FeedPost';
 import FeedSwitcher from '../components/FeedSwitcher';
 import { getOptimizedImageUrl } from '../utils';
-
 import FeedLayout from '../components/FeedLayout';
 import FeedGrid from '../components/FeedGrid';
+import ShowcaseModal from '../components/ShowcaseModal';
 import { useMemeData } from '../hooks/useMemeData';
+import '../styles/Feeds.css';
 
 export default function MemeFeed() {
     const navigate = useNavigate();
@@ -19,7 +19,6 @@ export default function MemeFeed() {
 
     // Local State
     const [focusImage, setFocusImage] = useState(null);
-    const [isTransitioning, setIsTransitioning] = useState(false);
 
     // Initial Filter from URL
     const creatorFilter = useMemo(() => {
@@ -82,7 +81,6 @@ export default function MemeFeed() {
 
     const handleFilterChange = (newFilter) => {
         if (creatorFilter?.id === newFilter?.id) return;
-        setIsTransitioning(true);
 
         setTimeout(() => {
             if (!newFilter) {
@@ -98,7 +96,7 @@ export default function MemeFeed() {
             }
 
             setTimeout(() => {
-                setIsTransitioning(false);
+                // setIsTransitioning(false);
             }, 100);
         }, 300);
     };
@@ -112,90 +110,106 @@ export default function MemeFeed() {
                 image: focusImage ? (focusImage.thumbnailUrl || focusImage.imageUrl) : undefined,
                 canonical: focusImage ? `/memes/${focusImage.id}` : undefined
             }}
-            focusImage={focusImage}
-            onCloseFocus={closeFocus}
-            isTransitioning={isTransitioning}
+            showcaseModal={focusImage && (
+                <ShowcaseModal
+                    image={focusImage}
+                    model={{ name: "Meme Formatter", image: "/dreambees_icon.png" }}
+                    onClose={closeFocus}
+                    onNext={() => {
+                        const idx = images.findIndex(img => img.id === focusImage.id);
+                        if (idx !== -1 && idx < images.length - 1) openFocus(images[idx + 1]);
+                    }}
+                    onPrev={() => {
+                        const idx = images.findIndex(img => img.id === focusImage.id);
+                        if (idx > 0) openFocus(images[idx - 1]);
+                    }}
+                    hasNext={images.findIndex(img => img.id === focusImage.id) < images.length - 1}
+                    hasPrev={images.findIndex(img => img.id === focusImage.id) > 0}
+                />
+            )}
         >
-            <div className="discovery-container">
-                <FeedSwitcher />
+            <FeedSwitcher />
 
-                {/* Filter Indicator */}
-                {creatorFilter && (
-                    <div style={{
-                        maxWidth: '600px',
-                        margin: '0 auto 20px',
-                        padding: '0 20px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        background: 'rgba(168, 85, 247, 0.1)',
-                        border: '1px solid rgba(168, 85, 247, 0.3)',
-                        borderRadius: '8px',
-                        height: '50px'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span style={{ fontSize: '0.9rem', color: '#d8b4fe' }}>
-                                Filtering by <strong>{creatorFilter.name}</strong>
-                            </span>
-                        </div>
-                        <button
-                            onClick={() => handleFilterChange(null)}
-                            style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}
-                        >
-                            Clear Filter
-                        </button>
+            {/* Filter Indicator */}
+            {creatorFilter && (
+                <div style={{
+                    margin: '0 auto 20px',
+                    padding: '0 20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: 'rgba(168, 85, 247, 0.1)',
+                    border: '1px solid rgba(168, 85, 247, 0.3)',
+                    borderRadius: '8px',
+                    height: '50px',
+                    width: 'calc(100% - 32px)',
+                    marginLeft: 'auto',
+                    marginRight: 'auto',
+                    maxWidth: '800px'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '0.9rem', color: '#d8b4fe' }}>
+                            Filtering by <strong>{creatorFilter.name}</strong>
+                        </span>
                     </div>
-                )}
-
-                <div style={{ maxWidth: '600px', margin: '0 auto', paddingBottom: '60px' }}>
-                    <FeedGrid
-                        items={images}
-                        loading={loading}
-                        hasMore={hasMore}
-                        onLoadMore={fetchMemes}
-                        layoutClass="feed-posts-container" // Override to not use masonry/grid specific styles if desired for single column
-                        renderItem={(imgItem, index) => {
-                            const mockModel = { name: "Meme Formatter", image: "/dreambees_icon.png" };
-                            const creatorName = imgItem.userDisplayName || "Creator";
-                            return (
-                                <FeedPost
-                                    key={imgItem.id}
-                                    imgItem={imgItem}
-                                    index={index}
-                                    model={mockModel}
-                                    getOptimizedImageUrl={getOptimizedImageUrl}
-                                    navigate={navigate}
-                                    setActiveShowcaseImage={openFocus}
-                                    headerTitle={creatorName}
-                                    headerSubtitle="Meme Formatter"
-                                    avatarImage="/dreambees_icon.png"
-                                    onCreatorClick={() => {
-                                        if (imgItem.userId) {
-                                            handleFilterChange({ id: imgItem.userId, name: creatorName });
-                                        }
-                                    }}
-                                />
-                            );
-                        }}
-                        emptyState={
-                            <div className="empty-feed-state">
-                                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
-                                    <Smile size={40} style={{ opacity: 0.8 }} />
-                                </div>
-                                <h3>No memes yet</h3>
-                                <p style={{ maxWidth: '300px', margin: '0 auto' }}>Be the first to share your memes with the community.</p>
-                                <button
-                                    onClick={() => navigate('/meme-formatter')}
-                                    style={{ marginTop: '10px', padding: '12px 24px', borderRadius: '30px', background: 'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)', color: 'white', border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: '1rem', boxShadow: '0 4px 15px rgba(168, 85, 247, 0.4)', transition: 'transform 0.2s ease' }}
-                                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
-                                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                                >
-                                    Create Meme
-                                </button>
-                            </div>
-                        }
-                    />
+                    <button
+                        onClick={() => handleFilterChange(null)}
+                        style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}
+                    >
+                        Clear Filter
+                    </button>
                 </div>
+            )}
+
+            <div style={{ width: '100%', paddingBottom: '60px' }}>
+                <FeedGrid
+                    items={images}
+                    loading={loading}
+                    hasMore={hasMore}
+                    onLoadMore={fetchMemes}
+                    layoutClass="feed-posts-container masonry-feed" // Use masonry-feed
+                    renderItem={(imgItem, index) => {
+                        const mockModel = { name: "Meme Formatter", image: "/dreambees_icon.png" };
+                        const creatorName = imgItem.userDisplayName || "Creator";
+                        return (
+                            <FeedPost
+                                key={imgItem.id}
+                                imgItem={imgItem}
+                                index={index}
+                                model={mockModel}
+                                getOptimizedImageUrl={getOptimizedImageUrl}
+                                navigate={navigate}
+                                setActiveShowcaseImage={openFocus}
+                                headerTitle={creatorName}
+                                headerSubtitle="Meme Formatter"
+                                avatarImage="/dreambees_icon.png"
+                                variant="masonry" // Set to masonry
+                                onCreatorClick={() => {
+                                    if (imgItem.userId) {
+                                        handleFilterChange({ id: imgItem.userId, name: creatorName });
+                                    }
+                                }}
+                            />
+                        );
+                    }}
+                    emptyState={
+                        <div className="empty-feed-state">
+                            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+                                <Smile size={40} style={{ opacity: 0.8 }} />
+                            </div>
+                            <h3>No memes yet</h3>
+                            <p style={{ maxWidth: '300px', margin: '0 auto' }}>Be the first to share your memes with the community.</p>
+                            <button
+                                onClick={() => navigate('/meme-formatter')}
+                                style={{ marginTop: '10px', padding: '12px 24px', borderRadius: '30px', background: 'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)', color: 'white', border: 'none', fontWeight: 600, cursor: 'pointer', fontSize: '1rem', boxShadow: '0 4px 15px rgba(168, 85, 247, 0.4)', transition: 'transform 0.2s ease' }}
+                                onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+                                onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                            >
+                                Create Meme
+                            </button>
+                        </div>
+                    }
+                />
             </div>
         </FeedLayout>
     );

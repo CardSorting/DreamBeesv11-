@@ -1,16 +1,18 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 // Force rebuild: useEffect import verified
 import { AnimatePresence, motion } from 'framer-motion';
-import { Heart, MoreHorizontal, Bookmark, BadgeCheck, Aperture, Volume2, VolumeX, Flag, ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
+import { Heart, MoreHorizontal, Bookmark, BadgeCheck, Aperture, Volume2, VolumeX, Flag, ChevronLeft, ChevronRight, MessageCircle, RefreshCw } from 'lucide-react';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
 import SafeImage from './SafeImage';
+import { getOptimizedImageUrl } from '../utils';
+import SimpleEditModal from './SimpleEditModal';
 
 const FeedPost = ({
     imgItem,
     index,
     model,
-    getOptimizedImageUrl,
+    // getOptimizedImageUrl, // This is now imported from utils
     navigate,
     setActiveShowcaseImage,
     variant = 'feed',
@@ -20,7 +22,8 @@ const FeedPost = ({
     onCreatorClick,
     onTagClick
 }) => {
-    const { _currentUser } = useAuth();
+    const { currentUser } = useAuth();
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const { isLiked, isBookmarked, toggleLike, toggleBookmark, unhidePost, reportPost, appealPost, isHidden, markViewed } = useUserInteractions();
 
     const [activeSlide, setActiveSlide] = useState(0);
@@ -183,7 +186,7 @@ const FeedPost = ({
 
     // If hidden (reported/hidden), render the "Hidden Overlay" state instead of the post
     if (isPostHidden) {
-        const isOwner = _currentUser?.uid === imgItem.userId;
+        const isOwner = currentUser?.uid === imgItem.userId;
 
         return (
             <motion.div
@@ -681,12 +684,17 @@ const FeedPost = ({
                             whileTap={{ scale: 0.8 }}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                navigate(`/channel/${imgItem.id}`, { state: { imageItem: imgItem } });
+                                if (!currentUser) {
+                                    navigate('/login');
+                                    return;
+                                }
+                                setIsEditModalOpen(true);
                             }}
+                            className="btn-edit-action"
                             style={{
-                                background: 'rgba(169, 112, 255, 0.2)',
-                                border: '1px solid rgba(169, 112, 255, 0.4)',
-                                color: '#a970ff',
+                                background: 'rgba(255, 255, 255, 0.1)',
+                                border: '1px solid rgba(255, 255, 255, 0.2)',
+                                color: 'white',
                                 cursor: 'pointer',
                                 padding: '8px',
                                 borderRadius: '50%',
@@ -694,10 +702,16 @@ const FeedPost = ({
                                 alignItems: 'center',
                                 justifyContent: 'center'
                             }}
-                            title="Talk to this character"
+                            title="Edit this generation"
                         >
-                            <MessageCircle size={20} />
+                            <RefreshCw size={20} />
                         </motion.button>
+
+                        <SimpleEditModal
+                            isOpen={isEditModalOpen}
+                            onClose={() => setIsEditModalOpen(false)}
+                            referenceImage={imgItem}
+                        />
                     </div>
 
                     <div style={{ display: 'flex', gap: '12px' }}>
