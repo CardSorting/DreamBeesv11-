@@ -1,6 +1,6 @@
 import { X, Sparkles } from 'lucide-react';
 
-const EditHeader = ({ onClose, isMobile }) => {
+const EditHeader = ({ isMobile }) => {
     return (
         <div style={{
             display: 'flex',
@@ -46,45 +46,7 @@ const EditHeader = ({ onClose, isMobile }) => {
                     )}
                 </div>
             </div>
-            <button
-                onClick={onClose}
-                style={{
-                    padding: isMobile ? '10px' : '10px',
-                    minWidth: isMobile ? '44px' : 'auto',
-                    minHeight: isMobile ? '44px' : 'auto',
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '12px',
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    touchAction: 'manipulation'
-                }}
-                onMouseEnter={e => {
-                    e.currentTarget.style.color = 'white';
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                    e.currentTarget.style.transform = 'rotate(90deg) scale(1.1)';
-                }}
-                onMouseLeave={e => {
-                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)';
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                    e.currentTarget.style.transform = 'rotate(0deg) scale(1)';
-                }}
-                onTouchStart={e => {
-                    e.currentTarget.style.color = 'white';
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                }}
-                onTouchEnd={e => {
-                    e.currentTarget.style.color = 'rgba(255, 255, 255, 0.5)';
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                }}
-                aria-label="Close modal"
-            >
-                <X size={isMobile ? 22 : 24} />
-            </button>
+
         </div>
     );
 };

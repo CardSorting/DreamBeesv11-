@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Sparkles, Info, Image as ImageIcon, Wand2, Layers, RefreshCw, Maximize2, Minimize2 } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, Info, Image as ImageIcon, Wand2, Layers, RefreshCw, Maximize2, Minimize2 } from 'lucide-react';
 import {
     collection,
     doc,
@@ -226,10 +227,12 @@ const EditStudio = () => {
     useEffect(() => {
         if (!storageKey) return;
         const cachedPrompt = sessionStorage.getItem(storageKey);
+        // Only restore if we have no prompt (initial load)
         if (cachedPrompt && !prompt) {
             setPrompt(cachedPrompt);
         }
-    }, [storageKey, prompt, setPrompt]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [storageKey]);
 
     useEffect(() => {
         if (!storageKey) return;
@@ -425,11 +428,35 @@ const EditStudio = () => {
                                 activePresetIndex={activePresetIndex}
                                 isMobile={isMobile}
                                 isCompact={compactMode}
+                                hideGenerateButton={isMobile}
                             />
                         )}
                     </div>
                 </div>
             </div>
+
+            {/* Sticky Mobile Action Bar */}
+            {isMobile && !generatedImage && (
+                <div className="edit-studio-mobile-action-bar">
+                    <button
+                        className="edit-studio-mobile-cta"
+                        onClick={handleEdit}
+                        disabled={isGenerating || !prompt.trim()}
+                    >
+                        {isGenerating ? (
+                            <>
+                                <Loader2 size={18} className="spin" />
+                                Creating...
+                            </>
+                        ) : (
+                            <>
+                                <Sparkles size={18} />
+                                Generate Edit
+                            </>
+                        )}
+                    </button>
+                </div>
+            )}
 
         </div>
     );

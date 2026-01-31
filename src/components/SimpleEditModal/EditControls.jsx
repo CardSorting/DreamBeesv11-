@@ -13,7 +13,8 @@ const EditControls = ({
     setActiveCategoryIndex,
     activePresetIndex,
     isMobile,
-    isCompact
+    isCompact,
+    hideGenerateButton
 }) => {
     const [appendMode, setAppendMode] = useState(true);
     const presetsScrollRef = useRef(null);
@@ -307,159 +308,104 @@ const EditControls = ({
             </div>
 
             {/* Preset Chips - Horizontal scroll on mobile */}
-            <div
-                ref={presetsScrollRef}
-                style={{
-                    display: 'flex',
-                    flexWrap: isMobile ? 'nowrap' : 'wrap',
-                    gap: isMobile ? '6px' : '8px',
-                    overflowX: isMobile ? 'auto' : 'visible',
-                    minHeight: isMobile ? '44px' : '80px',
-                    alignItems: 'flex-start',
-                    scrollbarWidth: 'none',
-                    msOverflowStyle: 'none',
-                    WebkitOverflowScrolling: 'touch',
-                    paddingBottom: isMobile ? '6px' : '0'
-                }}
-            >
-                {activePresets.map((preset, index) => (
-                    <button
-                        key={preset.text}
-                        onClick={() => handlePresetClick(preset.text)}
-                        title={preset.description}
-                        disabled={isGenerating}
-                        style={{
-                            background: activePresetIndex === index ? 'rgba(168, 85, 247, 0.2)' : 'rgba(255, 255, 255, 0.03)',
-                            border: `1px solid ${activePresetIndex === index ? 'rgba(168, 85, 247, 0.45)' : 'rgba(255, 255, 255, 0.08)'}`,
-                            borderRadius: isMobile ? '10px' : '12px',
-                            padding: isMobile ? '8px 12px' : '10px 14px',
-                            color: activePresetIndex === index ? 'white' : 'rgba(255, 255, 255, 0.7)',
-                            fontSize: isMobile ? '0.75rem' : '0.8rem',
-                            fontWeight: '500',
-                            cursor: isGenerating ? 'not-allowed' : 'pointer',
-                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                            whiteSpace: 'nowrap',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            opacity: isGenerating ? 0.5 : 1,
-                            flexShrink: 0,
-                            minHeight: isMobile ? '40px' : 'auto',
-                            touchAction: 'manipulation'
-                        }}
-                        onMouseEnter={e => {
-                            if (!isGenerating) {
-                                e.currentTarget.style.background = 'rgba(168, 85, 247, 0.15)';
-                                e.currentTarget.style.color = 'white';
-                                e.currentTarget.style.borderColor = 'rgba(168, 85, 247, 0.3)';
-                                e.currentTarget.style.transform = 'translateY(-2px)';
-                            }
-                        }}
-                        onMouseLeave={e => {
-                            e.currentTarget.style.background = activePresetIndex === index
-                                ? 'rgba(168, 85, 247, 0.2)'
-                                : 'rgba(255, 255, 255, 0.03)';
-                            e.currentTarget.style.color = activePresetIndex === index ? 'white' : 'rgba(255, 255, 255, 0.7)';
-                            e.currentTarget.style.borderColor = activePresetIndex === index
-                                ? 'rgba(168, 85, 247, 0.45)'
-                                : 'rgba(255, 255, 255, 0.08)';
-                            e.currentTarget.style.transform = 'translateY(0)';
-                        }}
-                        onTouchStart={e => {
-                            if (!isGenerating) {
-                                e.currentTarget.style.background = 'rgba(168, 85, 247, 0.15)';
-                                e.currentTarget.style.color = 'white';
-                                e.currentTarget.style.borderColor = 'rgba(168, 85, 247, 0.3)';
-                            }
-                        }}
-                        onTouchEnd={e => {
-                            e.currentTarget.style.background = activePresetIndex === index
-                                ? 'rgba(168, 85, 247, 0.2)'
-                                : 'rgba(255, 255, 255, 0.03)';
-                            e.currentTarget.style.color = activePresetIndex === index ? 'white' : 'rgba(255, 255, 255, 0.7)';
-                            e.currentTarget.style.borderColor = activePresetIndex === index
-                                ? 'rgba(168, 85, 247, 0.45)'
-                                : 'rgba(255, 255, 255, 0.08)';
-                        }}
-                    >
-                        <span style={{ fontSize: isMobile ? '0.9rem' : '1rem' }}>{preset.icon}</span>
-                        {preset.text}
-                    </button>
-                ))}
+            {/* Preset Cards Grid - Responsive & Animated */}
+            <div className="preset-grid" ref={presetsScrollRef} style={{ marginTop: '12px' }}>
+                {activePresets.map((preset, index) => {
+                    const isActive = activePresetIndex === index;
+                    return (
+                        <button
+                            key={preset.text}
+                            onClick={() => handlePresetClick(preset.text)}
+                            title={preset.description}
+                            disabled={isGenerating}
+                            className={`preset-card ${isActive ? 'active' : ''}`}
+                            style={{ animationDelay: `${index * 50}ms` }}
+                        >
+                            <div className="preset-card-bg" />
+                            <div className="preset-card-content">
+                                <span className="preset-card-icon">{preset.icon}</span>
+                                <span className="preset-card-text">{preset.text}</span>
+                            </div>
+                            {isActive && <div className="preset-card-glow" />}
+                        </button>
+                    );
+                })}
             </div>
 
             {/* Generate Button */}
-            <button
-                onClick={handleEdit}
-                disabled={isGenerating || !prompt.trim() || isAtLimit}
-                style={{
-                    width: '100%',
-                    height: isMobile ? '48px' : '56px',
-                    marginTop: 'auto',
-                    background: isGenerating || !prompt.trim() || isAtLimit
-                        ? 'rgba(255, 255, 255, 0.05)'
-                        : 'linear-gradient(135deg, #6366f1, #a855f7, #ec4899)',
-                    color: isGenerating || !prompt.trim() || isAtLimit
-                        ? 'rgba(255, 255, 255, 0.2)'
-                        : 'white',
-                    borderRadius: isMobile ? '14px' : '16px',
-                    fontWeight: '800',
-                    fontSize: isMobile ? '0.85rem' : '0.9rem',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.1em',
-                    cursor: isGenerating || !prompt.trim() || isAtLimit ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '12px',
-                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                    border: 'none',
-                    boxShadow: isGenerating || !prompt.trim() || isAtLimit
-                        ? 'none'
-                        : '0 10px 25px -10px rgba(168, 85, 247, 0.5)',
-                    position: 'relative',
-                    overflow: 'hidden',
-                    flexShrink: 0,
-                    touchAction: 'manipulation',
-                    minHeight: isMobile ? '48px' : '56px'
-                }}
-                onMouseEnter={e => {
-                    if (!isGenerating && prompt.trim() && !isAtLimit) {
-                        e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 20px 40px -12px rgba(168, 85, 247, 0.6)';
-                        e.currentTarget.style.filter = 'brightness(1.1)';
-                    }
-                }}
-                onMouseLeave={e => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = isGenerating || !prompt.trim() || isAtLimit
-                        ? 'none'
-                        : '0 10px 25px -10px rgba(168, 85, 247, 0.5)';
-                    e.currentTarget.style.filter = 'brightness(1)';
-                }}
-                onTouchStart={e => {
-                    if (!isGenerating && prompt.trim() && !isAtLimit) {
-                        e.currentTarget.style.transform = 'translateY(-1px)';
-                        e.currentTarget.style.filter = 'brightness(1.1)';
-                    }
-                }}
-                onTouchEnd={e => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.filter = 'brightness(1)';
-                }}
-            >
-                {isGenerating ? (
-                    <>
-                        <Loader2 size={isMobile ? 18 : 20} style={{ animation: 'spin 1s linear infinite' }} />
-                        Creating...
-                    </>
-                ) : (
-                    <>
-                        <Sparkles size={isMobile ? 18 : 20} />
-                        {isMobile ? 'Generate' : 'Generate Edit'}
-                    </>
-                )}
-            </button>
+            {!hideGenerateButton && (
+                <button
+                    onClick={handleEdit}
+                    disabled={isGenerating || !prompt.trim() || isAtLimit}
+                    style={{
+                        width: '100%',
+                        height: isMobile ? '48px' : '56px',
+                        marginTop: 'auto',
+                        background: isGenerating || !prompt.trim() || isAtLimit
+                            ? 'rgba(255, 255, 255, 0.05)'
+                            : 'linear-gradient(135deg, #6366f1, #a855f7, #ec4899)',
+                        color: isGenerating || !prompt.trim() || isAtLimit
+                            ? 'rgba(255, 255, 255, 0.2)'
+                            : 'white',
+                        borderRadius: isMobile ? '14px' : '16px',
+                        fontWeight: '800',
+                        fontSize: isMobile ? '0.85rem' : '0.9rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.1em',
+                        cursor: isGenerating || !prompt.trim() || isAtLimit ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '12px',
+                        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                        border: 'none',
+                        boxShadow: isGenerating || !prompt.trim() || isAtLimit
+                            ? 'none'
+                            : '0 10px 25px -10px rgba(168, 85, 247, 0.5)',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        flexShrink: 0,
+                        touchAction: 'manipulation',
+                        minHeight: isMobile ? '48px' : '56px'
+                    }}
+                    onMouseEnter={e => {
+                        if (!isGenerating && prompt.trim() && !isAtLimit) {
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                            e.currentTarget.style.boxShadow = '0 20px 40px -12px rgba(168, 85, 247, 0.6)';
+                            e.currentTarget.style.filter = 'brightness(1.1)';
+                        }
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = isGenerating || !prompt.trim() || isAtLimit
+                            ? 'none'
+                            : '0 10px 25px -10px rgba(168, 85, 247, 0.5)';
+                        e.currentTarget.style.filter = 'brightness(1)';
+                    }}
+                    onTouchStart={e => {
+                        if (!isGenerating && prompt.trim() && !isAtLimit) {
+                            e.currentTarget.style.transform = 'translateY(-1px)';
+                            e.currentTarget.style.filter = 'brightness(1.1)';
+                        }
+                    }}
+                    onTouchEnd={e => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.filter = 'brightness(1)';
+                    }}
+                >
+                    {isGenerating ? (
+                        <>
+                            <Loader2 size={isMobile ? 18 : 20} style={{ animation: 'spin 1s linear infinite' }} />
+                            Creating...
+                        </>
+                    ) : (
+                        <>
+                            <Sparkles size={isMobile ? 18 : 20} />
+                            {isMobile ? 'Generate' : 'Generate Edit'}
+                        </>
+                    )}
+                </button>
+            )}
 
             {/* Keyboard Shortcut Hint - Desktop only */}
             {!isMobile && (

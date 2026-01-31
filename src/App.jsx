@@ -53,7 +53,7 @@ function Layout() {
 
         <AnimatedRoutes />
       </main>
-      {!isLanding && pathname !== '/generate' && !pathname.startsWith('/channel') && !(pathname.startsWith('/mockup-catalog') && isMobile) && (
+      {!isLanding && pathname !== '/generate' && !pathname.startsWith('/channel') && !pathname.startsWith('/edit') && !(pathname.startsWith('/mockup-catalog') && isMobile) && (
         <div className="app-footer">
           <Footer />
         </div>
