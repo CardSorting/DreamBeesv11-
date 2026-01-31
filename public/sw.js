@@ -1,20 +1,33 @@
-const CACHE_NAME = 'dreambees-v2';
-const ASSETS_TO_CACHE = [
-    '/',
-    '/index.html',
-    '/dreambees_icon.png',
-    '/manifest.json'
-];
+const CACHE_NAME = 'dreambees-runtime-v3';
 
-// Network First strategy for index.html and root
-// Stale-While-Revalidate for other assets
+const shouldCache = (request) => {
+    if (request.method !== 'GET') return false;
+    const url = new URL(request.url);
+    if (url.origin !== self.location.origin) return false;
+
+    // Never cache HTML, JS, or CSS so fresh builds are always fetched.
+    if (
+        request.destination === 'document' ||
+        request.destination === 'script' ||
+        request.destination === 'style' ||
+        url.pathname.endsWith('.html') ||
+        url.pathname.endsWith('.js') ||
+        url.pathname.endsWith('.css')
+    ) {
+        return false;
+    }
+
+    // Avoid caching API calls or dynamic endpoints.
+    if (url.pathname.startsWith('/api') || url.pathname.startsWith('/functions')) {
+        return false;
+    }
+
+    return true;
+};
+
+// Network-first strategy with minimal runtime caching.
 self.addEventListener('install', (event) => {
     self.skipWaiting();
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(ASSETS_TO_CACHE);
-        })
-    );
 });
 
 self.addEventListener('activate', (event) => {
@@ -32,39 +45,23 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    const url = new URL(event.request.url);
+    if (event.request.mode === 'navigate' || event.request.destination === 'document') {
+        event.respondWith(fetch(event.request));
+        return;
+    }
 
-    // Use Network First for navigation requests (HTML)
-    if (event.request.mode === 'navigate' || (event.request.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html'))) {
-        event.respondWith(
-            fetch(event.request)
-                .then((response) => {
+    event.respondWith(
+        fetch(event.request)
+            .then((response) => {
+                if (response && response.status === 200 && shouldCache(event.request)) {
                     const responseClone = response.clone();
                     caches.open(CACHE_NAME).then((cache) => {
                         cache.put(event.request, responseClone);
                     });
-                    return response;
-                })
-                .catch(() => caches.match(event.request))
-        );
-        return;
-    }
-
-    // Default: Stale-While-Revalidate
-    event.respondWith(
-        caches.match(event.request).then((cachedResponse) => {
-            const fetchPromise = fetch(event.request).then((networkResponse) => {
-                if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
-                    const responseClone = networkResponse.clone();
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, responseClone);
-                    });
                 }
-                return networkResponse;
-            }).catch(() => null);
-
-            return cachedResponse || fetchPromise;
-        })
+                return response;
+            })
+            .catch(() => caches.match(event.request))
     );
 });
 

@@ -21,13 +21,19 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
       .then(registration => {
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          console.warn('[SW] Controller changed, reloading to pick up new assets.');
+          window.location.reload();
+        });
+
         registration.onupdatefound = () => {
           const installingWorker = registration.installing;
           if (installingWorker) {
             installingWorker.onstatechange = () => {
               if (installingWorker.state === 'installed') {
                 if (navigator.serviceWorker.controller) {
-                  console.warn('[SW] New content is available; please refresh.');
+                  console.warn('[SW] New content is available; reloading.');
+                  window.location.reload();
                 } else {
                   console.warn('[SW] Content is cached for offline use.');
                 }
