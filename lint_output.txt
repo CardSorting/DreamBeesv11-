@@ -1,0 +1,36 @@
+
+> dreambees-app@1.0.1 lint
+> eslint .
+
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/SimpleEditModal/EditControls.jsx
+  35:13  error  'setActivePresetIndex' is not defined  no-undef
+  36:13  error  'setActivePresetIndex' is not defined  no-undef
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/SimpleEditModal/FakeProgressBar.jsx
+  8:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+   6 |     useEffect(() => {
+   7 |         if (!isGenerating) {
+>  8 |             setProgress(0);
+     |             ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+   9 |             return;
+  10 |         }
+  11 |  react-hooks/set-state-in-effect
+
+/Users/bozoegg/Desktop/DreamBeesv11/src/components/SimpleEditModal/ReferencePanel.jsx
+   7:29  error  'React' is not defined                                                                                                  no-undef
+   8:31  error  'React' is not defined                                                                                                  no-undef
+  19:5   error  'React' is not defined                                                                                                  no-undef
+  44:8   error  React Hook React.useEffect has a missing dependency: 'PHASES'. Either include it or remove the dependency array         react-hooks/exhaustive-deps
+  47:5   error  'React' is not defined                                                                                                  no-undef
+  52:8   error  React Hook React.useEffect has a missing dependency: 'PHASES.length'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+✖ 9 problems (9 errors, 0 warnings)
+

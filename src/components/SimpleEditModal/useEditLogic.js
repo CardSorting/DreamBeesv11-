@@ -57,8 +57,10 @@ export const useEditLogic = ({ isOpen, onClose, referenceImage }) => {
         return () => unsubscribe();
     }, [currentJobId]);
 
-    const handleEdit = useCallback(async () => {
-        if (!prompt.trim()) {
+    const handleEdit = useCallback(async (promptOverride) => {
+        const promptToUse = typeof promptOverride === 'string' ? promptOverride : prompt;
+
+        if (!promptToUse.trim()) {
             toast.error("Please enter what you'd like to change.");
             return;
         }
@@ -69,7 +71,7 @@ export const useEditLogic = ({ isOpen, onClose, referenceImage }) => {
 
             const { data } = await apiCall('api', {
                 action: 'createGenerationRequest',
-                prompt: prompt,
+                prompt: promptToUse,
                 modelId: 'flux-klein-4b',
                 image: activeReference.imageUrl || activeReference.url || activeReference,
                 aspectRatio: activeReference.aspectRatio || '1:1',

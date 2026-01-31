@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Loader2, X, Plus, Wand2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { PRESET_CATEGORIES } from './constants';
 
 const MAX_PROMPT_LENGTH = 500;
@@ -12,6 +13,7 @@ const EditControls = ({
     activeCategoryIndex,
     setActiveCategoryIndex,
     activePresetIndex,
+    setActivePresetIndex,
     isMobile,
     isCompact,
     hideGenerateButton
@@ -26,12 +28,54 @@ const EditControls = ({
         }
     }, [activeCategoryIndex]);
 
-    const handlePresetClick = (presetText) => {
-        if (appendMode && prompt.trim()) {
-            setPrompt(`${prompt.trim()}, ${presetText.toLowerCase()}`);
-        } else {
-            setPrompt(presetText);
+    const handlePresetClick = (presetText, index) => {
+        let newPrompt = prompt.trim();
+        const cleanPreset = presetText.trim();
+
+        // Update active index for visual feedback
+        if (setActivePresetIndex) {
+            setActivePresetIndex(index);
         }
+
+        if (appendMode && newPrompt) {
+            // Avoid duplicates: check if preset is already in prompt (case-insensitive)
+            const lowerPrompt = newPrompt.toLowerCase();
+            const lowerPreset = cleanPreset.toLowerCase();
+
+            if (!lowerPrompt.includes(lowerPreset)) {
+                // Remove trailing punctuation if present before appending
+                if (newPrompt.endsWith('.') || newPrompt.endsWith(',')) {
+                    newPrompt = newPrompt.slice(0, -1);
+                }
+                newPrompt = `${newPrompt}, ${lowerPreset}`;
+            } else {
+                // If already present, maybe just flash the UI or do nothing? 
+                // For now, let's re-run generation to be safe/responsive to the click
+            }
+        } else {
+            newPrompt = cleanPreset;
+        }
+
+        if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+        }
+
+        // Immediate feedback toast
+        toast.dismiss(); // Clear existing
+        toast.success(`Applying ${cleanPreset}...`, {
+            icon: '✨',
+            duration: 2000,
+            style: {
+                background: 'rgba(9, 9, 11, 0.9)',
+                color: '#fff',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                backdropFilter: 'blur(10px)',
+            }
+        });
+
+        setPrompt(newPrompt);
+        // Trigger generation immediately with the new prompt
+        handleEdit(newPrompt);
     };
 
     const handleClear = () => {
@@ -315,7 +359,7 @@ const EditControls = ({
                     return (
                         <button
                             key={preset.text}
-                            onClick={() => handlePresetClick(preset.text)}
+                            onClick={() => handlePresetClick(preset.text, index)}
                             title={preset.description}
                             disabled={isGenerating}
                             className={`preset-card ${isActive ? 'active' : ''}`}
@@ -323,7 +367,11 @@ const EditControls = ({
                         >
                             <div className="preset-card-bg" />
                             <div className="preset-card-content">
-                                <span className="preset-card-icon">{preset.icon}</span>
+                                {isActive && isGenerating ? (
+                                    <Loader2 className="preset-card-icon spin" size={20} />
+                                ) : (
+                                    <span className="preset-card-icon">{preset.icon}</span>
+                                )}
                                 <span className="preset-card-text">{preset.text}</span>
                             </div>
                             {isActive && <div className="preset-card-glow" />}
