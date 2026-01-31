@@ -119,58 +119,7 @@ export default function ModelFeed() {
         fetchImage();
     }, [searchParams, feedItems]);
 
-    {
-        isLoading && (
-            <div className="feed-loader-skeletons">
-                {/* eslint-disable-next-line react/no-array-index-key */}
-                {[...Array(3)].map((_, i) => <FeedPostSkeleton key={`skeleton-${i}`} />)}
-            </div>
-        )
-    }
 
-    {
-        !isLoading && visibleImages.length === 0 && (
-            <div className="empty-feed-state">
-                <Sparkles size={48} />
-                <h3>No posts found</h3>
-                <p>Try adjusting your filters or check back later.</p>
-                <button onClick={() => setActiveFilter('All')} className="reset-filter-btn">
-                    Clear Filters
-                </button>
-            </div>
-        )
-    }
-
-    {/* Sentinel for Infinite Scroll Trigger OR Manual Load Button */ }
-    {
-        !isLoading && manualLoadNeeded && (visibleImages.length < imagesToRender.length || (id ? !hasShowcaseEnded(id) : !hasGlobalFeedEnded)) ? (
-            <div style={{ padding: '40px 0', textAlign: 'center', width: '100%' }}>
-                <button
-                    onClick={triggerManualLoad}
-                    className="reset-filter-btn" // Reusing verify clean white pill style
-                    style={{
-                        fontSize: '1rem',
-                        padding: '12px 32px',
-                        fontWeight: '700',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
-                    }}
-                >
-                    Load More
-                </button>
-            </div>
-        ) : (
-            <div ref={sentinelRef} style={{ height: '20px', width: '100%', marginTop: '40px' }} aria-hidden="true" />
-        )
-    }
-
-    {
-        !isLoading && visibleImages.length > 0 && (visibleImages.length < imagesToRender.length || (id ? !hasShowcaseEnded(id) : !hasGlobalFeedEnded)) && (
-            <div className="feed-loader-skeletons">
-                {/* eslint-disable-next-line react/no-array-index-key */}
-                {[...Array(1)].map((_, i) => <FeedPostSkeleton key={`skeleton-bottom-${i}`} />)}
-            </div>
-        )
-    }
 
     const openShowcase = (img) => {
         setSearchParams(prev => {
@@ -492,8 +441,12 @@ export default function ModelFeed() {
                     // Track newly fetched IDs to prevent dupe processing in recursion
                     itemsToAppend.forEach(img => fetchedIdsThisSession.add(img.id));
 
-                    // Append to Feed
-                    setFeedItems(prev => [...prev, ...itemsToAppend]);
+                    // Append to Feed with functional update to ensure latest state and deduplication
+                    setFeedItems(prev => {
+                        const existingIds = new Set(prev.map(p => p.id));
+                        const uniqueNew = itemsToAppend.filter(item => !existingIds.has(item.id));
+                        return [...prev, ...uniqueNew];
+                    });
                     fetchedCountRef.current = allFetchedImages.length;
 
                     // Stagnation Check: How many of these actually pass the filter?

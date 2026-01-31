@@ -240,7 +240,8 @@ export function useGenerationLogic({
                 seed: seed,
                 useTurbo,
                 requestId, // Pass the client-generated ID
-                image: referenceImage // Pass the reference image for img2img
+                image: referenceImage, // Pass the reference image for img2img
+                isPublic: true // Force public visibility for feed discovery
             }, {
                 timeout: 540000,
                 toastErrors: false // We handle errors manually below

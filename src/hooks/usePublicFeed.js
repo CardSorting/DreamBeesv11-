@@ -58,13 +58,17 @@ export function usePublicFeed(activeFilter, affinityMap, viewedIds, hiddenIds) {
                     q = query(q, startAfter(lastTimestamp));
                 }
 
-                return getDocs(q).then(snap => ({ colName, docs: snap.docs }));
+                return getDocs(q).then(snap => ({ colName, docs: snap.docs })).catch(err => {
+                    console.warn(`Failed to fetch from ${colName}:`, err);
+                    return { colName, docs: [], error: err };
+                });
             });
 
             const results = await Promise.all(queries);
 
             let allDocs = [];
             results.forEach(({ colName, docs }) => {
+                if (!docs) return; // Skip failed
                 const normalized = docs.map(doc => {
                     const data = doc.data();
                     return {
@@ -80,7 +84,16 @@ export function usePublicFeed(activeFilter, affinityMap, viewedIds, hiddenIds) {
                 allDocs = [...allDocs, ...normalized];
             });
 
-            const validImages = allDocs.filter(img =>
+            // 1. Strict Dedupe of Fetched Docs
+            const uniqueFetchedMap = new Map();
+            allDocs.forEach(doc => {
+                if (!uniqueFetchedMap.has(doc.id)) {
+                    uniqueFetchedMap.set(doc.id, doc);
+                }
+            });
+            const uniqueDocs = Array.from(uniqueFetchedMap.values());
+
+            const validImages = uniqueDocs.filter(img =>
                 !img.hidden &&
                 (!img.status || img.status === 'completed' || img.status === 'succeeded') &&
                 !hiddenIds.has(img.id) &&
@@ -105,13 +118,25 @@ export function usePublicFeed(activeFilter, affinityMap, viewedIds, hiddenIds) {
             if (isLoadMore) {
                 setImages(prev => {
                     const existingIds = new Set(prev.map(p => p.id));
-                    const uniqueNew = displaySlice.filter(img => !existingIds.has(img.id));
+                    // 2. Filter out items already in State
+                    let uniqueNew = displaySlice.filter(img => !existingIds.has(img.id));
+
+                    // 3. Dedupe New Batch against itself (Safety belt)
+                    const uniqueNewMap = new Map();
+                    uniqueNew.forEach(item => uniqueNewMap.set(item.id, item));
+                    uniqueNew = Array.from(uniqueNewMap.values());
+
                     if (uniqueNew.length === 0) return prev;
                     const mixedNewImages = smartMix(uniqueNew, affinityMap, viewedIds);
                     return [...prev, ...mixedNewImages];
                 });
             } else {
-                const mixedImages = smartMix(displaySlice, affinityMap, viewedIds);
+                // Initial Load - Dedupe against itself just in case
+                const uniqueSliceMap = new Map();
+                displaySlice.forEach(item => uniqueSliceMap.set(item.id, item));
+                const uniqueSlice = Array.from(uniqueSliceMap.values());
+
+                const mixedImages = smartMix(uniqueSlice, affinityMap, viewedIds);
                 setImages(mixedImages);
             }
 
