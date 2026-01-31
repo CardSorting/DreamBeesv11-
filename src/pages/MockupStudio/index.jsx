@@ -158,6 +158,7 @@ const MockupStudio = () => {
 
                                     // Visibility & metrics
                                     isPublic: true,
+                                    status: 'completed',
                                     likesCount: 0,
                                     bookmarksCount: 0,
 

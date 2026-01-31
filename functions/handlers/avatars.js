@@ -211,6 +211,7 @@ export const handleGenerateAvatarCollection = async (request) => {
                 theme,
                 style,
                 minted: false,
+                isPublic: true,
                 random: Math.random(),
                 createdAt: FieldValue.serverTimestamp()
             });
@@ -279,6 +280,7 @@ export const handleMintRandomAvatar = async (request) => {
                 syllables: avatarData.syllables,
                 collectionName: avatarData.theme,
                 minted: true,
+                isPublic: true,
                 createdAt: FieldValue.serverTimestamp()
             });
 

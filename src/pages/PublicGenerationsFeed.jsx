@@ -16,6 +16,7 @@ import { smartMix } from '../utils/feedHelpers'; // Import smartMix
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { isOver18 } from '../utils/age';
 import CommunityConsentModal from '../components/CommunityConsentModal';
+import '../components/FeedSwitcher/FeedSwitcher.css';
 import './ModelFeed.css'; // Import shared styles
 
 const FeedSkeleton = () => (
@@ -61,7 +62,6 @@ export default function PublicGenerationsFeed() {
     const { userProfile, isProfileLoaded, hiddenIds, likes, bookmarks, viewedIds } = useUserInteractions();
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [lastDoc, setLastDoc] = useState(null);
     const [hasMore, setHasMore] = useState(true);
     const [focusImage, setFocusImage] = useState(null);
     const isFetchingRef = useRef(false);
@@ -135,11 +135,24 @@ export default function PublicGenerationsFeed() {
         });
     };
 
+    const [lastTimestamp, setLastTimestamp] = useState(null);
+
     const [error, setError] = useState(null);
+    const [activeFilter, setActiveFilter] = useState('All');
+
+    // Reset list when filter changes
+    useEffect(() => {
+        setImages([]);
+        setLastTimestamp(null);
+        setHasMore(true);
+        // Trigger fetch is handled by effect dependency or manual call?
+        // Let's add activeFilter to fetchGenerations dependency and dependency of simple effect
+    }, [activeFilter]);
+
 
     const fetchGenerations = useCallback(async (isLoadMore = false) => {
         if (isFetchingRef.current) return;
-        if (isLoadMore && (!lastDoc || !hasMore)) return;
+        if (isLoadMore && (!lastTimestamp || !hasMore)) return;
 
         try {
             isFetchingRef.current = true;
@@ -148,59 +161,108 @@ export default function PublicGenerationsFeed() {
                 setError(null);
             }
 
-            // Simple direct query: Get public generations, sorted by date
-            // We switch to 'generations' collection which is public-readable (with isPublic=true)
-            // 'generation_queue' is strictly private.
-            let q = query(
-                collection(db, 'generations'),
-                where('isPublic', '==', true),
-                orderBy('createdAt', 'desc'),
-                limit(60)
-            );
+            let collectionsToQuery = [];
 
-            if (isLoadMore && lastDoc) {
-                q = query(q, startAfter(lastDoc));
+            if (activeFilter === 'All') {
+                collectionsToQuery = ['generations', 'images', 'videos', 'memes', 'mockups'];
+            } else if (activeFilter === 'Images') {
+                collectionsToQuery = ['images'];
+            } else if (activeFilter === 'Videos') {
+                collectionsToQuery = ['videos'];
+            } else if (activeFilter === 'Mockups') {
+                collectionsToQuery = ['generations', 'mockups'];
+            } else if (activeFilter === 'Memes') {
+                collectionsToQuery = ['memes'];
             }
 
-            const snapshot = await getDocs(q);
+            const PAGE_SIZE = 30; // Reduce strict limit per collection to avoid over-fetching, but high enough to mix
 
-            if (snapshot.empty) {
-                setHasMore(false);
+            // Parallel queries
+            const queries = collectionsToQuery.map(colName => {
+                let q = query(
+                    collection(db, colName),
+                    where('isPublic', '==', true),
+                    orderBy('createdAt', 'desc'),
+                    limit(PAGE_SIZE)
+                );
+
+                if (isLoadMore && lastTimestamp) {
+                    q = query(q, startAfter(lastTimestamp));
+                }
+
+                return getDocs(q).then(snap => ({ colName, docs: snap.docs }));
+            });
+
+            const results = await Promise.all(queries);
+
+            // Combine and Normalize
+            let allDocs = [];
+            results.forEach(({ colName, docs }) => {
+                const normalized = docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        ...data,
+                        _collection: colName,
+                        // Polyfill type based on collection
+                        type: colName === 'videos' ? 'video' : (data.type || 'image'),
+                        // Normalize Timestamp
+                        createdAtMillis: data.createdAt?.toMillis ? data.createdAt.toMillis() :
+                            (data.createdAt instanceof Date ? data.createdAt.getTime() :
+                                (new Date(data.createdAt).getTime() || 0))
+                    };
+                });
+                allDocs = [...allDocs, ...normalized];
+            });
+
+            // Filter valid/visible
+            const validImages = allDocs.filter(img =>
+                !img.hidden &&
+                (!img.status || img.status === 'completed' || img.status === 'succeeded') &&
+                !hiddenIds.has(img.id) &&
+                (img.imageUrl || img.url || img.coverUrl || img.videoUrl) // Support videoUrl
+            );
+
+            // Sort merged results by time desc
+            validImages.sort((a, b) => b.createdAtMillis - a.createdAtMillis);
+
+            // Take top PAGE_SIZE for this "page" of the feed
+            // Note: In a robust infinite scroll with merged sources, this simple slice is "good enough" for feed feel,
+            // though technically might skip items if distribution is highly skewed. 
+            // For a user feed, "newest mixed" is the goal.
+            const displaySlice = validImages.slice(0, PAGE_SIZE);
+
+            if (displaySlice.length === 0) {
+                setHasMore(false); // Rough termination
                 if (!isLoadMore) setLoading(false);
                 return;
             }
 
-            const newImages = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-
-            // Filter out any hidden or potentially invalid images
-            // IMPORTANT: Client-side check for 'completed' status
-            const validImages = newImages.filter(img =>
-                !img.hidden &&
-                img.status === 'completed' &&
-                !hiddenIds.has(img.id) &&
-                (img.imageUrl || img.url || img.coverUrl)
-            );
-
-            setLastDoc(snapshot.docs[snapshot.docs.length - 1]);
+            // Update Cursor (use the timestamp of the last item in our slice)
+            const lastItem = displaySlice[displaySlice.length - 1];
+            if (lastItem.createdAt) { // Keep the original object for startAfter if possible, but we use value here
+                setLastTimestamp(lastItem.createdAt);
+            }
 
             if (isLoadMore) {
                 setImages(prev => {
-                    // Smart Mix NEW items only
                     const existingIds = new Set(prev.map(p => p.id));
-                    const uniqueNew = validImages.filter(img => !existingIds.has(img.id));
-
-                    if (uniqueNew.length === 0) return prev; // No new unique images
+                    const uniqueNew = displaySlice.filter(img => !existingIds.has(img.id));
+                    if (uniqueNew.length === 0) return prev;
 
                     const mixedNewImages = smartMix(uniqueNew, affinityMap, viewedIds);
                     return [...prev, ...mixedNewImages];
                 });
             } else {
-                const mixedImages = smartMix(validImages, affinityMap, viewedIds);
+                const mixedImages = smartMix(displaySlice, affinityMap, viewedIds);
                 setImages(mixedImages);
             }
+
+            // Heuristic for "No More": If we fetched fewer than half page total from all sources, likely done.
+            if (validImages.length < 5) {
+                setHasMore(false);
+            }
+
         } catch (error) {
             console.error("Error fetching generations:", error);
             setError("Failed to load feed. Please try again.");
@@ -208,7 +270,7 @@ export default function PublicGenerationsFeed() {
             isFetchingRef.current = false;
             setLoading(false);
         }
-    }, [lastDoc, hiddenIds, affinityMap, viewedIds, hasMore]);
+    }, [lastTimestamp, hiddenIds, affinityMap, viewedIds, hasMore, activeFilter]);
 
     useEffect(() => {
         fetchGenerations();
@@ -283,10 +345,24 @@ export default function PublicGenerationsFeed() {
 
             <CommunityConsentModal />
 
+            {/* Filter Pills */}
+            <div className="feed-switcher-container">
+                <div className="feed-switcher-pills">
+                    {['All', 'Images', 'Videos', 'Mockups', 'Memes'].map(filter => (
+                        <button
+                            key={filter}
+                            className={`feed-pill ${activeFilter === filter ? 'active' : ''}`}
+                            onClick={() => setActiveFilter(filter)}
+                        >
+                            <span className="pill-label" style={{ display: 'inline', fontSize: '0.9rem' }}>{filter}</span>
+                            {activeFilter === filter && <div className="pill-active-indicator" />}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             <main className="feed-main-content">
                 <div className="discovery-container">
-
-                    {/* Filter Slider Removed - Single Stream */}
 
                     {/* Age Restriction Check */}
                     {isProfileLoaded && currentUser && !isOver18(userProfile.birthday) ? (

@@ -272,6 +272,7 @@ export const handleMeowaccTransform = async (request) => {
             imageUrl,
             thumbnailUrl,
             lqip,
+            isPublic: true,
             createdAt: FieldValue.serverTimestamp(),
             type: 'meowacc'
         });

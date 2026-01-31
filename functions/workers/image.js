@@ -272,6 +272,7 @@ export const processImageTask = async (req) => {
         const imageRef = await db.collection("images").add({
             userId, prompt, negative_prompt, steps, cfg, aspectRatio, modelId,
             imageUrl, thumbnailUrl, lqip, promptHash, promptMetadata,
+            isPublic: true,
             createdAt: FieldValue.serverTimestamp(), originalRequestId: requestId
         });
 

@@ -294,6 +294,7 @@ export const transformImageWithGemini = async (imageUrl, styleName, instructions
         imageUrl: finalImageUrl,
         thumbnailUrl: finalThumbnailUrl,
         lqip,
+        isPublic: true,
         createdAt: new Date(),
         type: 'restyled'
     });
