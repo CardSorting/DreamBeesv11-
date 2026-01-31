@@ -1,34 +1,50 @@
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import SEO from '../../components/SEO';
-import { Play } from 'lucide-react';
+import { Play, Sparkles } from 'lucide-react';
 import './BrowsePage.css';
-import { useTwitch } from '../../contexts/TwitchContext';
+import { useTwitch } from '../../hooks/useTwitch';
+// Ensure we're using the generated avatars
+import novaImg from '/assets/personas/nova.png';
+import lunaImg from '/assets/personas/luna.png';
+import roxieImg from '/assets/personas/roxie.png';
 
 const BrowseHero = ({ featuredPersona }) => {
     const navigate = useNavigate();
-    if (!featuredPersona) return <div className="browse-hero-skeleton"></div>;
+
+    // Explicitly handle "No Featured" case
+    if (!featuredPersona) {
+        return (
+            <div className="browse-hero-skeleton">
+                <div className="skeleton-content">Initialize Official Agents...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="browse-hero-container" onClick={() => navigate(`/channel/${featuredPersona.id}`)}>
             <div className="hero-content-split">
                 <div className="hero-video-preview">
-                    <img src={featuredPersona.imageUrl} alt="" />
+                    {/* Force official image if available, else fallback */}
+                    <img src={featuredPersona.id === 'persona-nova' ? novaImg : featuredPersona.imageUrl} alt={featuredPersona.name} />
                     <div className="live-badge-hero">LIVE</div>
+                    <div className="hero-overlay-play">
+                        <Play size={64} fill="white" />
+                    </div>
                 </div>
                 <div className="hero-info-section">
                     <div className="hero-streamer-header">
-                        <img src={featuredPersona.imageUrl} alt="" className="hero-avatar" />
                         <div className="hero-meta">
-                            <p className="hero-name">{featuredPersona.name}</p>
-                            <p className="hero-game">Just Chatting</p>
+                            <h2 className="hero-name">{featuredPersona.name}</h2>
+                            <p className="hero-game">{featuredPersona.category}</p>
                             <div className="hero-tags">
-                                <span className="tag-twitch">AI Agent</span>
-                                <span className="tag-twitch">English</span>
+                                <span className="tag-twitch-official">OFFICIAL AGENT</span>
+                                <span className="tag-twitch">LIVE</span>
                             </div>
                         </div>
                     </div>
                     <div className="hero-description">
-                        Check out {featuredPersona.name}'s latest AI-driven stream. Dive into interactive conversations and help shape the story!
+                        {featuredPersona.bio}
                     </div>
                     <button className="watch-btn-hero">Watch Now</button>
                 </div>
@@ -38,59 +54,49 @@ const BrowseHero = ({ featuredPersona }) => {
 };
 
 const BrowsePage = () => {
-    const { personas, categories, loading } = useTwitch();
+    const { personas, loading } = useTwitch();
     const navigate = useNavigate();
+
+    // STRICTLY find our 3 characters from the context list
+    // The context should already be filtered, but we double-check here for UI safety
+    const nova = personas.find(p => p.id === 'persona-nova');
+    const luna = personas.find(p => p.id === 'persona-luna');
+    const roxie = personas.find(p => p.id === 'persona-roxie');
+
+    // Display order: Nova is Hero. Luna and Roxie are secondary cards.
+    const secondaryPersonas = [luna, roxie].filter(Boolean);
 
     return (
         <div className="browse-page-twitch">
-            <SEO title="Browse - PersonaStream" />
+            <SEO title="Browse - DreamBees Live" />
 
-            <BrowseHero featuredPersona={personas[0]} />
-
-            {/* Suggested Categories Carousel */}
-            <section className="suggested-categories-section">
-                <h2>Suggested Categories</h2>
-                <div className="categories-carousel">
-                    {categories.length > 0 ? categories.map(cat => (
-                        <div key={cat.id} className="category-carousel-card" onClick={() => navigate('/directory')}>
-                            <div className="cat-card-image">
-                                <img src={cat.image} alt={cat.name} />
-                            </div>
-                            <div className="cat-card-info">
-                                <h3>{cat.name}</h3>
-                                <p>{cat.viewers} viewers</p>
-                            </div>
-                        </div>
-                    )) : (
-                        <div className="empty-categories">No active categories yet. Start a conversation to awaken one!</div>
-                    )}
+            <header className="browse-header-main">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <Sparkles color="#a970ff" />
+                    <h1>DreamBees Live</h1>
                 </div>
-            </section>
-
-            <header className="browse-header">
-                <h1>Live Channels</h1>
+                <p>Interact with our <span style={{ color: '#a970ff', fontWeight: 'bold' }}>Official AI Agents</span>.</p>
             </header>
 
+            {/* Nova is always the Hero if she exists */}
+            <BrowseHero featuredPersona={nova} />
+
             <section className="live-streams-grid">
+                <h2>Active Channels</h2>
                 <div className="streams-grid">
                     {loading ? (
-                        [1, 2, 3, 4, 5, 6, 7, 8].map(n => (
-                            <div key={`browse-sk-${n}`} className="stream-skeleton"></div>
-                        ))
+                        [1, 2].map(n => <div key={n} className="stream-skeleton"></div>)
                     ) : (
-                        personas.sort((a, b) => (b.hypeScore || 0) - (a.hypeScore || 0)).map(p => (
+                        secondaryPersonas.length > 0 ? secondaryPersonas.map(p => (
                             <div key={p.id} className="stream-card-twitch" onClick={() => navigate(`/channel/${p.id}`)}>
                                 <div className="card-thumbnail">
-                                    <img src={p.imageUrl} alt={p.name} />
+                                    <img src={p.id === 'persona-luna' ? lunaImg : roxieImg} alt={p.name} />
                                     <div className="card-badges">
                                         <div style={{ display: 'flex', gap: '4px' }}>
                                             <span className="live-badge-card">LIVE</span>
-                                            {p.hypeLevel >= 3 && (
-                                                <span className="hype-badge-card">HYPE</span>
-                                            )}
                                         </div>
                                         <span className="viewers-count-card">
-                                            {(p.hypeScore || 0) + 1}k viewers
+                                            {Math.floor((p.hypeScore || 100) / 10)}k viewers
                                         </span>
                                     </div>
                                     <div className="play-overlay">
@@ -98,22 +104,21 @@ const BrowsePage = () => {
                                     </div>
                                 </div>
                                 <div className="card-details-twitch">
-                                    <div className="card-avatar-mini">
-                                        <img src={p.imageUrl} alt="" />
-                                    </div>
                                     <div className="card-info-text">
-                                        <h3 className="card-title-twitch">{p.streamTitle || `Chillin with ${p.name}`}</h3>
+                                        <h3 className="card-title-twitch">{p.streamTitle || `Live with ${p.name}`}</h3>
                                         <p className="card-author-twitch">{p.name}</p>
-                                        <p className="card-game-twitch">{p.category || 'Just Chatting'}</p>
+                                        <p className="card-game-twitch">{p.category}</p>
                                         <div className="card-tags-twitch">
-                                            <span className="tag-twitch">AI</span>
-                                            <span className="tag-twitch">English</span>
-                                            {p.hypeLevel >= 4 && <span className="tag-twitch-hype">Trending</span>}
+                                            <span className="tag-twitch-hype">Official</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        ))
+                        )) : (
+                            <div className="empty-state-browse">
+                                <p>Other agents are currently offline.</p>
+                            </div>
+                        )
                     )}
                 </div>
             </section>

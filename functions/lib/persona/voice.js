@@ -5,8 +5,8 @@ import { getReaction as getReactionData } from "../data/reactions.js";
 
 export const getReaction = getReactionData;
 
-const TTS_API_URL = "https://mariecoderinc--phantom-twitch-tts-fastapi-app-dev.modal.run/v1/tts";
-const JOBS_API_URL = "https://mariecoderinc--phantom-twitch-tts-fastapi-app-dev.modal.run/v1/jobs";
+const TTS_API_URL = "https://mariecoderinc--phantom-twitch-tts-fastapi-app.modal.run/v1/tts";
+const JOBS_API_URL = "https://mariecoderinc--phantom-twitch-tts-fastapi-app.modal.run/v1/jobs";
 const CACHE_COLLECTION = 'tts_cache';
 const CACHE_TTL_MS = 20 * 60 * 60 * 1000; // 20 Hours (Safety for 24h cleanup)
 
@@ -17,15 +17,15 @@ export const pollForCompletion = async (jobId, attempts = 30) => {
     for (let i = 0; i < attempts; i++) {
         // Adaptive delay: 500ms for first 4, 1s for next 10, then 2s
         let delay = 1000;
-        if (i < 4) {delay = 500;}
-        else if (i > 14) {delay = 2000;}
+        if (i < 4) { delay = 500; }
+        else if (i > 14) { delay = 2000; }
 
         await new Promise(r => setTimeout(r, delay));
         const res = await fetchWithRetry(`${JOBS_API_URL}/${jobId}`);
         if (res.ok) {
             const data = await res.json();
-            if (data.status === 'completed') {return data;}
-            if (data.status === 'failed') {throw new Error("TTS Job Failed");}
+            if (data.status === 'completed') { return data; }
+            if (data.status === 'failed') { throw new Error("TTS Job Failed"); }
         }
     }
     throw new Error("TTS Job Timed Out");
@@ -40,7 +40,7 @@ export const pollForCompletion = async (jobId, attempts = 30) => {
  */
 const injectFillers = (text, emotion, hypeLevel) => {
     // 30% chance to inject (unless very short)
-    if (Math.random() > 0.3 || text.length < 5) {return text;}
+    if (Math.random() > 0.3 || text.length < 5) { return text; }
 
     const fillers = [];
 
@@ -105,7 +105,7 @@ export const modulateDna = (baseDna, emotion, hypeLevel = 5, text = "") => {
 
     // Combine
     const parts = [emotionMod, pacingMod, intonationMod].filter(Boolean);
-    if (parts.length === 0) {return baseDna;}
+    if (parts.length === 0) { return baseDna; }
 
     return `${baseDna}, ${parts.join(', ')}.`;
 };
@@ -121,7 +121,7 @@ export const modulateDna = (baseDna, emotion, hypeLevel = 5, text = "") => {
  */
 export const submitTtsJob = async (text, voiceDna, emotion = 'Neutral', hypeLevel = 5) => {
     try {
-        if (!text || !voiceDna) {return null;}
+        if (!text || !voiceDna) { return null; }
 
         // Apply Fillers
         const finalText = injectFillers(text, emotion, hypeLevel);
@@ -203,14 +203,14 @@ export const getOrCreateReaction = async (personaId, voiceDna, reactionKey, reac
 
         // 2. Generate Audio (Reactions are hype-neutral -> 5)
         const jobId = await submitTtsJob(reactionData.textPrompt, voiceDna, reactionData.emotion, 5);
-        if (!jobId) {throw new Error("Failed to submit TTS job");}
+        if (!jobId) { throw new Error("Failed to submit TTS job"); }
 
         // 3. Poll for Completion
         await pollForCompletion(jobId);
 
         // 4. Download Audio
         const audioRes = await fetchWithRetry(`${JOBS_API_URL}/${jobId}/audio`);
-        if (!audioRes.ok) {throw new Error("Failed to download audio");}
+        if (!audioRes.ok) { throw new Error("Failed to download audio"); }
         const arrayBuffer = await audioRes.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 

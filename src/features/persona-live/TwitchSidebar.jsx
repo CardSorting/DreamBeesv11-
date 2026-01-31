@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Sparkles, MessageCircle, Heart, ChevronDown, ChevronRight, Zap } from 'lucide-react';
-import { useTwitch } from '../../contexts/TwitchContext';
+import { useTwitch } from '../../hooks/useTwitch';
 import { formatTwitchCount } from '../../utils/twitchHelpers';
 
 const TwitchSidebar = ({ isCollapsed, onToggle }) => {
@@ -35,7 +35,7 @@ const TwitchSidebar = ({ isCollapsed, onToggle }) => {
             <div className="sidebar-section">
                 <div className="sidebar-header">{isCollapsed ? '' : 'FOLLOWED CHANNELS'}</div>
                 <div className="suggested-channels-list">
-                    {followedPersonas.map(p => (
+                    {followedPersonas && followedPersonas.length > 0 ? followedPersonas.map(p => (
                         <div key={p.id} className="suggested-channel-item" onClick={() => navigate(`/channel/${p.id}`)}>
                             <div className="channel-avatar">
                                 <img src={p.imageUrl} alt="" />
@@ -45,7 +45,10 @@ const TwitchSidebar = ({ isCollapsed, onToggle }) => {
                                 <>
                                     <div className="channel-info-mini">
                                         <p className="channel-name-mini">{p.name}</p>
-                                        <p className="channel-game-mini">{p.category || 'AI Streaming'}</p>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <p className="channel-game-mini">{p.category || 'AI Streaming'}</p>
+                                            {p.isOfficial && <span style={{ fontSize: '0.6rem', background: '#a970ff', padding: '0 4px', borderRadius: '4px', color: 'white' }}>OFFICIAL</span>}
+                                        </div>
                                     </div>
                                     <div className="channel-viewers-mini">
                                         <span className="view-dot"></span> {formatTwitchCount((p.hypeScore || 0) + 1000)}
@@ -53,7 +56,11 @@ const TwitchSidebar = ({ isCollapsed, onToggle }) => {
                                 </>
                             )}
                         </div>
-                    ))}
+                    )) : (
+                        <div style={{ padding: '0 10px', color: 'gray', fontSize: '0.8rem' }}>
+                            {!isCollapsed && "Offline"}
+                        </div>
+                    )}
                 </div>
             </div>
 

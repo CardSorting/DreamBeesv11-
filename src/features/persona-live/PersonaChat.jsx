@@ -670,6 +670,8 @@ const PersonaChatContent = () => {
             if (snapshot.exists()) {
                 setPersona(prev => ({ ...prev, ...snapshot.data() }));
             }
+        }, (err) => {
+            console.error("[PersonaChat] Persona listener error:", err);
         });
         return () => unsub();
     }, [id]);
@@ -684,6 +686,8 @@ const PersonaChatContent = () => {
         const unsub = onSnapshot(supporterQuery, (snapshot) => {
             const supporters = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setTopSupporters(supporters);
+        }, (err) => {
+            console.error("[PersonaChat] Supporters listener error:", err);
         });
         return () => unsub();
     }, [id]);

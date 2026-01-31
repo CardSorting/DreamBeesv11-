@@ -59,7 +59,7 @@ export const processVoiceTask = async (req) => {
                 const jobResult = await Voice.pollForCompletion(audioJobId);
                 if (jobResult && jobResult.status === 'completed') {
                     // The Modal API usually returns audio at /v1/jobs/{job_id}/audio
-                    audioUrl = `https://mariecoderinc--phantom-twitch-tts-fastapi-app-dev.modal.run/v1/jobs/${audioJobId}/audio`;
+                    audioUrl = `https://mariecoderinc--phantom-twitch-tts-fastapi-app.modal.run/v1/jobs/${audioJobId}/audio`;
                     const pollDuration = Date.now() - pollStart;
                     const totalDuration = Date.now() - submitStart;
                     logger.info(`[VoiceWorker] TTS Ready: ${audioJobId}. Poll:${pollDuration}ms Total:${totalDuration}ms`);
@@ -71,8 +71,8 @@ export const processVoiceTask = async (req) => {
 
         // 2. Update Firestore Message
         const updateData = { updatedAt: FieldValue.serverTimestamp() };
-        if (audioJobId) {updateData.audioJobId = audioJobId;}
-        if (audioUrl) {updateData.audioUrl = audioUrl;}
+        if (audioJobId) { updateData.audioJobId = audioJobId; }
+        if (audioUrl) { updateData.audioUrl = audioUrl; }
 
         const msgRef = db.collection('personas').doc(imageId).collection('messages').doc(messageId);
         await msgRef.update(updateData);

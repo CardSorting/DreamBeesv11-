@@ -3,6 +3,7 @@ import { useApi } from '../../hooks/useApi';
 import { db } from '../../firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import { trackEvent } from '../../utils/analytics';
 import { PRESET_CATEGORIES } from './constants';
 
 export const useEditLogic = ({ isOpen, onClose, referenceImage }) => {
@@ -68,6 +69,11 @@ export const useEditLogic = ({ isOpen, onClose, referenceImage }) => {
                 setIsGenerating(false);
                 setCurrentJobId(null);
                 toast.error(data.error || 'Edit failed', { id: 'edit-gen' });
+            }
+        }, (error) => {
+            console.error('[useEditLogic] Job listener error:', error);
+            if (error.code === 'permission-denied') {
+                trackEvent('edit_job_permission_denied', { jobId: currentJobId });
             }
         });
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import SEO from '../../components/SEO';
-import { useTwitch } from '../../contexts/TwitchContext';
+import { useTwitch } from '../../hooks/useTwitch';
 import './CategoryDirectory.css';
 
 const CategoryDirectory = () => {

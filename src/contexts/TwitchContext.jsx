@@ -1,15 +1,10 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import { db } from '../firebase';
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { OFFICIAL_PERSONAS } from '../data/officialPersonas';
 
-const TwitchContext = createContext();
-
-export const useTwitch = () => {
-    const context = useContext(TwitchContext);
-    if (!context) throw new Error("useTwitch must be used within a TwitchProvider");
-    return context;
-};
+export const TwitchContext = createContext();
 
 export const TwitchProvider = ({ children }) => {
     const [personas, setPersonas] = useState([]);
@@ -19,47 +14,111 @@ export const TwitchProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Real-time listener for personas to keep them synced
-        const q = query(collection(db, 'personas'), orderBy('createdAt', 'desc'), limit(100));
+        let isMounted = true;
+
+        // Auto-seed Official Personas (Fire-and-forget, safe fail)
+        const seedOfficials = async () => {
+            try {
+                // Check if we can write headers or simple ping? 
+                // Actually just try to seed one by one.
+                for (const p of OFFICIAL_PERSONAS) {
+                    const docRef = doc(db, 'personas', p.id);
+                    // Just try getDoc first
+                    try {
+                        const snap = await getDoc(docRef);
+                        if (!snap.exists()) {
+                            // Only try to write if missing
+                            await setDoc(docRef, {
+                                ...p,
+                                createdAt: serverTimestamp()
+                            });
+                        }
+                    } catch {
+                        // Silent fail for seeding - we use manual script for this anyway
+                    }
+                }
+            } catch (e) {
+                console.warn("[TwitchContext] Auto-seed failed (likely permissions), defaulting to offline mode.", e);
+            }
+        };
+        seedOfficials();
+
+        // Real-time listener: Bare collection fetch to rule out any query-level permission traps
+        const q = collection(db, 'personas');
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            const all = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            setPersonas(all);
+            if (!isMounted) return;
 
-            // Derive categories dynamically
+            // Map DB results
+            const dbDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            // HYBRID MERGE: prefer DB data, fallback to LOCAL official data
+            // This ensures that if DB write failed (permissions), we still show the characters!
+            const mergedOfficials = OFFICIAL_PERSONAS.map(official => {
+                const foundInDb = dbDocs.find(d => d.id === official.id);
+                if (foundInDb) return foundInDb;
+                return official; // Fallback to local constant
+            });
+
+            // Set State
+            setPersonas(mergedOfficials);
+            setFollowedPersonas(mergedOfficials);
+            setSuggestedPersonas([]);
+
+            // Derive categories
             const catMap = {};
-            all.forEach(p => {
-                if (p.category) {
+            mergedOfficials.forEach(p => {
+                const catName = p.category || 'Just Chatting';
+                if (!catMap[catName]) {
+                    catMap[catName] = {
+                        id: catName.toLowerCase().replace(/\s+/g, '-'),
+                        name: catName,
+                        image: p.imageUrl,
+                        viewers: 0,
+                        hype: 0
+                    };
+                }
+                const zapViewers = Math.floor((p.zapCurrent || 0) / 10);
+                catMap[catName].viewers += zapViewers + Math.floor(Math.random() * 5) + 1;
+                catMap[catName].hype += p.hypeScore || 0;
+            });
+
+            const derivedCats = Object.values(catMap).sort((a, b) => b.viewers - a.viewers);
+            setCategories(derivedCats);
+            setLoading(false);
+
+        }, (error) => {
+            console.warn("TwitchContext Listener Error (Permissions?), switching to Offline Mode:", error);
+
+            // FALLBACK TO OFFLINE MODE COMPLETELY
+            if (isMounted) {
+                setPersonas(OFFICIAL_PERSONAS);
+                setFollowedPersonas(OFFICIAL_PERSONAS);
+                setSuggestedPersonas([]);
+
+                // Manual category derivation for offline
+                const catMap = {};
+                OFFICIAL_PERSONAS.forEach(p => {
                     const catName = p.category;
                     if (!catMap[catName]) {
                         catMap[catName] = {
                             id: catName.toLowerCase().replace(/\s+/g, '-'),
                             name: catName,
                             image: p.imageUrl,
-                            viewers: 0,
-                            hype: 0
+                            viewers: 1200,
+                            hype: 500
                         };
                     }
-                    // Viewers derived from ZAPs + standard random
-                    const zapViewers = Math.floor((p.zapCurrent || 0) / 10);
-                    catMap[catName].viewers += zapViewers + Math.floor(Math.random() * 5) + 1;
-                    catMap[catName].hype += p.hypeScore || 0;
-                }
-            });
-
-            // Sort categories by total hype/viewers
-            const derivedCats = Object.values(catMap).sort((a, b) => b.viewers - a.viewers);
-            setCategories(derivedCats);
-
-            setFollowedPersonas(all.slice(0, 5));
-            setSuggestedPersonas(all.slice(5, 15));
-            setLoading(false);
-        }, (error) => {
-            console.error("TwitchContext Listener Error:", error);
-            setLoading(false);
+                });
+                setCategories(Object.values(catMap));
+                setLoading(false);
+            }
         });
 
-        return () => unsubscribe();
+        return () => {
+            isMounted = false;
+            unsubscribe();
+        };
     }, []);
 
     const value = {

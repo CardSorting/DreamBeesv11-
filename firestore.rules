@@ -103,6 +103,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /jobs/{jobId} {
+      allow read: if request.auth != null && (resource == null || resource.data.userId == request.auth.uid);
+      allow write: if false;
+    }
+
     // Stats & Limits
     match /app_stats/{statId} {
       allow read: if true;
@@ -114,8 +119,8 @@ service cloud.firestore {
     }
 
     // Twitch Platform Collections
-    match /personas/{id} {
-      allow read: if true;
+    match /personas/{personaId} {
+      allow get, list: if true;
       allow write: if false; // Admin only
       
       match /shared_messages/{msgId} {

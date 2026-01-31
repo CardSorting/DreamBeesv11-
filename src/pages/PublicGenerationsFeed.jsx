@@ -164,7 +164,25 @@ export default function PublicGenerationsFeed() {
                 </div>
             </div>
 
-            <div style={{ marginTop: '60px' }}>
+            <div style={{ textAlign: 'center', marginTop: '2px', marginBottom: '2px' }}>
+                <div style={{
+                    display: 'inline-block',
+                    fontSize: '0.65rem',
+                    color: '#ffffff',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    padding: '3px 10px',
+                    borderRadius: '20px',
+                    lineHeight: '1.2',
+                    fontWeight: '400',
+                    letterSpacing: '0.01em'
+                }}>
+                    <span style={{ opacity: 0.9, fontWeight: '600', marginRight: '4px' }}>Disclaimer:</span>
+                    Experimental, user-generated AI content. Not automated views of DreamBees. Viewer discretion advised.
+                </div>
+            </div>
+
+            <div style={{ marginTop: '12px' }}>
                 {/* Age Restriction */}
                 {isProfileLoaded && currentUser && !isOver18(userProfile.birthday) ? (
                     <div className="flex flex-col items-center justify-center py-20 px-6 text-center">

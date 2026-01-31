@@ -37,6 +37,8 @@ export function useVideoGeneration({
             );
             const unsubscribe = onSnapshot(q, (snapshot) => {
                 setRecentImages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            }, (error) => {
+                console.error('[useVideoGeneration] Recent images listener error:', error);
             });
             return () => unsubscribe();
         }
