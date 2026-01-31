@@ -1,128 +1,461 @@
-import React from 'react';
-import { Sparkles, Loader2 } from 'lucide-react';
-import { PRESETS } from './constants';
+import React, { useState, useRef, useEffect } from 'react';
+import { Sparkles, Loader2, X, Plus, Wand2 } from 'lucide-react';
+import { PRESET_CATEGORIES } from './constants';
 
-const EditControls = ({ prompt, setPrompt, handleEdit, isGenerating }) => {
+const MAX_PROMPT_LENGTH = 500;
+
+const EditControls = ({
+    prompt,
+    setPrompt,
+    handleEdit,
+    isGenerating,
+    activeCategoryIndex,
+    setActiveCategoryIndex,
+    activePresetIndex,
+    isMobile
+}) => {
+    const [appendMode, setAppendMode] = useState(true);
+    const presetsScrollRef = useRef(null);
+
+    // Sync with parent category index
+    useEffect(() => {
+        if (activeCategoryIndex !== undefined) {
+            // Scroll to active category if needed
+        }
+    }, [activeCategoryIndex]);
+
+    const handlePresetClick = (presetText) => {
+        if (appendMode && prompt.trim()) {
+            setPrompt(`${prompt.trim()}, ${presetText.toLowerCase()}`);
+        } else {
+            setPrompt(presetText);
+        }
+    };
+
+    const handleClear = () => {
+        setPrompt('');
+    };
+
+    const charCount = prompt.length;
+    const isNearLimit = charCount > MAX_PROMPT_LENGTH * 0.8;
+    const isAtLimit = charCount >= MAX_PROMPT_LENGTH;
+
+    const activeCategory = PRESET_CATEGORIES[activeCategoryIndex || 0];
+    const activePresets = activeCategory?.presets || [];
+
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
-            <label style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--color-text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Instructions</label>
+        <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: isMobile ? '12px' : '16px',
+            flex: 1,
+            minHeight: 0
+        }}>
+            {/* Header with Label and Character Count */}
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+            }}>
+                <label style={{
+                    fontSize: isMobile ? '0.7rem' : '0.75rem',
+                    fontWeight: '700',
+                    color: 'var(--color-text-dim)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                }}>
+                    <Wand2 size={isMobile ? 12 : 14} />
+                    Instructions
+                </label>
+                <span style={{
+                    fontSize: isMobile ? '0.65rem' : '0.7rem',
+                    color: isAtLimit ? '#ef4444' : isNearLimit ? '#f59e0b' : 'rgba(255,255,255,0.3)',
+                    fontWeight: '600',
+                    transition: 'color 0.3s'
+                }}>
+                    {charCount}/{MAX_PROMPT_LENGTH}
+                </span>
+            </div>
 
-            <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Add red hair, change to night scene, make it cinematic..."
+            {/* Prompt Input with Clear Button */}
+            <div style={{ position: 'relative' }}>
+                <textarea
+                    value={prompt}
+                    onChange={(e) => {
+                        if (e.target.value.length <= MAX_PROMPT_LENGTH) {
+                            setPrompt(e.target.value);
+                        }
+                    }}
+                    placeholder="Describe the changes you want to make..."
+                    maxLength={MAX_PROMPT_LENGTH}
+                    style={{
+                        flex: 1,
+                        width: '100%',
+                        minHeight: isMobile ? '80px' : '120px',
+                        padding: isMobile ? '12px 40px 12px 12px' : '16px 44px 16px 16px',
+                        background: 'rgba(255, 255, 255, 0.02)',
+                        border: `1px solid ${isAtLimit ? 'rgba(239, 68, 68, 0.5)' : 'rgba(255, 255, 255, 0.1)'}`,
+                        borderRadius: isMobile ? '12px' : '16px',
+                        color: 'white',
+                        fontFamily: 'inherit',
+                        fontSize: isMobile ? '0.9rem' : '0.95rem',
+                        lineHeight: '1.5',
+                        resize: 'none',
+                        outline: 'none',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.2)'
+                    }}
+                    onFocus={e => {
+                        e.currentTarget.style.borderColor = isAtLimit ? 'rgba(239, 68, 68, 0.8)' : 'rgba(168, 85, 247, 0.5)';
+                        e.currentTarget.style.boxShadow = `0 0 0 4px ${isAtLimit ? 'rgba(239, 68, 68, 0.1)' : 'rgba(168, 85, 247, 0.1)'}, inset 0 2px 4px rgba(0, 0, 0, 0.3)`;
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                    }}
+                    onBlur={e => {
+                        e.currentTarget.style.borderColor = isAtLimit ? 'rgba(239, 68, 68, 0.5)' : 'rgba(255, 255, 255, 0.1)';
+                        e.currentTarget.style.boxShadow = 'inset 0 2px 4px rgba(0, 0, 0, 0.2)';
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.02)';
+                    }}
+                    disabled={isGenerating}
+                    autoFocus={!isMobile}
+                />
+                {prompt && (
+                    <button
+                        onClick={handleClear}
+                        style={{
+                            position: 'absolute',
+                            top: isMobile ? '8px' : '12px',
+                            right: isMobile ? '8px' : '12px',
+                            padding: isMobile ? '4px' : '6px',
+                            background: 'rgba(255, 255, 255, 0.1)',
+                            border: 'none',
+                            borderRadius: '8px',
+                            color: 'rgba(255, 255, 255, 0.6)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.2s',
+                            minWidth: isMobile ? '32px' : 'auto',
+                            minHeight: isMobile ? '32px' : 'auto'
+                        }}
+                        onMouseEnter={e => {
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
+                            e.currentTarget.style.color = 'white';
+                        }}
+                        onMouseLeave={e => {
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                            e.currentTarget.style.color = 'rgba(255, 255, 255, 0.6)';
+                        }}
+                        title="Clear prompt"
+                    >
+                        <X size={isMobile ? 14 : 16} />
+                    </button>
+                )}
+            </div>
+
+            <div style={{
+                fontSize: isMobile ? '0.7rem' : '0.75rem',
+                color: 'rgba(255, 255, 255, 0.45)',
+                fontWeight: '500',
+                lineHeight: '1.5'
+            }}>
+                Tip: be specific about what to change, like “add soft lighting” or “swap the background to a city”.
+            </div>
+
+            {/* Append Mode Toggle */}
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: isMobile ? '6px 10px' : '8px 12px',
+                background: 'rgba(255, 255, 255, 0.03)',
+                borderRadius: isMobile ? '8px' : '10px',
+                border: '1px solid rgba(255, 255, 255, 0.05)'
+            }}>
+                <span style={{
+                    fontSize: isMobile ? '0.7rem' : '0.75rem',
+                    color: 'rgba(255, 255, 255, 0.5)',
+                    fontWeight: '500'
+                }}>
+                    Presets:
+                </span>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                        onClick={() => setAppendMode(true)}
+                        style={{
+                            padding: isMobile ? '4px 10px' : '6px 12px',
+                            background: appendMode ? 'rgba(168, 85, 247, 0.3)' : 'transparent',
+                            border: `1px solid ${appendMode ? 'rgba(168, 85, 247, 0.5)' : 'rgba(255, 255, 255, 0.1)'}`,
+                            borderRadius: '8px',
+                            color: appendMode ? 'white' : 'rgba(255, 255, 255, 0.5)',
+                            fontSize: isMobile ? '0.7rem' : '0.75rem',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        <Plus size={isMobile ? 10 : 12} />
+                        Add
+                    </button>
+                    <button
+                        onClick={() => setAppendMode(false)}
+                        style={{
+                            padding: isMobile ? '4px 10px' : '6px 12px',
+                            background: !appendMode ? 'rgba(168, 85, 247, 0.3)' : 'transparent',
+                            border: `1px solid ${!appendMode ? 'rgba(168, 85, 247, 0.5)' : 'rgba(255, 255, 255, 0.1)'}`,
+                            borderRadius: '8px',
+                            color: !appendMode ? 'white' : 'rgba(255, 255, 255, 0.5)',
+                            fontSize: isMobile ? '0.7rem' : '0.75rem',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        Replace
+                    </button>
+                </div>
+            </div>
+
+            <div style={{
+                fontSize: isMobile ? '0.65rem' : '0.7rem',
+                color: 'rgba(255, 255, 255, 0.35)',
+                fontWeight: '500'
+            }}>
+                Add = append to your instructions. Replace = swap the entire prompt.
+            </div>
+
+            {/* Category Tabs - Horizontal scroll on mobile */}
+            <div style={{
+                display: 'flex',
+                gap: isMobile ? '6px' : '8px',
+                overflowX: isMobile ? 'auto' : 'visible',
+                flexWrap: isMobile ? 'nowrap' : 'wrap',
+                padding: '4px',
+                background: 'rgba(255, 255, 255, 0.02)',
+                borderRadius: isMobile ? '10px' : '12px',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+                WebkitOverflowScrolling: 'touch'
+            }}>
+                {PRESET_CATEGORIES.map((category, index) => (
+                    <button
+                        key={category.id}
+                        onClick={() => setActiveCategoryIndex && setActiveCategoryIndex(index)}
+                        style={{
+                            padding: isMobile ? '6px 12px' : '8px 16px',
+                            background: (activeCategoryIndex || 0) === index ? 'rgba(168, 85, 247, 0.2)' : 'transparent',
+                            border: 'none',
+                            borderRadius: '8px',
+                            color: (activeCategoryIndex || 0) === index ? 'white' : 'rgba(255, 255, 255, 0.5)',
+                            fontSize: isMobile ? '0.75rem' : '0.8rem',
+                            fontWeight: '600',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            position: 'relative',
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0
+                        }}
+                    >
+                        {category.label}
+                        {(activeCategoryIndex || 0) === index && (
+                            <div style={{
+                                position: 'absolute',
+                                bottom: '-4px',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: '4px',
+                                height: '4px',
+                                background: '#a855f7',
+                                borderRadius: '50%'
+                            }} />
+                        )}
+                    </button>
+                ))}
+            </div>
+
+            {/* Preset Chips - Horizontal scroll on mobile */}
+            <div
+                ref={presetsScrollRef}
                 style={{
-                    flex: 1,
-                    width: '100%',
-                    padding: '16px',
-                    background: 'rgba(255, 255, 255, 0.03)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)',
-                    color: 'white',
-                    fontFamily: 'inherit',
-                    fontSize: '0.875rem',
-                    resize: 'none',
-                    outline: 'none',
-                    transition: 'border-color 0.2s, box-shadow 0.2s, background-color 0.2s'
+                    display: 'flex',
+                    flexWrap: isMobile ? 'nowrap' : 'wrap',
+                    gap: isMobile ? '6px' : '8px',
+                    overflowX: isMobile ? 'auto' : 'visible',
+                    minHeight: isMobile ? '44px' : '80px',
+                    alignItems: 'flex-start',
+                    scrollbarWidth: 'none',
+                    msOverflowStyle: 'none',
+                    WebkitOverflowScrolling: 'touch',
+                    paddingBottom: isMobile ? '6px' : '0'
                 }}
-                onFocus={e => {
-                    e.currentTarget.style.borderColor = 'var(--color-accent-primary)';
-                    e.currentTarget.style.boxShadow = '0 0 0 4px rgba(168, 85, 247, 0.1)';
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                }}
-                onBlur={e => {
-                    e.currentTarget.style.borderColor = 'var(--color-border)';
-                    e.currentTarget.style.boxShadow = 'none';
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
-                }}
-                disabled={isGenerating}
-                autoFocus
-            />
-
-            {/* Preset Chips */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {PRESETS.map((preset) => (
+            >
+                {activePresets.map((preset, index) => (
                     <button
                         key={preset.text}
-                        onClick={() => setPrompt(preset.text)}
+                        onClick={() => handlePresetClick(preset.text)}
+                        title={preset.description}
+                        disabled={isGenerating}
                         style={{
-                            background: 'rgba(255,255,255,0.05)',
-                            border: '1px solid var(--color-border)',
-                            borderRadius: '16px',
-                            padding: '6px 12px',
-                            color: 'var(--color-text-muted)',
-                            fontSize: '0.75rem',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                            background: activePresetIndex === index ? 'rgba(168, 85, 247, 0.2)' : 'rgba(255, 255, 255, 0.03)',
+                            border: `1px solid ${activePresetIndex === index ? 'rgba(168, 85, 247, 0.45)' : 'rgba(255, 255, 255, 0.08)'}`,
+                            borderRadius: isMobile ? '10px' : '12px',
+                            padding: isMobile ? '8px 12px' : '10px 14px',
+                            color: activePresetIndex === index ? 'white' : 'rgba(255, 255, 255, 0.7)',
+                            fontSize: isMobile ? '0.75rem' : '0.8rem',
+                            fontWeight: '500',
+                            cursor: isGenerating ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                             whiteSpace: 'nowrap',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '6px'
+                            gap: '6px',
+                            opacity: isGenerating ? 0.5 : 1,
+                            flexShrink: 0,
+                            minHeight: isMobile ? '40px' : 'auto',
+                            touchAction: 'manipulation'
                         }}
                         onMouseEnter={e => {
-                            e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                            e.currentTarget.style.color = 'white';
-                            e.currentTarget.style.borderColor = 'var(--color-text-muted)';
-                            e.currentTarget.style.transform = 'translateY(-1px)';
+                            if (!isGenerating) {
+                                e.currentTarget.style.background = 'rgba(168, 85, 247, 0.15)';
+                                e.currentTarget.style.color = 'white';
+                                e.currentTarget.style.borderColor = 'rgba(168, 85, 247, 0.3)';
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                            }
                         }}
                         onMouseLeave={e => {
-                            e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                            e.currentTarget.style.color = 'var(--color-text-muted)';
-                            e.currentTarget.style.borderColor = 'var(--color-border)';
+                            e.currentTarget.style.background = activePresetIndex === index
+                                ? 'rgba(168, 85, 247, 0.2)'
+                                : 'rgba(255, 255, 255, 0.03)';
+                            e.currentTarget.style.color = activePresetIndex === index ? 'white' : 'rgba(255, 255, 255, 0.7)';
+                            e.currentTarget.style.borderColor = activePresetIndex === index
+                                ? 'rgba(168, 85, 247, 0.45)'
+                                : 'rgba(255, 255, 255, 0.08)';
                             e.currentTarget.style.transform = 'translateY(0)';
                         }}
-                        disabled={isGenerating}
+                        onTouchStart={e => {
+                            if (!isGenerating) {
+                                e.currentTarget.style.background = 'rgba(168, 85, 247, 0.15)';
+                                e.currentTarget.style.color = 'white';
+                                e.currentTarget.style.borderColor = 'rgba(168, 85, 247, 0.3)';
+                            }
+                        }}
+                        onTouchEnd={e => {
+                            e.currentTarget.style.background = activePresetIndex === index
+                                ? 'rgba(168, 85, 247, 0.2)'
+                                : 'rgba(255, 255, 255, 0.03)';
+                            e.currentTarget.style.color = activePresetIndex === index ? 'white' : 'rgba(255, 255, 255, 0.7)';
+                            e.currentTarget.style.borderColor = activePresetIndex === index
+                                ? 'rgba(168, 85, 247, 0.45)'
+                                : 'rgba(255, 255, 255, 0.08)';
+                        }}
                     >
-                        <span>{preset.icon}</span>
+                        <span style={{ fontSize: isMobile ? '0.9rem' : '1rem' }}>{preset.icon}</span>
                         {preset.text}
                     </button>
                 ))}
             </div>
 
+            {/* Generate Button */}
             <button
                 onClick={handleEdit}
-                disabled={isGenerating || !prompt.trim()}
+                disabled={isGenerating || !prompt.trim() || isAtLimit}
                 style={{
                     width: '100%',
-                    height: '56px',
-                    background: isGenerating || !prompt.trim() ? 'var(--color-zinc-800)' : 'linear-gradient(to right, #4f46e5, #9333ea)',
-                    color: isGenerating || !prompt.trim() ? 'var(--color-text-dim)' : 'white',
-                    borderRadius: 'var(--radius-md)',
-                    fontWeight: '700',
-                    fontSize: '0.875rem',
+                    height: isMobile ? '48px' : '56px',
+                    marginTop: 'auto',
+                    background: isGenerating || !prompt.trim() || isAtLimit
+                        ? 'rgba(255, 255, 255, 0.05)'
+                        : 'linear-gradient(135deg, #6366f1, #a855f7, #ec4899)',
+                    color: isGenerating || !prompt.trim() || isAtLimit
+                        ? 'rgba(255, 255, 255, 0.2)'
+                        : 'white',
+                    borderRadius: isMobile ? '14px' : '16px',
+                    fontWeight: '800',
+                    fontSize: isMobile ? '0.85rem' : '0.9rem',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    cursor: isGenerating || !prompt.trim() ? 'not-allowed' : 'pointer',
+                    letterSpacing: '0.1em',
+                    cursor: isGenerating || !prompt.trim() || isAtLimit ? 'not-allowed' : 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: '12px',
-                    transition: 'all 0.3s',
-                    boxShadow: isGenerating || !prompt.trim() ? 'none' : '0 10px 20px -5px rgba(79, 70, 229, 0.3)'
+                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                    border: 'none',
+                    boxShadow: isGenerating || !prompt.trim() || isAtLimit
+                        ? 'none'
+                        : '0 10px 25px -10px rgba(168, 85, 247, 0.5)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    flexShrink: 0,
+                    touchAction: 'manipulation',
+                    minHeight: isMobile ? '48px' : '56px'
                 }}
                 onMouseEnter={e => {
-                    if (!isGenerating && prompt.trim()) {
+                    if (!isGenerating && prompt.trim() && !isAtLimit) {
                         e.currentTarget.style.transform = 'translateY(-2px)';
-                        e.currentTarget.style.boxShadow = '0 15px 30px -5px rgba(79, 70, 229, 0.4)';
+                        e.currentTarget.style.boxShadow = '0 20px 40px -12px rgba(168, 85, 247, 0.6)';
+                        e.currentTarget.style.filter = 'brightness(1.1)';
                     }
                 }}
                 onMouseLeave={e => {
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = isGenerating || !prompt.trim() ? 'none' : '0 10px 20px -5px rgba(79, 70, 229, 0.3)';
+                    e.currentTarget.style.boxShadow = isGenerating || !prompt.trim() || isAtLimit
+                        ? 'none'
+                        : '0 10px 25px -10px rgba(168, 85, 247, 0.5)';
+                    e.currentTarget.style.filter = 'brightness(1)';
+                }}
+                onTouchStart={e => {
+                    if (!isGenerating && prompt.trim() && !isAtLimit) {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.filter = 'brightness(1.1)';
+                    }
+                }}
+                onTouchEnd={e => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.filter = 'brightness(1)';
                 }}
             >
                 {isGenerating ? (
                     <>
-                        <Loader2 size={20} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
-                        Processing...
+                        <Loader2 size={isMobile ? 18 : 20} style={{ animation: 'spin 1s linear infinite' }} />
+                        Creating...
                     </>
                 ) : (
                     <>
-                        <Sparkles size={20} />
-                        APPLY EDIT
+                        <Sparkles size={isMobile ? 18 : 20} />
+                        {isMobile ? 'Generate' : 'Generate Edit'}
                     </>
                 )}
             </button>
+
+            {/* Keyboard Shortcut Hint - Desktop only */}
+            {!isMobile && (
+                <div style={{
+                    textAlign: 'center',
+                    fontSize: '0.7rem',
+                    color: 'rgba(255, 255, 255, 0.3)',
+                    fontWeight: '500'
+                }}>
+                    Press <kbd style={{
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontFamily: 'inherit'
+                    }}>Ctrl</kbd> + <kbd style={{
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontFamily: 'inherit'
+                    }}>Enter</kbd> to generate
+                </div>
+            )}
         </div>
     );
 };
