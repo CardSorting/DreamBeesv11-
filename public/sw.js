@@ -26,7 +26,7 @@ const shouldCache = (request) => {
 };
 
 // Network-first strategy with minimal runtime caching.
-self.addEventListener('install', (event) => {
+self.addEventListener('install', () => {
     self.skipWaiting();
 });
 
