@@ -1,0 +1,291 @@
+.edit-studio-page {
+    min-height: 100vh;
+    background: radial-gradient(circle at top, rgba(168, 85, 247, 0.12), rgba(0, 0, 0, 0.98));
+    color: white;
+    display: flex;
+    flex-direction: column;
+    padding: 24px clamp(16px, 4vw, 48px) 64px;
+    gap: 24px;
+}
+
+.edit-studio-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 24px;
+    background: rgba(10, 10, 12, 0.92);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+    position: sticky;
+    top: 16px;
+    z-index: 10;
+}
+
+.edit-studio-header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.edit-studio-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+}
+
+.edit-studio-title {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.edit-studio-title-label {
+    font-size: 1.1rem;
+    font-weight: 800;
+}
+
+.edit-studio-title-sub {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.edit-studio-header-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.edit-studio-header-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.edit-studio-stepper {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+}
+
+.edit-studio-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.edit-studio-step.active {
+    background: rgba(168, 85, 247, 0.2);
+    border-color: rgba(168, 85, 247, 0.4);
+    color: white;
+}
+
+.edit-studio-step.complete {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.edit-studio-step-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.edit-studio-tips {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 20px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+}
+
+.edit-studio-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: 24px;
+}
+
+.edit-studio-panel {
+    background: rgba(9, 9, 11, 0.85);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.edit-studio-panel-main {
+    min-height: 480px;
+    display: flex;
+    flex-direction: column;
+}
+
+.edit-studio-toggle {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.edit-studio-mobile-bar {
+    position: sticky;
+    bottom: 16px;
+    padding: 12px;
+    border-radius: 16px;
+    background: rgba(10, 10, 12, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    z-index: 15;
+}
+
+.edit-studio-mobile-cta {
+    width: 100%;
+    padding: 12px 18px;
+    border-radius: 14px;
+    border: none;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
+    color: white;
+    cursor: pointer;
+}
+
+.edit-studio-mobile-cta:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.edit-studio-mobile-hint {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.edit-studio-loading,
+.edit-studio-error {
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.edit-studio-skeleton-header {
+    width: min(720px, 90vw);
+    height: 80px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    margin-bottom: 24px;
+}
+
+.edit-studio-skeleton-body {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    width: min(980px, 90vw);
+}
+
+.edit-studio-skeleton-card {
+    height: 280px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.edit-studio-error-card {
+    background: rgba(10, 10, 12, 0.9);
+    border-radius: 20px;
+    padding: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    max-width: 520px;
+    text-align: center;
+}
+
+.edit-studio-error-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.btn-primary,
+.btn-secondary {
+    padding: 10px 18px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    color: white;
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.7);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+@media (max-width: 1024px) {
+    .edit-studio-body {
+        grid-template-columns: 1fr;
+    }
+
+    .edit-studio-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .edit-studio-header-actions {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 640px) {
+    .edit-studio-page {
+        padding: 16px 16px 40px;
+    }
+
+    .edit-studio-header {
+        position: static;
+    }
+
+    .edit-studio-title-sub {
+        display: none;
+    }
+}

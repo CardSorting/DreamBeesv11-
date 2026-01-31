@@ -5,7 +5,6 @@ import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useModel } from '../contexts/ModelContext';
 import { getOptimizedImageUrl } from '../utils';
 import { trackLoopConversion } from '../utils/analytics';
-import SimpleEditModal from './SimpleEditModal';
 import { useAuth } from '../contexts/AuthContext';
 
 const ShowcaseModal = ({ image, onClose, model, onNext, onPrev, hasNext, hasPrev }) => {
@@ -14,7 +13,6 @@ const ShowcaseModal = ({ image, onClose, model, onNext, onPrev, hasNext, hasPrev
     const { currentUser } = useAuth();
     const navigate = useNavigate();
 
-    const [isEditModalOpen, setIsEditModalOpen] = React.useState(false);
 
     // Stability: Threshold logic and stable timestamp for render-pure calculations
 
@@ -306,11 +304,11 @@ const ShowcaseModal = ({ image, onClose, model, onNext, onPrev, hasNext, hasPrev
                                 <button
                                     onClick={() => {
                                         if (!currentUser) {
-                                            navigate('/login');
+                                            navigate('/auth', { state: { redirectTo: window.location.pathname } });
                                             return;
                                         }
                                         trackLoopConversion('showcase_edit_picture', model?.id);
-                                        setIsEditModalOpen(true);
+                                        navigate(`/edit/${image.id}`);
                                     }}
                                     className="btn w-full justify-center text-xs"
                                     style={{
@@ -329,12 +327,6 @@ const ShowcaseModal = ({ image, onClose, model, onNext, onPrev, hasNext, hasPrev
                     </div>
                 </div>
             </div>
-
-            <SimpleEditModal
-                isOpen={isEditModalOpen}
-                onClose={() => setIsEditModalOpen(false)}
-                referenceImage={image}
-            />
 
             <style>{`
                 .meta-label {

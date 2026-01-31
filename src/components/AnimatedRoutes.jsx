@@ -38,6 +38,7 @@ const MockupProductPage = lazyRetry(() => import('../pages/MockupCatalog/MockupP
 const MemeFormatter = lazyRetry(() => import('../pages/MemeFormatter'));
 const MemeFeed = lazyRetry(() => import('../pages/MemeFeed'));
 const PublicGenerationsFeed = lazyRetry(() => import('../pages/PublicGenerationsFeed'));
+const EditStudio = lazyRetry(() => import('../pages/EditStudio'));
 const CommunitySafety = lazyRetry(() => import('../pages/safety'));
 const QuickMockups = lazyRetry(() => import('../pages/QuickMockups'));
 const QuickMockupCreator = lazyRetry(() => import('../pages/QuickMockups/MockupCreator'));
@@ -201,6 +202,10 @@ const AnimatedRoutes = () => {
                             } />
                             <Route path="/quick-mockups/:itemId" element={
                                 <PrivateRoute><QuickMockupCreator /></PrivateRoute>
+                            } />
+
+                            <Route path="/edit/:id" element={
+                                <PrivateRoute><EditStudio /></PrivateRoute>
                             } />
 
                             {/* Twitch Platform Routes */}

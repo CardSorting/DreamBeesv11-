@@ -6,7 +6,6 @@ import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
 import SafeImage from './SafeImage';
 import { getOptimizedImageUrl } from '../utils';
-import SimpleEditModal from './SimpleEditModal';
 
 const FeedPost = ({
     imgItem,
@@ -23,7 +22,6 @@ const FeedPost = ({
     onTagClick
 }) => {
     const { currentUser } = useAuth();
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const { isLiked, isBookmarked, toggleLike, toggleBookmark, unhidePost, reportPost, appealPost, isHidden, markViewed } = useUserInteractions();
 
     const [activeSlide, setActiveSlide] = useState(0);
@@ -685,10 +683,10 @@ const FeedPost = ({
                             onClick={(e) => {
                                 e.stopPropagation();
                                 if (!currentUser) {
-                                    navigate('/login');
+                                    navigate('/auth', { state: { redirectTo: window.location.pathname } });
                                     return;
                                 }
-                                setIsEditModalOpen(true);
+                                navigate(`/edit/${imgItem.id}`);
                             }}
                             className="btn-edit-action"
                             style={{
@@ -706,12 +704,6 @@ const FeedPost = ({
                         >
                             <RefreshCw size={20} />
                         </motion.button>
-
-                        <SimpleEditModal
-                            isOpen={isEditModalOpen}
-                            onClose={() => setIsEditModalOpen(false)}
-                            referenceImage={imgItem}
-                        />
                     </div>
 
                     <div style={{ display: 'flex', gap: '12px' }}>
