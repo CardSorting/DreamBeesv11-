@@ -6,6 +6,8 @@ import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
 import SafeImage from './SafeImage';
 import { getOptimizedImageUrl } from '../utils';
+import toast from 'react-hot-toast';
+import { trackEvent } from '../utils/analytics';
 
 const FeedPost = ({
     imgItem,
@@ -686,6 +688,16 @@ const FeedPost = ({
                                     navigate('/auth', { state: { redirectTo: window.location.pathname } });
                                     return;
                                 }
+                                const hasImage = Boolean(imgItem.imageUrl || imgItem.url || imgItem.coverUrl);
+                                if (imgItem.type === 'video' || !hasImage) {
+                                    toast.error('This item cannot be edited yet.');
+                                    trackEvent('edit_blocked', {
+                                        item_id: imgItem.id,
+                                        item_type: imgItem.type || 'unknown',
+                                        collection: imgItem._collection || 'unknown'
+                                    });
+                                    return;
+                                }
                                 const collectionHint = imgItem._collection;
                                 const params = new URLSearchParams();
                                 if (collectionHint) params.set('collection', collectionHint);
@@ -704,7 +716,6 @@ const FeedPost = ({
                                 justifyContent: 'center'
                             }}
                             title="Edit this generation"
-                            disabled={!['image', 'mockup'].includes(imgItem.type)}
                         >
                             <RefreshCw size={20} />
                         </motion.button>

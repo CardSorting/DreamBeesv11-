@@ -4,7 +4,8 @@ import { ArrowLeft, X, ThumbsUp, ThumbsDown, Sparkles, Flag, ChevronLeft, Chevro
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useModel } from '../contexts/ModelContext';
 import { getOptimizedImageUrl } from '../utils';
-import { trackLoopConversion } from '../utils/analytics';
+import { trackEvent, trackLoopConversion } from '../utils/analytics';
+import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 
 const ShowcaseModal = ({ image, onClose, model, onNext, onPrev, hasNext, hasPrev }) => {
@@ -307,7 +308,14 @@ const ShowcaseModal = ({ image, onClose, model, onNext, onPrev, hasNext, hasPrev
                                             navigate('/auth', { state: { redirectTo: window.location.pathname } });
                                             return;
                                         }
-                                        if (image.type && image.type !== 'image' && image.type !== 'mockup') {
+                                        const hasImage = Boolean(image.imageUrl || image.url || image.thumbnailUrl);
+                                        if (image.type === 'video' || !hasImage) {
+                                            toast.error('This item cannot be edited yet.');
+                                            trackEvent('edit_blocked', {
+                                                item_id: image.id,
+                                                item_type: image.type || 'unknown',
+                                                collection: image._collection || 'unknown'
+                                            });
                                             return;
                                         }
                                         trackLoopConversion('showcase_edit_picture', model?.id);
@@ -324,7 +332,6 @@ const ShowcaseModal = ({ image, onClose, model, onNext, onPrev, hasNext, hasPrev
                                         fontWeight: '700',
                                         cursor: 'pointer'
                                     }}
-                                    disabled={image.type && image.type !== 'image' && image.type !== 'mockup'}
                                 >
                                     EDIT
                                 </button>

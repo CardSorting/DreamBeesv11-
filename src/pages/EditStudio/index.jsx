@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Sparkles, Info, Image as ImageIcon, Wand2, Layers, RefreshCw } from 'lucide-react';
 import {
     collection,
@@ -32,10 +32,11 @@ const STEP_FLOW = [
 const EditStudio = () => {
     const { id: generationId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const [searchParams] = useSearchParams();
     const isMobile = useMobileDetect();
 
-    const [referenceImage, setReferenceImage] = useState(null);
+    const [referenceImage, setReferenceImage] = useState(location.state?.referenceImage || null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [showHowItWorks, setShowHowItWorks] = useState(true);
@@ -95,12 +96,22 @@ const EditStudio = () => {
         };
 
         const fetchAlias = async () => {
-            const aliasRef = doc(db, 'generation_aliases', generationId);
-            const aliasSnap = await getDoc(aliasRef);
-            if (!aliasSnap.exists()) return null;
-            const aliasData = aliasSnap.data();
-            if (!aliasData?.targetId || !aliasData?.collection) return null;
-            return aliasData;
+            try {
+                const aliasRef = doc(db, 'generation_aliases', generationId);
+                const aliasSnap = await getDoc(aliasRef);
+                if (!aliasSnap.exists()) return null;
+                const aliasData = aliasSnap.data();
+                if (!aliasData?.targetId || !aliasData?.collection) return null;
+                return aliasData;
+            } catch (err) {
+                if (err?.code === 'permission-denied' || err?.message?.includes('Missing or insufficient permissions')) {
+                    trackEvent('edit_alias_permission_denied', {
+                        generation_id: generationId
+                    });
+                    return null;
+                }
+                throw err;
+            }
         };
 
         const fetchReference = async () => {
@@ -119,7 +130,9 @@ const EditStudio = () => {
                 'generations',
                 'images',
                 'mockups',
-                'memes'
+                'memes',
+                'model_showcase_images',
+                'showcase_images'
             ].filter(Boolean);
             const seen = new Set();
             const orderedCollections = collectionsToTry.filter((name) => {
@@ -146,7 +159,7 @@ const EditStudio = () => {
                 if (!resolved) {
                     for (const collectionName of orderedCollections) {
                         const docRef = doc(db, collectionName, generationId);
-                         
+
                         const snapshot = await getDoc(docRef);
                         if (snapshot.exists()) {
                             resolved = {
@@ -157,7 +170,7 @@ const EditStudio = () => {
                             break;
                         }
 
-                         
+
                         const fallbackResult = await fetchByFallbackFields(collectionName);
                         if (fallbackResult) {
                             resolved = fallbackResult;
@@ -182,7 +195,10 @@ const EditStudio = () => {
                 }
             } catch (err) {
                 console.error('[EditStudio] Failed to load generation', err);
-                setError('Unable to load this edit right now.');
+                const message = err?.code === 'permission-denied'
+                    ? 'This generation is private or you do not have access.'
+                    : 'Unable to load this edit right now.';
+                setError(message);
                 trackFriction('api_failure', 'EditStudio', err.message || 'Failed to load generation');
             } finally {
                 setLoading(false);

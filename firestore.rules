@@ -16,12 +16,12 @@ service cloud.firestore {
 
     // Creative Content (Images, Videos, Avatars)
     match /images/{imageId} {
-      allow read: if (resource.data.isPublic == true) || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow read: if request.auth != null || (resource.data.isPublic == true);
       allow write: if request.auth != null && (resource == null || resource.data.userId == request.auth.uid) && request.resource.data.userId == request.auth.uid;
     }
     
     match /videos/{videoId} {
-      allow read: if (resource.data.isPublic == true) || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow read: if request.auth != null || (resource.data.isPublic == true);
       allow write: if request.auth != null && (resource == null || resource.data.userId == request.auth.uid) && request.resource.data.userId == request.auth.uid;
     }
 
@@ -45,7 +45,7 @@ service cloud.firestore {
     }
 
     match /memes/{memeId} {
-      allow read: if (resource.data.isPublic == true) || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow read: if request.auth != null || (resource.data.isPublic == true);
       allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
       allow update: if request.auth != null && resource.data.userId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isPublic', 'likes', 'hidden']);
     }
@@ -93,8 +93,14 @@ service cloud.firestore {
     }
 
     match /mockups/{mockupId} {
-      allow read: if (resource.data.isPublic == true) || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow read: if request.auth != null || (resource.data.isPublic == true);
       allow create, update: if request.auth != null && (resource == null || resource.data.userId == request.auth.uid) && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Alias mapping for edit lookups
+    match /generation_aliases/{aliasId} {
+      allow read: if request.auth != null;
+      allow write: if false;
     }
 
     // Stats & Limits

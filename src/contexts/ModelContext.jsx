@@ -243,7 +243,8 @@ export function ModelProvider({ children }) {
                     url: optimizedUrl,
                     likesCount: data.likesCount || 0,
                     bookmarksCount: data.bookmarksCount || 0,
-                    rating: data.rating || 0
+                    rating: data.rating || 0,
+                    _collection: 'model_showcase_images'
                 };
             });
 
@@ -393,7 +394,8 @@ export function ModelProvider({ children }) {
                     url: optimizedUrl,
                     likesCount: data.likesCount || 0,
                     bookmarksCount: data.bookmarksCount || 0,
-                    rating: data.rating || 0
+                    rating: data.rating || 0,
+                    _collection: 'model_showcase_images'
                 };
             }).filter(item => item !== null);
 

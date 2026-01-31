@@ -71,11 +71,14 @@ export function usePublicFeed(activeFilter, affinityMap, viewedIds, hiddenIds) {
                 if (!docs) return; // Skip failed
                 const normalized = docs.map(doc => {
                     const data = doc.data();
+                    const hasVideo = Boolean(data.videoUrl);
+                    const hasImage = Boolean(data.imageUrl || data.url || data.coverUrl);
+                    const inferredType = hasVideo ? 'video' : (data.type || (hasImage ? 'image' : 'unknown'));
                     return {
                         id: doc.id,
                         ...data,
                         _collection: colName,
-                        type: colName === 'videos' ? 'video' : (data.type || 'image'),
+                        type: colName === 'videos' ? 'video' : inferredType,
                         createdAtMillis: data.createdAt?.toMillis ? data.createdAt.toMillis() :
                             (data.createdAt instanceof Date ? data.createdAt.getTime() :
                                 (new Date(data.createdAt).getTime() || 0))
