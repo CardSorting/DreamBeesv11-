@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Image as ImageIcon } from 'lucide-react';
 import { getOptimizedImageUrl } from '../../utils';
 import FakeProgressBar from './FakeProgressBar';
@@ -12,29 +13,28 @@ const PHASES = [
 ];
 
 // Helper for dynamic text with scramble effect
-const LoadingStatus = ({ isMobile }) => {
-    const [text, setText] = useState('Scanning Reference...');
-    const [phase, setPhase] = useState(0);
+const LoadingStatus = ({ isMobile, targetText }) => {
+    const [text, setText] = useState(targetText || 'Scanning Reference...');
 
     // Scramble effect
     useEffect(() => {
         let iterations = 0;
-        const targetText = PHASES[phase];
+        const currentTarget = targetText || 'Scanning Reference...';
         const randomChars = '!<>-_\\/[]{}—=+*^?#________';
 
         const interval = setInterval(() => {
-            setText(targetText
+            setText(currentTarget
                 .split('')
                 .map((letter, index) => {
                     if (index < iterations) {
-                        return targetText[index];
+                        return currentTarget[index];
                     }
                     return randomChars[Math.floor(Math.random() * randomChars.length)];
                 })
                 .join('')
             );
 
-            if (iterations >= targetText.length) {
+            if (iterations >= currentTarget.length) {
                 clearInterval(interval);
             }
 
@@ -42,15 +42,7 @@ const LoadingStatus = ({ isMobile }) => {
         }, 30);
 
         return () => clearInterval(interval);
-    }, [phase]);
-
-    // Cycling phases
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setPhase(p => (p + 1) % PHASES.length);
-        }, 3200);
-        return () => clearInterval(interval);
-    }, []);
+    }, [targetText]);
 
     return (
         <div style={{ textAlign: 'center' }}>
@@ -65,16 +57,6 @@ const LoadingStatus = ({ isMobile }) => {
             }}>
                 {text}
             </p>
-            {!isMobile && (
-                <p style={{
-                    fontSize: '0.8rem',
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    marginTop: '4px',
-                    fontWeight: '500'
-                }}>
-                    AI is processing your vision
-                </p>
-            )}
         </div>
     );
 };
@@ -84,7 +66,9 @@ const ReferencePanel = ({
     generatedImage,
     isGenerating,
     isMobile,
-    isCompact
+    isCompact,
+    statusText,
+    loadingProgress
 }) => {
     const rawImageUrl = referenceImage?.imageUrl || referenceImage?.url || referenceImage;
     const imageUrl = rawImageUrl ? getOptimizedImageUrl(rawImageUrl) : null;
@@ -142,18 +126,25 @@ const ReferencePanel = ({
                 margin: isMobile ? '0 auto' : '0',
                 width: isMobile ? '100%' : 'auto'
             }}>
-                <img
-                    src={imageUrl}
-                    alt="Reference"
-                    style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        opacity: isGenerating ? 0.4 : 1,
-                        transition: 'opacity 0.5s',
-                        filter: isGenerating ? 'grayscale(30%) blur(1px)' : 'none'
-                    }}
-                />
+                <AnimatePresence mode="wait">
+                    <motion.img
+                        key={imageUrl}
+                        src={imageUrl}
+                        alt="Reference"
+                        initial={{ opacity: 0, filter: 'blur(10px) grayscale(100%)' }}
+                        animate={{
+                            opacity: isGenerating ? 0.4 : 1,
+                            filter: isGenerating ? 'grayscale(30%) blur(1px)' : 'blur(0px) grayscale(0%)'
+                        }}
+                        exit={{ opacity: 0, filter: 'blur(10px) grayscale(100%)' }}
+                        transition={{ duration: 0.5, ease: 'easeOut' }}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                        }}
+                    />
+                </AnimatePresence>
 
                 {/* Loading Overlay */}
                 {isGenerating && (
@@ -197,29 +188,19 @@ const ReferencePanel = ({
                                 </div>
                             </div>
 
-                            {/* Progress Text */}
-                            <div style={{ textAlign: 'center' }}>
+                            {/* Progress Text with Scramble effect */}
+                            <LoadingStatus isMobile={isMobile} targetText={statusText} />
+
+                            {!isMobile && (
                                 <p style={{
-                                    color: 'white',
-                                    fontWeight: '700',
-                                    fontSize: isMobile ? '0.85rem' : '1rem',
-                                    margin: 0,
-                                    letterSpacing: '0.02em',
-                                    animation: 'pulse-text 1.5s ease-in-out infinite'
+                                    fontSize: '0.8rem',
+                                    color: 'rgba(255, 255, 255, 0.5)',
+                                    marginTop: '-12px',
+                                    fontWeight: '500'
                                 }}>
-                                    Scanning Reference...
+                                    AI is processing your vision
                                 </p>
-                                {!isMobile && (
-                                    <p style={{
-                                        fontSize: '0.8rem',
-                                        color: 'rgba(255, 255, 255, 0.5)',
-                                        marginTop: '4px',
-                                        fontWeight: '500'
-                                    }}>
-                                        Analyzing visual features
-                                    </p>
-                                )}
-                            </div>
+                            )}
 
                             {/* Scanning Line Animation */}
                             <div style={{
@@ -325,7 +306,7 @@ const ReferencePanel = ({
                 }
             `}</style>
 
-            <FakeProgressBar isGenerating={isGenerating} />
+            <FakeProgressBar isGenerating={isGenerating} manualProgress={loadingProgress} />
         </div>
     );
 };

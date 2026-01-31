@@ -10,11 +10,13 @@ export const useEditLogic = ({ isOpen, onClose, referenceImage }) => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [generatedImage, setGeneratedImage] = useState(null);
     const [currentJobId, setCurrentJobId] = useState(null);
+    const [loadingProgress, setLoadingProgress] = useState(0);
     const { call: apiCall } = useApi();
 
     const [activeReference, setActiveReference] = useState(referenceImage);
     const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
     const [activePresetIndex, setActivePresetIndex] = useState(-1);
+    const [statusText, setStatusText] = useState('Initializing...');
 
     // Reset state when opening
     useEffect(() => {
@@ -26,6 +28,7 @@ export const useEditLogic = ({ isOpen, onClose, referenceImage }) => {
             setActiveReference(referenceImage);
             setActiveCategoryIndex(0);
             setActivePresetIndex(-1);
+            setStatusText('Initializing...');
         }
     }, [isOpen, referenceImage]);
 
@@ -38,14 +41,28 @@ export const useEditLogic = ({ isOpen, onClose, referenceImage }) => {
             if (!snapshot.exists()) return;
 
             const data = snapshot.data();
+            // console.log('Job update:', data); // Debugging
 
-            if (data.status === 'completed' || data.status === 'success') {
-                const finalUrl = data.outputUrl || (data.result && data.result[0]) || data.images?.[0];
+            if (data.status === 'completed' || data.status === 'success' || data.status === 'succeeded') {
+                // Check all possible fields for the image URL
+                const finalUrl = data.outputUrl ||
+                    data.output_url ||
+                    data.imageUrl ||
+                    (data.result && data.result[0]) ||
+                    data.images?.[0] ||
+                    data.url;
+
                 if (finalUrl) {
                     setGeneratedImage(finalUrl);
                     setIsGenerating(false);
                     setCurrentJobId(null);
                     toast.success('Edit completed!', { id: 'edit-gen' });
+                } else {
+                    // Job is marked complete but we can't find the image
+                    console.error('Job completed but no URL found:', data);
+                    setIsGenerating(false);
+                    setCurrentJobId(null);
+                    toast.error('Edit finished but result was missing.', { id: 'edit-gen' });
                 }
             } else if (data.status === 'failed' || data.status === 'error') {
                 setIsGenerating(false);
@@ -56,6 +73,38 @@ export const useEditLogic = ({ isOpen, onClose, referenceImage }) => {
 
         return () => unsubscribe();
     }, [currentJobId]);
+
+    // Dynamic Status and Progress Timer
+    useEffect(() => {
+        if (!isGenerating) {
+            setStatusText('Initializing...');
+            setLoadingProgress(0);
+            return;
+        }
+
+        const msgs = [
+            { text: "Sending to GPU...", progress: 10 },
+            { text: "Analyzing image structure...", progress: 25 },
+            { text: "Applying your edits...", progress: 45 },
+            { text: "Refining details...", progress: 70 },
+            { text: "Adding finishing touches...", progress: 85 },
+            { text: "Almost there...", progress: 95 }
+        ];
+
+        let step = 0;
+        setStatusText(msgs[0].text);
+        setLoadingProgress(msgs[0].progress);
+
+        const interval = setInterval(() => {
+            step++;
+            if (step < msgs.length) {
+                setStatusText(msgs[step].text);
+                setLoadingProgress(msgs[step].progress);
+            }
+        }, 3000); // Faster transitions for better feel
+
+        return () => clearInterval(interval);
+    }, [isGenerating]);
 
     const handleEdit = useCallback(async (promptOverride) => {
         const promptToUse = typeof promptOverride === 'string' ? promptOverride : prompt;
@@ -191,6 +240,8 @@ export const useEditLogic = ({ isOpen, onClose, referenceImage }) => {
         activePresetIndex,
         setActivePresetIndex,
         handleEdit,
-        promoteToReference
+        promoteToReference,
+        statusText,
+        loadingProgress
     };
 };

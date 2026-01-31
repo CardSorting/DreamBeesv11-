@@ -124,9 +124,14 @@ const ResultPanel = ({
             </div>
 
             <motion.div
-                initial={{ opacity: 0, scale: 0.95, filter: 'blur(10px)' }}
-                animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                initial={{ opacity: 0, scale: 0.9, filter: 'blur(20px) brightness(2)' }}
+                animate={{ opacity: 1, scale: 1, filter: 'blur(0px) brightness(1)' }}
+                transition={{
+                    duration: 1.2,
+                    ease: [0.16, 1, 0.3, 1],
+                    opacity: { duration: 0.6 },
+                    filter: { duration: 1.2 }
+                }}
                 style={{
                     flex: 1,
                     position: 'relative',
@@ -139,6 +144,23 @@ const ResultPanel = ({
                 }}
                 ref={resultRef}
             >
+                {/* Result Reveal Shimmer */}
+                <motion.div
+                    initial={{ left: '-100%' }}
+                    animate={{ left: '200%' }}
+                    transition={{ duration: 1.5, ease: 'easeInOut', delay: 0.2 }}
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        bottom: 0,
+                        width: '50%',
+                        background: 'linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.4), transparent)',
+                        transform: 'skewX(-20deg)',
+                        zIndex: 20,
+                        pointerEvents: 'none'
+                    }}
+                />
+
                 {isComparing ? (
                     <ComparisonSlider before={beforeUrl} after={afterUrl} isMobile={isMobile} />
                 ) : (

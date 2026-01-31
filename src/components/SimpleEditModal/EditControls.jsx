@@ -16,7 +16,8 @@ const EditControls = ({
     setActivePresetIndex,
     isMobile,
     isCompact,
-    hideGenerateButton
+    hideGenerateButton,
+    statusText
 }) => {
     const [appendMode, setAppendMode] = useState(true);
     const presetsScrollRef = useRef(null);
@@ -106,14 +107,16 @@ const EditControls = ({
                 <label style={{
                     fontSize: isMobile ? '0.7rem' : '0.75rem',
                     fontWeight: '700',
-                    color: 'var(--color-text-dim)',
+                    color: isGenerating ? '#a855f7' : 'var(--color-text-dim)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px'
+                    gap: '8px',
+                    transition: 'all 0.3s ease',
+                    animation: isGenerating ? 'pulse-purple 2s infinite' : 'none'
                 }}>
-                    <Wand2 size={isMobile ? 12 : 14} />
+                    <Wand2 size={isMobile ? 12 : 14} style={{ animation: isGenerating ? 'spin-slow 4s linear infinite' : 'none' }} />
                     Instructions
                 </label>
                 <span style={{
@@ -143,7 +146,7 @@ const EditControls = ({
                         minHeight: isMobile ? '80px' : '120px',
                         padding: isMobile ? '12px 40px 12px 12px' : '16px 44px 16px 16px',
                         background: 'rgba(255, 255, 255, 0.02)',
-                        border: `1px solid ${isAtLimit ? 'rgba(239, 68, 68, 0.5)' : 'rgba(255, 255, 255, 0.1)'}`,
+                        border: `1px solid ${isGenerating ? 'rgba(168, 85, 247, 0.3)' : isAtLimit ? 'rgba(239, 68, 68, 0.5)' : 'rgba(255, 255, 255, 0.1)'}`,
                         borderRadius: isMobile ? '12px' : '16px',
                         color: 'white',
                         fontFamily: 'inherit',
@@ -152,9 +155,11 @@ const EditControls = ({
                         resize: 'none',
                         outline: 'none',
                         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.2)'
+                        boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.2)',
+                        opacity: isGenerating ? 0.6 : 1
                     }}
                     onFocus={e => {
+                        if (isGenerating) return;
                         e.currentTarget.style.borderColor = isAtLimit ? 'rgba(239, 68, 68, 0.8)' : 'rgba(168, 85, 247, 0.5)';
                         e.currentTarget.style.boxShadow = `0 0 0 4px ${isAtLimit ? 'rgba(239, 68, 68, 0.1)' : 'rgba(168, 85, 247, 0.1)'}, inset 0 2px 4px rgba(0, 0, 0, 0.3)`;
                         e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
@@ -167,7 +172,28 @@ const EditControls = ({
                     disabled={isGenerating}
                     autoFocus={!isMobile}
                 />
-                {prompt && (
+
+                {isGenerating && (
+                    <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        borderRadius: isMobile ? '12px' : '16px',
+                        overflow: 'hidden',
+                        pointerEvents: 'none',
+                        zIndex: 5
+                    }}>
+                        <div style={{
+                            position: 'absolute',
+                            top: 0,
+                            bottom: 0,
+                            width: '40%',
+                            background: 'linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.1), transparent)',
+                            animation: 'shimmer-x 2s infinite linear'
+                        }} />
+                    </div>
+                )}
+
+                {prompt && !isGenerating && (
                     <button
                         onClick={handleClear}
                         style={{
@@ -185,7 +211,8 @@ const EditControls = ({
                             justifyContent: 'center',
                             transition: 'all 0.2s',
                             minWidth: isMobile ? '32px' : 'auto',
-                            minHeight: isMobile ? '32px' : 'auto'
+                            minHeight: isMobile ? '32px' : 'auto',
+                            zIndex: 10
                         }}
                         onMouseEnter={e => {
                             e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
@@ -444,7 +471,7 @@ const EditControls = ({
                     {isGenerating ? (
                         <>
                             <Loader2 size={isMobile ? 18 : 20} style={{ animation: 'spin 1s linear infinite' }} />
-                            Creating...
+                            {statusText || 'Creating...'}
                         </>
                     ) : (
                         <>
@@ -476,6 +503,21 @@ const EditControls = ({
                     }}>Enter</kbd> to generate
                 </div>
             )}
+
+            <style>{`
+                @keyframes pulse-purple {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.6; transform: scale(0.98); }
+                }
+                @keyframes spin-slow {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+                @keyframes shimmer-x {
+                    0% { left: -100%; }
+                    100% { left: 200%; }
+                }
+            `}</style>
         </div>
     );
 };

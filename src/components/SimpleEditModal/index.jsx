@@ -30,7 +30,9 @@ const SimpleEditModal = ({ isOpen, onClose, referenceImage }) => {
         setActiveCategoryIndex,
         activePresetIndex,
         handleEdit,
-        promoteToReference
+        promoteToReference,
+        statusText,
+        loadingProgress
     } = useEditLogic({ isOpen, onClose, referenceImage });
 
     useEffect(() => {
@@ -285,6 +287,8 @@ const SimpleEditModal = ({ isOpen, onClose, referenceImage }) => {
                                     generatedImage={generatedImage}
                                     isGenerating={isGenerating}
                                     isMobile={isMobile}
+                                    statusText={statusText}
+                                    loadingProgress={loadingProgress}
                                 />
                             </div>
                         )}
@@ -336,6 +340,7 @@ const SimpleEditModal = ({ isOpen, onClose, referenceImage }) => {
                                             setActiveCategoryIndex={setActiveCategoryIndex}
                                             activePresetIndex={activePresetIndex}
                                             isMobile={isMobile}
+                                            statusText={statusText}
                                         />
                                     </motion.div>
                                 )}
