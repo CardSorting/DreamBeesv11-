@@ -1,7 +1,7 @@
 import { HttpsError } from "firebase-functions/v2/https";
 // [REMOVED] import { db, FieldValue } from "../firebaseInit.js";
 import { logger } from "../lib/utils.js";
-import { CostManager } from "../lib/costs.js";
+
 import { Billing } from "../lib/billing.js";
 
 const SYSTEM_INSTRUCTION = `

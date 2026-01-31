@@ -55,10 +55,10 @@ export const constructSystemPrompt = (persona, contextData) => {
     const now = new Date();
     const hours = now.getHours();
     let timeOfDay = "Day";
-    if (hours < 6) timeOfDay = "Late Night (Gremlin Hours)";
-    else if (hours < 12) timeOfDay = "Morning";
-    else if (hours < 18) timeOfDay = "Afternoon";
-    else timeOfDay = "Evening";
+    if (hours < 6) { timeOfDay = "Late Night (Gremlin Hours)"; }
+    else if (hours < 12) { timeOfDay = "Morning"; }
+    else if (hours < 18) { timeOfDay = "Afternoon"; }
+    else { timeOfDay = "Evening"; }
 
     const dayOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][now.getDay()];
 

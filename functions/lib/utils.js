@@ -9,7 +9,7 @@ import { HttpsError } from "firebase-functions/v2/https";
 
 export const logger = {
     info: (message, context = {}) => {
-        console.log(JSON.stringify({ severity: 'INFO', message, ...context, timestamp: new Date().toISOString() }));
+        console.log(JSON.stringify({ severity: 'INFO', message, ...context, timestamp: new Date().toISOString() })); // eslint-disable-line no-console
     },
     warn: (message, context = {}) => {
         console.warn(JSON.stringify({ severity: 'WARNING', message, ...context, timestamp: new Date().toISOString() }));

@@ -1,4 +1,5 @@
 import { logger, getS3Client, retryOperation } from "../lib/utils.js";
+import { Billing } from "../lib/billing.js";
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -10,8 +11,8 @@ import { MOCKUP_ITEMS, MOCKUP_PRESETS, TCG_ITEMS, TCG_PRESETS, DOLL_ITEMS, DOLL_
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { db, FieldValue } from "../firebaseInit.js";
 import { HttpsError } from "firebase-functions/v2/https";
-import { CostManager } from "../lib/costs.js";
-import { Billing } from "../lib/billing.js";
+
+
 
 // ESM __dirname fix
 const __filename = fileURLToPath(import.meta.url);
@@ -286,6 +287,8 @@ export const handleGachaSpin = async (request) => {
     // However, runAsync refunds on ANY error.
     // Gacha throws only if ALL fail.
     // So we can wrap the Gacha logic in the callback. If it finishes (even with 0 prizes? No, it throws if 0), return.
+
+    const requestId = request.data.requestId || `gacha_${Date.now()}`;
 
     return await Billing.runAsync(uid, 'MOCKUP_GEN', requestId, { type: 'gacha_spin', mode: request.data.mode }, async () => {
         // Decode base64

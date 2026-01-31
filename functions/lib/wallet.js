@@ -21,9 +21,9 @@ export class Wallet {
      * @returns {Promise<{success: boolean, transactionId: string, newBalance: number, previousBalance: number, idempotent: boolean}>}
      */
     static async debit(uid, amount, requestId, metadata = {}, currency = 'zaps', externalTransaction = null) {
-        if (!uid) throw new HttpsError('unauthenticated', 'User must be authenticated.');
-        if (!requestId) throw new HttpsError('invalid-argument', 'requestId is required for financial transactions.');
-        if (amount < 0) throw new HttpsError('invalid-argument', 'Debit amount cannot be negative.');
+        if (!uid) { throw new HttpsError('unauthenticated', 'User must be authenticated.'); }
+        if (!requestId) { throw new HttpsError('invalid-argument', 'requestId is required for financial transactions.'); }
+        if (amount < 0) { throw new HttpsError('invalid-argument', 'Debit amount cannot be negative.'); }
 
         // Zero-cost operations are free, but we still log them if needed, or just return success.
         // Let's log them to keep the history complete if it's a "transaction".
@@ -47,7 +47,7 @@ export class Wallet {
 
             // 2. Balance Check
             const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
+            if (!userDoc.exists) { throw new HttpsError('not-found', 'User not found.'); }
 
             const userData = userDoc.data();
             const currentBalance = userData[currency] || 0;
@@ -112,9 +112,9 @@ export class Wallet {
      * @param {string} currency 
      */
     static async credit(uid, amount, requestId, metadata = {}, currency = 'zaps', externalTransaction = null) {
-        if (!uid) throw new HttpsError('unauthenticated', 'User must be authenticated.');
-        if (!requestId) throw new HttpsError('invalid-argument', 'requestId is required.');
-        if (amount < 0) throw new HttpsError('invalid-argument', 'Credit amount cannot be negative.');
+        if (!uid) { throw new HttpsError('unauthenticated', 'User must be authenticated.'); }
+        if (!requestId) { throw new HttpsError('invalid-argument', 'requestId is required.'); }
+        if (amount < 0) { throw new HttpsError('invalid-argument', 'Credit amount cannot be negative.'); }
 
         const userRef = db.collection('users').doc(uid);
         const transactionRef = db.collection('wallet_transactions').doc(requestId);
@@ -134,7 +134,7 @@ export class Wallet {
 
             // 2. Get User State
             const userDoc = await t.get(userRef);
-            if (!userDoc.exists) throw new HttpsError('not-found', 'User not found.');
+            if (!userDoc.exists) { throw new HttpsError('not-found', 'User not found.'); }
 
             const userData = userDoc.data();
             const currentBalance = userData[currency] || 0;
@@ -182,7 +182,7 @@ export class Wallet {
 
     static async getBalance(uid) {
         const doc = await db.collection('users').doc(uid).get();
-        if (!doc.exists) throw new HttpsError('not-found', 'User not found');
+        if (!doc.exists) { throw new HttpsError('not-found', 'User not found'); }
         const data = doc.data();
         return {
             zaps: data.zaps || 0,

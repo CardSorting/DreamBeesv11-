@@ -1,9 +1,9 @@
 import { HttpsError } from "firebase-functions/v2/https";
-import { FieldValue } from "../firebaseInit.js";
+
 import { handleError, logger } from "../lib/utils.js";
 import { formatMemeWithGemini } from "../lib/ai.js";
 import { CostManager } from "../lib/costs.js";
-import { Billing } from "../lib/billing.js";
+import { Wallet } from "../lib/wallet.js";
 
 export const handleFormatMeme = async (request) => {
     const uid = request.auth?.uid;

@@ -25,7 +25,7 @@ export class Billing {
      * @returns {Promise<{success: boolean, requestId: string, cost: number, idempotent?: boolean}>}
      */
     static async runAtomic(uid, costOrKey, requestId, metadata, dbCallback) {
-        if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
+        if (!uid) { throw new HttpsError('unauthenticated', "User must be authenticated"); }
 
         try {
             const cost = (typeof costOrKey === 'number') ? costOrKey : await CostManager.get(costOrKey);
@@ -61,7 +61,7 @@ export class Billing {
         } catch (error) {
             // No refund needed for Atomic, because the transaction failed, so Debit was rolled back.
             // Just rethrow or normalize
-            if (error instanceof HttpsError) throw error;
+            if (error instanceof HttpsError) { throw error; }
             throw new HttpsError('internal', error.message);
         }
     }
@@ -78,7 +78,7 @@ export class Billing {
      * @returns {Promise<any>} Result of actionCallback, or throws error.
      */
     static async runAsync(uid, costOrKey, requestId, metadata, actionCallback, options = {}) {
-        if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
+        if (!uid) { throw new HttpsError('unauthenticated', "User must be authenticated"); }
 
         const cost = (typeof costOrKey === 'number') ? costOrKey : await CostManager.get(costOrKey);
 
@@ -144,25 +144,20 @@ export class Billing {
      * @param {object} options 
      */
     static async runTwoPhase(uid, costOrKey, requestId, metadata, initCallback, actionCallback, options = {}) {
-        if (!uid) throw new HttpsError('unauthenticated', "User must be authenticated");
+        if (!uid) { throw new HttpsError('unauthenticated', "User must be authenticated"); }
 
         const cost = (typeof costOrKey === 'number') ? costOrKey : await CostManager.get(costOrKey);
         let idempotent = false;
 
         // Phase 1: Debit + Init
-        try {
-            await db.runTransaction(async (t) => {
-                const debitResult = await Wallet.debit(uid, cost, requestId, metadata, 'zaps', t);
-                if (debitResult.idempotent) {
-                    idempotent = true;
-                    return;
-                }
-                await initCallback(t);
-            });
-        } catch (e) {
-            // If Phase 1 fails, transaction aborts, no debit.
-            throw e;
-        }
+        await db.runTransaction(async (t) => {
+            const debitResult = await Wallet.debit(uid, cost, requestId, metadata, 'zaps', t);
+            if (debitResult.idempotent) {
+                idempotent = true;
+                return;
+            }
+            await initCallback(t);
+        });
 
         if (idempotent) { return { success: true, idempotent: true }; }
 

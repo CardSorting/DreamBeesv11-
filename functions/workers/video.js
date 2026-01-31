@@ -1,5 +1,5 @@
 
-import { db, FieldValue } from "../firebaseInit.js";
+import { db } from "../firebaseInit.js";
 import { Wallet } from "../lib/wallet.js";
 import { getS3Client, fetchWithRetry, logger, retryOperation, findPrimaryUrl } from "../lib/utils.js";
 import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";

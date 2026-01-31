@@ -1,4 +1,4 @@
-import { db, FieldValue } from "../../firebaseInit.js";
+import { db } from "../../firebaseInit.js";
 import { logger } from "../../lib/utils.js";
 import { constructWebhookEvent } from "../../lib/stripe.js";
 import { Wallet } from "../../lib/wallet.js";

@@ -96,8 +96,8 @@ class CostManagerService {
             // Map legacy persona keys to ZAP_COSTS keys format if needed
             // Legacy persona config uses 'cost_chat', 'cost_create'
             // We want to map them to 'PERSONA_CHAT', 'PERSONA_CREATE'
-            if (personaConfig.cost_chat !== undefined) pricing.PERSONA_CHAT = Number(personaConfig.cost_chat);
-            if (personaConfig.cost_create !== undefined) pricing.PERSONA_CREATE = Number(personaConfig.cost_create);
+            if (personaConfig.cost_chat !== undefined) { pricing.PERSONA_CHAT = Number(personaConfig.cost_chat); }
+            if (personaConfig.cost_create !== undefined) { pricing.PERSONA_CREATE = Number(personaConfig.cost_create); }
 
             this.cache = pricing;
             this.lastFetch = now;

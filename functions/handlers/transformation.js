@@ -12,7 +12,7 @@ export const handleCreateAnalysisRequest = async (request) => {
     const { image, imageUrl, requestId } = request.data;
     if (!image && !imageUrl) { throw new HttpsError('invalid-argument', "Image required"); }
 
-    const COST = ZAP_COSTS.IMAGE_ANALYSIS;
+    const COST = await CostManager.get('IMAGE_ANALYSIS');
 
     try {
         const docRef = requestId ? db.collection('analysis_queue').doc(requestId) : db.collection('analysis_queue').doc();
@@ -45,7 +45,7 @@ export const handleCreateEnhanceRequest = async (request) => {
     const { prompt, requestId } = request.data;
     if (!prompt) { throw new HttpsError('invalid-argument', "Prompt required"); }
 
-    const COST = ZAP_COSTS.IMAGE_ENHANCE;
+    const COST = await CostManager.get('IMAGE_ENHANCE');
 
     try {
         const docRef = requestId ? db.collection('enhance_queue').doc(requestId) : db.collection('enhance_queue').doc();
@@ -84,7 +84,7 @@ export const handleTransformImage = async (request) => {
     const { imageUrl, styleName, instructions, intensity, requestId } = request.data;
     const uid = request.auth?.uid;
     if (!uid) { throw new HttpsError('unauthenticated', "User must be authenticated"); }
-    const COST = ZAP_COSTS.IMAGE_TRANSFORM;
+
     try {
         if (requestId) { db.collection('action_logs').doc(requestId); }
 
@@ -94,9 +94,7 @@ export const handleTransformImage = async (request) => {
         // Uses 'runAsync' for the Debit -> Action -> Refund cycle
         // We drop explicit 'action_logs' write as 'wallet_transactions' covers the audit trail.
 
-        return await Billing.runAsync(uid, 'IMAGE_TRANSFORM', requestId || `transform_${Date.now()}`, { type: 'transform_image' }, async () => {
-            return await transformImageWithGemini(imageUrl, styleName, instructions, intensity, uid);
-        });
+
 
     } catch (error) {
         throw handleError(error, { uid });
@@ -111,12 +109,12 @@ export const handleMeowaccTransform = async (request) => {
     const { imageBase64, mimeType, mode, extraData, requestId } = request.data;
     if (!imageBase64) { throw new HttpsError('invalid-argument', "Image data required"); }
 
-    const COST = ZAP_COSTS.MEOWACC;
+
 
     try {
         const queueRef = requestId ? db.collection('generation_queue').doc(requestId) : db.collection('generation_queue').doc();
         const userRef = db.collection('users').doc(uid);
-        let userDisplayName = "DreamBees User";
+        const userDisplayName = "DreamBees User";
 
         const {
             MEOWACC_PROMPT,

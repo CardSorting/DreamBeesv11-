@@ -1,8 +1,9 @@
 import { HttpsError } from "firebase-functions/v2/https";
 import { db, FieldValue } from "../firebaseInit.js";
 import { handleError, logger } from "../lib/utils.js";
-import { ZAP_COSTS, CostManager } from "../lib/costs.js";
+
 import { Billing } from "../lib/billing.js";
+import { VertexAI } from "@google-cloud/vertexai";
 
 const RATE_LIMIT_DELAY = 6000;
 
@@ -12,8 +13,6 @@ export const handleGenerateAvatarCollection = async (request) => {
 
     const { theme, style, referenceImage, referenceImageMimeType, requestId } = request.data;
     if (!theme && !style) { throw new HttpsError('invalid-argument', "Theme or Style required"); }
-
-    const COST = await CostManager.get('AVATAR_COLLECTION');
 
     try {
         const logRef = requestId ? db.collection('action_logs').doc(requestId) : null;
@@ -218,7 +217,6 @@ export const handleMintRandomAvatar = async (request) => {
     if (!uid) { throw new HttpsError('unauthenticated', "User must be authenticated"); }
 
     const { requestId } = request.data;
-    const MINT_COST = await CostManager.get('AVATAR_MINT');
 
     try {
         const logRef = requestId ? db.collection('action_logs').doc(requestId) : null;

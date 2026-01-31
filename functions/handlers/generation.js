@@ -61,7 +61,7 @@ export const handleCreateGenerationRequest = async (request) => {
 
         // Calculate Cost
         const userDoc = await db.collection('users').doc(uid).get();
-        if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+        if (!userDoc.exists) { throw new HttpsError('not-found', "User not found"); }
         const userData = userDoc.data();
         const isSubscriber = userData.subscriptionStatus === 'active';
 
@@ -205,7 +205,7 @@ export const handleCreateDressUpRequest = async (request) => {
 
         // Fetch display name (could be passed in Wallet metadata, looking up user doc just for name is expensive-ish but fine)
         const userDoc = await db.collection('users').doc(uid).get();
-        if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+        if (!userDoc.exists) { throw new HttpsError('not-found', "User not found"); }
         const userDisplayName = userDoc.data().displayName || "Explorer";
 
         await Billing.runAtomic(uid, 'DRESS_UP', docId, {
@@ -248,7 +248,7 @@ export const handleCreateSlideshowGeneration = async (request) => {
         const queueRef = db.collection('generation_queue').doc(docId);
 
         const userDoc = await db.collection('users').doc(uid).get();
-        if (!userDoc.exists) throw new HttpsError('not-found', "User not found");
+        if (!userDoc.exists) { throw new HttpsError('not-found', "User not found"); }
         const userDisplayName = userDoc.data().displayName || "Explorer";
 
         const costKey = safeMode === 'slideshow' ? 'SLIDESHOW' : 'POSTER';
@@ -288,7 +288,7 @@ export const handleGenerateVideoPrompt = async (request) => {
     const uid = request.auth?.uid;
     if (!uid) { throw new HttpsError('unauthenticated', "User must be authenticated"); }
 
-    const COST = await CostManager.get('VIDEO_PROMPT');
+
 
     try {
         // This is a direct sync action (usually), but we log it.
