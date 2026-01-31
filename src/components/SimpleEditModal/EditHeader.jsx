@@ -1,6 +1,9 @@
-import { X, Sparkles } from 'lucide-react';
+import { ArrowLeft, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const EditHeader = ({ isMobile }) => {
+    const navigate = useNavigate();
+
     return (
         <div style={{
             display: 'flex',
@@ -13,16 +16,36 @@ const EditHeader = ({ isMobile }) => {
             flexShrink: 0
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '16px' }}>
-                <div style={{
-                    padding: isMobile ? '8px' : '10px',
-                    background: 'linear-gradient(135deg, #6366f1, #a855f7, #ec4899)',
-                    borderRadius: isMobile ? '12px' : '14px',
-                    display: 'flex',
-                    boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)',
-                    border: '1px solid rgba(255, 255, 255, 0.2)'
-                }}>
-                    <Sparkles size={isMobile ? 18 : 22} color="white" />
-                </div>
+                {isMobile ? (
+                    <button
+                        onClick={() => navigate(-1)}
+                        style={{
+                            padding: '10px',
+                            marginRight: '-4px',
+                            background: 'rgba(255, 255, 255, 0.05)',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: '12px',
+                            color: 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <ArrowLeft size={20} />
+                    </button>
+                ) : (
+                    <div style={{
+                        padding: '10px',
+                        background: 'linear-gradient(135deg, #6366f1, #a855f7, #ec4899)',
+                        borderRadius: '14px',
+                        display: 'flex',
+                        boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)'
+                    }}>
+                        <Sparkles size={22} color="white" />
+                    </div>
+                )}
                 <div>
                     <h3 style={{
                         fontSize: isMobile ? '1.1rem' : '1.4rem',
@@ -32,7 +55,7 @@ const EditHeader = ({ isMobile }) => {
                         letterSpacing: '-0.01em',
                         lineHeight: 1.2
                     }}>
-                        Edit and Remix Images
+                        {isMobile ? 'Edit & Remix' : 'Edit and Remix Images'}
                     </h3>
                     {!isMobile && (
                         <p style={{
