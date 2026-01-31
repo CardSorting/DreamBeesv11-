@@ -1,10 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Sparkles, Info, Image as ImageIcon, Wand2, Layers, RefreshCw } from 'lucide-react';
-import { doc, getDoc } from 'firebase/firestore';
+import {
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    limit,
+    query,
+    where
+} from 'firebase/firestore';
 
 import { db } from '../../firebase';
 import { useMobileDetect } from '../../hooks/useMobileDetect';
+import { trackEvent, trackFriction } from '../../utils/analytics';
 import EditHeader from '../../components/SimpleEditModal/EditHeader';
 import ReferencePanel from '../../components/SimpleEditModal/ReferencePanel';
 import EditControls from '../../components/SimpleEditModal/EditControls';
@@ -23,6 +32,7 @@ const STEP_FLOW = [
 const EditStudio = () => {
     const { id: generationId } = useParams();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const isMobile = useMobileDetect();
 
     const [referenceImage, setReferenceImage] = useState(null);
@@ -53,6 +63,46 @@ const EditStudio = () => {
     });
 
     useEffect(() => {
+        const normalizeReference = (data, sourceCollection) => {
+            if (!data) return null;
+            const imageUrl = data.imageUrl || data.url || data.thumbnailUrl;
+            return {
+                ...data,
+                imageUrl,
+                url: data.url || data.imageUrl || imageUrl,
+                aspectRatio: data.aspectRatio || '1:1',
+                _collection: sourceCollection
+            };
+        };
+
+        const fetchByFallbackFields = async (collectionName) => {
+            const ref = collection(db, collectionName);
+            const queryFields = [
+                { field: 'originalRequestId', value: generationId },
+                { field: 'slug', value: generationId }
+            ];
+
+            for (const { field, value } of queryFields) {
+                if (!value) continue;
+                const fallbackQuery = query(ref, where(field, '==', value), limit(1));
+                const fallbackSnap = await getDocs(fallbackQuery);
+                if (!fallbackSnap.empty) {
+                    const docSnap = fallbackSnap.docs[0];
+                    return { id: docSnap.id, data: docSnap.data(), source: collectionName };
+                }
+            }
+            return null;
+        };
+
+        const fetchAlias = async () => {
+            const aliasRef = doc(db, 'generation_aliases', generationId);
+            const aliasSnap = await getDoc(aliasRef);
+            if (!aliasSnap.exists()) return null;
+            const aliasData = aliasSnap.data();
+            if (!aliasData?.targetId || !aliasData?.collection) return null;
+            return aliasData;
+        };
+
         const fetchReference = async () => {
             if (!generationId) {
                 setError('Missing generation id.');
@@ -63,26 +113,84 @@ const EditStudio = () => {
             setLoading(true);
             setError(null);
 
-            try {
-                const docRef = doc(db, 'generations', generationId);
-                const snapshot = await getDoc(docRef);
+            const hintedCollection = searchParams.get('collection');
+            const collectionsToTry = [
+                hintedCollection,
+                'generations',
+                'images',
+                'mockups',
+                'memes'
+            ].filter(Boolean);
+            const seen = new Set();
+            const orderedCollections = collectionsToTry.filter((name) => {
+                if (seen.has(name)) return false;
+                seen.add(name);
+                return true;
+            });
 
-                if (!snapshot.exists()) {
+            try {
+                let resolved = null;
+
+                const alias = await fetchAlias();
+                if (alias) {
+                    const aliasDocRef = doc(db, alias.collection, alias.targetId);
+                    const aliasSnap = await getDoc(aliasDocRef);
+                    if (aliasSnap.exists()) {
+                        resolved = {
+                            id: aliasSnap.id,
+                            data: aliasSnap.data(),
+                            source: alias.collection
+                        };
+                    }
+                }
+                if (!resolved) {
+                    for (const collectionName of orderedCollections) {
+                        const docRef = doc(db, collectionName, generationId);
+                         
+                        const snapshot = await getDoc(docRef);
+                        if (snapshot.exists()) {
+                            resolved = {
+                                id: snapshot.id,
+                                data: snapshot.data(),
+                                source: collectionName
+                            };
+                            break;
+                        }
+
+                         
+                        const fallbackResult = await fetchByFallbackFields(collectionName);
+                        if (fallbackResult) {
+                            resolved = fallbackResult;
+                            break;
+                        }
+                    }
+                }
+
+                if (!resolved) {
                     setReferenceImage(null);
                     setError('We could not find that generation.');
+                    trackEvent('edit_load_failed', {
+                        generation_id: generationId,
+                        collection_hint: hintedCollection || 'none',
+                        reason: 'not_found'
+                    });
                 } else {
-                    setReferenceImage({ id: snapshot.id, ...snapshot.data() });
+                    setReferenceImage({
+                        id: resolved.id,
+                        ...normalizeReference(resolved.data, resolved.source)
+                    });
                 }
             } catch (err) {
                 console.error('[EditStudio] Failed to load generation', err);
                 setError('Unable to load this edit right now.');
+                trackFriction('api_failure', 'EditStudio', err.message || 'Failed to load generation');
             } finally {
                 setLoading(false);
             }
         };
 
         fetchReference();
-    }, [generationId]);
+    }, [generationId, searchParams]);
 
     useEffect(() => {
         if (!storageKey) return;

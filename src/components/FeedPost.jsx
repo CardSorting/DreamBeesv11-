@@ -686,7 +686,10 @@ const FeedPost = ({
                                     navigate('/auth', { state: { redirectTo: window.location.pathname } });
                                     return;
                                 }
-                                navigate(`/edit/${imgItem.id}`);
+                                const collectionHint = imgItem._collection;
+                                const params = new URLSearchParams();
+                                if (collectionHint) params.set('collection', collectionHint);
+                                navigate(`/edit/${imgItem.id}${params.toString() ? `?${params.toString()}` : ''}`);
                             }}
                             className="btn-edit-action"
                             style={{
@@ -701,6 +704,7 @@ const FeedPost = ({
                                 justifyContent: 'center'
                             }}
                             title="Edit this generation"
+                            disabled={!['image', 'mockup'].includes(imgItem.type)}
                         >
                             <RefreshCw size={20} />
                         </motion.button>

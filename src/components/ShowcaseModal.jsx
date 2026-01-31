@@ -307,8 +307,13 @@ const ShowcaseModal = ({ image, onClose, model, onNext, onPrev, hasNext, hasPrev
                                             navigate('/auth', { state: { redirectTo: window.location.pathname } });
                                             return;
                                         }
+                                        if (image.type && image.type !== 'image' && image.type !== 'mockup') {
+                                            return;
+                                        }
                                         trackLoopConversion('showcase_edit_picture', model?.id);
-                                        navigate(`/edit/${image.id}`);
+                                        const params = new URLSearchParams();
+                                        if (image._collection) params.set('collection', image._collection);
+                                        navigate(`/edit/${image.id}${params.toString() ? `?${params.toString()}` : ''}`);
                                     }}
                                     className="btn w-full justify-center text-xs"
                                     style={{
@@ -319,6 +324,7 @@ const ShowcaseModal = ({ image, onClose, model, onNext, onPrev, hasNext, hasPrev
                                         fontWeight: '700',
                                         cursor: 'pointer'
                                     }}
+                                    disabled={image.type && image.type !== 'image' && image.type !== 'mockup'}
                                 >
                                     EDIT
                                 </button>
