@@ -11,7 +11,8 @@ import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
 import FeedPost from '../components/FeedPost';
 import ShowcaseModal from '../components/ShowcaseModal';
 import SafeImage from '../components/SafeImage';
-import './ModelFeed.css';
+// Using shared FeedLayout CSS for consistency across all feeds
+import '../components/FeedLayout/FeedLayout.css';
 
 const FeedPostSkeleton = () => (
     <div className="post-skeleton animate-pulse">
@@ -52,11 +53,10 @@ export default function ModelFeed() {
     useEffect(() => {
         if (!id && globalShowcaseCache && globalShowcaseCache.length > feedItems.length) {
             // Cache has more items than our local state - sync it
-            console.log(`[ModelFeed] Syncing cache: ${feedItems.length} -> ${globalShowcaseCache.length}`);
             setFeedItems(globalShowcaseCache);
         }
-    }, [id, globalShowcaseCache, feedItems.length]);
-
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id, globalShowcaseCache]);
 
     // Loading state - false if we have data already
     const [isLoading, setIsLoading] = useState(() => {
@@ -68,6 +68,7 @@ export default function ModelFeed() {
     const [displayPage, setDisplayPage] = useState(2);
     const [fetchedShowcaseImage, setFetchedShowcaseImage] = useState(null);
     const [searchParams, setSearchParams] = useSearchParams();
+    const lastFetchedIdRef = useRef(null);
 
     // Derived State: The image currently being viewed in the modal
     const activeShowcaseImage = useMemo(() => {
@@ -81,19 +82,24 @@ export default function ModelFeed() {
         return null;
     }, [searchParams, feedItems, fetchedShowcaseImage]);
 
-    // Deep Linking: Async fallback for missing items
+
+
     useEffect(() => {
         const viewId = searchParams.get('view');
         if (!viewId) {
-            if (fetchedShowcaseImage) setFetchedShowcaseImage(null);
+            setFetchedShowcaseImage(prev => prev ? null : prev);
+            lastFetchedIdRef.current = null;
             return;
         }
 
-        // Only fetch if not already in local cache or fetched cache
         const inCache = feedItems.some(img => img.id === viewId);
-        if (inCache || fetchedShowcaseImage?.id === viewId) return;
+        if (inCache) return;
+
+        if (lastFetchedIdRef.current === viewId) return;
 
         const fetchImage = async () => {
+            // console.log("Fetching deep link", viewId);
+            lastFetchedIdRef.current = viewId;
             try {
                 let docRef = doc(db, 'model_showcase_images', viewId);
                 let snapshot = await getDoc(docRef);
@@ -111,7 +117,60 @@ export default function ModelFeed() {
             }
         };
         fetchImage();
-    }, [searchParams, feedItems, fetchedShowcaseImage]);
+    }, [searchParams, feedItems]);
+
+    {
+        isLoading && (
+            <div className="feed-loader-skeletons">
+                {/* eslint-disable-next-line react/no-array-index-key */}
+                {[...Array(3)].map((_, i) => <FeedPostSkeleton key={`skeleton-${i}`} />)}
+            </div>
+        )
+    }
+
+    {
+        !isLoading && visibleImages.length === 0 && (
+            <div className="empty-feed-state">
+                <Sparkles size={48} />
+                <h3>No posts found</h3>
+                <p>Try adjusting your filters or check back later.</p>
+                <button onClick={() => setActiveFilter('All')} className="reset-filter-btn">
+                    Clear Filters
+                </button>
+            </div>
+        )
+    }
+
+    {/* Sentinel for Infinite Scroll Trigger OR Manual Load Button */ }
+    {
+        !isLoading && manualLoadNeeded && (visibleImages.length < imagesToRender.length || (id ? !hasShowcaseEnded(id) : !hasGlobalFeedEnded)) ? (
+            <div style={{ padding: '40px 0', textAlign: 'center', width: '100%' }}>
+                <button
+                    onClick={triggerManualLoad}
+                    className="reset-filter-btn" // Reusing verify clean white pill style
+                    style={{
+                        fontSize: '1rem',
+                        padding: '12px 32px',
+                        fontWeight: '700',
+                        boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+                    }}
+                >
+                    Load More
+                </button>
+            </div>
+        ) : (
+            <div ref={sentinelRef} style={{ height: '20px', width: '100%', marginTop: '40px' }} aria-hidden="true" />
+        )
+    }
+
+    {
+        !isLoading && visibleImages.length > 0 && (visibleImages.length < imagesToRender.length || (id ? !hasShowcaseEnded(id) : !hasGlobalFeedEnded)) && (
+            <div className="feed-loader-skeletons">
+                {/* eslint-disable-next-line react/no-array-index-key */}
+                {[...Array(1)].map((_, i) => <FeedPostSkeleton key={`skeleton-bottom-${i}`} />)}
+            </div>
+        )
+    }
 
     const openShowcase = (img) => {
         setSearchParams(prev => {
@@ -267,11 +326,11 @@ export default function ModelFeed() {
                 let images = [];
                 if (id) {
                     // Single Model Mode - Fetch using ID directly (don't wait for model metadata)
-                    console.log(`[ModelFeed] Loading showcase for model: ${id}`);
+                    // console.log(`[ModelFeed] Loading showcase for model: ${id}`);
                     images = await getShowcaseImages(id, false, 60);
                 } else {
                     // Global Feed Mode - use context's robust fetcher
-                    console.log("[ModelFeed] Loading global showcase");
+                    // console.log("[ModelFeed] Loading global showcase");
                     images = await getGlobalShowcaseImages(false, 'modelfeed_init', 75);
                 }
 
@@ -409,10 +468,10 @@ export default function ModelFeed() {
 
                 let allFetchedImages;
                 if (id) {
-                    console.log(`[ModelFeed] Loading more images for model: ${id} (Attempt ${retryCount + 1}, Limit: ${currentLimit})`);
+                    // console.log(`[ModelFeed] Loading more images for model: ${id} (Attempt ${retryCount + 1}, Limit: ${currentLimit})`);
                     allFetchedImages = await getShowcaseImages(id, true, currentLimit);
                 } else {
-                    console.log(`[ModelFeed] Loading more global images (Attempt ${retryCount + 1}, Limit: ${currentLimit})`);
+                    // console.log(`[ModelFeed] Loading more global images (Attempt ${retryCount + 1}, Limit: ${currentLimit})`);
                     allFetchedImages = await getGlobalShowcaseImages(true, 'infinite_scroll', currentLimit);
                 }
 
@@ -457,7 +516,7 @@ export default function ModelFeed() {
                         return true;
                     }).length;
 
-                    console.log(`[Infinite Scroll] Fetched ${newImages.length} new. Displayable: ${displayableCount} (Yield Rate: ${((displayableCount / newImages.length) * 100).toFixed(1)}%)`);
+                    // console.log(`[Infinite Scroll] Fetched ${newImages.length} new. Displayable: ${displayableCount} (Yield Rate: ${((displayableCount / newImages.length) * 100).toFixed(1)}%)`);
                 }
 
                 // Recursive Retry if Stagnated
@@ -473,7 +532,7 @@ export default function ModelFeed() {
                     // Hard cap to prevent massive queries
                     if (nextLimit > 200) nextLimit = 200;
 
-                    console.log(`[Infinite Scroll] Stagnation detected (${displayableCount} visible). Retrying with expanded limit: ${nextLimit}...`);
+                    // console.log(`[Infinite Scroll] Stagnation detected (${displayableCount} visible). Retrying with expanded limit: ${nextLimit}...`);
                     retryCount++;
                     await fetchStep(nextLimit);
                 }
@@ -560,6 +619,7 @@ export default function ModelFeed() {
 
                     {isLoading && (
                         <div className="feed-loader-skeletons">
+                            {/* eslint-disable-next-line react/no-array-index-key */}
                             {[...Array(3)].map((_, i) => <FeedPostSkeleton key={i} />)}
                         </div>
                     )}
@@ -597,6 +657,7 @@ export default function ModelFeed() {
 
                     {!isLoading && visibleImages.length > 0 && (visibleImages.length < imagesToRender.length || (id ? !hasShowcaseEnded(id) : !hasGlobalFeedEnded)) && (
                         <div className="feed-loader-skeletons">
+                            {/* eslint-disable-next-line react/no-array-index-key */}
                             {[...Array(1)].map((_, i) => <FeedPostSkeleton key={i} />)}
                         </div>
                     )}
