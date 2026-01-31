@@ -16,36 +16,32 @@ const EditHeader = ({ isMobile }) => {
             flexShrink: 0
         }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '16px' }}>
-                {isMobile ? (
-                    <button
-                        onClick={() => navigate(-1)}
-                        style={{
-                            padding: '10px',
-                            marginRight: '-4px',
-                            background: 'rgba(255, 255, 255, 0.05)',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            borderRadius: '12px',
-                            color: 'white',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        <ArrowLeft size={20} />
-                    </button>
-                ) : (
-                    <div style={{
+                <button
+                    onClick={() => navigate(-1)}
+                    style={{
                         padding: '10px',
-                        background: 'linear-gradient(135deg, #6366f1, #a855f7, #ec4899)',
-                        borderRadius: '14px',
+                        marginRight: isMobile ? '-4px' : '0',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '12px',
+                        color: 'white',
                         display: 'flex',
-                        boxShadow: '0 4px 12px rgba(168, 85, 247, 0.3)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)'
-                    }}>
-                        <Sparkles size={22} color="white" />
-                    </div>
-                )}
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={e => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                        e.currentTarget.style.transform = 'translateX(-2px)';
+                    }}
+                    onMouseLeave={e => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                        e.currentTarget.style.transform = 'translateX(0)';
+                    }}
+                >
+                    <ArrowLeft size={20} />
+                </button>
                 <div>
                     <h3 style={{
                         fontSize: isMobile ? '1.1rem' : '1.4rem',
