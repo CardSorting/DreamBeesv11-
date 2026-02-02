@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 // Force rebuild: useEffect import verified
 import { AnimatePresence, motion } from 'framer-motion';
-import { Heart, MoreHorizontal, Bookmark, BadgeCheck, Aperture, Volume2, VolumeX, Flag, ChevronLeft, ChevronRight, MessageCircle, RefreshCw } from 'lucide-react';
+import { Heart, MoreHorizontal, Bookmark, BadgeCheck, Aperture, Volume2, VolumeX, Flag, ChevronLeft, ChevronRight, MessageCircle, RefreshCw, Info, Eye, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useUserInteractions } from '../contexts/UserInteractionsContext';
 import { useAuth } from '../contexts/AuthContext';
 import SafeImage from './SafeImage';
@@ -23,8 +23,14 @@ const FeedPost = ({
     onCreatorClick,
     onTagClick
 }) => {
-    const { currentUser } = useAuth();
-    const { isLiked, isBookmarked, toggleLike, toggleBookmark, unhidePost, reportPost, appealPost, isHidden, markViewed } = useUserInteractions();
+    const { currentUser, isUnder18, userRole } = useAuth();
+    const {
+        isLiked, isBookmarked, toggleLike, toggleBookmark,
+        unhidePost, reportPost, appealPost, isHidden, markViewed,
+        isSafeMode, isRevealed: isPersistentlyRevealed, markRevealed, updateNSFWStatus
+    } = useUserInteractions();
+
+    const isAdmin = userRole === 'admin';
 
     const [activeSlide, setActiveSlide] = useState(0);
     const [showLargeHeart, setShowLargeHeart] = useState(false);
@@ -33,6 +39,7 @@ const FeedPost = ({
     const [manualUnmute, setManualUnmute] = useState(false);
     const [showReportMenu, setShowReportMenu] = useState(false);
     const [dismissed, setDismissed] = useState(false);
+    const [isLocalRevealed, setIsLocalRevealed] = useState(false);
     const timerRef = useRef(null);
     const videoRef = useRef(null);
     const viewRef = useRef(null);
@@ -170,16 +177,25 @@ const FeedPost = ({
     // Get the primary URL for this item
     const primaryUrl = imgItem.url || imgItem.imageUrl || (typeof imgItem === 'string' ? imgItem : '');
 
+    // --- Moderation State ---
+
     // Guard: Don't render if URL is invalid (extra safety layer)
     if (!isValidUrl(primaryUrl) && imgItem.type !== 'video') {
         console.warn('[FeedPost] Skipping render due to invalid URL:', imgItem.id, primaryUrl?.substring(0, 30));
         return null;
     }
 
-    // --- Moderation State ---
-
-    // Derived state: Is this post effectively hidden for the user?
     const isPostHidden = isHidden(imgItem.id);
+    const isNSFW = imgItem.isNSFW || imgItem.nsfw || imgItem.tags?.some(t => t?.toLowerCase() === 'nsfw' || t?.toLowerCase() === '18+');
+    const isActuallyRevealed = isPersistentlyRevealed(imgItem.id) || isLocalRevealed;
+
+    const shouldBlur = isNSFW && (isUnder18 || isSafeMode) && !isActuallyRevealed;
+
+    const handleReveal = (e) => {
+        e.stopPropagation();
+        setIsLocalRevealed(true);
+        markRevealed(imgItem.id);
+    };
 
     // If dismissed (user clicked 'X' on the hidden overlay), don't render anything
     if (dismissed) return null;
@@ -337,6 +353,33 @@ const FeedPost = ({
                                 {reason}
                             </button>
                         ))}
+
+                        {isAdmin && (
+                            <>
+                                <div style={{ padding: '8px', fontSize: '0.75rem', color: '#ffb300', fontWeight: 800, textTransform: 'uppercase', borderTop: '1px solid rgba(255,255,255,0.05)', marginTop: '4px' }}>Admin Controls</div>
+                                <button
+                                    onClick={() => {
+                                        updateNSFWStatus(imgItem, !isNSFW);
+                                        setShowReportMenu(false);
+                                    }}
+                                    style={{
+                                        padding: '10px',
+                                        textAlign: 'left',
+                                        background: 'rgba(239, 68, 68, 0.1)',
+                                        border: 'none',
+                                        color: isNSFW ? '#4ade80' : '#ef4444',
+                                        fontSize: '0.9rem',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', gap: '10px'
+                                    }}
+                                >
+                                    {isNSFW ? <ShieldCheck size={16} /> : <ShieldAlert size={16} />}
+                                    {isNSFW ? 'Mark as SAFE' : 'Mark as NSFW'}
+                                </button>
+                            </>
+                        )}
+
                         <button
                             onClick={() => setShowReportMenu(false)}
                             style={{
@@ -379,30 +422,65 @@ const FeedPost = ({
                         cursor: onCreatorClick ? 'pointer' : 'default'
                     }}
                 >
-                    <div style={{
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '50%',
-                        background: 'linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%)',
-                        padding: '2px'
-                    }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {isAdmin && (
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateNSFWStatus(imgItem, !isNSFW);
+                                }}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    padding: '4px 10px',
+                                    borderRadius: '12px',
+                                    background: isNSFW ? 'rgba(239, 68, 68, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                                    border: `1px solid ${isNSFW ? 'rgba(239, 68, 68, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s ease'
+                                }}
+                                title={isNSFW ? "Status: NSFW (Click to make Safe)" : "Status: Safe (Click to mark NSFW)"}
+                            >
+                                <span style={{
+                                    fontSize: '0.6rem',
+                                    fontWeight: '900',
+                                    color: isNSFW ? '#ef4444' : 'rgba(255,255,255,0.4)',
+                                    letterSpacing: '0.05em'
+                                }}>
+                                    {isNSFW ? 'ADULT' : 'SAFE'}
+                                </span>
+                                {isNSFW ? <ShieldAlert size={12} className="text-red-400" /> : <ShieldCheck size={12} className="text-zinc-500" />}
+                            </motion.button>
+                        )}
+
                         <div style={{
-                            width: '100%',
-                            height: '100%',
+                            width: '36px',
+                            height: '36px',
                             borderRadius: '50%',
-                            background: '#1a1a1a',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            overflow: 'hidden',
-                            border: '1px solid #000'
+                            background: 'linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%)',
+                            padding: '2px'
                         }}>
-                            <SafeImage
-                                src={avatarImage || model?.image}
-                                alt={headerTitle || model?.name}
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                fallback={<div style={{ width: '100%', height: '100%', background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: '10px', color: '#888' }}>DB</span></div>}
-                            />
+                            <div style={{
+                                width: '100%',
+                                height: '100%',
+                                borderRadius: '50%',
+                                background: '#1a1a1a',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                overflow: 'hidden',
+                                border: '1px solid #000'
+                            }}>
+                                <SafeImage
+                                    src={avatarImage || model?.image}
+                                    alt={headerTitle || model?.name}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    fallback={<div style={{ width: '100%', height: '100%', background: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: '10px', color: '#888' }}>DB</span></div>}
+                                />
+                            </div>
                         </div>
                     </div>
                     <div>
@@ -550,11 +628,105 @@ const FeedPost = ({
                                 height: '100%',
                                 objectFit: 'cover',
                                 display: 'block',
+                                filter: shouldBlur ? 'blur(40px)' : 'none',
+                                transition: 'filter 0.5s ease',
                                 aspectRatio: imgItem.aspectRatio || '1/1'
                             }}
                         />
                     )}
                 </motion.div>
+
+                {/* Restricted Content Cover */}
+                <AnimatePresence>
+                    {shouldBlur && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={handleReveal}
+                            style={{
+                                position: 'absolute',
+                                inset: 0,
+                                zIndex: 10,
+                                background: 'rgba(5, 5, 5, 0.4)',
+                                backdropFilter: 'blur(40px) saturate(1.5)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: '20px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            <div style={{ position: 'relative', zIndex: 11, textAlign: 'center' }}>
+                                <motion.div
+                                    animate={{ scale: [1, 1.1, 1] }}
+                                    transition={{ duration: 3, repeat: Infinity }}
+                                    style={{
+                                        width: '56px',
+                                        height: '56px',
+                                        borderRadius: '50%',
+                                        background: 'rgba(239, 68, 68, 0.2)',
+                                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        margin: '0 auto 12px auto',
+                                        color: '#ef4444',
+                                        boxShadow: '0 0 30px rgba(239, 68, 68, 0.2)'
+                                    }}
+                                >
+                                    <Info size={28} />
+                                </motion.div>
+
+                                <h3 style={{ fontSize: '0.8rem', fontWeight: '800', letterSpacing: '0.1em', color: 'white', marginBottom: '4px' }}>
+                                    RESTRICTED CONTENT
+                                </h3>
+                                <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', marginBottom: '16px', fontWeight: '600' }}>
+                                    18+ ONLY
+                                </p>
+
+                                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                    <motion.button
+                                        whileHover={{ scale: 1.05, background: '#ef4444', color: 'white' }}
+                                        whileTap={{ scale: 0.95 }}
+                                        style={{
+                                            background: 'rgba(255,255,255,0.1)',
+                                            backdropFilter: 'blur(10px)',
+                                            border: '1px solid rgba(255,255,255,0.2)',
+                                            padding: '8px 16px',
+                                            borderRadius: '30px',
+                                            color: '#ef4444',
+                                            fontSize: '0.65rem',
+                                            fontWeight: '800',
+                                            letterSpacing: '0.1em',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        <Eye size={12} /> REVEAL
+                                    </motion.button>
+                                </div>
+                            </div>
+
+                            <motion.div
+                                animate={{ top: ['0%', '100%'] }}
+                                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                                style={{
+                                    position: 'absolute',
+                                    left: 0,
+                                    right: 0,
+                                    height: '1px',
+                                    background: 'linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.4), transparent)',
+                                    opacity: 0.2,
+                                    pointerEvents: 'none'
+                                }}
+                            />
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 {/* Big Heart Overlay Animation */}
                 <AnimatePresence>

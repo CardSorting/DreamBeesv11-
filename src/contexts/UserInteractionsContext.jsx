@@ -42,6 +42,8 @@ export function UserInteractionsProvider({ children }) {
     // App Likes Logic
     const [likedAppIds, setLikedAppIds] = useState(new Set());
     const [viewedIds, setViewedIds] = useState(new Set());
+    const [revealedIds, setRevealedIds] = useState(new Set());
+    const [isSafeMode, setIsSafeMode] = useState(true);
 
 
     // User Profile Data (Centralized Sync)
@@ -79,6 +81,8 @@ export function UserInteractionsProvider({ children }) {
                 setAppGenerations([]);
                 setPersonalCreations([]);
                 setMainstreamGenerations([]);
+                setRevealedIds(new Set());
+                setIsSafeMode(true);
                 setIsProfileLoaded(false);
                 prevCreationsLengthRef.current = 0;
             }, 0);
@@ -179,8 +183,10 @@ export function UserInteractionsProvider({ children }) {
                     birthday: data.birthday || null,
                     referralCode: data.referralCode || '',
                     referredBy: data.referredBy || '',
-                    referralCount: data.referralCount || 0
+                    referralCount: data.referralCount || 0,
+                    safeMode: data.safeMode !== undefined ? data.safeMode : true
                 });
+                setIsSafeMode(data.safeMode !== undefined ? data.safeMode : true);
             }
             setIsProfileLoaded(true);
         }, (error) => {
@@ -280,6 +286,7 @@ export function UserInteractionsProvider({ children }) {
     const isLiked = useCallback((id) => likedIds.has(id), [likedIds]);
     const isBookmarked = useCallback((id) => bookmarkedIds.has(id), [bookmarkedIds]);
     const isHidden = useCallback((id) => hiddenIds.has(id), [hiddenIds]);
+    const isRevealed = useCallback((id) => revealedIds.has(id), [revealedIds]);
 
     // Actions with debouncing/optimistic updates managed by the caller usually, 
     // but here we provide a verified function.
@@ -429,6 +436,41 @@ export function UserInteractionsProvider({ children }) {
         } catch { toast.error("Appeal failed"); }
     }, [currentUser, apiCall]);
 
+    const markRevealed = useCallback((id) => {
+        if (!id) return;
+        setRevealedIds(prev => new Set(prev).add(id));
+    }, []);
+
+    const toggleSafeMode = useCallback(async () => {
+        const nextMode = !isSafeMode;
+        setIsSafeMode(nextMode);
+        if (currentUser?.uid) {
+            try {
+                await setDoc(doc(db, 'users', currentUser.uid), { safeMode: nextMode }, { merge: true });
+                trackEvent('safe_mode_toggle', { enabled: nextMode });
+            } catch (err) {
+                console.error("Failed to persist safe mode:", err);
+                setIsSafeMode(!nextMode); // rollback
+            }
+        }
+    }, [isSafeMode, currentUser]);
+
+    const updateNSFWStatus = useCallback(async (imgItem, isNSFW) => {
+        if (!currentUser) return;
+        const id = imgItem.id;
+        const collectionName = imgItem._collection || 'images';
+
+        try {
+            const docRef = doc(db, collectionName, id);
+            await setDoc(docRef, { isNSFW: isNSFW, nsfw: isNSFW }, { merge: true });
+            toast.success(`Marked as ${isNSFW ? 'NSFW' : 'Safe'}`);
+            trackEvent('admin_nsfw_update', { image_id: id, isNSFW });
+        } catch (error) {
+            console.error("Failed to update NSFW status:", error);
+            toast.error("Update failed");
+        }
+    }, [currentUser]);
+
     const isAppLiked = useCallback((appId) => likedAppIds.has(appId), [likedAppIds]);
 
     // Adapted from useAppLikes toggle logic but simplified for context
@@ -555,14 +597,20 @@ export function UserInteractionsProvider({ children }) {
         _hidePost: hidePost,
         _reportPost: reportPost,
         _isHidden: isHidden,
-        hidden
+        hidden,
+        isSafeMode,
+        toggleSafeMode,
+        revealedIds,
+        isRevealed,
+        markRevealed,
+        updateNSFWStatus
     }), [
         likedIds, bookmarkedIds, likes, bookmarks, mockups, memes, appCreations, mainstreamGenerations,
         isLiked, isBookmarked, hidePost, unhidePost, reportPost, appealPost, voteOnSafety,
         hiddenIds, isHidden, toggleLike, toggleBookmark, optimizedUserProfile,
         likedAppIds, isAppLiked, toggleAppLike, isProfileLoaded,
         deductZapsOptimistically, rollbackZaps, deductReelsOptimistically, rollbackReels,
-        hidden, viewedIds, markViewed
+        hidden, viewedIds, markViewed, isSafeMode, toggleSafeMode, revealedIds, isRevealed, markRevealed, updateNSFWStatus
     ]);
 
     return (

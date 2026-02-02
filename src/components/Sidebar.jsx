@@ -5,8 +5,9 @@ import { useAuth } from '../contexts/AuthContext';
 import {
     Home, User, LayoutTemplate, Zap, Film, LayoutGrid, Settings, Hexagon,
     ChevronDown, ChevronRight, Compass,
-    Package, Images, Smile, Sparkles, Shield, Trophy // Imported for Mockup and Meme features
+    Package, Images, Smile, Sparkles, Shield, Trophy, Eye, EyeOff, Lock // Added Eye icons for Safe Mode
 } from 'lucide-react';
+import { useUserInteractions } from '../contexts/UserInteractionsContext';
 
 const CollapsibleGroup = ({ title, children, defaultOpen = true }) => {
     const [isOpen, setIsOpen] = useState(defaultOpen);
@@ -28,7 +29,8 @@ const CollapsibleGroup = ({ title, children, defaultOpen = true }) => {
 };
 
 const Sidebar = ({ activeId }) => {
-    const { currentUser } = useAuth();
+    const { currentUser, isUnder18 } = useAuth();
+    const { isSafeMode, toggleSafeMode } = useUserInteractions();
     const isAdmin = currentUser?.uid === 'prT9j3royVTstWLDDcKMoUOU7aQ2';
 
     // Primary Top Level
@@ -124,8 +126,42 @@ const Sidebar = ({ activeId }) => {
                         ))}
                     </CollapsibleGroup>
                 ))}
+
+                {/* Global Safe Mode Toggle */}
+                <div style={{ marginTop: 'auto', padding: '20px 0 10px 0', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div
+                        onClick={() => !isUnder18 && toggleSafeMode()}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '12px 16px',
+                            background: isSafeMode ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                            borderRadius: '16px',
+                            border: `1px solid ${isSafeMode ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
+                            cursor: isUnder18 ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.3s ease',
+                            opacity: isUnder18 ? 0.7 : 1
+                        }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ color: isSafeMode ? '#4ade80' : '#ef4444' }}>
+                                {isSafeMode ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <span style={{ fontSize: '0.75rem', fontWeight: '800', color: 'white', letterSpacing: '0.05em' }}>
+                                    {isSafeMode ? 'SAFE MODE ON' : 'SAFE MODE OFF'}
+                                </span>
+                                <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', fontWeight: '600' }}>
+                                    {isUnder18 ? 'Locked for minors' : (isSafeMode ? 'Hiding 18+ content' : 'Exposing all content')}
+                                </span>
+                            </div>
+                        </div>
+                        {isUnder18 && <Lock size={12} style={{ color: 'rgba(255,255,255,0.3)' }} />}
+                    </div>
+                </div>
             </nav>
-        </aside>
+        </aside >
     );
 };
 

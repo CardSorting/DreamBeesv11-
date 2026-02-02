@@ -40,3 +40,6 @@ test_output_*.png
 # Generated Assets
 functions/assets/images
 
+# Large Video Files
+Minecraft_Lush_Caves_H264.mp4
+*.mp4

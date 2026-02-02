@@ -3,8 +3,10 @@ import SEO from '../components/SEO';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useModel } from '../contexts/ModelContext';
 import { useIntersectionObserver } from '../hooks/useIntersectionObserver';
-import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight, X, Copy, RefreshCw, ThumbsUp, ThumbsDown, Loader2, LayoutGrid, Square, Film, Heart, Share2, Bookmark, MoreHorizontal, BadgeCheck, Activity, Info } from 'lucide-react';
+import { ArrowLeft, Check, Sparkles, Zap, Aperture, Hash, Layers, ArrowUpRight, X, Copy, RefreshCw, ThumbsUp, ThumbsDown, Loader2, LayoutGrid, Square, Film, Heart, Share2, Bookmark, MoreHorizontal, BadgeCheck, Activity, Info, Eye, EyeOff, ShieldAlert, ShieldCheck } from 'lucide-react';
 import ShowcaseModal from '../components/ShowcaseModal';
+import { useAuth } from '../contexts/AuthContext';
+import { useUserInteractions } from '../contexts/UserInteractionsContext';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { getOptimizedImageUrl, getImageSrcSet, preloadImage } from '../utils';
@@ -13,16 +15,30 @@ import { getOptimizedImageUrl, getImageSrcSet, preloadImage } from '../utils';
 export default function ModelDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
-    const { availableModels, setSelectedModel, selectedModel, rateShowcaseImage: _rateShowcaseImage, isModelShowcaseLoading, hasShowcaseEnded } = useModel();
+    const { isUnder18, userRole } = useAuth();
+    const { isSafeMode, isRevealed, markRevealed, updateNSFWStatus } = useUserInteractions();
     const [activeShowcaseImage, setActiveShowcaseImage] = useState(null);
     const imagesPerPage = 12;
 
     // 1. Determine Initial Showcase from Cache Synchronously to avoid "Initializing" flash
-    const { showcaseCache, getShowcaseImages } = useModel();
+    const { availableModels, selectedModel, setSelectedModel, showcaseCache, getShowcaseImages, isModelShowcaseLoading, hasShowcaseEnded } = useModel();
     const [showcaseImages, setShowcaseImages] = useState(() => {
         return (id && showcaseCache[id]) ? showcaseCache[id] : [];
     });
     const isFetchingRef = useRef(false);
+
+    const [showAgeGate, setShowAgeGate] = useState(false);
+    const [hasConfirmedAge, setHasConfirmedAge] = useState(false);
+
+    const isModelNSFW = useMemo(() => {
+        return model?.tags?.some(t => t?.toLowerCase() === 'nsfw' || t?.toLowerCase() === '18+');
+    }, [model]);
+
+    useEffect(() => {
+        if (isModelNSFW && !hasConfirmedAge) {
+            setShowAgeGate(true);
+        }
+    }, [isModelNSFW, hasConfirmedAge]);
 
     // Ensure displayPage is sufficient for deep-linked items (not strictly necessary but helpful if we were scrolling)
     const [displayPage, setDisplayPage] = useState(2);
@@ -34,6 +50,8 @@ export default function ModelDetail() {
         }
         return null;
     }, [id, availableModels]);
+
+    const isActive = selectedModel?.id === model?.id;
 
     // Fetch or Seed Showcase Images
     useEffect(() => {
@@ -127,8 +145,6 @@ export default function ModelDetail() {
             return newParams;
         });
     };
-
-    const isActive = selectedModel?.id === model?.id;
 
     // Use the fetched showcase images, defaulting to previewImages or model.image
     const rawImages = useMemo(() => {
@@ -528,6 +544,12 @@ export default function ModelDetail() {
                                         imgItem={imgItem}
                                         index={index}
                                         ratio={ratio}
+                                        isUnder18={isUnder18}
+                                        isAdmin={userRole === 'admin'}
+                                        isSafeMode={isSafeMode}
+                                        isPersistentlyRevealed={isRevealed(imgItem.id)}
+                                        onReveal={() => markRevealed(imgItem.id)}
+                                        updateNSFWStatus={updateNSFWStatus}
                                         onClick={() => openShowcase(imgItem)}
                                     />
                                 );
@@ -752,14 +774,119 @@ export default function ModelDetail() {
                     scrollbar-width: none;
                 }
             `}</style>
+
+            <AnimatePresence>
+                {showAgeGate && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        style={{
+                            position: 'fixed',
+                            inset: 0,
+                            zIndex: 1000,
+                            background: 'rgba(0,0,0,0.85)',
+                            backdropFilter: 'blur(20px)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            padding: '20px'
+                        }}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            style={{
+                                maxWidth: '400px',
+                                width: '100%',
+                                background: '#111',
+                                border: '1px solid #333',
+                                borderRadius: '24px',
+                                padding: '40px',
+                                textAlign: 'center',
+                                boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+                            }}
+                        >
+                            <div style={{
+                                width: '80px',
+                                height: '80px',
+                                borderRadius: '50%',
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                border: '1px solid rgba(239, 68, 68, 0.2)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#ef4444',
+                                margin: '0 auto 24px auto'
+                            }}>
+                                <Info size={40} />
+                            </div>
+                            <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '12px', color: 'white' }}>
+                                Content Advisory
+                            </h2>
+                            <p style={{ color: '#888', marginBottom: '32px', lineHeight: '1.6' }}>
+                                This model is used to generate 18+ content. By proceeding, you confirm you are of legal age and wish to view this content.
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <motion.button
+                                    whileHover={{ scale: 1.02, background: '#fff' }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => {
+                                        setHasConfirmedAge(true);
+                                        setShowAgeGate(false);
+                                    }}
+                                    style={{
+                                        padding: '16px',
+                                        borderRadius: '16px',
+                                        background: '#eee',
+                                        border: 'none',
+                                        color: 'black',
+                                        fontWeight: '800',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    I am 18 or older
+                                </motion.button>
+                                <button
+                                    onClick={() => navigate('/')}
+                                    style={{
+                                        padding: '16px',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: '#666',
+                                        fontWeight: '600',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Go Back
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </main>
     );
 }
 
 // Sub-component to handle individual image loading state
-const ShowcaseCard = React.memo(function ShowcaseCard({ imgItem, index, ratio, onClick }) {
+const ShowcaseCard = React.memo(function ShowcaseCard({ imgItem, index, ratio, onClick, isUnder18, isAdmin, isSafeMode, isPersistentlyRevealed, onReveal, updateNSFWStatus }) {
     const [isLoaded, setIsLoaded] = useState(false);
+    const [isLocalRevealed, setIsLocalRevealed] = useState(false);
 
+    const isRevealed = isPersistentlyRevealed || isLocalRevealed;
+    const isNSFW = imgItem.isNSFW || imgItem.nsfw || imgItem.tags?.some(t => t?.toLowerCase() === 'nsfw' || t?.toLowerCase() === '18+');
+
+    // Logic: Blur if NSFW AND (User is Under 18 OR Safe Mode is ON) AND Not revealed yet
+    const shouldBlur = isNSFW && (isUnder18 || isSafeMode) && !isRevealed;
+
+    const blurFilter = shouldBlur ? 'blur(30px)' : 'none';
+
+    const handleReveal = (e) => {
+        e.stopPropagation();
+        setIsLocalRevealed(true);
+        if (onReveal) onReveal();
+    };
     return (
         <article
             className="masonry-item group"
@@ -789,11 +916,152 @@ const ShowcaseCard = React.memo(function ShowcaseCard({ imgItem, index, ratio, o
                             height: '100%',
                             objectFit: 'cover',
                             display: 'block',
-                            // Fade in texture when loaded
+                            // Add extra blur and fade
+                            filter: blurFilter,
                             opacity: isLoaded ? 1 : 0,
                             transition: 'opacity 0.5s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), filter 0.6s'
                         }}
                     />
+
+                    {/* Admin Moderation Toolbar */}
+                    {isAdmin && (
+                        <div style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            zIndex: 40,
+                            display: 'flex',
+                            gap: '4px'
+                        }}>
+                            <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    updateNSFWStatus({ ...imgItem, _collection: 'model_showcase_images' }, !isNSFW);
+                                }}
+                                style={{
+                                    width: '28px',
+                                    height: '28px',
+                                    borderRadius: '8px',
+                                    background: isNSFW ? 'rgba(239, 68, 68, 0.8)' : 'rgba(0, 0, 0, 0.5)',
+                                    backdropFilter: 'blur(10px)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'white',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+                                }}
+                                title={isNSFW ? "Status: NSFW" : "Status: Safe"}
+                            >
+                                {isNSFW ? <ShieldAlert size={14} /> : <ShieldCheck size={14} />}
+                            </motion.button>
+                        </div>
+                    )}
+
+                    {/* Restricted Content Cover */}
+                    <AnimatePresence>
+                        {shouldBlur && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={handleReveal}
+                                style={{
+                                    position: 'absolute',
+                                    inset: 0,
+                                    zIndex: 10,
+                                    background: 'rgba(5, 5, 5, 0.4)',
+                                    backdropFilter: 'blur(40px) saturate(1.5)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: '20px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                {/* Frosted highlight */}
+                                <div style={{
+                                    position: 'absolute',
+                                    inset: 0,
+                                    background: 'radial-gradient(circle at center, rgba(255,255,255,0.05) 0%, transparent 70%)',
+                                    pointerEvents: 'none'
+                                }} />
+
+                                <div style={{ position: 'relative', zIndex: 11, textAlign: 'center' }}>
+                                    <motion.div
+                                        animate={{ scale: [1, 1.1, 1] }}
+                                        transition={{ duration: 3, repeat: Infinity }}
+                                        style={{
+                                            width: '64px',
+                                            height: '64px',
+                                            borderRadius: '50%',
+                                            background: 'rgba(239, 68, 68, 0.2)',
+                                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            margin: '0 auto 16px auto',
+                                            color: '#ef4444',
+                                            boxShadow: '0 0 30px rgba(239, 68, 68, 0.2)'
+                                        }}
+                                    >
+                                        <Info size={32} />
+                                    </motion.div>
+
+                                    <h3 style={{ fontSize: '0.9rem', fontWeight: '800', letterSpacing: '0.1em', color: 'white', marginBottom: '8px' }}>
+                                        RESTRICTED CONTENT
+                                    </h3>
+                                    <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', marginBottom: '24px', fontWeight: '600' }}>
+                                        18+ MATURE AUDIENCES ONLY
+                                    </p>
+
+                                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                        <motion.button
+                                            whileHover={{ scale: 1.05, background: '#ef4444', color: 'white' }}
+                                            whileTap={{ scale: 0.95 }}
+                                            style={{
+                                                background: 'rgba(255,255,255,0.1)',
+                                                backdropFilter: 'blur(10px)',
+                                                border: '1px solid rgba(255,255,255,0.2)',
+                                                padding: '12px 24px',
+                                                borderRadius: '30px',
+                                                color: '#ef4444',
+                                                fontSize: '0.7rem',
+                                                fontWeight: '800',
+                                                letterSpacing: '0.1em',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '10px',
+                                                cursor: 'pointer',
+                                                boxShadow: '0 10px 20px rgba(0,0,0,0.3)'
+                                            }}
+                                        >
+                                            <Eye size={14} /> REVEAL 18+
+                                        </motion.button>
+                                    </div>
+                                </div>
+
+                                {/* Subtle scanning line */}
+                                <motion.div
+                                    animate={{ top: ['0%', '100%'] }}
+                                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                                    style={{
+                                        position: 'absolute',
+                                        left: 0,
+                                        right: 0,
+                                        height: '1px',
+                                        background: 'linear-gradient(90deg, transparent, rgba(239, 68, 68, 0.5), transparent)',
+                                        opacity: 0.3,
+                                        pointerEvents: 'none'
+                                    }}
+                                />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                     <div style={{
                         position: 'absolute',
                         inset: 0,

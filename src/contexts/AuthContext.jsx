@@ -26,6 +26,7 @@ export function AuthProvider({ children }) {
     const [currentUser, setCurrentUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [pendingBirthday, setPendingBirthday] = useState(null);
+    const [userMetadata, setUserMetadata] = useState({ role: 'user', isUnder18: true });
 
     const signup = useCallback((email, password, birthday = null) => {
         if (birthday) setPendingBirthday(birthday);
@@ -119,12 +120,39 @@ export function AuthProvider({ children }) {
                 identifyUser(user.uid);
                 try {
                     await ensureUserInitialized(user);
+
+                    // Fetch role and birthday
+                    const userRef = doc(db, 'users', user.uid);
+                    const userSnap = await getDoc(userRef);
+                    if (userSnap.exists()) {
+                        const data = userSnap.data();
+                        const birthday = data.birthday;
+                        let isUnder18 = true;
+
+                        if (birthday) {
+                            const birthDate = new Date(birthday);
+                            const today = new Date();
+                            let age = today.getFullYear() - birthDate.getFullYear();
+                            const m = today.getMonth() - birthDate.getMonth();
+                            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                                age--;
+                            }
+                            isUnder18 = age < 18;
+                        }
+
+                        setUserMetadata({
+                            role: data.role || 'user',
+                            isUnder18: isUnder18
+                        });
+                    }
+
                     console.warn("[Auth] User initialization flow complete.");
                 } catch (err) {
                     console.error("[Auth] User initialization flow failed:", err);
                 }
             } else {
                 identifyUser(null);
+                setUserMetadata({ role: 'user', isUnder18: true });
             }
 
             setCurrentUser(user);
@@ -141,11 +169,13 @@ export function AuthProvider({ children }) {
 
     const value = useMemo(() => ({
         currentUser,
+        userRole: userMetadata.role,
+        isUnder18: userMetadata.isUnder18,
         signup,
         login,
         loginWithGoogle,
         logout
-    }), [currentUser, signup, login, loginWithGoogle, logout]);
+    }), [currentUser, userMetadata, signup, login, loginWithGoogle, logout]);
 
     return (
         <AuthContext.Provider value={value}>
