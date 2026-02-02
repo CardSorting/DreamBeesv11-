@@ -164,21 +164,52 @@ export default function PublicGenerationsFeed() {
                 </div>
             </div>
 
-            <div style={{ textAlign: 'center', marginTop: '2px', marginBottom: '2px' }}>
-                <div style={{
-                    display: 'inline-block',
-                    fontSize: '0.65rem',
-                    color: '#ffffff',
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    padding: '3px 10px',
-                    borderRadius: '20px',
-                    lineHeight: '1.2',
-                    fontWeight: '400',
-                    letterSpacing: '0.01em'
-                }}>
-                    <span style={{ opacity: 0.9, fontWeight: '600', marginRight: '4px' }}>Disclaimer:</span>
-                    Experimental, user-generated AI content. Not automated views of DreamBees. Viewer discretion advised.
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                marginTop: '12px',
+                marginBottom: '12px',
+                padding: '0 20px'
+            }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        backdropFilter: 'blur(20px)',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        padding: '10px 24px',
+                        borderRadius: '100px',
+                        boxShadow: '0 4px 30px rgba(0,0,0,0.3)',
+                        maxWidth: '1000px'
+                    }}
+                >
+                    <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        background: 'rgba(255,255,255,0.05)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        flexShrink: 0
+                    }}>
+                        <ShieldAlert size={16} className="text-amber-400" />
+                    </div>
+                    <p style={{
+                        fontSize: '0.8rem',
+                        color: 'rgba(255,255,255,0.6)',
+                        margin: 0,
+                        fontWeight: '500',
+                        letterSpacing: '0.01em',
+                        lineHeight: '1.5',
+                        textAlign: 'left'
+                    }}>
+                        <span style={{ color: 'white', fontWeight: '800', marginRight: '8px', textTransform: 'uppercase', fontSize: '0.7rem' }}>Content Advisory:</span>
+                        This feed contains experimental, user-generated AI content. Individual discretion is advised. All content is moderated according to our Community Safety Guidelines.
+                    </p>
                 </div>
             </div>
 

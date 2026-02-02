@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Smile } from 'lucide-react';
+import { Smile, ShieldAlert } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import FeedPost from '../components/FeedPost';
@@ -160,6 +160,55 @@ export default function MemeFeed() {
                     </button>
                 </div>
             )}
+
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                marginTop: '12px',
+                marginBottom: '12px',
+                padding: '0 20px'
+            }}>
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        backdropFilter: 'blur(20px)',
+                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        padding: '10px 24px',
+                        borderRadius: '100px',
+                        boxShadow: '0 4px 30px rgba(0,0,0,0.3)',
+                        maxWidth: '1000px'
+                    }}
+                >
+                    <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        background: 'rgba(255,255,255,0.05)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        flexShrink: 0
+                    }}>
+                        <ShieldAlert size={16} className="text-amber-400" />
+                    </div>
+                    <p style={{
+                        fontSize: '0.8rem',
+                        color: 'rgba(255,255,255,0.6)',
+                        margin: 0,
+                        fontWeight: '500',
+                        letterSpacing: '0.01em',
+                        lineHeight: '1.5',
+                        textAlign: 'left'
+                    }}>
+                        <span style={{ color: 'white', fontWeight: '800', marginRight: '8px', textTransform: 'uppercase', fontSize: '0.7rem' }}>Content Advisory:</span>
+                        This feed contains experimental, user-generated AI content. Individual discretion is advised. All content is moderated according to our Community Safety Guidelines.
+                    </p>
+                </div>
+            </div>
 
             <div style={{ width: '100%', paddingBottom: '60px' }}>
                 <FeedGrid

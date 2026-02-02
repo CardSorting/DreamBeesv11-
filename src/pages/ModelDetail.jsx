@@ -30,6 +30,14 @@ export default function ModelDetail() {
     const [showAgeGate, setShowAgeGate] = useState(false);
     const [hasConfirmedAge, setHasConfirmedAge] = useState(false);
 
+    // Derive model from availableModels instead of using useState + useEffect
+    const model = useMemo(() => {
+        if (availableModels?.length > 0) {
+            return availableModels.find(m => m.id === id) || null;
+        }
+        return null;
+    }, [id, availableModels]);
+
     const isModelNSFW = useMemo(() => {
         return model?.tags?.some(t => t?.toLowerCase() === 'nsfw' || t?.toLowerCase() === '18+');
     }, [model]);
@@ -43,13 +51,6 @@ export default function ModelDetail() {
     // Ensure displayPage is sufficient for deep-linked items (not strictly necessary but helpful if we were scrolling)
     const [displayPage, setDisplayPage] = useState(2);
 
-    // Derive model from availableModels instead of using useState + useEffect
-    const model = useMemo(() => {
-        if (availableModels?.length > 0) {
-            return availableModels.find(m => m.id === id) || null;
-        }
-        return null;
-    }, [id, availableModels]);
 
     const isActive = selectedModel?.id === model?.id;
 
@@ -525,6 +526,54 @@ export default function ModelDetail() {
                             )}
                         </button>
                     </nav>
+                </div>
+
+                <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    marginBottom: '32px',
+                    padding: '0 20px',
+                    animation: 'fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.4s both'
+                }}>
+                    <motion.div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            background: 'rgba(255, 255, 255, 0.03)',
+                            backdropFilter: 'blur(20px)',
+                            border: '1px solid rgba(255, 255, 255, 0.08)',
+                            padding: '10px 24px',
+                            borderRadius: '100px',
+                            boxShadow: '0 4px 30px rgba(0,0,0,0.3)',
+                            maxWidth: '1000px'
+                        }}
+                    >
+                        <div style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            background: 'rgba(255,255,255,0.05)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            flexShrink: 0
+                        }}>
+                            <ShieldAlert size={16} className="text-amber-400" />
+                        </div>
+                        <p style={{
+                            fontSize: '0.8rem',
+                            color: 'rgba(255,255,255,0.6)',
+                            margin: 0,
+                            fontWeight: '500',
+                            letterSpacing: '0.01em',
+                            lineHeight: '1.5'
+                        }}>
+                            <span style={{ color: 'white', fontWeight: '800', marginRight: '8px', textTransform: 'uppercase', fontSize: '0.7rem' }}>Content Advisory:</span>
+                            This environment features experimental, user-managed AI content. DreamBees provides tools for expression; viewer discretion and adherence to our Community Safety Standards is required.
+                        </p>
+                    </motion.div>
                 </div>
 
                 <section className="gallery-section" aria-label="Showcase Gallery" style={{
