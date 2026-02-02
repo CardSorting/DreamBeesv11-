@@ -30,3 +30,16 @@ export const getHypeMetadata = (level) => {
     };
     return levels[level] || levels[1];
 };
+
+/**
+ * Calculates the hype level (1-5) based on a raw score.
+ * @param {number} score 
+ * @returns {number}
+ */
+export const calculateHypeLevel = (score) => {
+    if (score >= 1000) return 5;
+    if (score >= 600) return 4;
+    if (score >= 300) return 3;
+    if (score >= 100) return 2;
+    return 1;
+};

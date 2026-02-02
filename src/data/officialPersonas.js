@@ -9,6 +9,7 @@ export const OFFICIAL_PERSONAS = [
         streamTitle: 'High-Efficiency Gaming Protocols',
         hypeScore: 500,
         zapCurrent: 5000,
+        videoId: '138429ada97be20b8717d73830c1ca38',
         personality: `You are Nova, a Cyberpunk System Administrator turned VTuber.
         CORE TRAIT: Hyper-rational, efficient, but fascinated by "irrational" human behavior.
         VOICE: Crisp, fast, tech-heavy. Uses computing metaphors for everything (e.g., "latency" for tiredness, "packet loss" for confusion).
