@@ -126,9 +126,14 @@ export const usePersonaChat = (id, imageItem, setImageItem, audioHelpers) => {
         fetchImage();
     }, [id, imageItem, setImageItem]);
 
+    const prevIdRef = useRef(id);
+
     // Reset when ID changes
     useEffect(() => {
         if (!id) return;
+        // Hard guard: only reset if ID actually changed
+        if (prevIdRef.current === id) return;
+        prevIdRef.current = id;
 
         // Reset Logic
         resetAudioState();

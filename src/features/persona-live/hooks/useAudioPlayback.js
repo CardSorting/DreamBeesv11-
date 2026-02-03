@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 
 export const useAudioPlayback = (isMounted = { current: true }) => {
@@ -20,7 +20,7 @@ export const useAudioPlayback = (isMounted = { current: true }) => {
         };
     }, []);
 
-    const handlePlayAudio = (msgId, fallbackAudioUrl = null) => {
+    const handlePlayAudio = useCallback((msgId, fallbackAudioUrl = null) => {
         // Use map first, fallback to passed URL from message object
         const audioUrl = messageAudioMap[msgId] || fallbackAudioUrl;
         if (!audioUrl) {
@@ -68,14 +68,14 @@ export const useAudioPlayback = (isMounted = { current: true }) => {
                 }
             });
         }
-    };
+    }, [messageAudioMap, currentlyPlayingMsgId, isMounted, audioErrorMsgId]);
 
-    const handleAiAudioEnded = () => {
+    const handleAiAudioEnded = useCallback(() => {
         setCurrentlyPlayingMsgId(null);
         setLoadingAudioMsgId(null);
-    };
+    }, []);
 
-    const registerAudioUpdate = (msgId, audioUrl, messagesRef) => {
+    const registerAudioUpdate = useCallback((msgId, audioUrl, messagesRef) => {
         const hasMessage = messagesRef.current.some(msg => msg.id === msgId);
         if (!hasMessage) {
             pendingAudioUpdates.current[msgId] = audioUrl;
@@ -85,18 +85,18 @@ export const useAudioPlayback = (isMounted = { current: true }) => {
             ...prev,
             [msgId]: audioUrl
         }));
-    };
+    }, []);
 
-    const consumePendingAudio = (msgId) => {
+    const consumePendingAudio = useCallback((msgId) => {
         if (pendingAudioUpdates.current[msgId]) {
             const url = pendingAudioUpdates.current[msgId];
             delete pendingAudioUpdates.current[msgId];
             return url;
         }
         return null;
-    };
+    }, []);
 
-    const resetAudioState = () => {
+    const resetAudioState = useCallback(() => {
         if (audioVoiceRef.current) {
             audioVoiceRef.current.pause();
             audioVoiceRef.current.src = '';
@@ -106,7 +106,7 @@ export const useAudioPlayback = (isMounted = { current: true }) => {
         setLoadingAudioMsgId(null);
         setAudioErrorMsgId(null);
         pendingAudioUpdates.current = {};
-    };
+    }, []);
 
     return {
         audioVoiceRef,

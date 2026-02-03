@@ -159,6 +159,8 @@ export default function Auth() {
                         <div>
                             <input
                                 type="email"
+                                name="email"
+                                id="auth-email"
                                 placeholder="name@example.com"
                                 required
                                 value={email}
@@ -169,6 +171,8 @@ export default function Auth() {
                         <div>
                             <input
                                 type="password"
+                                name="password"
+                                id="auth-password"
                                 placeholder="Password"
                                 required
                                 value={password}
@@ -183,6 +187,8 @@ export default function Auth() {
                                 </label>
                                 <input
                                     type="date"
+                                    name="birthday"
+                                    id="auth-birthday"
                                     required
                                     value={birthday}
                                     onChange={(e) => setBirthday(e.target.value)}

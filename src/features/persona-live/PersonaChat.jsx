@@ -107,15 +107,10 @@ const PersonaChatContent = () => {
 
     // Stream Player Hook
     const {
-        iframeRef,
+        videoRef,
         videoLoaded,
         setVideoLoaded,
-        isMuted,
-        isOverlayVisible,
-        iframeSrc,
-        streamSdkReady,
-        handleUnmute,
-        ensurePlayerReady
+        posterUrl,
     } = useStreamPlayer(persona, imageItem);
 
     // Populate imageItem if possible (hook handles logic, but this local state is for immediate render if passed)
@@ -201,17 +196,23 @@ const PersonaChatContent = () => {
                     <div className={`video-player-mock ${persona?.hypeLevel >= 5 ? 'hype-level-5' : ''} ${isShaking ? 'screen-shake' : ''}`}>
                         {persona?.videoId ? (
                             <>
-                                <iframe
-                                    ref={iframeRef}
-                                    src={iframeSrc}
+                                <video
+                                    ref={videoRef}
+                                    poster={posterUrl}
+                                    autoPlay
+                                    muted
+                                    playsInline
+                                    disablePictureInPicture
+                                    controls
+                                    className="native-stream-player"
                                     style={{
-                                        border: 'none',
                                         position: 'absolute',
                                         top: 0,
                                         left: 0,
                                         height: '100%',
                                         width: '100%',
                                         objectFit: 'cover',
+                                        background: '#000',
                                         opacity: videoLoaded ? 1 : 0,
                                         transition: 'opacity 0.8s ease-in-out',
                                         filter: `
@@ -220,16 +221,8 @@ const PersonaChatContent = () => {
                                             ${(persona?.hypeLevel || 1) >= 4 ? 'saturate(120%)' : ''}
                                         `
                                     }}
-                                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                                    allowFullScreen={true}
-                                    title={`${persona.name} Stream`}
-                                    onLoad={() => {
-                                        setVideoLoaded(true);
-                                        if (streamSdkReady) {
-                                            ensurePlayerReady();
-                                        }
-                                    }}
-                                ></iframe>
+                                    onLoadedData={() => setVideoLoaded(true)}
+                                />
 
                                 {/* Live Stream Overlays */}
                                 {videoLoaded && (
@@ -245,18 +238,7 @@ const PersonaChatContent = () => {
                                     </>
                                 )}
 
-                                {isMuted && videoLoaded && (
-                                    <div
-                                        className={`join-stream-overlay ${!isOverlayVisible ? 'fading-out' : ''}`}
-                                        onClick={handleUnmute}
-                                    >
-                                        <div className="join-stream-btn">
-                                            <Zap size={24} fill="currentColor" className="text-yellow-400" />
-                                            <span>Join Stream</span>
-                                        </div>
-                                        <div className="join-stream-text">Click to unmute & sync</div>
-                                    </div>
-                                )}
+
 
                                 {imageItem && (
                                     <img

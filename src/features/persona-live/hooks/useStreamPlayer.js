@@ -1,77 +1,41 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import toast from 'react-hot-toast';
 import { getOptimizedImageUrl } from '../../../utils';
 
+/**
+ * Hook to manage a native <video> element with HLS.js for Cloudflare Stream.
+ * This is the most standardized and native way to handle streaming in the browser.
+ */
 export const useStreamPlayer = (persona, imageItem) => {
+    const { videoId } = persona || {};
     const [videoLoaded, setVideoLoaded] = useState(false);
-    const [isMuted, setIsMuted] = useState(true);
-    const [isOverlayVisible, setIsOverlayVisible] = useState(true);
+    const [hlsReady, setHlsReady] = useState(() => typeof window !== 'undefined' && !!window.Hls);
 
-    // Use lazy state initialization for safeStartTime.
-    // This maintains purity (no side effects in render) and avoids setState-in-effect.
-    // Since the parent component (PersonaChatContent) has a key={id}, this hook 
-    // is fully re-initialized when the persona ID changes, so this calculation runs once per persona.
-    const [safeStartTime] = useState(() => {
-        if (persona?.videoDuration && !isNaN(persona.videoDuration)) {
-            return Math.floor((Date.now() / 1000) % persona.videoDuration);
-        }
-        return 0;
-    });
+    const videoRef = useRef(null);
+    const hlsRef = useRef(null);
 
-    // Initialize lazily to avoid sync-state-in-effect issues if already present
-    const [streamSdkReady, setStreamSdkReady] = useState(() => typeof window !== 'undefined' && !!window.Stream);
-
-    const iframeRef = useRef(null);
-    const playerRef = useRef(null);
-    const hasAttachedPlayerRef = useRef(false);
-
+    // 1. Poster URL calculation
     const posterUrl = useMemo(() => {
         if (!imageItem?.imageUrl) return '';
         const optimized = getOptimizedImageUrl(imageItem.imageUrl);
-        if (!optimized) return '';
-        const absoluteUrl = optimized.startsWith('http')
+        return optimized && optimized.startsWith('http')
             ? optimized
-            : `${window.location.origin}${optimized}`;
-
-        // Avoid mixed-content in HTTPS iframe (Cloudflare Stream)
-        if (absoluteUrl.startsWith('http://')) {
-            console.warn('[PersonaChat] Skipping insecure poster URL:', absoluteUrl);
-            return '';
-        }
-
-        return encodeURIComponent(absoluteUrl);
+            : (optimized ? `${window.location.origin}${optimized}` : '');
     }, [imageItem]);
 
-    const iframeSrc = useMemo(() => {
-        if (!persona?.videoId) return '';
-        const safeStart = isNaN(safeStartTime) ? 0 : safeStartTime;
-        const posterParam = posterUrl ? `&poster=${posterUrl}` : '';
-        return `https://iframe.videodelivery.net/${persona.videoId}?loop=true&autoplay=true&muted=true&controls=false&startTime=${safeStart}${posterParam}`;
-    }, [persona, safeStartTime, posterUrl]);
+    // 2. Manifest URL
+    const manifestUrl = useMemo(() => {
+        if (!videoId) return '';
+        return `https://videodelivery.net/${videoId}/manifest/video.m3u8`;
+    }, [videoId]);
 
-    // Reset player ref if the iframe source URL changes significantly
+    // 3. Inject HLS.js script
     useEffect(() => {
-        // If the source changes, the iframe reloads, invalidating the player instance.
-        playerRef.current = null;
-        hasAttachedPlayerRef.current = false;
-    }, [iframeSrc]);
-
-    // Inject Cloudflare Stream SDK
-    useEffect(() => {
-        if (streamSdkReady) return;
-
-
+        if (typeof window === 'undefined' || hlsReady) return;
 
         const script = document.createElement('script');
-        script.src = "https://embed.videodelivery.net/embed/r4xu.js";
+        script.src = "https://cdn.jsdelivr.net/npm/hls.js@latest";
         script.async = true;
-        script.onload = () => {
-            console.warn('[PersonaChat] Cloudflare Stream SDK ready');
-            setStreamSdkReady(true);
-        };
-        script.onerror = () => {
-            console.error('[PersonaChat] Failed to load Cloudflare Stream SDK');
-        };
+        script.onload = () => setHlsReady(true);
         document.body.appendChild(script);
 
         return () => {
@@ -79,108 +43,72 @@ export const useStreamPlayer = (persona, imageItem) => {
                 document.body.removeChild(script);
             }
         };
-    }, [streamSdkReady]);
+    }, [hlsReady]);
 
-    const ensurePlayerReady = () => {
-        if (hasAttachedPlayerRef.current) return;
-        if (playerRef.current) return;
-        // Double check if Stream is actually available directly on the element if we missed a ref update
-        if (iframeRef.current && iframeRef.current.hasAttribute('data-stream-bridge-attached')) {
-            hasAttachedPlayerRef.current = true;
-            return;
-        }
-
-        if (!iframeRef.current || !window.Stream) return;
-        hasAttachedPlayerRef.current = true;
-        iframeRef.current.setAttribute('data-stream-bridge-attached', 'true');
-
-        try {
-            // Check if we already have a player instance attached properly
-            const player = window.Stream(iframeRef.current);
-            playerRef.current = player;
-            console.warn('[PersonaChat] Stream player attached');
-
-            // Attach event listeners regarding playback state
-            player.addEventListener('play', () => {
-                if (!player.muted) {
-                    setIsMuted(false);
-                    setIsOverlayVisible(false);
-                }
-            });
-
-            player.addEventListener('volumechange', () => {
-                if (!player.muted && player.volume > 0) {
-                    setIsMuted(false);
-                    setIsOverlayVisible(false);
-                } else {
-                    setIsMuted(true);
-                }
-            });
-
-            player.addEventListener('ended', () => {
-                console.warn('[PersonaChat] Video ended, forcing loop');
-                player.currentTime = 0;
-                player.play().catch(e => console.warn('Loop retry failed', e));
-            });
-
-            player.addEventListener('error', (e) => {
-                console.warn('[PersonaChat] Player internal error:', e);
-            });
-
-        } catch (error) {
-            console.warn('[PersonaChat] Stream player init failed:', error);
-        }
-    };
-
+    // 4. Initialize HLS on the video element
     useEffect(() => {
-        if (!streamSdkReady || !videoLoaded) return;
-        ensurePlayerReady();
-    }, [streamSdkReady, videoLoaded]);
+        if (!hlsReady || !manifestUrl || !videoRef.current) return;
 
-    const handleUnmute = async () => {
-        const tryUnmute = async (attempts = 0) => {
-            ensurePlayerReady();
-            const player = playerRef.current;
+        const video = videoRef.current;
 
-            if (!player) {
-                if (attempts < 5) {
-                    setTimeout(() => tryUnmute(attempts + 1), 200);
-                    return;
+        // Clean up previous HLS instance
+        if (hlsRef.current) {
+            hlsRef.current.destroy();
+            hlsRef.current = null;
+        }
+
+        // Native HLS support (Safari)
+        if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = manifestUrl;
+            video.addEventListener('loadedmetadata', () => {
+                video.play().catch(e => console.warn('[useStreamPlayer] Native autoplay failed:', e));
+            });
+        }
+        // HLS.js support (Chrome, Firefox, etc.)
+        else if (window.Hls.isSupported()) {
+            const hls = new window.Hls({
+                enableWorker: true,
+                lowLatencyMode: true,
+                liveDurationInfinity: true, // Force "Live" semantics (no scrubber)
+            });
+            hlsRef.current = hls;
+            hls.loadSource(manifestUrl);
+            hls.attachMedia(video);
+            hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+                video.play().catch(e => console.warn('[useStreamPlayer] HLS.js autoplay failed:', e));
+            });
+
+            hls.on(window.Hls.Events.ERROR, (event, data) => {
+                if (data.fatal) {
+                    switch (data.type) {
+                        case window.Hls.ErrorTypes.NETWORK_ERROR:
+                            hls.startLoad();
+                            break;
+                        case window.Hls.ErrorTypes.MEDIA_ERROR:
+                            hls.recoverMediaError();
+                            break;
+                        default:
+                            hls.destroy();
+                            break;
+                    }
                 }
-                toast.error("Stream player not ready. Please refresh.");
-                return;
-            }
+            });
+        }
 
-            try {
-                player.muted = false;
-                player.volume = 1;
-                await player.play();
-                // State updates via event listeners
-            } catch (error) {
-                console.warn(`[PersonaChat] Unmute attempt ${attempts + 1} failed:`, error);
-
-                if (attempts < 3) {
-                    setTimeout(() => tryUnmute(attempts + 1), 300);
-                } else {
-                    console.error('[PersonaChat] Final unmute failure.');
-                    toast.error("Couldn't unmute stream automatically. Please click again.");
-                }
+        return () => {
+            if (hlsRef.current) {
+                hlsRef.current.destroy();
+                hlsRef.current = null;
             }
         };
-
-        tryUnmute();
-    };
+    }, [hlsReady, manifestUrl]);
 
     return {
-        iframeRef,
-        playerRef,
+        videoRef,
         videoLoaded,
         setVideoLoaded,
-        isMuted,
-        isOverlayVisible,
-        iframeSrc,
-        streamSdkReady,
-        handleUnmute,
-        ensurePlayerReady
+        manifestUrl,
+        posterUrl,
+        hlsReady,
     };
 };

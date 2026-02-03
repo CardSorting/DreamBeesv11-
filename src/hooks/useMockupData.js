@@ -8,14 +8,15 @@ export function useMockupData(creatorFilter) {
     const [hasMore, setHasMore] = useState(true);
     const lastDocRef = useRef(null);
     const isFetchingRef = useRef(false);
+    const hasMoreRef = useRef(true);
 
     const fetchMockups = useCallback(async (isLoadMore = false) => {
         if (isFetchingRef.current) return;
-        if (isLoadMore && (!lastDocRef.current || !hasMore)) return;
+        if (isLoadMore && (!lastDocRef.current || !hasMoreRef.current)) return;
 
         try {
+            setLoading(true);
             isFetchingRef.current = true;
-            if (!isLoadMore) setLoading(true);
 
             let q = query(
                 collection(db, 'generations'),
@@ -42,6 +43,7 @@ export function useMockupData(creatorFilter) {
 
             if (snapshot.empty) {
                 setHasMore(false);
+                hasMoreRef.current = false;
                 if (!isLoadMore) setLoading(false);
                 return;
             }
@@ -68,13 +70,14 @@ export function useMockupData(creatorFilter) {
             isFetchingRef.current = false;
             setLoading(false);
         }
-    }, [creatorFilter, hasMore]);
+    }, [creatorFilter]); // Removed hasMore to stabilize function identity
 
     useEffect(() => {
         setImages([]);
         lastDocRef.current = null;
         isFetchingRef.current = false;
         setHasMore(true);
+        hasMoreRef.current = true;
         fetchMockups();
     }, [creatorFilter, fetchMockups]);
 

@@ -33,7 +33,7 @@ const TwitchLayout = () => {
 
                     <div className="nav-center">
                         <div className="twitch-search-bar">
-                            <input type="text" placeholder="Search..." />
+                            <input type="text" placeholder="Search..." name="search" id="twitch-nav-search" />
                             <button className="search-icon-btn">
                                 <Search size={18} />
                             </button>

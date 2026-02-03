@@ -579,50 +579,118 @@ export default function ModelDetail() {
                 <section className="gallery-section" aria-label="Showcase Gallery" style={{
                     padding: '0 2vw 40px 2vw',
                     animation: 'fadeIn 1.5s ease 0.4s both',
-                    minHeight: '40vh'
+                    minHeight: '40vh',
+                    position: 'relative'
                 }}>
-                    {visibleImages.length > 0 ? (
-                        <div className="masonry-grid">
-                            {visibleImages.map((imgItem, index) => {
-                                const ratios = ['1/1', '3/4', '1/1', '2/3', '4/3', '1/1', '3/5'];
-                                const ratio = imgItem.aspectRatio || ratios[index % ratios.length];
+                    <AnimatePresence mode="wait">
+                        {showAgeGate ? (
+                            <motion.div
+                                key="age-gate"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                style={{
+                                    width: '100%',
+                                    maxWidth: '800px',
+                                    margin: '60px auto',
+                                    padding: '60px 40px',
+                                    background: 'rgba(255, 255, 255, 0.02)',
+                                    backdropFilter: 'blur(20px)',
+                                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                                    borderRadius: '32px',
+                                    textAlign: 'center',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: '24px'
+                                }}
+                            >
+                                <div style={{
+                                    width: '64px',
+                                    height: '64px',
+                                    borderRadius: '50%',
+                                    background: 'rgba(239, 68, 68, 0.1)',
+                                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: '#ef4444'
+                                }}>
+                                    <Info size={32} />
+                                </div>
+                                <div>
+                                    <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '12px', color: 'white' }}>
+                                        Showcase Restricted
+                                    </h2>
+                                    <p style={{ color: '#888', maxWidth: '400px', margin: '0 auto', lineHeight: '1.6', fontSize: '0.9rem' }}>
+                                        This model's showcase contains mature (18+) content. You must confirm you are of legal age to view the gallery.
+                                    </p>
+                                </div>
+                                <motion.button
+                                    whileHover={{ scale: 1.02, background: '#fff' }}
+                                    whileTap={{ scale: 0.98 }}
+                                    onClick={() => {
+                                        setHasConfirmedAge(true);
+                                        setShowAgeGate(false);
+                                    }}
+                                    style={{
+                                        padding: '16px 40px',
+                                        borderRadius: '100px',
+                                        background: '#eee',
+                                        border: 'none',
+                                        color: 'black',
+                                        fontWeight: '800',
+                                        cursor: 'pointer',
+                                        fontSize: '0.8rem',
+                                        letterSpacing: '0.05em'
+                                    }}
+                                >
+                                    CONFIRM AGE
+                                </motion.button>
+                            </motion.div>
+                        ) : visibleImages.length > 0 ? (
+                            <motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="masonry-grid">
+                                {visibleImages.map((imgItem, index) => {
+                                    const ratios = ['1/1', '3/4', '1/1', '2/3', '4/3', '1/1', '3/5'];
+                                    const ratio = imgItem.aspectRatio || ratios[index % ratios.length];
 
-                                return (
-                                    <ShowcaseCard
-                                        key={imgItem.id || index}
-                                        imgItem={imgItem}
-                                        index={index}
-                                        ratio={ratio}
-                                        isUnder18={isUnder18}
-                                        isAdmin={userRole === 'admin'}
-                                        isSafeMode={isSafeMode}
-                                        isPersistentlyRevealed={isRevealed(imgItem.id)}
-                                        onReveal={() => markRevealed(imgItem.id)}
-                                        updateNSFWStatus={updateNSFWStatus}
-                                        onClick={() => openShowcase(imgItem)}
-                                    />
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        <div className="masonry-grid" style={{ opacity: 0.5 }}>
-                            {Array.from({ length: 12 }).map((_, idx) => {
-                                const ratios = ['1/1', '3/4', '4/5', '2/3', '1/1', '3/5'];
-                                return (
-                                    // eslint-disable-next-line react/no-array-index-key
-                                    <div key={`skeleton-${idx}`} className="masonry-item" style={{ marginBottom: '4px' }}>
-                                        <div className="image-card" style={{
-                                            aspectRatio: ratios[idx % ratios.length],
-                                            background: 'rgba(255,255,255,0.03)',
-                                            border: 'none'
-                                        }}>
-                                            <div className="shimmer-loading" style={{ position: 'absolute', inset: 0 }} />
+                                    return (
+                                        <ShowcaseCard
+                                            key={imgItem.id || index}
+                                            imgItem={imgItem}
+                                            index={index}
+                                            ratio={ratio}
+                                            isUnder18={isUnder18}
+                                            isAdmin={userRole === 'admin'}
+                                            isSafeMode={isSafeMode}
+                                            isPersistentlyRevealed={isRevealed(imgItem.id)}
+                                            onReveal={() => markRevealed(imgItem.id)}
+                                            updateNSFWStatus={updateNSFWStatus}
+                                            onClick={() => openShowcase(imgItem)}
+                                        />
+                                    );
+                                })}
+                            </motion.div>
+                        ) : (
+                            <motion.div key="skeletons" initial={{ opacity: 0 }} animate={{ opacity: 0.5 }} className="masonry-grid">
+                                {Array.from({ length: 12 }).map((_, idx) => {
+                                    const ratios = ['1/1', '3/4', '4/5', '2/3', '1/1', '3/5'];
+                                    return (
+                                        // eslint-disable-next-line react/no-array-index-key
+                                        <div key={`skeleton-${idx}`} className="masonry-item" style={{ marginBottom: '4px' }}>
+                                            <div className="image-card" style={{
+                                                aspectRatio: ratios[idx % ratios.length],
+                                                background: 'rgba(255,255,255,0.03)',
+                                                border: 'none'
+                                            }}>
+                                                <div className="shimmer-loading" style={{ position: 'absolute', inset: 0 }} />
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
+                                    );
+                                })}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </section>
 
                 {/* Sentinel for Infinite Scroll Trigger */}
@@ -824,96 +892,6 @@ export default function ModelDetail() {
                 }
             `}</style>
 
-            <AnimatePresence>
-                {showAgeGate && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        style={{
-                            position: 'fixed',
-                            inset: 0,
-                            zIndex: 1000,
-                            background: 'rgba(0,0,0,0.85)',
-                            backdropFilter: 'blur(20px)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: '20px'
-                        }}
-                    >
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            style={{
-                                maxWidth: '400px',
-                                width: '100%',
-                                background: '#111',
-                                border: '1px solid #333',
-                                borderRadius: '24px',
-                                padding: '40px',
-                                textAlign: 'center',
-                                boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
-                            }}
-                        >
-                            <div style={{
-                                width: '80px',
-                                height: '80px',
-                                borderRadius: '50%',
-                                background: 'rgba(239, 68, 68, 0.1)',
-                                border: '1px solid rgba(239, 68, 68, 0.2)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                color: '#ef4444',
-                                margin: '0 auto 24px auto'
-                            }}>
-                                <Info size={40} />
-                            </div>
-                            <h2 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '12px', color: 'white' }}>
-                                Content Advisory
-                            </h2>
-                            <p style={{ color: '#888', marginBottom: '32px', lineHeight: '1.6' }}>
-                                This model is used to generate 18+ content. By proceeding, you confirm you are of legal age and wish to view this content.
-                            </p>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                <motion.button
-                                    whileHover={{ scale: 1.02, background: '#fff' }}
-                                    whileTap={{ scale: 0.98 }}
-                                    onClick={() => {
-                                        setHasConfirmedAge(true);
-                                        setShowAgeGate(false);
-                                    }}
-                                    style={{
-                                        padding: '16px',
-                                        borderRadius: '16px',
-                                        background: '#eee',
-                                        border: 'none',
-                                        color: 'black',
-                                        fontWeight: '800',
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    I am 18 or older
-                                </motion.button>
-                                <button
-                                    onClick={() => navigate('/')}
-                                    style={{
-                                        padding: '16px',
-                                        background: 'transparent',
-                                        border: 'none',
-                                        color: '#666',
-                                        fontWeight: '600',
-                                        cursor: 'pointer'
-                                    }}
-                                >
-                                    Go Back
-                                </button>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </main>
     );
 }

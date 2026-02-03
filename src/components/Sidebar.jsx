@@ -31,7 +31,7 @@ const CollapsibleGroup = ({ title, children, defaultOpen = true }) => {
 const Sidebar = ({ activeId }) => {
     const { currentUser, isUnder18 } = useAuth();
     const { isSafeMode, toggleSafeMode } = useUserInteractions();
-    const isAdmin = currentUser?.uid === 'prT9j3royVTstWLDDcKMoUOU7aQ2';
+
 
     // Primary Top Level
     const homeLink = { path: '/', label: 'Home', icon: Home };
@@ -67,7 +67,7 @@ const Sidebar = ({ activeId }) => {
 
     const visibleGroups = navGroups.map(group => {
         const visibleItems = group.items.filter(item => {
-            if (isAdmin) return true;
+
             // Public items for everyone
 
             if (item.path === '/mockups') return true;
@@ -128,7 +128,7 @@ const Sidebar = ({ activeId }) => {
                 ))}
 
                 {/* Global Safe Mode Toggle */}
-                <div style={{ marginTop: 'auto', padding: '20px 0 10px 0', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ marginTop: 'auto', paddingTop: '20px', paddingBottom: '10px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                     <div
                         onClick={() => !isUnder18 && toggleSafeMode()}
                         style={{
@@ -153,7 +153,7 @@ const Sidebar = ({ activeId }) => {
                                     {isSafeMode ? 'SAFE MODE ON' : 'SAFE MODE OFF'}
                                 </span>
                                 <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', fontWeight: '600' }}>
-                                    {isUnder18 ? 'Locked for minors' : (isSafeMode ? 'Hiding 18+ content' : 'Exposing all content')}
+                                    {isUnder18 ? 'Restricted Mode' : (isSafeMode ? 'Hiding 18+ content' : 'Exposing all content')}
                                 </span>
                             </div>
                         </div>

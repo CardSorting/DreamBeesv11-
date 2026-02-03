@@ -8,25 +8,27 @@ export function usePublicFeed(activeFilter, affinityMap, viewedIds, hiddenIds) {
     const [loading, setLoading] = useState(true);
     const [hasMore, setHasMore] = useState(true);
     const [error, setError] = useState(null);
-    const [lastTimestamp, setLastTimestamp] = useState(null);
     const isFetchingRef = useRef(false);
+    const lastTimestampRef = useRef(null);
+    const hasMoreRef = useRef(true);
 
     // Reset when filter changes
     useEffect(() => {
         setImages([]);
-        setLastTimestamp(null);
+        lastTimestampRef.current = null;
         setHasMore(true);
+        hasMoreRef.current = true;
         setLoading(true);
     }, [activeFilter]);
 
     const fetchGenerations = useCallback(async (isLoadMore = false) => {
         if (isFetchingRef.current) return;
-        if (isLoadMore && (!lastTimestamp || !hasMore)) return;
+        if (isLoadMore && (!lastTimestampRef.current || !hasMoreRef.current)) return;
 
         try {
+            setLoading(true);
             isFetchingRef.current = true;
             if (!isLoadMore) {
-                setLoading(true);
                 setError(null);
             }
 
@@ -54,8 +56,8 @@ export function usePublicFeed(activeFilter, affinityMap, viewedIds, hiddenIds) {
                     limit(PAGE_SIZE)
                 );
 
-                if (isLoadMore && lastTimestamp) {
-                    q = query(q, startAfter(lastTimestamp));
+                if (isLoadMore && lastTimestampRef.current) {
+                    q = query(q, startAfter(lastTimestampRef.current));
                 }
 
                 return getDocs(q).then(snap => ({ colName, docs: snap.docs })).catch(err => {
@@ -109,13 +111,14 @@ export function usePublicFeed(activeFilter, affinityMap, viewedIds, hiddenIds) {
 
             if (displaySlice.length === 0) {
                 setHasMore(false);
+                hasMoreRef.current = false;
                 if (!isLoadMore) setLoading(false);
                 return;
             }
 
             const lastItem = displaySlice[displaySlice.length - 1];
             if (lastItem.createdAt) {
-                setLastTimestamp(lastItem.createdAt);
+                lastTimestampRef.current = lastItem.createdAt;
             }
 
             if (isLoadMore) {
@@ -145,6 +148,7 @@ export function usePublicFeed(activeFilter, affinityMap, viewedIds, hiddenIds) {
 
             if (validImages.length < 5) {
                 setHasMore(false);
+                hasMoreRef.current = false;
             }
 
         } catch (error) {
@@ -154,7 +158,7 @@ export function usePublicFeed(activeFilter, affinityMap, viewedIds, hiddenIds) {
             isFetchingRef.current = false;
             setLoading(false);
         }
-    }, [activeFilter, lastTimestamp, hasMore, affinityMap, viewedIds, hiddenIds]);
+    }, [activeFilter, affinityMap, viewedIds, hiddenIds]); // Removed lastTimestamp and hasMore to stabilize identity
 
     return {
         images,
