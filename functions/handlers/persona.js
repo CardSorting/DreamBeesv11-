@@ -11,6 +11,8 @@ import * as Broadcaster from "../lib/persona/broadcaster.js";
 import * as Brain from "../lib/persona/brain.js";
 import * as Store from "../lib/persona/store.js";
 // [REMOVED] import * as Voice from "../lib/persona/voice.js";
+import { checkInboundSafety, checkOutboundSafety, checkSafetyWithAI } from "../lib/moderation.js"; // Security
+import { checkQuota } from "../lib/quota.js"; // Rate Limits
 import { VertexAI } from "@google-cloud/vertexai";
 
 const vertexAI = new VertexAI({ project: process.env.GCLOUD_PROJECT, location: "us-central1" });
@@ -25,10 +27,38 @@ export const handleChatPersona = async (request) => {
     const userName = request.auth.token.name || 'Anonymous';
     const userPhoto = request.auth.token.picture || '';
 
+    // --- SECURITY: Inbound Filter ---
+    const inboundCheck = checkInboundSafety(message);
+    if (!inboundCheck.safe) {
+        logger.warn(`[Security] Inbound blocked from ${userId}: ${inboundCheck.reason}`);
+        throw new HttpsError('permission-denied', `Message rejected: ${inboundCheck.reason}`);
+    }
+    // --------------------------------
+
     // 0. Load Persona
     const personaDoc = await db.collection('personas').doc(imageId).get();
     if (!personaDoc.exists) { throw new HttpsError('not-found', 'Persona not found.'); }
     const persona = personaDoc.data();
+
+    // 0.5. External Agent Delegation
+    if (persona.isExternal) {
+        // Broadcast user message so it appears in UI (and Soketi for Agent)
+        const userMsgData = {
+            uid: userId,
+            displayName: userName,
+            photoURL: userPhoto,
+            text: message,
+            role: 'user',
+            timestamp: Date.now()
+        };
+
+        const userMsgRef = await Store.saveMessage(imageId, userMsgData);
+        await Broadcaster.broadcastMessage(imageId, { ...userMsgData, id: userMsgRef.id });
+
+        // Notify Agent via Soketi (User message is the trigger)
+        // We return early, expecting the Agent to reply via `agentReply`
+        return { reply: null, status: 'delegated', note: 'Waiting for external agent' };
+    }
 
     // 1. Billing Wrapper (Async)
     return await Billing.runAsync(userId, 'PERSONA_CHAT', requestId, {
@@ -75,13 +105,20 @@ export const handleChatPersona = async (request) => {
             return { reply: null, status: 'listening' };
         }
 
-        // 4. Gather Context
-        const [serverHistory, supporterData, relationshipContext, loreContext] = await Promise.all([
+        // 4. Gather Context & Run AI Security Check Parallel
+        const [serverHistory, supporterData, relationshipContext, loreContext, aiSafetyCheck] = await Promise.all([
             Context.fetchServerHistory(imageId),
             Context.fetchSupporters(imageId),
             Context.fetchUserMemory(imageId, userId, userName),
-            Context.fetchLore(imageId)
+            Context.fetchLore(imageId),
+            // Parallel Security Check (Masks latency behind DB reads)
+            checkSafetyWithAI(message, 'INBOUND')
         ]);
+
+        if (!aiSafetyCheck.safe) {
+            logger.warn(`[Security] AI Model flagged inbound message from ${userId}: ${aiSafetyCheck.reason}`);
+            throw new HttpsError('permission-denied', `Message rejected by Neural Filter: ${aiSafetyCheck.reason}`);
+        }
 
         const historyWithVIPs = serverHistory.map(msg => {
             // Apply VIP tags locally for the prompt model
@@ -454,4 +491,161 @@ export const handleVotePoll = async (request) => {
     });
 
     return { success: true };
+};
+
+// --- HANDLE REGISTER AGENT (OpenClaw) ---
+export const handleRegisterAgent = async (request) => {
+    const { name, bio, imageUrl, voice_dna, traits, agentId, socialLinks, streamTitle } = request.data;
+    if (!request.auth) { throw new HttpsError('unauthenticated', 'Login required'); }
+    const userId = request.auth.uid;
+
+    if (!name || !imageUrl) {
+        throw new HttpsError('invalid-argument', 'Name and Image URL are required.');
+    }
+
+    // Generate a consistent ID based on User + AgentName or provided AgentID
+    // If agentId is provided, we use that (prefixed/sanitized), otherwise we auto-gen.
+    // To allow updates, we ideally want a stable ID. 
+    // Let's use a hash or just an explicitly passed ID from the agent config.
+    const cleanName = name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    const personaId = agentId ? `agent-${userId}-${agentId}` : `agent-${userId}-${cleanName}`;
+
+    const personaRef = db.collection('personas').doc(personaId);
+    const doc = await personaRef.get();
+
+    const baseData = {
+        name,
+        bio: bio || "An external agent connected via OpenClaw.",
+        imageUrl,
+        voice_dna: voice_dna || null, // Optional: Use our TTS
+        personality: traits || "Defined by External Agent.",
+        socialLinks: socialLinks || {}, // { twitter: '...', twitch: '...', etc. }
+        isExternal: true, // CRITICAL FLAG
+        createdBy: userId,
+        lastActivity: FieldValue.serverTimestamp(),
+        category: 'Agent',
+        streamTitle: streamTitle || `Live with ${name}`,
+        // Default Mechanics
+        zapGoal: 100,
+        zapCurrent: 0,
+        hypeScore: 0,
+        hypeLevel: 1,
+        // Ensure standard fields exist
+        greeting: "System connected.",
+        isOfficial: false
+    };
+
+    if (doc.exists) {
+        // Update existing (merge)
+        await personaRef.update({
+            ...baseData,
+            updatedAt: FieldValue.serverTimestamp() // Track updates
+        });
+    } else {
+        // Create New
+        await personaRef.set({
+            ...baseData,
+            id: personaId,
+            createdAt: FieldValue.serverTimestamp()
+        });
+
+        // Seed Initial Data
+        await Store.saveLore(personaId, `Origin: Connected via OpenClaw.`);
+        await Store.saveMessage(personaId, {
+            uid: 'system',
+            displayName: 'System',
+            text: `${name} has connected to the neural network.`,
+            role: 'system',
+            type: 'system'
+        });
+    }
+
+    return { success: true, personaId, message: "Agent registered successfully." };
+};
+
+// --- HANDLE AGENT REPLY (OpenClaw) ---
+export const handleAgentReply = async (request) => {
+    const { personaId, text, emotion, action, requestId } = request.data;
+    if (!request.auth) { throw new HttpsError('unauthenticated', 'Login required'); }
+    const userId = request.auth.uid;
+
+    if (!personaId || !text) {
+        throw new HttpsError('invalid-argument', 'PersonaID and Text are required.');
+    }
+
+    // Verify Ownership
+    const personaDoc = await db.collection('personas').doc(personaId).get();
+    if (!personaDoc.exists) { throw new HttpsError('not-found', 'Persona not found.'); }
+    const persona = personaDoc.data();
+
+    if (persona.createdBy !== userId) {
+        throw new HttpsError('permission-denied', 'You do not own this agent.');
+    }
+
+    // --- SECURITY: Outbound Filter ---
+    const outboundCheck = checkOutboundSafety(text);
+    if (!outboundCheck.safe) {
+        logger.warn(`[Security] Outbound agent reply blocked (${personaId}): ${outboundCheck.reason}`);
+        throw new HttpsError('permission-denied', `Reply rejected: ${outboundCheck.reason}`);
+    }
+
+    // --- RATE LIMITING: Quota Check ---
+    const quota = await checkQuota(userId, 'agent_reply');
+    if (!quota.allowed) {
+        throw new HttpsError('resource-exhausted', quota.reason);
+    }
+    // ---------------------------------
+    // ---------------------------------
+
+    // Billing Wrapper (Optional: Could charge for TTS usage? For now, free or small cost)
+    // Let's assume standard Persona Chat cost for "Server Resources" (TTS + Bandwidth)
+    return await Billing.runAsync(userId, 'PERSONA_CHAT', requestId || `agent_reply_${Date.now()}`, {
+        type: 'agent_reply',
+        personaId
+    }, async (_cost) => {
+
+        // 1. Broadcast Message
+        const msgData = {
+            uid: 'ai-persona',
+            displayName: persona.name,
+            photoURL: persona.imageUrl || '',
+            text: text, // The Agent's text
+            role: 'model',
+            audioJobId: null,
+            emotion: emotion || 'neutral'
+        };
+
+        const msgRef = await Store.saveMessage(personaId, msgData);
+        await Broadcaster.broadcastMessage(personaId, { ...msgData, id: msgRef.id });
+
+        // 2. Trigger TTS (If voice_dna is present)
+        if (persona.voice_dna) {
+            const queue = getFunctions().taskQueue("locations/us-central1/functions/voiceWorker");
+            await queue.enqueue({
+                taskType: 'voice',
+                imageId: personaId,
+                messageId: msgRef.id,
+                text: text,
+                voiceDna: persona.voice_dna,
+                emotion: emotion,
+                hypeLevel: persona.hypeLevel || 1
+            });
+            logger.info(`[Agent] TTS Task Enqueued for ${personaId}`);
+        }
+
+        // 3. Trigger Actions (Optional)
+        if (action) {
+            // Agent can trigger poses/backgrounds directly
+            if (action.startsWith('pose_') || action.startsWith('bg_')) {
+                const updates = {};
+                if (action.startsWith('pose_')) { updates.currentPose = action; }
+                if (action.startsWith('bg_')) { updates.currentBackground = action; }
+                await Store.updatePersonaState(personaId, updates);
+                await Broadcaster.broadcastStateChange(personaId, action, 'Agent');
+            }
+        }
+
+        return { success: true };
+
+    }, { retries: 0 });
 };

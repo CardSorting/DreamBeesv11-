@@ -1,0 +1,13 @@
+{
+    "name": "my-openclaw-agent",
+    "version": "1.0.0",
+    "description": "A starter OpenClaw agent for DreamBees.",
+    "type": "module",
+    "main": "index.js",
+    "scripts": {
+        "start": "node index.js"
+    },
+    "dependencies": {
+        "@dreambees/openclaw-sdk": "file:../../.."
+    }
+}

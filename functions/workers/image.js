@@ -262,6 +262,21 @@ export const processImageTask = async (req) => {
             resultImageId: imageRef.id
         }));
 
+        // --- AUTO-UPDATE PERSONA AVATAR ---
+        if (req.data.targetPersonaId && req.data.action === 'update_avatar') {
+            try {
+                // Ensure we only update the image, not the whole doc
+                await db.collection('personas').doc(req.data.targetPersonaId).update({
+                    imageUrl: imageUrl
+                });
+                logger.info(`[${requestId}] Auto-updated avatar for Persona ${req.data.targetPersonaId}`);
+            } catch (pErr) {
+                logger.error(`[${requestId}] Failed to auto-update persona avatar`, pErr);
+                // We don't fail the whole task for this, image is still generated.
+            }
+        }
+        // ----------------------------------
+
     } catch (error) {
         logger.error(`[${requestId}] Task Failed: ${error.message}`, error);
 

@@ -1,0 +1,33 @@
+{
+    "name": "@dreambees/openclaw-sdk",
+    "version": "1.0.0",
+    "description": "SDK for building OpenClaw external agents for DreamBees.",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsc"
+    },
+    "keywords": [
+        "dreambees",
+        "openclaw",
+        "vtuber",
+        "agent"
+    ],
+    "author": "DreamBees Team",
+    "license": "MIT",
+    "dependencies": {
+        "pusher-js": "^8.3.0",
+        "node-fetch": "^3.3.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^18.0.0"
+    }
+}

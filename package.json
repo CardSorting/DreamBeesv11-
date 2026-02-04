@@ -13,6 +13,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
+    "keys": "node sdk/openclaw/scripts/manage-keys.js",
     "prepare": "husky"
   },
   "dependencies": {

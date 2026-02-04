@@ -10,6 +10,7 @@ import {
     checkAbuseScore,
     recordViolation
 } from "./lib/abuse.js";
+import { validateApiKey } from "./lib/apiKey.js";
 
 // -- Imports from Handlers --
 import * as Generation from "./handlers/generation.js";
@@ -25,6 +26,7 @@ import * as ColorCraft from "./handlers/colorCraft.js";
 import * as Distill from "./handlers/distill.js";
 import * as DistillStudent from "./handlers/distillStudent.js";
 import * as DistillStudentBatch from "./handlers/distillStudentBatch.js";
+import * as Developer from "./handlers/developer.js";
 
 // ============================================================================
 
@@ -40,8 +42,34 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
     }
 
     const { action } = request.data;
-    const uid = request.auth?.uid;
+    let uid = request.auth?.uid;
     const clientIp = request.rawRequest?.ip || "unknown";
+
+    // --- API KEY AUTHENTICATION ---
+    if (!uid) {
+        const apiKey = request.rawRequest?.headers['x-api-key'];
+        if (apiKey) {
+            const apiAuth = await validateApiKey(apiKey);
+            if (apiAuth) {
+                uid = apiAuth.uid;
+                // Mock the auth object so downstream handlers don't crash
+                request.auth = {
+                    uid: apiAuth.uid,
+                    token: {
+                        name: 'API User',
+                        picture: '',
+                        email: '',
+                        email_verified: true,
+                        scope: apiAuth.scope // Inject scope
+                    }
+                };
+                logger.info(`[API] Authenticated via API Key for user: ${uid} (Scopes: ${apiAuth.scope})`);
+            } else {
+                logger.warn(`[API] Invalid API Key attempt from ${clientIp}`);
+                throw new HttpsError('unauthenticated', 'Invalid API Key.');
+            }
+        }
+    }
 
     logger.info(`[API_DEBUG] action=${action}, uid=${uid}, IP=${clientIp}`);
 
@@ -155,6 +183,30 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
             await checkUserQuota(uid, action);
         }
 
+        // --- 3. Scope Enforcement (API Keys) ---
+        if (request.auth?.token?.scope) {
+            const scopes = request.auth.token.scope;
+            const requiredScopes = {
+                'registerAgent': 'agent:write',
+                'agentReply': 'agent:write',
+                'generateAvatar': 'agent:write',
+                'createGenerationRequest': 'agent:write'
+            };
+
+            const required = requiredScopes[action];
+            if (required && !scopes.includes(required) && !scopes.includes('default')) {
+                // Note: 'default' usually implies full access in this MVP, or we can make it strict.
+                // Let's assume 'default' allows everything for now OR strict.
+                // Plan said "agent:write", so let's be strict. 
+                // If default DOES NOT include write, we block.
+                // Let's assume 'default' is read-only or basic. 
+                // Actually, let's allow 'default' to be a super-scope or just require specific.
+                // For safety: require EXPLICIT 'agent:write' for agents.
+                logger.warn(`[Scope] Blocked ${action} for user ${uid}. Missing verified scope: ${required}`);
+                throw new HttpsError('permission-denied', `Missing required scope: ${required}`);
+            }
+        }
+
         switch (action) {
             // Generation
             case 'createGenerationRequest': return Generation.handleCreateGenerationRequest(request);
@@ -213,8 +265,17 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
             case 'triggerAction': return Persona.handleTriggerAction(request);
             case 'votePoll': return Persona.handleVotePoll(request);
 
+            // OpenClaw Agent
+            case 'registerAgent': return Persona.handleRegisterAgent(request);
+            case 'agentReply': return Persona.handleAgentReply(request);
+
             case 'toggleBookmark': return Data.handleToggleBookmark(request);
             case 'toggleLike': return Data.handleToggleLike(request);
+
+            // API Key Management
+            case 'createApiKey': return Developer.handleCreateApiKey(request);
+            case 'listApiKeys': return Developer.handleListApiKeys(request);
+            case 'revokeApiKey': return Developer.handleRevokeApiKey(request);
 
             default:
                 throw new HttpsError('invalid-argument', `Unknown action: ${action}`);

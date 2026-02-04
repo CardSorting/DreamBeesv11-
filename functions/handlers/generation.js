@@ -6,17 +6,35 @@ import { VALID_MODELS } from "../lib/constants.js";
 import { CostManager, REEL_COSTS } from "../lib/costs.js";
 import { Billing } from "../lib/billing.js";
 import { checkCumulativeLimit } from "../lib/abuse.js";
+import { checkQuota } from "../lib/quota.js"; // Rate Limits
 
 export const handleCreateGenerationRequest = async (request) => {
     if (!process.env.FUNCTIONS_EMULATOR && request.app === undefined) { logger.warn("App Check verification failed (Warn Mode)"); }
     const uid = request.auth?.uid;
-    const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler, useTurbo, requestId, image } = request.data;
+    const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler, useTurbo, requestId, image, targetPersonaId, action } = request.data;
 
 
     if (!uid) { throw new HttpsError('unauthenticated', "User must be authenticated"); }
 
+    // --- RATE LIMITING: Quota Check ---
+    const quota = await checkQuota(uid, 'image_gen');
+    if (!quota.allowed) {
+        throw new HttpsError('resource-exhausted', quota.reason);
+    }
+    // ---------------------------------
+
+
     if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 5) { throw new HttpsError('invalid-argument', "Prompt is required"); }
     if (modelId && !VALID_MODELS.includes(modelId)) { throw new HttpsError('invalid-argument', `Invalid model ID.`); }
+
+    // --- Validate Target Persona (if updating avatar) ---
+    if (targetPersonaId && action === 'update_avatar') {
+        const pDoc = await db.collection('personas').doc(targetPersonaId).get();
+        if (!pDoc.exists || pDoc.data().createdBy !== uid) {
+            throw new HttpsError('permission-denied', "Invalid Target Persona.");
+        }
+    }
+    // ----------------------------------------------------
 
     let cleanPrompt = prompt.trim();
     cleanPrompt = cleanPrompt.replace(/([^a-zA-Z0-9\s])\1{2,}/g, '$1').replace(/\d{5,}/g, '').trim();
@@ -97,7 +115,10 @@ export const handleCreateGenerationRequest = async (request) => {
                 promptHash,
                 promptMetadata,
                 createdAt: FieldValue.serverTimestamp(),
-                costForRecord: finalCost
+                costForRecord: finalCost,
+                // Pass through new fields to queue doc for visibility/debug
+                targetPersonaId: targetPersonaId || null,
+                action: action || null
             }, { merge: true });
         });
 
@@ -109,7 +130,9 @@ export const handleCreateGenerationRequest = async (request) => {
             taskType: 'image',
             requestId: queueRef.id, userId: uid, prompt: cleanPrompt, negative_prompt, modelId, steps: safeSteps,
             cfg: safeCfg, aspectRatio: safeAspectRatio, scheduler, useTurbo: !!useTurbo, promptHash, promptMetadata,
-            image // Pass base64 image if present
+            image, // Pass base64 image if present
+            targetPersonaId, // <--- PASSED TO WORKER
+            action           // <--- PASSED TO WORKER
         });
         return { requestId: queueRef.id };
     } catch (error) {

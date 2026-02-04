@@ -59,6 +59,7 @@ const TwitchLayout = lazyRetry(() => import('../features/persona-live/TwitchLayo
 const BrowsePage = lazyRetry(() => import('../features/browse/Browse'));
 
 const CategoryDirectory = lazyRetry(() => import('../features/persona-live/CategoryDirectory'));
+const DeveloperSettings = lazyRetry(() => import('../pages/DeveloperSettings'));
 
 import { Privacy, Terms, Cookies } from '../pages/Legal';
 import { Careers, Brand, Api, Showcase } from '../pages/Misc';
@@ -147,6 +148,11 @@ const AnimatedRoutes = () => {
                             <Route path="/gallery/:id" element={
                                 <PrivateRoute><ImageDetail /></PrivateRoute>
                             } />
+
+                            <Route path="/settings/developer" element={
+                                <PrivateRoute><DeveloperSettings /></PrivateRoute>
+                            } />
+
                             <Route path="/models" element={<Models />} />
                             <Route path="/model/:id" element={<ModelDetail />} />
                             <Route path="/model/:id/feed" element={

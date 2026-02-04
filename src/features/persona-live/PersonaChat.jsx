@@ -14,6 +14,7 @@ import './PersonaChat.css';
 import { useStreamPlayer } from './hooks/useStreamPlayer';
 import { useAudioPlayback } from './hooks/useAudioPlayback';
 import { usePersonaChat } from './hooks/usePersonaChat';
+import { useTwitch } from '../../hooks/useTwitch';
 
 class PersonaErrorBoundary extends React.Component {
     constructor(props) {
@@ -63,6 +64,8 @@ const PersonaChatContent = () => {
     const location = useLocation();
     const { currentUser } = useAuth();
     const { userProfile } = useUserInteractions();
+    const { toggleFollow, isFollowing } = useTwitch();
+    const isFollowed = isFollowing(id);
 
     const [imageItem, setImageItem] = useState(() => location.state?.imageItem || null);
     const [showEmotes, setShowEmotes] = useState(false);
@@ -380,7 +383,25 @@ const PersonaChatContent = () => {
                                 <div className="live-badge-avatar">LIVE</div>
                             </div>
                             <div className="streamer-details">
-                                <h1 className="stream-title">{persona?.streamTitle || (persona ? `Chillin with ${persona.name}` : 'Initializing...')}</h1>
+                                <div className="stream-header-row" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <h1 className="stream-title">{persona?.streamTitle || (persona ? `Chillin with ${persona.name}` : 'Initializing...')}</h1>
+                                    <button
+                                        className={`follow-btn ${isFollowed ? 'following' : ''}`}
+                                        onClick={() => toggleFollow(persona?.id)}
+                                        style={{
+                                            padding: '4px 12px',
+                                            borderRadius: '6px',
+                                            background: isFollowed ? '#3f3f46' : '#9146ff',
+                                            color: 'white',
+                                            border: 'none',
+                                            fontWeight: '600',
+                                            cursor: 'pointer',
+                                            fontSize: '0.85rem'
+                                        }}
+                                    >
+                                        {isFollowed ? 'Unfollow' : 'Follow'}
+                                    </button>
+                                </div>
                                 <p className="streamer-name-purple">{persona?.name || 'Character'}</p>
                                 <div className="stream-tags">
                                     <span className="twitch-tag">AI</span>
