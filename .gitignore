@@ -7,6 +7,30 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# --- Node.js & Build ---
+node_modules/
+dist/
+dist-ssr/
+dist-electron/
+release/
+out/
+build/
+bin/
+obj/
+.eslintcache
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist/
+.cache/
+.temp/
+.vite/
+
+# --- Electron ---
+*.dev.log
+*.prod.log
+*.electron-builder.log
+
 # --- Firebase ---
 .firebase/
 .firestore/
@@ -16,24 +40,12 @@ ui-debug.log*
 functions-debug.log*
 firebase-export*
 .firebase-export*
-firebase.json
-.firebaserc
-firestore.rules
-firestore.indexes.json
-database.rules.json
-.firebaseignore
-
-# --- Node.js ---
-node_modules/
-dist/
-dist-ssr/
-.eslintcache
-.parcel-cache/
-.next/
-.nuxt/
-.vuepress/dist/
-.cache/
-.temp/
+!firebase.json
+!firestore.rules
+!firestore.indexes.json
+!database.rules.json
+!.firebaserc
+!.firebaseignore
 
 # --- Environment / Secrets ---
 .env
@@ -100,6 +112,8 @@ coverage.xml
 # --- Editor / OS ---
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
 .idea/
 .DS_Store
 .DS_Store?
@@ -114,6 +128,8 @@ desktop.ini
 *.sw?
 *~
 *.tmp
+*.bak
+*.orig
 
 # --- Docker ---
 docker-compose.override.yml
@@ -123,21 +139,27 @@ docker-compose.override.yml
 *.sqlite
 *.db
 *.sql-dump
+*.sqlite-journal
 
 # --- Test Artifacts & Coverage ---
 test_output_*.png
 coverage/
 .nyc_output/
+vitest-reports/
 
 # --- Generated Assets & Large Files ---
-functions/assets/images
-functions/assets/creditcard.png
-functions/lib/
 showcase_results/
-Minecraft_Lush_Caves_H264.mp4
 *.mp4
 *.mkv
 *.mov
 *.tgz
 *.zip
 *.gz
+*.tar
+*.iso
+*.dmg
+
+# --- Project Specific ---
+functions/lib/
+functions/assets/images
+functions/assets/creditcard.png

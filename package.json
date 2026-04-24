@@ -42,5 +42,22 @@
     "vite-plugin-electron": "^0.29.1",
     "vite-plugin-electron-renderer": "^0.14.6",
     "vitest": "^3.2.4"
+  },
+  "build": {
+    "appId": "com.dreambees.lite",
+    "productName": "DreamBees Lite",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist",
+      "dist-electron"
+    ],
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.productivity"
+    }
   }
 }
