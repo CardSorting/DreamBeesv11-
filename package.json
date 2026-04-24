@@ -1,6 +1,8 @@
 {
   "name": "dreambees-lite",
   "private": true,
+  "description": "DreamBees Lite desktop app",
+  "author": "DreamBeesAI",
   "version": "1.0.1",
   "type": "module",
   "main": "dist-electron/main.js",
@@ -8,6 +10,7 @@
     "dev": "vite",
     "dev:electron": "vite",
     "build:electron": "vite build && electron-builder",
+    "verify:electron": "npm exec tsc -- --noEmit --pretty false && vite build && electron-builder --dir && node scripts/verify-electron-build.cjs",
     "preview": "vite preview",
     "test": "vitest run"
   },
@@ -53,11 +56,30 @@
       "dist",
       "dist-electron"
     ],
+    "asarUnpack": [
+      "**/*.node",
+      "node_modules/better-sqlite3/build/Release/*.node"
+    ],
     "mac": {
       "target": [
         "dmg"
       ],
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "icon": "public/dreambees_icon.png",
+      "extendInfo": {
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSAllowsLocalNetworking": true,
+          "NSExceptionDomains": {
+            "localhost": {
+              "NSExceptionAllowsInsecureHTTPLoads": true
+            },
+            "127.0.0.1": {
+              "NSExceptionAllowsInsecureHTTPLoads": true
+            }
+          }
+        }
+      }
     }
   }
 }

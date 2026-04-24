@@ -92,13 +92,23 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const loadLocal = useCallback(async () => {
-        if (window.electronAPI?.lite) {
-            const gens = await window.electronAPI.lite.getGenerations(50);
-            setLocalHistory(gens);
+        try {
+            if (window.electronAPI?.lite) {
+                const gens = await window.electronAPI.lite.getGenerations(50);
+                setLocalHistory(gens);
+            }
+        } catch (err) {
+            console.warn('[Lite] Local history unavailable:', err);
         }
     }, []);
 
     useEffect(() => { loadLocal(); }, [loadLocal]);
+
+    useEffect(() => {
+        window.electronAPI?.lite.health()
+            .then(health => console.info('[Lite] Electron bridge health:', health))
+            .catch(err => console.warn('[Lite] Electron bridge unavailable:', err));
+    }, []);
 
     useEffect(() => {
         const modelsQuery = query(collection(db, 'models'), orderBy('order', 'asc'), limit(20));
@@ -109,13 +119,19 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 const savedId = localStorage.getItem('lite_selected_model');
                 setSelectedModel(models.find(m => m.id === savedId) || models[0]);
             }
+        }, err => {
+            console.warn('[Lite] Model subscription failed:', err);
+            setAvailableModels([]);
         });
     }, [selectedModel]);
 
     useEffect(() => {
         if (!currentUser) { setHistory([]); return; }
         const q = query(collection(db, 'images'), orderBy('createdAt', 'desc'), limit(50));
-        return onSnapshot(q, snap => setHistory(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))));
+        return onSnapshot(q, snap => setHistory(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))), err => {
+            console.warn('[Lite] History subscription failed:', err);
+            setHistory([]);
+        });
     }, [currentUser]);
 
     const login = (email: string, pass: string) => signInWithEmailAndPassword(auth, email, pass).then(() => {});
@@ -166,15 +182,19 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                     addToast("Vision complete!", "success", requestId);
                     setGenerating(false);
                     if (window.electronAPI?.lite) {
-                        await window.electronAPI.lite.saveGeneration({
-                            id: requestId,
-                            prompt,
-                            imageUrl: data.imageUrl,
-                            modelId: selectedModel.id,
-                            params,
-                            createdAt: Date.now()
-                        });
-                        loadLocal();
+                        try {
+                            await window.electronAPI.lite.saveGeneration({
+                                id: requestId,
+                                prompt,
+                                imageUrl: data.imageUrl,
+                                modelId: selectedModel.id,
+                                params,
+                                createdAt: Date.now()
+                            });
+                            loadLocal();
+                        } catch (err) {
+                            console.warn('[Lite] Failed to persist local generation:', err);
+                        }
                     }
                     unsub();
                 } else if (data?.status === 'failed') {
@@ -182,6 +202,10 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                     setGenerating(false);
                     unsub();
                 }
+            }, err => {
+                console.warn('[Lite] Generation subscription failed:', err);
+                addToast('Generation status unavailable', 'error', requestId);
+                setGenerating(false);
             });
         } catch (err: any) {
             addToast(err.message, "error", requestId);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { HashRouter as Router } from 'react-router-dom';
 import { LiteProvider } from './contexts/LiteContext';
 import { Toaster } from 'react-hot-toast';
 import AnimatedRoutes from './components/AnimatedRoutes';

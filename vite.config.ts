@@ -6,6 +6,7 @@ import electron from 'vite-plugin-electron';
 import renderer from 'vite-plugin-electron-renderer';
 
 export default defineConfig({
+  base: './',
   server: {
     port: 3000,
   },
@@ -13,8 +14,17 @@ export default defineConfig({
     react(),
     tailwindcss(),
     electron([
-      { entry: 'electron/main.ts' },
-      { 
+      {
+        entry: 'electron/main.ts',
+        vite: {
+          build: {
+            rollupOptions: {
+              external: ['better-sqlite3'],
+            },
+          },
+        },
+      },
+      {
         entry: 'electron/preload.ts',
         onstart(options) { options.reload(); }
       },
