@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
+  <link rel="preconnect" href="https://cdn.dreambeesai.com" crossorigin />
+  <link rel="dns-prefetch" href="https://cdn.dreambeesai.com" />
+  <link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin />
+  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+  <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com">
+  <link rel="dns-prefetch" href="https://www.googletagmanager.com">
+  <link rel="dns-prefetch" href="https://www.google-analytics.com">
+  <link rel="preload" as="font"
+    href="https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZg.woff2"
+    type="font/woff2" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/png" href="/dreambees_icon.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/dreambees_icon.png" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+
+  <script type="speculationrules">
+  {
+    "prerender": [
+      {
+        "source": "list",
+        "urls": ["/discovery", "/models"]
+      }
+    ]
+  }
+  </script>
+
+  <!-- SEO_INJECT_START -->
+  <title>AI Image Generator - Text to Image Online (No Discord Required)</title>
+  <meta name="description"
+    content="Generate high-quality AI art directly on the web. No Discord servers, no complex prompts. Fast, private, and simple text-to-image creation. Start for free." />
+  <meta name="keywords"
+    content="AI image generator, text to image without discord, simple ai art tool, ai art generator, stable diffusion online, flux ai" />
+  <!-- SEO_INJECT_END -->
+
+  <!-- Open Graph Image Dimensions -->
+  <meta property="og:site_name" content="DreamBees" />
+  <meta property="og:locale" content="en_US" />
+
+  <!-- Social Media Handles (Placeholders) -->
+  <meta name="twitter:site" content="@dreambeesai" />
+  <meta name="twitter:creator" content="@dreambeesai" />
+  <meta property="fb:app_id" content="REPLACE_ME" />
+
+  <!-- Additional SEO -->
+  <meta name="robots" content="index, follow" />
+  <meta name="author" content="DreamBeesAI" />
+  <link rel="canonical" href="https://dreambeesai.com/" />
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-2MB0XFEC9G"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-2MB0XFEC9G');
+  </script>
+
+  <script>
+    (function() {
+      try {
+        var accent = localStorage.getItem('v8-accent-color') || 'purple';
+        var colorMap = { amber: '#fbbf24', pink: '#ec4899', cyan: '#2dd4bf', purple: '#8b5cf6' };
+        var hex = colorMap[accent] || accent;
+        if (hex) {
+          document.documentElement.style.setProperty('--v8-accent', hex);
+          var r = 139, g = 92, b = 246;
+          if (hex.startsWith('#')) {
+            var h = hex.slice(1);
+            if (h.length === 3) {
+              r = parseInt(h[0] + h[0], 16);
+              g = parseInt(h[1] + h[1], 16);
+              b = parseInt(h[2] + h[2], 16);
+            } else if (h.length === 6) {
+              r = parseInt(h.slice(0, 2), 16);
+              g = parseInt(h.slice(2, 4), 16);
+              b = parseInt(h.slice(4, 6), 16);
+            }
+          }
+          document.documentElement.style.setProperty('--v8-accent-rgb', r + ', ' + g + ', ' + b);
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>

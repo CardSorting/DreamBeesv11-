@@ -1,0 +1,46 @@
+{
+  "name": "dreambees-lite",
+  "private": true,
+  "version": "1.0.1",
+  "type": "module",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "dev:electron": "vite",
+    "build:electron": "vite build && electron-builder",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.9.0",
+    "dotenv": "^17.2.3",
+    "firebase": "^11.4.0",
+    "framer-motion": "^11.0.0",
+    "lucide-react": "^0.471.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-hot-toast": "^2.4.1",
+    "react-router-dom": "^7.11.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@tailwindcss/vite": "^4.1.18",
+    "@testing-library/react": "^16.3.1",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.2.3",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.57.2",
+    "@typescript-eslint/parser": "^8.57.2",
+    "@vitejs/plugin-react": "^5.1.1",
+    "electron": "^41.3.0",
+    "electron-builder": "^26.8.1",
+    "eslint": "^9.39.1",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.4",
+    "vite-plugin-electron": "^0.29.1",
+    "vite-plugin-electron-renderer": "^0.14.6",
+    "vitest": "^3.2.4"
+  }
+}
