@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useLite } from '../contexts/LiteContext';
 import { getOptimizedImageUrl } from '../lite-utils';
 import { IconZap } from '../icons';
@@ -6,46 +6,60 @@ import { IconZap } from '../icons';
 export default function ModelFeed() {
     const { availableModels, setSelectedModel, selectedModel } = useLite();
 
+    const filteredModels = useMemo(() => {
+        return availableModels.filter(m => 
+            !m.name.toLowerCase().includes('test') && 
+            !m.name.toLowerCase().includes('draft') &&
+            !m.id.includes('hallucinated')
+        ).slice(0, 6);
+    }, [availableModels]);
+
     return (
         <div className="lite-feed fade-in">
             <header>
                 <h1>Discover<span>Models</span></h1>
-                <p>Choose your creative engine</p>
+                <p>Curated creative engines</p>
             </header>
 
             <div className="models-grid">
-                {availableModels.map(model => (
-                    <div 
-                        key={model.id} 
-                        className={`model-card glass ${selectedModel?.id === model.id ? 'active' : ''}`}
-                        onClick={() => {
-                            setSelectedModel(model);
-                            localStorage.setItem('lite_selected_model', model.id);
-                        }}
-                    >
-                        <div className="model-image">
-                            <img src={getOptimizedImageUrl(model.image) || ''} alt={model.name} />
-                            {selectedModel?.id === model.id && (
-                                <div className="active-badge">
-                                    <IconZap size={14} fill="currentColor" />
-                                    <span>Active</span>
-                                </div>
-                            )}
+                {filteredModels.length > 0 ? (
+                    filteredModels.map(model => (
+                        <div 
+                            key={model.id} 
+                            className={`model-card glass ${selectedModel?.id === model.id ? 'active' : ''}`}
+                            onClick={() => {
+                                setSelectedModel(model);
+                                localStorage.setItem('lite_selected_model', model.id);
+                            }}
+                        >
+                            <div className="model-image">
+                                <img src={getOptimizedImageUrl(model.image) || ''} alt={model.name} />
+                                {selectedModel?.id === model.id && (
+                                    <div className="active-badge">
+                                        <IconZap size={14} fill="currentColor" />
+                                        <span>Active</span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="model-info">
+                                <h3>{model.name}</h3>
+                                <p>{model.description}</p>
+                            </div>
                         </div>
-                        <div className="model-info">
-                            <h3>{model.name}</h3>
-                            <p>{model.description}</p>
-                        </div>
+                    ))
+                ) : (
+                    <div className="empty-state glass">
+                        <p>No models available at this time.</p>
                     </div>
-                ))}
+                )}
             </div>
 
             <style>{`
-                .lite-feed { padding: 40px 20px; max-width: 1000px; margin: 0 auto; }
-                header { text-align: center; margin-bottom: 40px; }
+                .lite-feed { padding: 40px 20px 120px; max-width: 1000px; margin: 0 auto; }
+                header { text-align: center; margin-bottom: 40px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
                 header h1 { font-size: 2.5rem; letter-spacing: -2px; }
                 header h1 span { color: #8b5cf6; margin-left: 8px; }
-                header p { color: #71717a; margin-top: 5px; }
+                header p { color: #71717a; }
 
                 .models-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
                 .model-card { border-radius: 24px; overflow: hidden; cursor: pointer; transition: transform 0.3s, border-color 0.3s; }
@@ -61,6 +75,9 @@ export default function ModelFeed() {
                 .model-info { padding: 20px; }
                 .model-info h3 { font-size: 1.2rem; margin-bottom: 5px; }
                 .model-info p { font-size: 0.85rem; color: #71717a; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+                .empty-state { grid-column: 1 / -1; padding: 60px; text-align: center; border-radius: 32px; color: #71717a; }
+                .empty-state button { margin-top: 20px; background: #8b5cf6; color: white; border: none; padding: 10px 20px; border-radius: 12px; font-weight: 600; cursor: pointer; }
             `}</style>
         </div>
     );

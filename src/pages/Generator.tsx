@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useLite } from '../contexts/LiteContext';
 import { getOptimizedImageUrl } from '../lite-utils';
 import { IconZap, IconLoader, IconImage, IconLayers } from '../icons';
@@ -25,10 +26,10 @@ export default function Generator() {
     return (
         <div className="lite-generator fade-in">
             <header className="gen-header">
-                <div className="model-pill glass">
+                <Link to="/" className="model-pill glass clickable">
                     <div className="status-dot animate-pulse"></div>
                     {selectedModel?.name || "Select Model"}
-                </div>
+                </Link>
             </header>
 
             <main className="gen-main">
@@ -88,7 +89,9 @@ export default function Generator() {
             <style>{`
                 .lite-generator { padding: 40px 20px; max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 30px; }
                 .gen-header { display: flex; justify-content: center; }
-                .model-pill { display: flex; align-items: center; gap: 10px; padding: 8px 20px; border-radius: 99px; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #8b5cf6; }
+                .model-pill { display: flex; align-items: center; gap: 10px; padding: 8px 20px; border-radius: 99px; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #8b5cf6; text-decoration: none; }
+                .model-pill.clickable { cursor: pointer; transition: transform 0.2s, background 0.2s; }
+                .model-pill.clickable:hover { transform: scale(1.05); background: rgba(139, 92, 246, 0.1); }
                 .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #8b5cf6; }
 
                 .result-area { width: 100%; aspect-ratio: 1; border-radius: 32px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; background: #09090b; }
