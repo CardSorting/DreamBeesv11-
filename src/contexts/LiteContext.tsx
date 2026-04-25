@@ -111,7 +111,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     }, []);
 
     useEffect(() => {
-        const modelsQuery = query(collection(db, 'models'), orderBy('order', 'asc'), limit(6));
+        const modelsQuery = query(collection(db, 'models'), orderBy('order', 'asc'), limit(3));
         return onSnapshot(modelsQuery, snap => {
             const models = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as AIModel));
             setAvailableModels(models);

@@ -11,7 +11,7 @@ export default function ModelFeed() {
             !m.name.toLowerCase().includes('test') && 
             !m.name.toLowerCase().includes('draft') &&
             !m.id.includes('hallucinated')
-        ).slice(0, 6);
+        ).slice(0, 3);
     }, [availableModels]);
 
     return (
