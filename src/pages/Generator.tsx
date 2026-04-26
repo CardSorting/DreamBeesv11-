@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useLite } from '../contexts/LiteContext';
 import { getOptimizedImageUrl } from '../lite-utils';
-import { IconZap, IconLoader, IconImage, IconLayers } from '../icons';
+import { IconZap, IconLoader, IconImage, IconLayers, IconSparkles, IconMagic } from '../icons';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Generator() {
@@ -26,37 +26,50 @@ export default function Generator() {
 
     const greeting = useMemo(() => {
         const hour = new Date().getHours();
-        if (hour < 12) return "Morning";
-        if (hour < 18) return "Afternoon";
-        return "Evening";
+        if (hour < 5) return "Quiet Hours";
+        if (hour < 12) return "Golden Morning";
+        if (hour < 17) return "Bright Afternoon";
+        if (hour < 21) return "Cozy Evening";
+        return "Starlit Night";
     }, []);
 
-    // Particle effect during generation for a "Magical" feel
-    const particles = useMemo(() => Array.from({ length: 8 }), []);
+    const particles = useMemo(() => Array.from({ length: 12 }), []);
 
     return (
         <div className="lite-generator-immersive fade-in">
-            {/* Soft mesh background */}
+            {/* Dynamic Mesh Background */}
             <div className="mesh-gradient-container">
                 <div className="mesh-ball mesh-1"></div>
                 <div className="mesh-ball mesh-2"></div>
+                <div className="mesh-ball mesh-3"></div>
             </div>
 
             <header className="gen-header">
-                <div className="header-left">
-                    <span className="welcome-tag">Good {greeting}, {currentUser?.displayName?.split(' ')[0] || 'Creator'}</span>
-                </div>
-                <Link to="/" className="model-pill-warm glass-warm clickable">
-                    <div className="status-dot-glow"></div>
-                    <span>{selectedModel?.name || "Select Engine"}</span>
-                </Link>
+                <motion.div 
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="header-left"
+                >
+                    <span className="welcome-tag">{greeting}</span>
+                    <h1>{currentUser?.displayName?.split(' ')[0] || 'Visionary'}</h1>
+                </motion.div>
+                
+                <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                >
+                    <Link to="/" className="model-jewel glass-immersive clickable">
+                        <div className="status-orb-glow"></div>
+                        <span>{selectedModel?.name || "Select Engine"}</span>
+                    </Link>
+                </motion.div>
             </header>
 
             <main className="gen-main">
                 <div className="canvas-wrapper">
                     <motion.div 
                         layout
-                        className="result-area-warm glass-warm"
+                        className="result-area-immersive glass-immersive"
                     >
                         <AnimatePresence mode="wait">
                             {generating ? (
@@ -67,69 +80,89 @@ export default function Generator() {
                                     exit={{ opacity: 0 }}
                                     className="loader-overlay"
                                 >
-                                    <div className="magical-loader">
-                                        <div className="pulse-container">
-                                            <div className="pulse-ring"></div>
-                                            <IconZap size={48} fill="#8b5cf6" />
+                                    <div className="latent-swirl-container">
+                                        <div className="swirl-ring ring-1"></div>
+                                        <div className="swirl-ring ring-2"></div>
+                                        <div className="swirl-ring ring-3"></div>
+                                        <div className="core-zap">
+                                            <IconMagic size={48} fill="var(--color-accent)" />
                                         </div>
-                                        {/* Particle swarm */}
+                                        {/* Magic particles */}
                                         {particles.map((_, i) => (
                                             <motion.div 
                                                 key={i}
-                                                className="latent-particle"
+                                                className="magic-particle"
                                                 animate={{ 
-                                                    scale: [0, 1, 0],
-                                                    x: [0, (Math.random() - 0.5) * 200],
-                                                    y: [0, (Math.random() - 0.5) * 200],
-                                                    opacity: [0, 0.8, 0]
+                                                    scale: [0, 1.2, 0],
+                                                    rotate: [0, 360],
+                                                    x: [0, (Math.random() - 0.5) * 250],
+                                                    y: [0, (Math.random() - 0.5) * 250],
+                                                    opacity: [0, 1, 0]
                                                 }}
                                                 transition={{ 
-                                                    duration: 1.5 + Math.random(),
+                                                    duration: 2 + Math.random(),
                                                     repeat: Infinity,
-                                                    delay: i * 0.2
+                                                    delay: i * 0.1
                                                 }}
                                             />
                                         ))}
                                     </div>
-                                    <p className="dreaming-text">Dreaming with <span>{selectedModel?.name || 'AI'}</span></p>
+                                    <p className="dreaming-text">Materializing your <span>vision</span>...</p>
                                 </motion.div>
                             ) : localHistory[0] ? (
-                                <motion.img 
+                                <motion.div 
                                     key={localHistory[0].id}
-                                    initial={{ opacity: 0, scale: 1.02, filter: 'blur(20px)' }}
+                                    initial={{ opacity: 0, scale: 1.05, filter: 'blur(30px)' }}
                                     animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                                    src={getOptimizedImageUrl(localHistory[0].imageUrl) || ''} 
-                                    alt="Generation" 
-                                    className="main-image"
-                                />
+                                    className="image-container"
+                                >
+                                    <img 
+                                        src={getOptimizedImageUrl(localHistory[0].imageUrl) || ''} 
+                                        alt="Generation" 
+                                        className="main-image-immersive"
+                                    />
+                                    <div className="image-reflection"></div>
+                                    <div className="image-info-overlay">
+                                        <p>{localHistory[0].prompt}</p>
+                                    </div>
+                                </motion.div>
                             ) : (
                                 <motion.div 
                                     key="placeholder"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="placeholder-warm"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="dream-seed-placeholder"
                                 >
-                                    <div className="icon-box">
-                                        <IconImage size={48} />
+                                    <div className="seed-visual organic-float">
+                                        <IconSparkles size={56} className="breathe" />
                                     </div>
-                                    <h3>Empty Canvas</h3>
-                                    <p>Describe your vision below</p>
-                                    <button 
-                                        type="button"
-                                        className="example-prompt-btn"
-                                        onClick={() => setPrompt("A futuristic garden with bioluminescent bees and crystal flowers")}
-                                    >
-                                        Try: "A futuristic garden..."
-                                    </button>
+                                    <h3>Begin the Dream</h3>
+                                    <p>What shall we manifest today?</p>
+                                    <div className="suggestion-chips">
+                                        <button 
+                                            type="button"
+                                            className="chip"
+                                            onClick={() => setPrompt("A crystalline bee harvesting nectar from a neon lotus")}
+                                        >
+                                            "Crystalline bee..."
+                                        </button>
+                                        <button 
+                                            type="button"
+                                            className="chip"
+                                            onClick={() => setPrompt("An ethereal garden floating in a velvet nebula")}
+                                        >
+                                            "Ethereal garden..."
+                                        </button>
+                                    </div>
                                 </motion.div>
                             )}
                         </AnimatePresence>
                     </motion.div>
                 </div>
 
-                <form className="input-area-warm glass-warm" onSubmit={handleGenerate}>
+                <form className="journal-area glass-immersive" onSubmit={handleGenerate}>
                     <textarea 
-                        placeholder="What are we dreaming of today?"
+                        placeholder="Speak your vision into existence..."
                         value={prompt}
                         onChange={e => setPrompt(e.target.value)}
                         onKeyDown={e => {
@@ -139,33 +172,46 @@ export default function Generator() {
                             }
                         }}
                     />
-                    <div className="input-footer">
-                        <div className="shortcuts">
-                            <span>⌘ + ↵ to materialize</span>
+                    <div className="journal-footer">
+                        <div className="hint">
+                            <IconMagic size={12} />
+                            <span>⌘ + ↵ to Materialize</span>
                         </div>
-                        <button type="submit" disabled={generating || !prompt} className="gen-btn-warm">
-                            {generating ? <IconLoader size={20} /> : <IconZap size={18} fill="currentColor" />}
-                            <span>{generating ? 'Materializing' : 'Bring to Life'}</span>
+                        <button type="submit" disabled={generating || !prompt} className="manifest-btn">
+                            <AnimatePresence mode="wait">
+                                {generating ? (
+                                    <motion.div key="l" exit={{ scale: 0 }} initial={{ scale: 0 }} animate={{ scale: 1 }}>
+                                        <IconLoader size={20} />
+                                    </motion.div>
+                                ) : (
+                                    <motion.div key="z" exit={{ scale: 0 }} initial={{ scale: 0 }} animate={{ scale: 1 }} className="btn-icon-stack">
+                                        <IconZap size={18} fill="currentColor" />
+                                        <IconSparkles size={14} className="sparkle-overlay" />
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                            <span>{generating ? 'Awakening' : 'Materialize'}</span>
                         </button>
                     </div>
                 </form>
 
-                <section className="history-preview">
-                    <div className="section-title">
+                <section className="latent-gallery">
+                    <div className="gallery-header">
                         <IconLayers size={14} />
                         <span>Latent Archive</span>
                     </div>
-                    <div className="history-scroll-warm">
+                    <div className="gallery-grid">
                         {localHistory.slice(1, 10).map((item, idx) => (
                             <motion.div 
                                 key={item.id} 
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: idx * 0.05 }}
-                                whileHover={{ scale: 1.05, y: -5 }}
-                                className="history-card-warm glass-warm"
+                                initial={{ opacity: 0, y: 30 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: idx * 0.1, ease: "easeOut" }}
+                                whileHover={{ scale: 1.08, y: -8, zIndex: 10 }}
+                                className="gallery-card glass-immersive"
                             >
                                 <img src={getOptimizedImageUrl(item.imageUrl) || ''} alt="" />
+                                <div className="card-hint">{item.prompt.substring(0, 30)}...</div>
                             </motion.div>
                         ))}
                     </div>
@@ -173,68 +219,79 @@ export default function Generator() {
             </main>
 
             <style>{`
-                .lite-generator-immersive { min-height: 100vh; padding: 40px 20px 140px; max-width: 900px; margin: 0 auto; position: relative; }
+                .lite-generator-immersive { min-height: 100vh; padding: 60px 24px 160px; max-width: 1000px; margin: 0 auto; position: relative; }
                 
-                .mesh-gradient-container { position: absolute; inset: 0; overflow: hidden; pointer-events: none; opacity: 0.2; }
-                .mesh-ball { position: absolute; border-radius: 50%; filter: blur(100px); animation: float 20s infinite alternate ease-in-out; }
-                .mesh-1 { width: 600px; height: 600px; background: rgba(139, 92, 246, 0.2); top: -200px; right: -100px; }
-                .mesh-2 { width: 500px; height: 500px; background: rgba(217, 70, 239, 0.1); bottom: -100px; left: -100px; animation-delay: -5s; }
+                .mesh-gradient-container { position: absolute; inset: 0; overflow: hidden; pointer-events: none; opacity: 0.3; }
+                .mesh-ball { position: absolute; border-radius: 50%; filter: blur(120px); animation: drift 25s infinite alternate ease-in-out; }
+                .mesh-1 { width: 700px; height: 700px; background: rgba(139, 92, 246, 0.25); top: -250px; right: -150px; }
+                .mesh-2 { width: 600px; height: 600px; background: rgba(245, 158, 11, 0.15); bottom: -150px; left: -150px; animation-delay: -7s; }
+                .mesh-3 { width: 500px; height: 500px; background: rgba(217, 70, 239, 0.1); top: 30%; left: 10%; animation-duration: 30s; }
                 
-                @keyframes float { 
-                    0% { transform: translate(0, 0) scale(1); }
-                    100% { transform: translate(50px, 50px) scale(1.1); }
+                @keyframes drift { 
+                    0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+                    100% { transform: translate(60px, 60px) scale(1.15) rotate(15deg); }
                 }
 
-                .gen-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
-                .welcome-tag { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #71717a; }
+                .gen-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 50px; }
+                .header-left h1 { font-size: 2.5rem; margin-top: 4px; letter-spacing: -2px; }
+                .welcome-tag { font-size: 0.75rem; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; color: var(--color-accent); opacity: 0.8; }
                 
-                .glass-warm { background: rgba(24, 24, 27, 0.4); backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 40px 80px rgba(0,0,0,0.5); }
+                .model-jewel { display: flex; align-items: center; gap: 12px; padding: 12px 28px; border-radius: 99px; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: white; text-decoration: none; border-color: rgba(255,255,255,0.1); transition: all 0.4s; }
+                .model-jewel:hover { border-color: var(--color-accent); transform: translateY(-3px) scale(1.02); box-shadow: 0 20px 40px rgba(139, 92, 246, 0.3); }
+                .status-orb-glow { width: 10px; height: 10px; border-radius: 50%; background: var(--color-accent); box-shadow: 0 0 15px var(--color-accent); animation: pulse 2s infinite; }
+
+                .canvas-wrapper { width: 100%; margin-bottom: 40px; perspective: 1000px; }
+                .result-area-immersive { width: 100%; aspect-ratio: 1/1; border-radius: 64px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; }
                 
-                .model-pill-warm { display: flex; align-items: center; gap: 10px; padding: 10px 24px; border-radius: 99px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #8b5cf6; text-decoration: none; border-color: rgba(139, 92, 246, 0.2); }
-                .model-pill-warm.clickable:hover { transform: translateY(-2px); border-color: #8b5cf6; box-shadow: 0 10px 20px rgba(139, 92, 246, 0.2); }
-                .status-dot-glow { width: 8px; height: 8px; border-radius: 50%; background: #8b5cf6; box-shadow: 0 0 10px #8b5cf6; animation: pulse 2s infinite; }
+                .image-container { width: 100%; height: 100%; position: relative; }
+                .main-image-immersive { width: 100%; height: 100%; object-fit: cover; }
+                .image-reflection { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.4)); pointer-events: none; }
+                .image-info-overlay { position: absolute; bottom: 30px; left: 30px; right: 30px; padding: 20px; background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); transform: translateY(100%); opacity: 0; transition: all 0.4s; }
+                .image-container:hover .image-info-overlay { transform: translateY(0); opacity: 1; }
+                .image-info-overlay p { color: white; font-size: 0.9rem; font-weight: 600; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-                .canvas-wrapper { width: 100%; margin-bottom: 30px; }
-                .result-area-warm { width: 100%; aspect-ratio: 4/5; border-radius: 48px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; }
-                .main-image { width: 100%; height: 100%; object-fit: cover; }
+                .dream-seed-placeholder { text-align: center; color: var(--color-zinc-400); display: flex; flex-direction: column; align-items: center; gap: 20px; }
+                .seed-visual { width: 120px; height: 120px; border-radius: 40px; background: var(--color-accent-soft); display: flex; align-items: center; justify-content: center; color: var(--color-accent); margin-bottom: 10px; box-shadow: 0 20px 50px rgba(139, 92, 246, 0.15); }
+                .dream-seed-placeholder h3 { color: white; font-size: 2rem; }
+                .suggestion-chips { display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; justify-content: center; }
+                .chip { background: rgba(255,255,255,0.03); color: #a1a1aa; padding: 10px 20px; border-radius: 16px; font-size: 0.8rem; font-weight: 700; border: 1px solid rgba(255,255,255,0.06); transition: all 0.3s; }
+                .chip:hover { background: var(--color-accent-soft); color: var(--color-accent); border-color: var(--color-accent); transform: translateY(-2px); }
+
+                .latent-swirl-container { position: relative; width: 240px; height: 240px; display: flex; align-items: center; justify-content: center; }
+                .swirl-ring { position: absolute; border: 2px solid transparent; border-radius: 50%; animation: spin var(--d) linear infinite; }
+                .ring-1 { width: 180px; height: 180px; border-top-color: var(--color-accent); --d: 3s; opacity: 0.6; }
+                .ring-2 { width: 140px; height: 140px; border-right-color: var(--color-dream-purple); --d: 2s; opacity: 0.4; }
+                .ring-3 { width: 100px; height: 100px; border-bottom-color: var(--color-soft-gold); --d: 4s; opacity: 0.2; }
+                .core-zap { z-index: 5; filter: drop-shadow(0 0 20px var(--color-accent)); }
+                .magic-particle { position: absolute; width: 4px; height: 4px; background: white; border-radius: 50%; box-shadow: 0 0 10px var(--color-accent); }
                 
-                .placeholder-warm { text-align: center; color: #52525b; display: flex; flex-direction: column; align-items: center; gap: 15px; }
-                .icon-box { width: 100px; height: 100px; border-radius: 32px; background: rgba(255,255,255,0.03); display: flex; align-items: center; justify-content: center; color: #3f3f46; margin-bottom: 10px; }
-                .placeholder-warm h3 { color: #a1a1aa; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.5px; }
-                .placeholder-warm p { font-size: 1rem; margin-bottom: 15px; }
-                .example-prompt-btn { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; padding: 8px 16px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; border: 1px solid rgba(139, 92, 246, 0.2); transition: all 0.3s; }
-                .example-prompt-btn:hover { background: rgba(139, 92, 246, 0.2); transform: translateY(-2px); }
+                .dreaming-text { font-weight: 800; font-size: 1.2rem; color: #a1a1aa; margin-top: 20px; }
+                .dreaming-text span { color: var(--color-accent); }
 
-                .loader-overlay { text-align: center; color: #8b5cf6; display: flex; flex-direction: column; align-items: center; gap: 20px; z-index: 10; }
-                .magical-loader { position: relative; width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; }
-                .latent-particle { position: absolute; width: 6px; height: 6px; background: #8b5cf6; border-radius: 50%; filter: blur(2px); box-shadow: 0 0 10px #8b5cf6; }
-                .pulse-container { position: relative; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; z-index: 5; }
-                .pulse-ring { position: absolute; inset: 0; border: 2px solid #8b5cf6; border-radius: 50%; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite; }
-                .dreaming-text { font-weight: 800; font-size: 1.1rem; color: #a1a1aa; }
-                .dreaming-text span { color: #8b5cf6; }
-
-                .input-area-warm { padding: 24px; border-radius: 32px; display: flex; flex-direction: column; gap: 15px; }
-                textarea { width: 100%; background: transparent; border: none; color: white; font-size: 1.25rem; padding: 10px; min-height: 100px; resize: none; outline: none; line-height: 1.5; font-weight: 500; }
-                textarea::placeholder { color: #3f3f46; }
+                .journal-area { padding: 32px; border-radius: 40px; display: flex; flex-direction: column; gap: 20px; margin-bottom: 60px; }
+                textarea { width: 100%; background: transparent; border: none; color: white; font-size: 1.4rem; padding: 5px; min-height: 120px; resize: none; outline: none; line-height: 1.5; font-weight: 600; }
+                textarea::placeholder { color: #3f3f46; opacity: 0.5; }
                 
-                .input-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); }
-                .shortcuts { font-size: 0.7rem; font-weight: 800; color: #3f3f46; text-transform: uppercase; letter-spacing: 1px; }
+                .journal-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); }
+                .hint { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; font-weight: 900; color: #52525b; text-transform: uppercase; letter-spacing: 2px; }
                 
-                .gen-btn-warm { background: #8b5cf6; color: white; border: none; padding: 14px 28px; border-radius: 18px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; transition: all 0.3s; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; }
-                .gen-btn-warm:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4); }
-                .gen-btn-warm:disabled { background: rgba(255,255,255,0.05); color: #3f3f46; cursor: not-allowed; }
+                .manifest-btn { background: var(--color-accent); color: white; border: none; padding: 16px 36px; border-radius: 24px; font-weight: 900; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); text-transform: uppercase; font-size: 0.9rem; letter-spacing: 2px; position: relative; overflow: hidden; }
+                .manifest-btn:hover:not(:disabled) { transform: translateY(-4px) scale(1.02); box-shadow: 0 20px 40px rgba(139, 92, 246, 0.4); }
+                .manifest-btn:active:not(:disabled) { transform: translateY(-1px); }
+                .manifest-btn:disabled { background: rgba(255,255,255,0.04); color: #3f3f46; cursor: not-allowed; }
+                
+                .btn-icon-stack { position: relative; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
+                .sparkle-overlay { position: absolute; top: -6px; right: -6px; color: var(--color-soft-gold); }
 
-                .history-preview { margin-top: 50px; }
-                .section-title { display: flex; align-items: center; gap: 10px; color: #52525b; font-size: 0.8rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 25px; }
-                .history-scroll-warm { display: flex; gap: 20px; overflow-x: auto; padding: 10px 5px 30px; scrollbar-width: none; }
-                .history-scroll-warm::-webkit-scrollbar { display: none; }
-                .history-card-warm { width: 120px; height: 120px; border-radius: 24px; overflow: hidden; flex-shrink: 0; cursor: pointer; border-color: rgba(255,255,255,0.05); }
-                .history-card-warm img { width: 100%; height: 100%; object-fit: cover; }
+                .latent-gallery { margin-top: 20px; }
+                .gallery-header { display: flex; align-items: center; gap: 12px; color: #52525b; font-size: 0.75rem; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 30px; }
+                .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 20px; }
+                .gallery-card { aspect-ratio: 1/1; border-radius: 32px; overflow: hidden; position: relative; cursor: pointer; border-color: rgba(255,255,255,0.06); }
+                .gallery-card img { width: 100%; height: 100%; object-fit: cover; }
+                .card-hint { position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; padding: 15px; color: white; font-size: 0.7rem; font-weight: 700; text-align: center; opacity: 0; transition: all 0.3s; }
+                .gallery-card:hover .card-hint { opacity: 1; }
 
-                @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
-                @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-                .spin { animation: spin 2s linear infinite; }
-                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.9); } }
             `}</style>
         </div>
     );

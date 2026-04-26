@@ -1,38 +1,49 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { IconHome, IconZap, IconUser } from '../icons';
+import { IconHome, IconZap, IconUser, IconSparkles } from '../icons';
+import { motion } from 'framer-motion';
 
 export default function BottomNav() {
     return (
-        <nav className="bottom-nav-warm glass-warm">
-            <NavLink to="/" className={({ isActive }) => `nav-item-warm ${isActive ? 'active' : ''}`}>
-                <IconHome size={22} />
+        <nav className="bottom-nav-immersive glass-immersive">
+            <NavLink to="/" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <IconHome size={20} />
                 <span>Explore</span>
             </NavLink>
-            <NavLink to="/generate" className={({ isActive }) => `nav-item-warm ${isActive ? 'active' : ''}`}>
-                <div className="zap-pill-warm">
-                    <IconZap size={22} fill="currentColor" />
+            
+            <NavLink to="/generate" className={({ isActive }) => `nav-link-center ${isActive ? 'active' : ''}`}>
+                <div className="zap-jewel">
+                    <IconZap size={24} fill="currentColor" />
+                    <motion.div 
+                        animate={{ opacity: [0, 1, 0], scale: [0.8, 1.2, 0.8] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="zap-sparkle"
+                    >
+                        <IconSparkles size={12} />
+                    </motion.div>
                 </div>
             </NavLink>
-            <NavLink to="/profile" className={({ isActive }) => `nav-item-warm ${isActive ? 'active' : ''}`}>
-                <IconUser size={22} />
+            
+            <NavLink to="/profile" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+                <IconUser size={20} />
                 <span>Studio</span>
             </NavLink>
 
             <style>{`
-                .glass-warm { background: rgba(24, 24, 27, 0.6); backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 40px 80px rgba(0,0,0,0.6); }
-
-                .bottom-nav-warm { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 320px; height: 80px; border-radius: 40px; display: flex; align-items: center; justify-content: space-around; padding: 0 20px; z-index: 1000; }
+                .bottom-nav-immersive { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 340px; height: 84px; border-radius: 42px; display: flex; align-items: center; justify-content: space-around; padding: 0 10px; z-index: 1000; box-shadow: 0 40px 100px rgba(0,0,0,0.8); }
                 
-                .nav-item-warm { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #52525b; text-decoration: none; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1); }
-                .nav-item-warm.active { color: white; }
-                .nav-item-warm:hover { color: #a1a1aa; transform: translateY(-2px); }
+                .nav-link { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #52525b; text-decoration: none; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); flex: 1; }
+                .nav-link.active { color: white; }
+                .nav-link:hover { color: #a1a1aa; transform: translateY(-2px); }
                 
-                .zap-pill-warm { background: #8b5cf6; color: white; padding: 16px; border-radius: 24px; transform: translateY(-10px); box-shadow: 0 15px 30px rgba(139, 92, 246, 0.4); transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
-                .nav-item-warm.active .zap-pill-warm { transform: translateY(-15px) scale(1.1); box-shadow: 0 20px 40px rgba(139, 92, 246, 0.6); }
+                .nav-link-center { position: relative; flex: 1; display: flex; justify-content: center; }
+                .zap-jewel { background: var(--color-accent); color: white; padding: 18px; border-radius: 28px; transform: translateY(-15px); box-shadow: 0 20px 40px rgba(139, 92, 246, 0.4); transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1); position: relative; }
+                .nav-link-center.active .zap-jewel { transform: translateY(-25px) scale(1.15); box-shadow: 0 30px 60px rgba(139, 92, 246, 0.6); background: linear-gradient(135deg, var(--color-accent), var(--color-dream-purple)); }
+                
+                .zap-sparkle { position: absolute; top: 8px; right: 8px; color: var(--color-soft-gold); pointer-events: none; }
                 
                 @media (max-width: 480px) {
-                    .bottom-nav-warm { width: 90%; bottom: 20px; }
+                    .bottom-nav-immersive { width: 90%; bottom: 20px; }
                 }
             `}</style>
         </nav>

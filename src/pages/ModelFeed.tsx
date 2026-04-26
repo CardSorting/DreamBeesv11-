@@ -1,12 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { useLite } from '../contexts/LiteContext';
 import { getOptimizedImageUrl } from '../lite-utils';
-import { IconZap, IconChevronLeft, IconChevronRight } from '../icons';
+import { IconZap, IconChevronLeft, IconChevronRight, IconSparkles, IconMagic } from '../icons';
 import { AnimatePresence, motion } from 'framer-motion';
 
-/**
- * Provides a clean, short description for models based on their identity
- */
 const getBriefDescription = (name: string, originalDesc: string) => {
     const n = name.toLowerCase();
     if (n.includes('flux')) return "Our most advanced engine. Capable of incredible detail and following complex instructions perfectly.";
@@ -14,14 +11,10 @@ const getBriefDescription = (name: string, originalDesc: string) => {
     if (n.includes('pony')) return "Full of personality and style. Perfect for expressive characters and vibrant, artistic flair.";
     if (n.includes('real')) return "Captured reality. Optimized for lifelike skin, hair, and natural lighting.";
     if (n.includes('anime')) return "The ultimate aesthetic. Hand-crafted for beautiful, stylized character illustrations.";
-    if (n.includes('v1.5')) return "Lightweight and fast. A great choice for rapid experimentation and classic styles.";
     
     return originalDesc.length > 80 ? originalDesc.substring(0, 77) + "..." : originalDesc;
 };
 
-/**
- * Provides a 'Best For' insight for each model
- */
 const getModelInsight = (name: string) => {
     const n = name.toLowerCase();
     if (n.includes('flux')) return "Complex Prompts & Realism";
@@ -61,14 +54,16 @@ export default function ModelFeed() {
     
     const greeting = useMemo(() => {
         const hour = new Date().getHours();
-        if (hour < 12) return "Good Morning";
-        if (hour < 18) return "Good Afternoon";
-        return "Good Evening";
+        if (hour < 5) return "Quiet Hours";
+        if (hour < 12) return "Golden Morning";
+        if (hour < 17) return "Bright Afternoon";
+        if (hour < 21) return "Cozy Evening";
+        return "Starlit Night";
     }, []);
 
     return (
-        <div className="lite-feed-immersive">
-            {/* Soft Mesh Background */}
+        <div className="lite-feed-immersive fade-in">
+            {/* Dynamic Mesh Background */}
             <div className="mesh-gradient-container">
                 <div className="mesh-ball mesh-1"></div>
                 <div className="mesh-ball mesh-2"></div>
@@ -79,10 +74,10 @@ export default function ModelFeed() {
                 <motion.div 
                     key={`bg-${currentModel?.id}`}
                     initial={{ opacity: 0 }}
-                    animate={{ opacity: 0.15 }}
+                    animate={{ opacity: 0.2 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 1.2 }}
-                    className="immersive-bg"
+                    transition={{ duration: 1.5 }}
+                    className="immersive-bg-blur"
                     style={{ backgroundImage: `url(${getOptimizedImageUrl(currentModel?.image)})` }}
                 />
             </AnimatePresence>
@@ -90,19 +85,25 @@ export default function ModelFeed() {
             <div className="content-overlay">
                 <header className="feed-header">
                     <motion.div 
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
                         className="welcome-row"
                     >
-                        <span>{greeting}, {currentUser?.displayName?.split(' ')[0] || 'Creator'}</span>
+                        <span className="welcome-tag">{greeting}</span>
                     </motion.div>
-                    <h1>What will you<span>dream up?</span></h1>
+                    <motion.h1
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                    >
+                        Explore the<span>Latent Garden</span>
+                    </motion.h1>
                 </header>
 
                 <div className="pagination-container">
                     {filteredModels.length > 0 ? (
                         <div className="pager-wrapper">
-                            <button className="nav-arrow prev glass-warm" onClick={handlePrev}>
+                            <button className="nav-arrow prev glass-immersive" onClick={handlePrev}>
                                 <IconChevronLeft size={32} />
                             </button>
 
@@ -110,53 +111,55 @@ export default function ModelFeed() {
                                 <AnimatePresence mode="wait">
                                     <motion.div 
                                         key={currentModel.id}
-                                        initial={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
-                                        animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-                                        exit={{ opacity: 0, scale: 1.02, filter: 'blur(10px)' }}
-                                        transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-                                        className={`model-card-soft glass-warm ${selectedModel?.id === currentModel.id ? 'active' : ''}`}
+                                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 1.05, y: -20 }}
+                                        transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
+                                        className={`model-jewel-card glass-immersive ${selectedModel?.id === currentModel.id ? 'selected' : ''}`}
                                     >
-                                        <div className="model-visual-root" onClick={() => {
+                                        <div className="model-jewel-root" onClick={() => {
                                             setSelectedModel(currentModel);
                                             localStorage.setItem('lite_selected_model', currentModel.id);
                                         }}>
-                                            <div className="model-image-container">
+                                            <div className="model-visual-side">
                                                 <img src={getOptimizedImageUrl(currentModel.image) || ''} alt={currentModel.name} />
-                                                <div className="card-overlays">
+                                                <div className="visual-overlays">
                                                     {selectedModel?.id === currentModel.id && (
-                                                        <div className="active-badge glow-soft">
-                                                            <IconZap size={14} fill="currentColor" />
-                                                            <span>Selected</span>
-                                                        </div>
+                                                        <motion.div layoutId="active" className="active-jewel-badge">
+                                                            <IconMagic size={14} fill="currentColor" />
+                                                            <span>Active</span>
+                                                        </motion.div>
                                                     )}
-                                                    {currentModel.name.toLowerCase().includes('flux') && <div className="flagship-pill">Flagship Engine</div>}
+                                                    {currentModel.name.toLowerCase().includes('flux') && <div className="premium-tag">Flagship</div>}
                                                 </div>
+                                                <div className="image-reflection"></div>
                                             </div>
                                             
-                                            <div className="model-details">
-                                                <div className="title-row">
-                                                    <div className="name-box">
-                                                        <label className="type-tag">{currentModel.name.toLowerCase().includes('flux') ? 'Ultra Quality' : 'High Performance'}</label>
+                                            <div className="model-info-side">
+                                                <div className="info-header">
+                                                    <div className="name-stack">
+                                                        <span className="type-label">{currentModel.name.toLowerCase().includes('flux') ? 'Superior Quality' : 'Artistic Engine'}</span>
                                                         <h2>{currentModel.name}</h2>
                                                     </div>
-                                                    <div className="step-indicator">{currentIndex + 1} / {filteredModels.length}</div>
+                                                    <div className="index-pill">{currentIndex + 1} / {filteredModels.length}</div>
                                                 </div>
                                                 
-                                                <p className="description">
+                                                <p className="poetic-desc">
                                                     {getBriefDescription(currentModel.name, currentModel.description)}
                                                 </p>
 
-                                                <div className="insight-pill">
-                                                    <IconZap size={14} />
-                                                    <span>Best for: <strong>{getModelInsight(currentModel.name)}</strong></span>
+                                                <div className="insight-jewel">
+                                                    <IconSparkles size={16} />
+                                                    <span>Mastery: <strong>{getModelInsight(currentModel.name)}</strong></span>
                                                 </div>
                                                 
-                                                <div className="action-footer">
-                                                    <div className={`primary-btn ${selectedModel?.id === currentModel.id ? 'active' : ''}`}>
-                                                        {selectedModel?.id === currentModel.id ? 'Ready to Generate' : 'Select Engine'}
-                                                    </div>
-                                                    <div className="model-tip">
-                                                        <span>Pro Tip: Best for {currentModel.name.toLowerCase().includes('flux') ? 'complex scenes' : 'fast results'}</span>
+                                                <div className="action-row">
+                                                    <button className={`select-btn ${selectedModel?.id === currentModel.id ? 'active' : ''}`}>
+                                                        {selectedModel?.id === currentModel.id ? 'Current Choice' : 'Select Core'}
+                                                    </button>
+                                                    <div className="engine-trait">
+                                                        <IconZap size={12} />
+                                                        <span>{currentModel.name.toLowerCase().includes('flux') ? 'Nuanced Precision' : 'Fluid Creativity'}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -165,13 +168,14 @@ export default function ModelFeed() {
                                 </AnimatePresence>
                             </div>
 
-                            <button className="nav-arrow next glass-warm" onClick={handleNext}>
+                            <button className="nav-arrow next glass-immersive" onClick={handleNext}>
                                 <IconChevronRight size={32} />
                             </button>
                         </div>
                     ) : (
-                        <div className="empty-state glass-warm">
-                            <p>Polishing the creative cores...</p>
+                        <div className="empty-garden glass-immersive">
+                            <IconMagic size={48} className="breathe" />
+                            <p>Cultivating new visions...</p>
                         </div>
                     )}
                 </div>
@@ -180,80 +184,80 @@ export default function ModelFeed() {
             <style>{`
                 .lite-feed-immersive { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #09090b; }
                 
-                .mesh-gradient-container { position: absolute; inset: 0; overflow: hidden; pointer-events: none; opacity: 0.4; }
-                .mesh-ball { position: absolute; border-radius: 50%; filter: blur(100px); animation: float 20s infinite alternate ease-in-out; }
-                .mesh-1 { width: 600px; height: 600px; background: rgba(139, 92, 246, 0.2); top: -200px; right: -100px; }
-                .mesh-2 { width: 500px; height: 500px; background: rgba(217, 70, 239, 0.1); bottom: -100px; left: -100px; animation-delay: -5s; }
-                .mesh-3 { width: 400px; height: 400px; background: rgba(59, 130, 246, 0.1); top: 50%; left: 30%; animation-delay: -10s; }
+                .mesh-gradient-container { position: absolute; inset: 0; overflow: hidden; pointer-events: none; opacity: 0.3; }
+                .mesh-ball { position: absolute; border-radius: 50%; filter: blur(120px); animation: drift 25s infinite alternate ease-in-out; }
+                .mesh-1 { width: 700px; height: 700px; background: rgba(139, 92, 246, 0.2); top: -250px; right: -150px; }
+                .mesh-2 { width: 600px; height: 600px; background: rgba(245, 158, 11, 0.15); bottom: -150px; left: -150px; animation-delay: -7s; }
+                .mesh-3 { width: 500px; height: 500px; background: rgba(217, 70, 239, 0.1); top: 30%; left: 10%; animation-duration: 30s; }
                 
-                @keyframes float { 
-                    0% { transform: translate(0, 0) scale(1); }
-                    100% { transform: translate(100px, 100px) scale(1.2); }
+                @keyframes drift { 
+                    0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+                    100% { transform: translate(60px, 60px) scale(1.15) rotate(15deg); }
                 }
 
-                .immersive-bg { position: absolute; inset: -100px; background-size: cover; background-position: center; filter: blur(80px) saturate(1.2); opacity: 0.15; pointer-events: none; }
+                .immersive-bg-blur { position: absolute; inset: -100px; background-size: cover; background-position: center; filter: blur(100px) saturate(1.5); opacity: 0.2; pointer-events: none; }
                 
-                .content-overlay { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 40px 40px 120px; }
+                .content-overlay { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 60px 40px 140px; max-width: 1400px; margin: 0 auto; }
                 
-                .feed-header { text-align: left; margin-bottom: 20px; max-width: 1200px; margin: 0 auto 40px; width: 100%; }
-                .welcome-row { color: #8b5cf6; font-size: 0.9rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; opacity: 0.8; }
-                .feed-header h1 { font-size: 4rem; letter-spacing: -3px; line-height: 0.9; font-weight: 900; color: white; }
-                .feed-header h1 span { display: block; color: #a1a1aa; }
+                .feed-header { text-align: left; margin-bottom: 40px; width: 100%; }
+                .welcome-tag { font-size: 0.75rem; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; color: var(--color-accent); opacity: 0.8; }
+                .feed-header h1 { font-size: 3.5rem; letter-spacing: -3px; line-height: 0.9; font-weight: 900; color: white; margin-top: 5px; }
+                .feed-header h1 span { display: block; color: var(--color-zinc-400); }
 
                 .pagination-container { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
-                .pager-wrapper { display: flex; align-items: center; gap: 40px; width: 100%; max-width: 1200px; }
+                .pager-wrapper { display: flex; align-items: center; gap: 60px; width: 100%; }
 
-                .nav-arrow { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; transition: all 0.3s; border: 1px solid rgba(255,255,255,0.05); }
-                .nav-arrow:hover { background: #8b5cf6; border-color: #8b5cf6; transform: scale(1.1); box-shadow: 0 0 30px rgba(139, 92, 246, 0.3); }
+                .nav-arrow { width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); border-color: rgba(255,255,255,0.08); }
+                .nav-arrow:hover { background: var(--color-accent); border-color: var(--color-accent); transform: scale(1.15); box-shadow: 0 20px 40px rgba(139, 92, 246, 0.4); }
 
-                .pager-content { flex: 1; min-width: 0; }
+                .pager-content { flex: 1; min-width: 0; perspective: 2000px; }
                 
-                .glass-warm { background: rgba(24, 24, 27, 0.4); backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 40px 80px rgba(0,0,0,0.5); }
+                .model-jewel-card { width: 100%; border-radius: 64px; overflow: hidden; position: relative; transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1); }
+                .model-jewel-card.selected { border-color: var(--color-accent); box-shadow: 0 40px 100px rgba(139, 92, 246, 0.2); }
                 
-                .model-card-soft { width: 100%; border-radius: 48px; overflow: hidden; position: relative; transition: border-color 0.4s; }
-                .model-card-soft.active { border-color: #8b5cf6; }
+                .model-jewel-root { display: flex; flex-direction: row; cursor: pointer; min-height: 600px; }
                 
-                .model-visual-root { display: flex; flex-direction: row; cursor: pointer; }
+                .model-visual-side { flex: 1; position: relative; overflow: hidden; }
+                .model-visual-side img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s cubic-bezier(0.23, 1, 0.32, 1); }
+                .model-jewel-card:hover .model-visual-side img { transform: scale(1.08); }
                 
-                .model-image-container { flex: 0.9; aspect-ratio: 1; position: relative; overflow: hidden; }
-                .model-image-container img { width: 100%; height: 100%; object-fit: cover; transition: transform 1s cubic-bezier(0.23, 1, 0.32, 1); }
-                .model-card-soft:hover .model-image-container img { transform: scale(1.05); }
-                
-                .card-overlays { position: absolute; top: 30px; left: 30px; right: 30px; display: flex; justify-content: space-between; pointer-events: none; }
-                .active-badge { background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 99px; display: flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 900; text-transform: uppercase; box-shadow: 0 10px 30px rgba(139, 92, 246, 0.5); }
-                .flagship-pill { background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); color: white; padding: 10px 20px; border-radius: 99px; font-size: 0.75rem; font-weight: 900; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.1); }
+                .visual-overlays { position: absolute; top: 40px; left: 40px; right: 40px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; }
+                .active-jewel-badge { background: var(--color-accent); color: white; padding: 12px 24px; border-radius: 99px; display: flex; align-items: center; gap: 10px; font-size: 0.75rem; font-weight: 900; text-transform: uppercase; box-shadow: 0 15px 30px rgba(139, 92, 246, 0.5); }
+                .premium-tag { background: rgba(0,0,0,0.5); backdrop-filter: blur(15px); color: white; padding: 12px 24px; border-radius: 99px; font-size: 0.75rem; font-weight: 900; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.12); }
+                .image-reflection { position: absolute; inset: 0; background: linear-gradient(90deg, transparent 70%, rgba(0,0,0,0.3)); pointer-events: none; }
 
-                .model-details { flex: 1.1; padding: 60px; display: flex; flex-direction: column; justify-content: center; }
-                .type-tag { font-size: 0.7rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: #8b5cf6; margin-bottom: 8px; display: block; }
-                .model-details h2 { font-size: 3.5rem; font-weight: 900; letter-spacing: -2px; line-height: 1; margin-bottom: 20px; }
-                .step-indicator { color: #3f3f46; font-weight: 900; font-size: 1.5rem; }
+                .model-info-side { flex: 1.2; padding: 80px; display: flex; flex-direction: column; justify-content: center; background: rgba(255,255,255,0.01); }
+                .type-label { font-size: 0.75rem; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; color: var(--color-accent); margin-bottom: 12px; display: block; opacity: 0.8; }
+                .model-info-side h2 { font-size: 4rem; font-weight: 900; letter-spacing: -3px; line-height: 0.95; margin-bottom: 25px; color: white; }
+                .index-pill { font-size: 1.2rem; font-weight: 900; color: var(--color-zinc-400); margin-top: 10px; }
                 
-                .description { font-size: 1.25rem; color: #a1a1aa; line-height: 1.5; margin-bottom: 20px; }
+                .poetic-desc { font-size: 1.4rem; color: var(--color-zinc-400); line-height: 1.6; margin-bottom: 40px; font-weight: 500; }
 
-                .insight-pill { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; padding: 10px 20px; border-radius: 16px; width: fit-content; display: flex; align-items: center; gap: 10px; font-size: 0.85rem; margin-bottom: 40px; border: 1px solid rgba(139, 92, 246, 0.1); }
-                .insight-pill strong { color: white; }
+                .insight-jewel { background: var(--color-accent-soft); color: var(--color-accent); padding: 14px 28px; border-radius: 20px; width: fit-content; display: flex; align-items: center; gap: 12px; font-size: 0.95rem; margin-bottom: 50px; border: 1px solid rgba(139, 92, 246, 0.15); }
+                .insight-jewel strong { color: white; }
                 
-                .action-footer { display: flex; align-items: center; gap: 20px; }
-                .primary-btn { padding: 16px 32px; border-radius: 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; font-weight: 800; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; transition: all 0.3s; }
-                .primary-btn.active { background: #8b5cf6; border-color: #8b5cf6; transform: scale(1.05); box-shadow: 0 10px 40px rgba(139, 92, 246, 0.4); }
+                .action-row { display: flex; align-items: center; gap: 30px; }
+                .select-btn { padding: 18px 40px; border-radius: 24px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: white; font-weight: 900; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 2px; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
+                .select-btn.active { background: var(--color-accent); border-color: var(--color-accent); transform: translateY(-4px); box-shadow: 0 20px 40px rgba(139, 92, 246, 0.4); }
+                .select-btn:hover:not(.active) { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); transform: translateY(-2px); }
                 
-                .model-tip { display: flex; align-items: center; gap: 8px; color: #52525b; font-size: 0.8rem; font-weight: 700; }
+                .engine-trait { display: flex; align-items: center; gap: 10px; color: #52525b; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
 
-                .glow-soft { animation: glow 3s infinite alternate; }
-                @keyframes glow { from { box-shadow: 0 0 10px rgba(139, 92, 246, 0.3); } to { box-shadow: 0 0 25px rgba(139, 92, 246, 0.6); } }
+                .empty-garden { padding: 100px; text-align: center; border-radius: 64px; display: flex; flex-direction: column; align-items: center; gap: 30px; color: var(--color-zinc-400); }
 
-                @media (max-width: 1100px) {
-                    .model-visual-root { flex-direction: column; }
-                    .model-image-container { aspect-ratio: 16/9; }
-                    .model-details { padding: 40px; }
-                    .model-details h2 { font-size: 2.5rem; }
-                    .feed-header h1 { font-size: 3rem; }
+                @media (max-width: 1200px) {
+                    .model-jewel-root { flex-direction: column; min-height: auto; }
+                    .model-visual-side { aspect-ratio: 16/9; }
+                    .model-info-side { padding: 50px; }
+                    .model-info-side h2 { font-size: 3rem; }
                 }
 
                 @media (max-width: 768px) {
-                    .content-overlay { padding: 20px; }
+                    .content-overlay { padding: 30px 20px; }
                     .nav-arrow { display: none; }
-                    .feed-header h1 { font-size: 2rem; }
+                    .feed-header h1 { font-size: 2.5rem; }
+                    .model-info-side h2 { font-size: 2.5rem; }
+                    .poetic-desc { font-size: 1.1rem; }
                 }
             `}</style>
         </div>
