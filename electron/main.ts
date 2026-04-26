@@ -70,6 +70,18 @@ function isAllowedNavigation(url: string) {
 
   try {
     const parsed = new URL(url);
+    
+    // Allow Firebase and Google Auth domains
+    const allowedHosts = [
+      'accounts.google.com',
+      'dreambees-alchemist.firebaseapp.com',
+      'firebaseapp.com'
+    ];
+    
+    if (allowedHosts.some(host => parsed.hostname === host || parsed.hostname.endsWith('.' + host))) {
+      return true;
+    }
+
     if (parsed.protocol === 'file:') {
       const targetPath = path.resolve(fileURLToPath(parsed));
       return targetPath === rendererRoot || targetPath.startsWith(`${rendererRoot}${path.sep}`);
