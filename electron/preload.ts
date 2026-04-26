@@ -7,5 +7,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getGenerations: (limit: number) => ipcRenderer.invoke('lite:getGenerations', limit),
     setSetting: (key: string, val: any) => ipcRenderer.invoke('lite:setSetting', key, val),
     getSetting: (key: string) => ipcRenderer.invoke('lite:getSetting', key),
+    googleLogin: () => ipcRenderer.invoke('auth:google-login'),
   }
 });

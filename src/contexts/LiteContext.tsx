@@ -7,7 +7,8 @@ import {
     createUserWithEmailAndPassword, 
     signOut, 
     GoogleAuthProvider, 
-    signInWithPopup 
+    signInWithPopup,
+    signInWithCredential
 } from 'firebase/auth';
 import { collection, doc, onSnapshot, query, orderBy, limit, setDoc, serverTimestamp, enableNetwork, disableNetwork } from 'firebase/firestore';
 import { AIModel } from '../lite-utils';
@@ -145,9 +146,38 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     const logout = () => signOut(auth).then(() => { toast.success("Safe travels."); });
 
     const loginWithGoogle = async () => {
-        const provider = new GoogleAuthProvider();
         try {
-            const res = await signInWithPopup(auth, provider);
+            if (!window.electronAPI?.lite?.googleLogin) {
+                // Fallback for web/dev if available
+                const provider = new GoogleAuthProvider();
+                const res = await signInWithPopup(auth, provider);
+                if (res.user) {
+                    await setDoc(doc(db, 'users', res.user.uid), {
+                        email: res.user.email,
+                        lastLogin: serverTimestamp()
+                    }, { merge: true });
+                    toast.success(`Welcome back, ${res.user.displayName?.split(' ')[0]}`);
+                }
+                return;
+            }
+
+            // Electron Manual Flow
+            const resultUrl = await window.electronAPI.lite.googleLogin();
+            
+            // Hardened parsing: Handle both hash (#) and query (?) formats
+            const normalizedUrl = resultUrl.includes('#') ? resultUrl.replace('#', '?') : resultUrl;
+            const searchParams = new URL(normalizedUrl).searchParams;
+            
+            const idToken = searchParams.get('id_token');
+            const accessToken = searchParams.get('access_token');
+
+            if (!idToken && !accessToken) {
+                throw new Error("The identity portal returned an empty response. Please try again.");
+            }
+
+            const credential = GoogleAuthProvider.credential(idToken, accessToken);
+            const res = await signInWithCredential(auth, credential);
+
             if (res.user) {
                 await setDoc(doc(db, 'users', res.user.uid), {
                     email: res.user.email,
@@ -156,7 +186,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 toast.success(`Welcome back, ${res.user.displayName?.split(' ')[0]}`);
             }
         } catch (err: any) {
-            toast.error(err.message);
+            console.error('[Lite Auth Error]', err);
+            toast.error(err.message || "The vision was interrupted.");
         }
     };
 

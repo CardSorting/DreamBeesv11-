@@ -76,6 +76,44 @@ function registerIpcHandlers() {
       return null;
     }
   });
+
+  // Manual Google Auth Flow for Electron
+  ipcMain.handle('auth:google-login', async () => {
+    return new Promise((resolve, reject) => {
+      const authWindow = new BrowserWindow({
+        width: 500,
+        height: 600,
+        show: true,
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true,
+          sandbox: true
+        }
+      });
+
+      const apiKey = process.env.VITE_FIREBASE_API_KEY;
+      const authDomain = 'dreambees-alchemist.firebaseapp.com';
+      
+      // Use the Firebase Auth Handler page as a proxy
+      const authUrl = `https://${authDomain}/__/auth/handler?apiKey=${apiKey}&appName=[DEFAULT]&authType=popup&redirectWidgetMode=float`;
+
+      authWindow.loadURL(authUrl);
+
+      const handleRedirect = (url: string) => {
+        if (url.includes('id_token=') || url.includes('access_token=')) {
+          resolve(url);
+          if (!authWindow.isDestroyed()) authWindow.close();
+        }
+      };
+
+      authWindow.webContents.on('will-navigate', (_event, url) => handleRedirect(url));
+      authWindow.webContents.on('will-redirect', (_event, url) => handleRedirect(url));
+
+      authWindow.on('closed', () => {
+        reject(new Error('Login window was closed by the visionary.'));
+      });
+    });
+  });
 }
 
 function tryInitDatabase() {
@@ -130,7 +168,7 @@ function isAllowedNavigation(url: string) {
 function setupSecurityHeaders() {
   const authDomain = 'dreambees-alchemist.firebaseapp.com';
 
-  // 1. Outgoing: Spoof Origin/Referer to appear as the authorized domain
+  // 1. Outgoing: Comprehensive Masquerade
   session.defaultSession.webRequest.onBeforeSendHeaders({
     urls: [
       'https://*.googleapis.com/*',
@@ -139,12 +177,20 @@ function setupSecurityHeaders() {
       'https://accounts.google.com/*'
     ]
   }, (details, callback) => {
-    details.requestHeaders['Origin'] = `https://${authDomain}`;
-    details.requestHeaders['Referer'] = `https://${authDomain}/`;
-    callback({ cancel: false, requestHeaders: details.requestHeaders });
+    const headers = { ...details.requestHeaders };
+    
+    headers['Origin'] = `https://${authDomain}`;
+    headers['Referer'] = `https://${authDomain}/`;
+    
+    // Mask metadata to appear as a same-site request from the authorized domain
+    headers['Sec-Fetch-Site'] = 'same-site';
+    headers['Sec-Fetch-Mode'] = 'cors';
+    headers['Sec-Fetch-Dest'] = 'empty';
+    
+    callback({ cancel: false, requestHeaders: headers });
   });
 
-  // 2. Incoming: Force Allow CORS to bypass renderer-side origin checks
+  // 2. Incoming: Force Allow CORS & Inject CSP
   session.defaultSession.webRequest.onHeadersReceived({
     urls: [
       'https://*.googleapis.com/*',
@@ -155,12 +201,10 @@ function setupSecurityHeaders() {
   }, (details, callback) => {
     const responseHeaders = { ...details.responseHeaders };
     
-    // Inject broad CORS headers to satisfy the browser's security model
     responseHeaders['Access-Control-Allow-Origin'] = ['*'];
     responseHeaders['Access-Control-Allow-Methods'] = ['GET, POST, OPTIONS, PUT, DELETE'];
     responseHeaders['Access-Control-Allow-Headers'] = ['*'];
     
-    // Implement CSP
     const csp = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
