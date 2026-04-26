@@ -128,7 +128,39 @@ function isAllowedNavigation(url: string) {
 }
 
 function setupSecurityHeaders() {
-  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+  const authDomain = 'dreambees-alchemist.firebaseapp.com';
+
+  // 1. Outgoing: Spoof Origin/Referer to appear as the authorized domain
+  session.defaultSession.webRequest.onBeforeSendHeaders({
+    urls: [
+      'https://*.googleapis.com/*',
+      'https://*.firebaseio.com/*',
+      'https://*.firebaseapp.com/*',
+      'https://accounts.google.com/*'
+    ]
+  }, (details, callback) => {
+    details.requestHeaders['Origin'] = `https://${authDomain}`;
+    details.requestHeaders['Referer'] = `https://${authDomain}/`;
+    callback({ cancel: false, requestHeaders: details.requestHeaders });
+  });
+
+  // 2. Incoming: Force Allow CORS to bypass renderer-side origin checks
+  session.defaultSession.webRequest.onHeadersReceived({
+    urls: [
+      'https://*.googleapis.com/*',
+      'https://*.firebaseio.com/*',
+      'https://*.firebaseapp.com/*',
+      'https://accounts.google.com/*'
+    ]
+  }, (details, callback) => {
+    const responseHeaders = { ...details.responseHeaders };
+    
+    // Inject broad CORS headers to satisfy the browser's security model
+    responseHeaders['Access-Control-Allow-Origin'] = ['*'];
+    responseHeaders['Access-Control-Allow-Methods'] = ['GET, POST, OPTIONS, PUT, DELETE'];
+    responseHeaders['Access-Control-Allow-Headers'] = ['*'];
+    
+    // Implement CSP
     const csp = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
@@ -139,28 +171,10 @@ function setupSecurityHeaders() {
       "frame-src 'self' https://accounts.google.com",
       "object-src 'none'"
     ].join('; ');
+    
+    responseHeaders['Content-Security-Policy'] = [csp];
 
-    callback({
-      responseHeaders: {
-        ...details.responseHeaders,
-        'Content-Security-Policy': [csp]
-      }
-    });
-  });
-
-  // Fix: Firebase auth/unauthorized-domain in production
-  const filter = {
-    urls: [
-      'https://identitytoolkit.googleapis.com/*',
-      'https://securetoken.googleapis.com/*',
-      `https://${authDomain}/*`
-    ]
-  };
-
-  session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
-    details.requestHeaders['Origin'] = `https://${authDomain}`;
-    details.requestHeaders['Referer'] = `https://${authDomain}/`;
-    callback({ cancel: false, requestHeaders: details.requestHeaders });
+    callback({ cancel: false, responseHeaders });
   });
 }
 
