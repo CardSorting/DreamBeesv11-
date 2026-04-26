@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useLite } from '../contexts/LiteContext';
 import { getOptimizedImageUrl } from '../lite-utils';
 import { IconZap, IconLoader, IconImage, IconLayers } from '../icons';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Generator() {
     const [prompt, setPrompt] = useState('');
-    const { selectedModel, generate, generating, localHistory } = useLite();
+    const { selectedModel, generate, generating, localHistory, currentUser } = useLite();
 
     const handleGenerate = async (e?: React.FormEvent) => {
         e?.preventDefault();
@@ -23,39 +24,82 @@ export default function Generator() {
         return () => window.removeEventListener('keydown', handleKeys);
     }, [prompt, generating]);
 
+    const greeting = useMemo(() => {
+        const hour = new Date().getHours();
+        if (hour < 12) return "Morning";
+        if (hour < 18) return "Afternoon";
+        return "Evening";
+    }, []);
+
     return (
-        <div className="lite-generator fade-in">
+        <div className="lite-generator-immersive fade-in">
+            {/* Soft mesh background */}
+            <div className="mesh-gradient-container">
+                <div className="mesh-ball mesh-1"></div>
+                <div className="mesh-ball mesh-2"></div>
+            </div>
+
             <header className="gen-header">
-                <Link to="/" className="model-pill glass clickable">
-                    <div className="status-dot animate-pulse"></div>
-                    {selectedModel?.name || "Select Model"}
+                <div className="header-left">
+                    <span className="welcome-tag">Good {greeting}, {currentUser?.displayName?.split(' ')[0] || 'Creator'}</span>
+                </div>
+                <Link to="/" className="model-pill-warm glass-warm clickable">
+                    <div className="status-dot-glow"></div>
+                    <span>{selectedModel?.name || "Select Engine"}</span>
                 </Link>
             </header>
 
             <main className="gen-main">
-                <div className="result-area glass">
-                    {generating ? (
-                        <div className="loader-overlay">
-                            <IconLoader size={48} />
-                            <p>Dreaming...</p>
-                        </div>
-                    ) : localHistory[0] ? (
-                        <img 
-                            src={getOptimizedImageUrl(localHistory[0].imageUrl) || ''} 
-                            alt="Last Generation" 
-                            className="main-image"
-                        />
-                    ) : (
-                        <div className="placeholder">
-                            <IconImage size={64} />
-                            <p>Enter a prompt to start</p>
-                        </div>
-                    )}
+                <div className="canvas-wrapper">
+                    <motion.div 
+                        layout
+                        className="result-area-warm glass-warm"
+                    >
+                        <AnimatePresence mode="wait">
+                            {generating ? (
+                                <motion.div 
+                                    key="loading"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    className="loader-overlay"
+                                >
+                                    <div className="pulse-container">
+                                        <div className="pulse-ring"></div>
+                                        <IconZap size={48} fill="#8b5cf6" />
+                                    </div>
+                                    <p>Expanding your vision...</p>
+                                </motion.div>
+                            ) : localHistory[0] ? (
+                                <motion.img 
+                                    key={localHistory[0].id}
+                                    initial={{ opacity: 0, scale: 1.05, filter: 'blur(10px)' }}
+                                    animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                                    src={getOptimizedImageUrl(localHistory[0].imageUrl) || ''} 
+                                    alt="Generation" 
+                                    className="main-image"
+                                />
+                            ) : (
+                                <motion.div 
+                                    key="placeholder"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="placeholder-warm"
+                                >
+                                    <div className="icon-box">
+                                        <IconImage size={48} />
+                                    </div>
+                                    <h3>Empty Canvas</h3>
+                                    <p>Describe what you want to see below</p>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </motion.div>
                 </div>
 
-                <form className="input-area glass" onSubmit={handleGenerate}>
+                <form className="input-area-warm glass-warm" onSubmit={handleGenerate}>
                     <textarea 
-                        placeholder="Describe your vision..."
+                        placeholder="Describe your vision in detail..."
                         value={prompt}
                         onChange={e => setPrompt(e.target.value)}
                         onKeyDown={e => {
@@ -65,56 +109,93 @@ export default function Generator() {
                             }
                         }}
                     />
-                    <button type="submit" disabled={generating || !prompt} className="gen-btn">
-                        {generating ? <IconLoader size={20} /> : <IconZap size={20} />}
-                        <span>{generating ? 'Dreaming' : 'Generate'}</span>
-                    </button>
+                    <div className="input-footer">
+                        <div className="shortcuts">
+                            <span>⌘ + ↵ to generate</span>
+                        </div>
+                        <button type="submit" disabled={generating || !prompt} className="gen-btn-warm">
+                            {generating ? <IconLoader size={20} className="spin" /> : <IconZap size={18} fill="currentColor" />}
+                            <span>{generating ? 'Dreaming...' : 'Bring to Life'}</span>
+                        </button>
+                    </div>
                 </form>
 
                 <section className="history-preview">
                     <div className="section-title">
-                        <IconLayers size={16} />
-                        <span>Recent Creations</span>
+                        <IconLayers size={14} />
+                        <span>Previous Creations</span>
                     </div>
-                    <div className="history-grid custom-scrollbar">
-                        {localHistory.slice(1, 6).map(item => (
-                            <div key={item.id} className="history-item glass">
+                    <div className="history-scroll-warm">
+                        {localHistory.slice(1, 10).map(item => (
+                            <motion.div 
+                                key={item.id} 
+                                whileHover={{ scale: 1.05, y: -5 }}
+                                className="history-card-warm glass-warm"
+                            >
                                 <img src={getOptimizedImageUrl(item.imageUrl) || ''} alt="" />
-                            </div>
+                            </motion.div>
                         ))}
                     </div>
                 </section>
             </main>
 
             <style>{`
-                .lite-generator { padding: 40px 20px; max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 30px; }
-                .gen-header { display: flex; justify-content: center; }
-                .model-pill { display: flex; align-items: center; gap: 10px; padding: 8px 20px; border-radius: 99px; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #8b5cf6; text-decoration: none; }
-                .model-pill.clickable { cursor: pointer; transition: transform 0.2s, background 0.2s; }
-                .model-pill.clickable:hover { transform: scale(1.05); background: rgba(139, 92, 246, 0.1); }
-                .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #8b5cf6; }
+                .lite-generator-immersive { min-height: 100vh; padding: 40px 20px 100px; max-width: 900px; margin: 0 auto; position: relative; }
+                
+                .mesh-gradient-container { position: absolute; inset: 0; overflow: hidden; pointer-events: none; opacity: 0.2; }
+                .mesh-ball { position: absolute; border-radius: 50%; filter: blur(100px); animation: float 20s infinite alternate ease-in-out; }
+                .mesh-1 { width: 600px; height: 600px; background: rgba(139, 92, 246, 0.2); top: -200px; right: -100px; }
+                .mesh-2 { width: 500px; height: 500px; background: rgba(217, 70, 239, 0.1); bottom: -100px; left: -100px; animation-delay: -5s; }
+                
+                @keyframes float { 
+                    0% { transform: translate(0, 0) scale(1); }
+                    100% { transform: translate(50px, 50px) scale(1.1); }
+                }
 
-                .result-area { width: 100%; aspect-ratio: 1; border-radius: 32px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; background: #09090b; }
-                .main-image { width: 100%; height: 100%; object-fit: cover; animation: reveal 0.8s ease-out; }
-                .placeholder { text-align: center; color: #3f3f46; display: flex; flex-direction: column; align-items: center; gap: 15px; }
-                .placeholder p { font-size: 0.9rem; font-weight: 500; }
-                .loader-overlay { text-align: center; color: #8b5cf6; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+                .gen-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+                .welcome-tag { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #71717a; }
+                
+                .glass-warm { background: rgba(24, 24, 27, 0.4); backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 40px 80px rgba(0,0,0,0.5); }
+                
+                .model-pill-warm { display: flex; align-items: center; gap: 10px; padding: 10px 24px; border-radius: 99px; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #8b5cf6; text-decoration: none; border-color: rgba(139, 92, 246, 0.2); }
+                .model-pill-warm.clickable:hover { transform: translateY(-2px); border-color: #8b5cf6; box-shadow: 0 10px 20px rgba(139, 92, 246, 0.2); }
+                .status-dot-glow { width: 8px; height: 8px; border-radius: 50%; background: #8b5cf6; box-shadow: 0 0 10px #8b5cf6; animation: pulse 2s infinite; }
 
-                .input-area { padding: 12px; border-radius: 24px; display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
-                textarea { width: 100%; background: transparent; border: none; color: white; font-size: 1.1rem; padding: 15px; min-height: 80px; resize: none; outline: none; }
-                .gen-btn { background: #8b5cf6; color: white; border: none; padding: 15px; border-radius: 16px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: transform 0.2s; }
-                .gen-btn:disabled { background: #27272a; color: #52525b; cursor: not-allowed; }
-                .gen-btn:active { transform: scale(0.98); }
+                .canvas-wrapper { width: 100%; margin-bottom: 30px; }
+                .result-area-warm { width: 100%; aspect-ratio: 4/5; border-radius: 48px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; }
+                .main-image { width: 100%; height: 100%; object-fit: cover; }
+                
+                .placeholder-warm { text-align: center; color: #52525b; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+                .icon-box { width: 100px; height: 100px; border-radius: 32px; background: rgba(255,255,255,0.03); display: flex; align-items: center; justify-content: center; color: #3f3f46; margin-bottom: 10px; }
+                .placeholder-warm h3 { color: #a1a1aa; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.5px; }
+                .placeholder-warm p { font-size: 1rem; }
 
-                .history-preview { margin-top: 20px; }
-                .section-title { display: flex; align-items: center; gap: 8px; color: #71717a; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; }
-                .history-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; }
-                .history-item { width: 80px; height: 80px; border-radius: 16px; overflow: hidden; flex-shrink: 0; }
-                .history-item img { width: 100%; height: 100%; object-fit: cover; }
+                .loader-overlay { text-align: center; color: #8b5cf6; display: flex; flex-direction: column; align-items: center; gap: 20px; }
+                .pulse-container { position: relative; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; }
+                .pulse-ring { position: absolute; inset: 0; border: 2px solid #8b5cf6; border-radius: 50%; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite; }
 
-                @keyframes reveal { from { filter: blur(20px); opacity: 0; transform: scale(1.05); } to { filter: blur(0); opacity: 1; transform: scale(1); } }
-                @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
-                .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+                .input-area-warm { padding: 24px; border-radius: 32px; display: flex; flex-direction: column; gap: 15px; }
+                textarea { width: 100%; background: transparent; border: none; color: white; font-size: 1.25rem; padding: 10px; min-height: 100px; resize: none; outline: none; line-height: 1.5; font-weight: 500; }
+                textarea::placeholder { color: #3f3f46; }
+                
+                .input-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); }
+                .shortcuts { font-size: 0.7rem; font-weight: 800; color: #3f3f46; text-transform: uppercase; letter-spacing: 1px; }
+                
+                .gen-btn-warm { background: #8b5cf6; color: white; border: none; padding: 14px 28px; border-radius: 18px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; transition: all 0.3s; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; }
+                .gen-btn-warm:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4); }
+                .gen-btn-warm:disabled { background: rgba(255,255,255,0.05); color: #3f3f46; cursor: not-allowed; }
+
+                .history-preview { margin-top: 50px; }
+                .section-title { display: flex; align-items: center; gap: 10px; color: #52525b; font-size: 0.8rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 25px; }
+                .history-scroll-warm { display: flex; gap: 20px; overflow-x: auto; padding: 10px 5px 30px; scrollbar-width: none; }
+                .history-scroll-warm::-webkit-scrollbar { display: none; }
+                .history-card-warm { width: 120px; height: 120px; border-radius: 24px; overflow: hidden; flex-shrink: 0; cursor: pointer; border-color: rgba(255,255,255,0.05); }
+                .history-card-warm img { width: 100%; height: 100%; object-fit: cover; }
+
+                @keyframes ping { 75%, 100% { transform: scale(2); opacity: 0; } }
+                @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+                .spin { animation: spin 2s linear infinite; }
+                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
             `}</style>
         </div>
     );
