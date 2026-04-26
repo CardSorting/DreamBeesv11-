@@ -11,12 +11,7 @@ import {
 } from 'firebase/auth';
 import { collection, doc, onSnapshot, query, orderBy, limit, setDoc, serverTimestamp, enableNetwork, disableNetwork } from 'firebase/firestore';
 import { AIModel } from '../lite-utils';
-
-interface Toast {
-    id: string;
-    message: string;
-    type: 'success' | 'error' | 'loading';
-}
+import toast from 'react-hot-toast';
 
 interface LiteContextType {
     currentUser: User | null;
@@ -33,9 +28,7 @@ interface LiteContextType {
     logout: () => Promise<void>;
     loginWithGoogle: () => Promise<void>;
     isOffline: boolean;
-    toasts: Toast[];
-    addToast: (message: string, type?: Toast['type'], id?: string) => string;
-    removeToast: (id: string) => void;
+    addToast: (message: string, type?: 'success' | 'error' | 'loading', id?: string) => string;
 }
 
 const LiteContext = createContext<LiteContextType | undefined>(undefined);
@@ -55,27 +48,16 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
     const [isOffline, setIsOffline] = useState(!navigator.onLine);
-    const [toasts, setToasts] = useState<Toast[]>([]);
 
-    const addToast = useCallback((message: string, type: Toast['type'] = 'success', existingId?: string) => {
-        const id = existingId || Math.random().toString(36).substring(7);
-        setToasts(prev => {
-            const filtered = prev.filter(t => t.id !== id);
-            return [...filtered, { id, message, type }];
-        });
-        if (type !== 'loading') {
-            setTimeout(() => removeToast(id), 4000);
-        }
-        return id;
-    }, []);
-
-    const removeToast = useCallback((id: string) => {
-        setToasts(prev => prev.filter(t => t.id !== id));
+    const addToast = useCallback((message: string, type: 'success' | 'error' | 'loading' = 'success', existingId?: string) => {
+        if (type === 'loading') return toast.loading(message, { id: existingId });
+        if (type === 'error') return toast.error(message, { id: existingId });
+        return toast.success(message, { id: existingId });
     }, []);
 
     useEffect(() => {
-        const handleOnline = () => { setIsOffline(false); enableNetwork(db); };
-        const handleOffline = () => { setIsOffline(true); disableNetwork(db); };
+        const handleOnline = () => { setIsOffline(false); enableNetwork(db); toast.success("Network restored"); };
+        const handleOffline = () => { setIsOffline(true); disableNetwork(db); toast.error("Offline Mode Active"); };
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
         return () => {
@@ -105,19 +87,31 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     useEffect(() => { loadLocal(); }, [loadLocal]);
 
     useEffect(() => {
-        window.electronAPI?.lite.health()
-            .then(health => console.info('[Lite] Electron bridge health:', health))
-            .catch(err => console.warn('[Lite] Electron bridge unavailable:', err));
-    }, []);
+        const handleStorage = (e: StorageEvent) => {
+            if (e.key === 'lite_selected_model' && e.newValue && availableModels.length > 0) {
+                const model = availableModels.find(m => m.id === e.newValue);
+                if (model) setSelectedModel(model);
+            }
+        };
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
+    }, [availableModels]);
 
     useEffect(() => {
         const modelsQuery = query(collection(db, 'models'), orderBy('order', 'asc'), limit(12));
         return onSnapshot(modelsQuery, snap => {
             const models = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as AIModel));
             setAvailableModels(models);
-            if (models.length > 0 && !selectedModel) {
+            
+            if (models.length > 0) {
                 const savedId = localStorage.getItem('lite_selected_model');
-                setSelectedModel(models.find(m => m.id === savedId) || models[0]);
+                const savedModel = models.find(m => m.id === savedId);
+                
+                if (savedModel && (!selectedModel || selectedModel.id !== savedModel.id)) {
+                    setSelectedModel(savedModel);
+                } else if (!selectedModel) {
+                    setSelectedModel(models[0]);
+                }
             }
         }, err => {
             console.warn('[Lite] Model subscription failed:', err);
@@ -148,24 +142,37 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const logout = () => signOut(auth);
+    const logout = () => signOut(auth).then(() => { toast.success("Safe travels."); });
 
     const loginWithGoogle = async () => {
         const provider = new GoogleAuthProvider();
-        const res = await signInWithPopup(auth, provider);
-        if (res.user) {
-            await setDoc(doc(db, 'users', res.user.uid), {
-                email: res.user.email,
-                lastLogin: serverTimestamp()
-            }, { merge: true });
+        try {
+            const res = await signInWithPopup(auth, provider);
+            if (res.user) {
+                await setDoc(doc(db, 'users', res.user.uid), {
+                    email: res.user.email,
+                    lastLogin: serverTimestamp()
+                }, { merge: true });
+                toast.success(`Welcome back, ${res.user.displayName?.split(' ')[0]}`);
+            }
+        } catch (err: any) {
+            toast.error(err.message);
         }
     };
 
     const generate = useCallback(async (prompt: string, params: any = {}) => {
-        if (isOffline) { addToast("Offline: Internet required", "error"); return; }
-        if (!currentUser || !selectedModel) return;
+        if (isOffline) { toast.error("The garden requires a connection to bloom."); return; }
+        if (!currentUser || !selectedModel) { toast.error("Identity unknown. Please sign in."); return; }
+        
         setGenerating(true);
         const requestId = `gen_${Date.now()}`;
+        const toastId = toast.loading("Invoking the latent space...", { id: requestId });
+
+        const timeoutId = setTimeout(() => {
+            setGenerating(false);
+            toast.error("The vision is taking too long to manifest. Please try again.", { id: requestId });
+        }, 60000); // 1 minute timeout
+
         try {
             const token = await currentUser.getIdToken();
             const res = await fetch('https://api.dreambeesai.com/api', {
@@ -173,13 +180,14 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ action: 'createGenerationRequest', prompt, modelId: selectedModel.id, requestId, ...params })
             });
-            if (!res.ok) throw new Error("Request failed");
-            addToast("Generating...", "loading", requestId);
+            
+            if (!res.ok) throw new Error("The engine failed to respond.");
             
             const unsub = onSnapshot(doc(db, 'generation_queue', requestId), async (snap) => {
                 const data = snap.data();
                 if (data?.status === 'completed' && data.imageUrl) {
-                    addToast("Vision complete!", "success", requestId);
+                    clearTimeout(timeoutId);
+                    toast.success("Vision materialized.", { id: requestId });
                     setGenerating(false);
                     if (window.electronAPI?.lite) {
                         try {
@@ -193,49 +201,36 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                             });
                             loadLocal();
                         } catch (err) {
-                            console.warn('[Lite] Failed to persist local generation:', err);
+                            console.warn('[Lite] Local save skipped:', err);
                         }
                     }
                     unsub();
                 } else if (data?.status === 'failed') {
-                    addToast(data.error || "Failed", "error", requestId);
+                    clearTimeout(timeoutId);
+                    toast.error(data.error || "The manifestation failed.", { id: requestId });
                     setGenerating(false);
                     unsub();
                 }
             }, err => {
-                console.warn('[Lite] Generation subscription failed:', err);
-                addToast('Generation status unavailable', 'error', requestId);
+                console.warn('[Lite] Gen subscription error:', err);
+                clearTimeout(timeoutId);
                 setGenerating(false);
             });
         } catch (err: any) {
-            addToast(err.message, "error", requestId);
+            clearTimeout(timeoutId);
+            toast.error(err.message, { id: requestId });
             setGenerating(false);
         }
-    }, [currentUser, selectedModel, isOffline, loadLocal, addToast]);
+    }, [currentUser, selectedModel, isOffline, loadLocal]);
 
     return (
         <LiteContext.Provider value={{ 
             currentUser, availableModels, selectedModel, setSelectedModel, 
             history, localHistory, loading, generating, generate, 
             login, signup, logout, loginWithGoogle, isOffline,
-            toasts, addToast, removeToast
+            addToast
         }}>
             {children}
-            {/* Custom Toast UI */}
-            <div className="toast-container">
-                {toasts.map(t => (
-                    <div key={t.id} className={`toast ${t.type}`}>
-                        {t.message}
-                    </div>
-                ))}
-            </div>
-            <style>{`
-                .toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; }
-                .toast { padding: 12px 24px; border-radius: 12px; background: #18181b; color: white; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-size: 0.9rem; animation: slideIn 0.3s ease-out; }
-                .toast.error { border-color: #ef4444; color: #fca5a5; }
-                .toast.loading { border-color: #8b5cf6; }
-                @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-            `}</style>
         </LiteContext.Provider>
     );
 }

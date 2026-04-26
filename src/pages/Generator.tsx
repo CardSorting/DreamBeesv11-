@@ -51,7 +51,7 @@ export default function Generator() {
                     className="header-left"
                 >
                     <span className="welcome-tag">{greeting}</span>
-                    <h1>{currentUser?.displayName?.split(' ')[0] || 'Visionary'}</h1>
+                    <h1 className="text-jeweled">{currentUser?.displayName?.split(' ')[0] || 'Visionary'}</h1>
                 </motion.div>
                 
                 <motion.div
@@ -219,7 +219,7 @@ export default function Generator() {
             </main>
 
             <style>{`
-                .lite-generator-immersive { min-height: 100vh; padding: 60px 24px 160px; max-width: 1000px; margin: 0 auto; position: relative; }
+                .lite-generator-immersive { min-height: 100vh; padding: 40px 24px 140px; max-width: 900px; margin: 0 auto; position: relative; }
                 
                 .mesh-gradient-container { position: absolute; inset: 0; overflow: hidden; pointer-events: none; opacity: 0.3; }
                 .mesh-ball { position: absolute; border-radius: 50%; filter: blur(120px); animation: drift 25s infinite alternate ease-in-out; }
@@ -232,64 +232,70 @@ export default function Generator() {
                     100% { transform: translate(60px, 60px) scale(1.15) rotate(15deg); }
                 }
 
-                .gen-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 50px; }
-                .header-left h1 { font-size: 2.5rem; margin-top: 4px; letter-spacing: -2px; }
-                .welcome-tag { font-size: 0.75rem; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; color: var(--color-accent); opacity: 0.8; }
+                .gen-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px; }
+                .header-left h1 { font-size: 2rem; margin-top: 4px; letter-spacing: -1.5px; }
+                .welcome-tag { font-size: 0.7rem; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; color: var(--color-accent); opacity: 0.8; }
                 
-                .model-jewel { display: flex; align-items: center; gap: 12px; padding: 12px 28px; border-radius: 99px; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: white; text-decoration: none; border-color: rgba(255,255,255,0.1); transition: all 0.4s; }
-                .model-jewel:hover { border-color: var(--color-accent); transform: translateY(-3px) scale(1.02); box-shadow: 0 20px 40px rgba(139, 92, 246, 0.3); }
-                .status-orb-glow { width: 10px; height: 10px; border-radius: 50%; background: var(--color-accent); box-shadow: 0 0 15px var(--color-accent); animation: pulse 2s infinite; }
+                .model-jewel { display: flex; align-items: center; gap: 10px; padding: 10px 24px; border-radius: 99px; font-weight: 900; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; color: white; text-decoration: none; border: 1px solid rgba(255,255,255,0.08); transition: all 0.4s; }
+                .model-jewel:hover { border-color: var(--color-accent); transform: translateY(-3px); box-shadow: 0 15px 30px rgba(139, 92, 246, 0.2); }
+                .status-orb-glow { width: 8px; height: 8px; border-radius: 50%; background: var(--color-accent); box-shadow: 0 0 10px var(--color-accent); animation: pulse 2s infinite; }
 
-                .canvas-wrapper { width: 100%; margin-bottom: 40px; perspective: 1000px; }
-                .result-area-immersive { width: 100%; aspect-ratio: 1/1; border-radius: 64px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; }
+                .canvas-wrapper { width: 100%; margin-bottom: 30px; perspective: 1000px; }
+                .result-area-immersive { width: 100%; aspect-ratio: 1/1; border-radius: 48px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.05); }
                 
                 .image-container { width: 100%; height: 100%; position: relative; }
                 .main-image-immersive { width: 100%; height: 100%; object-fit: cover; }
-                .image-reflection { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.4)); pointer-events: none; }
-                .image-info-overlay { position: absolute; bottom: 30px; left: 30px; right: 30px; padding: 20px; background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); border-radius: 24px; border: 1px solid rgba(255,255,255,0.1); transform: translateY(100%); opacity: 0; transition: all 0.4s; }
+                .image-reflection { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 70%, rgba(0,0,0,0.3)); pointer-events: none; }
+                .image-info-overlay { position: absolute; bottom: 25px; left: 25px; right: 25px; padding: 16px; background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); transform: translateY(100%); opacity: 0; transition: all 0.4s; }
                 .image-container:hover .image-info-overlay { transform: translateY(0); opacity: 1; }
-                .image-info-overlay p { color: white; font-size: 0.9rem; font-weight: 600; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+                .image-info-overlay p { color: white; font-size: 0.85rem; font-weight: 600; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-                .dream-seed-placeholder { text-align: center; color: var(--color-zinc-400); display: flex; flex-direction: column; align-items: center; gap: 20px; }
-                .seed-visual { width: 120px; height: 120px; border-radius: 40px; background: var(--color-accent-soft); display: flex; align-items: center; justify-content: center; color: var(--color-accent); margin-bottom: 10px; box-shadow: 0 20px 50px rgba(139, 92, 246, 0.15); }
-                .dream-seed-placeholder h3 { color: white; font-size: 2rem; }
-                .suggestion-chips { display: flex; gap: 12px; margin-top: 10px; flex-wrap: wrap; justify-content: center; }
-                .chip { background: rgba(255,255,255,0.03); color: #a1a1aa; padding: 10px 20px; border-radius: 16px; font-size: 0.8rem; font-weight: 700; border: 1px solid rgba(255,255,255,0.06); transition: all 0.3s; }
+                .dream-seed-placeholder { text-align: center; color: var(--color-zinc-400); display: flex; flex-direction: column; align-items: center; gap: 15px; }
+                .seed-visual { width: 90px; height: 90px; border-radius: 32px; background: var(--color-accent-soft); display: flex; align-items: center; justify-content: center; color: var(--color-accent); margin-bottom: 5px; box-shadow: 0 15px 30px rgba(139, 92, 246, 0.1); }
+                .dream-seed-placeholder h3 { color: white; font-size: 1.5rem; letter-spacing: -1px; }
+                .suggestion-chips { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; justify-content: center; }
+                .chip { background: rgba(255,255,255,0.03); color: #71717a; padding: 8px 18px; border-radius: 14px; font-size: 0.75rem; font-weight: 700; border: 1px solid rgba(255,255,255,0.05); transition: all 0.3s; }
                 .chip:hover { background: var(--color-accent-soft); color: var(--color-accent); border-color: var(--color-accent); transform: translateY(-2px); }
 
-                .latent-swirl-container { position: relative; width: 240px; height: 240px; display: flex; align-items: center; justify-content: center; }
+                .latent-swirl-container { position: relative; width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; }
                 .swirl-ring { position: absolute; border: 2px solid transparent; border-radius: 50%; animation: spin var(--d) linear infinite; }
-                .ring-1 { width: 180px; height: 180px; border-top-color: var(--color-accent); --d: 3s; opacity: 0.6; }
-                .ring-2 { width: 140px; height: 140px; border-right-color: var(--color-dream-purple); --d: 2s; opacity: 0.4; }
-                .ring-3 { width: 100px; height: 100px; border-bottom-color: var(--color-soft-gold); --d: 4s; opacity: 0.2; }
-                .core-zap { z-index: 5; filter: drop-shadow(0 0 20px var(--color-accent)); }
-                .magic-particle { position: absolute; width: 4px; height: 4px; background: white; border-radius: 50%; box-shadow: 0 0 10px var(--color-accent); }
+                .ring-1 { width: 160px; height: 160px; border-top-color: var(--color-accent); --d: 3s; opacity: 0.6; }
+                .ring-2 { width: 120px; height: 120px; border-right-color: var(--color-dream-purple); --d: 2s; opacity: 0.4; }
+                .ring-3 { width: 80px; height: 80px; border-bottom-color: var(--color-soft-gold); --d: 4s; opacity: 0.2; }
+                .core-zap { z-index: 5; filter: drop-shadow(0 0 15px var(--color-accent)); }
+                .magic-particle { position: absolute; width: 3px; height: 3px; background: white; border-radius: 50%; box-shadow: 0 0 8px var(--color-accent); }
                 
-                .dreaming-text { font-weight: 800; font-size: 1.2rem; color: #a1a1aa; margin-top: 20px; }
+                .dreaming-text { font-weight: 800; font-size: 1rem; color: #71717a; margin-top: 20px; }
                 .dreaming-text span { color: var(--color-accent); }
 
-                .journal-area { padding: 32px; border-radius: 40px; display: flex; flex-direction: column; gap: 20px; margin-bottom: 60px; }
-                textarea { width: 100%; background: transparent; border: none; color: white; font-size: 1.4rem; padding: 5px; min-height: 120px; resize: none; outline: none; line-height: 1.5; font-weight: 600; }
-                textarea::placeholder { color: #3f3f46; opacity: 0.5; }
+                .journal-area { padding: 24px; border-radius: 32px; display: flex; flex-direction: column; gap: 15px; margin-bottom: 50px; border: 1px solid rgba(255,255,255,0.05); }
+                textarea { width: 100%; background: transparent; border: none; color: white; font-size: 1.15rem; padding: 5px; min-height: 100px; resize: none; outline: none; line-height: 1.5; font-weight: 600; }
+                textarea::placeholder { color: #3f3f46; opacity: 0.4; }
                 
-                .journal-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06); }
-                .hint { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; font-weight: 900; color: #52525b; text-transform: uppercase; letter-spacing: 2px; }
+                .journal-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.04); }
+                .hint { display: flex; align-items: center; gap: 8px; font-size: 0.65rem; font-weight: 900; color: #3f3f46; text-transform: uppercase; letter-spacing: 2px; }
                 
-                .manifest-btn { background: var(--color-accent); color: white; border: none; padding: 16px 36px; border-radius: 24px; font-weight: 900; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); text-transform: uppercase; font-size: 0.9rem; letter-spacing: 2px; position: relative; overflow: hidden; }
-                .manifest-btn:hover:not(:disabled) { transform: translateY(-4px) scale(1.02); box-shadow: 0 20px 40px rgba(139, 92, 246, 0.4); }
+                .manifest-btn { background: var(--color-accent); color: white; border: none; padding: 14px 32px; border-radius: 20px; font-weight: 900; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 2px; position: relative; overflow: hidden; }
+                .manifest-btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(139, 92, 246, 0.3); }
                 .manifest-btn:active:not(:disabled) { transform: translateY(-1px); }
-                .manifest-btn:disabled { background: rgba(255,255,255,0.04); color: #3f3f46; cursor: not-allowed; }
+                .manifest-btn:disabled { background: rgba(255,255,255,0.03); color: #3f3f46; cursor: not-allowed; }
                 
-                .btn-icon-stack { position: relative; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; }
-                .sparkle-overlay { position: absolute; top: -6px; right: -6px; color: var(--color-soft-gold); }
+                .btn-icon-stack { position: relative; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
+                .sparkle-overlay { position: absolute; top: -5px; right: -5px; color: var(--color-soft-gold); }
 
-                .latent-gallery { margin-top: 20px; }
-                .gallery-header { display: flex; align-items: center; gap: 12px; color: #52525b; font-size: 0.75rem; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 30px; }
-                .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 20px; }
-                .gallery-card { aspect-ratio: 1/1; border-radius: 32px; overflow: hidden; position: relative; cursor: pointer; border-color: rgba(255,255,255,0.06); }
+                .latent-gallery { margin-top: 10px; }
+                .gallery-header { display: flex; align-items: center; gap: 10px; color: #3f3f46; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 25px; }
+                .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 15px; }
+                .gallery-card { aspect-ratio: 1/1; border-radius: 24px; overflow: hidden; position: relative; cursor: pointer; border: 1px solid rgba(255,255,255,0.04); }
                 .gallery-card img { width: 100%; height: 100%; object-fit: cover; }
-                .card-hint { position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; padding: 15px; color: white; font-size: 0.7rem; font-weight: 700; text-align: center; opacity: 0; transition: all 0.3s; }
+                .card-hint { position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; padding: 10px; color: white; font-size: 0.65rem; font-weight: 700; text-align: center; opacity: 0; transition: all 0.3s; }
                 .gallery-card:hover .card-hint { opacity: 1; }
+
+                @media (max-width: 600px) {
+                    .lite-generator-immersive { padding: 30px 16px 120px; }
+                    .gen-header { flex-direction: column; align-items: flex-start; gap: 20px; }
+                    .header-left h1 { font-size: 1.8rem; }
+                }
 
                 @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.9); } }
             `}</style>

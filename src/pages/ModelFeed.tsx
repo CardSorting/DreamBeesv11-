@@ -3,6 +3,7 @@ import { useLite } from '../contexts/LiteContext';
 import { getOptimizedImageUrl } from '../lite-utils';
 import { IconZap, IconChevronLeft, IconChevronRight, IconSparkles, IconMagic } from '../icons';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const getBriefDescription = (name: string, originalDesc: string) => {
     const n = name.toLowerCase();
@@ -28,6 +29,7 @@ const getModelInsight = (name: string) => {
 export default function ModelFeed() {
     const { availableModels, setSelectedModel, selectedModel, currentUser } = useLite();
     const [currentIndex, setCurrentIndex] = useState(0);
+    const navigate = useNavigate();
 
     const filteredModels = useMemo(() => {
         const base = availableModels.filter(m => 
@@ -84,20 +86,8 @@ export default function ModelFeed() {
 
             <div className="content-overlay">
                 <header className="feed-header">
-                    <motion.div 
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="welcome-row"
-                    >
-                        <span className="welcome-tag">{greeting}</span>
-                    </motion.div>
-                    <motion.h1
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                    >
-                        Explore the<span>Latent Garden</span>
-                    </motion.h1>
+                    <span className="welcome-tag">The Latent Garden</span>
+                    <h1 className="text-jeweled">Explore <span>Engines</span></h1>
                 </header>
 
                 <div className="pagination-container">
@@ -118,8 +108,13 @@ export default function ModelFeed() {
                                         className={`model-jewel-card glass-immersive ${selectedModel?.id === currentModel.id ? 'selected' : ''}`}
                                     >
                                         <div className="model-jewel-root" onClick={() => {
-                                            setSelectedModel(currentModel);
                                             localStorage.setItem('lite_selected_model', currentModel.id);
+                                            if (!currentUser) {
+                                                navigate('/auth');
+                                                return;
+                                            }
+                                            setSelectedModel(currentModel);
+                                            navigate('/generate');
                                         }}>
                                             <div className="model-visual-side">
                                                 <img src={getOptimizedImageUrl(currentModel.image) || ''} alt={currentModel.name} />
@@ -154,7 +149,19 @@ export default function ModelFeed() {
                                                 </div>
                                                 
                                                 <div className="action-row">
-                                                    <button className={`select-btn ${selectedModel?.id === currentModel.id ? 'active' : ''}`}>
+                                                     <button 
+                                                        className={`select-btn ${selectedModel?.id === currentModel.id ? 'active' : ''}`}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            localStorage.setItem('lite_selected_model', currentModel.id);
+                                                            if (!currentUser) {
+                                                                navigate('/auth');
+                                                                return;
+                                                            }
+                                                            setSelectedModel(currentModel);
+                                                            navigate('/generate');
+                                                        }}
+                                                    >
                                                         {selectedModel?.id === currentModel.id ? 'Current Choice' : 'Select Core'}
                                                     </button>
                                                     <div className="engine-trait">
@@ -197,67 +204,74 @@ export default function ModelFeed() {
 
                 .immersive-bg-blur { position: absolute; inset: -100px; background-size: cover; background-position: center; filter: blur(100px) saturate(1.5); opacity: 0.2; pointer-events: none; }
                 
-                .content-overlay { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 60px 40px 140px; max-width: 1400px; margin: 0 auto; }
+                .content-overlay { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 40px 40px 140px; max-width: 1200px; margin: 0 auto; }
                 
-                .feed-header { text-align: left; margin-bottom: 40px; width: 100%; }
-                .welcome-tag { font-size: 0.75rem; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; color: var(--color-accent); opacity: 0.8; }
-                .feed-header h1 { font-size: 3.5rem; letter-spacing: -3px; line-height: 0.9; font-weight: 900; color: white; margin-top: 5px; }
-                .feed-header h1 span { display: block; color: var(--color-zinc-400); }
+                .feed-header { text-align: left; margin-bottom: 30px; width: 100%; }
+                .welcome-tag { font-size: 0.7rem; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; color: var(--color-accent); opacity: 0.8; }
+                .feed-header h1 { font-size: 2.5rem; letter-spacing: -2px; line-height: 1; font-weight: 900; color: white; margin-top: 5px; }
+                .feed-header h1 span { color: var(--color-zinc-400); }
 
-                .pagination-container { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
-                .pager-wrapper { display: flex; align-items: center; gap: 60px; width: 100%; }
+                .pagination-container { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; overflow: hidden; }
+                .pager-wrapper { display: flex; align-items: center; gap: 40px; width: 100%; }
 
-                .nav-arrow { width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); border-color: rgba(255,255,255,0.08); }
-                .nav-arrow:hover { background: var(--color-accent); border-color: var(--color-accent); transform: scale(1.15); box-shadow: 0 20px 40px rgba(139, 92, 246, 0.4); }
+                .nav-arrow { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); border-color: rgba(255,255,255,0.06); }
+                .nav-arrow:hover { background: var(--color-accent); border-color: var(--color-accent); transform: scale(1.1); box-shadow: 0 15px 30px rgba(139, 92, 246, 0.4); }
 
-                .pager-content { flex: 1; min-width: 0; perspective: 2000px; }
+                .pager-content { flex: 1; min-width: 0; perspective: 1500px; }
                 
-                .model-jewel-card { width: 100%; border-radius: 64px; overflow: hidden; position: relative; transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1); }
-                .model-jewel-card.selected { border-color: var(--color-accent); box-shadow: 0 40px 100px rgba(139, 92, 246, 0.2); }
+                .model-jewel-card { width: 100%; border-radius: 48px; overflow: hidden; position: relative; transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1); border: 1px solid rgba(255,255,255,0.06); }
+                .model-jewel-card.selected { border-color: var(--color-accent); box-shadow: 0 30px 60px rgba(139, 92, 246, 0.15); }
                 
-                .model-jewel-root { display: flex; flex-direction: row; cursor: pointer; min-height: 600px; }
+                .model-jewel-root { display: flex; flex-direction: row; cursor: pointer; min-height: 480px; }
                 
-                .model-visual-side { flex: 1; position: relative; overflow: hidden; }
+                .model-visual-side { flex: 1; position: relative; overflow: hidden; background: #18181b; }
                 .model-visual-side img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s cubic-bezier(0.23, 1, 0.32, 1); }
-                .model-jewel-card:hover .model-visual-side img { transform: scale(1.08); }
+                .model-jewel-card:hover .model-visual-side img { transform: scale(1.05); }
                 
-                .visual-overlays { position: absolute; top: 40px; left: 40px; right: 40px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; }
-                .active-jewel-badge { background: var(--color-accent); color: white; padding: 12px 24px; border-radius: 99px; display: flex; align-items: center; gap: 10px; font-size: 0.75rem; font-weight: 900; text-transform: uppercase; box-shadow: 0 15px 30px rgba(139, 92, 246, 0.5); }
-                .premium-tag { background: rgba(0,0,0,0.5); backdrop-filter: blur(15px); color: white; padding: 12px 24px; border-radius: 99px; font-size: 0.75rem; font-weight: 900; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.12); }
-                .image-reflection { position: absolute; inset: 0; background: linear-gradient(90deg, transparent 70%, rgba(0,0,0,0.3)); pointer-events: none; }
-
-                .model-info-side { flex: 1.2; padding: 80px; display: flex; flex-direction: column; justify-content: center; background: rgba(255,255,255,0.01); }
-                .type-label { font-size: 0.75rem; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; color: var(--color-accent); margin-bottom: 12px; display: block; opacity: 0.8; }
-                .model-info-side h2 { font-size: 4rem; font-weight: 900; letter-spacing: -3px; line-height: 0.95; margin-bottom: 25px; color: white; }
-                .index-pill { font-size: 1.2rem; font-weight: 900; color: var(--color-zinc-400); margin-top: 10px; }
+                .visual-overlays { position: absolute; top: 30px; left: 30px; right: 30px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; }
+                .active-jewel-badge { background: var(--color-accent); color: white; padding: 10px 20px; border-radius: 99px; display: flex; align-items: center; gap: 8px; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; box-shadow: 0 10px 20px rgba(139, 92, 246, 0.4); }
+                .premium-tag { background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); color: white; padding: 10px 20px; border-radius: 99px; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.1); }
+                .image-reflection { position: absolute; inset: 0; background: linear-gradient(90deg, transparent 60%, rgba(0,0,0,0.2)); pointer-events: none; }
+-
+                .model-info-side { flex: 1.2; padding: 50px; display: flex; flex-direction: column; justify-content: center; background: rgba(255,255,255,0.01); }
+                .type-label { font-size: 0.7rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: var(--color-accent); margin-bottom: 8px; display: block; opacity: 0.8; }
+                .model-info-side h2 { font-size: 2.8rem; font-weight: 900; letter-spacing: -2px; line-height: 1; margin-bottom: 20px; color: white; }
+                .index-pill { font-size: 1rem; font-weight: 900; color: var(--color-zinc-500); margin-top: 5px; }
                 
-                .poetic-desc { font-size: 1.4rem; color: var(--color-zinc-400); line-height: 1.6; margin-bottom: 40px; font-weight: 500; }
+                .poetic-desc { font-size: 1.1rem; color: var(--color-zinc-400); line-height: 1.5; margin-bottom: 30px; font-weight: 500; }
 
-                .insight-jewel { background: var(--color-accent-soft); color: var(--color-accent); padding: 14px 28px; border-radius: 20px; width: fit-content; display: flex; align-items: center; gap: 12px; font-size: 0.95rem; margin-bottom: 50px; border: 1px solid rgba(139, 92, 246, 0.15); }
+                .insight-jewel { background: var(--color-accent-soft); color: var(--color-accent); padding: 12px 24px; border-radius: 16px; width: fit-content; display: flex; align-items: center; gap: 10px; font-size: 0.85rem; margin-bottom: 40px; border: 1px solid rgba(139, 92, 246, 0.1); }
                 .insight-jewel strong { color: white; }
                 
-                .action-row { display: flex; align-items: center; gap: 30px; }
-                .select-btn { padding: 18px 40px; border-radius: 24px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: white; font-weight: 900; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 2px; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
-                .select-btn.active { background: var(--color-accent); border-color: var(--color-accent); transform: translateY(-4px); box-shadow: 0 20px 40px rgba(139, 92, 246, 0.4); }
-                .select-btn:hover:not(.active) { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); transform: translateY(-2px); }
+                .action-row { display: flex; align-items: center; gap: 24px; }
+                .select-btn { padding: 16px 32px; border-radius: 20px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: white; font-weight: 900; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 2px; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
+                .select-btn.active { background: var(--color-accent); border-color: var(--color-accent); transform: translateY(-3px); box-shadow: 0 15px 30px rgba(139, 92, 246, 0.3); }
+                .select-btn:hover:not(.active) { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); transform: translateY(-2px); }
                 
-                .engine-trait { display: flex; align-items: center; gap: 10px; color: #52525b; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+                .engine-trait { display: flex; align-items: center; gap: 8px; color: #52525b; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
 
-                .empty-garden { padding: 100px; text-align: center; border-radius: 64px; display: flex; flex-direction: column; align-items: center; gap: 30px; color: var(--color-zinc-400); }
+                .empty-garden { padding: 80px; text-align: center; border-radius: 48px; display: flex; flex-direction: column; align-items: center; gap: 20px; color: var(--color-zinc-400); }
 
-                @media (max-width: 1200px) {
-                    .model-jewel-root { flex-direction: column; min-height: auto; }
-                    .model-visual-side { aspect-ratio: 16/9; }
-                    .model-info-side { padding: 50px; }
-                    .model-info-side h2 { font-size: 3rem; }
+                @media (max-width: 1100px) {
+                    .pager-wrapper { gap: 20px; }
+                    .model-jewel-root { min-height: 400px; }
+                    .model-info-side { padding: 40px; }
+                    .model-info-side h2 { font-size: 2.2rem; }
                 }
 
-                @media (max-width: 768px) {
-                    .content-overlay { padding: 30px 20px; }
+                @media (max-width: 900px) {
+                    .model-jewel-root { flex-direction: column; min-height: auto; }
+                    .model-visual-side { aspect-ratio: 16/10; }
+                    .model-info-side { padding: 40px; }
+                }
+
+                @media (max-width: 600px) {
+                    .content-overlay { padding: 20px 16px; }
                     .nav-arrow { display: none; }
-                    .feed-header h1 { font-size: 2.5rem; }
-                    .model-info-side h2 { font-size: 2.5rem; }
-                    .poetic-desc { font-size: 1.1rem; }
+                    .feed-header h1 { font-size: 2rem; }
+                    .model-info-side h2 { font-size: 1.8rem; }
+                    .poetic-desc { font-size: 1rem; }
+                    .action-row { flex-direction: column; align-items: stretch; }
                 }
             `}</style>
         </div>

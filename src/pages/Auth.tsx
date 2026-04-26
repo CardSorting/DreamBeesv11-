@@ -170,46 +170,46 @@ export default function Auth() {
                     100% { transform: translate(60px, 60px) scale(1.15) rotate(15deg); }
                 }
 
-                .auth-jewel-card { width: 100%; max-width: 480px; padding: 60px; border-radius: 64px; position: relative; z-index: 10; box-shadow: 0 40px 100px rgba(0,0,0,0.6); }
+                .auth-jewel-card { width: 100%; max-width: 420px; padding: 40px; border-radius: 48px; position: relative; z-index: 10; box-shadow: 0 40px 100px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.05); }
                 
-                .auth-header { text-align: center; margin-bottom: 50px; }
-                .brand-orb-visual { position: relative; width: 80px; height: 80px; margin: 0 auto 25px; display: flex; align-items: center; justify-content: center; }
-                .orb-ring { position: absolute; inset: -10px; border: 2px dashed rgba(139, 92, 246, 0.3); border-radius: 50%; }
-                .ring-sparkle { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); color: var(--color-soft-gold); }
-                .orb-core { width: 100%; height: 100%; background: var(--color-accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(139, 92, 246, 0.5); }
+                .auth-header { text-align: center; margin-bottom: 30px; }
+                .brand-orb-visual { position: relative; width: 60px; height: 60px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; }
+                .orb-ring { position: absolute; inset: -8px; border: 2px dashed rgba(139, 92, 246, 0.2); border-radius: 50%; }
+                .ring-sparkle { position: absolute; top: -8px; left: 50%; transform: translateX(-50%); color: var(--color-soft-gold); }
+                .orb-core { width: 100%; height: 100%; background: var(--color-accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(139, 92, 246, 0.4); }
                 
-                .auth-header h1 { font-size: 2.8rem; font-weight: 900; letter-spacing: -3px; line-height: 1; color: white; }
-                .auth-header h1 span { color: var(--color-accent); margin-left: 5px; opacity: 0.8; }
-                .poetic-welcome { color: var(--color-zinc-400); margin-top: 12px; font-size: 1.15rem; font-weight: 600; }
+                .auth-header h1 { font-size: 2rem; font-weight: 900; letter-spacing: -1.5px; line-height: 1; color: white; }
+                .auth-header h1 span { color: var(--color-accent); margin-left: 4px; opacity: 0.8; }
+                .poetic-welcome { color: var(--color-zinc-500); margin-top: 10px; font-size: 0.95rem; font-weight: 600; }
 
-                .auth-form { display: flex; flex-direction: column; gap: 20px; }
-                .field-group { display: flex; flex-direction: column; gap: 8px; }
-                .field-group label { font-size: 0.75rem; font-weight: 900; text-transform: uppercase; color: var(--color-accent); letter-spacing: 3px; padding-left: 5px; opacity: 0.8; }
-                input { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 20px 28px; border-radius: 24px; color: white; font-size: 1rem; outline: none; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
-                input:focus { border-color: var(--color-accent); background: rgba(139, 92, 246, 0.04); box-shadow: 0 0 30px rgba(139, 92, 246, 0.15); }
-                .date-input { color: #71717a; }
+                .auth-form { display: flex; flex-direction: column; gap: 15px; }
+                .field-group { display: flex; flex-direction: column; gap: 6px; }
+                .field-group label { font-size: 0.65rem; font-weight: 900; text-transform: uppercase; color: var(--color-accent); letter-spacing: 2px; padding-left: 5px; opacity: 0.8; }
+                input { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); padding: 16px 24px; border-radius: 20px; color: white; font-size: 0.95rem; outline: none; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
+                input:focus { border-color: var(--color-accent); background: rgba(139, 92, 246, 0.04); box-shadow: 0 0 20px rgba(139, 92, 246, 0.1); }
+                .date-input { color: #52525b; }
 
-                .manifest-btn { background: var(--color-accent); color: white; border: none; padding: 20px; border-radius: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; margin-top: 15px; transition: all 0.4s; font-size: 0.95rem; box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3); }
-                .manifest-btn:hover:not(:disabled) { transform: translateY(-4px); box-shadow: 0 20px 50px rgba(139, 92, 246, 0.5); }
+                .manifest-btn { background: var(--color-accent); color: white; border: none; padding: 16px; border-radius: 20px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; margin-top: 10px; transition: all 0.4s; font-size: 0.85rem; box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3); }
+                .manifest-btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(139, 92, 246, 0.4); }
                 .manifest-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-                .auth-divider { display: flex; align-items: center; gap: 20px; margin: 40px 0; }
-                .auth-divider .line { flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
-                .auth-divider span { font-size: 0.7rem; font-weight: 900; color: #3f3f46; letter-spacing: 3px; }
+                .auth-divider { display: flex; align-items: center; gap: 15px; margin: 30px 0; }
+                .auth-divider .line { flex: 1; height: 1px; background: rgba(255,255,255,0.04); }
+                .auth-divider span { font-size: 0.6rem; font-weight: 900; color: #3f3f46; letter-spacing: 2px; }
 
-                .google-jewel-btn { background: rgba(255,255,255,0.03); color: white; border: 1px solid rgba(255,255,255,0.08); padding: 18px; border-radius: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 15px; transition: all 0.4s; }
-                .google-jewel-btn:hover:not(:disabled) { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); transform: translateY(-2px); }
+                .google-jewel-btn { background: rgba(255,255,255,0.02); color: white; border: 1px solid rgba(255,255,255,0.06); padding: 14px; border-radius: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.4s; }
+                .google-jewel-btn:hover:not(:disabled) { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.1); transform: translateY(-2px); }
 
-                .creator-trust { margin-top: 40px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+                .creator-trust { margin-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
                 .avatar-cluster { display: flex; align-items: center; justify-content: center; }
-                .mini-orb { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #09090b; background: #27272a; margin-right: -12px; }
+                .mini-orb { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #09090b; background: #27272a; margin-right: -10px; }
                 .mini-orb:nth-child(2) { background: #3f3f46; }
                 .mini-orb:nth-child(3) { background: #52525b; }
-                .mini-plus { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #09090b; background: var(--color-accent); color: white; font-size: 0.65rem; font-weight: 900; display: flex; align-items: center; justify-content: center; z-index: 5; }
-                .creator-trust span { font-size: 0.8rem; color: var(--color-zinc-400); font-weight: 800; letter-spacing: 1px; }
+                .mini-plus { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #09090b; background: var(--color-accent); color: white; font-size: 0.6rem; font-weight: 900; display: flex; align-items: center; justify-content: center; z-index: 5; }
+                .creator-trust span { font-size: 0.75rem; color: var(--color-zinc-500); font-weight: 800; letter-spacing: 1px; }
 
-                .auth-footer { text-align: center; margin-top: 40px; color: #52525b; font-size: 1.1rem; font-weight: 600; }
-                .auth-footer button { background: transparent; border: none; color: var(--color-accent); font-weight: 900; cursor: pointer; margin-left: 8px; text-decoration: underline; text-underline-offset: 6px; font-size: 1.1rem; transition: all 0.3s; }
+                .auth-footer { text-align: center; margin-top: 30px; color: #3f3f46; font-size: 0.95rem; font-weight: 600; }
+                .auth-footer button { background: transparent; border: none; color: var(--color-accent); font-weight: 900; cursor: pointer; margin-left: 6px; text-decoration: underline; text-underline-offset: 4px; font-size: 0.95rem; transition: all 0.3s; }
                 .auth-footer button:hover { color: var(--color-dream-purple); }
 
                 .spin { animation: spin 2s linear infinite; }
