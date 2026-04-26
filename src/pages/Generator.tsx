@@ -114,6 +114,13 @@ export default function Generator() {
                                     </div>
                                     <h3>Empty Canvas</h3>
                                     <p>Describe your vision below</p>
+                                    <button 
+                                        type="button"
+                                        className="example-prompt-btn"
+                                        onClick={() => setPrompt("A futuristic garden with bioluminescent bees and crystal flowers")}
+                                    >
+                                        Try: "A futuristic garden..."
+                                    </button>
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -137,7 +144,7 @@ export default function Generator() {
                             <span>⌘ + ↵ to materialize</span>
                         </div>
                         <button type="submit" disabled={generating || !prompt} className="gen-btn-warm">
-                            {generating ? <IconLoader size={20} className="spin" /> : <IconZap size={18} fill="currentColor" />}
+                            {generating ? <IconLoader size={20} /> : <IconZap size={18} fill="currentColor" />}
                             <span>{generating ? 'Materializing' : 'Bring to Life'}</span>
                         </button>
                     </div>
@@ -194,7 +201,9 @@ export default function Generator() {
                 .placeholder-warm { text-align: center; color: #52525b; display: flex; flex-direction: column; align-items: center; gap: 15px; }
                 .icon-box { width: 100px; height: 100px; border-radius: 32px; background: rgba(255,255,255,0.03); display: flex; align-items: center; justify-content: center; color: #3f3f46; margin-bottom: 10px; }
                 .placeholder-warm h3 { color: #a1a1aa; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.5px; }
-                .placeholder-warm p { font-size: 1rem; }
+                .placeholder-warm p { font-size: 1rem; margin-bottom: 15px; }
+                .example-prompt-btn { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; padding: 8px 16px; border-radius: 12px; font-size: 0.8rem; font-weight: 700; border: 1px solid rgba(139, 92, 246, 0.2); transition: all 0.3s; }
+                .example-prompt-btn:hover { background: rgba(139, 92, 246, 0.2); transform: translateY(-2px); }
 
                 .loader-overlay { text-align: center; color: #8b5cf6; display: flex; flex-direction: column; align-items: center; gap: 20px; z-index: 10; }
                 .magical-loader { position: relative; width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; }

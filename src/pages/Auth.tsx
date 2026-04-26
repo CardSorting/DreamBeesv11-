@@ -125,6 +125,16 @@ export default function Auth() {
                     Google
                 </button>
 
+                <div className="community-trust">
+                    <div className="avatar-stack">
+                        <div className="mini-avatar"></div>
+                        <div className="mini-avatar"></div>
+                        <div className="mini-avatar"></div>
+                        <div className="mini-count">+12k</div>
+                    </div>
+                    <span>Joined the collective of creators</span>
+                </div>
+
                 <p className="footer-toggle">
                     {isLogin ? "Don't have an account? " : "Already with us? "}
                     <button type="button" onClick={() => setIsLogin(!isLogin)}>{isLogin ? 'Join now' : 'Sign in'}</button>
@@ -170,6 +180,14 @@ export default function Auth() {
 
                 .google-btn-warm { background: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 16px; border-radius: 20px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; transition: all 0.3s; }
                 .google-btn-warm:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+
+                .community-trust { margin-top: 30px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+                .avatar-stack { display: flex; align-items: center; justify-content: center; }
+                .mini-avatar { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #18181b; background: #27272a; margin-right: -10px; }
+                .mini-avatar:nth-child(2) { background: #3f3f46; }
+                .mini-avatar:nth-child(3) { background: #52525b; }
+                .mini-count { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #18181b; background: #8b5cf6; color: white; font-size: 0.6rem; font-weight: 900; display: flex; align-items: center; justify-content: center; z-index: 5; }
+                .community-trust span { font-size: 0.75rem; color: #52525b; font-weight: 700; }
 
                 .footer-toggle { text-align: center; margin-top: 30px; color: #71717a; font-size: 1rem; font-weight: 500; }
                 .footer-toggle button { background: transparent; border: none; color: #8b5cf6; font-weight: 800; cursor: pointer; margin-left: 5px; text-decoration: underline; text-underline-offset: 4px; }

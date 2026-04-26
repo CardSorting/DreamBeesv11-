@@ -19,6 +19,19 @@ const getBriefDescription = (name: string, originalDesc: string) => {
     return originalDesc.length > 80 ? originalDesc.substring(0, 77) + "..." : originalDesc;
 };
 
+/**
+ * Provides a 'Best For' insight for each model
+ */
+const getModelInsight = (name: string) => {
+    const n = name.toLowerCase();
+    if (n.includes('flux')) return "Complex Prompts & Realism";
+    if (n.includes('xl')) return "Cinematic Landscapes";
+    if (n.includes('pony')) return "Expressive Characters";
+    if (n.includes('real')) return "Portraits & Products";
+    if (n.includes('anime')) return "Digital Illustrations";
+    return "Creative Exploration";
+};
+
 export default function ModelFeed() {
     const { availableModels, setSelectedModel, selectedModel, currentUser } = useLite();
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -132,13 +145,17 @@ export default function ModelFeed() {
                                                 <p className="description">
                                                     {getBriefDescription(currentModel.name, currentModel.description)}
                                                 </p>
+
+                                                <div className="insight-pill">
+                                                    <IconZap size={14} />
+                                                    <span>Best for: <strong>{getModelInsight(currentModel.name)}</strong></span>
+                                                </div>
                                                 
                                                 <div className="action-footer">
                                                     <div className={`primary-btn ${selectedModel?.id === currentModel.id ? 'active' : ''}`}>
                                                         {selectedModel?.id === currentModel.id ? 'Ready to Generate' : 'Select Engine'}
                                                     </div>
                                                     <div className="model-tip">
-                                                        <IconZap size={12} />
                                                         <span>Pro Tip: Best for {currentModel.name.toLowerCase().includes('flux') ? 'complex scenes' : 'fast results'}</span>
                                                     </div>
                                                 </div>
@@ -211,7 +228,10 @@ export default function ModelFeed() {
                 .model-details h2 { font-size: 3.5rem; font-weight: 900; letter-spacing: -2px; line-height: 1; margin-bottom: 20px; }
                 .step-indicator { color: #3f3f46; font-weight: 900; font-size: 1.5rem; }
                 
-                .description { font-size: 1.25rem; color: #a1a1aa; line-height: 1.5; margin-bottom: 40px; }
+                .description { font-size: 1.25rem; color: #a1a1aa; line-height: 1.5; margin-bottom: 20px; }
+
+                .insight-pill { background: rgba(139, 92, 246, 0.1); color: #8b5cf6; padding: 10px 20px; border-radius: 16px; width: fit-content; display: flex; align-items: center; gap: 10px; font-size: 0.85rem; margin-bottom: 40px; border: 1px solid rgba(139, 92, 246, 0.1); }
+                .insight-pill strong { color: white; }
                 
                 .action-footer { display: flex; align-items: center; gap: 20px; }
                 .primary-btn { padding: 16px 32px; border-radius: 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; font-weight: 800; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; transition: all 0.3s; }
