@@ -161,24 +161,35 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     };
 
     const generate = useCallback(async (prompt: string, params: any = {}) => {
+        const cleanPrompt = prompt?.trim();
+        if (!cleanPrompt) return;
         if (isOffline) { toast.error("The garden requires a connection to bloom."); return; }
         if (!currentUser || !selectedModel) { toast.error("Identity unknown. Please sign in."); return; }
         
         setGenerating(true);
         const requestId = `gen_${Date.now()}`;
         const toastId = toast.loading("Invoking the latent space...", { id: requestId });
+        const controller = new AbortController();
 
         const timeoutId = setTimeout(() => {
+            controller.abort();
             setGenerating(false);
-            toast.error("The vision is taking too long to manifest. Please try again.", { id: requestId });
-        }, 60000); // 1 minute timeout
+            toast.error("The vision is taking too long to manifest.", { id: requestId });
+        }, 90000); // 90 second timeout for deep audit hardening
 
         try {
-            const token = await currentUser.getIdToken();
+            const token = await currentUser.getIdToken(true); // Force refresh for security
             const res = await fetch('https://api.dreambeesai.com/api', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ action: 'createGenerationRequest', prompt, modelId: selectedModel.id, requestId, ...params })
+                body: JSON.stringify({ 
+                    action: 'createGenerationRequest', 
+                    prompt: cleanPrompt, 
+                    modelId: selectedModel.id, 
+                    requestId, 
+                    ...params 
+                }),
+                signal: controller.signal
             });
             
             if (!res.ok) throw new Error("The engine failed to respond.");
@@ -193,7 +204,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                         try {
                             await window.electronAPI.lite.saveGeneration({
                                 id: requestId,
-                                prompt,
+                                prompt: cleanPrompt,
                                 imageUrl: data.imageUrl,
                                 modelId: selectedModel.id,
                                 params,
@@ -218,7 +229,9 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             });
         } catch (err: any) {
             clearTimeout(timeoutId);
-            toast.error(err.message, { id: requestId });
+            if (err.name !== 'AbortError') {
+                toast.error(err.message, { id: requestId });
+            }
             setGenerating(false);
         }
     }, [currentUser, selectedModel, isOffline, loadLocal]);

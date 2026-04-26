@@ -47,3 +47,11 @@ export const useTitle = (title: string) => {
         document.title = `${title} | DreamBees LITE`;
     }
 };
+
+/**
+ * Sanitizes user input to prevent common injection and UI breakage
+ */
+export const sanitizeInput = (text: string, maxLength: number = 1000): string => {
+    if (!text || typeof text !== 'string') return '';
+    return text.trim().slice(0, maxLength).replace(/[<>]/g, '');
+};

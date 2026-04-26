@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, WebContents } from 'electron';
+import { app, BrowserWindow, ipcMain, WebContents, session } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GenerationRecord, LiteDatabase } from './database';
@@ -17,6 +17,7 @@ let dbInitError: string | null = null;
 const isDev = !app.isPackaged;
 const devServerUrl = process.env.VITE_DEV_SERVER_URL;
 const rendererRoot = path.resolve(__dirname, '../dist');
+const authDomain = 'dreambees-alchemist.firebaseapp.com';
 
 function logStartup(message: string, error?: unknown) {
   const suffix = error instanceof Error ? `: ${error.stack || error.message}` : error ? `: ${String(error)}` : '';
@@ -29,17 +30,52 @@ function ensureDb() {
 }
 
 function registerIpcHandlers() {
+  // Health check with system diagnostics
   ipcMain.handle('lite:health', async () => ({
     ok: true,
     appVersion: app.getVersion(),
     dbAvailable: Boolean(db),
     dbError: dbInitError,
     packaged: app.isPackaged,
+    platform: process.platform,
+    arch: process.arch,
   }));
-  ipcMain.handle('lite:saveGeneration', async (_, data: GenerationRecord) => ensureDb().saveGeneration(data));
-  ipcMain.handle('lite:getGenerations', async (_, limit?: number) => ensureDb().getGenerations(limit));
-  ipcMain.handle('lite:setSetting', async (_, key: string, val: unknown) => ensureDb().setSetting(key, val));
-  ipcMain.handle('lite:getSetting', async (_, key: string) => ensureDb().getSetting(key));
+
+  ipcMain.handle('lite:saveGeneration', async (_, data: GenerationRecord) => {
+    try {
+      return ensureDb().saveGeneration(data);
+    } catch (error) {
+      logStartup('Failed to save generation', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('lite:getGenerations', async (_, limit?: number) => {
+    try {
+      return ensureDb().getGenerations(limit);
+    } catch (error) {
+      logStartup('Failed to get generations', error);
+      return [];
+    }
+  });
+
+  ipcMain.handle('lite:setSetting', async (_, key: string, val: unknown) => {
+    try {
+      return ensureDb().setSetting(key, val);
+    } catch (error) {
+      logStartup(`Failed to set setting: ${key}`, error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('lite:getSetting', async (_, key: string) => {
+    try {
+      return ensureDb().getSetting(key);
+    } catch (error) {
+      logStartup(`Failed to get setting: ${key}`, error);
+      return null;
+    }
+  });
 }
 
 function tryInitDatabase() {
@@ -62,7 +98,6 @@ function attachWebContentsDiagnostics(contents: WebContents) {
     logStartup(`Renderer process gone: ${details.reason} (${details.exitCode})`);
   });
   contents.on('unresponsive', () => logStartup('Renderer became unresponsive'));
-  contents.on('responsive', () => logStartup('Renderer became responsive'));
 }
 
 function isAllowedNavigation(url: string) {
@@ -74,7 +109,7 @@ function isAllowedNavigation(url: string) {
     // Allow Firebase and Google Auth domains
     const allowedHosts = [
       'accounts.google.com',
-      'dreambees-alchemist.firebaseapp.com',
+      authDomain,
       'firebaseapp.com'
     ];
     
@@ -92,6 +127,43 @@ function isAllowedNavigation(url: string) {
   }
 }
 
+function setupSecurityHeaders() {
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      `img-src 'self' data: https: blob:`,
+      `connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://api.dreambeesai.com https://www.google-analytics.com https://${authDomain}`,
+      "frame-src 'self' https://accounts.google.com",
+      "object-src 'none'"
+    ].join('; ');
+
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [csp]
+      }
+    });
+  });
+
+  // Fix: Firebase auth/unauthorized-domain in production
+  const filter = {
+    urls: [
+      'https://identitytoolkit.googleapis.com/*',
+      'https://securetoken.googleapis.com/*',
+      `https://${authDomain}/*`
+    ]
+  };
+
+  session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
+    details.requestHeaders['Origin'] = `https://${authDomain}`;
+    details.requestHeaders['Referer'] = `https://${authDomain}/`;
+    callback({ cancel: false, requestHeaders: details.requestHeaders });
+  });
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -103,9 +175,10 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      webgl: true,
     },
     titleBarStyle: 'hiddenInset',
-    backgroundColor: '#000000',
+    backgroundColor: '#060608',
     show: false,
   });
 
@@ -117,32 +190,23 @@ function createWindow() {
 
   loadPromise.catch((error) => {
     logStartup('Failed to load renderer', error);
-    mainWindow?.show();
   });
 
   if (isDev || process.env.DREAMBEES_OPEN_DEVTOOLS === '1') {
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   }
 
-  const showFallback = setTimeout(() => {
-    if (mainWindow && !mainWindow.isVisible()) {
-      logStartup('Showing window via ready-to-show fallback');
-      mainWindow.show();
-    }
-  }, 5000);
-
   mainWindow.once('ready-to-show', () => {
-    clearTimeout(showFallback);
     mainWindow?.show();
   });
 
   mainWindow.on('closed', () => {
-    clearTimeout(showFallback);
     mainWindow = null;
   });
 }
 
 app.whenReady().then(() => {
+  setupSecurityHeaders();
   registerIpcHandlers();
   createWindow();
   tryInitDatabase();
@@ -166,16 +230,29 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-process.on('uncaughtException', (error) => logStartup('Uncaught exception', error));
-process.on('unhandledRejection', (reason) => logStartup('Unhandled rejection', reason));
-
-// Security: restrict navigation and new windows to known app/dev origins.
+// Security: restrict navigation and new windows
 app.on('web-contents-created', (_, contents) => {
   contents.on('will-navigate', (event, url) => {
-    if (!isAllowedNavigation(url)) event.preventDefault();
+    if (!isAllowedNavigation(url)) {
+      logStartup(`Blocked unauthorized navigation to: ${url}`);
+      event.preventDefault();
+    }
   });
 
   contents.setWindowOpenHandler(({ url }) => {
-    return isAllowedNavigation(url) ? { action: 'allow' } : { action: 'deny' };
+    if (isAllowedNavigation(url)) {
+      return { action: 'allow' };
+    }
+    logStartup(`Blocked unauthorized window opening: ${url}`);
+    return { action: 'deny' };
+  });
+
+  // Harden: prevent rogue webviews
+  contents.on('will-attach-webview', (event) => {
+    event.preventDefault();
+    logStartup('Blocked unauthorized webview attachment');
   });
 });
+
+process.on('uncaughtException', (error) => logStartup('Uncaught exception', error));
+process.on('unhandledRejection', (reason) => logStartup('Unhandled rejection', reason));
