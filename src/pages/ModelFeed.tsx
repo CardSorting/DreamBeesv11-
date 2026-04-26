@@ -28,7 +28,6 @@ const getModelInsight = (name: string) => {
 
 export default function ModelFeed() {
     const { availableModels, setSelectedModel, selectedModel, currentUser } = useLite();
-    const [currentIndex, setCurrentIndex] = useState(0);
     const navigate = useNavigate();
 
     const filteredModels = useMemo(() => {
@@ -44,16 +43,6 @@ export default function ModelFeed() {
         return fluxKlein ? [fluxKlein, ...others] : base;
     }, [availableModels]);
 
-    const handleNext = () => {
-        setCurrentIndex((prev) => (prev + 1) % filteredModels.length);
-    };
-
-    const handlePrev = () => {
-        setCurrentIndex((prev) => (prev - 1 + filteredModels.length) % filteredModels.length);
-    };
-
-    const currentModel = filteredModels[currentIndex];
-    
     const greeting = useMemo(() => {
         const hour = new Date().getHours();
         if (hour < 5) return "Quiet Hours";
@@ -72,112 +61,70 @@ export default function ModelFeed() {
                 <div className="mesh-ball mesh-3"></div>
             </div>
 
-            <AnimatePresence mode="wait">
-                <motion.div 
-                    key={`bg-${currentModel?.id}`}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 0.2 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 1.5 }}
-                    className="immersive-bg-blur"
-                    style={{ backgroundImage: `url(${getOptimizedImageUrl(currentModel?.image)})` }}
-                />
-            </AnimatePresence>
-
             <div className="content-overlay">
                 <header className="feed-header">
-                    <span className="welcome-tag">The Latent Garden</span>
-                    <h1 className="text-jeweled">Explore <span>Engines</span></h1>
+                    <span className="welcome-tag">{greeting}</span>
+                    <h1 className="text-jeweled">Choose your <span>Engine</span></h1>
                 </header>
 
-                <div className="pagination-container">
+                <div className="models-grid-container">
                     {filteredModels.length > 0 ? (
-                        <div className="pager-wrapper">
-                            <button className="nav-arrow prev glass-immersive" onClick={handlePrev}>
-                                <IconChevronLeft size={32} />
-                            </button>
-
-                            <div className="pager-content">
-                                <AnimatePresence mode="wait">
-                                    <motion.div 
-                                        key={currentModel.id}
-                                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 1.05, y: -20 }}
-                                        transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
-                                        className={`model-jewel-card glass-immersive ${selectedModel?.id === currentModel.id ? 'selected' : ''}`}
-                                    >
-                                        <div className="model-jewel-root" onClick={() => {
-                                            localStorage.setItem('lite_selected_model', currentModel.id);
-                                            if (!currentUser) {
-                                                navigate('/auth');
-                                                return;
-                                            }
-                                            setSelectedModel(currentModel);
-                                            navigate('/generate');
-                                        }}>
-                                            <div className="model-visual-side">
-                                                <img src={getOptimizedImageUrl(currentModel.image) || ''} alt={currentModel.name} />
-                                                <div className="visual-overlays">
-                                                    {selectedModel?.id === currentModel.id && (
-                                                        <motion.div layoutId="active" className="active-jewel-badge">
-                                                            <IconMagic size={14} fill="currentColor" />
-                                                            <span>Active</span>
-                                                        </motion.div>
-                                                    )}
-                                                    {currentModel.name.toLowerCase().includes('flux') && <div className="premium-tag">Flagship</div>}
+                        <div className="models-grid">
+                            {filteredModels.map((model, idx) => (
+                                <motion.div 
+                                    key={model.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.5, delay: idx * 0.1 }}
+                                    className={`model-unified-card glass-immersive ${selectedModel?.id === model.id ? 'active' : ''}`}
+                                    onClick={() => {
+                                        localStorage.setItem('lite_selected_model', model.id);
+                                        if (!currentUser) {
+                                            navigate('/auth');
+                                            return;
+                                        }
+                                        setSelectedModel(model);
+                                        navigate('/generate');
+                                    }}
+                                >
+                                    <div className="card-visual">
+                                        <img src={getOptimizedImageUrl(model.image) || ''} alt={model.name} />
+                                        <div className="card-badges">
+                                            {selectedModel?.id === model.id && (
+                                                <div className="badge active-badge">
+                                                    <IconMagic size={10} fill="currentColor" />
+                                                    <span>Selected</span>
                                                 </div>
-                                                <div className="image-reflection"></div>
+                                            )}
+                                            {model.name.toLowerCase().includes('flux') && <div className="badge flagship-badge">Flagship</div>}
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="card-content">
+                                        <div className="card-header">
+                                            <span className="engine-type">{model.name.toLowerCase().includes('flux') ? 'Superior' : 'Creative'}</span>
+                                            <h3>{model.name}</h3>
+                                        </div>
+                                        
+                                        <p className="card-desc">
+                                            {getBriefDescription(model.name, model.description)}
+                                        </p>
+
+                                        <div className="card-meta">
+                                            <div className="meta-item">
+                                                <IconSparkles size={12} />
+                                                <span>{getModelInsight(model.name)}</span>
                                             </div>
-                                            
-                                            <div className="model-info-side">
-                                                <div className="info-header">
-                                                    <div className="name-stack">
-                                                        <span className="type-label">{currentModel.name.toLowerCase().includes('flux') ? 'Superior Quality' : 'Artistic Engine'}</span>
-                                                        <h2>{currentModel.name}</h2>
-                                                    </div>
-                                                    <div className="index-pill">{currentIndex + 1} / {filteredModels.length}</div>
-                                                </div>
-                                                
-                                                <p className="poetic-desc">
-                                                    {getBriefDescription(currentModel.name, currentModel.description)}
-                                                </p>
-
-                                                <div className="insight-jewel">
-                                                    <IconSparkles size={16} />
-                                                    <span>Mastery: <strong>{getModelInsight(currentModel.name)}</strong></span>
-                                                </div>
-                                                
-                                                <div className="action-row">
-                                                     <button 
-                                                        className={`select-btn ${selectedModel?.id === currentModel.id ? 'active' : ''}`}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            localStorage.setItem('lite_selected_model', currentModel.id);
-                                                            if (!currentUser) {
-                                                                navigate('/auth');
-                                                                return;
-                                                            }
-                                                            setSelectedModel(currentModel);
-                                                            navigate('/generate');
-                                                        }}
-                                                    >
-                                                        {selectedModel?.id === currentModel.id ? 'Current Choice' : 'Select Core'}
-                                                    </button>
-                                                    <div className="engine-trait">
-                                                        <IconZap size={12} />
-                                                        <span>{currentModel.name.toLowerCase().includes('flux') ? 'Nuanced Precision' : 'Fluid Creativity'}</span>
-                                                    </div>
-                                                </div>
+                                            <div className="meta-item trait">
+                                                <IconZap size={12} />
+                                                <span>{model.name.toLowerCase().includes('flux') ? 'Precision' : 'Fluid'}</span>
                                             </div>
                                         </div>
-                                    </motion.div>
-                                </AnimatePresence>
-                            </div>
+                                    </div>
 
-                            <button className="nav-arrow next glass-immersive" onClick={handleNext}>
-                                <IconChevronRight size={32} />
-                            </button>
+                                    <div className="card-selection-glow"></div>
+                                </motion.div>
+                            ))}
                         </div>
                     ) : (
                         <div className="empty-garden glass-immersive">
@@ -189,9 +136,9 @@ export default function ModelFeed() {
             </div>
 
             <style>{`
-                .lite-feed-immersive { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #09090b; }
+                .lite-feed-immersive { position: relative; width: 100vw; min-height: 100vh; overflow-x: hidden; background: #09090b; padding-bottom: 150px; }
                 
-                .mesh-gradient-container { position: absolute; inset: 0; overflow: hidden; pointer-events: none; opacity: 0.3; }
+                .mesh-gradient-container { position: fixed; inset: 0; overflow: hidden; pointer-events: none; opacity: 0.3; z-index: 0; }
                 .mesh-ball { position: absolute; border-radius: 50%; filter: blur(120px); animation: drift 25s infinite alternate ease-in-out; }
                 .mesh-1 { width: 700px; height: 700px; background: rgba(139, 92, 246, 0.2); top: -250px; right: -150px; }
                 .mesh-2 { width: 600px; height: 600px; background: rgba(245, 158, 11, 0.15); bottom: -150px; left: -150px; animation-delay: -7s; }
@@ -202,78 +149,170 @@ export default function ModelFeed() {
                     100% { transform: translate(60px, 60px) scale(1.15) rotate(15deg); }
                 }
 
-                .immersive-bg-blur { position: absolute; inset: -100px; background-size: cover; background-position: center; filter: blur(100px) saturate(1.5); opacity: 0.2; pointer-events: none; }
+                .content-overlay { position: relative; z-index: 10; width: 100%; max-width: 1200px; margin: 0 auto; padding: 60px 24px; }
                 
-                .content-overlay { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 40px 40px 140px; max-width: 1200px; margin: 0 auto; }
-                
-                .feed-header { text-align: left; margin-bottom: 30px; width: 100%; }
+                .feed-header { margin-bottom: 50px; }
                 .welcome-tag { font-size: 0.7rem; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; color: var(--color-accent); opacity: 0.8; }
-                .feed-header h1 { font-size: 2.5rem; letter-spacing: -2px; line-height: 1; font-weight: 900; color: white; margin-top: 5px; }
-                .feed-header h1 span { color: var(--color-zinc-400); }
+                .feed-header h1 { font-size: 2.8rem; margin-top: 8px; }
+                .feed-header h1 span { color: var(--color-zinc-500); }
 
-                .pagination-container { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; overflow: hidden; }
-                .pager-wrapper { display: flex; align-items: center; gap: 40px; width: 100%; }
+                .models-grid-container { width: 100%; }
+                .models-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
 
-                .nav-arrow { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); border-color: rgba(255,255,255,0.06); }
-                .nav-arrow:hover { background: var(--color-accent); border-color: var(--color-accent); transform: scale(1.1); box-shadow: 0 15px 30px rgba(139, 92, 246, 0.4); }
+                .model-unified-card { 
+                    position: relative;
+                    border-radius: 32px;
+                    overflow: hidden;
+                    cursor: pointer;
+                    transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+                    border: 1px solid rgba(255,255,255,0.06);
+                    background: rgba(255,255,255,0.02);
+                    display: flex;
+                    flex-direction: column;
+                }
 
-                .pager-content { flex: 1; min-width: 0; perspective: 1500px; }
-                
-                .model-jewel-card { width: 100%; border-radius: 48px; overflow: hidden; position: relative; transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1); border: 1px solid rgba(255,255,255,0.06); }
-                .model-jewel-card.selected { border-color: var(--color-accent); box-shadow: 0 30px 60px rgba(139, 92, 246, 0.15); }
-                
-                .model-jewel-root { display: flex; flex-direction: row; cursor: pointer; min-height: 480px; }
-                
-                .model-visual-side { flex: 1; position: relative; overflow: hidden; background: #18181b; }
-                .model-visual-side img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s cubic-bezier(0.23, 1, 0.32, 1); }
-                .model-jewel-card:hover .model-visual-side img { transform: scale(1.05); }
-                
-                .visual-overlays { position: absolute; top: 30px; left: 30px; right: 30px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; }
-                .active-jewel-badge { background: var(--color-accent); color: white; padding: 10px 20px; border-radius: 99px; display: flex; align-items: center; gap: 8px; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; box-shadow: 0 10px 20px rgba(139, 92, 246, 0.4); }
-                .premium-tag { background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); color: white; padding: 10px 20px; border-radius: 99px; font-size: 0.7rem; font-weight: 900; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.1); }
-                .image-reflection { position: absolute; inset: 0; background: linear-gradient(90deg, transparent 60%, rgba(0,0,0,0.2)); pointer-events: none; }
--
-                .model-info-side { flex: 1.2; padding: 50px; display: flex; flex-direction: column; justify-content: center; background: rgba(255,255,255,0.01); }
-                .type-label { font-size: 0.7rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: var(--color-accent); margin-bottom: 8px; display: block; opacity: 0.8; }
-                .model-info-side h2 { font-size: 2.8rem; font-weight: 900; letter-spacing: -2px; line-height: 1; margin-bottom: 20px; color: white; }
-                .index-pill { font-size: 1rem; font-weight: 900; color: var(--color-zinc-500); margin-top: 5px; }
-                
-                .poetic-desc { font-size: 1.1rem; color: var(--color-zinc-400); line-height: 1.5; margin-bottom: 30px; font-weight: 500; }
+                .model-unified-card:hover {
+                    transform: translateY(-8px) scale(1.02);
+                    background: rgba(255,255,255,0.04);
+                    border-color: rgba(255,255,255,0.12);
+                    box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+                }
 
-                .insight-jewel { background: var(--color-accent-soft); color: var(--color-accent); padding: 12px 24px; border-radius: 16px; width: fit-content; display: flex; align-items: center; gap: 10px; font-size: 0.85rem; margin-bottom: 40px; border: 1px solid rgba(139, 92, 246, 0.1); }
-                .insight-jewel strong { color: white; }
-                
-                .action-row { display: flex; align-items: center; gap: 24px; }
-                .select-btn { padding: 16px 32px; border-radius: 20px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: white; font-weight: 900; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 2px; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
-                .select-btn.active { background: var(--color-accent); border-color: var(--color-accent); transform: translateY(-3px); box-shadow: 0 15px 30px rgba(139, 92, 246, 0.3); }
-                .select-btn:hover:not(.active) { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); transform: translateY(-2px); }
-                
-                .engine-trait { display: flex; align-items: center; gap: 8px; color: #52525b; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+                .model-unified-card.active {
+                    border-color: var(--color-accent);
+                    background: rgba(139, 92, 246, 0.05);
+                    box-shadow: 0 0 0 1px var(--color-accent), 0 30px 60px rgba(139, 92, 246, 0.1);
+                }
+
+                .card-visual {
+                    position: relative;
+                    width: 100%;
+                    aspect-ratio: 16/10;
+                    overflow: hidden;
+                    background: #18181b;
+                }
+
+                .card-visual img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    transition: transform 1s ease;
+                }
+
+                .model-unified-card:hover .card-visual img {
+                    transform: scale(1.08);
+                }
+
+                .card-badges {
+                    position: absolute;
+                    top: 16px;
+                    left: 16px;
+                    right: 16px;
+                    display: flex;
+                    justify-content: space-between;
+                    pointer-events: none;
+                }
+
+                .badge {
+                    padding: 6px 12px;
+                    border-radius: 99px;
+                    font-size: 0.6rem;
+                    font-weight: 900;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(255,255,255,0.1);
+                }
+
+                .active-badge {
+                    background: var(--color-accent);
+                    color: white;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    border-color: rgba(255,255,255,0.2);
+                }
+
+                .flagship-badge {
+                    background: rgba(0,0,0,0.5);
+                    color: var(--color-soft-gold);
+                }
+
+                .card-content {
+                    padding: 24px;
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 16px;
+                }
+
+                .card-header .engine-type {
+                    font-size: 0.65rem;
+                    font-weight: 900;
+                    text-transform: uppercase;
+                    letter-spacing: 2px;
+                    color: var(--color-accent);
+                    margin-bottom: 4px;
+                    display: block;
+                }
+
+                .card-header h3 {
+                    font-size: 1.5rem;
+                    color: white;
+                }
+
+                .card-desc {
+                    font-size: 0.85rem;
+                    line-height: 1.5;
+                    color: var(--color-zinc-400);
+                    font-weight: 500;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 2;
+                    -webkit-box-orient: vertical;
+                    overflow: hidden;
+                }
+
+                .card-meta {
+                    margin-top: auto;
+                    display: flex;
+                    gap: 16px;
+                }
+
+                .meta-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 0.7rem;
+                    font-weight: 700;
+                    color: var(--color-zinc-300);
+                }
+
+                .meta-item.trait {
+                    color: var(--color-zinc-500);
+                }
+
+                .card-selection-glow {
+                    position: absolute;
+                    inset: 0;
+                    background: radial-gradient(circle at center, var(--color-accent), transparent);
+                    opacity: 0;
+                    transition: opacity 0.5s;
+                    pointer-events: none;
+                    mix-blend-mode: soft-light;
+                }
+
+                .model-unified-card.active .card-selection-glow {
+                    opacity: 0.1;
+                }
 
                 .empty-garden { padding: 80px; text-align: center; border-radius: 48px; display: flex; flex-direction: column; align-items: center; gap: 20px; color: var(--color-zinc-400); }
 
-                @media (max-width: 1100px) {
-                    .pager-wrapper { gap: 20px; }
-                    .model-jewel-root { min-height: 400px; }
-                    .model-info-side { padding: 40px; }
-                    .model-info-side h2 { font-size: 2.2rem; }
-                }
-
-                @media (max-width: 900px) {
-                    .model-jewel-root { flex-direction: column; min-height: auto; }
-                    .model-visual-side { aspect-ratio: 16/10; }
-                    .model-info-side { padding: 40px; }
-                }
-
                 @media (max-width: 600px) {
-                    .content-overlay { padding: 20px 16px; }
-                    .nav-arrow { display: none; }
-                    .feed-header h1 { font-size: 2rem; }
-                    .model-info-side h2 { font-size: 1.8rem; }
-                    .poetic-desc { font-size: 1rem; }
-                    .action-row { flex-direction: column; align-items: stretch; }
+                    .feed-header h1 { font-size: 2.2rem; }
+                    .models-grid { grid-template-columns: 1fr; }
                 }
             `}</style>
         </div>
     );
 }
+

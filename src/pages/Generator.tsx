@@ -58,9 +58,14 @@ export default function Generator() {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                 >
-                    <Link to="/" className="model-jewel glass-immersive clickable">
-                        <div className="status-orb-glow"></div>
-                        <span>{selectedModel?.name || "Select Engine"}</span>
+                    <Link to="/" className="model-switcher-unified glass-immersive clickable">
+                        <div className="switcher-icon">
+                            <IconMagic size={14} fill="currentColor" />
+                        </div>
+                        <div className="switcher-info">
+                            <span className="label">Active Engine</span>
+                            <span className="name">{selectedModel?.name || "Select Engine"}</span>
+                        </div>
                     </Link>
                 </motion.div>
             </header>
@@ -236,9 +241,13 @@ export default function Generator() {
                 .header-left h1 { font-size: 2rem; margin-top: 4px; letter-spacing: -1.5px; }
                 .welcome-tag { font-size: 0.7rem; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; color: var(--color-accent); opacity: 0.8; }
                 
-                .model-jewel { display: flex; align-items: center; gap: 10px; padding: 10px 24px; border-radius: 99px; font-weight: 900; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; color: white; text-decoration: none; border: 1px solid rgba(255,255,255,0.08); transition: all 0.4s; }
-                .model-jewel:hover { border-color: var(--color-accent); transform: translateY(-3px); box-shadow: 0 15px 30px rgba(139, 92, 246, 0.2); }
-                .status-orb-glow { width: 8px; height: 8px; border-radius: 50%; background: var(--color-accent); box-shadow: 0 0 10px var(--color-accent); animation: pulse 2s infinite; }
+                .model-switcher-unified { display: flex; align-items: center; gap: 14px; padding: 10px 20px; border-radius: 20px; text-decoration: none; border: 1px solid rgba(255,255,255,0.08); transition: all 0.4s; }
+                .model-switcher-unified:hover { border-color: var(--color-accent); background: rgba(139, 92, 246, 0.05); transform: translateY(-2px); }
+                
+                .switcher-icon { width: 32px; height: 32px; border-radius: 10px; background: var(--color-accent); color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 16px rgba(139, 92, 246, 0.3); }
+                .switcher-info { display: flex; flex-direction: column; gap: 2px; }
+                .switcher-info .label { font-size: 0.55rem; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5px; color: var(--color-zinc-500); }
+                .switcher-info .name { font-size: 0.75rem; font-weight: 800; color: white; white-space: nowrap; }
 
                 .canvas-wrapper { width: 100%; margin-bottom: 30px; perspective: 1000px; }
                 .result-area-immersive { width: 100%; aspect-ratio: 1/1; border-radius: 48px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.05); }
