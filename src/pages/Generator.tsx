@@ -31,6 +31,9 @@ export default function Generator() {
         return "Evening";
     }, []);
 
+    // Particle effect during generation for a "Magical" feel
+    const particles = useMemo(() => Array.from({ length: 8 }), []);
+
     return (
         <div className="lite-generator-immersive fade-in">
             {/* Soft mesh background */}
@@ -64,16 +67,36 @@ export default function Generator() {
                                     exit={{ opacity: 0 }}
                                     className="loader-overlay"
                                 >
-                                    <div className="pulse-container">
-                                        <div className="pulse-ring"></div>
-                                        <IconZap size={48} fill="#8b5cf6" />
+                                    <div className="magical-loader">
+                                        <div className="pulse-container">
+                                            <div className="pulse-ring"></div>
+                                            <IconZap size={48} fill="#8b5cf6" />
+                                        </div>
+                                        {/* Particle swarm */}
+                                        {particles.map((_, i) => (
+                                            <motion.div 
+                                                key={i}
+                                                className="latent-particle"
+                                                animate={{ 
+                                                    scale: [0, 1, 0],
+                                                    x: [0, (Math.random() - 0.5) * 200],
+                                                    y: [0, (Math.random() - 0.5) * 200],
+                                                    opacity: [0, 0.8, 0]
+                                                }}
+                                                transition={{ 
+                                                    duration: 1.5 + Math.random(),
+                                                    repeat: Infinity,
+                                                    delay: i * 0.2
+                                                }}
+                                            />
+                                        ))}
                                     </div>
-                                    <p>Expanding your vision...</p>
+                                    <p className="dreaming-text">Dreaming with <span>{selectedModel?.name || 'AI'}</span></p>
                                 </motion.div>
                             ) : localHistory[0] ? (
                                 <motion.img 
                                     key={localHistory[0].id}
-                                    initial={{ opacity: 0, scale: 1.05, filter: 'blur(10px)' }}
+                                    initial={{ opacity: 0, scale: 1.02, filter: 'blur(20px)' }}
                                     animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
                                     src={getOptimizedImageUrl(localHistory[0].imageUrl) || ''} 
                                     alt="Generation" 
@@ -90,7 +113,7 @@ export default function Generator() {
                                         <IconImage size={48} />
                                     </div>
                                     <h3>Empty Canvas</h3>
-                                    <p>Describe what you want to see below</p>
+                                    <p>Describe your vision below</p>
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -99,7 +122,7 @@ export default function Generator() {
 
                 <form className="input-area-warm glass-warm" onSubmit={handleGenerate}>
                     <textarea 
-                        placeholder="Describe your vision in detail..."
+                        placeholder="What are we dreaming of today?"
                         value={prompt}
                         onChange={e => setPrompt(e.target.value)}
                         onKeyDown={e => {
@@ -111,11 +134,11 @@ export default function Generator() {
                     />
                     <div className="input-footer">
                         <div className="shortcuts">
-                            <span>⌘ + ↵ to generate</span>
+                            <span>⌘ + ↵ to materialize</span>
                         </div>
                         <button type="submit" disabled={generating || !prompt} className="gen-btn-warm">
                             {generating ? <IconLoader size={20} className="spin" /> : <IconZap size={18} fill="currentColor" />}
-                            <span>{generating ? 'Dreaming...' : 'Bring to Life'}</span>
+                            <span>{generating ? 'Materializing' : 'Bring to Life'}</span>
                         </button>
                     </div>
                 </form>
@@ -123,12 +146,15 @@ export default function Generator() {
                 <section className="history-preview">
                     <div className="section-title">
                         <IconLayers size={14} />
-                        <span>Previous Creations</span>
+                        <span>Latent Archive</span>
                     </div>
                     <div className="history-scroll-warm">
-                        {localHistory.slice(1, 10).map(item => (
+                        {localHistory.slice(1, 10).map((item, idx) => (
                             <motion.div 
                                 key={item.id} 
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: idx * 0.05 }}
                                 whileHover={{ scale: 1.05, y: -5 }}
                                 className="history-card-warm glass-warm"
                             >
@@ -140,7 +166,7 @@ export default function Generator() {
             </main>
 
             <style>{`
-                .lite-generator-immersive { min-height: 100vh; padding: 40px 20px 100px; max-width: 900px; margin: 0 auto; position: relative; }
+                .lite-generator-immersive { min-height: 100vh; padding: 40px 20px 140px; max-width: 900px; margin: 0 auto; position: relative; }
                 
                 .mesh-gradient-container { position: absolute; inset: 0; overflow: hidden; pointer-events: none; opacity: 0.2; }
                 .mesh-ball { position: absolute; border-radius: 50%; filter: blur(100px); animation: float 20s infinite alternate ease-in-out; }
@@ -170,9 +196,13 @@ export default function Generator() {
                 .placeholder-warm h3 { color: #a1a1aa; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.5px; }
                 .placeholder-warm p { font-size: 1rem; }
 
-                .loader-overlay { text-align: center; color: #8b5cf6; display: flex; flex-direction: column; align-items: center; gap: 20px; }
-                .pulse-container { position: relative; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; }
+                .loader-overlay { text-align: center; color: #8b5cf6; display: flex; flex-direction: column; align-items: center; gap: 20px; z-index: 10; }
+                .magical-loader { position: relative; width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; }
+                .latent-particle { position: absolute; width: 6px; height: 6px; background: #8b5cf6; border-radius: 50%; filter: blur(2px); box-shadow: 0 0 10px #8b5cf6; }
+                .pulse-container { position: relative; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; z-index: 5; }
                 .pulse-ring { position: absolute; inset: 0; border: 2px solid #8b5cf6; border-radius: 50%; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite; }
+                .dreaming-text { font-weight: 800; font-size: 1.1rem; color: #a1a1aa; }
+                .dreaming-text span { color: #8b5cf6; }
 
                 .input-area-warm { padding: 24px; border-radius: 32px; display: flex; flex-direction: column; gap: 15px; }
                 textarea { width: 100%; background: transparent; border: none; color: white; font-size: 1.25rem; padding: 10px; min-height: 100px; resize: none; outline: none; line-height: 1.5; font-weight: 500; }

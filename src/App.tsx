@@ -4,11 +4,13 @@ import { LiteProvider } from './contexts/LiteContext';
 import { Toaster } from 'react-hot-toast';
 import AnimatedRoutes from './components/AnimatedRoutes';
 import BottomNav from './components/BottomNav';
+import SplashScreen from './components/SplashScreen';
 
 function App() {
   return (
     <Router>
       <LiteProvider>
+        <SplashScreen />
         <div className="app-container" style={{ minHeight: '100vh', background: '#09090b' }}>
           <main className="app-main">
             <AnimatedRoutes />

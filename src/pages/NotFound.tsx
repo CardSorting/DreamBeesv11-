@@ -1,202 +1,56 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
-import { Home, Compass, Box, Image as ImageIcon, ArrowLeft, Search } from 'lucide-react';
-import NotFoundBg from '../assets/404-bg.png';
+import { Link } from 'react-router-dom';
+import { IconHome, IconZap } from '../icons';
 
-const NotFound = () => {
-    const navigate = useNavigate();
-
-    const popularLinks = [
-        { name: 'Discovery', path: '/discovery', icon: <Compass size={20} />, description: 'Explore AI generated wonders' },
-        { name: 'Models', path: '/models', icon: <Box size={20} />, description: 'Browse our specialized models' },
-        { name: 'Mockups', path: '/mockups', icon: <ImageIcon size={20} />, description: 'Professional product mockups' },
-    ];
-
-    const containerVariants = {
-        initial: { opacity: 0 },
-        animate: {
-            opacity: 1,
-            transition: {
-                staggerChildren: 0.1,
-                delayChildren: 0.2
-            }
-        }
-    };
-
-    const itemVariants = {
-        initial: { opacity: 0, y: 20 },
-        animate: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } }
-    };
-
+export default function NotFound() {
     return (
-        <div className="not-found-page" style={{
-            minHeight: '100vh',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            overflow: 'hidden',
-            backgroundColor: '#050505',
-            padding: '24px',
-            color: '#fff'
-        }}>
-            {/* Background Image with Overlay */}
-            <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                zIndex: 0,
-                opacity: 0.4
-            }}>
-                <img
-                    src={NotFoundBg}
-                    alt="Not Found Background"
-                    style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        filter: 'blur(4px) brightness(0.5)'
-                    }}
-                />
-                <div style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    background: 'radial-gradient(circle at center, transparent 0%, #050505 80%)'
-                }} />
+        <div className="lite-notfound-immersive">
+            <div className="mesh-gradient-container">
+                <div className="mesh-ball mesh-1"></div>
+                <div className="mesh-ball mesh-2"></div>
             </div>
 
-            <motion.div
-                className="not-found-content"
-                variants={containerVariants}
-                initial="initial"
-                animate="animate"
-                style={{
-                    position: 'relative',
-                    zIndex: 1,
-                    maxWidth: '800px',
-                    width: '100%',
-                    textAlign: 'center'
-                }}
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="notfound-card glass-warm"
             >
-                <motion.div variants={itemVariants} style={{ marginBottom: '40px' }}>
-                    <h1 style={{
-                        fontSize: 'clamp(4rem, 15vw, 10rem)',
-                        fontWeight: '800',
-                        lineHeight: 1,
-                        margin: 0,
-                        letterSpacing: '-0.05em',
-                        background: 'linear-gradient(to bottom, #fff 30%, rgba(255,255,255,0.2))',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        opacity: 0.8
-                    }}>
-                        404
-                    </h1>
-                    <h2 style={{
-                        fontSize: 'clamp(1.5rem, 4vw, 2.5rem)',
-                        fontWeight: '600',
-                        marginTop: '-10px',
-                        color: 'var(--color-zinc-100)'
-                    }}>
-                        Lost in the Hive?
-                    </h2>
-                    <p style={{
-                        color: 'var(--color-zinc-400)',
-                        fontSize: '1.1rem',
-                        maxWidth: '500px',
-                        margin: '20px auto 0'
-                    }}>
-                        The page you're looking for has flown away or never existed in this colony.
-                    </p>
-                </motion.div>
-
-                <motion.div
-                    variants={itemVariants}
-                    style={{
-                        display: 'flex',
-                        gap: '16px',
-                        justifyContent: 'center',
-                        marginBottom: '60px'
-                    }}
-                >
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="btn btn-outline"
-                        style={{ gap: '8px' }}
-                    >
-                        <ArrowLeft size={18} />
-                        Go Back
-                    </button>
-                    <Link to="/" className="btn btn-primary" style={{ gap: '8px' }}>
-                        <Home size={18} />
-                        Return Home
-                    </Link>
-                </motion.div>
-
-                <motion.div
-                    variants={itemVariants}
-                    style={{
-                        textAlign: 'left',
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        backdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
-                        borderRadius: '24px',
-                        padding: '32px'
-                    }}
-                >
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: '600', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Search size={18} color="var(--color-accent-primary)" />
-                        Quick Navigation
-                    </h3>
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                        gap: '16px'
-                    }}>
-                        {popularLinks.map((link) => (
-                            <Link
-                                key={link.path}
-                                to={link.path}
-                                style={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '4px',
-                                    padding: '16px',
-                                    borderRadius: '16px',
-                                    background: 'rgba(255, 255, 255, 0.05)',
-                                    border: '1px solid transparent',
-                                    transition: 'all 0.3s ease'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
-                                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                                    e.currentTarget.style.transform = 'translateY(-2px)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                                    e.currentTarget.style.borderColor = 'transparent';
-                                    e.currentTarget.style.transform = 'translateY(0)';
-                                }}
-                            >
-                                <div style={{ color: 'var(--color-accent-primary)', marginBottom: '8px' }}>
-                                    {link.icon}
-                                </div>
-                                <span style={{ fontWeight: '600', color: '#fff' }}>{link.name}</span>
-                                <span style={{ fontSize: '0.85rem', color: 'var(--color-zinc-400)' }}>{link.description}</span>
-                            </Link>
-                        ))}
-                    </div>
-                </motion.div>
+                <div className="icon-box-glow">
+                    <IconZap size={48} fill="#8b5cf6" />
+                </div>
+                <h1>Lost in the<span>Latent Space?</span></h1>
+                <p>This coordinate doesn't exist yet, but your next masterpiece does.</p>
+                
+                <Link to="/" className="primary-btn-warm">
+                    <IconHome size={20} />
+                    <span>Return to Studio</span>
+                </Link>
             </motion.div>
+
+            <style>{`
+                .lite-notfound-immersive { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; background: #09090b; position: relative; overflow: hidden; }
+                
+                .mesh-gradient-container { position: absolute; inset: 0; overflow: hidden; pointer-events: none; opacity: 0.3; }
+                .mesh-ball { position: absolute; border-radius: 50%; filter: blur(100px); animation: float 20s infinite alternate ease-in-out; }
+                .mesh-1 { width: 600px; height: 600px; background: rgba(139, 92, 246, 0.2); top: -200px; right: -100px; }
+                .mesh-2 { width: 500px; height: 500px; background: rgba(217, 70, 239, 0.1); bottom: -100px; left: -100px; animation-delay: -5s; }
+                
+                @keyframes float { 
+                    0% { transform: translate(0, 0) scale(1); }
+                    100% { transform: translate(50px, 50px) scale(1.1); }
+                }
+
+                .notfound-card { padding: 80px 40px; border-radius: 48px; text-align: center; max-width: 500px; width: 90%; display: flex; flex-direction: column; align-items: center; gap: 20px; z-index: 10; }
+                .icon-box-glow { width: 100px; height: 100px; border-radius: 32px; background: rgba(139, 92, 246, 0.1); display: flex; align-items: center; justify-content: center; color: #8b5cf6; margin-bottom: 10px; box-shadow: 0 0 30px rgba(139, 92, 246, 0.2); }
+                
+                .notfound-card h1 { font-size: 2.5rem; letter-spacing: -2px; line-height: 1; }
+                .notfound-card h1 span { color: #8b5cf6; display: block; }
+                .notfound-card p { color: #52525b; font-weight: 600; font-size: 1.1rem; max-width: 300px; margin: 0 auto 20px; }
+                
+                .primary-btn-warm { background: #8b5cf6; color: white; padding: 16px 32px; border-radius: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 12px; transition: all 0.3s; box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4); }
+                .primary-btn-warm:hover { transform: translateY(-3px) scale(1.05); }
+            `}</style>
         </div>
     );
-};
-
-export default NotFound;
+}
