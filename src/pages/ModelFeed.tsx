@@ -9,19 +9,18 @@ import { AnimatePresence, motion } from 'framer-motion';
  */
 const getBriefDescription = (name: string, originalDesc: string) => {
     const n = name.toLowerCase();
-    if (n.includes('flux')) return "Flagship engine. Industry-leading fidelity and prompt adherence.";
-    if (n.includes('xl')) return "High-resolution specialist. Perfect for detailed, cinematic compositions.";
-    if (n.includes('pony')) return "Creative & expressive. Exceptional for artistic and stylized character work.";
-    if (n.includes('real')) return "Photorealism expert. Optimized for lifelike textures and lighting.";
-    if (n.includes('anime')) return "Stylized illustration engine. Pure aesthetic for character design.";
-    if (n.includes('v1.5')) return "Fast and efficient classic. Great for quick ideation and exploration.";
+    if (n.includes('flux')) return "Our most advanced engine. Capable of incredible detail and following complex instructions perfectly.";
+    if (n.includes('xl')) return "A versatile powerhouse. Ideal for creating cinematic, high-resolution masterpieces.";
+    if (n.includes('pony')) return "Full of personality and style. Perfect for expressive characters and vibrant, artistic flair.";
+    if (n.includes('real')) return "Captured reality. Optimized for lifelike skin, hair, and natural lighting.";
+    if (n.includes('anime')) return "The ultimate aesthetic. Hand-crafted for beautiful, stylized character illustrations.";
+    if (n.includes('v1.5')) return "Lightweight and fast. A great choice for rapid experimentation and classic styles.";
     
-    // Fallback to a truncated version of the original description if it's not too messy
     return originalDesc.length > 80 ? originalDesc.substring(0, 77) + "..." : originalDesc;
 };
 
 export default function ModelFeed() {
-    const { availableModels, setSelectedModel, selectedModel } = useLite();
+    const { availableModels, setSelectedModel, selectedModel, currentUser } = useLite();
     const [currentIndex, setCurrentIndex] = useState(0);
 
     const filteredModels = useMemo(() => {
@@ -34,7 +33,6 @@ export default function ModelFeed() {
         const fluxKlein = base.find(m => m.name.toLowerCase().includes('flux klein') || m.id.includes('flux-klein'));
         const others = base.filter(m => m !== fluxKlein);
 
-        // Include all available models (up to the context limit)
         return fluxKlein ? [fluxKlein, ...others] : base;
     }, [availableModels]);
 
@@ -47,17 +45,30 @@ export default function ModelFeed() {
     };
 
     const currentModel = filteredModels[currentIndex];
+    
+    const greeting = useMemo(() => {
+        const hour = new Date().getHours();
+        if (hour < 12) return "Good Morning";
+        if (hour < 18) return "Good Afternoon";
+        return "Good Evening";
+    }, []);
 
     return (
         <div className="lite-feed-immersive">
-            {/* Dynamic Background */}
+            {/* Soft Mesh Background */}
+            <div className="mesh-gradient-container">
+                <div className="mesh-ball mesh-1"></div>
+                <div className="mesh-ball mesh-2"></div>
+                <div className="mesh-ball mesh-3"></div>
+            </div>
+
             <AnimatePresence mode="wait">
                 <motion.div 
                     key={`bg-${currentModel?.id}`}
                     initial={{ opacity: 0 }}
-                    animate={{ opacity: 0.3 }}
+                    animate={{ opacity: 0.15 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 1 }}
+                    transition={{ duration: 1.2 }}
                     className="immersive-bg"
                     style={{ backgroundImage: `url(${getOptimizedImageUrl(currentModel?.image)})` }}
                 />
@@ -68,17 +79,17 @@ export default function ModelFeed() {
                     <motion.div 
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="elite-badge"
+                        className="welcome-row"
                     >
-                        Creative Engines
+                        <span>{greeting}, {currentUser?.displayName?.split(' ')[0] || 'Creator'}</span>
                     </motion.div>
-                    <h1>Select<span>Power</span></h1>
+                    <h1>What will you<span>dream up?</span></h1>
                 </header>
 
                 <div className="pagination-container">
                     {filteredModels.length > 0 ? (
                         <div className="pager-wrapper">
-                            <button className="nav-arrow prev glass" onClick={handlePrev}>
+                            <button className="nav-arrow prev glass-warm" onClick={handlePrev}>
                                 <IconChevronLeft size={32} />
                             </button>
 
@@ -86,17 +97,11 @@ export default function ModelFeed() {
                                 <AnimatePresence mode="wait">
                                     <motion.div 
                                         key={currentModel.id}
-                                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 1.05, y: -10 }}
-                                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                        drag="x"
-                                        dragConstraints={{ left: 0, right: 0 }}
-                                        onDragEnd={(_, info) => {
-                                            if (info.offset.x > 80) handlePrev();
-                                            else if (info.offset.x < -80) handleNext();
-                                        }}
-                                        className={`model-card-immersive glass ${selectedModel?.id === currentModel.id ? 'active' : ''}`}
+                                        initial={{ opacity: 0, scale: 0.98, filter: 'blur(10px)' }}
+                                        animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                                        exit={{ opacity: 0, scale: 1.02, filter: 'blur(10px)' }}
+                                        transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+                                        className={`model-card-soft glass-warm ${selectedModel?.id === currentModel.id ? 'active' : ''}`}
                                     >
                                         <div className="model-visual-root" onClick={() => {
                                             setSelectedModel(currentModel);
@@ -106,27 +111,35 @@ export default function ModelFeed() {
                                                 <img src={getOptimizedImageUrl(currentModel.image) || ''} alt={currentModel.name} />
                                                 <div className="card-overlays">
                                                     {selectedModel?.id === currentModel.id && (
-                                                        <div className="active-badge glow-pulse">
+                                                        <div className="active-badge glow-soft">
                                                             <IconZap size={14} fill="currentColor" />
                                                             <span>Selected</span>
                                                         </div>
                                                     )}
-                                                    {currentModel.name.toLowerCase().includes('flux') && <div className="featured-pill">Flagship</div>}
+                                                    {currentModel.name.toLowerCase().includes('flux') && <div className="flagship-pill">Flagship Engine</div>}
                                                 </div>
                                             </div>
                                             
                                             <div className="model-details">
                                                 <div className="title-row">
-                                                    <h2>{currentModel.name}</h2>
+                                                    <div className="name-box">
+                                                        <label className="type-tag">{currentModel.name.toLowerCase().includes('flux') ? 'Ultra Quality' : 'High Performance'}</label>
+                                                        <h2>{currentModel.name}</h2>
+                                                    </div>
                                                     <div className="step-indicator">{currentIndex + 1} / {filteredModels.length}</div>
                                                 </div>
+                                                
                                                 <p className="description">
                                                     {getBriefDescription(currentModel.name, currentModel.description)}
                                                 </p>
                                                 
-                                                <div className="select-action">
-                                                    <div className={`action-btn ${selectedModel?.id === currentModel.id ? 'selected' : ''}`}>
-                                                        {selectedModel?.id === currentModel.id ? 'Selected Engine' : 'Choose Engine'}
+                                                <div className="action-footer">
+                                                    <div className={`primary-btn ${selectedModel?.id === currentModel.id ? 'active' : ''}`}>
+                                                        {selectedModel?.id === currentModel.id ? 'Ready to Generate' : 'Select Engine'}
+                                                    </div>
+                                                    <div className="model-tip">
+                                                        <IconZap size={12} />
+                                                        <span>Pro Tip: Best for {currentModel.name.toLowerCase().includes('flux') ? 'complex scenes' : 'fast results'}</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -135,74 +148,92 @@ export default function ModelFeed() {
                                 </AnimatePresence>
                             </div>
 
-                            <button className="nav-arrow next glass" onClick={handleNext}>
+                            <button className="nav-arrow next glass-warm" onClick={handleNext}>
                                 <IconChevronRight size={32} />
                             </button>
                         </div>
                     ) : (
-                        <div className="empty-state glass">
-                            <p>Loading creative engines...</p>
+                        <div className="empty-state glass-warm">
+                            <p>Polishing the creative cores...</p>
                         </div>
                     )}
                 </div>
             </div>
 
             <style>{`
-                .lite-feed-immersive { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #000; }
-                .immersive-bg { position: absolute; inset: -50px; background-size: cover; background-position: center; filter: blur(60px) saturate(1.5); opacity: 0.3; pointer-events: none; }
+                .lite-feed-immersive { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #09090b; }
                 
-                .content-overlay { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 40px 20px 100px; }
+                .mesh-gradient-container { position: absolute; inset: 0; overflow: hidden; pointer-events: none; opacity: 0.4; }
+                .mesh-ball { position: absolute; border-radius: 50%; filter: blur(100px); animation: float 20s infinite alternate ease-in-out; }
+                .mesh-1 { width: 600px; height: 600px; background: rgba(139, 92, 246, 0.2); top: -200px; right: -100px; }
+                .mesh-2 { width: 500px; height: 500px; background: rgba(217, 70, 239, 0.1); bottom: -100px; left: -100px; animation-delay: -5s; }
+                .mesh-3 { width: 400px; height: 400px; background: rgba(59, 130, 246, 0.1); top: 50%; left: 30%; animation-delay: -10s; }
                 
-                .feed-header { text-align: center; margin-bottom: 30px; }
-                .elite-badge { color: #8b5cf6; font-size: 0.75rem; font-weight: 900; text-transform: uppercase; letter-spacing: 4px; margin-bottom: 10px; }
-                .feed-header h1 { font-size: 3.5rem; letter-spacing: -4px; line-height: 1; }
-                .feed-header h1 span { color: #8b5cf6; margin-left: 10px; }
+                @keyframes float { 
+                    0% { transform: translate(0, 0) scale(1); }
+                    100% { transform: translate(100px, 100px) scale(1.2); }
+                }
 
-                .pagination-container { flex: 1; display: flex; align-items: center; justify-content: center; }
-                .pager-wrapper { display: flex; align-items: center; gap: 60px; width: 100%; max-width: 1100px; }
-
-                .nav-arrow { width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); border: 1px solid rgba(255,255,255,0.1); }
-                .nav-arrow:hover { background: #8b5cf6; border-color: #8b5cf6; transform: scale(1.15); box-shadow: 0 0 40px rgba(139, 92, 246, 0.4); }
-
-                .pager-content { flex: 1; min-width: 0; perspective: 1000px; }
+                .immersive-bg { position: absolute; inset: -100px; background-size: cover; background-position: center; filter: blur(80px) saturate(1.2); opacity: 0.15; pointer-events: none; }
                 
-                .model-card-immersive { width: 100%; border-radius: 48px; overflow: hidden; background: rgba(15, 15, 18, 0.7) !important; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 50px 100px rgba(0,0,0,0.8); }
-                .model-card-immersive.active { border-color: #8b5cf6; }
+                .content-overlay { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; padding: 40px 40px 120px; }
+                
+                .feed-header { text-align: left; margin-bottom: 20px; max-width: 1200px; margin: 0 auto 40px; width: 100%; }
+                .welcome-row { color: #8b5cf6; font-size: 0.9rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; opacity: 0.8; }
+                .feed-header h1 { font-size: 4rem; letter-spacing: -3px; line-height: 0.9; font-weight: 900; color: white; }
+                .feed-header h1 span { display: block; color: #a1a1aa; }
+
+                .pagination-container { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
+                .pager-wrapper { display: flex; align-items: center; gap: 40px; width: 100%; max-width: 1200px; }
+
+                .nav-arrow { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; transition: all 0.3s; border: 1px solid rgba(255,255,255,0.05); }
+                .nav-arrow:hover { background: #8b5cf6; border-color: #8b5cf6; transform: scale(1.1); box-shadow: 0 0 30px rgba(139, 92, 246, 0.3); }
+
+                .pager-content { flex: 1; min-width: 0; }
+                
+                .glass-warm { background: rgba(24, 24, 27, 0.4); backdrop-filter: blur(40px); border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 40px 80px rgba(0,0,0,0.5); }
+                
+                .model-card-soft { width: 100%; border-radius: 48px; overflow: hidden; position: relative; transition: border-color 0.4s; }
+                .model-card-soft.active { border-color: #8b5cf6; }
                 
                 .model-visual-root { display: flex; flex-direction: row; cursor: pointer; }
                 
-                .model-image-container { flex: 1; aspect-ratio: 1; position: relative; overflow: hidden; border-right: 1px solid rgba(255,255,255,0.05); }
-                .model-image-container img { width: 100%; height: 100%; object-fit: cover; }
+                .model-image-container { flex: 0.9; aspect-ratio: 1; position: relative; overflow: hidden; }
+                .model-image-container img { width: 100%; height: 100%; object-fit: cover; transition: transform 1s cubic-bezier(0.23, 1, 0.32, 1); }
+                .model-card-soft:hover .model-image-container img { transform: scale(1.05); }
                 
                 .card-overlays { position: absolute; top: 30px; left: 30px; right: 30px; display: flex; justify-content: space-between; pointer-events: none; }
-                .active-badge { background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 99px; display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 900; text-transform: uppercase; }
-                .featured-pill { background: rgba(0,0,0,0.6); backdrop-filter: blur(20px); color: white; padding: 10px 20px; border-radius: 99px; font-size: 0.8rem; font-weight: 900; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.1); }
+                .active-badge { background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 99px; display: flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 900; text-transform: uppercase; box-shadow: 0 10px 30px rgba(139, 92, 246, 0.5); }
+                .flagship-pill { background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); color: white; padding: 10px 20px; border-radius: 99px; font-size: 0.75rem; font-weight: 900; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.1); }
 
-                .model-details { flex: 1.2; padding: 60px; display: flex; flex-direction: column; justify-content: center; }
-                .title-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; }
-                .model-details h2 { font-size: 2.5rem; font-weight: 900; letter-spacing: -2px; line-height: 1; }
-                .step-indicator { color: #52525b; font-weight: 900; font-size: 1.2rem; }
+                .model-details { flex: 1.1; padding: 60px; display: flex; flex-direction: column; justify-content: center; }
+                .type-tag { font-size: 0.7rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: #8b5cf6; margin-bottom: 8px; display: block; }
+                .model-details h2 { font-size: 3.5rem; font-weight: 900; letter-spacing: -2px; line-height: 1; margin-bottom: 20px; }
+                .step-indicator { color: #3f3f46; font-weight: 900; font-size: 1.5rem; }
                 
-                .description { font-size: 1.1rem; color: #a1a1aa; line-height: 1.6; margin-bottom: 40px; }
+                .description { font-size: 1.25rem; color: #a1a1aa; line-height: 1.5; margin-bottom: 40px; }
                 
-                .select-action { margin-top: 20px; }
-                .action-btn { width: fit-content; padding: 12px 30px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; font-weight: 800; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; transition: all 0.3s; }
-                .action-btn.selected { background: #8b5cf6; border-color: #8b5cf6; box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3); }
+                .action-footer { display: flex; align-items: center; gap: 20px; }
+                .primary-btn { padding: 16px 32px; border-radius: 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; font-weight: 800; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; transition: all 0.3s; }
+                .primary-btn.active { background: #8b5cf6; border-color: #8b5cf6; transform: scale(1.05); box-shadow: 0 10px 40px rgba(139, 92, 246, 0.4); }
+                
+                .model-tip { display: flex; align-items: center; gap: 8px; color: #52525b; font-size: 0.8rem; font-weight: 700; }
 
-                .glow-pulse { animation: glow 2s infinite alternate; }
-                @keyframes glow { from { box-shadow: 0 0 10px rgba(139, 92, 246, 0.4); } to { box-shadow: 0 0 30px rgba(139, 92, 246, 0.8); } }
+                .glow-soft { animation: glow 3s infinite alternate; }
+                @keyframes glow { from { box-shadow: 0 0 10px rgba(139, 92, 246, 0.3); } to { box-shadow: 0 0 25px rgba(139, 92, 246, 0.6); } }
 
                 @media (max-width: 1100px) {
                     .model-visual-root { flex-direction: column; }
                     .model-image-container { aspect-ratio: 16/9; }
                     .model-details { padding: 40px; }
-                    .model-details h2 { font-size: 2rem; }
+                    .model-details h2 { font-size: 2.5rem; }
+                    .feed-header h1 { font-size: 3rem; }
                 }
 
                 @media (max-width: 768px) {
-                    .pager-wrapper { gap: 20px; }
+                    .content-overlay { padding: 20px; }
                     .nav-arrow { display: none; }
-                    .feed-header h1 { font-size: 2.5rem; }
+                    .feed-header h1 { font-size: 2rem; }
                 }
             `}</style>
         </div>
