@@ -4,6 +4,22 @@ import { getOptimizedImageUrl } from '../lite-utils';
 import { IconZap, IconChevronLeft, IconChevronRight } from '../icons';
 import { AnimatePresence, motion } from 'framer-motion';
 
+/**
+ * Provides a clean, short description for models based on their identity
+ */
+const getBriefDescription = (name: string, originalDesc: string) => {
+    const n = name.toLowerCase();
+    if (n.includes('flux')) return "Flagship engine. Industry-leading fidelity and prompt adherence.";
+    if (n.includes('xl')) return "High-resolution specialist. Perfect for detailed, cinematic compositions.";
+    if (n.includes('pony')) return "Creative & expressive. Exceptional for artistic and stylized character work.";
+    if (n.includes('real')) return "Photorealism expert. Optimized for lifelike textures and lighting.";
+    if (n.includes('anime')) return "Stylized illustration engine. Pure aesthetic for character design.";
+    if (n.includes('v1.5')) return "Fast and efficient classic. Great for quick ideation and exploration.";
+    
+    // Fallback to a truncated version of the original description if it's not too messy
+    return originalDesc.length > 80 ? originalDesc.substring(0, 77) + "..." : originalDesc;
+};
+
 export default function ModelFeed() {
     const { availableModels, setSelectedModel, selectedModel } = useLite();
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -18,7 +34,8 @@ export default function ModelFeed() {
         const fluxKlein = base.find(m => m.name.toLowerCase().includes('flux klein') || m.id.includes('flux-klein'));
         const others = base.filter(m => m !== fluxKlein);
 
-        return fluxKlein ? [fluxKlein, ...others].slice(0, 3) : base.slice(0, 3);
+        // Include all available models (up to the context limit)
+        return fluxKlein ? [fluxKlein, ...others] : base;
     }, [availableModels]);
 
     const handleNext = () => {
@@ -30,15 +47,6 @@ export default function ModelFeed() {
     };
 
     const currentModel = filteredModels[currentIndex];
-
-    // Mock capabilities for "Elite" feel
-    const capabilities = useMemo(() => {
-        if (!currentModel) return null;
-        const name = currentModel.name.toLowerCase();
-        if (name.includes('flux')) return { speed: 9.8, quality: 9.9, artistic: 9.5 };
-        if (name.includes('xl')) return { speed: 9.2, quality: 9.6, artistic: 9.8 };
-        return { speed: 9.5, quality: 9.4, artistic: 9.2 };
-    }, [currentModel]);
 
     return (
         <div className="lite-feed-immersive">
@@ -62,9 +70,9 @@ export default function ModelFeed() {
                         animate={{ opacity: 1, y: 0 }}
                         className="elite-badge"
                     >
-                        The Elite Trio
+                        Creative Engines
                     </motion.div>
-                    <h1>Creative<span>Intelligence</span></h1>
+                    <h1>Select<span>Power</span></h1>
                 </header>
 
                 <div className="pagination-container">
@@ -75,18 +83,18 @@ export default function ModelFeed() {
                             </button>
 
                             <div className="pager-content">
-                                <AnimatePresence mode="wait" custom={currentIndex}>
+                                <AnimatePresence mode="wait">
                                     <motion.div 
                                         key={currentModel.id}
-                                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
                                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                                        exit={{ opacity: 0, scale: 1.1, y: -20 }}
+                                        exit={{ opacity: 0, scale: 1.05, y: -10 }}
                                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
                                         drag="x"
                                         dragConstraints={{ left: 0, right: 0 }}
                                         onDragEnd={(_, info) => {
-                                            if (info.offset.x > 100) handlePrev();
-                                            else if (info.offset.x < -100) handleNext();
+                                            if (info.offset.x > 80) handlePrev();
+                                            else if (info.offset.x < -80) handleNext();
                                         }}
                                         className={`model-card-immersive glass ${selectedModel?.id === currentModel.id ? 'active' : ''}`}
                                     >
@@ -112,20 +120,13 @@ export default function ModelFeed() {
                                                     <h2>{currentModel.name}</h2>
                                                     <div className="step-indicator">{currentIndex + 1} / {filteredModels.length}</div>
                                                 </div>
-                                                <p className="description">{currentModel.description}</p>
+                                                <p className="description">
+                                                    {getBriefDescription(currentModel.name, currentModel.description)}
+                                                </p>
                                                 
-                                                <div className="specs-grid">
-                                                    <div className="spec-item">
-                                                        <label>Velocity</label>
-                                                        <div className="bar-root"><motion.div initial={{width:0}} animate={{width:`${(capabilities?.speed || 0)*10}%`}} className="bar-fill" /></div>
-                                                    </div>
-                                                    <div className="spec-item">
-                                                        <label>Fidelity</label>
-                                                        <div className="bar-root"><motion.div initial={{width:0}} animate={{width:`${(capabilities?.quality || 0)*10}%`}} className="bar-fill" /></div>
-                                                    </div>
-                                                    <div className="spec-item">
-                                                        <label>Latent Depth</label>
-                                                        <div className="bar-root"><motion.div initial={{width:0}} animate={{width:`${(capabilities?.artistic || 0)*10}%`}} className="bar-fill" /></div>
+                                                <div className="select-action">
+                                                    <div className={`action-btn ${selectedModel?.id === currentModel.id ? 'selected' : ''}`}>
+                                                        {selectedModel?.id === currentModel.id ? 'Selected Engine' : 'Choose Engine'}
                                                     </div>
                                                 </div>
                                             </div>
@@ -140,7 +141,7 @@ export default function ModelFeed() {
                         </div>
                     ) : (
                         <div className="empty-state glass">
-                            <p>Scanning for creative cores...</p>
+                            <p>Loading creative engines...</p>
                         </div>
                     )}
                 </div>
@@ -158,7 +159,7 @@ export default function ModelFeed() {
                 .feed-header h1 span { color: #8b5cf6; margin-left: 10px; }
 
                 .pagination-container { flex: 1; display: flex; align-items: center; justify-content: center; }
-                .pager-wrapper { display: flex; align-items: center; gap: 60px; width: 100%; max-width: 1200px; }
+                .pager-wrapper { display: flex; align-items: center; gap: 60px; width: 100%; max-width: 1100px; }
 
                 .nav-arrow { width: 72px; height: 72px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1); border: 1px solid rgba(255,255,255,0.1); }
                 .nav-arrow:hover { background: #8b5cf6; border-color: #8b5cf6; transform: scale(1.15); box-shadow: 0 0 40px rgba(139, 92, 246, 0.4); }
@@ -175,20 +176,18 @@ export default function ModelFeed() {
                 
                 .card-overlays { position: absolute; top: 30px; left: 30px; right: 30px; display: flex; justify-content: space-between; pointer-events: none; }
                 .active-badge { background: #8b5cf6; color: white; padding: 10px 20px; border-radius: 99px; display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 900; text-transform: uppercase; }
-                .featured-pill { background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); color: white; padding: 10px 20px; border-radius: 99px; font-size: 0.8rem; font-weight: 900; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.1); }
+                .featured-pill { background: rgba(0,0,0,0.6); backdrop-filter: blur(20px); color: white; padding: 10px 20px; border-radius: 99px; font-size: 0.8rem; font-weight: 900; text-transform: uppercase; border: 1px solid rgba(255,255,255,0.1); }
 
                 .model-details { flex: 1.2; padding: 60px; display: flex; flex-direction: column; justify-content: center; }
                 .title-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; }
-                .model-details h2 { font-size: 3rem; font-weight: 900; letter-spacing: -2px; line-height: 1; }
+                .model-details h2 { font-size: 2.5rem; font-weight: 900; letter-spacing: -2px; line-height: 1; }
                 .step-indicator { color: #52525b; font-weight: 900; font-size: 1.2rem; }
                 
-                .description { font-size: 1.2rem; color: #a1a1aa; line-height: 1.6; margin-bottom: 40px; }
+                .description { font-size: 1.1rem; color: #a1a1aa; line-height: 1.6; margin-bottom: 40px; }
                 
-                .specs-grid { display: flex; flex-direction: column; gap: 20px; }
-                .spec-item { display: flex; flex-direction: column; gap: 8px; }
-                .spec-item label { font-size: 0.7rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: #52525b; }
-                .bar-root { width: 100%; height: 4px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
-                .bar-fill { height: 100%; background: linear-gradient(90deg, #8b5cf6, #d946ef); border-radius: 2px; }
+                .select-action { margin-top: 20px; }
+                .action-btn { width: fit-content; padding: 12px 30px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: white; font-weight: 800; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; transition: all 0.3s; }
+                .action-btn.selected { background: #8b5cf6; border-color: #8b5cf6; box-shadow: 0 10px 20px rgba(139, 92, 246, 0.3); }
 
                 .glow-pulse { animation: glow 2s infinite alternate; }
                 @keyframes glow { from { box-shadow: 0 0 10px rgba(139, 92, 246, 0.4); } to { box-shadow: 0 0 30px rgba(139, 92, 246, 0.8); } }
