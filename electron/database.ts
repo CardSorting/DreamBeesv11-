@@ -40,21 +40,50 @@ export class LiteDatabase {
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('busy_timeout = 5000');
     this.db.pragma('foreign_keys = ON');
+
+    // Simple migration system
     this.db.exec(`
+      CREATE TABLE IF NOT EXISTS migrations (
+        id INTEGER PRIMARY KEY,
+        version INTEGER NOT NULL,
+        appliedAt INTEGER NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS generations (
         id TEXT PRIMARY KEY,
         prompt TEXT,
         imageUrl TEXT,
         modelId TEXT,
-        params TEXT, -- JSON
+        params TEXT,
         createdAt INTEGER
       );
 
       CREATE TABLE IF NOT EXISTS settings (
         key TEXT PRIMARY KEY,
-        value TEXT -- JSON
+        value TEXT
       );
     `);
+
+    this.runMigrations();
+  }
+
+  private runMigrations() {
+    try {
+      const row = this.db.prepare('SELECT MAX(version) as v FROM migrations').get() as { v: number | null } | undefined;
+      const currentVersion = row?.v || 0;
+      
+      // logStartup(`Database version: ${currentVersion}`);
+      console.log(`[database] Current version: ${currentVersion}`);
+      
+      // Example of future migration structure
+      // if (currentVersion < 1) {
+      //   this.db.exec('ALTER TABLE generations ADD COLUMN meta TEXT');
+      //   this.db.prepare('INSERT INTO migrations (version, appliedAt) VALUES (?, ?)').run(1, Date.now());
+      // }
+    } catch (error) {
+      // If migrations table doesn't exist yet (first run), it's handled by CREATE TABLE IF NOT EXISTS
+      console.warn('[database] Migration check failed (expected on first run)');
+    }
   }
 
   public saveGeneration(data: GenerationRecord) {

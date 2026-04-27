@@ -1,5 +1,6 @@
-import { app, BrowserWindow, ipcMain, WebContents, session, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, WebContents, session, shell, net } from 'electron';
 import http from 'http';
+import netModule from 'net'; // For port discovery
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -22,6 +23,8 @@ let mainWindow: BrowserWindow | null = null;
 let db: LiteDatabase | null = null;
 let dbInitError: string | null = null;
 let pendingAuthResolve: ((url: string) => void) | null = null;
+let activeAuthServer: http.Server | null = null;
+let authServerTimeout: NodeJS.Timeout | null = null;
 
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
@@ -38,7 +41,30 @@ const authDomain = 'dreambees-alchemist.firebaseapp.com';
 
 function logStartup(message: string, error?: unknown) {
   const suffix = error instanceof Error ? `: ${error.stack || error.message}` : error ? `: ${String(error)}` : '';
-  console.log(`[main] ${message}${suffix}`);
+  console.log(`[main] ${new Date().toISOString()} | ${message}${suffix}`);
+}
+
+async function findAvailablePort(startPort: number): Promise<number> {
+  return new Promise((resolve) => {
+    const server = netModule.createServer();
+    server.unref();
+    server.on('error', () => resolve(findAvailablePort(startPort + 1)));
+    server.listen(startPort, '127.0.0.1', () => {
+      const port = (server.address() as netModule.AddressInfo).port;
+      server.close(() => resolve(port));
+    });
+  });
+}
+
+function cleanupAuthServer() {
+  if (activeAuthServer) {
+    activeAuthServer.close();
+    activeAuthServer = null;
+  }
+  if (authServerTimeout) {
+    clearTimeout(authServerTimeout);
+    authServerTimeout = null;
+  }
 }
 
 function ensureDb() {
@@ -96,11 +122,19 @@ function registerIpcHandlers() {
 
   // Local Self-Contained Google Auth Flow for Electron
   ipcMain.handle('auth:google-login', async () => {
-    return new Promise((resolve, reject) => {
-      const port = 3000; // Use port 3000 as it is most likely to be whitelisted in Firebase
+    cleanupAuthServer(); // Kill any stale sessions
+    
+    return new Promise(async (resolve, reject) => {
+      // Preference for port 3000 to maximize likelihood of being whitelisted in Firebase Console
+      const preferredPort = 3000;
+      const actualPort = await findAvailablePort(preferredPort);
+      
+      if (actualPort !== preferredPort) {
+        logStartup(`Port ${preferredPort} occupied. Falling back to port ${actualPort}. Note: You may need to whitelist http://127.0.0.1:${actualPort} in Firebase Console.`);
+      }
       
       const server = http.createServer((req, res) => {
-        const url = new URL(req.url || '', `http://localhost:${port}`);
+        const url = new URL(req.url || '', `http://127.0.0.1:${actualPort}`);
         
         if (url.pathname === '/callback') {
           const idToken = url.searchParams.get('id_token');
@@ -109,8 +143,17 @@ function registerIpcHandlers() {
           if (idToken) {
             resolve(`dreambees://auth?id_token=${idToken}&access_token=${accessToken || ''}`);
             res.writeHead(200, { 'Content-Type': 'text/html' });
-            res.end('<h1>Success!</h1><p>Identity manifested. You can close this window now.</p><script>window.close();</script>');
-            server.close();
+            res.end(`
+              <body style="background: #09090b; color: white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;">
+                <div style="text-align: center; max-width: 400px; padding: 40px;">
+                  <div style="font-size: 48px; margin-bottom: 20px;">🐝</div>
+                  <h1 style="color: #8b5cf6; margin-bottom: 12px; font-weight: 600;">Success!</h1>
+                  <p style="color: #a1a1aa; line-height: 1.5;">You've signed in successfully. We're taking you back to DreamBees now.</p>
+                  <script>setTimeout(() => window.close(), 2000);</script>
+                </div>
+              </body>
+            `);
+            cleanupAuthServer();
           } else {
             res.writeHead(400);
             res.end('Authentication failed: Missing tokens.');
@@ -124,19 +167,22 @@ function registerIpcHandlers() {
 <!DOCTYPE html>
 <html>
 <head>
-  <title>DreamBees Auth Bridge</title>
+  <title>Sign in to DreamBees</title>
   <style>
-    body { font-family: sans-serif; background: #09090b; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-    .btn { background: white; color: black; border: none; padding: 12px 24px; border-radius: 12px; font-weight: bold; cursor: pointer; text-decoration: none; display: inline-block; }
-    .loader { border: 3px solid #1a1a1c; border-top: 3px solid #8b5cf6; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #09090b; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    .loader { border: 3px solid #1a1a1c; border-top: 3px solid #8b5cf6; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .container { text-align: center; max-width: 400px; padding: 40px; }
+    h1 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+    p { color: #a1a1aa; font-size: 15px; margin: 0; }
   </style>
 </head>
 <body>
-  <div style="text-align: center;">
+  <div class="container">
     <div id="status">
-      <div class="loader" style="margin: 0 auto 20px;"></div>
-      <p id="msg">Stabilizing Identity Portal...</p>
+      <div class="loader"></div>
+      <h1 id="msg">Securely connecting...</h1>
+      <p id="submsg">One moment while we prepare your sign-in.</p>
     </div>
   </div>
 
@@ -161,20 +207,18 @@ function registerIpcHandlers() {
       try {
         const result = await getRedirectResult(auth);
         if (result) {
-          const credential = GoogleAuthProvider.credentialFromResult(result);
           const idToken = await result.user.getIdToken();
-          const accessToken = credential.accessToken;
-          
-          document.getElementById('msg').innerText = "Identity Manifested. Returning...";
+          const accessToken = GoogleAuthProvider.credentialFromResult(result).accessToken;
           window.location.href = "/callback?id_token=" + encodeURIComponent(idToken) + "&access_token=" + encodeURIComponent(accessToken || '');
         } else {
-          // Automatic Redirect
-          document.getElementById('msg').innerText = "Redirecting to Google...";
+          document.getElementById('msg').innerText = "Signing you in...";
+          document.getElementById('submsg').innerText = "Taking you to Google's secure sign-in page.";
           signInWithRedirect(auth, provider);
         }
       } catch (err) {
         console.error(err);
-        document.getElementById('msg').innerHTML = "<span style='color: #ef4444'>The vision was interrupted: " + err.message + "</span>";
+        document.getElementById('msg').innerText = "Something went wrong";
+        document.getElementById('submsg').innerHTML = "<span style='color: #ef4444'>" + err.message + "</span>";
       }
     }
 
@@ -185,19 +229,20 @@ function registerIpcHandlers() {
         `);
       });
 
-      server.listen(port, '127.0.0.1', () => {
-        logStartup(`Auth bridge listening on http://127.0.0.1:${port}`);
-        shell.openExternal(`http://127.0.0.1:${port}`);
+      activeAuthServer = server;
+      server.listen(actualPort, '127.0.0.1', () => {
+        logStartup(`Auth bridge listening on http://127.0.0.1:${actualPort}`);
+        shell.openExternal(`http://127.0.0.1:${actualPort}`);
       });
 
       server.on('error', (err) => {
         logStartup('Auth bridge server error', err);
+        cleanupAuthServer();
         reject(err);
       });
 
-      // Safety timeout
-      setTimeout(() => {
-        server.close();
+      authServerTimeout = setTimeout(() => {
+        cleanupAuthServer();
         reject(new Error('Authentication timed out after 5 minutes.'));
       }, 300000);
     });
