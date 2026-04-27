@@ -138,9 +138,6 @@ function registerIpcHandlers() {
       <div class="loader" style="margin: 0 auto 20px;"></div>
       <p id="msg">Stabilizing Identity Portal...</p>
     </div>
-    <div id="action" style="display: none;">
-       <button class="btn" onclick="login()">Connect Identity</button>
-    </div>
   </div>
 
   <script type="module">
@@ -171,22 +168,15 @@ function registerIpcHandlers() {
           document.getElementById('msg').innerText = "Identity Manifested. Returning...";
           window.location.href = "/callback?id_token=" + encodeURIComponent(idToken) + "&access_token=" + encodeURIComponent(accessToken || '');
         } else {
-          document.getElementById('status').style.display = 'none';
-          document.getElementById('action').style.display = 'block';
+          // Automatic Redirect
+          document.getElementById('msg').innerText = "Redirecting to Google...";
+          signInWithRedirect(auth, provider);
         }
       } catch (err) {
         console.error(err);
         document.getElementById('msg').innerHTML = "<span style='color: #ef4444'>The vision was interrupted: " + err.message + "</span>";
-        document.getElementById('action').style.display = 'block';
       }
     }
-
-    window.login = () => {
-      document.getElementById('action').style.display = 'none';
-      document.getElementById('status').style.display = 'block';
-      document.getElementById('msg').innerText = "Redirecting to Google...";
-      signInWithRedirect(auth, provider);
-    };
 
     checkResult();
   </script>
