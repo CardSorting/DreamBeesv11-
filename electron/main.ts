@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, WebContents, session, shell } from 'electron';
 import http from 'http';
+import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GenerationRecord, LiteDatabase } from './database';
@@ -10,6 +11,8 @@ const __dirname = path.dirname(__filename);
 // Shim for dependencies that rely on __filename/__dirname (like better-sqlite3's bindings).
 Object.defineProperty(globalThis, '__filename', { value: __filename });
 Object.defineProperty(globalThis, '__dirname', { value: __dirname });
+
+dotenv.config();
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
@@ -94,7 +97,7 @@ function registerIpcHandlers() {
   // Local Self-Contained Google Auth Flow for Electron
   ipcMain.handle('auth:google-login', async () => {
     return new Promise((resolve, reject) => {
-      const port = 4242; // We can use a fixed port for localhost authorized domain consistency
+      const port = 3000; // Use port 3000 as it is most likely to be whitelisted in Firebase
       
       const server = http.createServer((req, res) => {
         const url = new URL(req.url || '', `http://localhost:${port}`);
@@ -124,7 +127,7 @@ function registerIpcHandlers() {
   <title>DreamBees Auth Bridge</title>
   <style>
     body { font-family: sans-serif; background: #09090b; color: white; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-    .btn { background: white; color: black; border: none; padding: 12px 24px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+    .btn { background: white; color: black; border: none; padding: 12px 24px; border-radius: 12px; font-weight: bold; cursor: pointer; text-decoration: none; display: inline-block; }
     .loader { border: 3px solid #1a1a1c; border-top: 3px solid #8b5cf6; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin-bottom: 20px; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
@@ -133,7 +136,7 @@ function registerIpcHandlers() {
   <div style="text-align: center;">
     <div id="status">
       <div class="loader" style="margin: 0 auto 20px;"></div>
-      <p>Connecting to Identity Portal...</p>
+      <p id="msg">Stabilizing Identity Portal...</p>
     </div>
     <div id="action" style="display: none;">
        <button class="btn" onclick="login()">Connect Identity</button>
@@ -142,7 +145,7 @@ function registerIpcHandlers() {
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     const config = {
       apiKey: "${process.env.VITE_FIREBASE_API_KEY}",
@@ -157,21 +160,35 @@ function registerIpcHandlers() {
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
 
-    window.login = async () => {
+    async function checkResult() {
       try {
-        const result = await signInWithPopup(auth, provider);
-        const credential = GoogleAuthProvider.credentialFromResult(result);
-        const idToken = await result.user.getIdToken();
-        const accessToken = credential.accessToken;
-        
-        window.location.href = "/callback?id_token=" + encodeURIComponent(idToken) + "&access_token=" + encodeURIComponent(accessToken || '');
+        const result = await getRedirectResult(auth);
+        if (result) {
+          const credential = GoogleAuthProvider.credentialFromResult(result);
+          const idToken = await result.user.getIdToken();
+          const accessToken = credential.accessToken;
+          
+          document.getElementById('msg').innerText = "Identity Manifested. Returning...";
+          window.location.href = "/callback?id_token=" + encodeURIComponent(idToken) + "&access_token=" + encodeURIComponent(accessToken || '');
+        } else {
+          document.getElementById('status').style.display = 'none';
+          document.getElementById('action').style.display = 'block';
+        }
       } catch (err) {
-        document.getElementById('status').innerHTML = "<p style='color: #ef4444'>Error: " + err.message + "</p>";
+        console.error(err);
+        document.getElementById('msg').innerHTML = "<span style='color: #ef4444'>The vision was interrupted: " + err.message + "</span>";
+        document.getElementById('action').style.display = 'block';
       }
+    }
+
+    window.login = () => {
+      document.getElementById('action').style.display = 'none';
+      document.getElementById('status').style.display = 'block';
+      document.getElementById('msg').innerText = "Redirecting to Google...";
+      signInWithRedirect(auth, provider);
     };
 
-    document.getElementById('status').style.display = 'none';
-    document.getElementById('action').style.display = 'block';
+    checkResult();
   </script>
 </body>
 </html>
@@ -179,8 +196,8 @@ function registerIpcHandlers() {
       });
 
       server.listen(port, '127.0.0.1', () => {
-        logStartup(`Auth bridge listening on http://localhost:${port}`);
-        shell.openExternal(`http://localhost:${port}`);
+        logStartup(`Auth bridge listening on http://127.0.0.1:${port}`);
+        shell.openExternal(`http://127.0.0.1:${port}`);
       });
 
       server.on('error', (err) => {
@@ -313,7 +330,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      sandbox: false,
       webgl: true,
     },
     titleBarStyle: 'hiddenInset',

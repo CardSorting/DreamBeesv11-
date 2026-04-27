@@ -147,8 +147,33 @@ export function LiteProvider({ children }: { children: ReactNode }) {
 
     const loginWithGoogle = async () => {
         try {
-            if (!window.electronAPI?.lite?.googleLogin) {
-                // Fallback for web/dev if available
+            console.log("[Lite Auth] Version 1.1.2. Electron API:", Boolean(window.electronAPI?.lite?.googleLogin));
+            const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
+            const hasNativeLogin = Boolean(window.electronAPI?.lite?.googleLogin);
+            
+            if (isElectron && hasNativeLogin) {
+                // Electron Native Flow (Local Bridge)
+                const resultUrl = await window.electronAPI.lite.googleLogin();
+                
+                const normalizedUrl = resultUrl.includes('#') ? resultUrl.replace('#', '?') : resultUrl;
+                const searchParams = new URL(normalizedUrl).searchParams;
+                const idToken = searchParams.get('id_token');
+                const accessToken = searchParams.get('access_token');
+
+                if (!idToken && !accessToken) throw new Error("The identity portal returned an empty response.");
+
+                const credential = GoogleAuthProvider.credential(idToken, accessToken);
+                const res = await signInWithCredential(auth, credential);
+
+                if (res.user) {
+                    await setDoc(doc(db, 'users', res.user.uid), {
+                        email: res.user.email,
+                        lastLogin: serverTimestamp()
+                    }, { merge: true });
+                    toast.success(`Welcome back, ${res.user.displayName?.split(' ')[0]}`);
+                }
+            } else {
+                // Web Fallback
                 const provider = new GoogleAuthProvider();
                 const res = await signInWithPopup(auth, provider);
                 if (res.user) {
@@ -158,32 +183,6 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                     }, { merge: true });
                     toast.success(`Welcome back, ${res.user.displayName?.split(' ')[0]}`);
                 }
-                return;
-            }
-
-            // Electron Manual Flow
-            const resultUrl = await window.electronAPI.lite.googleLogin();
-            
-            // Hardened parsing: Handle both hash (#) and query (?) formats
-            const normalizedUrl = resultUrl.includes('#') ? resultUrl.replace('#', '?') : resultUrl;
-            const searchParams = new URL(normalizedUrl).searchParams;
-            
-            const idToken = searchParams.get('id_token');
-            const accessToken = searchParams.get('access_token');
-
-            if (!idToken && !accessToken) {
-                throw new Error("The identity portal returned an empty response. Please try again.");
-            }
-
-            const credential = GoogleAuthProvider.credential(idToken, accessToken);
-            const res = await signInWithCredential(auth, credential);
-
-            if (res.user) {
-                await setDoc(doc(db, 'users', res.user.uid), {
-                    email: res.user.email,
-                    lastLogin: serverTimestamp()
-                }, { merge: true });
-                toast.success(`Welcome back, ${res.user.displayName?.split(' ')[0]}`);
             }
         } catch (err: any) {
             console.error('[Lite Auth Error]', err);
@@ -206,10 +205,10 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             controller.abort();
             setGenerating(false);
             toast.error("The vision is taking too long to manifest.", { id: requestId });
-        }, 90000); // 90 second timeout for deep audit hardening
+        }, 90000);
 
         try {
-            const token = await currentUser.getIdToken(true); // Force refresh for security
+            const token = await currentUser.getIdToken(true);
             const res = await fetch('https://api.dreambeesai.com/api', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
