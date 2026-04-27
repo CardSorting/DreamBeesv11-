@@ -142,9 +142,9 @@ function registerIpcHandlers() {
           const accessToken = url.searchParams.get('access_token');
           
           if (idToken) {
-            // Return structured data to the renderer instead of a raw URL
-            resolve({ idToken, accessToken });
+            console.log('[Main Auth] Tokens received. Finalizing handover...');
             
+            // 1. Respond to browser first so it shows "Success!"
             res.writeHead(200, { 'Content-Type': 'text/html' });
             res.end(`
               <body style="background: #09090b; color: white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;">
@@ -152,14 +152,25 @@ function registerIpcHandlers() {
                   <div style="font-size: 48px; margin-bottom: 20px;">🐝</div>
                   <h1 style="color: #8b5cf6; margin-bottom: 12px; font-weight: 600;">Success!</h1>
                   <p style="color: #a1a1aa; line-height: 1.5;">You've signed in successfully. We're taking you back to DreamBees now.</p>
-                  <script>setTimeout(() => window.close(), 2000);</script>
+                  <script>setTimeout(() => window.close(), 1000);</script>
                 </div>
               </body>
             `);
-            cleanupAuthServer();
+
+            // 2. Resolve the IPC promise to the renderer after a tiny delay
+            setTimeout(() => {
+              resolve({ idToken, accessToken });
+              console.log('[Main Auth] IPC Handover complete');
+            }, 500);
+            
+            // 3. Cleanup the server after the handover is definitely finished
+            setTimeout(() => cleanupAuthServer(), 3000);
           } else {
+            console.error('[Main Auth] Callback received but missing tokens');
             res.writeHead(400);
             res.end('Authentication failed: Missing tokens.');
+            cleanupAuthServer();
+            reject(new Error('Missing tokens in callback'));
           }
           return;
         }

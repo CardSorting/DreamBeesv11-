@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3';
 import path from 'path';
+import fs from 'fs';
 import { app } from 'electron';
 
 export interface GenerationRecord {
@@ -29,17 +30,47 @@ function safeJsonParse(value: string | null): unknown {
 
 export class LiteDatabase {
   private db: Database.Database;
+  private dbPath: string;
 
   constructor(dbPath?: string) {
-    const finalPath = dbPath || path.join(app.getPath('userData'), 'lite.sqlite');
-    this.db = new Database(finalPath, { timeout: 5000 });
+    this.dbPath = dbPath || path.join(app.getPath('userData'), 'lite.sqlite');
+    this.backup(); // Perform a rotation backup on startup
+    this.db = new Database(this.dbPath, { timeout: 5000 });
     this.init();
+    this.verifyIntegrity();
+  }
+
+  private backup() {
+    try {
+      if (fs.existsSync(this.dbPath)) {
+        const backupPath = `${this.dbPath}.bak`;
+        fs.copyFileSync(this.dbPath, backupPath);
+        console.log('[database] Survival backup created:', backupPath);
+      }
+    } catch (err) {
+      console.warn('[database] Backup failed:', err);
+    }
+  }
+
+  private verifyIntegrity() {
+    try {
+      const integrity = this.db.pragma('integrity_check');
+      if (integrity !== 'ok') {
+        console.error('[database] Integrity check FAILED:', integrity);
+        // In a real app, we might restore from backup here
+      } else {
+        console.log('[database] Integrity verified: OK');
+      }
+    } catch (err) {
+      console.error('[database] Integrity check error:', err);
+    }
   }
 
   private init() {
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('busy_timeout = 5000');
     this.db.pragma('foreign_keys = ON');
+    this.db.pragma('synchronous = NORMAL'); // Balance between speed and safety
 
     // Simple migration system
     this.db.exec(`

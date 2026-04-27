@@ -156,10 +156,15 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 addToast("Establishing secure link...", "loading", "google-auth");
                 
                 // Structured response from hardened main process (v1.3.0)
-                const { idToken, accessToken } = await window.electronAPI.lite.googleLogin();
+                const authData = await window.electronAPI.lite.googleLogin();
+                console.log("[Lite Auth] Received data from bridge:", authData ? "YES" : "NO");
+                addToast("Identity confirmed. Finalizing...", "loading", "google-auth");
+                
+                const { idToken, accessToken } = authData;
 
                 if (!idToken) throw new Error("The identity portal returned an incomplete response. Please try again.");
 
+                console.log("[Lite Auth] Creating Firebase credential...");
                 const credential = GoogleAuthProvider.credential(idToken, accessToken || undefined);
                 const res = await signInWithCredential(auth, credential);
 
@@ -208,7 +213,28 @@ export function LiteProvider({ children }: { children: ReactNode }) {
 
         try {
             const token = await currentUser.getIdToken(true);
-            const res = await fetch('https://api.dreambeesai.com/api', {
+            
+            // PRODUCTION HARDENING: Exponential Backoff Retry System
+            const fetchWithRetry = async (url: string, options: any, retries = 3, backoff = 1000): Promise<Response> => {
+                try {
+                    const res = await fetch(url, options);
+                    if (!res.ok && retries > 0 && res.status >= 500) {
+                        console.warn(`[Lite Gen] Engine busy (${res.status}), retrying in ${backoff}ms...`);
+                        await new Promise(r => setTimeout(r, backoff));
+                        return fetchWithRetry(url, options, retries - 1, backoff * 2);
+                    }
+                    return res;
+                } catch (err: any) {
+                    if (retries > 0 && err.name !== 'AbortError') {
+                        console.warn(`[Lite Gen] Network hiccup, retrying in ${backoff}ms...`, err);
+                        await new Promise(r => setTimeout(r, backoff));
+                        return fetchWithRetry(url, options, retries - 1, backoff * 2);
+                    }
+                    throw err;
+                }
+            };
+
+            const res = await fetchWithRetry('https://api.dreambeesai.com/api', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ 
