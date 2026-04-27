@@ -86,6 +86,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle('lite:saveGeneration', async (_, data: GenerationRecord) => {
     try {
+      if (!data?.id) throw new Error('Generation record must have an ID');
       return ensureDb().saveGeneration(data);
     } catch (error) {
       logStartup('Failed to save generation', error);
@@ -141,7 +142,9 @@ function registerIpcHandlers() {
           const accessToken = url.searchParams.get('access_token');
           
           if (idToken) {
-            resolve(`dreambees://auth?id_token=${idToken}&access_token=${accessToken || ''}`);
+            // Return structured data to the renderer instead of a raw URL
+            resolve({ idToken, accessToken });
+            
             res.writeHead(200, { 'Content-Type': 'text/html' });
             res.end(`
               <body style="background: #09090b; color: white; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0;">
@@ -206,19 +209,24 @@ function registerIpcHandlers() {
     async function checkResult() {
       try {
         const result = await getRedirectResult(auth);
+        
         if (result) {
           const idToken = await result.user.getIdToken();
-          const accessToken = GoogleAuthProvider.credentialFromResult(result).accessToken;
+          const accessToken = GoogleAuthProvider.credentialFromResult(result)?.accessToken;
           window.location.href = "/callback?id_token=" + encodeURIComponent(idToken) + "&access_token=" + encodeURIComponent(accessToken || '');
-        } else {
+        } else if (!sessionStorage.getItem('db_auth_started')) {
           document.getElementById('msg').innerText = "Signing you in...";
-          document.getElementById('submsg').innerText = "Taking you to Google's secure sign-in page.";
+          document.getElementById('submsg').innerText = "Connecting to Google...";
+          sessionStorage.setItem('db_auth_started', 'true');
           signInWithRedirect(auth, provider);
+        } else {
+          document.getElementById('msg').innerText = "Action Needed";
+          document.getElementById('submsg').innerHTML = "We couldn't confirm your sign-in. <a href='#' onclick='sessionStorage.clear(); window.location.reload()' style='color: #8b5cf6;'>Click here to try again</a>.";
         }
       } catch (err) {
         console.error(err);
-        document.getElementById('msg').innerText = "Something went wrong";
-        document.getElementById('submsg').innerHTML = "<span style='color: #ef4444'>" + err.message + "</span>";
+        document.getElementById('msg').innerText = "Sign-in interrupted";
+        document.getElementById('submsg').innerHTML = "<span style='color: #ef4444'>" + err.message + "</span><br><br><a href='#' onclick='sessionStorage.clear(); window.location.reload()' style='color: #8b5cf6;'>Try Again</a>";
       }
     }
 

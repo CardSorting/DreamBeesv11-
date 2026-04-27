@@ -128,7 +128,20 @@ export class LiteDatabase {
     return row ? safeJsonParse(row.value) : null;
   }
 
+  public checkpoint() {
+    try {
+      this.db.pragma('wal_checkpoint(FULL)');
+      console.log('[database] WAL Checkpoint complete');
+    } catch (err) {
+      console.warn('[database] Checkpoint failed:', err);
+    }
+  }
+
   public close() {
-    if (this.db.open) this.db.close();
+    if (this.db.open) {
+      this.checkpoint();
+      this.db.close();
+      console.log('[database] Database connection closed safely');
+    }
   }
 }

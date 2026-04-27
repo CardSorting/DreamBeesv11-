@@ -153,24 +153,23 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             
             if (isElectron && hasNativeLogin) {
                 // Electron Native Flow (Local Bridge)
-                const resultUrl = await window.electronAPI.lite.googleLogin();
+                addToast("Establishing secure link...", "loading", "google-auth");
                 
-                const normalizedUrl = resultUrl.includes('#') ? resultUrl.replace('#', '?') : resultUrl;
-                const searchParams = new URL(normalizedUrl).searchParams;
-                const idToken = searchParams.get('id_token');
-                const accessToken = searchParams.get('access_token');
+                // Structured response from hardened main process (v1.3.0)
+                const { idToken, accessToken } = await window.electronAPI.lite.googleLogin();
 
-                if (!idToken && !accessToken) throw new Error("The identity portal returned an empty response.");
+                if (!idToken) throw new Error("The identity portal returned an incomplete response. Please try again.");
 
-                const credential = GoogleAuthProvider.credential(idToken, accessToken);
+                const credential = GoogleAuthProvider.credential(idToken, accessToken || undefined);
                 const res = await signInWithCredential(auth, credential);
 
                 if (res.user) {
                     await setDoc(doc(db, 'users', res.user.uid), {
                         email: res.user.email,
-                        lastLogin: serverTimestamp()
+                        lastLogin: serverTimestamp(),
+                        platform: 'electron'
                     }, { merge: true });
-                    toast.success(`Welcome back, ${res.user.displayName?.split(' ')[0]}`);
+                    addToast(`Welcome back, ${res.user.displayName?.split(' ')[0]}`, "success", "google-auth");
                 }
             } else {
                 // Web Fallback
