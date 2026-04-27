@@ -395,6 +395,7 @@ function createWindow() {
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#060608',
     show: false,
+    icon: path.join(__dirname, '../public/dreambees_icon.png'),
   });
 
   attachWebContentsDiagnostics(mainWindow.webContents);

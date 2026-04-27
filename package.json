@@ -3,7 +3,7 @@
   "private": true,
   "description": "DreamBees Lite desktop app",
   "author": "DreamBeesAI",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
@@ -65,7 +65,7 @@
         "dmg"
       ],
       "category": "public.app-category.productivity",
-      "icon": "public/dreambees_icon.png",
+      "icon": "build/icon.png",
       "extendInfo": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": false,
@@ -80,6 +80,27 @@
           }
         }
       }
+    },
+    "dmg": {
+      "backgroundColor": "#09090b",
+      "window": {
+        "width": 540,
+        "height": 380
+      },
+      "contents": [
+        {
+          "x": 410,
+          "y": 150,
+          "type": "link",
+          "path": "/Applications"
+        },
+        {
+          "x": 130,
+          "y": 150,
+          "type": "file"
+        }
+      ],
+      "title": "Install DreamBees Lite"
     },
     "protocols": {
       "name": "DreamBees Lite",
