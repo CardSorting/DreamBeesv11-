@@ -177,21 +177,26 @@ function registerIpcHandlers() {
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     .container { text-align: center; max-width: 400px; padding: 40px; }
     h1 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
-    p { color: #a1a1aa; font-size: 15px; margin: 0; }
+    p { color: #a1a1aa; font-size: 15px; margin-bottom: 24px; }
+    .btn { background: #8b5cf6; color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 15px; transition: background 0.2s; }
+    .btn:hover { background: #7c3aed; }
   </style>
 </head>
 <body>
   <div class="container">
     <div id="status">
-      <div class="loader"></div>
-      <h1 id="msg">Securely connecting...</h1>
-      <p id="submsg">One moment while we prepare your sign-in.</p>
+      <div style="font-size: 48px; margin-bottom: 20px;">🐝</div>
+      <h1 id="msg">Ready to connect</h1>
+      <p id="submsg">Click the button below to sign in securely with Google.</p>
+      <div id="action">
+        <button class="btn" onclick="startAuth()">Sign in with Google</button>
+      </div>
     </div>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
     const config = {
       apiKey: "${process.env.VITE_FIREBASE_API_KEY}",
@@ -206,31 +211,31 @@ function registerIpcHandlers() {
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
 
-    async function checkResult() {
+    async function startAuth() {
       try {
-        const result = await getRedirectResult(auth);
+        document.getElementById('action').style.display = 'none';
+        document.getElementById('msg').innerText = "Connecting...";
         
-        if (result) {
-          const idToken = await result.user.getIdToken();
-          const accessToken = GoogleAuthProvider.credentialFromResult(result)?.accessToken;
-          window.location.href = "/callback?id_token=" + encodeURIComponent(idToken) + "&access_token=" + encodeURIComponent(accessToken || '');
-        } else if (!sessionStorage.getItem('db_auth_started')) {
-          document.getElementById('msg').innerText = "Signing you in...";
-          document.getElementById('submsg').innerText = "Connecting to Google...";
-          sessionStorage.setItem('db_auth_started', 'true');
-          signInWithRedirect(auth, provider);
-        } else {
-          document.getElementById('msg').innerText = "Action Needed";
-          document.getElementById('submsg').innerHTML = "We couldn't confirm your sign-in. <a href='#' onclick='sessionStorage.clear(); window.location.reload()' style='color: #8b5cf6;'>Click here to try again</a>.";
-        }
+        const result = await signInWithPopup(auth, provider);
+        const idToken = await result.user.getIdToken();
+        const accessToken = GoogleAuthProvider.credentialFromResult(result)?.accessToken;
+        
+        document.getElementById('status').innerHTML = \`
+          <div class="loader"></div>
+          <h1>Success!</h1>
+          <p>Returning to DreamBees...</p>
+        \`;
+        
+        window.location.href = "/callback?id_token=" + encodeURIComponent(idToken) + "&access_token=" + encodeURIComponent(accessToken || '');
       } catch (err) {
         console.error(err);
         document.getElementById('msg').innerText = "Sign-in interrupted";
-        document.getElementById('submsg').innerHTML = "<span style='color: #ef4444'>" + err.message + "</span><br><br><a href='#' onclick='sessionStorage.clear(); window.location.reload()' style='color: #8b5cf6;'>Try Again</a>";
+        document.getElementById('submsg').innerHTML = "<span style='color: #ef4444'>" + err.message + "</span>";
+        document.getElementById('action').style.display = 'block';
       }
     }
 
-    checkResult();
+    window.startAuth = startAuth;
   </script>
 </body>
 </html>

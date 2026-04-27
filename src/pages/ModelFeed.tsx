@@ -1,30 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { useLite } from '../contexts/LiteContext';
-import { getOptimizedImageUrl } from '../lite-utils';
+import { getOptimizedImageUrl, getModelMetadata } from '../lite-utils';
 import { IconZap, IconChevronLeft, IconChevronRight, IconSparkles, IconMagic } from '../icons';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-
-const getBriefDescription = (name: string, originalDesc: string) => {
-    const n = name.toLowerCase();
-    if (n.includes('flux')) return "Our most advanced engine. Capable of incredible detail and following complex instructions perfectly.";
-    if (n.includes('xl')) return "A versatile powerhouse. Ideal for creating cinematic, high-resolution masterpieces.";
-    if (n.includes('pony')) return "Full of personality and style. Perfect for expressive characters and vibrant, artistic flair.";
-    if (n.includes('real')) return "Captured reality. Optimized for lifelike skin, hair, and natural lighting.";
-    if (n.includes('anime')) return "The ultimate aesthetic. Hand-crafted for beautiful, stylized character illustrations.";
-    
-    return originalDesc.length > 80 ? originalDesc.substring(0, 77) + "..." : originalDesc;
-};
-
-const getModelInsight = (name: string) => {
-    const n = name.toLowerCase();
-    if (n.includes('flux')) return "Complex Prompts & Realism";
-    if (n.includes('xl')) return "Cinematic Landscapes";
-    if (n.includes('pony')) return "Expressive Characters";
-    if (n.includes('real')) return "Portraits & Products";
-    if (n.includes('anime')) return "Digital Illustrations";
-    return "Creative Exploration";
-};
 
 export default function ModelFeed() {
     const { availableModels, setSelectedModel, selectedModel, currentUser } = useLite();
@@ -47,8 +26,8 @@ export default function ModelFeed() {
         );
 
         return {
-            flagship: base.filter(m => m.name.toLowerCase().includes('flux') || m.id.includes('flux')),
-            specialized: base.filter(m => !m.name.toLowerCase().includes('flux') && !m.id.includes('flux'))
+            flagship: base.filter(m => getModelMetadata(m).isFlagship),
+            specialized: base.filter(m => !getModelMetadata(m).isFlagship)
         };
     }, [availableModels]);
 
@@ -348,6 +327,8 @@ export default function ModelFeed() {
 }
 
 function ModelCard({ model, idx, selectedModel, setSelectedModel, currentUser, navigate }: any) {
+    const meta = useMemo(() => getModelMetadata(model), [model]);
+
     return (
         <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -373,28 +354,28 @@ function ModelCard({ model, idx, selectedModel, setSelectedModel, currentUser, n
                             <span>Selected</span>
                         </div>
                     )}
-                    {model.name.toLowerCase().includes('flux') && <div className="badge flagship-badge">Flagship</div>}
+                    {meta.isFlagship && <div className="badge flagship-badge">Flagship</div>}
                 </div>
             </div>
             
             <div className="card-content">
                 <div className="card-header">
-                    <span className="engine-type">{model.name.toLowerCase().includes('flux') ? 'Superior' : 'Creative'}</span>
+                    <span className="engine-type">{meta.tag}</span>
                     <h3>{model.name}</h3>
                 </div>
                 
                 <p className="card-desc">
-                    {getBriefDescription(model.name, model.description)}
+                    {meta.shortDesc}
                 </p>
 
                 <div className="card-meta">
                     <div className="meta-item">
                         <IconSparkles size={12} />
-                        <span>{getModelInsight(model.name)}</span>
+                        <span>{meta.insight}</span>
                     </div>
                     <div className="meta-item trait">
                         <IconZap size={12} />
-                        <span>{model.name.toLowerCase().includes('flux') ? 'Precision' : 'Fluid'}</span>
+                        <span>{meta.isFlagship ? 'Precision' : 'Fluid'}</span>
                     </div>
                 </div>
             </div>

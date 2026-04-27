@@ -1,12 +1,34 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useLite } from '../contexts/LiteContext';
-import { getOptimizedImageUrl } from '../lite-utils';
-import { IconUser, IconLogOut, IconLayers, IconZap, IconSparkles, IconMagic } from '../icons';
-import { motion } from 'framer-motion';
+import { getOptimizedImageUrl, calculateTier, USER_TIERS } from '../lite-utils';
+import { IconUser, IconLogOut, IconLayers, IconZap, IconSparkles, IconMagic, IconActivity, IconDatabase, IconCpu } from '../icons';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
 export default function UserProfile() {
     const { currentUser, logout, localHistory, addToast } = useLite();
+    const [health, setHealth] = useState<any>(null);
+    const [showHealth, setShowHealth] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const filteredHistory = useMemo(() => {
+        if (!searchQuery) return localHistory;
+        const q = searchQuery.toLowerCase();
+        return localHistory.filter(item => 
+            item.prompt.toLowerCase().includes(q) || 
+            item.id.toLowerCase().includes(q)
+        );
+    }, [localHistory, searchQuery]);
+
+    useEffect(() => {
+        const checkHealth = async () => {
+            if (window.electronAPI?.lite?.health) {
+                const h = await window.electronAPI.lite.health();
+                setHealth(h);
+            }
+        };
+        checkHealth();
+    }, []);
 
     const handleLogout = async () => {
         try {
@@ -19,18 +41,17 @@ export default function UserProfile() {
 
     const stats = useMemo(() => {
         const genCount = localHistory.length;
-        let tier = "Novice Dreamer";
-        let tierColor = "#a1a1aa";
+        const tier = calculateTier(genCount);
         
-        if (genCount > 50) { tier = "Master Visionary"; tierColor = "#fbbf24"; }
-        else if (genCount > 20) { tier = "Elite Artisan"; tierColor = "#a855f7"; }
-        else if (genCount > 5) { tier = "Creative Adept"; tierColor = "#8b5cf6"; }
+        const nextTier = USER_TIERS.find(t => t.minGens > genCount);
+        const milestone = nextTier ? nextTier.minGens : (genCount > 100 ? 500 : 100);
 
         return {
             totalGenerations: genCount,
-            tier,
-            tierColor,
-            nextMilestone: genCount > 50 ? 100 : (genCount > 20 ? 50 : (genCount > 5 ? 20 : 5))
+            tier: tier.level,
+            tierColor: tier.color,
+            benefits: tier.benefits,
+            nextMilestone: milestone
         };
     }, [localHistory]);
 
@@ -78,6 +99,23 @@ export default function UserProfile() {
                             </motion.h2>
                             <p className="user-email">{currentUser?.email}</p>
                         </div>
+
+                        <div className="spacer"></div>
+
+                        <div className="benefit-stack">
+                            {stats.benefits.map((b, i) => (
+                                <motion.div 
+                                    key={b} 
+                                    initial={{ opacity: 0, x: 10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.3 + (i * 0.1) }}
+                                    className="benefit-pill"
+                                >
+                                    <IconSparkles size={10} />
+                                    <span>{b}</span>
+                                </motion.div>
+                            ))}
+                        </div>
                     </div>
                     
                     <div className="stats-dashboard">
@@ -91,12 +129,67 @@ export default function UserProfile() {
                             </div>
                             <span className="stat-desc">Tier Progress</span>
                         </div>
+                        
                         <div className="spacer"></div>
-                        <button onClick={handleLogout} className="exit-studio-btn">
-                            <IconLogOut size={18} />
-                            <span>Exit Studio</span>
-                        </button>
+
+                        <div className="profile-actions-hardened">
+                            <button 
+                                onClick={() => setShowHealth(!showHealth)} 
+                                className={`health-toggle clickable ${showHealth ? 'active' : ''}`}
+                                title="System Diagnostics"
+                            >
+                                <IconActivity size={18} />
+                                <span>Diagnostics</span>
+                            </button>
+                            <button onClick={handleLogout} className="exit-studio-btn clickable">
+                                <IconLogOut size={18} />
+                                <span>Exit</span>
+                            </button>
+                        </div>
                     </div>
+
+                    <AnimatePresence>
+                        {showHealth && (
+                            <motion.div 
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="health-dashboard-expanded"
+                            >
+                                <div className="diagnostic-grid">
+                                    <div className="diag-item">
+                                        <div className="diag-header">
+                                            <IconDatabase size={14} />
+                                            <span>Local Ledger</span>
+                                        </div>
+                                        <div className="diag-status">
+                                            <div className={`status-dot ${health?.dbAvailable ? 'online' : 'offline'}`}></div>
+                                            <span>{health?.dbAvailable ? 'Encrypted & Online' : 'Unavailable'}</span>
+                                        </div>
+                                    </div>
+                                    <div className="diag-item">
+                                        <div className="diag-header">
+                                            <IconActivity size={14} />
+                                            <span>Engine Bridge</span>
+                                        </div>
+                                        <div className="diag-status">
+                                            <div className="status-dot online"></div>
+                                            <span>Version {health?.appVersion || 'Unknown'}</span>
+                                        </div>
+                                    </div>
+                                    <div className="diag-item">
+                                        <div className="diag-header">
+                                            <IconCpu size={14} />
+                                            <span>Platform Integrity</span>
+                                        </div>
+                                        <div className="diag-status">
+                                            <span>{health?.packaged ? 'Hardened Distribution' : 'Development Build'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </header>
 
                 <section className="latent-archive-expanded">
@@ -105,11 +198,21 @@ export default function UserProfile() {
                             <IconLayers size={20} />
                             <h2>The Latent Archive</h2>
                         </div>
-                        <p>Every dream you've materialized, preserved in time.</p>
+                        <div className="archive-controls">
+                            <div className="search-box glass-immersive">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                <input 
+                                    type="text" 
+                                    placeholder="Filter visions..." 
+                                    value={searchQuery}
+                                    onChange={e => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                        </div>
                     </div>
 
                     <div className="archive-grid-immersive">
-                        {localHistory.map((item, index) => (
+                        {filteredHistory.map((item, index) => (
                             <motion.div 
                                 key={item.id} 
                                 initial={{ opacity: 0, y: 30 }}
@@ -187,12 +290,34 @@ export default function UserProfile() {
                 .exit-studio-btn { display: flex; align-items: center; gap: 10px; color: #52525b; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; padding: 12px 24px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.06); transition: all 0.4s; }
                 .exit-studio-btn:hover { background: rgba(239, 68, 68, 0.08); color: #ef4444; border-color: rgba(239, 68, 68, 0.15); transform: translateY(-2px); }
 
+                .benefit-stack { display: flex; flex-wrap: wrap; gap: 8px; max-width: 300px; justify-content: flex-end; }
+                .benefit-pill { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 6px 12px; border-radius: 99px; display: flex; align-items: center; gap: 6px; font-size: 0.6rem; font-weight: 800; color: var(--color-zinc-400); text-transform: uppercase; letter-spacing: 1px; }
+                
+                .profile-actions-hardened { display: flex; align-items: center; gap: 12px; }
+                .health-toggle { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-radius: 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); color: var(--color-zinc-500); font-size: 0.7rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; transition: all 0.3s; }
+                .health-toggle:hover { background: rgba(255,255,255,0.05); color: white; }
+                .health-toggle.active { background: rgba(139, 92, 246, 0.1); border-color: var(--color-accent); color: var(--color-accent); }
+                
+                .health-dashboard-expanded { margin-top: 30px; padding-top: 30px; border-top: 1px solid rgba(255,255,255,0.06); overflow: hidden; }
+                .diagnostic-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+                .diag-item { display: flex; flex-direction: column; gap: 10px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 20px; border: 1px solid rgba(255,255,255,0.03); }
+                .diag-header { display: flex; align-items: center; gap: 8px; font-size: 0.6rem; font-weight: 900; text-transform: uppercase; color: var(--color-zinc-500); letter-spacing: 1.5px; }
+                .diag-status { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; font-weight: 700; color: white; }
+                .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+                .status-dot.online { background: #22c55e; box-shadow: 0 0 10px #22c55e66; }
+                .status-dot.offline { background: #ef4444; box-shadow: 0 0 10px #ef444466; }
+
                 .latent-archive-expanded { display: flex; flex-direction: column; gap: 30px; }
-                .archive-header-row { display: flex; flex-direction: column; gap: 8px; }
+                .archive-header-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
                 .title-group { display: flex; align-items: center; gap: 12px; }
                 .title-group h2 { font-weight: 900; font-size: 1.5rem; letter-spacing: -1px; color: white; }
                 .title-group svg { color: var(--color-accent); }
-                .archive-header-row p { color: var(--color-zinc-500); font-weight: 600; font-size: 1rem; }
+                
+                .archive-controls { flex: 1; max-width: 400px; }
+                .search-box { display: flex; align-items: center; gap: 12px; padding: 10px 18px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.06); color: var(--color-zinc-500); }
+                .search-box input { background: transparent; border: none; outline: none; color: white; font-size: 0.85rem; font-weight: 600; width: 100%; }
+                .search-box input::placeholder { color: var(--color-zinc-600); }
+                .search-box:focus-within { border-color: var(--color-accent); background: rgba(139, 92, 246, 0.03); }
                 
                 .archive-grid-immersive { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
                 .archive-jewel { aspect-ratio: 4/5; border-radius: 32px; overflow: hidden; position: relative; cursor: pointer; border: 1px solid rgba(255,255,255,0.05); }
@@ -215,7 +340,10 @@ export default function UserProfile() {
                 @media (max-width: 768px) {
                     .profile-hero-immersive { padding: 30px; }
                     .profile-main-info { flex-direction: column; text-align: center; gap: 20px; }
+                    .benefit-stack { justify-content: center; }
                     .stats-dashboard { flex-direction: column; gap: 25px; text-align: center; }
+                    .profile-actions-hardened { flex-direction: column; width: 100%; }
+                    .health-toggle, .exit-studio-btn { width: 100%; justify-content: center; }
                     .spacer { display: none; }
                     .archive-grid-immersive { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
                     .user-identity h2 { font-size: 2rem; }
