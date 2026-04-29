@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, WebContents, session, shell, net } from 'electron';
 import http from 'http';
+import fs from 'fs';
 import netModule from 'net'; // For port discovery
 import dotenv from 'dotenv';
 import path from 'path';
@@ -39,9 +40,28 @@ const devServerUrl = process.env.VITE_DEV_SERVER_URL;
 const rendererRoot = path.resolve(__dirname, '../dist');
 const authDomain = 'dreambees-alchemist.firebaseapp.com';
 
+/**
+ * PRODUCTION HARDENING: Persistent Forensic Logging
+ */
+const logFile = path.join(app.getPath('userData'), 'forensic.log');
 function logStartup(message: string, error?: unknown) {
   const suffix = error instanceof Error ? `: ${error.stack || error.message}` : error ? `: ${String(error)}` : '';
-  console.log(`[main] ${new Date().toISOString()} | ${message}${suffix}`);
+  const logEntry = `[${new Date().toISOString()}] ${message}${suffix}\n`;
+  
+  console.log(logEntry.trim());
+  
+  try {
+    // Append to forensic log for post-mortem analysis
+    fs.appendFileSync(logFile, logEntry);
+    
+    // Simple rotation: if log > 5MB, clear it
+    const stats = fs.statSync(logFile);
+    if (stats.size > 5 * 1024 * 1024) {
+      fs.writeFileSync(logFile, `[${new Date().toISOString()}] Log Rotated\n`);
+    }
+  } catch (err) {
+    // Fallback if FS is locked
+  }
 }
 
 async function findAvailablePort(startPort: number): Promise<number> {
@@ -228,16 +248,19 @@ function registerIpcHandlers() {
         document.getElementById('msg').innerText = "Connecting...";
         
         const result = await signInWithPopup(auth, provider);
-        const idToken = await result.user.getIdToken();
-        const accessToken = GoogleAuthProvider.credentialFromResult(result)?.accessToken;
+        const credential = GoogleAuthProvider.credentialFromResult(result);
+        const googleIdToken = credential.idToken;
+        const googleAccessToken = credential.accessToken;
         
+        if (!googleIdToken) throw new Error("Could not retrieve Google identity token.");
+
         document.getElementById('status').innerHTML = \`
           <div class="loader"></div>
           <h1>Success!</h1>
           <p>Returning to DreamBees...</p>
         \`;
         
-        window.location.href = "/callback?id_token=" + encodeURIComponent(idToken) + "&access_token=" + encodeURIComponent(accessToken || '');
+        window.location.href = "/callback?id_token=" + encodeURIComponent(googleIdToken) + "&access_token=" + encodeURIComponent(googleAccessToken || '');
       } catch (err) {
         console.error(err);
         document.getElementById('msg').innerText = "Sign-in interrupted";

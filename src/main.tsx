@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import './tailwind.css'
 import App from './App'
-import GlobalErrorBoundary from './components/GlobalErrorBoundary'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 // Global Async Error Handler
 window.addEventListener('unhandledrejection', (event) => {
@@ -12,8 +12,8 @@ window.addEventListener('unhandledrejection', (event) => {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <GlobalErrorBoundary>
+    <ErrorBoundary>
       <App />
-    </GlobalErrorBoundary>
+    </ErrorBoundary>
   </StrictMode>,
 )
