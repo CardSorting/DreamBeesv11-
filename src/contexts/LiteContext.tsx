@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
-import { auth, db } from '../firebase.ts';
+import { auth, db, functions } from '../firebase.ts';
+import { httpsCallable } from 'firebase/functions';
 import { 
     onAuthStateChanged, 
     User, 
@@ -49,6 +50,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
     const [isOffline, setIsOffline] = useState(!navigator.onLine);
+    const [cooldownUntil, setCooldownUntil] = useState<number>(0);
+    const [consecutiveFailures, setConsecutiveFailures] = useState(0);
 
     const addToast = useCallback((message: string, type: 'success' | 'error' | 'loading' = 'success', existingId?: string) => {
         if (type === 'loading') return toast.loading(message, { id: existingId });
@@ -138,7 +141,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 email,
                 birthday,
                 createdAt: serverTimestamp(),
-                zaps: 10
+                zaps: 'unlimited' // Explicitly set to unlimited for everyone
             });
         }
     };
@@ -172,7 +175,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                     await setDoc(doc(db, 'users', res.user.uid), {
                         email: res.user.email,
                         lastLogin: serverTimestamp(),
-                        platform: 'electron'
+                        platform: 'electron',
+                        zaps: 'unlimited'
                     }, { merge: true });
                     addToast(`Welcome back, ${res.user.displayName?.split(' ')[0]}`, "success", "google-auth");
                 }
@@ -183,7 +187,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 if (res.user) {
                     await setDoc(doc(db, 'users', res.user.uid), {
                         email: res.user.email,
-                        lastLogin: serverTimestamp()
+                        lastLogin: serverTimestamp(),
+                        zaps: 'unlimited'
                     }, { merge: true });
                     toast.success(`Welcome back, ${res.user.displayName?.split(' ')[0]}`);
                 }
@@ -200,6 +205,13 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         if (isOffline) { toast.error("The garden requires a connection to bloom."); return; }
         if (!currentUser || !selectedModel) { toast.error("Identity unknown. Please sign in."); return; }
         
+        // Cooldown/Glitched State Check
+        if (Date.now() < cooldownUntil) {
+            const remaining = Math.ceil((cooldownUntil - Date.now()) / 1000);
+            toast.error(`Service is cooling down. Please wait ${remaining}s...`, { id: 'cooldown' });
+            return;
+        }
+
         setGenerating(true);
         const requestId = `gen_${Date.now()}`;
         const toastId = toast.loading("Invoking the latent space...", { id: requestId });
@@ -209,45 +221,30 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             controller.abort();
             setGenerating(false);
             toast.error("The vision is taking too long to manifest.", { id: requestId });
+            
+            // Increment failure count on timeout
+            setConsecutiveFailures(prev => {
+                const next = prev + 1;
+                if (next >= 3) {
+                    setCooldownUntil(Date.now() + 120000); // 2 minute cooldown
+                    toast.error("Service appears overwhelmed. Entering recovery cooldown.", { duration: 5000 });
+                }
+                return next;
+            });
         }, 90000);
 
         try {
-            const token = await currentUser.getIdToken(true);
+            const apiCall = httpsCallable(functions, 'api');
             
-            // PRODUCTION HARDENING: Exponential Backoff Retry System
-            const fetchWithRetry = async (url: string, options: any, retries = 3, backoff = 1000): Promise<Response> => {
-                try {
-                    const res = await fetch(url, options);
-                    if (!res.ok && retries > 0 && res.status >= 500) {
-                        console.warn(`[Lite Gen] Engine busy (${res.status}), retrying in ${backoff}ms...`);
-                        await new Promise(r => setTimeout(r, backoff));
-                        return fetchWithRetry(url, options, retries - 1, backoff * 2);
-                    }
-                    return res;
-                } catch (err: any) {
-                    if (retries > 0 && err.name !== 'AbortError') {
-                        console.warn(`[Lite Gen] Network hiccup, retrying in ${backoff}ms...`, err);
-                        await new Promise(r => setTimeout(r, backoff));
-                        return fetchWithRetry(url, options, retries - 1, backoff * 2);
-                    }
-                    throw err;
-                }
-            };
-
-            const res = await fetchWithRetry('https://api.dreambeesai.com/api', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ 
-                    action: 'createGenerationRequest', 
-                    prompt: cleanPrompt, 
-                    modelId: selectedModel.id, 
-                    requestId, 
-                    ...params 
-                }),
-                signal: controller.signal
+            const res = await apiCall({ 
+                action: 'createGenerationRequest', 
+                prompt: cleanPrompt, 
+                modelId: selectedModel.id, 
+                requestId, 
+                ...params 
             });
             
-            if (!res.ok) throw new Error("The engine failed to respond.");
+            if (!res.data) throw new Error("The engine failed to respond.");
             
             const unsub = onSnapshot(doc(db, 'generation_queue', requestId), async (snap) => {
                 const data = snap.data();
@@ -255,6 +252,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                     clearTimeout(timeoutId);
                     toast.success("Vision materialized.", { id: requestId });
                     setGenerating(false);
+                    setConsecutiveFailures(0); // Reset failures on success
+                    
                     if (window.electronAPI?.lite) {
                         try {
                             await window.electronAPI.lite.saveGeneration({
@@ -275,6 +274,13 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                     clearTimeout(timeoutId);
                     toast.error(data.error || "The manifestation failed.", { id: requestId });
                     setGenerating(false);
+                    
+                    // Track internal engine failures
+                    setConsecutiveFailures(prev => {
+                        const next = prev + 1;
+                        if (next >= 3) setCooldownUntil(Date.now() + 120000);
+                        return next;
+                    });
                     unsub();
                 }
             }, err => {
@@ -286,10 +292,15 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             clearTimeout(timeoutId);
             if (err.name !== 'AbortError') {
                 toast.error(err.message, { id: requestId });
+                setConsecutiveFailures(prev => {
+                    const next = prev + 1;
+                    if (next >= 3) setCooldownUntil(Date.now() + 120000);
+                    return next;
+                });
             }
             setGenerating(false);
         }
-    }, [currentUser, selectedModel, isOffline, loadLocal]);
+    }, [currentUser, selectedModel, isOffline, loadLocal, cooldownUntil]);
 
     return (
         <LiteContext.Provider value={{ 

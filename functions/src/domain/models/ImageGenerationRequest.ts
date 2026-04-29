@@ -35,8 +35,9 @@ export class ImageGenerationRequest {
     const initiator = raw.auth?.uid || '';
     const requestor = raw.auth?.uid;
 
-    // Extract request data
-    const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler, requestId, image, targetPersonaId, action, targetUserId, idempotencyKey } = raw.data || {};
+    // Extract request data (handle both raw and pre-wrapped formats)
+    const data = raw.data || raw;
+    const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler, requestId, image, targetPersonaId, action, targetUserId, idempotencyKey } = data;
 
     // Determine initiator vs target
     const callerRole = raw.auth?.token?.role || 'user';
