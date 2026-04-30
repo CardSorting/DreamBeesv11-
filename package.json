@@ -8,6 +8,7 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
+    "build": "vite build",
     "dev:electron": "vite",
     "build:electron": "vite build && electron-builder",
     "verify:electron": "npm exec tsc -- --noEmit --pretty false && vite build && electron-builder --dir && node scripts/verify-electron-build.cjs",

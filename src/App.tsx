@@ -5,8 +5,15 @@ import { Toaster } from 'react-hot-toast';
 import AnimatedRoutes from './components/AnimatedRoutes';
 import BottomNav from './components/BottomNav';
 import SplashScreen from './components/SplashScreen';
+import LandingPage from './pages/LandingPage';
+
+const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
 
 function App() {
+  if (!isElectron) {
+    return <LandingPage />;
+  }
+
   return (
     <Router>
       <LiteProvider>

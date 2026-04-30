@@ -4,16 +4,16 @@ import { logger } from "../../lib/utils.js";
 export const handleApp = async (req: any, res: any) => {
     const path: string = req.path;
     const baseUrl = 'https://dreambeesai.com';
-    let title = "AI Image Generator - Text to Image Online";
-    let desc = "Generate high-quality AI art directly on the web. No Discord required. Fast, private, and powerful text-to-image creation.";
-    let image = `${baseUrl}/dreambees_icon.png`;
+    let title = "DreamBees Lite | Unlimited Desktop AI Art Generation";
+    let desc = "Experience the power of Stable Diffusion on your desktop. Unlimited generations, blazing fast speeds, and complete creative control. Download DreamBees Lite for macOS and Windows today.";
+    let image = `${baseUrl}/assets/hero_background_bee_1777509577091.png`;
     const structuredData: any[] = [];
     let statusCode = 200;
     const canonicalUrl = `${baseUrl}${path}`;
 
     // Skeleton Content
-    let skeletonH1 = "DreamBeesAI: Professional AI Art Creation";
-    let skeletonP = "Join the next generation of digital artists. Create stunning AI characters, models, and concepts in seconds directly in your browser.";
+    let skeletonH1 = "DreamBees Lite: Professional Desktop AI Art";
+    let skeletonP = "Unlimited AI image generation for artists and creators. Download the native app for macOS and Windows.";
 
     try {
         // 1. DISCOVERY / IMAGES
