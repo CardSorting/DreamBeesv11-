@@ -98,54 +98,6 @@ export const processImageTask = async (req: { data: any }): Promise<void> => {
                 }
             })();
         }
-        else if (([MODEL_IDS.ZIT, MODEL_IDS.ZIT_BASE] as readonly string[]).includes(modelId as string)) {
-            imageBuffer = await (async () => {
-                const endpoint = MODEL_ENDPOINTS[modelId];
-                const config = getModelGenerationConfig(modelId);
-                const defaultSteps = config?.defaultSteps || 30;
-
-                logger.info(`[${requestId}] Running ${modelId} generation`);
-                const body = {
-                    prompt,
-                    steps: steps || defaultSteps,
-                    width: resolution.width,
-                    height: resolution.height
-                };
-
-                const submitResponse = await fetch(`${endpoint}/generate`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(body)
-                });
-
-                if (!submitResponse.ok) { throw new Error(`${modelId} Submission Failed (${submitResponse.status})`); }
-
-                const { job_id } = await submitResponse.json() as any;
-                forensic.checkpoint('model_submitted', { modelId, job_id });
-
-                // --- ADAPTIVE POLLING: Densify initial feedback loop ---
-                for (let poll = 0; poll < 120; poll++) {
-                    const waitTime = poll < 5 ? 2000 : 4000; // Fast poll first 10 seconds
-                    await new Promise(r => setTimeout(r, waitTime));
-                    
-                    let resultRes = await fetch(`${endpoint}/result/${job_id}`);
-                    if (resultRes.status === 404) { resultRes = await fetch(`${endpoint}/jobs/${job_id}`); }
-
-                    if (resultRes.status === 202) { 
-                        if (poll % 5 === 0) forensic.checkpoint('polling', { poll, waitTime });
-                        continue; 
-                    }
-                    if (!resultRes.ok) { throw new Error(`${modelId} Polling Error (${resultRes.status})`); }
-
-                    const ct = resultRes.headers.get('content-type') || '';
-                    if (ct.includes('image/')) {
-                        forensic.checkpoint('image_received', { poll });
-                        return Buffer.from(await resultRes.arrayBuffer());
-                    }
-                }
-                throw new Error(`${modelId} generation timed out`);
-            })();
-        }
         else if (modelId === 'flux-2-dev') {
             imageBuffer = await (async () => {
                 const cfUrl = ENDPOINTS.flux2dev.replace('CLOUDFLARE_ACCOUNT_ID', CLOUDFLARE_ACCOUNT_ID);
@@ -215,7 +167,7 @@ export const processImageTask = async (req: { data: any }): Promise<void> => {
 
                 const body = {
                     prompt: finalPrompt,
-                    model: modelId === 'sdxl_h100' ? 'wai-illustrious' : (modelId || "wai-illustrious"),
+                    model: modelId || "wai-illustrious",
                     negative_prompt,
                     steps: finalSteps,
                     cfg: finalCfg,

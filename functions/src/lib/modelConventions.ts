@@ -25,24 +25,13 @@ import { MODELS_DB } from './constants.js';
  * - User-facing routes (/models/{id})
  */
 export const MODEL_IDS = {
-    // Z-Image Family
-    ZIT_BASE: 'zit-base-model',   // High-quality base model (28 steps)
-    ZIT_TURBO: 'zit-model',       // Fast generation model (9 steps)
-    ZIT: 'zit-h100',              // Implementation identifier for route shortcuts
-    
     // AI Models
     FLUX_KLEIN: 'flux-klein-9b',
-    GEMINI_FLASH: 'gemini-2.5-flash-image',
-    
+
     // SDXL Models
     WAI_ILLUSTRIOUS: 'wai-illustrious',
     CHENKIN_NOOB: 'chenkin-noob-xl',
-    NOVA_3D: 'nova-3d-cg-xl',
-    
-    // Special Models
-    SDXL_H100: 'sdxl_h100',
-    GEAR: 'gear-tool',
-    NEKOMIMI: 'nekomimi'
+    NOVA_3D: 'nova-3d-cg-xl'
 } as const;
 
 // Type alias for model IDs
@@ -57,16 +46,8 @@ export type ModelID = (typeof MODEL_IDS)[keyof typeof MODEL_IDS];
  * This ensures that domain identifiers are cleanly separated from infrastructure details.
  */
 export const MODEL_ENDPOINTS = {
-    // Z-Image Family
-    [MODEL_IDS.ZIT_BASE]: 'https://mariecoderinc--zit-a100-base-omniinferencea100-web.modal.run',
-    [MODEL_IDS.ZIT_TURBO]: 'https://mariecoderinc--zit-a100-omniinferencea100-web.modal.run',
-    [MODEL_IDS.ZIT]: 'https://mariecoderinc--zit-a100-omniinferencea100-web.modal.run',
-    
-    // SDXL Models
-    [MODEL_IDS.SDXL_H100]: 'https://mariecoderinc--sdxl-multi-model-a100-omniinferencea100-web.modal.run',
-    
     // Flux Klein
-    [MODEL_IDS.FLUX_KLEIN]: 'https://mariecoderinc--flux-klein-9b-flux-fastapi-app.modal.run'
+    [MODEL_IDS.FLUX_KLEIN]: 'https://mariecoderinc--flux-klein-9b-v2-flux-fastapi-app.modal.run'
 } as const;
 
 /**
@@ -87,24 +68,9 @@ export function isValidModelId(id: string): id is ModelID {
  * REMARK: Consider extracting to configuration file if values frequently change.
  */
 export const MODEL_GENERATION_PARAMS = {
-    [MODEL_IDS.ZIT_BASE]: {
-        defaultSteps: 28,
-        cfg: 7,
-        scheduler: 'DPM++ 2M Karras'
-    },
-    [MODEL_IDS.ZIT_TURBO]: {
-        defaultSteps: 9,
-        cfg: 7,
-        scheduler: 'DPM++ 2M Karras'
-    },
     [MODEL_IDS.FLUX_KLEIN]: {
         defaultSteps: 4,  // Flux Klein Edit uses minimal steps
         cfg: 7.5,
-        width: 1024,
-        height: 1024
-    },
-    [MODEL_IDS.GEMINI_FLASH]: {
-        defaultSteps: 25,
         width: 1024,
         height: 1024
     },
@@ -150,8 +116,8 @@ export function getModelConfig(modelId: string) {
 // ==============================================================================
 
 export const MODEL_CATEGORIES = {
-    PREMIUM: ['zit-model', 'zit-base-model', 'sdxl_h100', 'wai-illustrious'],
-    FAST: ['gemini-2.5-flash-image'],
+    PREMIUM: ['wai-illustrious'],
+    FAST: [],
     STANDARD: ['chenkin-noob-xl', 'flux-2-dev', 'gray-color', 'scyrax-pastel', 'ani-detox', 'animij-v7', 'swijtspot-no1']
 } as const;
 
@@ -171,26 +137,6 @@ export function getModelCost(modelId: string): number {
 }
 
 // ==============================================================================
-// 5. Deprecated Models (Infrastructural Safety)
-// ==============================================================================
-
-/**
- * Array of models that have been deprecated but may still exist in the database.
- * These should be soft-removed from VALID_MODELS and replaced with upgraded alternatives.
- */
-export const DEPRECATED_MODELS = [
-    'zit-model',      // New baseline: use zit-base-model for quality or test turbo separately
-    'flux-klein-4b'   // Marked as blocked in some contexts
-] as const;
-
-/**
- * Check if a model is deprecated
- */
-export function isModelDeprecated(modelId: string): boolean {
-    return (DEPRECATED_MODELS as readonly string[]).includes(modelId);
-}
-
-// ==============================================================================
 // 6. Utility Functions
 // ==============================================================================
 
@@ -205,11 +151,9 @@ export function isModelDeprecated(modelId: string): boolean {
 export function getPrimaryModelId(modelId: string): string | undefined {
     // Map known family models to their primary alternatives
     const familyMap: Record<string, string> = {
-        'zit-model': MODEL_IDS.ZIT_BASE,         // Use base model as default
-        'zit-h100': MODEL_IDS.ZIT_BASE,          // Alias
-        'sdxl_h100': MODEL_IDS.WAI_ILLUSTRIOUS   // Frontend ID maps to backend ID
+        // No current family redirects needed
     };
-    
+
     return familyMap[modelId];
 }
 
@@ -217,23 +161,23 @@ export function getPrimaryModelId(modelId: string): string | undefined {
  * Check if a model supports high-quality output
  */
 export function modelSupportsHighQuality(modelId: string): boolean {
-    const lowQualityModels = ['gemini-2.5-flash-image'];
-    return !lowQualityModels.includes(modelId);
+    return true; // All currently supported models are high quality
 }
 
 /**
  * Check if a model requires sequential generation (slower but more reliable)
  */
 export function modelRequiresSequentialGeneration(modelId: string): boolean {
-    const sequentialModels = ['zit-base-model']; // Last-generation confirmed models
-    return sequentialModels.includes(modelId);
+    return false; // No current models require sequential generation
 }
 
 /**
  * Get endpoint for a model, with fallback
  */
 export function getModelEndpoint(modelId: string): string {
-    return MODEL_ENDPOINTS[modelId] || MODEL_ENDPOINTS[MODEL_IDS.SDXL_H100];
+    // Default to SDXL A100 endpoint for most models
+    const SDXL_ENDPOINT = 'https://mariecoderinc--sdxl-multi-model-a100-omniinferencea100-web.modal.run';
+    return MODEL_ENDPOINTS[modelId as keyof typeof MODEL_ENDPOINTS] || SDXL_ENDPOINT;
 }
 
 // ==============================================================================
@@ -246,12 +190,11 @@ export function getModelEndpoint(modelId: string): string {
  */
 export function migrateModelId(oldId: string): string {
     const migrations: Record<string, string> = {
-        'zit-model': MODEL_IDS.ZIT_BASE,
-        'zit_h100': MODEL_IDS.ZIT_BASE,
-        'zit_a10g': MODEL_IDS.ZIT_BASE,
-        'zit_base': MODEL_IDS.ZIT_BASE
+        'sdxl_h100': MODEL_IDS.WAI_ILLUSTRIOUS,
+        'zit-model': MODEL_IDS.WAI_ILLUSTRIOUS, // Fallback to best available
+        'zit-base-model': MODEL_IDS.WAI_ILLUSTRIOUS
     };
-    
+
     return migrations[oldId] || oldId;
 }
 
@@ -265,12 +208,10 @@ export default {
     MODEL_GENERATION_PARAMS,
     MODEL_CATEGORIES,
     MODEL_COSTS,
-    DEPRECATED_MODELS,
     isValidModelId,
     getModelDefaultSteps,
     getModelConfig,
     getModelCost,
-    isModelDeprecated,
     getPrimaryModelId,
     modelSupportsHighQuality,
     modelRequiresSequentialGeneration,

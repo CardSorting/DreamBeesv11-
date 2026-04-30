@@ -68,26 +68,6 @@ const MODELS = [
         isActive: true
     },
     {
-        id: 'zit-model',
-        name: 'Z-Image-Turbo',
-        description: 'Ultra-fast generation model optimized for low latency.',
-        type: 'SDXL', // Kept as SDXL for UI compatibility for now, or use 'ZIT' if UI handles it. Using SDXL to ensure it shows up in default filters.
-        order: 10,
-        isActive: true,
-        image: 'https://cdn.dreambeesai.com/file/printeregg/showcase/zit-model/1769040774566_0.webp'
-    },
-    {
-        id: 'zit-base-model',
-        name: 'Z-Image Base',
-        description: 'High-quality stable base model for hyper-realistic and cinematic generations.',
-        type: 'SDXL',
-        order: 11,
-        isActive: true,
-        image: '/showcase/zit-base-model/cover.png',
-        tags: ['realistic', 'cinematic', 'high-quality', 'base']
-    },
-
-    {
         id: 'wai-illustrious',
         name: 'Wai Illustrious',
         description: 'High-quality illustrations with enforced quality tags and custom High-Res Fix workflow.',
@@ -104,15 +84,6 @@ const MODELS = [
         order: 14,
         isActive: true,
         hideFromGenerator: true // Hidden from manual selection, used for Remix/Edit only
-    },
-    {
-        id: 'gemini-2.5-flash-image',
-        name: 'Gemini 2.5 Flash (Image)',
-        description: 'Google\'s fastest multimodal model, optimized for speed and visual quality.',
-        type: 'Gemini',
-        order: 15,
-        isActive: true,
-        image: 'https://cdn.dreambeesai.com/file/printeregg/showcase/gemini-2.5-flash-image/1769040312885_0.webp'
     },
     {
         id: 'flux-2-dev',

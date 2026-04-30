@@ -76,7 +76,6 @@ export class ImageGenerationPolicy {
       case 'chenkin-noob-xl':
         return 'Euler a';
       case 'wai-illustrious':
-      case 'sdxl_h100':
       case 'flux-2-dev':
         return 'DPM++ 2M Karras';
       case 'nova-3d-cg-xl':
@@ -190,7 +189,7 @@ export class ResolutionRules {
  * Cost rules by model
  */
 export namespace CostRules {
-  export const TURBO_MODELS = ['zit-turbo', 'sdxl-h100', 'zit-h100'];
+  export const TURBO_MODELS = [];
   
   /**
    * Check if model should use turbo pricing

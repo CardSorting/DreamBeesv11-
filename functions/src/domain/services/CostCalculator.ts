@@ -30,7 +30,7 @@ export class CostCalculator {
   }
 
   /**
-   * Calculate cost for premium models (Zit Turbo, Zit Base, SDXL H100)
+   * Calculate cost for premium models
    */
   private static calculatePremiumCost(modelId: string, steps?: number): number {
     // Premium models have higher base rate but same cost calculation
@@ -94,10 +94,7 @@ export namespace ModelCosts {
     'wai-illustrious': 20, // Free initial trial Zaps
     'chenkin-noob-xl': 20,
     'nova-3d-cg-xl': 20,
-    'sdxl_h100': 50, // Requires purchase
     'flux-klein-9b': 0, // API-based, free tier
     'flux-2-dev': 0, // API-based, free tier
-    'zit-h100': 10, // Subscription required
-    'zit-base': 10,
   };
 }

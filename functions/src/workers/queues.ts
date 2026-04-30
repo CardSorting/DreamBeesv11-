@@ -8,7 +8,6 @@ const SAFE_TASK_TYPES = [
     'analysis',
     'enhance',
     'cleanup-resource',
-    'showcase',
     'chat'
 ];
 // ----------------------------------------------------------------------
@@ -17,7 +16,7 @@ import { processImageTask } from "./image.js";
 
 import { processAnalysisTask, processEnhanceTask } from "./transformation.js";
 import { processCleanupTasks } from "./cleanup.js";
-import { processShowcaseTask } from "./showcase.js";
+
 import { logger } from "../lib/utils.js";
 import { ForensicLogger } from "../lib/forensics.js";
 
@@ -64,9 +63,7 @@ const processTask = async (req: { data: any }, workerName: string): Promise<any>
             case 'cleanup-resource':
                 result = await processCleanupTasks(req);
                 break;
-            case 'showcase':
-                result = await processShowcaseTask(req);
-                break;
+
             case 'chat':
                 result = await processChatTask(req);
                 break;
