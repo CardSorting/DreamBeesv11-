@@ -9,6 +9,11 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
+const DEPRECATED_MODEL_IDS = [
+    'lightricks-ltx-2-pro',
+    'flux-2-dev'
+];
+
 const MODELS = [
 
     {
@@ -86,13 +91,15 @@ const MODELS = [
         hideFromGenerator: true // Hidden from manual selection, used for Remix/Edit only
     },
     {
-        id: 'flux-2-dev',
-        name: 'Flux 2 Dev',
-        description: 'Next-generation image synthesis with superior detail and prompt adherence by Black Forest Labs.',
-        type: 'Flux',
-        order: 16,
+        id: 'z-image-turbo-a100',
+        name: 'Z-Image Turbo',
+        description: 'Ultra-fast image generation model optimized for quick iteration on A100 GPUs.',
+        type: 'Image',
+        order: 17,
         isActive: true,
-        image: 'https://cdn.dreambeesai.com/file/printeregg/assets/landing/flux_2_dev_preview.png'
+        image: 'https://dreambees-alchemist.web.app/assets/styles/hr_core.png',
+        thumbnail: 'https://dreambees-alchemist.web.app/assets/styles/hr_core.png',
+        previewImages: ['https://dreambees-alchemist.web.app/assets/styles/hr_core.png']
     }
 ];
 
@@ -100,6 +107,11 @@ async function seedModels() {
     const collectionRef = db.collection('models');
 
     console.log(`Starting seed of ${MODELS.length} models...`);
+
+    for (const modelId of DEPRECATED_MODEL_IDS) {
+        await collectionRef.doc(modelId).delete();
+        console.log(`✕ Deleted deprecated model: ${modelId}`);
+    }
 
     for (const model of MODELS) {
         const docRef = collectionRef.doc(model.id);
