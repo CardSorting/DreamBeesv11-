@@ -1,5 +1,56 @@
 # Changelog
 
+## 2026-04-29 — Generation Page Guided UX and Readiness Audit Pass
+
+### Files Changed
+
+- `src/pages/Generator.tsx`
+- `.wiki/index.md`
+- `.wiki/changelog.md`
+
+### Verified UI Changes in `src/pages/Generator.tsx`
+
+- Re-audited the generation page and strengthened the existing task-oriented creation flow with more familiar guided-creation patterns for non-technical users.
+- Replaced the single flat prompt-example row with grouped prompt starter tabs:
+  - `Quick starts`
+  - `Characters`
+  - `Products`
+- Added multiple starter prompts per group so users can begin from recognizable examples instead of writing from a blank canvas.
+- Added a visible prompt strength/guide indicator showing how many helpful prompt details are currently included.
+- Added a collapsible writing-help checklist for:
+  - `Subject`
+  - `Style`
+  - `Mood`
+  - `Details`
+- Added dynamic workflow state handling so the four-step strip can reflect current progress across `Describe`, `Choose style`, `Generate`, and `Review`.
+- Added a quick-route shortcut strip for `Write prompt`, `Choose style`, `Open history`, and readiness status.
+- Added a generation readiness checklist for `Signed in`, `Style selected`, `Prompt added`, and `Online`.
+- Updated the primary create button logic and copy so disabled states explain the blocking condition:
+  - offline users see `Reconnect to create`.
+  - signed-out users see `Sign in to create`.
+  - users without a selected style see `Choose a style first`.
+  - users without prompt text see `Describe your image first`.
+- Updated generation submission gating so the page only calls `generate(cleanPrompt)` when prompt text, sign-in, selected style, online status, and non-generating status are all ready.
+- Updated selected-style helper copy to mention available styles when no style is selected.
+- Expanded the preview header with readiness/status badges.
+- Expanded the loading state with familiar progress cues: `Checking prompt`, `Applying style`, and `Saving result`.
+- Expanded the empty preview state with direct actions to write a prompt or choose a style.
+- Added a `Not sure where to start?` helper box in the prompt guide card.
+- Reworked responsive CSS for the added shortcut strip, prompt guide, prompt example tabs, readiness checklist, and preview badges.
+
+### Architecture Notes
+
+- Affected layer: UI page composition in `src/pages/Generator.tsx`.
+- Existing backend generation behavior remains delegated to the existing `generate` function from `LiteContext`.
+- Existing routes are reused for navigation: `/`, `/profile`, and `/auth`.
+- The prompt checklist and grouped starters are presentation guidance only; they do not alter backend prompts, model selection, moderation, billing, Firebase, Electron, Domain, or Core behavior.
+- No new dependencies were introduced.
+
+### Verification Evidence
+
+- `npm exec tsc -- --noEmit --pretty false` completed without reported TypeScript errors after the `src/pages/Generator.tsx` changes.
+- `npm run build` completed successfully after the `src/pages/Generator.tsx` changes, producing Vite production output for the app bundle plus Electron main and preload bundles.
+
 ## 2026-04-29 — Full-Width Profile and History UX Audit Pass
 
 ### Files Changed
