@@ -10,13 +10,15 @@ export const MODEL_IDS = {
     FLUX_KLEIN: 'flux-klein-9b',
     WAI_ILLUSTRIOUS: 'wai-illustrious',
     CHENKIN_NOOB: 'chenkin-noob-xl',
-    NOVA_3D: 'nova-3d-cg-xl'
+    NOVA_3D: 'nova-3d-cg-xl',
+    Z_IMAGE_TURBO: 'z-image-turbo-a100'
 };
 // ==============================================================================
 // 2. Backend Endpoint Mapping (Infrastructure Layer)
 // ==============================================================================
 export const MODEL_ENDPOINTS = {
-    [MODEL_IDS.FLUX_KLEIN]: 'https://mariecoderinc--flux-klein-9b-v2-flux-fastapi-app.modal.run'
+    [MODEL_IDS.FLUX_KLEIN]: 'https://mariecoderinc--flux-klein-9b-v2-flux-fastapi-app.modal.run',
+    [MODEL_IDS.Z_IMAGE_TURBO]: 'https://mariecoderinc--zit-a100-stable-fastapi-app.modal.run'
 };
 export function isValidModelId(id) {
     return Object.values(MODEL_IDS).includes(id);
@@ -42,6 +44,10 @@ export const MODEL_GENERATION_PARAMS = {
     [MODEL_IDS.NOVA_3D]: {
         hiresFix: true,
         qualityTags: ", 3d render, cgi, masterwork, ultra detailed, cinematic lighting"
+    },
+    [MODEL_IDS.Z_IMAGE_TURBO]: {
+        defaultSteps: 8,
+        maxSteps: 9
     }
 };
 // ==============================================================================
@@ -49,7 +55,7 @@ export const MODEL_GENERATION_PARAMS = {
 // ==============================================================================
 export const MODEL_CATEGORIES = {
     PREMIUM: ['wai-illustrious'],
-    FAST: [],
+    FAST: ['z-image-turbo-a100'],
     STANDARD: ['chenkin-noob-xl', 'flux-2-dev', 'gray-color', 'scyrax-pastel', 'ani-detox', 'animij-v7', 'swijtspot-no1']
 };
 export const MODEL_COSTS = {

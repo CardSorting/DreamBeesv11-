@@ -130,6 +130,12 @@ export const processImageTask = async (req) => {
                 if (modelId === 'wai-illustrious') {
                     hires_fix = true;
                 }
+                else if (modelId === 'z-image-turbo-a100') {
+                    finalSteps = Math.min(Math.max(steps || 8, 1), 9);
+                    finalCfg = cfg || 7;
+                    finalScheduler = scheduler || 'DPM++ 2M Karras';
+                    hires_fix = false;
+                }
                 else if (modelId === 'chenkin-noob-xl') {
                     finalSteps = steps || 25;
                     finalCfg = cfg || 4.0;
@@ -143,17 +149,26 @@ export const processImageTask = async (req) => {
                         finalPrompt = `${finalPrompt}${qualityTags}`;
                     }
                 }
-                const body = {
-                    prompt: finalPrompt,
-                    model: modelId || "wai-illustrious",
-                    negative_prompt,
-                    steps: finalSteps,
-                    cfg: finalCfg,
-                    width: resolution.width,
-                    height: resolution.height,
-                    scheduler: finalScheduler,
-                    hires_fix
-                };
+                const body = modelId === 'z-image-turbo-a100'
+                    ? {
+                        prompt: finalPrompt,
+                        negative_prompt,
+                        steps: finalSteps,
+                        aspect_ratio: aspectRatio,
+                        width: resolution.width,
+                        height: resolution.height
+                    }
+                    : {
+                        prompt: finalPrompt,
+                        model: modelId || "wai-illustrious",
+                        negative_prompt,
+                        steps: finalSteps,
+                        cfg: finalCfg,
+                        width: resolution.width,
+                        height: resolution.height,
+                        scheduler: finalScheduler,
+                        hires_fix
+                    };
                 const { getModelEndpoint } = await import("../lib/modelConventions.js");
                 const endpoint = getModelEndpoint(modelId);
                 const submitResponse = await fetchWithTimeout(`${endpoint}/generate`, {

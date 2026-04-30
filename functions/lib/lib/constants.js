@@ -11,7 +11,7 @@ export const VALID_MODELS = [
     'rin-anime-blend', 'rin-anime-popcute',
     'crystal-cuteness', 'veretoon-v10',
     'flux-2-dev', 'chenkin-noob-xl',
-    'nova-3d-cg-xl'
+    'nova-3d-cg-xl', 'z-image-turbo-a100'
 ];
 /**
  * Active models excluding deprecated ones
@@ -26,7 +26,8 @@ export const MODEL_IDS = {
     FLUX_KLEIN: 'flux-klein-9b',
     WAI_ILLUSTRIOUS: 'wai-illustrious',
     CHENKIN_NOOB: 'chenkin-noob-xl',
-    NOVA_3D: 'nova-3d-cg-xl'
+    NOVA_3D: 'nova-3d-cg-xl',
+    Z_IMAGE_TURBO: 'z-image-turbo-a100'
 };
 export const MODELS_DB = VALID_MODELS;
 export const B2_ENDPOINT = process.env.B2_ENDPOINT;

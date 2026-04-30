@@ -40,12 +40,12 @@ export const processImageTask = async (req: { data: any }): Promise<void> => {
             const doc = await t.get(docRef);
             if (!doc.exists) { throw new Error("Job document missing"); }
             const data = doc.data() as any;
-            
+
             if (['processing', 'completed'].includes(data.status)) {
                 throw new Error(`IDEMPOTENCY_BLOCK: Status is ${data.status}`);
             }
 
-            t.update(docRef, { 
+            t.update(docRef, {
                 status: "processing",
                 startedAt: FieldValue.serverTimestamp()
             });
@@ -151,6 +151,12 @@ export const processImageTask = async (req: { data: any }): Promise<void> => {
                 if (modelId === 'wai-illustrious') {
                     hires_fix = true;
                 }
+                else if (modelId === 'z-image-turbo-a100') {
+                    finalSteps = Math.min(Math.max(steps || 8, 1), 9);
+                    finalCfg = cfg || 7;
+                    finalScheduler = scheduler || 'DPM++ 2M Karras';
+                    hires_fix = false;
+                }
                 else if (modelId === 'chenkin-noob-xl') {
                     finalSteps = steps || 25;
                     finalCfg = cfg || 4.0;
@@ -165,17 +171,26 @@ export const processImageTask = async (req: { data: any }): Promise<void> => {
                     }
                 }
 
-                const body = {
-                    prompt: finalPrompt,
-                    model: modelId || "wai-illustrious",
-                    negative_prompt,
-                    steps: finalSteps,
-                    cfg: finalCfg,
-                    width: resolution.width,
-                    height: resolution.height,
-                    scheduler: finalScheduler,
-                    hires_fix
-                };
+                const body = modelId === 'z-image-turbo-a100'
+                    ? {
+                        prompt: finalPrompt,
+                        negative_prompt,
+                        steps: finalSteps,
+                        aspect_ratio: aspectRatio,
+                        width: resolution.width,
+                        height: resolution.height
+                    }
+                    : {
+                        prompt: finalPrompt,
+                        model: modelId || "wai-illustrious",
+                        negative_prompt,
+                        steps: finalSteps,
+                        cfg: finalCfg,
+                        width: resolution.width,
+                        height: resolution.height,
+                        scheduler: finalScheduler,
+                        hires_fix
+                    };
 
                 const { getModelEndpoint } = await import("../lib/modelConventions.js");
                 const endpoint = getModelEndpoint(modelId);
@@ -253,7 +268,7 @@ export const processImageTask = async (req: { data: any }): Promise<void> => {
             isPublic: true,
             createdAt: FieldValue.serverTimestamp(), originalRequestId: requestId
         });
-        
+
 
 
         await retryOperation(() => docRef.update({
@@ -278,7 +293,7 @@ export const processImageTask = async (req: { data: any }): Promise<void> => {
                 // DETERMINISTIC REFUND ID
                 const doc = await docRef.get();
                 const cost = doc.data()?.cost || 1;
-                
+
                 const refundId = `refund_worker_${requestId}`;
                 await Wallet.credit(userId, cost, refundId, {
                     auditType: 'worker_refund',
