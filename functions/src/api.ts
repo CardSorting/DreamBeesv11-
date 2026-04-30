@@ -162,11 +162,7 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
         if (request.auth?.token?.scope) {
             const scopes = request.auth.token.scope as string[];
             const requiredScopes: Record<string, string> = {
-                'registerAgent': 'agent:write',
-                'agentReply': 'agent:write',
-                'generateAvatar': 'agent:write',
-                'createGenerationRequest': 'agent:write',
-                'workerAiChat': 'ai:chat'
+                'createGenerationRequest': 'default'
             };
 
 
@@ -221,34 +217,11 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
                 const Data = await import("./handlers/data.js");
                 return Data.handleGetUserImages(authRequest);
             }
-            case 'rateGeneration': {
-                const Data = await import("./handlers/data.js");
-                return Data.handleRateGeneration(authRequest);
-            }
-            case 'moderationVote': {
-                const Data = await import("./handlers/data.js");
-                return Data.handleModerationVote(authRequest);
-            }
-            case 'appealGeneration': {
-                const Data = await import("./handlers/data.js");
-                return Data.handleAppealGeneration(authRequest);
-            }
-            case 'rateShowcaseImage': {
-                const Data = await import("./handlers/data.js");
-                return Data.handleRateShowcaseImage(authRequest);
-            }
             case 'deleteImage': {
                 const Data = await import("./handlers/data.js");
                 return Data.handleDeleteImage(authRequest);
             }
-            case 'toggleBookmark': {
-                const Data = await import("./handlers/data.js");
-                return Data.handleToggleBookmark(authRequest);
-            }
-            case 'toggleLike': {
-                const Data = await import("./handlers/data.js");
-                return Data.handleToggleLike(authRequest);
-            }
+
 
 
 
@@ -282,29 +255,6 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
             case 'completeCliHandshake': {
                 const Developer = await import("./handlers/developer.js");
                 return Developer.handleCompleteCliHandshake(authRequest);
-            }
-
-            // Social
-            case 'toggleFollow': {
-                const Social = await import("./handlers/social.js");
-                return Social.handleToggleFollow(authRequest);
-            }
-
-
-
-
-            // Discord
-            case 'linkDiscordAccount': {
-                const DiscordHandler = await import("./handlers/discord.js");
-                return DiscordHandler.handleLinkDiscordAccount(authRequest);
-            }
-            case 'registerDiscordGrid': {
-                const DiscordHandler = await import("./handlers/discord.js");
-                return DiscordHandler.handleRegisterDiscordGrid(authRequest);
-            }
-            case 'registerDiscordUpscale': {
-                const DiscordHandler = await import("./handlers/discord.js");
-                return DiscordHandler.handleRegisterDiscordUpscale(authRequest);
             }
 
             default:

@@ -6,7 +6,6 @@ export interface UserProfile {
     username?: string;
     displayName?: string;
     isPro?: boolean;
-    karma?: number;
     birthday?: string;
     createdAt?: Timestamp;
     tokens?: number;
@@ -26,8 +25,6 @@ export interface GenerationJob {
     createdAt: Timestamp | Date | string;
     error?: string;
     hidden?: boolean;
-    reportCount?: number;
-    moderationScore?: number;
     [key: string]: any;
 }
 

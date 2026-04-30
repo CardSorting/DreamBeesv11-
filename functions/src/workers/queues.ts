@@ -1,20 +1,17 @@
 
 import { onTaskDispatched } from "firebase-functions/v2/tasks";
-import { processChatTask } from "./chat.js";
+
 
 // --- SECURITY: Define allowed task types to prevent injection attacks ---
 const SAFE_TASK_TYPES = [
     'image',
-    'analysis',
-    'enhance',
-    'cleanup-resource',
-    'chat'
+    'cleanup-resource'
 ];
 // ----------------------------------------------------------------------
 
 import { processImageTask } from "./image.js";
 
-import { processAnalysisTask, processEnhanceTask } from "./transformation.js";
+
 import { processCleanupTasks } from "./cleanup.js";
 
 import { logger } from "../lib/utils.js";
@@ -54,19 +51,12 @@ const processTask = async (req: { data: any }, workerName: string): Promise<any>
                 result = await processImageTask(req);
                 break;
 
-            case 'analysis':
-                result = await processAnalysisTask(req);
-                break;
-            case 'enhance':
-                result = await processEnhanceTask(req);
-                break;
+
             case 'cleanup-resource':
                 result = await processCleanupTasks(req);
                 break;
 
-            case 'chat':
-                result = await processChatTask(req);
-                break;
+
             default:
                 throw new Error(`Unknown task type: ${taskType}`);
         }
