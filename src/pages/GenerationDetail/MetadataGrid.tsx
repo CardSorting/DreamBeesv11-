@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { IconImage, IconLayers, IconZap, IconUser } from '@/icons';
-import type { GenerationDetail } from '@/domain/models/generationdetail';
+import type { GenerationDetail } from '@/domain/models/GenerationDetail';
 import { getMetadataItems } from '@/pages/GenerationDetail/MetadataFormatter';
 
 interface MetadataGridProps {
@@ -19,14 +19,14 @@ interface MetadataItem {
 
 export default function MetadataGrid({ generation }: MetadataGridProps) {
     const items: MetadataItem[] = getMetadataItems(generation);
-    
+
     return (
         <div className="metadata-grid">
             <div className="metadata-header">
                 <IconLayers size={20} />
                 <h2>Generation Data</h2>
             </div>
-            
+
             <div className="metadata-content">
                 {items.map((item, index) => (
                     <div key={index} className="metadata-item">

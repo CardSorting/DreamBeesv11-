@@ -2,7 +2,7 @@
  * [LAYER: INFRASTRUCTURE]
  */
 
-import type { GenerationDetail } from '../../domain/models/generationdetail';
+import type { GenerationDetail } from '../../domain/models/GenerationDetail';
 
 /**
  * Formats generation parameters into a user-friendly string.
@@ -11,31 +11,31 @@ import type { GenerationDetail } from '../../domain/models/generationdetail';
  */
 export function formatParameters(generation: GenerationDetail): string {
     const parts: string[] = [];
-    
+
     if (generation.parameters?.size) {
         parts.push(`Size: ${generation.parameters.size}`);
     }
-    
+
     if (generation.parameters?.steps) {
         parts.push(`${generation.parameters.steps} steps`);
     }
-    
+
     if (generation.parameters?.guidanceScale) {
         parts.push(`Guidance: ${generation.parameters.guidanceScale}`);
     }
-    
+
     if (generation.parameters?.quality) {
         parts.push(`Mode: ${generation.parameters.quality.toUpperCase()}`);
     }
-    
+
     if (generation.parameters?.style) {
         parts.push(`${generation.parameters.style} preset`);
     }
-    
+
     if (generation.parameters?.format) {
         parts.push(`${generation.parameters.format.toUpperCase()}`);
     }
-    
+
     return parts.filter(Boolean).join(' · ');
 }
 
@@ -46,23 +46,23 @@ export function formatParameters(generation: GenerationDetail): string {
  */
 export function formatDateTime(createdAt: number): string {
     if (!createdAt) return 'Unknown date';
-    
+
     const date = new Date(createdAt);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
-    
+
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    
-    return date.toLocaleDateString(undefined, { 
-        month: 'short', 
+
+    return date.toLocaleDateString(undefined, {
+        month: 'short',
         day: 'numeric',
-        year: 'numeric' 
+        year: 'numeric'
     });
 }
 
@@ -73,7 +73,7 @@ export function formatDateTime(createdAt: number): string {
  */
 export function getMetadataItems(generation: GenerationDetail) {
     const items = [];
-    
+
     if (generation.id) {
         items.push({
             label: 'Generation ID',
@@ -81,7 +81,7 @@ export function getMetadataItems(generation: GenerationDetail) {
             type: 'id' as const
         });
     }
-    
+
     if (generation.modelId) {
         items.push({
             label: 'Model',
@@ -89,7 +89,7 @@ export function getMetadataItems(generation: GenerationDetail) {
             type: 'model' as const
         });
     }
-    
+
     if (generation.userId) {
         items.push({
             label: 'Created by',
@@ -97,7 +97,7 @@ export function getMetadataItems(generation: GenerationDetail) {
             type: 'user' as const
         });
     }
-    
+
     if (generation.generationTime) {
         items.push({
             label: 'Generation time',
@@ -105,7 +105,7 @@ export function getMetadataItems(generation: GenerationDetail) {
             type: 'time' as const
         });
     }
-    
+
     return items;
 }
 

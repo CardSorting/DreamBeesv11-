@@ -5,7 +5,7 @@
  */
 
 import { GenerationDetail, GenerationParameters } from '../domain/models/GenerationDetail';
-import { validateGeneration } from '../domain/services/GenerationMetadataFormatter';
+import { validateGeneration } from '../domain/models/GenerationDetail';
 
 // Custom error for permission/access issues
 export class PermissionError extends Error {
@@ -25,11 +25,11 @@ export class GenerationRepository {
   async getById(generationId: string): Promise<GenerationDetail> {
     const allGenerations = await this.getAllGenerations();
     const found = allGenerations.find(g => g.id === generationId);
-    
+
     if (!found) {
       throw new Error(`Generation not found: ${generationId}`);
     }
-    
+
     return this.enrichWithMetadata(found);
   }
 
@@ -46,11 +46,11 @@ export class GenerationRepository {
         console.warn('[GenerationRepository] Electron API call failed, falling back to localStorage:', error);
       }
     }
-    
+
     // Fallback to localStorage
-    const stored = localStorage.getItem(this.LOCAL_STORAGE_KEY);
+    const stored = localStorage.getItem(GenerationRepository.LOCAL_STORAGE_KEY);
     if (!stored) return [];
-    
+
     try {
       const raw = JSON.parse(stored) as any[];
       return raw.map(g => this.mapToDomainModel(g));
@@ -71,18 +71,18 @@ export class GenerationRepository {
     } catch (error) {
       console.warn('[GenerationRepository] Electron save failed, using localStorage fallback:', error);
     }
-    
+
     // Fallback to localStorage
     const allGenerations = await this.getAllGenerations();
     const existingIndex = allGenerations.findIndex(g => g.id === generation.id);
-    
+
     if (existingIndex >= 0) {
       allGenerations[existingIndex] = this.mapToDomainModel(generation);
     } else {
       allGenerations.unshift(this.mapToDomainModel(generation));
     }
-    
-    localStorage.setItem(this.LOCAL_STORAGE_KEY, JSON.stringify(allGenerations));
+
+    localStorage.setItem(GenerationRepository.LOCAL_STORAGE_KEY, JSON.stringify(allGenerations));
   }
 
   /**

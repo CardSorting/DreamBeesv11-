@@ -5,8 +5,8 @@
 import React, { Suspense, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-    IconCheck, 
+import {
+    IconCheck,
     IconChevronRight,
     IconLayers,
     IconZap
@@ -14,7 +14,7 @@ import {
 import { getOptimizedImageUrl, copyToClipboard, showToast, downloadImage, formatDuration } from '@/lite-utils';
 import { GenerationOrchestrator } from '@/core/GenerationOrchestrator';
 import { GenerationRepository } from '@/infrastructure/GenerationRepository';
-import { NavigatonHandler } from '@/core/NavigationHandler';
+import { NavigationHandler } from '@/core/NavigationHandler';
 import { formatParameters } from '@/pages/GenerationDetail/MetadataFormatter';
 
 // Import components
@@ -27,17 +27,17 @@ export default function GenerationDetail() {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const generationId = id || '';
-    
+
     // State
     const [generation, setGeneration] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
     const [isCompareMode, setIsCompareMode] = useState(false);
-    
+
     // Initialize orchestrator once
     const orchestrator = new GenerationOrchestrator(new GenerationRepository());
-    
+
     // Fetch generation data
     useEffect(() => {
         const fetchGeneration = async () => {
@@ -53,12 +53,12 @@ export default function GenerationDetail() {
                 setIsLoading(false);
             }
         };
-        
+
         if (generationId) {
             fetchGeneration();
         }
     }, [generationId, orchestrator]);
-    
+
     // Handle copy prompt
     const handleCopyPrompt = () => {
         navigator.clipboard.writeText(generation?.prompt || '').then(() => {
@@ -67,18 +67,18 @@ export default function GenerationDetail() {
             setTimeout(() => setCopied(false), 2000);
         });
     };
-    
+
     // Handle download
     const handleDownload = () => {
         if (generation?.imageUrl) {
             downloadImage(generation.imageUrl, `dreambees-${generationId}.png`);
         }
     };
-    
+
     // Handle share
     const handleShare = async () => {
         const shareUrl = `${window.location.origin}/generation/${generationId}`;
-        
+
         if (navigator.share) {
             try {
                 await navigator.share({
@@ -94,12 +94,12 @@ export default function GenerationDetail() {
             copyToClipboard(shareUrl);
         }
     };
-    
+
     // Handle compare mode toggle
     const toggleCompareMode = () => {
         setIsCompareMode(!isCompareMode);
     };
-    
+
     if (isLoading) {
         return (
             <div className="generation-detail-loading glass-immersive">
@@ -112,7 +112,7 @@ export default function GenerationDetail() {
             </div>
         );
     }
-    
+
     if (error) {
         return (
             <div className="generation-detail-error glass-immersive">
@@ -125,10 +125,10 @@ export default function GenerationDetail() {
             </div>
         );
     }
-    
+
     return (
         <div className="generation-detail-page glass-immersive full-page">
-            
+
             {/* Header */}
             <header className="generation-detail-header">
                 <div className="header-overview">
@@ -136,47 +136,47 @@ export default function GenerationDetail() {
                     <p className="generation-subtitle">Generation Details</p>
                 </div>
                 <div className="header-actions">
-                    <button 
+                    <button
                         onClick={handleShare}
                         className="action-button-outline"
                     >
                         Share
                     </button>
-                    <button 
-                        onClick={() => navigate(-1)} 
+                    <button
+                        onClick={() => navigate(-1)}
                         className="action-button-outline"
                     >
                         Back
                     </button>
                 </div>
             </header>
-            
+
             {/* Content Grid */}
             <div className="detail-content-grid">
                 {/* Main content area (left side) */}
                 <div className="detail-main">
                     <div className="immersive-hero-wrapper">
-                        <ImmersiveHero 
+                        <ImmersiveHero
                             generation={generation}
                             onCopyPrompt={handleCopyPrompt}
                             onDownload={handleDownload}
                             onShare={handleShare}
                         />
-                        
-                        <PromptReveal 
+
+                        <PromptReveal
                             prompt={generation.prompt}
                             parameters={formatParameters(generation)}
                             onClickCopy={handleCopyPrompt}
                             copied={copied}
                         />
-                        
+
                         <MetadataGrid generation={generation} />
                     </div>
                 </div>
-                
+
                 {/* Side panel (right side) */}
                 <div className="detail-sidebar">
-                    <ActionToolbar 
+                    <ActionToolbar
                         generationId={generation.id}
                         prompt={generation.prompt}
                         modelId={generation.modelId}
@@ -185,11 +185,11 @@ export default function GenerationDetail() {
                     />
                 </div>
             </div>
-            
+
             {/* Overlay for compare mode (when it exists in future) */}
             <AnimatePresence>
                 {isCompareMode && (
-                    <motion.div 
+                    <motion.div
                         className="compare-overlay"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
