@@ -40,6 +40,33 @@ const promptIdeaGroups = [
 
 type PromptIdeaGroupId = typeof promptIdeaGroups[number]['id'];
 
+const creationGoals = [
+    {
+        id: 'blank',
+        label: 'Start from scratch',
+        helper: 'Best when you already know the exact image you want.',
+        prompt: ''
+    },
+    {
+        id: 'character',
+        label: 'Make a character',
+        helper: 'Avatars, mascots, portraits, and story characters.',
+        prompt: 'A friendly character portrait with expressive eyes, detailed outfit, soft lighting, clean background'
+    },
+    {
+        id: 'scene',
+        label: 'Build a scene',
+        helper: 'Places, fantasy worlds, rooms, and environments.',
+        prompt: 'A cozy magical workshop filled with glowing jars, warm light, tiny details, storybook illustration style'
+    },
+    {
+        id: 'product',
+        label: 'Show a product',
+        helper: 'Brand mockups, product shots, and polished displays.',
+        prompt: 'A premium product photo on a clean studio background, soft shadows, elegant lighting, high detail'
+    }
+] as const;
+
 const promptTips = [
     'Subject: who or what should be in the image',
     'Style: watercolor, cinematic, 3D, anime, photo, or sketch',
@@ -101,12 +128,31 @@ export default function Generator() {
     const readinessLabel = canGenerate
         ? 'Ready to create'
         : `${readyCount} of ${readyChecklist.length} steps ready`;
+    const nextStep = generating
+        ? { kind: 'wait', label: 'Creating now', title: 'Image is being created', helper: 'Keep DreamBees open while the result is saved to your history.' }
+        : isOffline
+            ? { kind: 'blocked', label: 'Reconnect', title: 'Reconnect to continue', helper: 'DreamBees needs an internet connection before it can create a new image.' }
+            : !currentUser
+                ? { kind: 'route', label: 'Sign in', title: 'Sign in to create', helper: 'Sign in first so your generation can be created and saved.', to: '/auth' }
+                : !selectedModel
+                    ? { kind: 'route', label: 'Choose style', title: 'Choose an image style', helper: 'Pick a visual style so the result looks more predictable.', to: '/' }
+                    : !cleanPrompt
+                        ? { kind: 'anchor', label: 'Write prompt', title: 'Describe your image', helper: 'Start with a short sentence or use one of the templates below.', to: '#image-prompt' }
+                        : { kind: 'submit', label: 'Create image', title: 'Everything is ready', helper: 'Review the description and press Create image when you are ready.' };
 
     const handleGenerate = async (e?: React.FormEvent) => {
         e?.preventDefault();
         if (!canGenerate) return;
         await generate(cleanPrompt);
         setPrompt('');
+    };
+
+    const applyGoalPrompt = (starterPrompt: string) => {
+        if (!starterPrompt) {
+            setPrompt('');
+            return;
+        }
+        setPrompt(current => current.trim() ? current : starterPrompt);
     };
 
     useEffect(() => {
@@ -180,6 +226,37 @@ export default function Generator() {
                 <div className={`quick-route status ${canGenerate ? 'ready' : ''}`}>
                     <IconSparkles size={16} />
                     <span>{readinessLabel}</span>
+                </div>
+            </section>
+
+            <section className="next-action-card glass-immersive" aria-labelledby="next-action-heading">
+                <div className="next-action-copy">
+                    <span className={`next-action-badge ${nextStep.kind}`}>{nextStep.label}</span>
+                    <h2 id="next-action-heading">{nextStep.title}</h2>
+                    <p>{nextStep.helper}</p>
+                </div>
+                <div className="next-action-controls">
+                    {nextStep.kind === 'route' && nextStep.to && <Link to={nextStep.to}>{nextStep.label}</Link>}
+                    {nextStep.kind === 'anchor' && nextStep.to && <a href={nextStep.to}>{nextStep.label}</a>}
+                    {nextStep.kind === 'submit' && <button type="button" onClick={() => handleGenerate()}>{nextStep.label}</button>}
+                    {nextStep.kind === 'blocked' && <button type="button" disabled>{nextStep.label}</button>}
+                    {nextStep.kind === 'wait' && <button type="button" disabled>{nextStep.label}</button>}
+                </div>
+            </section>
+
+            <section className="goal-panel glass-immersive" aria-labelledby="goal-heading">
+                <div className="goal-heading">
+                    <span className="section-kicker"><IconSparkles size={14} /> Choose a starting point</span>
+                    <h2 id="goal-heading">What do you want to make?</h2>
+                    <p>Pick a familiar goal to start with a useful prompt structure, then edit the details in your own words.</p>
+                </div>
+                <div className="goal-grid">
+                    {creationGoals.map(goal => (
+                        <button type="button" key={goal.id} onClick={() => applyGoalPrompt(goal.prompt)}>
+                            <strong>{goal.label}</strong>
+                            <span>{goal.helper}</span>
+                        </button>
+                    ))}
                 </div>
             </section>
 
@@ -303,6 +380,14 @@ export default function Generator() {
                             {generating ? <IconLoader size={18} /> : <IconZap size={18} fill="currentColor" />}
                             <span>{generateLabel}</span>
                         </button>
+
+                        <div className="sticky-create-summary" aria-label="Create action summary">
+                            <div>
+                                <strong>{nextStep.title}</strong>
+                                <span>{readinessLabel}</span>
+                            </div>
+                            <button type="submit" disabled={!canGenerate}>{canGenerate ? 'Create' : readyCount + '/4 ready'}</button>
+                        </div>
 
                         <div className="safe-helper">
                             <IconHome size={15} />
@@ -462,6 +547,23 @@ export default function Generator() {
                 .quick-route.status { pointer-events: none; }
                 .quick-route:hover { color: white; border-color: rgba(139, 92, 246, 0.45); }
 
+                .next-action-card { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 18px; padding: 18px; border-radius: 26px; margin-bottom: 14px; }
+                .next-action-copy h2, .goal-heading h2 { font-size: 1.35rem; margin: 7px 0; letter-spacing: -0.04em; }
+                .next-action-copy p, .goal-heading p { color: var(--color-zinc-400); font-size: 0.86rem; font-weight: 650; }
+                .next-action-badge { display: inline-flex; width: fit-content; border-radius: 999px; padding: 6px 9px; color: white; background: rgba(139, 92, 246, 0.16); border: 1px solid rgba(139, 92, 246, 0.28); font-size: 0.68rem; font-weight: 950; text-transform: uppercase; letter-spacing: 0.1em; }
+                .next-action-badge.blocked { color: #fca5a5; background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.22); }
+                .next-action-badge.submit { background: rgba(34, 197, 94, 0.12); border-color: rgba(34, 197, 94, 0.24); }
+                .next-action-controls a, .next-action-controls button { min-height: 46px; min-width: 132px; padding: 0 16px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 16px; color: white; text-decoration: none; background: linear-gradient(135deg, var(--color-accent), var(--color-dream-purple)); font-weight: 950; cursor: pointer; }
+                .next-action-controls button:disabled { cursor: not-allowed; color: var(--color-zinc-500); background: rgba(255,255,255,0.05); }
+
+                .goal-panel { display: grid; grid-template-columns: 0.75fr 1.25fr; gap: 18px; align-items: center; padding: 18px; border-radius: 26px; margin-bottom: 18px; }
+                .goal-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+                .goal-grid button { min-height: 98px; text-align: left; border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 12px; color: var(--color-zinc-400); background: rgba(255,255,255,0.025); cursor: pointer; }
+                .goal-grid button:hover { color: white; border-color: rgba(139, 92, 246, 0.45); background: rgba(139, 92, 246, 0.1); transform: translateY(-2px); }
+                .goal-grid strong, .goal-grid span { display: block; }
+                .goal-grid strong { color: white; font-size: 0.83rem; margin-bottom: 6px; }
+                .goal-grid span { font-size: 0.72rem; line-height: 1.35; font-weight: 700; }
+
                 .generator-layout { display: grid; grid-template-columns: minmax(330px, 0.9fr) minmax(360px, 1.1fr); gap: 20px; align-items: start; }
                 .control-panel, .preview-card, .tips-card, .recent-empty { border-radius: 30px; }
                 .control-panel { padding: 22px; position: sticky; top: 18px; }
@@ -519,6 +621,12 @@ export default function Generator() {
                 .generate-button { min-height: 56px; border: none; border-radius: 18px; background: linear-gradient(135deg, var(--color-accent), var(--color-dream-purple)); color: white; display: inline-flex; align-items: center; justify-content: center; gap: 10px; font-weight: 950; font-size: 0.98rem; cursor: pointer; box-shadow: 0 18px 36px rgba(139, 92, 246, 0.26); }
                 .generate-button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 24px 46px rgba(139, 92, 246, 0.36); }
                 .generate-button:disabled { cursor: not-allowed; color: var(--color-zinc-500); background: rgba(255,255,255,0.05); box-shadow: none; }
+                .sticky-create-summary { position: sticky; bottom: 116px; z-index: 5; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px; padding: 12px; border-radius: 18px; background: rgba(24,24,27,0.82); border: 1px solid rgba(255,255,255,0.09); backdrop-filter: blur(22px); box-shadow: 0 18px 38px rgba(0,0,0,0.28); }
+                .sticky-create-summary strong, .sticky-create-summary span { display: block; }
+                .sticky-create-summary strong { color: white; font-size: 0.82rem; }
+                .sticky-create-summary span { color: var(--color-zinc-400); font-size: 0.72rem; font-weight: 800; margin-top: 2px; }
+                .sticky-create-summary button { min-height: 38px; border: 0; border-radius: 13px; padding: 0 13px; color: white; background: linear-gradient(135deg, var(--color-accent), var(--color-dream-purple)); font-weight: 950; cursor: pointer; }
+                .sticky-create-summary button:disabled { cursor: not-allowed; color: var(--color-zinc-500); background: rgba(255,255,255,0.06); }
                 .safe-helper { display: flex; align-items: center; gap: 8px; padding: 12px; border-radius: 16px; background: rgba(255,255,255,0.025); }
 
                 .preview-column { display: flex; flex-direction: column; gap: 16px; }
@@ -567,6 +675,8 @@ export default function Generator() {
                 @media (max-width: 980px) {
                     .generator-topbar { flex-direction: column; }
                     .workflow-card, .quick-route-card { grid-template-columns: repeat(2, 1fr); }
+                    .next-action-card, .goal-panel { grid-template-columns: 1fr; }
+                    .goal-grid { grid-template-columns: repeat(2, 1fr); }
                     .generator-layout { grid-template-columns: 1fr; }
                     .control-panel { position: static; }
                     .preview-stage { min-height: auto; }
@@ -577,8 +687,9 @@ export default function Generator() {
                     .topbar-actions, .recent-heading-row { align-items: stretch; width: 100%; }
                     .topbar-actions { display: grid; grid-template-columns: 1fr 1fr; }
                     .secondary-action { justify-content: center; }
-                    .workflow-card, .quick-route-card, .prompt-coach, .idea-tabs, .readiness-list { grid-template-columns: 1fr; }
+                    .workflow-card, .quick-route-card, .goal-grid, .prompt-coach, .idea-tabs, .readiness-list { grid-template-columns: 1fr; }
                     .workflow-step:not(.active) { display: none; }
+                    .next-action-controls a, .next-action-controls button { width: 100%; }
                     .style-card { grid-template-columns: auto 1fr; }
                     .change-style { grid-column: 1 / -1; text-align: center; }
                     .prompt-meta, .recent-heading-row { flex-direction: column; align-items: flex-start; }

@@ -1,5 +1,41 @@
 # Changelog
 
+## 2026-04-29 — Generation Page Next-Action and Goal-Based Creation Pass
+
+### Files Changed
+
+- `src/pages/Generator.tsx`
+- `.wiki/index.md`
+- `.wiki/changelog.md`
+
+### Verified UI Changes in `src/pages/Generator.tsx`
+
+- Added a next-best-action panel below the shortcut strip that tells the user exactly what to do next based on current state.
+- The next-best-action panel now provides familiar CTA routing for common blockers:
+  - signed-out users get a `Sign in` action to `/auth`.
+  - users without a selected style get a `Choose style` action to `/`.
+  - users without prompt text get a `Write prompt` anchor action to `#image-prompt`.
+  - ready users get a `Create image` action that invokes the existing generation handler.
+  - offline or currently-generating states show disabled status actions.
+- Added a goal-based creation starter panel titled `What do you want to make?`.
+- Added goal cards for `Start from scratch`, `Make a character`, `Build a scene`, and `Show a product`.
+- Goal cards seed the prompt textarea with familiar starter structures only when appropriate; they remain UI guidance and do not change backend prompt processing.
+- Added a sticky create summary inside the control form so users retain a visible create/readiness affordance while moving through the form.
+- Added responsive CSS for the next-action panel, goal panel, goal cards, and sticky create summary.
+
+### Architecture Notes
+
+- Affected layer: UI page composition in `src/pages/Generator.tsx`.
+- No Domain, Core, backend Infrastructure, Firebase, Electron, moderation, billing, or persistence logic was modified.
+- The existing generation call path remains delegated to `generate(cleanPrompt)` from `LiteContext`.
+- Existing routes are reused: `/auth`, `/`, `/profile`, and `#image-prompt`.
+- No new dependencies were introduced.
+
+### Verification Evidence
+
+- `npm exec tsc -- --noEmit --pretty false` completed without reported TypeScript errors after this pass.
+- `npm run build` completed successfully after this pass, producing Vite production output for app, Electron main, and Electron preload bundles.
+
 ## 2026-04-29 — Generation Page Guided UX and Readiness Audit Pass
 
 ### Files Changed
