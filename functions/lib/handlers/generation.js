@@ -65,7 +65,7 @@ export const handleCreateGenerationRequest = async (request) => {
  * Help: Enqueue generation task for worker (Infrastructure)
  */
 async function enqueueGenerationTask(requestId, ctx, userId) {
-    const { prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler, image, targetPersonaId, action, shouldBookmark } = ctx;
+    const { prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler, image } = ctx;
     const taskData = {
         taskType: 'image',
         requestId,
@@ -77,10 +77,7 @@ async function enqueueGenerationTask(requestId, ctx, userId) {
         cfg: cfg || 7.0,
         aspectRatio: aspectRatio || "1:1",
         scheduler: scheduler || 'DPM++ 2M Karras',
-        image,
-        targetPersonaId,
-        action,
-        shouldBookmark: !!shouldBookmark
+        image
     };
     const LOCATION = "us-central1";
     const queue = getFunctions().taskQueue(`locations/${LOCATION}/functions/urgentWorker`);

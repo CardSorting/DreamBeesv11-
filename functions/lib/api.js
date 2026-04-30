@@ -4,7 +4,6 @@ import { handleError, logger } from "./lib/utils.js";
 import { checkIpThrottle, checkUserAbuseStatus, checkUserQuota, checkTokenBucket, checkAbuseScore, recordViolation } from "./lib/abuse.js";
 import { validateApiKey } from "./lib/apiKey.js";
 // -- Imports from Handlers (Now Dynamically Loaded) --
-import { agentService } from "./services/agents.js";
 // ============================================================================
 // Main API Dispatcher
 // ============================================================================
@@ -134,11 +133,7 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
         if (request.auth?.token?.scope) {
             const scopes = request.auth.token.scope;
             const requiredScopes = {
-                'registerAgent': 'agent:write',
-                'agentReply': 'agent:write',
-                'generateAvatar': 'agent:write',
-                'createGenerationRequest': 'agent:write',
-                'workerAiChat': 'ai:chat'
+                'createGenerationRequest': 'default'
             };
             const required = requiredScopes[action];
             if (required && !scopes.includes(required) && !scopes.includes('default')) {
@@ -153,23 +148,6 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
                 const Generation = await import("./handlers/generation.js");
                 return Generation.handleCreateGenerationRequest(authRequest);
             }
-            // Transformation & AI
-            case 'createAnalysisRequest': {
-                const Transformation = await import("./handlers/transformation.js");
-                return Transformation.handleCreateAnalysisRequest(authRequest);
-            }
-            case 'createEnhanceRequest': {
-                const Transformation = await import("./handlers/transformation.js");
-                return Transformation.handleCreateEnhanceRequest(authRequest);
-            }
-            case 'transformPrompt': {
-                const Transformation = await import("./handlers/transformation.js");
-                return Transformation.handleTransformPrompt(authRequest);
-            }
-            case 'transformImage': {
-                const Transformation = await import("./handlers/transformation.js");
-                return Transformation.handleTransformImage(authRequest);
-            }
             // Billing
             case 'createStripeCheckout': {
                 const Billing = await import("./handlers/billing.js");
@@ -182,56 +160,6 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
             case 'claimDailyZaps': {
                 const Billing = await import("./handlers/billing.js");
                 return Billing.handleClaimDailyZaps(authRequest);
-            }
-            // Mockup Studio
-            case 'generateMockup': {
-                const Mockup = await import("./handlers/mockup.js");
-                return Mockup.handleGenerateMockup(authRequest);
-            }
-            case 'gachaSpin': {
-                const Mockup = await import("./handlers/mockup.js");
-                return Mockup.handleGachaSpin(authRequest);
-            }
-            case 'generateMockupGrid': {
-                const Mockup = await import("./handlers/mockup.js");
-                return Mockup.handleGenerateMockupGrid(authRequest);
-            }
-            case 'generateMockupItem': {
-                const Mockup = await import("./handlers/mockup.js");
-                return Mockup.handleGenerateMockupItem(authRequest);
-            }
-            case 'getMockupRegistry': {
-                const Mockup = await import("./handlers/mockup.js");
-                return {
-                    items: [
-                        ...Mockup.MOCKUP_ITEMS,
-                        ...Mockup.TCG_ITEMS,
-                        ...Mockup.DOLL_ITEMS,
-                        ...Mockup.RESKIN_ITEMS
-                    ]
-                };
-            }
-            // Avatar Forge
-            case 'generateAvatarCollection': {
-                const Avatar = await import("./handlers/avatars.js");
-                return Avatar.handleGenerateAvatarCollection(authRequest);
-            }
-            case 'mintRandomAvatar': {
-                const Avatar = await import("./handlers/avatars.js");
-                return Avatar.handleMintRandomAvatar(authRequest);
-            }
-            // Distill
-            case 'distill': {
-                const Distill = await import("./handlers/distill.js");
-                return Distill.handleDistillRequest(authRequest);
-            }
-            case 'studentCompose': {
-                const DistillStudent = await import("./handlers/distillStudent.js");
-                return DistillStudent.handleStudentComposeRequest(authRequest);
-            }
-            case 'studentBatchCompose': {
-                const DistillStudentBatch = await import("./handlers/distillStudentBatch.js");
-                return DistillStudentBatch.handleStudentBatchComposeRequest(authRequest);
             }
             // Data & Ratings
             case 'getGenerationHistory': {
@@ -246,96 +174,9 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
                 const Data = await import("./handlers/data.js");
                 return Data.handleGetUserImages(authRequest);
             }
-            case 'rateGeneration': {
-                const Data = await import("./handlers/data.js");
-                return Data.handleRateGeneration(authRequest);
-            }
-            case 'moderationVote': {
-                const Data = await import("./handlers/data.js");
-                return Data.handleModerationVote(authRequest);
-            }
-            case 'appealGeneration': {
-                const Data = await import("./handlers/data.js");
-                return Data.handleAppealGeneration(authRequest);
-            }
-            case 'rateShowcaseImage': {
-                const Data = await import("./handlers/data.js");
-                return Data.handleRateShowcaseImage(authRequest);
-            }
             case 'deleteImage': {
                 const Data = await import("./handlers/data.js");
                 return Data.handleDeleteImage(authRequest);
-            }
-            case 'toggleBookmark': {
-                const Data = await import("./handlers/data.js");
-                return Data.handleToggleBookmark(authRequest);
-            }
-            case 'toggleLike': {
-                const Data = await import("./handlers/data.js");
-                return Data.handleToggleLike(authRequest);
-            }
-            // Autonomous Agents
-            case 'decideAgentAction': {
-                const Agent = await import("./handlers/agents.js");
-                return Agent.handleDecideAgentAction(authRequest);
-            }
-            case 'tickAgents': {
-                const Agent = await import("./handlers/agents.js");
-                return Agent.handleTickAgents(authRequest);
-            }
-            case 'saveMemory': {
-                const Agent = await import("./handlers/agents.js");
-                return Agent.handleSaveMemory(authRequest);
-            }
-            case 'getMemory': {
-                const Agent = await import("./handlers/agents.js");
-                return Agent.handleGetMemory(authRequest);
-            }
-            case 'logThought': {
-                await agentService.logThought(uid, authRequest.data.derivativeId, authRequest.data.thought, authRequest.data.context);
-                return { success: true };
-            }
-            case 'register_macro': {
-                await agentService.saveMacro(uid, authRequest.data.macroName, authRequest.data.toolSequences);
-                return { success: true, macro: authRequest.data.macroName };
-            }
-            case 'get_macros': {
-                const macros = await agentService.loadMacros(uid);
-                return { macros };
-            }
-            // Zap Features
-            case 'createDerivative': {
-                const Zap = await import("./handlers/zap.js");
-                return Zap.handleCreateDerivative(authRequest);
-            }
-            case 'executeTrade': {
-                const Zap = await import("./handlers/zap.js");
-                return Zap.handleExecuteTrade(authRequest);
-            }
-            case 'getDerivatives': {
-                const Zap = await import("./handlers/zap.js");
-                return Zap.handleGetDerivatives(authRequest);
-            }
-            case 'getDerivativeById': {
-                const Zap = await import("./handlers/zap.js");
-                return Zap.handleGetDerivativeById(authRequest);
-            }
-            // WorkerAI Specialist
-            case 'workerAiChat': {
-                const WorkerAI = await import("./handlers/workerAi.js");
-                return WorkerAI.handleWorkerAiChat(authRequest);
-            }
-            case 'workerAiStream': {
-                const WorkerAI = await import("./handlers/workerAi.js");
-                return WorkerAI.handleWorkerAiStream(authRequest);
-            }
-            case 'createWorkerAiTask': {
-                const WorkerAI = await import("./handlers/workerAi.js");
-                return WorkerAI.handleCreateWorkerAiTask(authRequest);
-            }
-            case 'characterAlchemy': {
-                const WorkerAI = await import("./handlers/workerAi.js");
-                return WorkerAI.handleCharacterAlchemy(authRequest);
             }
             // API Key Management
             case 'createApiKey': {
@@ -362,36 +203,6 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
             case 'completeCliHandshake': {
                 const Developer = await import("./handlers/developer.js");
                 return Developer.handleCompleteCliHandshake(authRequest);
-            }
-            // Social
-            case 'toggleFollow': {
-                const Social = await import("./handlers/social.js");
-                return Social.handleToggleFollow(authRequest);
-            }
-            case 'nudge': {
-                const Interactions = await import("./handlers/interactions.js");
-                return Interactions.handleNudge(authRequest);
-            }
-            case 'congratulate': {
-                const Interactions = await import("./handlers/interactions.js");
-                return Interactions.handleCongratulate(authRequest);
-            }
-            case 'nekomimiTransform': {
-                const Nekomimi = await import("./handlers/nekomimi.js");
-                return Nekomimi.handleNekomimiTransform(authRequest);
-            }
-            // Discord
-            case 'linkDiscordAccount': {
-                const DiscordHandler = await import("./handlers/discord.js");
-                return DiscordHandler.handleLinkDiscordAccount(authRequest);
-            }
-            case 'registerDiscordGrid': {
-                const DiscordHandler = await import("./handlers/discord.js");
-                return DiscordHandler.handleRegisterDiscordGrid(authRequest);
-            }
-            case 'registerDiscordUpscale': {
-                const DiscordHandler = await import("./handlers/discord.js");
-                return DiscordHandler.handleRegisterDiscordUpscale(authRequest);
             }
             default:
                 throw new HttpsError('invalid-argument', `Unknown action: ${action}`);

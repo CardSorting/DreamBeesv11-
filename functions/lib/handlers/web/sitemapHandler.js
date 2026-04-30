@@ -24,7 +24,6 @@ export const handleSitemap = async (req, res) => {
             { path: '/api', priority: '0.4', changefreq: 'monthly' },
             { path: '/showcase', priority: '0.6', changefreq: 'weekly' },
             { path: '/generations', priority: '0.7', changefreq: 'daily' },
-            { path: '/mockups', priority: '0.7', changefreq: 'daily' },
             { path: '/landing', priority: '0.8', changefreq: 'monthly' },
         ];
         staticPages.forEach(page => {

@@ -11,9 +11,7 @@ export const staleJobCleanup = onSchedule("every 5 minutes", async (_event) => {
     const staleThreshold = new Date(Date.now() - 20 * 60 * 1000); // 20 minutes ago
     const resuscitationThreshold = new Date(Date.now() - 3 * 60 * 1000); // 3 minutes ago
     const collections = [
-        "generation_queue",
-        "analysis_queue",
-        "enhance_queue"
+        "generation_queue"
     ];
     for (const collectionName of collections) {
         try {

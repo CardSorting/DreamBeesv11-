@@ -2,8 +2,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import { handleStripeWebhook } from "./handlers/web/stripeHandler.js";
 import { handleSitemap } from "./handlers/web/sitemapHandler.js";
 import { handleApp } from "./handlers/web/appHandler.js";
-
-import { logger, fetchWithTimeout } from "./lib/utils.js";
+import { handleDiagnostic } from "./handlers/diagnostic.js";
 
 /**
  * Unified 'web' entry point.
@@ -26,9 +25,10 @@ export const web = onRequest({
         return handleSitemap(req, res);
     }
 
-
-    
-
+    // 3. Admin Diagnostic (requires admin bearer token or ADMIN_DIAGNOSTIC_KEY)
+    if (path === '/admin/diagnostic' || path === '/diagnostic') {
+        return handleDiagnostic(req, res);
+    }
 
     // 4. Default: Handle as App Metadata / SEO Injection
     return handleApp(req, res);

@@ -2,14 +2,15 @@ import { db, FieldValue } from "../firebaseInit.js";
 import { Wallet } from "../lib/wallet.js";
 import { getS3Client, fetchWithTimeout, logger, retryOperation } from "../lib/utils.js";
 import { B2_BUCKET, B2_PUBLIC_URL, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, ENDPOINTS } from "../lib/constants.js";
-import { MODEL_IDS, MODEL_ENDPOINTS, getModelGenerationConfig } from "../lib/modelConventions.js";
 import { ForensicLogger } from "../lib/forensics.js";
 import { SubstrateHealth } from "../lib/substrateHealth.js";
+// @ts-ignore
+import { modalAPI } from "../lib/modal.js";
 /**
  * Main worker for image generation tasks
  */
 export const processImageTask = async (req) => {
-    const { requestId, userId, modelId, negative_prompt, steps = 30, cfg = 7, aspectRatio = '1:1', scheduler, promptHash, promptMetadata, shouldBookmark } = req.data;
+    const { requestId, userId, modelId, negative_prompt, steps = 30, cfg = 7, aspectRatio = '1:1', scheduler, promptHash, promptMetadata } = req.data;
     let prompt = req.data.prompt;
     if (prompt && prompt.length > 1500) {
         prompt = prompt.substring(0, 1500);
@@ -64,7 +65,6 @@ export const processImageTask = async (req) => {
         // --- MODEL EXECUTION ---
         if (modelId === 'flux-klein-9b') {
             imageBuffer = await (async () => {
-                const { modalAPI } = await import("../lib/modal.js");
                 logger.info(`[${requestId}] Running Flux Klein Edit via ModalAPI`, { userId, modelId });
                 try {
                     const result = await modalAPI.editAndWait({
@@ -81,53 +81,6 @@ export const processImageTask = async (req) => {
                     logger.error(`[${requestId}] Flux Klein Edit failed`, error);
                     throw error;
                 }
-            })();
-        }
-        else if ([MODEL_IDS.ZIT, MODEL_IDS.ZIT_BASE].includes(modelId)) {
-            imageBuffer = await (async () => {
-                const endpoint = MODEL_ENDPOINTS[modelId];
-                const config = getModelGenerationConfig(modelId);
-                const defaultSteps = config?.defaultSteps || 30;
-                logger.info(`[${requestId}] Running ${modelId} generation`);
-                const body = {
-                    prompt,
-                    steps: steps || defaultSteps,
-                    width: resolution.width,
-                    height: resolution.height
-                };
-                const submitResponse = await fetch(`${endpoint}/generate`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(body)
-                });
-                if (!submitResponse.ok) {
-                    throw new Error(`${modelId} Submission Failed (${submitResponse.status})`);
-                }
-                const { job_id } = await submitResponse.json();
-                forensic.checkpoint('model_submitted', { modelId, job_id });
-                // --- ADAPTIVE POLLING: Densify initial feedback loop ---
-                for (let poll = 0; poll < 120; poll++) {
-                    const waitTime = poll < 5 ? 2000 : 4000; // Fast poll first 10 seconds
-                    await new Promise(r => setTimeout(r, waitTime));
-                    let resultRes = await fetch(`${endpoint}/result/${job_id}`);
-                    if (resultRes.status === 404) {
-                        resultRes = await fetch(`${endpoint}/jobs/${job_id}`);
-                    }
-                    if (resultRes.status === 202) {
-                        if (poll % 5 === 0)
-                            forensic.checkpoint('polling', { poll, waitTime });
-                        continue;
-                    }
-                    if (!resultRes.ok) {
-                        throw new Error(`${modelId} Polling Error (${resultRes.status})`);
-                    }
-                    const ct = resultRes.headers.get('content-type') || '';
-                    if (ct.includes('image/')) {
-                        forensic.checkpoint('image_received', { poll });
-                        return Buffer.from(await resultRes.arrayBuffer());
-                    }
-                }
-                throw new Error(`${modelId} generation timed out`);
             })();
         }
         else if (modelId === 'flux-2-dev') {
@@ -192,7 +145,7 @@ export const processImageTask = async (req) => {
                 }
                 const body = {
                     prompt: finalPrompt,
-                    model: modelId === 'sdxl_h100' ? 'wai-illustrious' : (modelId || "wai-illustrious"),
+                    model: modelId || "wai-illustrious",
                     negative_prompt,
                     steps: finalSteps,
                     cfg: finalCfg,
@@ -201,7 +154,8 @@ export const processImageTask = async (req) => {
                     scheduler: finalScheduler,
                     hires_fix
                 };
-                const endpoint = ENDPOINTS.sdxl_a100;
+                const { getModelEndpoint } = await import("../lib/modelConventions.js");
+                const endpoint = getModelEndpoint(modelId);
                 const submitResponse = await fetchWithTimeout(`${endpoint}/generate`, {
                     method: "POST",
                     headers: {
@@ -267,25 +221,6 @@ export const processImageTask = async (req) => {
             isPublic: true,
             createdAt: FieldValue.serverTimestamp(), originalRequestId: requestId
         });
-        // --- Auto-Bookmark for Discord ---
-        if (shouldBookmark && userId) {
-            try {
-                await db.collection("users").doc(userId).collection("bookmarks").doc(imageRef.id).set({
-                    imageId: imageRef.id,
-                    imageUrl,
-                    thumbnailUrl,
-                    prompt,
-                    aspectRatio,
-                    createdAt: FieldValue.serverTimestamp(),
-                    _autoGenerated: true
-                });
-                logger.info(`[${requestId}] Auto-bookmarked image: ${imageRef.id} for user: ${userId}`);
-            }
-            catch (bookmarkError) {
-                logger.error(`[${requestId}] Failed to auto-bookmark image`, bookmarkError);
-            }
-        }
-        // ---------------------------------
         await retryOperation(() => docRef.update({
             status: "completed",
             imageUrl, thumbnailUrl, lqip,
