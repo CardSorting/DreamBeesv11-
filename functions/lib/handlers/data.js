@@ -3,6 +3,7 @@ import { db, FieldValue, getFunctions } from "../firebaseInit.js";
 import { handleError } from "../lib/utils.js";
 import { ImpactService } from "../lib/impact.js";
 import { ensureUserExists } from "../lib/user.js";
+import { ReputationService } from "../lib/reputation.js";
 export const handleGetGenerationHistory = async (request) => {
     const uid = request.auth.uid;
     if (!uid) {
@@ -242,8 +243,7 @@ export const handleModerationVote = async (request) => {
             const jobData = jobDoc.data();
             const userData = userDoc.data();
             // Use Isolated Reputation Service
-            const { ReputationService } = await import("../lib/reputation.js");
-            const reputation = userData?.reputation || userData?.karma || 0; // Fallback for transition
+            const reputation = userData?.reputation || 0;
             const votePower = ReputationService.calculateVotePower(reputation, validConfidence);
             if (verdict === 'skip') {
                 t.set(voteRef, {

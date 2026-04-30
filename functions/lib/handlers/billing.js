@@ -44,35 +44,34 @@ export const handleCreateStripePortalSession = async (request) => {
         throw handleError(error, { uid, context: "Stripe Portal" });
     }
 };
-export const handleClaimFreeCredits = async (request) => {
+export const handleClaimDailyZaps = async (request) => {
     const uid = request.auth.uid;
     if (!uid) {
         throw new Error("Unauthenticated");
     }
     const startTime = Date.now();
-    logger.info(`[Claim] Starting simplified execution for user ${uid}`);
+    logger.info(`[Claim] Starting hyper-streamlined execution for user ${uid}`);
     const now = new Date();
-    const dateId = `claim_${now.getUTCFullYear()}_${now.getUTCMonth() + 1}_${now.getUTCDate()}`;
+    const dateId = `${now.getUTCFullYear()}${(now.getUTCMonth() + 1).toString().padStart(2, '0')}${now.getUTCDate().toString().padStart(2, '0')}`;
     const userRef = db.collection('users').doc(uid);
-    const dailyClaimRef = userRef.collection('claims').doc(dateId);
     try {
         await db.runTransaction(async (transaction) => {
-            const claimDoc = await transaction.get(dailyClaimRef);
-            if (claimDoc.exists) {
+            const userDoc = await transaction.get(userRef);
+            if (!userDoc.exists) {
+                throw new Error("USER_NOT_FOUND");
+            }
+            const userData = userDoc.data();
+            if (userData.lastDailyClaimId === dateId) {
                 throw new Error("ALREADY_CLAIMED");
             }
-            transaction.set(dailyClaimRef, {
-                claimedAt: FieldValue.serverTimestamp(),
-                zapsAwarded: 100,
-                status: 'success'
-            });
             transaction.update(userRef, {
                 zaps: FieldValue.increment(100),
-                lastFreeClaimAt: now
+                lastFreeClaimAt: now,
+                lastDailyClaimId: dateId
             });
         });
         const duration = Date.now() - startTime;
-        logger.info(`[Claim] Finished in ${duration}ms for user ${uid}`);
+        logger.info(`[Claim] Hyper-streamlined finish in ${duration}ms for user ${uid}`);
         return {
             success: true,
             zapsAdded: 100,

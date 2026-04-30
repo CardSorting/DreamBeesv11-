@@ -1,6 +1,11 @@
 import { db } from '../firebaseInit.js';
 import { logger } from '../lib/utils.js';
 import { Timestamp } from 'firebase-admin/firestore';
+const CACHE_TTL_MS = 60000; // 60 seconds
+let cachedPolicy = null;
+let lastFetchTime = 0;
+const AGENT_LIMIT_CACHE_TTL = 300000; // 5 minutes
+const agentLimitCache = {};
 const DEFAULT_POLICY = {
     killSwitchActive: false,
     maxAmountPerTrade: 5000,
@@ -30,35 +35,51 @@ const DEFAULT_POLICY = {
 };
 export const governanceService = {
     async getPolicy() {
+        const now = Date.now();
+        if (cachedPolicy && (now - lastFetchTime < CACHE_TTL_MS)) {
+            return cachedPolicy;
+        }
         const doc = await db.collection('zap_governance').doc('global_policy').get();
         if (doc.exists) {
-            return doc.data();
+            cachedPolicy = doc.data();
+            lastFetchTime = now;
+            return cachedPolicy;
         }
         // Initialize if not exists
         const policy = { ...DEFAULT_POLICY, lastUpdated: Timestamp.now() };
         await db.collection('zap_governance').doc('global_policy').set(policy);
+        cachedPolicy = policy;
+        lastFetchTime = now;
         return policy;
     },
-    async checkVolatility(derivativeId, newPrice) {
-        // Backend volatility tracking. Ideally uses a sub-collection of recent prices.
+    async checkVolatility(derivativeId, newPrice, cachedRecentPrices) {
+        // FAST-PATH: Use cached recent prices if available to avoid extra DB reads
         const policy = (await this.getPolicy()).physics;
-        const pricesSnap = await db.collection('zap_derivatives')
-            .doc(derivativeId)
-            .collection('price_history')
-            .orderBy('timestamp', 'desc')
-            .limit(10)
-            .get();
-        if (pricesSnap.empty)
-            return;
-        const prices = pricesSnap.docs.map(d => d.data().price);
+        let prices = [];
+        if (cachedRecentPrices && cachedRecentPrices.length > 0) {
+            prices = cachedRecentPrices;
+        }
+        else {
+            // SLOW-PATH: Fallback for older derivatives (auditability mode)
+            const pricesSnap = await db.collection('zap_derivatives')
+                .doc(derivativeId)
+                .collection('price_history')
+                .orderBy('timestamp', 'desc')
+                .limit(10)
+                .get();
+            if (pricesSnap.empty)
+                return 'ACTIVE';
+            prices = pricesSnap.docs.map(d => d.data().price);
+        }
         const start = prices[prices.length - 1];
         const drift = Math.abs(newPrice - start) / start;
         if (drift > policy.CIRCUIT_BREAKER_VOL_REDLINE) {
-            await this.triggerBreaker(derivativeId, 'RED', 'Flash Volatility Redline Exceeded', drift);
+            return 'RED';
         }
         else if (drift > policy.CIRCUIT_BREAKER_VOL_YELLOW) {
-            await this.triggerBreaker(derivativeId, 'YELLOW', 'Volatility Spike Threshold', drift);
+            return 'YELLOW';
         }
+        return 'ACTIVE';
     },
     async triggerBreaker(derivativeId, status, reason, volatility) {
         await db.collection('zap_system_status').doc(derivativeId).set({
@@ -69,8 +90,8 @@ export const governanceService = {
         });
         logger.warn(`[CIRCUIT_BREAKER] ${status} triggered for ${derivativeId}: ${reason}`);
     },
-    async isActionAllowed(agentId, action, amount) {
-        const policy = await this.getPolicy();
+    async isActionAllowed(agentId, action, amount, providedPolicy) {
+        const policy = providedPolicy || await this.getPolicy();
         if (policy.killSwitchActive) {
             return { allowed: false, reason: 'Global Kill-Switch is ACTIVE.' };
         }
@@ -83,6 +104,10 @@ export const governanceService = {
         return { allowed: true };
     },
     async getRiskAdjustedLimit(agentId, policy) {
+        const now = Date.now();
+        if (agentLimitCache[agentId] && (now - agentLimitCache[agentId].timestamp < AGENT_LIMIT_CACHE_TTL)) {
+            return agentLimitCache[agentId].limit;
+        }
         let limit = policy.maxAmountPerTrade;
         const agentDoc = await db.collection('agent_capital').doc(agentId).get();
         if (agentDoc.exists) {
@@ -90,6 +115,7 @@ export const governanceService = {
             const level = data?.level || 'Novice';
             limit *= policy.reputationMultipliers[level] || 1;
         }
+        agentLimitCache[agentId] = { limit, timestamp: now };
         return limit;
     }
 };

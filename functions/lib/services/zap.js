@@ -40,12 +40,10 @@ export const zapService = {
         const docRef = await db.collection('zap_derivatives').add(derivativeData);
         return { id: docRef.id, ...derivativeData };
     },
-    async calculateNewPrice(derivative, tradeAmount, tradeType) {
-        const policy = await governanceService.getPolicy();
+    async calculateNewPrice(derivative, tradeAmount, tradeType, policy) {
         const physics = policy.physics;
         const { basePrice, circulatingSupply, volatilityFactor } = derivative;
         // INDUSTRIAL PHYSICS: Virtual Depth Engine
-        // Price resistance increases as supply grows or velocity spikes.
         const liquidityResistance = 1 + ((derivative.metrics?.velocity || 0) / 10000);
         const k = physics.DEFAULT_BONDING_SLOPE;
         const newSupply = tradeType === 'buy'
@@ -54,12 +52,11 @@ export const zapService = {
         // Linear base bonding curve
         let price = basePrice + (k * newSupply);
         price *= (derivative.hypeMultiplier || 1);
-        // Dynamic Volatility impact with real liquidity awareness
+        // Dynamic Volatility impact
         const velocityImpact = (derivative.metrics?.velocity || 0) / 1000 * (volatilityFactor || physics.DEFAULT_VOLATILITY_FACTOR) * liquidityResistance;
         const trendImpact = derivative.metrics?.lastPattern === 'pump' ? 1.02 : (derivative.metrics?.lastPattern === 'dump' ? 0.98 : 1);
-        // Physical Depth: TVL-based resistance
         const tvl = derivative.liquidityTotal || (circulatingSupply * derivative.currentPrice);
-        const depthResistance = 1 / (1 + (tvl / 1000000)); // Price harder to move as TVL grows
+        const depthResistance = 1 / (1 + (tvl / 1000000));
         price *= (1 + (velocityImpact * depthResistance)) * trendImpact;
         return Math.max(basePrice, price);
     },
@@ -76,28 +73,39 @@ export const zapService = {
     async executeTrade(tradeData) {
         const { derivativeId, amount, type, buyerId } = tradeData;
         try {
-            const govCheck = await governanceService.isActionAllowed(buyerId, 'execute_trade', amount);
+            // FAST-PATH: Policy caching eliminates cold-start reads
+            const policy = await governanceService.getPolicy();
+            if (policy.killSwitchActive)
+                throw new Error("Global Kill-Switch ACTIVE");
+            const govCheck = await governanceService.isActionAllowed(buyerId, 'execute_trade', amount, policy);
             if (!govCheck.allowed)
                 throw new Error(`Governance Reject: ${govCheck.reason}`);
-            const statusDoc = await db.collection('zap_system_status').doc(derivativeId).get();
-            if (statusDoc.exists && statusDoc.data()?.status === 'RED') {
-                throw new Error("Market Halted: Circuit breaker is RED.");
-            }
             return await db.runTransaction(async (transaction) => {
                 const derivativeRef = db.collection('zap_derivatives').doc(derivativeId);
                 const derivativeSnap = await transaction.get(derivativeRef);
                 if (!derivativeSnap.exists)
                     throw new Error("Derivative does not exist!");
                 const derivative = derivativeSnap.data();
+                // FAST-PATH: Native status check (zero-read)
+                if (derivative.status === 'RED') {
+                    throw new Error("Market Halted: Circuit breaker is RED.");
+                }
                 const prevPrice = derivative.currentPrice;
-                const newPrice = await this.calculateNewPrice(derivative, amount, type);
+                const newPrice = await this.calculateNewPrice(derivative, amount, type, policy);
                 const priceDelta = newPrice - prevPrice;
                 const pattern = this.detectPattern(newPrice, prevPrice, derivative.hypeMultiplier);
-                // Real Sentiment Synthesis (Market Mood)
                 const marketMood = Math.tanh(priceDelta / (prevPrice * 0.1 || 1));
+                // Maintain Native Price history (FIFO, max 5)
+                const recentPrices = derivative.metrics?.recentPrices || [];
+                recentPrices.push(newPrice);
+                if (recentPrices.length > 5)
+                    recentPrices.shift();
+                // FAST-PATH: Calculate new status without extra I/O
+                const newStatus = await governanceService.checkVolatility(derivativeId, newPrice, recentPrices);
                 transaction.update(derivativeRef, {
                     circulatingSupply: FieldValue.increment(type === 'buy' ? amount : -amount),
                     currentPrice: newPrice,
+                    status: newStatus || 'ACTIVE',
                     'metrics.demand': FieldValue.increment(type === 'buy' ? 1 : -1),
                     'metrics.velocity': FieldValue.increment(amount),
                     'metrics.totalTrades': FieldValue.increment(1),
@@ -106,9 +114,14 @@ export const zapService = {
                     'metrics.priceDelta': priceDelta,
                     'metrics.lastPattern': pattern,
                     'metrics.marketMood': marketMood,
+                    'metrics.recentPrices': recentPrices,
                     marketCap: newPrice * (derivative.totalSupply || 0),
                     liquidityTotal: FieldValue.increment(type === 'buy' ? amount * newPrice : -(amount * newPrice))
                 });
+                // HYBRID TURBO: Skip ledger creation for ultra-high velocity
+                if (tradeData.turbo) {
+                    return { id: `turbo_${Date.now()}`, price: newPrice };
+                }
                 const tradeRef = db.collection('zap_trades').doc();
                 const tradeRecord = {
                     ...tradeData,
@@ -119,9 +132,7 @@ export const zapService = {
                     patternDetected: pattern,
                     timestamp: Timestamp.now()
                 };
-                // Explicitly provide 2 arguments to Transaction.set
                 transaction.set(tradeRef, tradeRecord);
-                await governanceService.checkVolatility(derivativeId, newPrice);
                 return { id: tradeRef.id, price: newPrice };
             });
         }

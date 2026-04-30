@@ -53,7 +53,7 @@ export const handleOpenAiChat = async (req, res) => {
             return res.status(402).json({
                 error: {
                     message: "Insufficient Zaps. Please recharge your account.",
-                    type: "insufficient_credits"
+                    type: "insufficient_zaps"
                 }
             });
         }

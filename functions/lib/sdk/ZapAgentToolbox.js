@@ -13,7 +13,8 @@ export class ZapAgentToolbox {
         const { zapService } = await import('../services/zap.js');
         const { governanceService } = await import('../services/governance.js');
         // Safety & Governance Checks
-        const govCheck = await governanceService.isActionAllowed(userId, toolName, args);
+        const amount = typeof args === 'number' ? args : (args?.amount || 0);
+        const govCheck = await governanceService.isActionAllowed(userId, toolName, amount);
         if (!govCheck.allowed) {
             throw new Error(`Execution Blocked by Governance: ${govCheck.reason}`);
         }

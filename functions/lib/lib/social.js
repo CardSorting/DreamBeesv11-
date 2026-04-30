@@ -44,12 +44,10 @@ export class SocialFollowingService {
                     createdAt: FieldValue.serverTimestamp()
                 });
                 t.update(userRef, {
-                    followingCount: FieldValue.increment(1),
-                    karma: FieldValue.increment(10) // Small karma reward for spreading love
+                    followingCount: FieldValue.increment(1)
                 });
                 t.update(targetUserRef, {
-                    followerCount: FieldValue.increment(1),
-                    karma: FieldValue.increment(50) // Karma reward for being followed
+                    followerCount: FieldValue.increment(1)
                 });
                 return { isFollowing: true };
             }

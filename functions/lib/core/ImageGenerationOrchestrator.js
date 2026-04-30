@@ -4,71 +4,72 @@
  * Orchestrates Domain → Infrastructure components
  */
 import { CostCalculator } from '../domain/services/CostCalculator.js';
-import { ImageGenerationPolicy } from '../domain/services/ImageGenerationPolicy.js';
 import { PromptPreprocessor } from './PromptPreprocessor.js';
 import { CostOrchestrator } from './CostOrchestrator.js';
+import { ForensicLogger } from '../lib/forensics.js';
+import { SubstrateHealth } from '../lib/substrateHealth.js';
+import { Wallet } from '../lib/wallet.js';
 export class ImageGenerationOrchestrator {
     /**
      * Handle a generation request end-to-end
      * This is the main orchestration point
      */
     static async handleRequest(request, database, isPremiumUser) {
-        const requestId = request.requestId || this.generateRequestId();
+        const startTime = Date.now();
+        // 1. Identify Anchor (requestId or idempotencyKey)
+        // If client provides idempotencyKey, use it to anchor the requestId
+        const requestId = request.idempotencyKey
+            ? `zap_${request.idempotencyKey}`
+            : (request.requestId || this.generateRequestId());
+        const forensic = new ForensicLogger({
+            requestId,
+            workerName: 'Orchestrator',
+            taskType: 'submission',
+            userId: request.auth?.uid || 'anonymous',
+            startTime
+        });
+        forensic.checkpoint('submission_start');
         return this.executeWithIdempotency(requestId, database, async () => {
-            // 1. Preprocess request (sanitization, validation)
+            // 1. Preprocess request
             const { sanitizedRequest } = PromptPreprocessor.preprocess(request, isPremiumUser);
-            // 2. Check quota limits (rate limiting)
+            // 2. Circuit Breaker: Check Substrate Health
+            const isHealthy = await SubstrateHealth.isHealthy(sanitizedRequest.modelId);
+            if (!isHealthy) {
+                forensic.checkpoint('circuit_break_triggered');
+                throw new Error(`Provider for ${sanitizedRequest.modelId} is currently degraded. Please try again in a few minutes.`);
+            }
+            // 3. Check quota limits
             const quotaValid = await this.checkQuota(sanitizedRequest.requestorUid, database);
             if (!quotaValid) {
-                return {
-                    requestId,
-                    wheelUp: false,
-                    milestoneReached: false,
-                    questsProgressed: [],
-                    questsCompleted: [],
-                    achievementsUnlocked: []
-                };
+                throw new Error('Quota exceeded');
             }
-            // 3. Validate target persona (if applicable)
+            // 4. Validate target persona
             await this.validateTargetPersona(sanitizedRequest, database);
-            // 4. Check active jobs limit
+            // 5. Check active jobs limit
             const activeJobs = await this.getActiveJobsCount(sanitizedRequest.requestorUid, database);
-            if (activeJobs >= 10) {
-                return {
-                    requestId,
-                    wheelUp: false,
-                    milestoneReached: false,
-                    questsProgressed: [],
-                    questsCompleted: [],
-                    achievementsUnlocked: []
-                };
+            if (activeJobs >= 15) { // Increased for industrial throughput
+                throw new Error('Too many active jobs. Please wait for current generations to finish.');
             }
-            // 5. Validate and check cost
+            // 6. Validate cost
             const validationResult = await CostOrchestrator.validateGenerationCost(sanitizedRequest.initiatorUid, sanitizedRequest.modelId, sanitizedRequest.aspectRatio, isPremiumUser, database);
             if (!validationResult.allowed) {
-                return {
-                    requestId,
-                    wheelUp: false,
-                    milestoneReached: false,
-                    questsProgressed: [],
-                    questsCompleted: [],
-                    achievementsUnlocked: []
-                };
+                throw new Error(validationResult.reason || 'Insufficient funds or limit exceeded');
             }
-            // 6. Calculate exact cost
-            const modelDefaults = ImageGenerationPolicy.getModelDefaults(sanitizedRequest.modelId);
+            // 7. Calculate exact cost
             const safeParams = sanitizedRequest.getSafeParameters();
             const finalCost = CostCalculator.calculateModelCost(sanitizedRequest.modelId, isPremiumUser, safeParams.steps);
-            // 7. Update status to queued
-            await this.queueRequest(sanitizedRequest, requestId, database);
-            // 8. Return results (will be dispatched to worker off-main-thread)
+            forensic.checkpoint('transaction_prepared');
+            // 8. ATOMIC SUBMISSION: Transactional Debit + Queue Document
+            await database.runTransaction(async (t) => {
+                // A. Debit Wallet (Upstream Debit)
+                // This ensures the financial transaction is absolute before work starts
+                await Wallet.debit(sanitizedRequest.initiatorUid, finalCost, requestId, { auditType: 'zap_generation', modelId: sanitizedRequest.modelId }, 'zaps', t);
+                // B. Create Queue Entry
+                await this.queueRequestInTransaction(sanitizedRequest, requestId, finalCost, t, database);
+            });
+            forensic.checkpoint('submission_complete');
             return {
-                requestId,
-                wheelUp: false, // Calculated by Billing service
-                milestoneReached: false,
-                questsProgressed: [],
-                questsCompleted: [],
-                achievementsUnlocked: []
+                requestId
             };
         });
     }
@@ -108,12 +109,7 @@ export class ImageGenerationOrchestrator {
             if (doc.exists && ['processing', 'completed'].includes(doc.data().status)) {
                 console.log(`[Orchestrator] Idempotent: ${requestId}`);
                 return {
-                    requestId,
-                    wheelUp: false,
-                    milestoneReached: false,
-                    questsProgressed: [],
-                    questsCompleted: [],
-                    achievementsUnlocked: []
+                    requestId
                 };
             }
             return null;
@@ -164,16 +160,17 @@ export class ImageGenerationOrchestrator {
         }
     }
     /**
-     * Queue request for generation
+     * Queue request for generation (Transactional Version)
      */
-    static async queueRequest(request, requestId, database) {
+    static async queueRequestInTransaction(request, requestId, cost, t, database) {
         const safeParams = request.getSafeParameters();
         const meta = {
             promptHash: request.prompt,
-            promptMetadata: null // Would be calculated in plumbing
+            promptMetadata: null
         };
-        await database.collection('generation_queue').doc(requestId).set({
-            userId: request.requestorUid, // Execute as user
+        const ref = database.collection('generation_queue').doc(requestId);
+        t.set(ref, {
+            userId: request.requestorUid,
             prompt: request.prompt,
             negative_prompt: request.negativePrompt,
             modelId: request.modelId,
@@ -185,8 +182,23 @@ export class ImageGenerationOrchestrator {
             promptHash: meta.promptHash,
             promptMetadata: meta.promptMetadata,
             status: 'queued',
+            cost,
+            debited: true, // Mark that we've already taken the zaps
             createdAt: database.FieldValue.serverTimestamp()
-            // Other fields added by billing service
+        });
+    }
+    /**
+     * Queue request for generation (Legacy non-transactional)
+     */
+    static async queueRequest(request, requestId, database) {
+        await database.collection('generation_queue').doc(requestId).set({
+            userId: request.requestorUid,
+            prompt: request.prompt,
+            negative_prompt: request.negativePrompt,
+            modelId: request.modelId,
+            aspectRatio: request.aspectRatio,
+            status: 'queued',
+            createdAt: database.FieldValue.serverTimestamp()
         });
     }
     /**

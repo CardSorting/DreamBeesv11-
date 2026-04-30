@@ -3,6 +3,8 @@ import { Wallet } from "../lib/wallet.js";
 import { getS3Client, fetchWithTimeout, logger, retryOperation } from "../lib/utils.js";
 import { B2_BUCKET, B2_PUBLIC_URL, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, ENDPOINTS } from "../lib/constants.js";
 import { MODEL_IDS, MODEL_ENDPOINTS, getModelGenerationConfig } from "../lib/modelConventions.js";
+import { ForensicLogger } from "../lib/forensics.js";
+import { SubstrateHealth } from "../lib/substrateHealth.js";
 /**
  * Main worker for image generation tasks
  */
@@ -12,18 +14,45 @@ export const processImageTask = async (req) => {
     if (prompt && prompt.length > 1500) {
         prompt = prompt.substring(0, 1500);
     }
+    const forensic = new ForensicLogger({
+        requestId,
+        workerName: 'ImageWorker',
+        taskType: 'image',
+        userId,
+        startTime: Date.now()
+    });
     const docRef = db.collection("generation_queue").doc(requestId);
-    const existingDoc = await docRef.get();
-    if (existingDoc.exists && ['processing', 'completed'].includes(existingDoc.data().status)) {
-        logger.info(`Idempotency check: Task ${requestId} already processed. Skipping.`, { requestId });
-        return;
+    // --- DETERMINISTIC LOCK: Atomic State Transition ---
+    try {
+        await db.runTransaction(async (t) => {
+            const doc = await t.get(docRef);
+            if (!doc.exists) {
+                throw new Error("Job document missing");
+            }
+            const data = doc.data();
+            if (['processing', 'completed'].includes(data.status)) {
+                throw new Error(`IDEMPOTENCY_BLOCK: Status is ${data.status}`);
+            }
+            t.update(docRef, {
+                status: "processing",
+                startedAt: FieldValue.serverTimestamp()
+            });
+        });
+        forensic.checkpoint('locked_and_processing');
     }
+    catch (e) {
+        if (e.message.includes('IDEMPOTENCY_BLOCK')) {
+            forensic.checkpoint('skipped_idempotent');
+            return;
+        }
+        throw e;
+    }
+    // ---------------------------------------------------
     let imageUrl = null;
     let thumbnailUrl = null;
     let lqip = null;
     let imageBuffer = null;
     try {
-        await docRef.update({ status: "processing" });
         const resolutionMap = {
             '1:1': { width: 1024, height: 1024 },
             '2:3': { width: 832, height: 1216 },
@@ -75,13 +104,18 @@ export const processImageTask = async (req) => {
                     throw new Error(`${modelId} Submission Failed (${submitResponse.status})`);
                 }
                 const { job_id } = await submitResponse.json();
+                forensic.checkpoint('model_submitted', { modelId, job_id });
+                // --- ADAPTIVE POLLING: Densify initial feedback loop ---
                 for (let poll = 0; poll < 120; poll++) {
-                    await new Promise(r => setTimeout(r, 4000));
+                    const waitTime = poll < 5 ? 2000 : 4000; // Fast poll first 10 seconds
+                    await new Promise(r => setTimeout(r, waitTime));
                     let resultRes = await fetch(`${endpoint}/result/${job_id}`);
                     if (resultRes.status === 404) {
                         resultRes = await fetch(`${endpoint}/jobs/${job_id}`);
                     }
                     if (resultRes.status === 202) {
+                        if (poll % 5 === 0)
+                            forensic.checkpoint('polling', { poll, waitTime });
                         continue;
                     }
                     if (!resultRes.ok) {
@@ -89,6 +123,7 @@ export const processImageTask = async (req) => {
                     }
                     const ct = resultRes.headers.get('content-type') || '';
                     if (ct.includes('image/')) {
+                        forensic.checkpoint('image_received', { poll });
                         return Buffer.from(await resultRes.arrayBuffer());
                     }
                 }
@@ -218,10 +253,12 @@ export const processImageTask = async (req) => {
         const thumbFilename = `${baseFolder}_thumb.webp`;
         const { PutObjectCommand } = await import("@aws-sdk/client-s3");
         const s3 = await getS3Client();
+        forensic.checkpoint('upload_starting');
         await Promise.all([
             s3.send(new PutObjectCommand({ Bucket: B2_BUCKET, Key: originalFilename, Body: webpBuffer, ContentType: "image/webp" })),
             s3.send(new PutObjectCommand({ Bucket: B2_BUCKET, Key: thumbFilename, Body: thumbBuffer, ContentType: "image/webp" }))
         ]);
+        forensic.checkpoint('upload_complete');
         imageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalFilename}`;
         thumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbFilename}`;
         const imageRef = await db.collection("images").add({
@@ -255,13 +292,21 @@ export const processImageTask = async (req) => {
             completedAt: new Date(),
             resultImageId: imageRef.id
         }));
+        // RECORD SUCCESS
+        await SubstrateHealth.recordSuccess(modelId);
     }
     catch (error) {
-        logger.error(`[${requestId}] Task Failed: ${error.message}`, error);
+        forensic.fail(error);
         if (userId && !userId.startsWith('anonymous')) {
             try {
-                await Wallet.credit(userId, 1, `refund_worker_${requestId}`, {
-                    type: 'refund_worker_failure',
+                // RECORD FAILURE FOR CIRCUIT BREAKER
+                await SubstrateHealth.recordFailure(modelId, error.message);
+                // DETERMINISTIC REFUND ID
+                const doc = await docRef.get();
+                const cost = doc.data()?.cost || 1;
+                const refundId = `refund_worker_${requestId}`;
+                await Wallet.credit(userId, cost, refundId, {
+                    auditType: 'worker_refund',
                     originalRequestId: requestId,
                     reason: error.message
                 });
@@ -272,7 +317,8 @@ export const processImageTask = async (req) => {
         }
         await docRef.update({
             status: "failed",
-            error: error.message
+            error: error.message,
+            failedAt: FieldValue.serverTimestamp()
         }).catch(() => { });
     }
 };

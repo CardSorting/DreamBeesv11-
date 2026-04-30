@@ -1,14 +1,15 @@
 import { onSchedule } from "firebase-functions/v2/scheduler";
-import { db, FieldValue } from "../firebaseInit.js";
+import { db, FieldValue, getFunctions } from "../firebaseInit.js";
 import { logger, retryOperation } from "../lib/utils.js";
 import { Wallet } from "../lib/wallet.js";
 /**
- * Scheduled function to clean up stale jobs.
- * Runs every 10 minutes.
+ * Scheduled function to clean up stale jobs and RESUSCITATE stuck jobs.
+ * Runs every 5 minutes for high-velocity health.
  */
-export const staleJobCleanup = onSchedule("every 10 minutes", async (_event) => {
-    logger.info("Starting scheduled stale job cleanup");
+export const staleJobCleanup = onSchedule("every 5 minutes", async (_event) => {
+    logger.info("Starting scheduled stale job and resuscitation cleanup");
     const staleThreshold = new Date(Date.now() - 20 * 60 * 1000); // 20 minutes ago
+    const resuscitationThreshold = new Date(Date.now() - 3 * 60 * 1000); // 3 minutes ago
     const collections = [
         "generation_queue",
         "analysis_queue",
@@ -16,11 +17,22 @@ export const staleJobCleanup = onSchedule("every 10 minutes", async (_event) => 
     ];
     for (const collectionName of collections) {
         try {
+            // 1. STALE CLEANUP (Hard failure & Refund)
             const staleJobs = await db.collection(collectionName)
                 .where("status", "in", ["queued", "processing"])
                 .where("createdAt", "<=", staleThreshold)
                 .limit(50)
                 .get();
+            // 2. RESUSCITATION (Re-enqueue stuck 'queued' jobs)
+            // Only for generation_queue currently to prevent double-transforms
+            const resuscitateJobs = collectionName === 'generation_queue'
+                ? await db.collection(collectionName)
+                    .where("status", "==", "queued")
+                    .where("createdAt", "<=", resuscitationThreshold)
+                    .where("createdAt", ">", staleThreshold)
+                    .limit(50)
+                    .get()
+                : { empty: true, docs: [] };
             if (staleJobs.empty) {
                 continue;
             }
@@ -42,7 +54,7 @@ export const staleJobCleanup = onSchedule("every 10 minutes", async (_event) => 
                     if (cost > 0) {
                         refundPromises.push(retryOperation(async () => {
                             await Wallet.credit(userId, cost, `refund_stale_${requestId}`, {
-                                type: 'refund_stale_job',
+                                auditType: 'stale_recovery_refund',
                                 originalRequestId: requestId,
                                 collection: collectionName,
                                 reason: 'stale_job_recovery'
@@ -53,7 +65,7 @@ export const staleJobCleanup = onSchedule("every 10 minutes", async (_event) => 
                         const fallbackCost = 1.0;
                         refundPromises.push(retryOperation(async () => {
                             await Wallet.credit(userId, fallbackCost, `refund_stale_fallback_${requestId}`, {
-                                type: 'refund_stale_job_fallback',
+                                auditType: 'stale_recovery_refund_fallback',
                                 originalRequestId: requestId,
                                 reason: 'stale_job_recovery_fallback'
                             });
@@ -69,7 +81,35 @@ export const staleJobCleanup = onSchedule("every 10 minutes", async (_event) => 
                     logger.error(`Failed to refund ${failures.length} stale jobs`, failures[0].reason);
                 }
             }
-            logger.info(`Successfully processed ${staleJobs.size} stale jobs in ${collectionName}`);
+            // --- PROCESS RESUSCITATION ---
+            if (!resuscitateJobs.empty) {
+                logger.info(`Resuscitating ${resuscitateJobs.docs.length} stuck jobs in ${collectionName}`);
+                const queue = getFunctions().taskQueue('locations/us-central1/functions/urgentWorker');
+                for (const doc of resuscitateJobs.docs) {
+                    const data = doc.data();
+                    const requestId = doc.id;
+                    logger.info(`[RESUSCITATE] Re-enqueuing job ${requestId}`, { userId: data.userId });
+                    await queue.enqueue({
+                        taskType: 'image',
+                        requestId,
+                        userId: data.userId,
+                        prompt: data.prompt,
+                        negative_prompt: data.negative_prompt,
+                        modelId: data.modelId,
+                        steps: data.steps,
+                        cfg: data.cfg,
+                        aspectRatio: data.aspectRatio,
+                        scheduler: data.scheduler,
+                        resuscitated: true
+                    }).catch(err => logger.error(`Resuscitation failed for ${requestId}`, err));
+                    // Update doc to show resuscitation attempt
+                    await doc.ref.update({
+                        resuscitationCount: FieldValue.increment(1),
+                        lastResuscitatedAt: FieldValue.serverTimestamp()
+                    }).catch(() => { });
+                }
+            }
+            logger.info(`Successfully processed ${collectionName} maintenance cycle`);
         }
         catch (error) {
             logger.error(`Error during stale job cleanup for ${collectionName}`, error);

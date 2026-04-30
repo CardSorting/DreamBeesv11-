@@ -1,4 +1,3 @@
-import { db } from '../firebaseInit.js';
 import { logger } from './utils.js';
 export const ZAP_COSTS = {
     // Generation
@@ -37,48 +36,13 @@ export function calculateFluxCost(aspectRatio, steps) {
 }
 /**
  * CostManager
- * Handles dynamic pricing overrides from Firestore.
+ * Standardized hardcoded pricing for maximum determinism and zero-latency.
  */
-class CostManagerService {
-    cache = null;
-    lastFetch = 0;
-    TTL = 5 * 60 * 1000; // 5 minutes
-    async _fetchConfig() {
-        const now = Date.now();
-        if (this.cache && (now - this.lastFetch < this.TTL)) {
-            return this.cache;
-        }
-        try {
-            const [pricingDoc, personaDoc] = await Promise.all([
-                db.collection('sys_config').doc('pricing').get(),
-                db.collection('sys_config').doc('persona').get()
-            ]);
-            const pricing = pricingDoc.exists ? pricingDoc.data() : {};
-            const personaConfig = personaDoc.exists ? personaDoc.data() : {};
-            if (personaConfig.cost_chat !== undefined) {
-                pricing.PERSONA_CHAT = Number(personaConfig.cost_chat);
-            }
-            if (personaConfig.cost_create !== undefined) {
-                pricing.PERSONA_CREATE = Number(personaConfig.cost_create);
-            }
-            this.cache = pricing;
-            this.lastFetch = now;
-        }
-        catch (e) {
-            logger.error("[CostManager] Failed to fetch config, using defaults", e);
-            this.cache = {};
-        }
-        return this.cache;
-    }
+export const CostManager = {
     /**
      * Get the cost for a specific key.
      */
     async get(key) {
-        const overrides = await this._fetchConfig();
-        const overrideValue = overrides[key];
-        if (overrideValue !== undefined && overrideValue !== null) {
-            return Number(overrideValue);
-        }
         const defaultCost = ZAP_COSTS[key];
         if (defaultCost === undefined) {
             logger.warn(`[CostManager] Unknown cost key: ${key}, defaulting to 0`);
@@ -86,6 +50,5 @@ class CostManagerService {
         }
         return defaultCost;
     }
-}
-export const CostManager = new CostManagerService();
+};
 //# sourceMappingURL=costs.js.map

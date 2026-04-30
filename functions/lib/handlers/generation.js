@@ -18,6 +18,9 @@ export const handleCreateGenerationRequest = async (request) => {
     if (!process.env.FUNCTIONS_EMULATOR && request.app === undefined) {
         logger.warn("App Check verification failed (Warn Mode)");
     }
+    if (!request.auth) {
+        throw new HttpsError('unauthenticated', "User must be authenticated");
+    }
     const uid = request.auth.uid;
     const initiatorUid = uid; // Track initiator for security
     // Allow system/admin to submit on behalf of specific user
@@ -30,6 +33,7 @@ export const handleCreateGenerationRequest = async (request) => {
     // 2. Add Firebase-specific context to request
     const firebaseContext = {
         ...data,
+        idempotencyKey: data.idempotencyKey || null,
         auth: {
             uid: initiatorUid,
             token: { role: callerRole }
@@ -49,12 +53,7 @@ export const handleCreateGenerationRequest = async (request) => {
         // 5. Queue task for worker (Infrastructure concern)
         await enqueueGenerationTask(requestId, firebaseContext, finalUid);
         return {
-            requestId,
-            wheelUp: generatedResult.wheelUp || false,
-            milestoneReached: generatedResult.milestoneReached || false,
-            questsProgressed: generatedResult.questsProgressed || [],
-            questsCompleted: generatedResult.questsCompleted || [],
-            achievementsUnlocked: generatedResult.achievementsUnlocked || []
+            requestId
         };
     }
     catch (error) {

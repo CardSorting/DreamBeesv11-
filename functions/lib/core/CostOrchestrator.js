@@ -2,45 +2,51 @@
  * Core Service: Cost Orchestrator
  * Orchestrates cost validation and calculation
  * Coordinates with Domain services for purity
+ *
+ * HARDENED: Zero-latency via flattened User document usage tracking.
  */
 import { CostCalculator } from '../domain/services/CostCalculator.js';
 export class CostOrchestrator {
     /**
      * Validate if user has sufficient cost budget for generation
-     * Orchestrates multiple validation layers
+     * Orchestrates multiple validation layers using flattened user state.
      */
     static async validateGenerationCost(initiatorUid, modelId, aspectRatio, isPremiumUser, database) {
-        // Calculate estimated cost using Domain service (pure math)
-        const fluxModelId = modelId === 'flux-2-dev' ? modelId : null;
-        const estimatedCost = CostCalculator.calculateModelCost(modelId, isPremiumUser || CostHelpers.isTurboPricing(modelId), undefined // We'll calculate this from steps in the actual handler
+        // 1. Calculate estimated cost using Domain service (pure math)
+        const estimatedCost = CostCalculator.calculateModelCost(modelId, isPremiumUser || CostHelpers.isTurboPricing(modelId), undefined // We calculate base rate
         );
-        // For Flux models, calculate tile-based cost
+        // 2. For Flux models, calculate tile-based cost
         let tileBasedCost = 0;
         if (modelId === 'flux-2-dev') {
             tileBasedCost = CostCalculator.calculateFluxCost(aspectRatio, 25); // Default 25 steps
         }
         const finalCost = Math.max(estimatedCost, tileBasedCost);
-        // 1. Check if user has enough balance
-        const balance = await this.getUserBalance(initiatorUid, database);
+        // 3. Single-doc lookup: Get user and validate
+        const userDoc = await database.collection('users').doc(initiatorUid).get();
+        if (!userDoc.exists) {
+            return { allowed: false, estimatedCost: finalCost, reason: 'User not found' };
+        }
+        const userData = userDoc.data();
+        const balance = userData.zaps || 0;
+        // A. Check balance
         if (balance < finalCost) {
             return {
                 allowed: false,
                 estimatedCost: finalCost,
-                reason: `Insufficient balance. Available: ${balance}, Required: ${finalCost}`
+                reason: `Insufficient balance. Available: ${balance.toFixed(1)}, Required: ${finalCost.toFixed(1)}`
             };
         }
-        // 2. Check global daily limit (if applicable)
+        // B. Check usage limits (Rate Limiting)
         if (modelId === 'flux-2-dev' || CostHelpers.isTurboPricing(modelId)) {
+            // Global limit (still a separate doc as it's shared state)
             const globalUsage = await this.getGlobalDailyUsage(database);
             if (globalUsage >= CostConstants.FLUX_GLOBAL_LIMIT_DAILY) {
-                return {
-                    allowed: false,
-                    estimatedCost: finalCost,
-                    reason: 'Global daily limit exceeded'
-                };
+                return { allowed: false, estimatedCost: finalCost, reason: 'Global daily limit exceeded' };
             }
-            // 3. Check user daily limit
-            const userUsage = await this.getUserDailyUsage(initiatorUid, database);
+            // User limit (FLATTENED: Check directly on User doc)
+            const now = new Date();
+            const todayId = `${now.getUTCFullYear()}${(now.getUTCMonth() + 1).toString().padStart(2, '0')}${now.getUTCDate().toString().padStart(2, '0')}`;
+            const userUsage = userData.lastDailySpendId === todayId ? (userData.dailySpend || 0) : 0;
             const dailyLimit = CostHelpers.isTurboPricing(modelId)
                 ? CostConstants.FLUX_USER_LIMIT_DAILY
                 : CostConstants.STANDARD_MODEL_RATE;
@@ -52,27 +58,7 @@ export class CostOrchestrator {
                 };
             }
         }
-        // All checks passed
-        return {
-            allowed: true,
-            estimatedCost: finalCost
-        };
-    }
-    /**
-     * Get available balance for user
-     */
-    static async getUserBalance(uid, database) {
-        try {
-            const userDoc = await database.collection('users').doc(uid).get();
-            if (!userDoc.exists)
-                return 0;
-            const userData = userDoc.data();
-            return userData.credits || 0;
-        }
-        catch (error) {
-            console.error('Error fetching user balance:', error);
-            return 0;
-        }
+        return { allowed: true, estimatedCost: finalCost };
     }
     /**
      * Get global daily usage (for rate limit tracking)
@@ -92,43 +78,24 @@ export class CostOrchestrator {
         }
     }
     /**
-     * Get user daily usage (for rate limit tracking)
-     */
-    static async getUserDailyUsage(uid, database) {
-        try {
-            const today = new Date().toISOString().split('T')[0];
-            const usageDoc = await database.collection('users').doc(uid).collection('daily-costs').doc(today).get();
-            if (!usageDoc.exists)
-                return 0;
-            const usage = usageDoc.data();
-            return usage.totalSpend || 0;
-        }
-        catch (error) {
-            console.error('Error fetching user daily usage:', error);
-            return 0;
-        }
-    }
-    /**
      * Record cost for transaction
+     * FLATTENED: Writes directly to User document for maximum speed.
      */
-    static async recordCost(uid, cents, database, metadata) {
+    static async recordCost(uid, cents, database, requestId, metadata = {}) {
         try {
-            const today = new Date().toISOString().split('T')[0];
-            // Update user daily cost
-            const dailyCostRef = database.collection('users').doc(uid).collection('daily-costs').doc(today);
-            await dailyCostRef.set({
-                totalSpend: database.FieldValue.increment(cents),
-                lastUpdate: database.FieldValue.serverTimestamp(),
-                count: database.FieldValue.increment(1)
-            }, { merge: true });
-            // Update global daily cost
+            const { Wallet } = await import('../lib/wallet.js');
+            // FAST-PATH: Use Wallet.debit in turbo mode
+            await Wallet.debit(uid, cents, requestId || `cost_${Date.now()}`, {
+                ...metadata,
+                auditType: 'generation_cost'
+            }, 'zaps', null, true);
+            // Global cost update (separate write, but non-blocking)
+            const todayShort = new Date().toISOString().split('T')[0];
             const globalCostRef = database.collection('stats').doc('daily-cost');
-            await globalCostRef.set({
-                [today]: database.FieldValue.increment(cents),
+            globalCostRef.set({
+                [todayShort]: database.FieldValue.increment(cents),
                 lastUpdate: database.FieldValue.serverTimestamp()
-            }, { merge: true });
-            // Update user's main credits balance (if needed)
-            // This is typically handled by the Billing service
+            }, { merge: true }).catch(err => console.error('Global cost update failed', err));
         }
         catch (error) {
             console.error('Error recording cost:', error);
@@ -138,16 +105,16 @@ export class CostOrchestrator {
 }
 /**
  * Constants for cost orchestration
+ * Synchronized with industrial Zap throughput requirements.
  */
 const CostConstants = {
-    FLUX_GLOBAL_LIMIT_DAILY: 5000, // 50.00 in cents
-    FLUX_USER_LIMIT_DAILY: 200, // 2.00 in cents
-    STANDARD_MODEL_RATE: 1, // 0.01 in cents
-    PREMIUM_MODEL_RATE: 5 // 0.05 in cents
+    FLUX_GLOBAL_LIMIT_DAILY: 5000,
+    FLUX_USER_LIMIT_DAILY: 200,
+    STANDARD_MODEL_RATE: 1,
+    PREMIUM_MODEL_RATE: 5
 };
 /**
  * Helper functions for cost logic
- * Separate from CostRules to avoid circular references
  */
 export var CostHelpers;
 (function (CostHelpers) {
@@ -156,10 +123,7 @@ export var CostHelpers;
     }
     CostHelpers.isTurboPricing = isTurboPricing;
     function getMultiplier(modelId) {
-        if (CostHelpers.isTurboPricing(modelId)) {
-            return 5; // 5x standard rate
-        }
-        return 1;
+        return isTurboPricing(modelId) ? 5 : 1;
     }
     CostHelpers.getMultiplier = getMultiplier;
 })(CostHelpers || (CostHelpers = {}));

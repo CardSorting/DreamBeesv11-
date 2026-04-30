@@ -14,6 +14,10 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
     if (!process.env.FUNCTIONS_EMULATOR && request.app === undefined) {
         logger.warn("App Check verification failed. Proceeding (Warn Mode).", { uid: request.auth?.uid });
     }
+    if (!request.data || typeof request.data.action !== 'string') {
+        logger.error("[API] Invalid or missing request data", new Error("Invalid payload"), { data: request.data });
+        throw new HttpsError('invalid-argument', 'Request must include a valid string action.');
+    }
     const { action } = request.data;
     let uid = request.auth?.uid;
     const clientIp = request.rawRequest?.ip || "unknown";
@@ -68,7 +72,7 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
                         discordId: discordId || null,
                         birthday: request.data.birthday || null,
                         createdAt: new Date(),
-                        zaps: 10,
+                        zaps: 9999, // Unlimited policy
                         subscriptionStatus: 'inactive',
                         role: 'user'
                     });
@@ -106,7 +110,7 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
                         photoURL: request.auth?.token.picture || "",
                         discordId: discordId || null,
                         createdAt: new Date(),
-                        zaps: 10,
+                        zaps: 9999, // Unlimited policy
                         subscriptionStatus: 'inactive',
                         role: 'user'
                     });
@@ -175,13 +179,9 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
                 const Billing = await import("./handlers/billing.js");
                 return Billing.handleCreateStripePortalSession(authRequest);
             }
-            case 'claimFreeCredits': {
+            case 'claimDailyZaps': {
                 const Billing = await import("./handlers/billing.js");
-                return Billing.handleClaimFreeCredits(authRequest);
-            }
-            case 'claimFreeCredits': {
-                const Billing = await import("./handlers/billing.js");
-                return Billing.handleClaimFreeCredits(authRequest);
+                return Billing.handleClaimDailyZaps(authRequest);
             }
             // Mockup Studio
             case 'generateMockup': {

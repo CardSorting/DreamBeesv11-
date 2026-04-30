@@ -24,6 +24,10 @@ export const handleCreateGenerationRequest = async (request: RequestWithAuth<any
     logger.warn("App Check verification failed (Warn Mode)");
   }
 
+  if (!request.auth) {
+    throw new HttpsError('unauthenticated', "User must be authenticated");
+  }
+
   const uid = request.auth.uid;
   const initiatorUid = uid; // Track initiator for security
 

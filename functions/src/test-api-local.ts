@@ -13,7 +13,7 @@ async function runDiagnostic() {
         },
         data: {
             action: 'createGenerationRequest',
-            prompt: 'Diagnostic test prompt',
+            prompt: 'A hyper-realistic golden robotic bee with translucent wings, glowing blue circuitry, flying over a field of bioluminescent lavender at twilight, 8k resolution, cinematic lighting',
             modelId: 'wai-illustrious',
             requestId: `diag_${Date.now()}`
         }

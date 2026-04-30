@@ -78,7 +78,7 @@ export var CostConstants;
 export var ModelCosts;
 (function (ModelCosts) {
     ModelCosts.INITIAL_COSTS = {
-        'wai-illustrious': 20, // Free initial trial credits
+        'wai-illustrious': 20, // Free initial trial Zaps
         'chenkin-noob-xl': 20,
         'nova-3d-cg-xl': 20,
         'sdxl_h100': 50, // Requires purchase
