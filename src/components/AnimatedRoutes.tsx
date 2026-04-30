@@ -1,3 +1,6 @@
+/**
+ * [LAYER: INFRASTRUCTURE]
+ */
 import React, { Suspense } from 'react';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { useLite } from '../contexts/LiteContext';
@@ -9,6 +12,7 @@ const ModelFeed = lazyRetry(() => import('../pages/ModelFeed'));
 const Auth = lazyRetry(() => import('../pages/Auth'));
 const Generator = lazyRetry(() => import('../pages/Generator'));
 const UserProfile = lazyRetry(() => import('../pages/UserProfile'));
+const GenerationDetail = lazyRetry(() => import('../pages/GenerationDetail'));
 const NotFound = lazyRetry(() => import('../pages/NotFound'));
 
 const PageLoader = () => (
@@ -39,6 +43,7 @@ const AnimatedRoutes = () => {
                             </PrivateRoute>
                         } />
                         <Route path="/u/:id" element={<UserProfile />} />
+                        <Route path="/generation/:id" element={<GenerationDetail />} />
                         <Route path="/profile" element={
                             <PrivateRoute>
                                 <ProfileRedirect />

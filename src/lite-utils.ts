@@ -1,3 +1,6 @@
+/**
+ * [LAYER: INFRASTRUCTURE]
+ */
 import { lazy, ComponentType } from 'react';
 
 export interface AIModel {
@@ -93,3 +96,21 @@ export const getModelMetadata = (model: AIModel) => {
         shortDesc: model.description.length > 80 ? model.description.substring(0, 77) + "..." : model.description
     };
 };
+
+/**
+ * Image optimization utilities
+ */
+export { generatePreviewUrl, generateHeroUrl, generateThumbnailUrl, optimizeImageUrl, isLocalFile } from './utils/imagePreview';
+
+/**
+ * Feedback and notification utilities
+ */
+export {
+    showToast,
+    copyToClipboard,
+    downloadImage,
+    showLoading,
+    showSuccess,
+    showError,
+    formatDuration
+} from './utils/feedback';

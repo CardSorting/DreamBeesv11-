@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IconClock, IconCheck, IconLoader } from '../icons';
+import { IconActivity, IconCheck, IconLoader } from '../icons';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -284,7 +284,7 @@ function TimeMetrics({
   return (
     <div className="time-metrics-row">
       <div className="elapsed-badge" aria-live="polite">
-        <IconClock size={11} />
+        <IconActivity size={11} />
         <span>{formatDuration(elapsedSeconds)} elapsed</span>
       </div>
       <div

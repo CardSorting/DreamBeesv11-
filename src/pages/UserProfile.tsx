@@ -1,5 +1,8 @@
+/**
+ * [LAYER: INFRASTRUCTURE]
+ */
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useLite } from '../contexts/LiteContext';
 import { calculateTier, getOptimizedImageUrl, USER_TIERS } from '../lite-utils';
@@ -34,6 +37,7 @@ function getDisplayName(email?: string | null, name?: string | null) {
 
 export default function UserProfile() {
     const { currentUser, logout, localHistory, addToast } = useLite();
+    const navigate = useNavigate();
     const [health, setHealth] = useState<any>(null);
     const [showHealth, setShowHealth] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -229,7 +233,7 @@ export default function UserProfile() {
                     <NoResults onClear={() => { setSearchQuery(''); setActiveFilter('all'); }} />
                 ) : (
                     <div className="history-grid">
-                        {filteredHistory.map((item, index) => <HistoryCard key={item.id} item={item} index={index} />)}
+                        {filteredHistory.map((item, index) => <HistoryCardLink key={item.id} item={item} index={index} />)}
                     </div>
                 )}
 
@@ -304,9 +308,9 @@ export default function UserProfile() {
                 .history-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
                 .history-card { border-radius: 24px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.025); }
                 .history-card:hover { transform: translateY(-4px); border-color: rgba(139, 92, 246, 0.4); }
-                .history-image { position: relative; aspect-ratio: 1 / 1; overflow: hidden; background: #18181b; }
-                .history-image img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.75s ease; }
-                .history-card:hover .history-image img { transform: scale(1.04); }
+                .history-image-container { position: relative; aspect-ratio: 1 / 1; overflow: hidden; background: #18181b; }
+                .history-image-container img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.75s ease; }
+                .history-card:hover .history-image-container img { transform: scale(1.04); }
                 .history-date { position: absolute; top: 12px; left: 12px; padding: 6px 9px; border-radius: 999px; background: rgba(0,0,0,0.56); color: white; border: 1px solid rgba(255,255,255,0.13); backdrop-filter: blur(12px); font-size: 0.68rem; font-weight: 900; }
                 .history-details { padding: 14px; }
                 .history-details span { color: var(--color-zinc-500); font-size: 0.68rem; font-weight: 950; text-transform: uppercase; letter-spacing: 0.1em; }
@@ -371,6 +375,14 @@ function StatusItem({ icon, label, value, good }: { icon: React.ReactNode; label
     );
 }
 
+function HistoryCardLink({ item, index }: { item: LocalGeneration; index: number }) {
+    return (
+        <Link to={`/generation/${item.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+            <HistoryCard item={item} index={index} />
+        </Link>
+    );
+}
+
 function HistoryCard({ item, index }: { item: LocalGeneration; index: number }) {
     return (
         <motion.article
@@ -379,7 +391,7 @@ function HistoryCard({ item, index }: { item: LocalGeneration; index: number }) 
             transition={{ duration: 0.35, delay: Math.min(index * 0.03, 0.3) }}
             className="history-card glass-immersive"
         >
-            <div className="history-image">
+            <div className="history-image-container">
                 <img src={getOptimizedImageUrl(item.imageUrl) || ''} alt={item.prompt || 'Generated image'} loading="lazy" />
                 <span className="history-date">{formatDate(item.createdAt)}</span>
             </div>
