@@ -12,6 +12,7 @@ import { CostOrchestrator, CostValidationResult } from './CostOrchestrator.js';
 import { ForensicLogger } from '../lib/forensics.js';
 import { SubstrateHealth } from '../lib/substrateHealth.js';
 import { Wallet } from '../lib/wallet.js';
+import { FieldValue } from '../firebaseInit.js';
 
 export interface GenerationResult {
   requestId: string;
@@ -263,7 +264,7 @@ export class ImageGenerationOrchestrator {
       status: 'queued',
       cost,
       debited: true, // Mark that we've already taken the zaps
-      createdAt: database.FieldValue.serverTimestamp()
+      createdAt: FieldValue.serverTimestamp()
     });
   }
 
@@ -282,7 +283,7 @@ export class ImageGenerationOrchestrator {
       modelId: request.modelId,
       aspectRatio: request.aspectRatio,
       status: 'queued',
-      createdAt: database.FieldValue.serverTimestamp()
+      createdAt: FieldValue.serverTimestamp()
     });
   }
 
