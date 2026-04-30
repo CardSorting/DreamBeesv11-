@@ -1,7 +1,5 @@
 import { processImageTask } from "./image.js";
-import { processShowcaseTask } from "./showcase.js";
 export const workers = {
-    processImageTask,
-    processShowcaseTask
+    processImageTask
 };
 //# sourceMappingURL=index.js.map

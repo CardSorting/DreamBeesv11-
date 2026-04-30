@@ -2,7 +2,6 @@ import { HttpsError } from "firebase-functions/v2/https";
 import { db, FieldValue, getFunctions } from "../firebaseInit.js";
 import { handleError, logger } from "../lib/utils.js";
 import { ensureUserExists } from "../lib/user.js";
-import { checkQuota } from "../lib/quota.js";
 import { checkCumulativeLimit } from "../lib/abuse.js";
 import { RequestWithAuth } from "../types/functions.js";
 // Core orchestration layer
@@ -67,7 +66,7 @@ export const handleCreateGenerationRequest = async (request: RequestWithAuth<any
     // 4. Return Firebase-specific response (result is guaranteed to be GenerationResult here - type guard passed)
     const generatedResult = result as GenerationResult;
     const requestId = generatedResult.requestId;
-    
+
     // 5. Queue task for worker (Infrastructure concern)
     await enqueueGenerationTask(requestId, firebaseContext, finalUid);
 

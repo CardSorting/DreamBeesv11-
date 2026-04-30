@@ -11,7 +11,8 @@ import { handleDiagnostic } from "./handlers/diagnostic.js";
 export const web = onRequest({
     memory: "512MiB",
     cors: true,
-    timeoutSeconds: 60
+    timeoutSeconds: 60,
+    secrets: ["ADMIN_DIAGNOSTIC_KEY"]
 }, async (req, res) => {
     const path = req.path;
 

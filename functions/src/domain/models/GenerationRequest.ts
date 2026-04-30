@@ -16,12 +16,12 @@ export interface GenerationRequest {
   status: GenerationStatus;
   imageUrl?: string;
   error?: string;
-  
+
   // Timestamps (milliseconds since epoch)
   createdAt: number;
   startedAt?: number;
   completedAt?: number;
-  
+
   // Time estimation properties
   estimatedDurationSeconds?: number;
   hasProgressEstimate: boolean;
@@ -37,7 +37,7 @@ export class GenerationRequestFactory {
   /**
    * Creates a new generation request with required fields
    */
-  static create(props: Omit<GenerationRequest, 'id' | 'status' | 'createdAt'>): GenerationRequest {
+  static create(props: Omit<GenerationRequest, 'status' | 'createdAt'>): GenerationRequest {
     return {
       id: props.id,
       status: 'pending',
