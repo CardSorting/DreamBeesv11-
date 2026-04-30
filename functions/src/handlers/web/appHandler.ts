@@ -108,12 +108,7 @@ export const handleApp = async (req: any, res: any) => {
             }
         }
         // 4. LANDING / SPECIAL PAGES
-        else if (path === '/verify') {
-            title = "Pair Discord Account | DreamBeesAI";
-            desc = "Securely pair your Discord account and start generating art with DreamBees.";
-            skeletonH1 = "Pair Discord Account";
-            skeletonP = "Please confirm the link between your Discord and DreamBees identity to enable Discord commands.";
-        }
+
         else if (path === '/landing' || path === '/') {
             structuredData.push({
                 "@context": "https://schema.org",

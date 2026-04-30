@@ -4,28 +4,7 @@ export const ZAP_COSTS = {
     // Generation
     IMAGE_GENERATION: 0.5,           // Standard (non-subscriber)
     IMAGE_GENERATION_TURBO: 1.0,     // Turbo Mode
-    IMAGE_GENERATION_PREMIUM: 1.0,   // Premium Models (e.g., Z-Image models)
-
-    // Transformation
-    IMAGE_ANALYSIS: 0.5,
-    IMAGE_ENHANCE: 1.0,
-    IMAGE_TRANSFORM: 0.5,
-
-    // Ecommerce & Tools
-    MOCKUP_GEN: 0.25,
-
-    // WorkerAI
-    WORKER_AI_CHAT: 0.1,             // Synchronous chat (Base/Fixed)
-    WORKER_AI_TASK: 0.5,             // Asynchronous Cloud Task
-    WORKER_AI_TOKEN_RATE: 0.0001,    // Cost per 1k tokens (0.1 Zaps per 1M tokens)
-
-    // Avatar Forge
-    AVATAR_COLLECTION: 5.0,
-    AVATAR_MINT: 2.0,
-
-    // Persona
-    PERSONA_CHAT: 0.25,
-    PERSONA_CREATE: 5.0,
+    IMAGE_GENERATION_PREMIUM: 1.0    // Premium Models
 } as const;
 
 export type ZapCostKey = keyof typeof ZAP_COSTS;

@@ -183,9 +183,6 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
                 return Generation.handleCreateGenerationRequest(authRequest);
             }
 
-            // Transformation & AI
-
-
             // Billing
             case 'createStripeCheckout': {
                 const Billing = await import("./handlers/billing.js");
@@ -199,10 +196,6 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
                 const Billing = await import("./handlers/billing.js");
                 return Billing.handleClaimDailyZaps(authRequest);
             }
-
-
-
-
 
             // Data & Ratings
             case 'getGenerationHistory': {
@@ -221,10 +214,6 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
                 const Data = await import("./handlers/data.js");
                 return Data.handleDeleteImage(authRequest);
             }
-
-
-
-
 
 
 

@@ -47,13 +47,29 @@ export const handleGetUserImages = async (request: RequestWithAuth<any>) => {
     const { limit: l = 24, startAfterId, filter = 'all' } = request.data;
 
     try {
-        let iQ: any = db.collection('images').where('userId', '==', uid).orderBy('createdAt', 'desc').limit(l);
+        let iQ = db.collection('images')
+            .where('userId', '==', uid)
+            .orderBy('createdAt', 'desc')
+            .limit(l);
+
+        if (startAfterId) {
+            const lastDoc = await db.collection('images').doc(startAfterId).get();
+            if (lastDoc.exists) {
+                iQ = iQ.startAfter(lastDoc);
+            }
+        }
+
+        const snap = await iQ.get();
+        const images = snap.docs.map(d => ({
+            id: d.id,
+            ...(d.data() as any),
+            createdAt: (d.data() as any).createdAt?.toDate?.()?.toISOString() || (d.data() as any).createdAt
+        }));
 
         return {
-            images: items.map(i => ({ ...i, createdAt: i.createdAt?.toDate?.()?.toISOString() || i.createdAt })),
-            lastVisibleId: items[items.length - 1]?.id,
-            lastVisibleType: 'images',
-            hasMore: items.length === l
+            images,
+            lastVisibleId: snap.docs[snap.docs.length - 1]?.id,
+            hasMore: snap.size === l
         };
     } catch (e) { throw handleError(e, { uid }); }
 };

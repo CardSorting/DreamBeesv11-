@@ -1,16 +1,15 @@
 /**
  * Core Service: Prompt Preprocessor
- * Orchestrates prompt sanitization using Domain services
- * Pure orchestration logic, delegates to Domain for actual work
+ * Orchestrates prompt sanitization and model-specific adjustments
+ * Pure orchestration logic
  */
 
-import { ImageGenerationRequest, sanitizePrompt } from '../domain/models/ImageGenerationRequest.js';
-import { ImageGenerationPolicy } from '../domain/services/ImageGenerationPolicy.js';
+import { ImageGenerationRequest } from '../domain/models/ImageGenerationRequest.js';
+import { MODEL_GENERATION_PARAMS } from '../lib/modelConventions.js';
 
 export class PromptPreprocessor {
   /**
    * Preprocess a raw request into a domain-ready format
-   * Orchestrates sanitization and quality tag application
    */
   static preprocess(
     request: any,
@@ -19,20 +18,20 @@ export class PromptPreprocessor {
     sanitizedRequest: ImageGenerationRequest;
     qualityTagsApplied: boolean;
   } {
-    // Create domain request (handles validation and basic sanitization)
+    // 1. Create domain request (handles validation and basic sanitization)
     const domainRequest = ImageGenerationRequest.create(request);
     
-    // Apply model-specific quality tags (business rule)
+    // 2. Apply model-specific quality tags
     const originalPrompt = domainRequest.prompt;
-    const processedPrompt = ImageGenerationPolicy.applyModelQualityTags(
+    const processedPrompt = this.applyModelQualityTags(
       originalPrompt,
       domainRequest.modelId
     );
     
-    // Check if quality tags were actually added
     const qualityTagsApplied = processedPrompt !== originalPrompt;
     
-    // Return request with processed prompt
+    // 3. Re-wrap in domain model with processed prompt
+    // Use the constructor to maintain domain integrity
     const processedRequest = new ImageGenerationRequest(
       domainRequest.initiatorUid,
       domainRequest.requestorUid,
@@ -44,10 +43,9 @@ export class PromptPreprocessor {
       domainRequest.cfg,
       domainRequest.seed,
       domainRequest.scheduler,
+      domainRequest.idempotencyKey,
       domainRequest.targetUserId,
-      domainRequest.image,
-      domainRequest.targetPersonaId,
-      domainRequest.action
+      domainRequest.image
     );
     
     return {
@@ -57,59 +55,61 @@ export class PromptPreprocessor {
   }
 
   /**
+   * Internal: Apply model-specific quality tags from conventions
+   */
+  private static applyModelQualityTags(prompt: string, modelId: string): string {
+    const config = (MODEL_GENERATION_PARAMS as any)[modelId];
+    if (config?.qualityTags) {
+        const tags = config.qualityTags;
+        const normalizedPrompt = prompt.toLowerCase();
+        
+        // Check if tags (or key part of them) already exist to avoid duplication
+        if (!normalizedPrompt.includes('3d render') && modelId === 'nova-3d-cg-xl') {
+            return prompt + tags;
+        }
+    }
+    return prompt;
+  }
+
+  /**
    * Validate prompt is safe for AI generation
-   * This is a business rule that applies to all models
    */
   static isPromptSafe(prompt: string): boolean {
-    // Length validation
-    if (prompt.length < 5) return false;
-    if (prompt.length > 50000) return false;
+    if (!prompt || prompt.length < 5) return false;
+    if (prompt.length > 10000) return false;
     
-    // Content validation
-    const safePatterns = [
-      /^(?!\s*<).*(?<!\s*>)$/s,  // No HTML tags
-      /^(?!\s*\`\`\`).*(?<!\s*\`\`\`)$/,  // No code blocks
-      /^(?!\s*\[).*(?<!\s*\])$/s,  // No markdown links
-      /^(?!\s*\*\*).*(?<!\s*\*\*)$/s,  // No bold markdown
+    // Basic safety check for injection patterns
+    const forbidden = [
+      /<script/i,
+      /javascript:/i,
+      /onload=/i,
+      /eval\(/i
     ];
     
-    // At least one pattern must be broken for safety
-    return !safePatterns.some(pattern => pattern.test(prompt));
+    return !forbidden.some(pattern => pattern.test(prompt));
   }
 
   /**
    * Calculate prompt complexity score for abuse detection
-   * Returns score 0-100 (higher = more complex/promiseful)
    */
   static calculatePromptComplexity(prompt: string): number {
     let score = 0;
+    const clean = prompt.trim();
     
-    // Length bonus
-    if (prompt.length > 100) score += 20;
-    if (prompt.length > 500) score += 30;
-    if (prompt.length > 2000) score += 10;
+    if (clean.length > 100) score += 20;
+    if (clean.length > 500) score += 30;
     
-    // Keyword bonuses (indicates specific artistic direction)
     const artisticKeywords = [
       'cinematic', 'photorealistic', 'artstation', 'masterpiece',
-      'ultra detailed', '4k', '8k', 'HDR', 'ray tracing'
+      'ultra detailed', '8k', 'ray tracing'
     ];
     
     artisticKeywords.forEach(keyword => {
-      if (prompt.toLowerCase().includes(keyword)) {
+      if (clean.toLowerCase().includes(keyword)) {
         score += 15;
       }
     });
     
-    // Quality marker bonuses
-    const qualityMarkers = ['++', '>', '>>'];
-    qualityMarkers.forEach(marker => {
-      if (prompt.includes(marker)) {
-        score += 10;
-      }
-    });
-    
-    // Normalize to 0-100 range
     return Math.min(score, 100);
   }
 }

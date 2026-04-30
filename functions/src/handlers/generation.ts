@@ -88,7 +88,7 @@ async function enqueueGenerationTask(
   ctx: any,
   userId: string
 ): Promise<void> {
-  const { prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler, image, targetPersonaId, action, shouldBookmark } = ctx;
+  const { prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler, image } = ctx;
 
   const taskData = {
     taskType: 'image',
@@ -101,10 +101,7 @@ async function enqueueGenerationTask(
     cfg: cfg || 7.0,
     aspectRatio: aspectRatio || "1:1",
     scheduler: scheduler || 'DPM++ 2M Karras',
-    image,
-    targetPersonaId,
-    action,
-    shouldBookmark: !!shouldBookmark
+    image
   };
 
   const LOCATION = "us-central1";

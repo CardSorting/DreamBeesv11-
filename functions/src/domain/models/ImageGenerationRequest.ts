@@ -20,9 +20,7 @@ export class ImageGenerationRequest {
     public readonly scheduler: string,
     public readonly idempotencyKey?: string,
     public readonly targetUserId?: string,
-    public readonly image?: string,
-    public readonly targetPersonaId?: string,
-    public readonly action?: string
+    public readonly image?: string
   ) {
     this.validate();
   }
@@ -37,7 +35,7 @@ export class ImageGenerationRequest {
 
     // Extract request data (handle both raw and pre-wrapped formats)
     const data = raw.data || raw;
-    const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler, requestId, image, targetPersonaId, action, targetUserId, idempotencyKey } = data;
+    const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler, requestId, image, targetUserId, idempotencyKey } = data;
 
     // Determine initiator vs target
     const callerRole = raw.auth?.token?.role || 'user';
@@ -60,9 +58,7 @@ export class ImageGenerationRequest {
       scheduler || 'DPM++ 2M Karras',
       idempotencyKey,
       targetUserId,
-      image,
-      targetPersonaId,
-      action
+      image
     );
   }
 
@@ -167,9 +163,7 @@ export class ImageGenerationRequest {
       ...this.getSafeParameters(),
       seed: this.seed,
       scheduler: this.scheduler,
-      targetUserId: this.targetUserId,
-      targetPersonaId: this.targetPersonaId,
-      action: this.action
+      targetUserId: this.targetUserId
     };
   }
 }
@@ -185,7 +179,7 @@ export namespace Sanitizer {
   }
 
   export function toNormalizedDimensions(aspectRatio: string): { width: number, height: number } {
-    const map: Record<string, {width: number, height: number}> = {
+    const map: Record<string, { width: number, height: number }> = {
       '1:1': { width: 1024, height: 1024 },
       '2:3': { width: 832, height: 1216 },
       '3:2': { width: 1216, height: 832 },
@@ -200,27 +194,7 @@ export namespace Sanitizer {
   }
 }
 
-/**
- * Helper: Validate model ID against business domain
- */
-export namespace VALID_MODELS {
-  export const LIST = [
-    'wai-illustrious',
-    'chenkin-noob-xl',
-    'nova-3d-cg-xl',
-    'sdxl_h100',
-    'flux-klein-9b',
-    'flux-2-dev',
-    'zit-h100',
-    'zit-base',
-    MODEL_IDS.ZIT_TURBO,
-    MODEL_IDS.ZIT_BASE,
-    MODEL_IDS.SDXL_H100
-  ];
 
-  // Re-export from model conventions (plumbing has it as constants, but we need it here)
-  // In real implementation, we'd re-export from constants module
-}
 
 /**
  * Remove HTML, Markdown, and other sanitization rules

@@ -5,8 +5,6 @@
  */
 
 import { ImageGenerationRequest } from '../domain/models/ImageGenerationRequest.js';
-import { CostCalculator } from '../domain/services/CostCalculator.js';
-import { ImageGenerationPolicy } from '../domain/services/ImageGenerationPolicy.js';
 import { PromptPreprocessor } from './PromptPreprocessor.js';
 import { CostOrchestrator, CostValidationResult } from './CostOrchestrator.js';
 import { ForensicLogger } from '../lib/forensics.js';
@@ -37,7 +35,6 @@ export class ImageGenerationOrchestrator {
     const startTime = Date.now();
     
     // 1. Identify Anchor (requestId or idempotencyKey)
-    // If client provides idempotencyKey, use it to anchor the requestId
     const requestId = request.idempotencyKey 
         ? `zap_${request.idempotencyKey}` 
         : (request.requestId || this.generateRequestId());
@@ -63,22 +60,19 @@ export class ImageGenerationOrchestrator {
           throw new Error(`Provider for ${sanitizedRequest.modelId} is currently degraded. Please try again in a few minutes.`);
       }
 
-      // 3. Check quota limits
+      // 3. Check quota limits (Internal stub for now)
       const quotaValid = await this.checkQuota(sanitizedRequest.requestorUid, database);
       if (!quotaValid) {
         throw new Error('Quota exceeded');
       }
 
-      // 4. Validate target persona
-      await this.validateTargetPersona(sanitizedRequest, database);
-
-      // 5. Check active jobs limit
+      // 4. Check active jobs limit
       const activeJobs = await this.getActiveJobsCount(sanitizedRequest.requestorUid, database);
-      if (activeJobs >= 15) { // Increased for industrial throughput
+      if (activeJobs >= 15) {
         throw new Error('Too many active jobs. Please wait for current generations to finish.');
       }
 
-      // 6. Validate cost
+      // 5. Validate and calculate cost
       const validationResult = await CostOrchestrator.validateGenerationCost(
         sanitizedRequest.initiatorUid,
         sanitizedRequest.modelId,
@@ -91,20 +85,13 @@ export class ImageGenerationOrchestrator {
         throw new Error(validationResult.reason || 'Insufficient funds or limit exceeded');
       }
 
-      // 7. Calculate exact cost
-      const safeParams = sanitizedRequest.getSafeParameters();
-      const finalCost = CostCalculator.calculateModelCost(
-        sanitizedRequest.modelId,
-        isPremiumUser,
-        safeParams.steps
-      );
+      const finalCost = validationResult.estimatedCost;
 
       forensic.checkpoint('transaction_prepared');
 
-      // 8. ATOMIC SUBMISSION: Transactional Debit + Queue Document
+      // 6. ATOMIC SUBMISSION: Transactional Debit + Queue Document
       await database.runTransaction(async (t: any) => {
-          // A. Debit Wallet (Upstream Debit)
-          // This ensures the financial transaction is absolute before work starts
+          // A. Debit Wallet
           await Wallet.debit(
               sanitizedRequest.initiatorUid,
               finalCost,
@@ -141,16 +128,12 @@ export class ImageGenerationOrchestrator {
     operation: () => Promise<GenerationResult | GenerationError>
   ): Promise<GenerationResult | GenerationError> {
     try {
-      // Check if already processed (idempotency)
       const existing = await this.checkIdempotency(requestId, database);
       if (existing) {
         return existing;
       }
 
-      // Execute operation
       const result = await operation();
-
-      // If successful, mark as processed
       if (!result) {
         throw new Error('Operation completed with no result');
       }
@@ -173,46 +156,19 @@ export class ImageGenerationOrchestrator {
     try {
       const doc = await database.collection('generation_queue').doc(requestId).get();
       if (doc.exists && ['processing', 'completed'].includes((doc.data() as any).status)) {
-        console.log(`[Orchestrator] Idempotent: ${requestId}`);
-        return {
-          requestId
-        };
+        return { requestId };
       }
       return null;
     } catch (error) {
-      console.error('Idempotency check failed:', error);
       return null;
     }
   }
 
   /**
-   * Check user quota
+   * Check user quota (Internal stub)
    */
   private static async checkQuota(uid: string, database: any): Promise<boolean> {
-    // This would call the quota system
-    // For now, return true after implementing quota checks
     return true;
-  }
-
-  /**
-   * Validate target persona if provided
-   */
-  private static async validateTargetPersona(
-    request: ImageGenerationRequest,
-    database: any
-  ): Promise<void> {
-    if (!request.targetPersonaId) {
-      return;
-    }
-
-    if (request.action !== 'update_avatar') {
-      return;
-    }
-
-    const pDoc = await database.collection('personas').doc(request.targetPersonaId).get();
-    if (!pDoc.exists || (pDoc.data() as any).createdBy !== request.requestorUid) {
-      throw new Error('Invalid target persona');
-    }
   }
 
   /**
@@ -227,7 +183,6 @@ export class ImageGenerationOrchestrator {
         .get();
       return snap.size;
     } catch (error) {
-      console.error('Error getting active jobs:', error);
       return 0;
     }
   }
@@ -243,10 +198,6 @@ export class ImageGenerationOrchestrator {
     database: any
   ): Promise<void> {
     const safeParams = request.getSafeParameters();
-    const meta = {
-      promptHash: request.prompt,
-      promptMetadata: null 
-    };
 
     const ref = database.collection('generation_queue').doc(requestId);
     t.set(ref, {
@@ -259,30 +210,9 @@ export class ImageGenerationOrchestrator {
       cfg: safeParams.cfg,
       seed: request.seed,
       scheduler: request.scheduler,
-      promptHash: meta.promptHash,
-      promptMetadata: meta.promptMetadata,
       status: 'queued',
       cost,
-      debited: true, // Mark that we've already taken the zaps
-      createdAt: FieldValue.serverTimestamp()
-    });
-  }
-
-  /**
-   * Queue request for generation (Legacy non-transactional)
-   */
-  private static async queueRequest(
-    request: ImageGenerationRequest,
-    requestId: string,
-    database: any
-  ): Promise<void> {
-    await database.collection('generation_queue').doc(requestId).set({
-      userId: request.requestorUid,
-      prompt: request.prompt,
-      negative_prompt: request.negativePrompt,
-      modelId: request.modelId,
-      aspectRatio: request.aspectRatio,
-      status: 'queued',
+      debited: true,
       createdAt: FieldValue.serverTimestamp()
     });
   }

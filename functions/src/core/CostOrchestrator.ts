@@ -1,13 +1,12 @@
 /**
  * Core Service: Cost Orchestrator
  * Orchestrates cost validation and calculation
- * Coordinates with Domain services for purity
  * 
  * HARDENED: Zero-latency via flattened User document usage tracking.
+ * ALIGNED: Uses ZAP_COSTS from lib/costs.ts exclusively.
  */
 
-import { CostCalculator } from '../domain/services/CostCalculator.js';
-import { ZAP_COSTS } from '../lib/costs.js';
+import { ZAP_COSTS, calculateFluxCost } from '../lib/costs.js';
 
 export interface CostValidationResult {
   allowed: boolean;
@@ -17,8 +16,30 @@ export interface CostValidationResult {
 
 export class CostOrchestrator {
   /**
+   * Calculate final generation cost based on model and user status
+   */
+  static calculateFinalCost(
+    modelId: string,
+    isPremiumUser: boolean,
+    aspectRatio: string,
+    steps?: number
+  ): number {
+    // 1. Check for Flux specific cost
+    if (modelId === 'flux-2-dev' || modelId === 'flux-klein-9b') {
+        return calculateFluxCost(aspectRatio, steps || 25);
+    }
+
+    // 2. Check for Premium models
+    if (this.isPremiumModel(modelId)) {
+        return ZAP_COSTS.IMAGE_GENERATION_PREMIUM;
+    }
+
+    // 3. Standard cost
+    return isPremiumUser ? 0 : ZAP_COSTS.IMAGE_GENERATION;
+  }
+
+  /**
    * Validate if user has sufficient cost budget for generation
-   * Orchestrates multiple validation layers using flattened user state.
    */
   static async validateGenerationCost(
     initiatorUid: string,
@@ -27,22 +48,10 @@ export class CostOrchestrator {
     isPremiumUser: boolean,
     database: any
   ): Promise<CostValidationResult> {
-    // 1. Calculate estimated cost using Domain service (pure math)
-    const estimatedCost = CostCalculator.calculateModelCost(
-      modelId,
-      isPremiumUser || CostHelpers.isTurboPricing(modelId),
-      undefined // We calculate base rate
-    );
+    // 1. Calculate final cost
+    const finalCost = this.calculateFinalCost(modelId, isPremiumUser, aspectRatio);
 
-    // 2. For Flux models, calculate tile-based cost
-    let tileBasedCost = 0;
-    if (modelId === 'flux-2-dev') {
-      tileBasedCost = CostCalculator.calculateFluxCost(aspectRatio, 25); // Default 25 steps
-    }
-
-    const finalCost = Math.max(estimatedCost, tileBasedCost);
-
-    // 3. Single-doc lookup: Get user and validate
+    // 2. Single-doc lookup: Get user and validate
     const userDoc = await database.collection('users').doc(initiatorUid).get();
     if (!userDoc.exists) {
       return { allowed: false, estimatedCost: finalCost, reason: 'User not found' };
@@ -61,7 +70,7 @@ export class CostOrchestrator {
     }
 
     // B. Check usage limits (Rate Limiting)
-    if (modelId === 'flux-2-dev' || CostHelpers.isTurboPricing(modelId)) {
+    if (modelId === 'flux-2-dev' || modelId === 'flux-klein-9b') {
       // Global limit (still a separate doc as it's shared state)
       const globalUsage = await this.getGlobalDailyUsage(database);
       if (globalUsage >= CostConstants.FLUX_GLOBAL_LIMIT_DAILY) {
@@ -73,9 +82,7 @@ export class CostOrchestrator {
       const todayId = `${now.getUTCFullYear()}${(now.getUTCMonth() + 1).toString().padStart(2, '0')}${now.getUTCDate().toString().padStart(2, '0')}`;
       
       const userUsage = userData.lastDailySpendId === todayId ? (userData.dailySpend || 0) : 0;
-      const dailyLimit = CostHelpers.isTurboPricing(modelId) 
-        ? CostConstants.FLUX_USER_LIMIT_DAILY 
-        : CostConstants.STANDARD_MODEL_RATE;
+      const dailyLimit = CostConstants.FLUX_USER_LIMIT_DAILY;
       
       if (userUsage >= dailyLimit) {
         return {
@@ -106,60 +113,18 @@ export class CostOrchestrator {
   }
 
   /**
-   * Record cost for transaction
-   * FLATTENED: Writes directly to User document for maximum speed.
+   * Check if model is classified as premium
    */
-  static async recordCost(
-    uid: string,
-    cents: number,
-    database: any,
-    requestId: string,
-    metadata: any = {}
-  ): Promise<void> {
-    try {
-      const { Wallet } = await import('../lib/wallet.js');
-      
-      // FAST-PATH: Use Wallet.debit in turbo mode
-      await Wallet.debit(uid, cents, requestId || `cost_${Date.now()}`, {
-        ...metadata,
-        auditType: 'generation_cost'
-      }, 'zaps', null, true);
-
-      // Global cost update (separate write, but non-blocking)
-      const todayShort = new Date().toISOString().split('T')[0];
-      const globalCostRef = database.collection('stats').doc('daily-cost');
-      globalCostRef.set({
-        [todayShort]: database.FieldValue.increment(cents),
-        lastUpdate: database.FieldValue.serverTimestamp()
-      }, { merge: true }).catch(err => console.error('Global cost update failed', err));
-
-    } catch (error) {
-      console.error('Error recording cost:', error);
-      throw error;
-    }
+  private static isPremiumModel(modelId: string): boolean {
+    const premiumModels = ['wai-illustrious', 'nova-3d-cg-xl'];
+    return premiumModels.includes(modelId);
   }
 }
 
 /**
  * Constants for cost orchestration
- * Synchronized with industrial Zap throughput requirements.
  */
 const CostConstants = {
   FLUX_GLOBAL_LIMIT_DAILY: 5000, 
-  FLUX_USER_LIMIT_DAILY: 200, 
-  STANDARD_MODEL_RATE: 1, 
-  PREMIUM_MODEL_RATE: 5 
+  FLUX_USER_LIMIT_DAILY: 200
 };
-
-/**
- * Helper functions for cost logic
- */
-export namespace CostHelpers {
-  export function isTurboPricing(modelId: string): boolean {
-    return ['zit-turbo', 'sdxl-h100', 'zit-h100'].includes(modelId);
-  }
-
-  export function getMultiplier(modelId: string): number {
-    return isTurboPricing(modelId) ? 5 : 1;
-  }
-}
