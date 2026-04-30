@@ -1,3 +1,6 @@
+/**
+ * [LAYER: INFRASTRUCTURE]
+ */
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { auth, db, functions } from '../firebase.ts';
 import { httpsCallable } from 'firebase/functions';
@@ -24,6 +27,7 @@ interface LiteContextType {
     localHistory: any[];
     loading: boolean;
     generating: boolean;
+    generateStartTime: number | undefined;
     generate: (prompt: string, params?: any) => Promise<void>;
     login: (email: string, pass: string) => Promise<void>;
     signup: (email: string, pass: string, birthday: string) => Promise<void>;
@@ -52,6 +56,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     const [isOffline, setIsOffline] = useState(!navigator.onLine);
     const [cooldownUntil, setCooldownUntil] = useState<number>(0);
     const [consecutiveFailures, setConsecutiveFailures] = useState(0);
+    const [generateStartTime, setGenerateStartTime] = useState<number | undefined>(undefined);
 
     const addToast = useCallback((message: string, type: 'success' | 'error' | 'loading' = 'success', existingId?: string) => {
         if (type === 'loading') return toast.loading(message, { id: existingId });
@@ -141,7 +146,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 email,
                 birthday,
                 createdAt: serverTimestamp(),
-                zaps: 'unlimited' // Explicitly set to unlimited for everyone
+                zaps: 'unlimited'
             });
         }
     };
@@ -155,10 +160,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             const hasNativeLogin = Boolean(window.electronAPI?.lite?.googleLogin);
             
             if (isElectron && hasNativeLogin) {
-                // Electron Native Flow (Local Bridge)
                 addToast("Establishing secure link...", "loading", "google-auth");
                 
-                // Structured response from hardened main process (v1.3.0)
                 const authData = await window.electronAPI.lite.googleLogin();
                 console.log("[Lite Auth] Received data from bridge:", authData ? "YES" : "NO");
                 addToast("Identity confirmed. Finalizing...", "loading", "google-auth");
@@ -181,7 +184,6 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                     addToast(`Welcome back, ${res.user.displayName?.split(' ')[0]}`, "success", "google-auth");
                 }
             } else {
-                // Web Fallback
                 const provider = new GoogleAuthProvider();
                 const res = await signInWithPopup(auth, provider);
                 if (res.user) {
@@ -205,7 +207,6 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         if (isOffline) { toast.error("The garden requires a connection to bloom."); return; }
         if (!currentUser || !selectedModel) { toast.error("Identity unknown. Please sign in."); return; }
         
-        // Cooldown/Glitched State Check
         if (Date.now() < cooldownUntil) {
             const remaining = Math.ceil((cooldownUntil - Date.now()) / 1000);
             toast.error(`Service is cooling down. Please wait ${remaining}s...`, { id: 'cooldown' });
@@ -213,6 +214,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         }
 
         setGenerating(true);
+        setGenerateStartTime(Date.now());
         const requestId = `gen_${Date.now()}`;
         const toastId = toast.loading("Invoking the latent space...", { id: requestId });
         const controller = new AbortController();
@@ -220,13 +222,13 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         const timeoutId = setTimeout(() => {
             controller.abort();
             setGenerating(false);
+            setGenerateStartTime(undefined);
             toast.error("The vision is taking too long to manifest.", { id: requestId });
             
-            // Increment failure count on timeout
             setConsecutiveFailures(prev => {
                 const next = prev + 1;
                 if (next >= 3) {
-                    setCooldownUntil(Date.now() + 120000); // 2 minute cooldown
+                    setCooldownUntil(Date.now() + 120000);
                     toast.error("Service appears overwhelmed. Entering recovery cooldown.", { duration: 5000 });
                 }
                 return next;
@@ -250,9 +252,10 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 const data = snap.data();
                 if (data?.status === 'completed' && data.imageUrl) {
                     clearTimeout(timeoutId);
+                    setGenerateStartTime(undefined);
                     toast.success("Vision materialized.", { id: requestId });
                     setGenerating(false);
-                    setConsecutiveFailures(0); // Reset failures on success
+                    setConsecutiveFailures(0);
                     
                     if (window.electronAPI?.lite) {
                         try {
@@ -272,10 +275,10 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                     unsub();
                 } else if (data?.status === 'failed') {
                     clearTimeout(timeoutId);
+                    setGenerateStartTime(undefined);
                     toast.error(data.error || "The manifestation failed.", { id: requestId });
                     setGenerating(false);
                     
-                    // Track internal engine failures
                     setConsecutiveFailures(prev => {
                         const next = prev + 1;
                         if (next >= 3) setCooldownUntil(Date.now() + 120000);
@@ -287,9 +290,11 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 console.warn('[Lite] Gen subscription error:', err);
                 clearTimeout(timeoutId);
                 setGenerating(false);
+                setGenerateStartTime(undefined);
             });
         } catch (err: any) {
             clearTimeout(timeoutId);
+            setGenerateStartTime(undefined);
             if (err.name !== 'AbortError') {
                 toast.error(err.message, { id: requestId });
                 setConsecutiveFailures(prev => {
@@ -305,7 +310,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     return (
         <LiteContext.Provider value={{ 
             currentUser, availableModels, selectedModel, setSelectedModel, 
-            history, localHistory, loading, generating, generate, 
+            history, localHistory, loading, generating, generateStartTime, generate, 
             login, signup, logout, loginWithGoogle, isOffline,
             addToast
         }}>

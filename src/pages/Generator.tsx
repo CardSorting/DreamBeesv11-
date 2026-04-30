@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLite } from '../contexts/LiteContext';
 import { getOptimizedImageUrl } from '../lite-utils';
 import { IconHome, IconImage, IconLayers, IconLoader, IconMagic, IconSparkles, IconUser, IconZap } from '../icons';
+import GenerationTimeEstimator from '../components/GenerationTimeEstimator';
 
 const promptIdeaGroups = [
     {
@@ -201,6 +202,10 @@ export default function Generator() {
                         <div className="section-kicker"><IconSparkles size={14} /> Start here</div>
                         <h2 id="prompt-heading">Describe your image</h2>
                         <p>Use normal language. Add the subject, style, colors, and mood for better results.</p>
+                        <GenerationTimeEstimator 
+                            generating={generating}
+                            showProgressBar={true}
+                        />
                         <button
                             type="button"
                             className="guide-toggle"
@@ -521,7 +526,203 @@ export default function Generator() {
                 .generate-button:disabled { cursor: not-allowed; color: var(--color-zinc-500); background: rgba(255,255,255,0.05); box-shadow: none; }
                 .safe-helper { display: flex; align-items: center; gap: 6px; padding: 8px; border-radius: 14px; background: rgba(255,255,255,0.025); font-size: 0.72rem; }
 
+                /* ─── Generation Time Estimator (Industry-Standard) ────────── */
+                .generation-time {
+                    padding: 12px 14px;
+                    border-radius: 16px;
+                    background: rgba(139, 92, 246, 0.06);
+                    border: 1px solid rgba(139, 92, 246, 0.14);
+                    margin-top: 10px;
+                    display: grid;
+                    gap: 10px;
+                }
+
+                /* Stage Indicator Bar — dots + connectors like YouTube/Midjourney */
+                .stage-indicator-bar {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 0;
+                }
+
+                .stage-dot {
+                    width: 14px;
+                    height: 14px;
+                    border-radius: 999px;
+                    display: grid;
+                    place-items: center;
+                    background: rgba(255,255,255,0.08);
+                    border: 1.5px solid rgba(255,255,255,0.15);
+                    flex-shrink: 0;
+                    position: relative;
+                    transition: all 0.3s ease;
+                }
+
+                .stage-dot.complete {
+                    background: rgba(34, 197, 94, 0.25);
+                    border-color: rgba(34, 197, 94, 0.5);
+                    color: #4ade80;
+                }
+
+                .stage-dot.active {
+                    background: rgba(139, 92, 246, 0.25);
+                    border-color: var(--color-accent);
+                    box-shadow: 0 0 12px rgba(139, 92, 246, 0.4);
+                }
+
+                .stage-pulse {
+                    display: block;
+                    width: 6px;
+                    height: 6px;
+                    border-radius: 999px;
+                    background: var(--color-accent);
+                }
+
+                .stage-pending {
+                    display: block;
+                    width: 4px;
+                    height: 4px;
+                    border-radius: 999px;
+                    background: rgba(255,255,255,0.2);
+                }
+
+                .stage-connector {
+                    flex: 1;
+                    height: 2px;
+                    background: rgba(255,255,255,0.08);
+                    border-radius: 1px;
+                    overflow: hidden;
+                    min-width: 16px;
+                    max-width: 48px;
+                }
+
+                .stage-connector.complete {
+                    background: rgba(34, 197, 94, 0.15);
+                }
+
+                .connector-fill {
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(34, 197, 94, 0.6);
+                    transform-origin: left;
+                }
+
+                /* Stage Labels — current stage + ETA message */
+                .stage-labels {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 8px;
+                }
+
+                .stage-label.active-stage {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    font-size: 0.72rem;
+                    font-weight: 900;
+                    color: white;
+                }
+
+                .stage-emoji {
+                    font-size: 0.85rem;
+                    line-height: 1;
+                }
+
+                .eta-message {
+                    font-size: 0.7rem;
+                    font-weight: 750;
+                    color: var(--color-zinc-400);
+                    text-align: right;
+                }
+
+                /* Progress Section — bar + percentage */
+                .progress-section {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                }
+
+                .time-progress-track {
+                    flex: 1;
+                    height: 6px;
+                    border-radius: 999px;
+                    background: rgba(255,255,255,0.08);
+                    overflow: hidden;
+                    position: relative;
+                }
+
+                .time-progress-fill {
+                    height: 100%;
+                    border-radius: 999px;
+                    background: linear-gradient(90deg, var(--color-accent), #c084fc, var(--color-accent));
+                    background-size: 200% 100%;
+                    position: relative;
+                }
+
+                .progress-shimmer {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: linear-gradient(
+                        90deg,
+                        transparent 0%,
+                        rgba(255,255,255,0.15) 50%,
+                        transparent 100%
+                    );
+                    animation: shimmer 2s ease-in-out infinite;
+                }
+
+                @keyframes shimmer {
+                    0% { transform: translateX(-100%); }
+                    100% { transform: translateX(100%); }
+                }
+
+                .progress-percentage {
+                    font-size: 0.68rem;
+                    font-weight: 950;
+                    color: var(--color-zinc-300);
+                    min-width: 36px;
+                    text-align: right;
+                }
+
+                /* Time Metrics Row — elapsed badge + confidence indicator */
+                .time-metrics-row {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 8px;
+                }
+
+                .elapsed-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    font-size: 0.66rem;
+                    font-weight: 850;
+                    color: var(--color-zinc-300);
+                    background: rgba(255,255,255,0.05);
+                    padding: 4px 9px;
+                    border-radius: 8px;
+                }
+
+                .confidence-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 5px;
+                    font-size: 0.6rem;
+                    font-weight: 800;
+                    color: var(--color-zinc-400);
+                    border: 1px solid rgba(255,255,255,0.1);
+                    padding: 3px 8px;
+                    border-radius: 999px;
+                    transition: border-color 0.3s ease;
+                }
+
                 .preview-column { display: flex; flex-direction: column; gap: 12px; }
+  +++++++ REPLACE
                 .preview-card { padding: 12px; }
                 .preview-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 4px 4px 10px; }
                 .preview-header span { display: block; color: var(--color-zinc-500); font-size: 0.68rem; font-weight: 950; text-transform: uppercase; letter-spacing: 0.12em; }
