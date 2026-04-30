@@ -1,5 +1,54 @@
 # Changelog
 
+## 2026-04-29 — Full-Width Profile and History UX Audit Pass
+
+### Files Changed
+
+- `src/pages/UserProfile.tsx`
+- `.wiki/index.md`
+- `.wiki/changelog.md`
+
+### Verified UI Changes in `src/pages/UserProfile.tsx`
+
+- Replaced the previous narrow atmospheric profile/archive page with a full-width profile and history dashboard.
+- Added a clear page header with breadcrumb context: `Studio / Profile & history`.
+- Added plain-language page copy explaining that users can manage their account, review local history, and continue creating.
+- Added quick navigation actions for `Create image`, `Choose style`, and `Sign out`.
+- Replaced atmospheric account language with clearer labels:
+  - `Creator level`
+  - `Images created`
+  - `Current level`
+  - `Local history`
+  - `System status`
+- Added a full-width account overview with user identity, creator-level progress, next milestone copy, and benefit pills.
+- Added a dashboard stat grid for total images, current level, images with style info, and local history status.
+- Reworked the history area into a dedicated `Your image history` workspace.
+- Added search with placeholder text for prompts, image IDs, and style IDs.
+- Added visible result counts with `Showing X of Y images`.
+- Added filter tabs for `All images`, `Recent`, and `With style info`.
+- Added a no-results state with a clear search/filter reset action.
+- Added an empty-history state with direct actions to `Create image` and `Choose style`.
+- Reworked history cards so prompt text, save date, image ID, and style ID metadata are visible without relying on hover.
+- Improved image alt text by using prompt text when available.
+- Reworked diagnostics into a secondary `System status` panel with clearer labels:
+  - `Local history database`
+  - `Desktop app version`
+  - `Build type`
+- Reworked responsive CSS so the full-width dashboard collapses into tablet and mobile layouts.
+
+### Architecture Notes
+
+- Affected layer: UI page composition in `src/pages/UserProfile.tsx`.
+- Existing profile/history data contract remains intact: `currentUser`, `logout`, `localHistory`, and `addToast` are still sourced from `useLite()`.
+- Existing tier display source remains intact: `calculateTier()` and `USER_TIERS` are still used for creator-level display.
+- Existing optional system status contract remains intact: the page still calls `window.electronAPI.lite.health()` when available.
+- Search and filters are presentational UI behavior over existing `localHistory`; no persistence, backend, Electron, Domain, or Core behavior was modified.
+
+### Verification Evidence
+
+- `npm exec tsc -- --noEmit --pretty false` completed without reported errors.
+- `npm run build` completed successfully with Vite production output for app, Electron main, and Electron preload bundles.
+
 ## 2026-04-29 — Model Selection UX and Navigation Audit Pass
 
 ### Files Changed

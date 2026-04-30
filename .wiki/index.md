@@ -10,6 +10,8 @@ This ledger records verified project changes made during implementation work. En
 - The generation contract remains unchanged: the page still calls `useLite().generate(prompt)` and still consumes `selectedModel`, `generating`, `localHistory`, and `currentUser` from `useLite()`.
 - `src/pages/ModelFeed.tsx` was redesigned as a clearer style-selection workflow for non-technical users.
 - The model selection contract remains unchanged: the page still consumes `availableModels`, `selectedModel`, `setSelectedModel`, and `currentUser` from `useLite()`; selection still stores `lite_selected_model`; authenticated users still continue to `/generate`; unauthenticated users still go to `/auth`.
+- `src/pages/UserProfile.tsx` was redesigned as a full-width profile and image-history dashboard for non-technical users.
+- The profile/history contract remains unchanged: the page still consumes `currentUser`, `logout`, `localHistory`, and `addToast` from `useLite()`; tier display still uses `calculateTier()` and `USER_TIERS`; optional system status still uses `window.electronAPI.lite.health()`.
 - No Domain, Core, backend Infrastructure, Firebase, or Electron generation orchestration files were modified during this pass.
 - Verification performed: `npm exec tsc -- --noEmit --pretty false` and `npm run build` completed without reported errors.
 
