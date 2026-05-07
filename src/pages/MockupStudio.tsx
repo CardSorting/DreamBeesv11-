@@ -109,9 +109,9 @@ export default function MockupStudio() {
         if (!base64Image) { toast.error("Deposit a design first."); return; }
 
         setIsGenerating(true);
-        const apiFn = httpsCallable(functions, 'api');
+        const gachaFn = httpsCallable(functions, 'gachaSpin');
         try {
-            const result = await apiFn({ action: 'gachaSpin', image: base64Image, mode: selectedMode.id });
+            const result = await gachaFn({ image: base64Image, mode: selectedMode.id });
             const data = result.data as any;
             if (data?.success && data?.prizes) {
                 setPrizes(data.prizes);
