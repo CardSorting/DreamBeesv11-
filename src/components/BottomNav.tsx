@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { IconHome, IconZap, IconUser, IconSparkles } from '../icons';
+import { IconHome, IconZap, IconUser, IconSparkles, IconLayers } from '../icons';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function BottomNav() {
@@ -12,6 +12,14 @@ export default function BottomNav() {
                     <motion.div className="active-dot" layoutId="nav-dot" />
                 </div>
                 <span>Explore</span>
+            </NavLink>
+
+            <NavLink to="/mockup" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                <div className="nav-icon-box">
+                    <IconLayers size={22} />
+                    <motion.div className="active-dot" layoutId="nav-dot-m" />
+                </div>
+                <span>Mockup</span>
             </NavLink>
             
             <NavLink to="/generate" className={({ isActive }) => `nav-item-center ${isActive ? 'active' : ''}`}>
@@ -41,7 +49,7 @@ export default function BottomNav() {
             </NavLink>
 
             <style>{`
-                .bottom-nav-immersive { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 380px; height: 90px; border-radius: 45px; display: flex; align-items: center; justify-content: space-around; padding: 0 15px; z-index: 1000; box-shadow: 0 50px 100px rgba(0,0,0,0.8); }
+                .bottom-nav-immersive { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); width: 440px; height: 90px; border-radius: 45px; display: flex; align-items: center; justify-content: space-around; padding: 0 15px; z-index: 1000; box-shadow: 0 50px 100px rgba(0,0,0,0.8); }
                 
                 .nav-item { display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--color-zinc-500); text-decoration: none; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; transition: all 0.4s; flex: 1; position: relative; }
                 .nav-item.active { color: white; }

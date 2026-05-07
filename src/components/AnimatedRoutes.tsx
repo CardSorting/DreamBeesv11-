@@ -13,6 +13,7 @@ const Auth = lazyRetry(() => import('../pages/Auth'));
 const Generator = lazyRetry(() => import('../pages/Generator'));
 const UserProfile = lazyRetry(() => import('../pages/UserProfile'));
 const GenerationDetail = lazyRetry(() => import('../pages/GenerationDetail'));
+const MockupStudio = lazyRetry(() => import('../pages/MockupStudio'));
 const NotFound = lazyRetry(() => import('../pages/NotFound'));
 
 const PageLoader = () => (
@@ -44,6 +45,11 @@ const AnimatedRoutes = () => {
                         } />
                         <Route path="/u/:id" element={<UserProfile />} />
                         <Route path="/generation/:id" element={<GenerationDetail />} />
+                        <Route path="/mockup" element={
+                            <PrivateRoute>
+                                <MockupStudio />
+                            </PrivateRoute>
+                        } />
                         <Route path="/profile" element={
                             <PrivateRoute>
                                 <ProfileRedirect />

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, CheckCircle2, ChevronDown, Cloud, ImagePlus, Lock, Menu, Monitor, Sparkles, X, Zap } from 'lucide-react';
+import { ArrowRight, CheckCircle2, ChevronDown, Clock, Cloud, Cpu, ImagePlus, Lock, Menu, Monitor, Sparkles, X, Zap } from 'lucide-react';
 
 const navItems = [
   { label: 'How it works', href: '#how-it-works' },
@@ -238,6 +238,7 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#e5e7eb',
     lineHeight: 1.65,
     marginTop: 16,
+    fontFamily: 'monospace',
   },
   preview: {
     marginTop: 16,
@@ -252,9 +253,10 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid rgba(255,255,255,0.12)',
     background: 'rgba(0,0,0,0.22)',
     display: 'flex',
-    alignItems: 'flex-end',
-    padding: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
     fontWeight: 950,
+    color: 'rgba(255,255,255,0.2)',
   },
   band: {
     borderTop: '1px solid rgba(255,255,255,0.08)',
@@ -362,6 +364,142 @@ const styles: Record<string, React.CSSProperties> = {
   },
 };
 
+const DEMOS = [
+  {
+    prompt: "A futuristic honey bee drone, sleek gold and black carbon fiber, glowing yellow eyes, macro photography, 8k.",
+    image: "https://images.unsplash.com/photo-1558449028-b53a39d100fc?w=800&q=80",
+    model: "SDXL Turbo",
+    time: "0.8s"
+  },
+  {
+    prompt: "Cyberpunk street market at night, neon signs in Japanese, rainy puddles reflecting pink and teal lights.",
+    image: "https://images.unsplash.com/photo-1545156521-77bd85671d30?w=800&q=80",
+    model: "Flux Pro",
+    time: "1.2s"
+  },
+  {
+    prompt: "Ethereal forest with floating glowing lanterns, fireflies, magical atmosphere, cinematic lighting.",
+    image: "https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800&q=80",
+    model: "SDXL 1.0",
+    time: "0.9s"
+  }
+];
+
+function MockupDemo() {
+  const [index, setIndex] = useState(0);
+  const [displayedPrompt, setDisplayedPrompt] = useState("");
+  const [isTyping, setIsTyping] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showImage, setShowImage] = useState(false);
+
+  useEffect(() => {
+    let timeout: any;
+    const current = DEMOS[index];
+
+    if (isTyping) {
+      if (displayedPrompt.length < current.prompt.length) {
+        timeout = setTimeout(() => {
+          setDisplayedPrompt(current.prompt.slice(0, displayedPrompt.length + 1));
+        }, 30);
+      } else {
+        timeout = setTimeout(() => {
+          setIsTyping(false);
+          setIsGenerating(true);
+        }, 1000);
+      }
+    } else if (isGenerating) {
+      timeout = setTimeout(() => {
+        setIsGenerating(false);
+        setShowImage(true);
+      }, 2000);
+    } else if (showImage) {
+      timeout = setTimeout(() => {
+        setShowImage(false);
+        setIsTyping(true);
+        setDisplayedPrompt("");
+        setIndex((prev) => (prev + 1) % DEMOS.length);
+      }, 4000);
+    }
+
+    return () => clearTimeout(timeout);
+  }, [displayedPrompt, isTyping, isGenerating, showImage, index]);
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} style={styles.mockup}>
+      <div style={styles.mockInner}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <strong>Studio Preview</strong>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <span style={{ ...styles.pill, color: '#fbbf24', background: 'rgba(251,191,36,0.10)', border: '1px solid rgba(251,191,36,0.2)', fontSize: 11 }}>
+              {isGenerating ? 'Synthesizing...' : isTyping ? 'Drafting...' : 'Complete'}
+            </span>
+          </div>
+        </div>
+        
+        <div style={{ ...styles.promptBox, minHeight: 88, position: 'relative', fontSize: 14 }}>
+          <span style={{ color: '#fbbf24', marginRight: 8, fontWeight: 900 }}>➜</span>
+          {displayedPrompt}
+          {isTyping && <span className="typing-cursor"></span>}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 14 }}>
+          <StatusBadge icon={Cpu} label="Model" value={DEMOS[index].model} active={!isTyping} />
+          <StatusBadge icon={Clock} label="Time" value={DEMOS[index].time} active={!isTyping} />
+          <StatusBadge icon={Sparkles} label="Status" value="Verified" active={!isTyping} color="#34d399" />
+        </div>
+
+        <div style={{ ...styles.preview, position: 'relative', overflow: 'hidden' }}>
+          <AnimatePresence mode="wait">
+            {isGenerating && (
+              <motion.div
+                key="generating"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', background: 'rgba(0,0,0,0.6)', zIndex: 2, borderRadius: 20 }}
+              >
+                <div className="scan-line scan-active"></div>
+                <div style={{ color: '#fbbf24', fontWeight: 1000, fontSize: 13, letterSpacing: '0.2em' }}>DIFFUSING LATENT SPACE...</div>
+              </motion.div>
+            )}
+            {showImage && (
+              <motion.img
+                key="image"
+                src={DEMOS[index].image}
+                initial={{ opacity: 0, scale: 1.05 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 20 }}
+              />
+            )}
+            {!isGenerating && !showImage && (
+              <motion.div
+                key="placeholder"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                style={styles.previewInner}
+              >
+                <Sparkles size={32} style={{ opacity: 0.1, marginBottom: 12 }} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function StatusBadge({ icon: Icon, label, value, active, color = '#fbbf24' }: { icon: any, label: string, value: string, active: boolean, color?: string }) {
+  return (
+    <div style={{ ...styles.promptBox, marginTop: 0, padding: '12px 14px', opacity: active ? 1 : 0.4, transition: 'all 0.5s', border: active ? `1px solid ${color}33` : styles.promptBox.border }}>
+      <span style={{ color: 'rgba(255,255,255,0.38)', fontSize: 10, fontWeight: 900, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: 4 }}>
+        <Icon size={10} color={active ? color : 'currentColor'} /> {label}
+      </span>
+      <strong style={{ fontSize: 12, display: 'block', marginTop: 2, color: active ? '#fff' : 'rgba(255,255,255,0.5)' }}>{value}</strong>
+    </div>
+  );
+}
+
 function LandingPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
@@ -380,6 +518,38 @@ function LandingPage() {
           .landing-section { padding-top: 72px !important; padding-bottom: 72px !important; }
           .landing-actions { flex-direction: column !important; }
           .landing-actions a { width: 100% !important; }
+        }
+        .typing-cursor::after {
+          content: '▋';
+          animation: blink 1s step-end infinite;
+          color: #fbbf24;
+          margin-left: 4px;
+        }
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0; }
+        }
+        .scan-line {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(180deg, transparent 0%, rgba(251, 191, 36, 0.2) 50%, #fbbf24 50%, rgba(251, 191, 36, 0.2) 50%, transparent 100%);
+          background-size: 100% 200%;
+          z-index: 10;
+          opacity: 0;
+          mix-blend-mode: screen;
+          pointer-events: none;
+        }
+        .scan-active {
+          animation: hologramScan 1.6s ease-in-out forwards;
+        }
+        @keyframes hologramScan {
+          0% { background-position: 0% -100%; opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { background-position: 0% 200%; opacity: 0; }
         }
       `}</style>
 
@@ -411,14 +581,7 @@ function LandingPage() {
             <div style={styles.trust}>{['Mac & Windows', 'Private local history', 'Optional cloud boost'].map((item) => <span key={item} style={styles.pill}><CheckCircle2 size={16} color="#34d399" /> {item}</span>)}</div>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} style={styles.mockup}>
-            <div style={styles.mockInner}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><strong>New image</strong><span style={{ ...styles.pill, color: '#86efac', background: 'rgba(52,211,153,0.10)' }}>Beginner mode</span></div>
-              <div style={styles.promptBox}>A warm watercolor illustration of a tiny bee building a cozy studio inside a flower.</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 14 }}>{['Style', 'Size', 'Save'].map(label => <div key={label} style={{ ...styles.promptBox, marginTop: 0, padding: 14 }}><span style={{ color: 'rgba(255,255,255,0.38)', fontSize: 12, fontWeight: 900 }}>{label}</span><br /><strong>Simple</strong></div>)}</div>
-              <div style={styles.preview}><div style={styles.previewInner}>Preview area</div></div>
-            </div>
-          </motion.div>
+          <MockupDemo />
         </section>
 
         <section id="how-it-works" style={styles.band}><div className="landing-section" style={styles.section}><SectionHeader eyebrow="How it works" title="Three simple steps." /><div className="landing-grid-3" style={styles.grid3}>{[['Describe', 'Type what you want to see.', ImagePlus], ['Choose', 'Pick a style or use a simple default.', Sparkles], ['Create', 'Generate, save, and revisit your work.', ArrowRight]].map(([title, body, Icon], i) => { const I = Icon as typeof ImagePlus; return <div key={String(title)} style={styles.card}><div style={{ display: 'flex', justifyContent: 'space-between' }}><I color="#fbbf24" /><strong style={{ color: 'rgba(255,255,255,0.24)' }}>0{i + 1}</strong></div><h3 style={styles.cardTitle}>{String(title)}</h3><p style={styles.cardText}>{String(body)}</p></div>; })}</div></div></section>
