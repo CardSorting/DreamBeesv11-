@@ -2,9 +2,37 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { User, CreditCard, History, Settings, LogOut, Zap, Crown, Shield } from 'lucide-react';
+import { User, CreditCard, History, Settings, LogOut, Zap, Crown, Shield, Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
+  const { user, userData, loading, logout } = useAuth();
+  const router = useRouter();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#070708] flex items-center justify-center">
+        <Loader2 className="animate-spin text-purple-500" size={48} />
+      </div>
+    );
+  }
+
+  if (!user) {
+    router.push('/auth');
+    return null;
+  }
+
+  const tier = userData?.tier || 'free';
+  const zaps = userData?.zaps ?? (tier === 'free' ? 10 : 'unlimited');
+  const maxZaps = tier === 'free' ? 10 : (tier === 'pro' ? 1000 : 'unlimited');
+  const usagePercent = typeof zaps === 'number' && typeof maxZaps === 'number' ? ((maxZaps - zaps) / maxZaps) * 100 : 0;
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/');
+  };
+
   return (
     <div className="min-h-screen bg-[#070708] text-white flex">
       {/* Sidebar */}
@@ -23,7 +51,10 @@ export default function DashboardPage() {
           <NavItem icon={Settings} label="Settings" />
         </nav>
 
-        <button className="flex items-center gap-3 px-6 py-4 rounded-2xl text-zinc-500 hover:text-white hover:bg-white/5 transition-all font-bold">
+        <button 
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-6 py-4 rounded-2xl text-zinc-500 hover:text-white hover:bg-white/5 transition-all font-bold"
+        >
           <LogOut size={20} /> Sign Out
         </button>
       </aside>
@@ -37,12 +68,12 @@ export default function DashboardPage() {
               <p className="text-zinc-400 font-medium text-lg">Manage your identity and creation power.</p>
             </div>
             <div className="flex items-center gap-4 p-4 rounded-3xl bg-purple-500/10 border border-purple-500/20">
-              <div className="w-12 h-12 rounded-2xl bg-purple-500 flex items-center justify-center text-white">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white ${tier === 'free' ? 'bg-zinc-700' : 'bg-purple-500'}`}>
                 <Crown size={24} />
               </div>
               <div>
                 <div className="text-xs font-black uppercase tracking-widest text-purple-400">Current Plan</div>
-                <div className="text-lg font-black">Alchemist Pro</div>
+                <div className="text-lg font-black capitalize">{tier} {tier !== 'free' ? 'Pro' : 'Level'}</div>
               </div>
             </div>
           </header>
@@ -55,12 +86,12 @@ export default function DashboardPage() {
                 <button className="text-sm font-black text-amber-500 uppercase tracking-widest">Edit</button>
               </div>
               <div className="flex items-center gap-6 mb-8">
-                <div className="w-20 h-20 rounded-[32px] bg-linear-to-br from-amber-400 to-purple-500 flex items-center justify-center text-3xl font-black">
-                  D
+                <div className="w-20 h-20 rounded-[32px] bg-linear-to-br from-amber-400 to-purple-500 flex items-center justify-center text-3xl font-black uppercase">
+                  {user.email?.[0] || 'D'}
                 </div>
                 <div>
-                  <div className="text-2xl font-black">Dream Creator</div>
-                  <div className="text-zinc-500 font-medium">creator@dreambees.ai</div>
+                  <div className="text-2xl font-black">{user.displayName || user.email?.split('@')[0]}</div>
+                  <div className="text-zinc-500 font-medium">{user.email}</div>
                 </div>
               </div>
               <div className="space-y-4">
@@ -82,10 +113,15 @@ export default function DashboardPage() {
                 <div>
                   <div className="flex justify-between mb-3">
                     <span className="font-bold">Monthly Generations</span>
-                    <span className="text-purple-400 font-black">1,240 / ∞</span>
+                    <span className="text-purple-400 font-black">
+                      {typeof zaps === 'number' && typeof maxZaps === 'number' ? maxZaps - zaps : (zaps === 'unlimited' ? '∞' : '0')} / {maxZaps === 'unlimited' ? '∞' : maxZaps}
+                    </span>
                   </div>
                   <div className="h-3 w-full bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full w-[65%] bg-linear-to-r from-purple-500 to-amber-500"></div>
+                    <div 
+                      className="h-full bg-linear-to-r from-purple-500 to-amber-500 transition-all duration-1000" 
+                      style={{ width: `${maxZaps === 'unlimited' ? 100 : usagePercent}%` }}
+                    ></div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">

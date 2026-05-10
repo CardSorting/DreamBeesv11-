@@ -95,7 +95,7 @@ export default function Generator() {
     const [prompt, setPrompt] = useState('');
     const [activeIdeaGroup, setActiveIdeaGroup] = useState<PromptIdeaGroupId>('starter');
     const [showPromptGuide, setShowPromptGuide] = useState(true);
-    const { selectedModel, generate, generating, localHistory, currentUser, isOffline, availableModels } = useLite();
+    const { selectedModel, generate, generating, localHistory, currentUser, isOffline, availableModels, userTier, zaps } = useLite();
 
     const cleanPrompt = prompt.trim();
     const latestImage = localHistory[0];
@@ -107,10 +107,12 @@ export default function Generator() {
         { label: 'Signed in', ready: Boolean(currentUser), action: '/auth', actionLabel: 'Sign in' },
         { label: 'Style selected', ready: Boolean(selectedModel), action: '/', actionLabel: 'Choose style' },
         { label: 'Prompt added', ready: Boolean(cleanPrompt), action: '#image-prompt', actionLabel: 'Write prompt' },
+        { label: 'Has credits', ready: zaps === 'unlimited' || zaps > 0, action: '/profile', actionLabel: 'Upgrade' },
         { label: 'Online', ready: !isOffline, action: '', actionLabel: 'Reconnect' }
     ];
     const readyCount = readyChecklist.filter(item => item.ready).length;
-    const canGenerate = Boolean(cleanPrompt && selectedModel && currentUser && !isOffline && !generating);
+    const hasCredits = zaps === 'unlimited' || zaps > 0;
+    const canGenerate = Boolean(cleanPrompt && selectedModel && currentUser && !isOffline && !generating && hasCredits);
     const activeWorkflowIndex = generating ? 2 : latestImage && !cleanPrompt ? 3 : cleanPrompt && selectedModel ? 2 : cleanPrompt ? 1 : 0;
 
     const greeting = useMemo(() => {
@@ -126,9 +128,11 @@ export default function Generator() {
                 ? 'Sign in to create'
                 : !selectedModel
                     ? 'Choose a style first'
-                    : cleanPrompt
-                        ? 'Create image'
-                        : 'Describe your image first';
+                    : !hasCredits
+                        ? 'Out of credits'
+                        : cleanPrompt
+                            ? 'Create image'
+                            : 'Describe your image first';
     const readinessLabel = canGenerate
         ? 'Ready to create'
         : `${readyCount} of ${readyChecklist.length} steps ready`;
@@ -140,9 +144,11 @@ export default function Generator() {
                 ? { kind: 'route', label: 'Sign in', title: 'Sign in to create', helper: 'Sign in first so your generation can be created and saved.', to: '/auth' }
                 : !selectedModel
                     ? { kind: 'route', label: 'Choose style', title: 'Choose an image style', helper: 'Pick a visual style so the result looks more predictable.', to: '/' }
-                    : !cleanPrompt
-                        ? { kind: 'anchor', label: 'Write prompt', title: 'Describe your image', helper: 'Start with a short sentence or use one of the templates below.', to: '#image-prompt' }
-                        : { kind: 'submit', label: 'Create image', title: 'Everything is ready', helper: 'Review the description and press Create image when you are ready.' };
+                    : !hasCredits
+                        ? { kind: 'route', label: 'Upgrade', title: 'Out of credits', helper: 'You have used all your generations for this period. Upgrade to Pro for unlimited zaps.', to: '/profile' }
+                        : !cleanPrompt
+                            ? { kind: 'anchor', label: 'Write prompt', title: 'Describe your image', helper: 'Start with a short sentence or use one of the templates below.', to: '#image-prompt' }
+                            : { kind: 'submit', label: 'Create image', title: 'Everything is ready', helper: 'Review the description and press Create image when you are ready.' };
 
     const handleGenerate = async (e?: React.FormEvent) => {
         e?.preventDefault();
@@ -317,7 +323,7 @@ export default function Generator() {
                         </div>
 
                         <button type="submit" className="generate-button full-width" disabled={!canGenerate} aria-busy={generating}>
-                            {generating ? <><IconLoader size={18} /> Creating...</> : <><IconZap size={18} fill="currentColor" /> {generateLabel}</>}
+                            {generating ? <><IconLoader size={18} /> Creating...</> : <><IconZap size={18} fill={zaps === 'unlimited' ? '#fbbf24' : 'currentColor'} /> {generateLabel} {hasCredits && zaps !== 'unlimited' && `(${zaps})`}</>}
                         </button>
 
                         <div className="safe-helper">

@@ -34,6 +34,8 @@ interface LiteContextType {
     logout: () => Promise<void>;
     loginWithGoogle: () => Promise<void>;
     isOffline: boolean;
+    userTier: 'free' | 'pro' | 'architect';
+    zaps: number | 'unlimited';
     addToast: (message: string, type?: 'success' | 'error' | 'loading', id?: string) => string;
 }
 
@@ -57,6 +59,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     const [cooldownUntil, setCooldownUntil] = useState<number>(0);
     const [consecutiveFailures, setConsecutiveFailures] = useState(0);
     const [generateStartTime, setGenerateStartTime] = useState<number | undefined>(undefined);
+    const [userTier, setUserTier] = useState<'free' | 'pro' | 'architect'>('free');
+    const [zaps, setZaps] = useState<number | 'unlimited'>(10);
 
     const addToast = useCallback((message: string, type: 'success' | 'error' | 'loading' = 'success', existingId?: string) => {
         if (type === 'loading') return toast.loading(message, { id: existingId });
@@ -78,7 +82,27 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         return onAuthStateChanged(auth, user => {
             setCurrentUser(user);
-            setLoading(false);
+            if (!user) {
+                setLoading(false);
+                setUserTier('free');
+                setZaps(10);
+                return;
+            }
+
+            // Fetch user data from Firestore
+            const unsub = onSnapshot(doc(db, 'users', user.uid), snap => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    setUserTier(data.tier || 'free');
+                    setZaps(data.zaps ?? (data.tier === 'pro' || data.tier === 'architect' ? 'unlimited' : 10));
+                }
+                setLoading(false);
+            }, err => {
+                console.warn('[Lite] User data fetch failed:', err);
+                setLoading(false);
+            });
+
+            return () => unsub();
         });
     }, []);
 
@@ -146,7 +170,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 email,
                 birthday,
                 createdAt: serverTimestamp(),
-                zaps: 'unlimited'
+                tier: 'free',
+                zaps: 10
             });
         }
     };
@@ -179,7 +204,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                         email: res.user.email,
                         lastLogin: serverTimestamp(),
                         platform: 'electron',
-                        zaps: 'unlimited'
+                        tier: 'free',
+                        zaps: 10
                     }, { merge: true });
                     addToast(`Welcome back, ${res.user.displayName?.split(' ')[0]}`, "success", "google-auth");
                 }
@@ -190,7 +216,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                     await setDoc(doc(db, 'users', res.user.uid), {
                         email: res.user.email,
                         lastLogin: serverTimestamp(),
-                        zaps: 'unlimited'
+                        tier: 'free',
+                        zaps: 10
                     }, { merge: true });
                     toast.success(`Welcome back, ${res.user.displayName?.split(' ')[0]}`);
                 }
@@ -311,7 +338,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         <LiteContext.Provider value={{ 
             currentUser, availableModels, selectedModel, setSelectedModel, 
             history, localHistory, loading, generating, generateStartTime, generate, 
-            login, signup, logout, loginWithGoogle, isOffline,
+            login, signup, logout, loginWithGoogle, isOffline, userTier, zaps,
             addToast
         }}>
             {children}

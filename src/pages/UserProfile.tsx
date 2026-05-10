@@ -36,7 +36,7 @@ function getDisplayName(email?: string | null, name?: string | null) {
 }
 
 export default function UserProfile() {
-    const { currentUser, logout, localHistory, addToast } = useLite();
+    const { currentUser, logout, localHistory, addToast, userTier, zaps } = useLite();
     const navigate = useNavigate();
     const [health, setHealth] = useState<any>(null);
     const [showHealth, setShowHealth] = useState(false);
@@ -137,7 +137,21 @@ export default function UserProfile() {
                     <div>
                         <span className="section-kicker" style={{ color: stats.tier.color }}>Creator level</span>
                         <h2>{displayName}</h2>
-                        <p>{currentUser?.email || 'Signed in creator'}</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+                            <p style={{ margin: 0 }}>{currentUser?.email || 'Signed in creator'}</p>
+                            <span style={{ 
+                                background: userTier === 'free' ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+                                color: userTier === 'free' ? '#94a3b8' : '#000',
+                                padding: '4px 10px',
+                                borderRadius: '8px',
+                                fontSize: '10px',
+                                fontWeight: 950,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.1em'
+                            }}>
+                                {userTier} Tier
+                            </span>
+                        </div>
                     </div>
                 </div>
 
@@ -160,9 +174,15 @@ export default function UserProfile() {
             </section>
 
             <section className="stats-grid" aria-label="Profile stats">
+                <StatCard 
+                    icon={<IconZap size={20} />} 
+                    label="Credits (Zaps)" 
+                    value={zaps === 'unlimited' ? '∞' : zaps} 
+                    helper={zaps === 'unlimited' ? 'Unlimited Generations' : `${zaps} remaining`} 
+                    color="#fbbf24"
+                />
                 <StatCard icon={<IconImage size={20} />} label="Images created" value={stats.totalImages} helper="Saved in local history" />
                 <StatCard icon={<IconMagic size={20} />} label="Current level" value={stats.tier.level} helper="Based on images created" />
-                <StatCard icon={<IconLayers size={20} />} label="With style info" value={stats.withModelCount} helper="Images linked to a model/style" />
                 <StatCard icon={<IconDatabase size={20} />} label="Local history" value={health?.dbAvailable ? 'Available' : 'Checking'} helper="Stored on this device" />
             </section>
 
@@ -350,13 +370,13 @@ export default function UserProfile() {
     );
 }
 
-function StatCard({ icon, label, value, helper }: { icon: React.ReactNode; label: string; value: React.ReactNode; helper: string }) {
+function StatCard({ icon, label, value, helper, color = 'var(--color-accent)' }: { icon: React.ReactNode; label: string; value: React.ReactNode; helper: string; color?: string }) {
     return (
         <article className="stat-card glass-immersive">
-            <div className="stat-icon">{icon}</div>
+            <div className="stat-icon" style={{ color, background: `${color}1a` }}>{icon}</div>
             <div>
                 <span>{label}</span>
-                <strong>{value}</strong>
+                <strong style={{ color: value === '∞' ? '#fbbf24' : 'white' }}>{value}</strong>
                 <p>{helper}</p>
             </div>
         </article>
