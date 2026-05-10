@@ -60,33 +60,30 @@ export class ImageGenerationOrchestrator {
 
       // 2. Preprocess request
       const { sanitizedRequest } = PromptPreprocessor.preprocess(request, isPremiumUser);
-      
-      // 3. Circuit Breaker: Check Substrate Health
-      const isHealthy = await SubstrateHealth.isHealthy(sanitizedRequest.modelId);
+
+      // 3. Parallel Pre-flight Checks (Substrate Health + Quota)
+      const [isHealthy, activeJobs] = await Promise.all([
+          SubstrateHealth.isHealthy(sanitizedRequest.modelId),
+          this.getActiveJobsCount(sanitizedRequest.requestorUid, database)
+      ]);
+
       if (!isHealthy) {
           forensic.checkpoint('circuit_break_triggered');
           throw new Error(`Provider for ${sanitizedRequest.modelId} is currently degraded. Please try again in a few minutes.`);
       }
 
-      // 3. Check quota limits (Internal stub for now)
-      const quotaValid = await this.checkQuota(sanitizedRequest.requestorUid, database);
-      if (!quotaValid) {
-        throw new Error('Quota exceeded');
-      }
-
-      // 4. Check active jobs limit
-      const activeJobs = await this.getActiveJobsCount(sanitizedRequest.requestorUid, database);
       if (activeJobs >= 15) {
         throw new Error('Too many active jobs. Please wait for current generations to finish.');
       }
 
-      // 5. Validate and calculate cost
+      // 3. Validate and calculate cost (Pass userData to avoid re-fetch)
       const validationResult = await CostOrchestrator.validateGenerationCost(
         sanitizedRequest.initiatorUid,
         sanitizedRequest.modelId,
         sanitizedRequest.aspectRatio,
         isPremiumUser,
-        database
+        database,
+        userData // PASSING ALREADY FETCHED DATA
       );
 
       if (!validationResult.allowed) {
@@ -106,7 +103,8 @@ export class ImageGenerationOrchestrator {
               requestId,
               { auditType: 'zap_generation', modelId: sanitizedRequest.modelId },
               'zaps',
-              t
+              t,
+              true // TURBO MODE: Direct metabolic increment
           );
 
           // B. Create Queue Entry

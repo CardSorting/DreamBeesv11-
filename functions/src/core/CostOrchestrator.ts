@@ -46,18 +46,21 @@ export class CostOrchestrator {
     modelId: string,
     aspectRatio: string,
     isPremiumUser: boolean,
-    database: any
+    database: any,
+    cachedUserData?: any // Optional pre-loaded data
   ): Promise<CostValidationResult> {
     // 1. Calculate final cost
     const finalCost = this.calculateFinalCost(modelId, isPremiumUser, aspectRatio);
 
-    // 2. Single-doc lookup: Get user and validate
-    const userDoc = await database.collection('users').doc(initiatorUid).get();
-    if (!userDoc.exists) {
-      return { allowed: false, estimatedCost: finalCost, reason: 'User not found' };
+    // 2. Doc lookup: Use cache or fetch
+    let userData = cachedUserData;
+    if (!userData) {
+      const userDoc = await database.collection('users').doc(initiatorUid).get();
+      if (!userDoc.exists) {
+        return { allowed: false, estimatedCost: finalCost, reason: 'User not found' };
+      }
+      userData = userDoc.data();
     }
-
-    const userData = userDoc.data() as any;
     const balance = userData.zaps || 0;
     const tier = userData.tier || 'free';
     const isSubscriber = tier === 'pro' || tier === 'architect';

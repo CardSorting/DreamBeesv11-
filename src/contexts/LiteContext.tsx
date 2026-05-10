@@ -239,6 +239,12 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const calculateEstimatedCost = (modelId: string, tier: string) => {
+        if (tier === 'pro' || tier === 'architect') return 0;
+        if (['wai-illustrious', 'nova-3d-cg-xl'].includes(modelId)) return 1.0;
+        return 0.5;
+    };
+
     const generate = useCallback(async (prompt: string, params: any = {}) => {
         const cleanPrompt = prompt?.trim();
         if (!cleanPrompt) return;
@@ -249,6 +255,12 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         if (zaps !== 'unlimited' && zaps <= 0) {
             toast.error("You have exhausted your Zaps. Upgrade to continue creating.", { id: 'no-zaps' });
             return;
+        }
+
+        // OPTIMISTIC UI: Deduct credits locally to mask latency
+        const estimatedCost = calculateEstimatedCost(selectedModel.id, userTier);
+        if (typeof zaps === 'number' && estimatedCost > 0) {
+            setZaps(prev => typeof prev === 'number' ? Math.max(0, prev - estimatedCost) : prev);
         }
         
         if (Date.now() < cooldownUntil) {
