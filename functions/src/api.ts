@@ -97,7 +97,8 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
                         discordId: discordId || null,
                         birthday: request.data.birthday || null,
                         createdAt: new Date(),
-                        zaps: 9999, // Unlimited policy
+                        zaps: 10,
+                        tier: 'free',
                         subscriptionStatus: 'inactive',
                         role: 'user'
                     });
@@ -135,7 +136,8 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
                         photoURL: request.auth?.token.picture || "",
                         discordId: discordId || null,
                         createdAt: new Date(),
-                        zaps: 9999, // Unlimited policy
+                        zaps: 10,
+                        tier: 'free',
                         subscriptionStatus: 'inactive',
                         role: 'user'
                     });

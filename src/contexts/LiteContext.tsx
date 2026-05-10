@@ -166,13 +166,24 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     const signup = async (email: string, pass: string, birthday: string) => {
         const res = await createUserWithEmailAndPassword(auth, email, pass);
         if (res.user) {
-            await setDoc(doc(db, 'users', res.user.uid), {
-                email,
-                birthday,
-                createdAt: serverTimestamp(),
-                tier: 'free',
-                zaps: 10
-            });
+            // Explicit initialization call to ensure backend consistency
+            try {
+                const apiCall = httpsCallable(functions, 'api');
+                await apiCall({ 
+                    action: 'initializeUser', 
+                    birthday 
+                });
+            } catch (err) {
+                console.error('[Lite] User initialization failed:', err);
+                // Fallback to local set if API fails (but JIT will catch it later anyway)
+                await setDoc(doc(db, 'users', res.user.uid), {
+                    email,
+                    birthday,
+                    createdAt: serverTimestamp(),
+                    tier: 'free',
+                    zaps: 10
+                }, { merge: true });
+            }
         }
     };
 
@@ -233,6 +244,12 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         if (!cleanPrompt) return;
         if (isOffline) { toast.error("The garden requires a connection to bloom."); return; }
         if (!currentUser || !selectedModel) { toast.error("Identity unknown. Please sign in."); return; }
+        
+        // Credit Enforcement
+        if (zaps !== 'unlimited' && zaps <= 0) {
+            toast.error("You have exhausted your Zaps. Upgrade to continue creating.", { id: 'no-zaps' });
+            return;
+        }
         
         if (Date.now() < cooldownUntil) {
             const remaining = Math.ceil((cooldownUntil - Date.now()) / 1000);

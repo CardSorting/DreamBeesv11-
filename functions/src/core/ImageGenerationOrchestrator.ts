@@ -29,8 +29,7 @@ export class ImageGenerationOrchestrator {
    */
   static async handleRequest(
     request: any,
-    database: any,
-    isPremiumUser: boolean
+    database: any
   ): Promise<GenerationResult | GenerationError> {
     const startTime = Date.now();
     
@@ -50,10 +49,19 @@ export class ImageGenerationOrchestrator {
     forensic.checkpoint('submission_start');
 
     return this.executeWithIdempotency(requestId, database, async () => {
-      // 1. Preprocess request
+      // 1. Fetch User Data (Single Point of Truth)
+      const userDoc = await database.collection('users').doc(request.auth?.uid).get();
+      if (!userDoc.exists) {
+          throw new Error('User document not found. Please re-authenticate.');
+      }
+      const userData = userDoc.data();
+      const userTier = userData.tier || 'free';
+      const isPremiumUser = userTier === 'pro' || userTier === 'architect';
+
+      // 2. Preprocess request
       const { sanitizedRequest } = PromptPreprocessor.preprocess(request, isPremiumUser);
       
-      // 2. Circuit Breaker: Check Substrate Health
+      // 3. Circuit Breaker: Check Substrate Health
       const isHealthy = await SubstrateHealth.isHealthy(sanitizedRequest.modelId);
       if (!isHealthy) {
           forensic.checkpoint('circuit_break_triggered');

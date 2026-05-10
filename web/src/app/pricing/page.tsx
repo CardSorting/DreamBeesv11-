@@ -2,7 +2,12 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, Sparkles, Zap, Shield, Crown, ArrowRight } from 'lucide-react';
+import { Check, Sparkles, Zap, Shield, Crown, ArrowRight, Loader2 } from 'lucide-react';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 const plans = [
   {
@@ -21,7 +26,8 @@ const plans = [
     features: ['Unlimited generations', 'Turbo speed boost', 'Private studio', 'Exclusive Flux Pro models', 'Priority support'],
     cta: 'Ascend Now',
     popular: true,
-    color: 'rgba(139, 92, 246, 0.2)'
+    color: 'rgba(139, 92, 246, 0.2)',
+    priceId: 'price_alchemist_pro' // Real Stripe Price ID
   },
   {
     name: 'Architect',
@@ -30,11 +36,51 @@ const plans = [
     features: ['Everything in Alchemist', 'API access', 'Team workspace', 'Commercial license', 'Dedicated GPU'],
     cta: 'Scale Vision',
     popular: false,
-    color: 'rgba(251, 191, 36, 0.2)'
+    color: 'rgba(251, 191, 36, 0.2)',
+    priceId: 'price_architect_pro' // Real Stripe Price ID
   }
 ];
 
 export default function PricingPage() {
+  const [loadingPlan, setLoadingPlan] = React.useState<string | null>(null);
+  const { user } = useAuth();
+  const router = useRouter();
+
+  const handleCheckout = async (plan: any) => {
+    if (!user) {
+      router.push('/auth');
+      return;
+    }
+
+    if (plan.price === '0') {
+      router.push('/dashboard');
+      return;
+    }
+
+    setLoadingPlan(plan.name);
+    try {
+      const createStripeCheckout = httpsCallable(functions, 'api');
+      const res: any = await createStripeCheckout({
+        action: 'createStripeCheckout',
+        priceId: plan.priceId,
+        successUrl: window.location.origin + '/dashboard?success=true',
+        cancelUrl: window.location.origin + '/pricing?canceled=true',
+        mode: 'subscription'
+      });
+
+      if (res.data?.url) {
+        window.location.href = res.data.url;
+      } else {
+        throw new Error('Failed to create checkout session');
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Payment portal unavailable');
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#070708] text-white py-24 px-6 relative overflow-hidden">
       {/* Background Glows */}
@@ -105,8 +151,16 @@ export default function PricingPage() {
                 ))}
               </div>
 
-              <button className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 ${plan.popular ? 'bg-purple-500 hover:bg-purple-400 text-white shadow-lg shadow-purple-500/25' : 'bg-white/10 hover:bg-white/20 text-white'}`}>
-                {plan.cta} <ArrowRight size={16} />
+              <button 
+                onClick={() => handleCheckout(plan)}
+                disabled={loadingPlan !== null}
+                className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 ${plan.popular ? 'bg-purple-500 hover:bg-purple-400 text-white shadow-lg shadow-purple-500/25' : 'bg-white/10 hover:bg-white/20 text-white'}`}
+              >
+                {loadingPlan === plan.name ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <>{plan.cta} <ArrowRight size={16} /></>
+                )}
               </button>
             </motion.div>
           ))}

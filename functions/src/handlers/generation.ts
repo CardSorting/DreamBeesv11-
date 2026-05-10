@@ -53,8 +53,7 @@ export const handleCreateGenerationRequest = async (request: RequestWithAuth<any
     // 3. Delegate to Core orchestrator for business logic
     const result: GenerationResult | GenerationError = await ImageGenerationOrchestrator.handleRequest(
       firebaseContext,
-      db,
-      callerRole === 'premium' || callerRole === 'admin'
+      db
     );
 
     // Check if orchestrator returned an error (properly typed check)

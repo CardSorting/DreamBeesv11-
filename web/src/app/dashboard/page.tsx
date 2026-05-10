@@ -2,13 +2,30 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { User, CreditCard, History, Settings, LogOut, Zap, Crown, Shield, Loader2 } from 'lucide-react';
+import { User, CreditCard, History, Settings, LogOut, Zap, Crown, Shield, Loader2, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { httpsCallable } from 'firebase/functions';
+import { functions, db } from '@/lib/firebase';
+import { collection, query, where, getCountFromServer } from 'firebase/firestore';
+import toast from 'react-hot-toast';
 
 export default function DashboardPage() {
   const { user, userData, loading, logout } = useAuth();
+  const [portalLoading, setPortalLoading] = React.useState(false);
+  const [imageCount, setImageCount] = React.useState(0);
   const router = useRouter();
+
+  React.useEffect(() => {
+    if (user) {
+      const fetchStats = async () => {
+        const q = query(collection(db, 'images'), where('userId', '==', user.uid));
+        const snap = await getCountFromServer(q);
+        setImageCount(snap.data().count);
+      };
+      fetchStats();
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -31,6 +48,28 @@ export default function DashboardPage() {
   const handleLogout = async () => {
     await logout();
     router.push('/');
+  };
+
+  const handlePortal = async () => {
+    if (!userData?.stripeCustomerId) {
+      router.push('/pricing');
+      return;
+    }
+    setPortalLoading(true);
+    try {
+      const createPortalSession = httpsCallable(functions, 'api');
+      const res: any = await createPortalSession({
+        action: 'createStripePortalSession',
+        returnUrl: window.location.href
+      });
+      if (res.data?.url) {
+        window.location.href = res.data.url;
+      }
+    } catch (err: any) {
+      toast.error('Unable to open billing portal');
+    } finally {
+      setPortalLoading(false);
+    }
   };
 
   return (
@@ -127,11 +166,11 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center">
                     <div className="text-zinc-500 text-xs font-black uppercase mb-1">Saved Assets</div>
-                    <div className="text-2xl font-black text-amber-500">428</div>
+                    <div className="text-2xl font-black text-amber-500">{imageCount}</div>
                   </div>
                   <div className="p-4 rounded-2xl bg-white/5 border border-white/5 text-center">
-                    <div className="text-zinc-500 text-xs font-black uppercase mb-1">Time Saved</div>
-                    <div className="text-2xl font-black text-purple-500">12h</div>
+                    <div className="text-zinc-500 text-xs font-black uppercase mb-1">Status</div>
+                    <div className="text-2xl font-black text-purple-500 uppercase text-[10px] tracking-widest">{tier}</div>
                   </div>
                 </div>
               </div>
@@ -147,10 +186,18 @@ export default function DashboardPage() {
                   <CreditCard size={24} />
                 </div>
                 <div>
-                  <div className="font-black">•••• •••• •••• 4242</div>
-                  <div className="text-zinc-500 text-sm font-medium">Expires 12/28</div>
+                  <div className="font-black">{userData?.stripeCustomerId ? 'Stripe Billing Active' : 'No Payment Method'}</div>
+                  <div className="text-zinc-500 text-sm font-medium">
+                    {tier === 'free' ? 'Upgrade to Alchemist for Pro features' : 'Managed via Stripe Portal'}
+                  </div>
                 </div>
-                <button className="ml-auto text-xs font-black uppercase tracking-widest text-zinc-500 hover:text-white">Update</button>
+                <button 
+                  onClick={handlePortal}
+                  disabled={portalLoading}
+                  className="ml-auto text-xs font-black uppercase tracking-widest text-amber-500 hover:text-white flex items-center gap-2"
+                >
+                  {portalLoading ? <Loader2 size={12} className="animate-spin" /> : (userData?.stripeCustomerId ? <><ExternalLink size={12} /> Manage</> : 'Setup')}
+                </button>
               </div>
               <div className="flex-1 p-6 rounded-3xl bg-white/5 border border-white/5 flex items-center gap-6">
                 <div className="w-12 h-12 rounded-2xl bg-zinc-800 flex items-center justify-center">

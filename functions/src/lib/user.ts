@@ -28,7 +28,8 @@ export async function ensureUserExists(
                 photoURL: photoURL || fallbackPhoto,
                 createdAt: FieldValue.serverTimestamp(),
                 lastSeenAt: FieldValue.serverTimestamp(),
-                zaps: 50, // Welcome gift
+                zaps: 10,
+                tier: 'free',
                 role: 'user'
             });
             logger.info(`[UserSync] Provisioned new user: ${uid} (Name: ${identifier})`);

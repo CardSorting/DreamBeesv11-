@@ -59,9 +59,11 @@ export class CostOrchestrator {
 
     const userData = userDoc.data() as any;
     const balance = userData.zaps || 0;
+    const tier = userData.tier || 'free';
+    const isSubscriber = tier === 'pro' || tier === 'architect';
 
-    // A. Check balance
-    if (balance < finalCost) {
+    // A. Check balance (Subscribers have 'unlimited' zaps which bypasses the comparison)
+    if (balance !== 'unlimited' && balance < finalCost) {
       return {
         allowed: false,
         estimatedCost: finalCost,
