@@ -1,11 +1,14 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import Link from 'next/link';
 import { ArrowRight, CheckCircle2, ChevronDown, Clock, Cloud, Cpu, ImagePlus, Lock, Menu, Monitor, Sparkles, X, Zap } from 'lucide-react';
 
 const navItems = [
   { label: 'How it works', href: '#how-it-works' },
   { label: 'Features', href: '#features' },
-  { label: 'Privacy', href: '#privacy' },
+  { label: 'Pricing', href: '/pricing' },
   { label: 'FAQ', href: '#faq' },
 ];
 
@@ -121,6 +124,7 @@ const styles: Record<string, React.CSSProperties> = {
     textDecoration: 'none',
     fontWeight: 950,
     border: 'none',
+    cursor: 'pointer',
   },
   buttonSecondary: {
     display: 'inline-flex',
@@ -500,7 +504,7 @@ function StatusBadge({ icon: Icon, label, value, active, color = '#fbbf24' }: { 
   );
 }
 
-function LandingPage() {
+export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
   const closeMenu = () => setIsMenuOpen(false);
@@ -561,7 +565,7 @@ function LandingPage() {
               <span><strong style={{ display: 'block', fontSize: 16 }}>DreamBees</strong><span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, fontWeight: 700 }}>AI image studio</span></span>
             </a>
             <div className="landing-nav-links" style={styles.navLinks}>{navItems.map((item) => <a key={item.href} href={item.href} style={styles.navLink}>{item.label}</a>)}</div>
-            <a className="landing-download" href="#download" style={{ ...styles.buttonPrimary, minHeight: 44, padding: '0 20px', borderRadius: 18 }}>Download</a>
+            <Link className="landing-download" href="/auth" style={{ ...styles.buttonPrimary, minHeight: 44, padding: '0 20px', borderRadius: 18 }}>Join Now</Link>
             <button className="landing-menu-button" type="button" onClick={() => setIsMenuOpen(v => !v)} style={styles.menuButton} aria-label="Toggle navigation" aria-expanded={isMenuOpen}>{isMenuOpen ? <X size={20} /> : <Menu size={20} />}</button>
           </div>
           <AnimatePresence>{isMenuOpen && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden' }}><div style={styles.mobileMenu}>{navItems.map((item) => <a key={item.href} href={item.href} onClick={closeMenu} style={{ ...styles.navLink, padding: 12 }}>{item.label}</a>)}<a href="#download" onClick={closeMenu} style={styles.buttonPrimary}>Download DreamBees</a></div></motion.div>}</AnimatePresence>
@@ -575,8 +579,8 @@ function LandingPage() {
             <h1 style={styles.h1}>Create AI images without the confusing setup.</h1>
             <p style={styles.lead}>DreamBees Lite is a local-first desktop studio for turning ideas into images with clear controls, saved history, and optional cloud power.</p>
             <div className="landing-actions" style={styles.heroActions}>
-              <a href="#download" style={styles.buttonPrimary}>Download DreamBees <ArrowRight size={20} /></a>
-              <a href="#how-it-works" style={styles.buttonSecondary}>See how it works</a>
+              <Link href="/auth" style={styles.buttonPrimary}>Begin Journey <ArrowRight size={20} /></Link>
+              <Link href="/pricing" style={styles.buttonSecondary}>View Pricing</Link>
             </div>
             <div style={styles.trust}>{['Mac & Windows', 'Private local history', 'Optional cloud boost'].map((item) => <span key={item} style={styles.pill}><CheckCircle2 size={16} color="#34d399" /> {item}</span>)}</div>
           </motion.div>
@@ -584,11 +588,11 @@ function LandingPage() {
           <MockupDemo />
         </section>
 
-        <section id="how-it-works" style={styles.band}><div className="landing-section" style={styles.section}><SectionHeader eyebrow="How it works" title="Three simple steps." /><div className="landing-grid-3" style={styles.grid3}>{[['Describe', 'Type what you want to see.', ImagePlus], ['Choose', 'Pick a style or use a simple default.', Sparkles], ['Create', 'Generate, save, and revisit your work.', ArrowRight]].map(([title, body, Icon], i) => { const I = Icon as typeof ImagePlus; return <div key={String(title)} style={styles.card}><div style={{ display: 'flex', justifyContent: 'space-between' }}><I color="#fbbf24" /><strong style={{ color: 'rgba(255,255,255,0.24)' }}>0{i + 1}</strong></div><h3 style={styles.cardTitle}>{String(title)}</h3><p style={styles.cardText}>{String(body)}</p></div>; })}</div></div></section>
+        <section id="how-it-works" style={styles.band}><div className="landing-section" style={styles.section}><SectionHeader eyebrow="How it works" title="Three simple steps." /><div className="landing-grid-3" style={styles.grid3}>{[['Describe', 'Type what you want to see.', ImagePlus], ['Choose', 'Pick a style or use a simple default.', Sparkles], ['Create', 'Generate, save, and revisit your work.', ArrowRight]].map(([title, body, Icon], i) => { const I = Icon as any; return <div key={String(title)} style={styles.card}><div style={{ display: 'flex', justifyContent: 'space-between' }}><I color="#fbbf24" /><strong style={{ color: 'rgba(255,255,255,0.24)' }}>0{i + 1}</strong></div><h3 style={styles.cardTitle}>{String(title)}</h3><p style={styles.cardText}>{String(body)}</p></div>; })}</div></div></section>
 
         <section id="features" className="landing-section" style={styles.section}><SectionHeader eyebrow="Features" title="Only what users need first." /><div className="landing-grid-3" style={styles.grid3}>{features.map(feature => { const Icon = feature.icon; return <div key={feature.title} style={styles.card}><Icon color="#fbbf24" /><h3 style={styles.cardTitle}>{feature.title}</h3><p style={styles.cardText}>{feature.body}</p></div>; })}</div></section>
 
-        <section id="privacy" className="landing-section" style={{ ...styles.section, paddingTop: 0 }}><div className="landing-privacy" style={styles.privacy}><div><div style={styles.eyebrow}><Lock size={16} /> Privacy</div><h2 style={styles.h2}>Local-first, explained simply.</h2></div><div style={styles.rows}>{[['Your prompts and history are organized on your desktop.', Monitor], ['Use optional cloud power only when you choose it.', Cloud], ['Simple labels replace unnecessary technical jargon.', Sparkles]].map(([copy, Icon]) => { const I = Icon as typeof Monitor; return <div key={String(copy)} style={styles.row}><I size={20} color="#86efac" /> {String(copy)}</div>; })}</div></div></section>
+        <section id="privacy" className="landing-section" style={{ ...styles.section, paddingTop: 0 }}><div className="landing-privacy" style={styles.privacy}><div><div style={styles.eyebrow}><Lock size={16} /> Privacy</div><h2 style={styles.h2}>Local-first, explained simply.</h2></div><div style={styles.rows}>{[['Your prompts and history are organized on your desktop.', Monitor], ['Use optional cloud power only when you choose it.', Cloud], ['Simple labels replace unnecessary technical jargon.', Sparkles]].map(([copy, Icon]) => { const I = Icon as any; return <div key={String(copy)} style={styles.row}><I size={20} color="#86efac" /> {String(copy)}</div>; })}</div></div></section>
 
         <section id="faq" className="landing-section" style={{ ...styles.section, paddingTop: 0 }}><div style={styles.faq}><SectionHeader eyebrow="FAQ" title="Quick answers." center />{faqs.map((faq, i) => { const open = activeFaq === i; return <div key={faq.q} style={styles.faqItem}><button type="button" onClick={() => setActiveFaq(open ? null : i)} style={styles.faqButton}>{faq.q}<ChevronDown size={20} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 160ms' }} /></button><AnimatePresence initial={false}>{open && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}><p style={{ ...styles.cardText, padding: '0 20px 20px', margin: 0 }}>{faq.a}</p></motion.div>}</AnimatePresence></div>; })}</div></section>
 
@@ -603,5 +607,3 @@ function LandingPage() {
 function SectionHeader({ eyebrow, title, center = false }: { eyebrow: string; title: string; center?: boolean }) {
   return <div style={{ ...styles.sectionHeader, ...(center ? { marginLeft: 'auto', marginRight: 'auto', textAlign: 'center' as const } : {}) }}><span style={{ color: '#fbbf24', fontSize: 13, fontWeight: 1000, letterSpacing: '0.22em', textTransform: 'uppercase' }}>{eyebrow}</span><h2 style={styles.h2}>{title}</h2></div>;
 }
-
-export default LandingPage;
