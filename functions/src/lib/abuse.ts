@@ -6,47 +6,53 @@ import { logger } from "./utils.js";
  * Checks if a user or IP has exceeded a rate limit.
  * Uses a Fixed Window counter strategy in Firestore.
  */
-export async function checkRateLimit(key: string, limit: number, windowSeconds: number): Promise<void> {
+export async function checkRateLimit(key: string, limit: number, windowSeconds: number, turbo: boolean = true): Promise<void> {
     const db = getFirestore();
     const docId = `ratelimit_${key.replace(/[:.]/g, '_')}`;
     const docRef = db.collection('rate_limits').doc(docId);
     const now = Date.now();
     const windowMillis = windowSeconds * 1000;
 
-    // We use a transaction to ensure atomic read-modify-write
-    try {
-        await db.runTransaction(async (t) => {
-            const doc = await t.get(docRef);
-            const data = doc.data() || {};
+    // TURBO MODE: Direct increment (Zero contention, much faster)
+    if (turbo) {
+        const snap = await docRef.get();
+        const data = snap.data() || {};
+        const count = data.count || 0;
+        const resetTime = data.resetTime || 0;
 
-            let count = data.count || 0;
-            let resetTime = data.resetTime || 0;
+        if (now > resetTime) {
+            await docRef.set({ count: 1, resetTime: now + windowMillis, lastUpdated: FieldValue.serverTimestamp() });
+            return;
+        }
 
-            if (now > resetTime) {
-                // Window expired, reset counter
-                count = 1;
-                resetTime = now + windowMillis;
-            } else {
-                // Within window, increment
-                count++;
-            }
+        if (count >= limit) {
+            throw new HttpsError('resource-exhausted', `Rate limit exceeded. Try again later.`);
+        }
 
-            if (count > limit) {
-                throw new HttpsError('resource-exhausted', `Rate limit exceeded. Try again later.`);
-            }
-
-            t.set(docRef, {
-                count: count,
-                resetTime: resetTime,
-                lastUpdated: FieldValue.serverTimestamp()
-            }, { merge: true });
-        });
-    } catch (e: any) {
-        // Re-throw our HttpsError, log others
-        if (e.code === 'resource-exhausted') { throw e; }
-        logger.error(`Rate limit system error for ${key}`, e);
-        throw new HttpsError('internal', "Rate limit check failed");
+        await docRef.update({ count: FieldValue.increment(1), lastUpdated: FieldValue.serverTimestamp() });
+        return;
     }
+
+    // TRANSACTIONAL MODE (Original)
+    await db.runTransaction(async (t) => {
+        const doc = await t.get(docRef);
+        const data = doc.data() || {};
+        let count = data.count || 0;
+        let resetTime = data.resetTime || 0;
+
+        if (now > resetTime) {
+            count = 1;
+            resetTime = now + windowMillis;
+        } else {
+            count++;
+        }
+
+        if (count > limit) {
+            throw new HttpsError('resource-exhausted', `Rate limit exceeded. Try again later.`);
+        }
+
+        t.set(docRef, { count, resetTime, lastUpdated: FieldValue.serverTimestamp() }, { merge: true });
+    });
 }
 
 /**
@@ -75,27 +81,24 @@ export async function checkIpThrottle(ip?: string): Promise<void> {
 /**
  * Checks user-specific restrictions (shadow bans, account locks).
  */
-export async function checkUserAbuseStatus(uid?: string): Promise<void> {
+export async function checkUserAbuseStatus(uid?: string, cachedUserData?: any): Promise<void> {
     if (!uid) { return; }
 
-    const db = getFirestore();
-    const userRef = db.collection('users').doc(uid);
-    const userSnap = await userRef.get();
-
-    if (!userSnap.exists) { return; }
-
-    const userData = userSnap.data() as any;
+    let userData = cachedUserData;
+    if (!userData) {
+        const db = getFirestore();
+        const userSnap = await db.collection('users').doc(uid).get();
+        if (!userSnap.exists) { return; }
+        userData = userSnap.data();
+    }
 
     if (userData.isBanned) {
         throw new HttpsError('permission-denied', "Account suspended.");
     }
 
     if (userData.shadowBanned) {
-        // Artificial delay for shadow-banned users (Penalty Box)
-        const randomDelay = Math.floor(Math.random() * 2000) + 1000; // 1-3s delay
+        const randomDelay = Math.floor(Math.random() * 2000) + 1000; 
         await new Promise(resolve => setTimeout(resolve, randomDelay));
-
-        // Optionally fail randomly
         if (Math.random() > 0.8) {
             throw new HttpsError('unavailable', "System overload, please try again.");
         }
