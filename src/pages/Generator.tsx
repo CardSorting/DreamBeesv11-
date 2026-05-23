@@ -143,7 +143,7 @@ export default function Generator() {
             : !currentUser
                 ? { kind: 'route', label: 'Sign in', title: 'Sign in to create', helper: 'Sign in first so your generation can be created and saved.', to: '/auth' }
                 : !selectedModel
-                    ? { kind: 'route', label: 'Choose style', title: 'Choose an image style', helper: 'Pick a visual style so the result looks more predictable.', to: '/' }
+                    ? { kind: 'route', label: 'Choose style', title: 'Choose a style', helper: 'Select a visual style for your next image.', to: '/' }
                     : !hasCredits
                         ? { kind: 'route', label: 'Upgrade', title: 'Out of credits', helper: 'You have used all your generations for this period. Upgrade to Pro for unlimited zaps.', to: '/profile' }
                         : !cleanPrompt
@@ -175,58 +175,55 @@ export default function Generator() {
 
     return (
         <div className="generator-page fade-in">
-            <header className="ultra-compact-header" aria-label="Generation header">
-                <nav className="breadcrumbs" aria-label="Breadcrumb">
-                    <Link to="/">Explore</Link>
-                    <span>/</span>
-                    <span>Create</span>
-                </nav>
-                <div className="header-actions" aria-label="Quick navigation">
-                    <Link to="/" className="action-link">
-                        <IconLayers size={14} /> Styles
+            <header className="generator-topbar" aria-label="Generation header">
+                <div>
+                    <nav className="breadcrumbs" aria-label="Breadcrumb">
+                        <Link to="/">Explore</Link>
+                        <span>/</span>
+                        <span>Create</span>
+                    </nav>
+                    <h1>Create an image</h1>
+                    <p>Describe your idea and select a visual direction below.</p>
+                </div>
+
+                <div className="topbar-actions" aria-label="Quick navigation">
+                    {selectedModel && (
+                        <div className="active-style-pill" aria-label={`Active style: ${selectedModel.name}`}>
+                            <IconSparkles size={12} />
+                            <span>{selectedModel.name}</span>
+                        </div>
+                    )}
+                    <Link to="/" className="secondary-action">
+                        <IconLayers size={16} />
+                        Styles
                     </Link>
-                    <Link to="/profile" className="action-link">
-                        <IconUser size={14} /> History
+                    <Link to="/profile" className="secondary-action">
+                        <IconUser size={16} />
+                        History
                     </Link>
                 </div>
             </header>
 
-            <section className="compact-goal-panel" aria-labelledby="goal-heading">
-                <h2 id="goal-heading">What do you want to make?</h2>
-                <div className="goal-grid">
-                    {creationGoals.map(goal => (
-                        <button type="button" key={goal.id} onClick={() => applyGoalPrompt(goal.prompt)}>
-                            <span>{goal.label}</span>
-                        </button>
-                    ))}
-                </div>
-            </section>
-
             <main className="generator-layout">
-                <section className="control-panel glass-immersive" aria-labelledby="prompt-heading">
-                    <div className="panel-heading">
-                        <div className="section-kicker"><IconSparkles size={14} /> Start here</div>
-                        <h2 id="prompt-heading">Describe your image</h2>
-                        <p>Use normal language. Add the subject, style, colors, and mood for better results.</p>
-                        <GenerationTimeEstimator 
-                            generating={generating}
-                            showProgressBar={true}
-                        />
-                        <button
-                            type="button"
-                            className="guide-toggle"
-                            onClick={() => setShowPromptGuide(value => !value)}
-                            aria-expanded={showPromptGuide}
-                        >
-                            {showPromptGuide ? 'Hide writing help' : 'Show writing help'}
-                        </button>
-                    </div>
-
+                <section className="control-panel" aria-labelledby="prompt-heading">
                     <form onSubmit={handleGenerate} className="prompt-form">
-                        <label htmlFor="image-prompt">Image description</label>
+                        <div className="template-pills-row" aria-label="Starter templates">
+                            {creationGoals.map(goal => (
+                                <button
+                                    type="button"
+                                    key={goal.id}
+                                    className="template-pill"
+                                    onClick={() => applyGoalPrompt(goal.prompt)}
+                                    title={goal.helper}
+                                >
+                                    {goal.label}
+                                </button>
+                            ))}
+                        </div>
+
                         <textarea
                             id="image-prompt"
-                            placeholder="Example: A warm watercolor illustration of a tiny bee building a cozy studio inside a flower."
+                            placeholder="Example: A warm watercolor illustration of a tiny bee building a cozy studio inside a flower..."
                             value={prompt}
                             onChange={e => setPrompt(e.target.value)}
                             onKeyDown={e => {
@@ -238,103 +235,91 @@ export default function Generator() {
                             aria-describedby="prompt-help prompt-count prompt-strength"
                             maxLength={1000}
                         />
+
+                        <div className="prompt-strength-bar" id="prompt-strength" aria-label={`Prompt score: ${promptScore} of ${promptChecklist.length}`}>
+                            <div className="strength-fill" style={{ width: `${(promptScore / promptChecklist.length) * 100}%` }} />
+                        </div>
+
                         <div className="prompt-meta">
-                            <span id="prompt-help">Press Enter to generate, Shift + Enter for a new line.</span>
+                            <div className="prompt-meta-left">
+                                <span id="prompt-help">Enter to generate, Shift+Enter for new line.</span>
+                                <span className="meta-dot">•</span>
+                                <button
+                                    type="button"
+                                    className="meta-help-toggle"
+                                    onClick={() => setShowPromptGuide(value => !value)}
+                                    aria-expanded={showPromptGuide}
+                                >
+                                    {showPromptGuide ? 'Hide checklist' : 'Show checklist'}
+                                </button>
+                            </div>
                             <span id="prompt-count">{promptCharacterCount}/1000</span>
                         </div>
 
-                        <div className="prompt-strength" id="prompt-strength" aria-label={`Prompt guide: ${promptScore} of ${promptChecklist.length} suggestions included`}>
-                            <div>
-                                <strong>Prompt guide</strong>
-                                <span>{promptScore}/{promptChecklist.length} helpful details included</span>
-                            </div>
-                            <div className="strength-track"><div className="strength-fill" style={{ width: `${(promptScore / promptChecklist.length) * 100}%` }} /></div>
-                        </div>
-
                         {showPromptGuide && (
-                            <div className="prompt-coach" aria-label="Prompt quality checklist">
+                            <div className="prompt-coach-flat" aria-label="Prompt quality checklist">
                                 {promptChecklist.map(item => {
                                     const isReady = item.match(prompt);
                                     return (
-                                        <div className={isReady ? 'ready' : ''} key={item.label}>
-                                            <span>{isReady ? '✓' : '•'}</span>
+                                        <span className={`coach-item ${isReady ? 'ready' : ''}`} key={item.label}>
+                                            <span className="coach-status">{isReady ? '✓' : '•'}</span>
                                             <strong>{item.label}</strong>
-                                            <small>{item.help}</small>
-                                        </div>
+                                            <span className="coach-help">{item.help}</span>
+                                        </span>
                                     );
                                 })}
                             </div>
                         )}
 
-                        <div className="idea-picker" aria-label="Prompt examples">
-                            <div className="idea-tabs" role="tablist" aria-label="Prompt example categories">
+                        <div className="idea-picker-flat" aria-label="Prompt examples">
+                            <div className="idea-tabs-row" role="tablist" aria-label="Example categories">
+                                <span className="idea-label">Examples:</span>
                                 {promptIdeaGroups.map(group => (
                                     <button
                                         type="button"
                                         key={group.id}
                                         role="tab"
                                         aria-selected={activeIdeaGroup === group.id}
-                                        className={activeIdeaGroup === group.id ? 'active' : ''}
+                                        className={`idea-tab-tag ${activeIdeaGroup === group.id ? 'active' : ''}`}
                                         onClick={() => setActiveIdeaGroup(group.id)}
                                     >
-                                        <strong>{group.label}</strong>
-                                        <span>{group.helper}</span>
+                                        {group.label}
                                     </button>
                                 ))}
                             </div>
-                            <div className="idea-row">
+                            <div className="idea-tags-row">
                                 {activePromptIdeaGroup.ideas.map(idea => (
-                                    <button type="button" key={idea} onClick={() => setPrompt(idea)}>
+                                    <button type="button" key={idea} className="idea-tag-btn" onClick={() => setPrompt(idea)}>
                                         {idea}
                                     </button>
                                 ))}
                             </div>
                         </div>
 
-                        <div className="readiness-card" aria-label="Generation readiness checklist">
-                            <div className="readiness-header">
-                                <strong>{readinessLabel}</strong>
-                                <span>{readyCount}/{readyChecklist.length}</span>
-                            </div>
-                            <div className="readiness-list">
-                                {readyChecklist.map(item => (
-                                    <div className={item.ready ? 'ready' : 'needs-action'} key={item.label}>
-                                        <span>{item.ready ? '✓' : '!'}</span>
-                                        <strong>{item.label}</strong>
-                                        {!item.ready && item.action.startsWith('/') && (
-                                            <Link to={item.action}>{item.actionLabel}</Link>
-                                        )}
-                                        {!item.ready && item.action.startsWith('#') && (
-                                            <a href={item.action}>{item.actionLabel}</a>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        <GenerationTimeEstimator 
+                            generating={generating}
+                            showProgressBar={true}
+                        />
 
-                        <div className="style-card" aria-label="Selected style or model">
-                            <div className="style-icon"><IconMagic size={18} fill="currentColor" /></div>
-                            <div>
-                                <span>Selected style</span>
-                                <strong>{selectedModel?.name || 'Choose a style'}</strong>
-                                <p>{selectedModel?.description || `${availableModels.length || 'More'} styles are available. Pick one before generating for more predictable results.`}</p>
-                            </div>
-                            <Link to="/" className="change-style">Change</Link>
-                        </div>
+                        <div className="action-row-flat">
+                            <Link to="/" className="style-selector-pill" aria-label={`Selected style: ${selectedModel?.name || 'Choose style'}`}>
+                                <IconMagic size={14} />
+                                <span>Style: <strong>{selectedModel?.name || 'Choose style'}</strong></span>
+                            </Link>
 
-                        <button type="submit" className="generate-button full-width" disabled={!canGenerate} aria-busy={generating}>
-                            {generating ? <><IconLoader size={18} /> Creating...</> : <><IconZap size={18} fill={zaps === 'unlimited' ? '#fbbf24' : 'currentColor'} /> {generateLabel} {hasCredits && zaps !== 'unlimited' && `(${zaps})`}</>}
-                        </button>
-
-                        <div className="safe-helper">
-                            <IconHome size={15} />
-                            <span>{isOffline ? 'You are offline. Reconnect before creating a new image.' : 'Your recent creations stay organized in your local history.'}</span>
+                            <button type="submit" className="generate-button" disabled={!canGenerate} aria-busy={generating}>
+                                {generating ? (
+                                    <><IconLoader size={18} /> Creating...</>
+                                ) : (
+                                    <><IconZap size={18} fill={zaps === 'unlimited' ? '#fbbf24' : 'currentColor'} /> {generateLabel} {hasCredits && zaps !== 'unlimited' && `(${zaps})`}</>
+                                )}
+                            </button>
                         </div>
                     </form>
                 </section>
 
                 <section className="preview-column" aria-label="Image preview and recent creations">
-                    <div className="preview-card glass-immersive">
+                    <div className="preview-card">
                         <div className="preview-header">
                             <div>
                                 <span>Preview</span>
@@ -404,17 +389,6 @@ export default function Generator() {
                         </div>
                     </div>
 
-                    <aside className="tips-card glass-immersive" aria-labelledby="tips-heading">
-                        <div className="section-kicker"><IconSparkles size={14} /> Prompt guide</div>
-                        <h2 id="tips-heading">A good prompt usually includes</h2>
-                        <ul>
-                            {promptTips.map(tip => <li key={tip}>{tip}</li>)}
-                        </ul>
-                        <div className="next-step-box">
-                            <strong>Not sure where to start?</strong>
-                            <p>Pick a Quick start example, swap in your subject, and press Create image.</p>
-                        </div>
-                    </aside>
                 </section>
             </main>
 
@@ -435,7 +409,7 @@ export default function Generator() {
                                 initial={{ opacity: 0, y: 16 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: idx * 0.04 }}
-                                className="recent-card glass-immersive"
+                                className="recent-card"
                             >
                                 <img src={getOptimizedImageUrl(item.imageUrl) || ''} alt={item.prompt || 'Recent generated image'} />
                                 <p>{item.prompt}</p>
@@ -443,7 +417,7 @@ export default function Generator() {
                         ))}
                     </div>
                 ) : (
-                    <div className="recent-empty glass-immersive">
+                    <div className="recent-empty">
                         <IconImage size={20} />
                         <span>Your recent images will collect here after you generate more than one.</span>
                     </div>
@@ -458,13 +432,17 @@ export default function Generator() {
                 .orb-two { width: 440px; height: 440px; bottom: 4%; left: -160px; background: rgba(245, 158, 11, 0.14); animation-delay: -6s; }
                 .orb-three { width: 360px; height: 360px; top: 36%; left: 36%; background: rgba(168, 85, 247, 0.12); animation-delay: -12s; }
 
-                .ultra-compact-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
-                .breadcrumbs { display: flex; align-items: center; gap: 6px; color: var(--color-zinc-500); font-size: 0.65rem; font-weight: 800; }
+                .generator-topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 24px; }
+                .breadcrumbs { display: flex; align-items: center; gap: 8px; color: var(--color-zinc-500); font-size: 0.78rem; font-weight: 800; margin-bottom: 12px; }
                 .breadcrumbs a, .recent-heading-row a { color: var(--color-zinc-400); text-decoration: none; }
                 .breadcrumbs a:hover { color: white; }
-                .header-actions { display: flex; gap: 6px; flex-shrink: 0; }
-                .action-link { min-height: 32px; padding: 0 8px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid rgba(255,255,255,0.09); border-radius: 10px; color: white; text-decoration: none; background: rgba(255,255,255,0.035); font-size: 0.72rem; font-weight: 900; }
-                .action-link:hover { border-color: rgba(139, 92, 246, 0.5); background: rgba(139, 92, 246, 0.12); }
+                .generator-topbar h1 { font-size: clamp(2rem, 5vw, 4.25rem); letter-spacing: -0.07em; margin-bottom: 10px; }
+                .generator-topbar p { max-width: 650px; color: var(--color-zinc-400); font-weight: 650; }
+                .topbar-actions { display: flex; gap: 10px; flex-shrink: 0; align-items: center; }
+                .active-style-pill { display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border-radius: 14px; background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.28); color: white; font-size: 0.8rem; font-weight: 800; min-height: 42px; }
+                .active-style-pill svg { color: var(--color-accent); }
+                .secondary-action { min-height: 42px; padding: 0 14px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.09); border-radius: 14px; color: white; text-decoration: none; background: rgba(255,255,255,0.035); font-size: 0.82rem; font-weight: 900; }
+                .secondary-action:hover { border-color: rgba(139, 92, 246, 0.5); background: rgba(139, 92, 246, 0.12); }
 
                 .ready-state { padding: 10px 14px; border-radius: 99px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); }
                 .status-pill { display: inline-block; padding: 4px 12px; border-radius: 99px; color: var(--color-zinc-400); font-size: 0.75rem; font-weight: 950; text-transform: uppercase; letter-spacing: 0.1em; }
@@ -477,8 +455,10 @@ export default function Generator() {
                 .goal-grid button:hover { color: white; border-color: rgba(139, 92, 246, 0.45); background: rgba(139, 92, 246, 0.1); }
 
                 .generator-layout { display: grid; grid-template-columns: minmax(340px, 0.85fr) minmax(360px, 1.15fr); gap: 20px; align-items: start; }
-                .control-panel, .preview-card, .tips-card, .recent-empty { border-radius: 28px; }
-                .control-panel { padding: 14px; position: sticky; top: 16px; }
+                .control-panel { padding: 0; position: sticky; top: 16px; }
+                .preview-card { padding: 0; }
+                .tips-card { padding: 20px 0 0; border-top: 1px solid rgba(255,255,255,0.08); border-radius: 0; }
+                .recent-empty { padding: 24px; border: 1px dashed rgba(255,255,255,0.12); border-radius: 18px; background: rgba(255,255,255,0.015); }
                 .panel-heading { margin-bottom: 10px; }
                 .section-kicker { display: inline-flex; align-items: center; gap: 6px; color: var(--color-accent); font-size: 0.65rem; font-weight: 950; text-transform: uppercase; letter-spacing: 0.12em; }
                 .panel-heading h2, .tips-card h2, .recent-heading-row h2 { font-size: 1.2rem; margin: 6px 0; letter-spacing: -0.04em; }
@@ -486,51 +466,47 @@ export default function Generator() {
                 .guide-toggle { margin-top: 8px; border: 1px solid rgba(255,255,255,0.08); border-radius: 999px; background: rgba(255,255,255,0.035); color: white; padding: 6px 10px; font-size: 0.7rem; font-weight: 900; cursor: pointer; }
 
                 .prompt-form { display: flex; flex-direction: column; gap: 10px; }
-                .prompt-form label { font-size: 0.7rem; font-weight: 950; color: white; margin: -2px 0 4px; }
                 .prompt-form textarea { width: 100%; min-height: 130px; resize: vertical; border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; background: rgba(255,255,255,0.035); color: white; padding: 12px; font-size: 0.9rem; line-height: 1.4; outline: none; }
                 .prompt-form textarea:focus { border-color: rgba(139, 92, 246, 0.8); box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.14); }
-                .prompt-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: -4px; font-size: 0.71rem; }
+                .prompt-meta { display: flex; justify-content: space-between; gap: 8px; margin-top: -4px; font-size: 0.71rem; align-items: center; }
+                .prompt-meta-left { display: flex; align-items: center; gap: 8px; }
+                .meta-dot { color: var(--color-zinc-700); font-weight: 900; }
+                .meta-help-toggle { background: none; border: none; color: var(--color-accent); font-size: 0.71rem; font-weight: 850; cursor: pointer; text-decoration: underline; padding: 0; }
+                .meta-help-toggle:hover { color: white; }
 
-                .prompt-strength { display: grid; gap: 8px; padding: 10px; border-radius: 14px; background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06); }
-                .prompt-strength > div:first-child { display: flex; justify-content: space-between; gap: 10px; color: white; font-size: 0.72rem; font-weight: 950; }
-                .prompt-strength span { color: var(--color-zinc-400); }
-                .strength-track { height: 6px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; }
-                .strength-fill { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--color-accent), var(--color-soft-gold)); transition: width 0.25s ease; }
-                .prompt-coach { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-                .prompt-coach div { display: grid; grid-template-columns: auto 1fr; gap: 2px 6px; padding: 8px; border-radius: 12px; color: var(--color-zinc-400); background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06); }
-                .prompt-coach div.ready { color: white; border-color: rgba(34, 197, 94, 0.24); background: rgba(34, 197, 94, 0.08); }
-                .prompt-coach span { grid-row: span 2; font-weight: 950; color: var(--color-accent); }
-                .prompt-coach strong { font-size: 0.7rem; }
-                .prompt-coach small { font-size: 0.64rem; font-weight: 700; }
-                .idea-picker { display: grid; gap: 8px; }
-                .idea-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-                .idea-tabs button { text-align: left; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.025); color: var(--color-zinc-400); padding: 8px; border-radius: 12px; cursor: pointer; font-size: 0.7rem; }
-                .idea-tabs button.active { color: white; border-color: rgba(139, 92, 246, 0.45); background: rgba(139, 92, 246, 0.12); }
-                .idea-row { display: flex; flex-wrap: wrap; gap: 6px; }
-                .idea-row button { border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.035); color: var(--color-zinc-400); padding: 6px 8px; border-radius: 12px; font-size: 0.72rem; font-weight: 850; cursor: pointer; text-align: left; }
+                .template-pills-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+                .template-pill { display: inline-flex; align-items: center; justify-content: center; min-height: 32px; padding: 0 12px; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; background: rgba(255,255,255,0.025); color: var(--color-zinc-400); font-size: 0.74rem; font-weight: 850; cursor: pointer; transition: all 0.2s ease; }
+                .template-pill:hover { color: white; border-color: rgba(139, 92, 246, 0.45); background: rgba(139, 92, 246, 0.1); }
 
-                .readiness-card { display: grid; gap: 8px; border-radius: 18px; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); }
-                .readiness-header { display: flex; justify-content: space-between; gap: 10px; color: white; font-weight: 950; font-size: 0.72rem; }
-                .readiness-header span { color: var(--color-zinc-400); }
-                .readiness-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-                .readiness-list div { min-height: 34px; display: flex; align-items: center; gap: 6px; border-radius: 12px; padding: 6px; background: rgba(255,255,255,0.025); color: var(--color-zinc-400); font-size: 0.7rem; font-weight: 900; }
-                .readiness-list div.ready { color: white; background: rgba(34, 197, 94, 0.08); }
-                .readiness-list span { width: 16px; height: 16px; display: grid; place-items: center; border-radius: 999px; color: white; background: rgba(239, 68, 68, 0.7); font-size: 0.64rem; }
-                .readiness-list .ready span { background: rgba(34, 197, 94, 0.75); }
-                .readiness-list a { margin-left: auto; color: white; text-decoration: none; border-radius: 999px; padding: 4px 6px; font-size: 0.7rem; font-weight: 950; background: rgba(139, 92, 246, 0.2); }
+                .prompt-strength-bar { height: 2px; background: rgba(255,255,255,0.06); border-radius: 99px; margin-top: -6px; overflow: hidden; }
+                .strength-fill { height: 100%; background: linear-gradient(90deg, var(--color-accent), var(--color-soft-gold)); transition: width 0.3s ease; }
 
-                .style-card { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 10px; border-radius: 18px; background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.08); }
-                .style-icon { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; color: white; background: linear-gradient(135deg, var(--color-accent), var(--color-dream-purple)); }
-                .style-card span { display: block; color: var(--color-zinc-500); font-size: 0.64rem; font-weight: 950; text-transform: uppercase; letter-spacing: 0.1em; }
-                .style-card strong { display: block; color: white; font-size: 0.9rem; margin: 2px 0 4px; }
-                .style-card p { font-size: 0.7rem; line-height: 1.35; max-height: 2.7em; overflow: hidden; }
-                .change-style { color: white; text-decoration: none; border-radius: 12px; padding: 6px 8px; font-size: 0.7rem; font-weight: 950; background: rgba(255,255,255,0.07); }
-                .change-style:hover { background: rgba(139, 92, 246, 0.24); }
+                .prompt-coach-flat { display: flex; flex-wrap: wrap; gap: 8px 16px; padding: 10px 14px; border-radius: 12px; background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06); }
+                .coach-item { display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--color-zinc-400); }
+                .coach-item.ready { color: white; }
+                .coach-status { font-weight: 900; color: var(--color-accent); }
+                .coach-item.ready .coach-status { color: #4ade80; }
+                .coach-help { color: var(--color-zinc-500); font-weight: 650; }
+                .coach-item.ready .coach-help { color: var(--color-zinc-400); }
 
-                .generate-button { min-height: 52px; border: none; border-radius: 16px; background: linear-gradient(135deg, var(--color-accent), var(--color-dream-purple)); color: white; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 950; font-size: 0.95rem; cursor: pointer; box-shadow: 0 18px 36px rgba(139, 92, 246, 0.26); }
-                .generate-button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 24px 46px rgba(139, 92, 246, 0.36); }
+                .idea-picker-flat { display: flex; flex-direction: column; gap: 8px; }
+                .idea-tabs-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+                .idea-label { font-size: 0.72rem; font-weight: 850; color: var(--color-zinc-500); text-transform: uppercase; letter-spacing: 0.05em; margin-right: 4px; }
+                .idea-tab-tag { display: inline-flex; align-items: center; min-height: 26px; padding: 0 10px; border-radius: 8px; border: 1px dashed rgba(255,255,255,0.1); background: transparent; color: var(--color-zinc-400); font-size: 0.72rem; font-weight: 800; cursor: pointer; transition: all 0.2s ease; }
+                .idea-tab-tag:hover { color: white; border-color: rgba(255,255,255,0.2); }
+                .idea-tab-tag.active { color: white; border-style: solid; border-color: rgba(139, 92, 246, 0.45); background: rgba(139, 92, 246, 0.12); }
+                .idea-tags-row { display: flex; flex-wrap: wrap; gap: 6px; }
+                .idea-tag-btn { border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.025); color: var(--color-zinc-400); padding: 5px 9px; border-radius: 10px; font-size: 0.72rem; font-weight: 750; cursor: pointer; text-align: left; transition: all 0.2s ease; }
+                .idea-tag-btn:hover { color: white; border-color: rgba(139, 92, 246, 0.45); background: rgba(139, 92, 246, 0.08); }
+
+                .action-row-flat { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
+                .style-selector-pill { display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border-radius: 14px; background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.08); color: var(--color-zinc-300); text-decoration: none; font-size: 0.8rem; font-weight: 800; min-height: 48px; transition: all 0.2s ease; flex-shrink: 0; }
+                .style-selector-pill:hover { border-color: rgba(139, 92, 246, 0.45); background: rgba(139, 92, 246, 0.08); color: white; }
+                .style-selector-pill svg { color: var(--color-accent); }
+
+                .generate-button { flex: 1; min-height: 48px; border: none; border-radius: 14px; background: linear-gradient(135deg, var(--color-accent), var(--color-dream-purple)); color: white; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 950; font-size: 0.92rem; cursor: pointer; box-shadow: 0 10px 20px rgba(139, 92, 246, 0.15); transition: all 0.2s ease; }
+                .generate-button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 14px 28px rgba(139, 92, 246, 0.25); }
                 .generate-button:disabled { cursor: not-allowed; color: var(--color-zinc-500); background: rgba(255,255,255,0.05); box-shadow: none; }
-                .safe-helper { display: flex; align-items: center; gap: 6px; padding: 8px; border-radius: 14px; background: rgba(255,255,255,0.025); font-size: 0.72rem; }
 
                 /* ─── Generation Time Estimator (Industry-Standard) ────────── */
                 .generation-time {
@@ -786,11 +762,11 @@ export default function Generator() {
                     .topbar-actions, .recent-heading-row { align-items: stretch; width: 100%; }
                     .topbar-actions { display: grid; grid-template-columns: 1fr 1fr; }
                     .secondary-action { justify-content: center; }
-                    .workflow-card, .quick-route-card, .goal-grid, .prompt-coach, .idea-tabs, .readiness-list { grid-template-columns: 1fr; }
+                    .workflow-card, .quick-route-card, .goal-grid, .prompt-coach, .idea-tabs { grid-template-columns: 1fr; }
                     .workflow-step:not(.active) { display: none; }
                     .next-action-controls a, .next-action-controls button { width: 100%; }
-                    .style-card { grid-template-columns: auto 1fr; }
-                    .change-style { grid-column: 1 / -1; text-align: center; }
+                    .action-row-flat { flex-direction: column; align-items: stretch; }
+                    .style-selector-pill { justify-content: center; }
                     .prompt-meta, .recent-heading-row { flex-direction: column; align-items: flex-start; }
                     .recent-grid { grid-template-columns: repeat(2, 1fr); }
                     .preview-header { align-items: flex-start; flex-direction: column; }

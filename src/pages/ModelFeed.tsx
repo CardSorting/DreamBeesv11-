@@ -15,18 +15,12 @@ interface ModelProfile {
     isRecommended: boolean;
 }
 
-const categoryOptions: Array<{ id: CategoryId; label: string; description: string }> = [
-    { id: 'all', label: 'All styles', description: 'Browse every available look' },
-    { id: 'beginner', label: 'Best for beginners', description: 'Reliable choices for first images' },
-    { id: 'realistic', label: 'Realistic', description: 'Photos, portraits, products' },
-    { id: 'illustration', label: 'Illustration', description: 'Anime, drawing, painted looks' },
-    { id: 'creative', label: 'Creative', description: 'Stylized and experimental ideas' }
-];
-
-const starterQuestions = [
-    'Want photo-like detail? Try a realistic style.',
-    'Want a softer art look? Try illustration or anime.',
-    'Not sure yet? Pick a recommended beginner style.'
+const categoryOptions: Array<{ id: CategoryId; label: string }> = [
+    { id: 'all', label: 'All Styles' },
+    { id: 'beginner', label: 'Beginner Friendly' },
+    { id: 'realistic', label: 'Realistic' },
+    { id: 'illustration', label: 'Illustration' },
+    { id: 'creative', label: 'Creative' }
 ];
 
 function getModelProfile(model: AIModel): ModelProfile {
@@ -127,16 +121,26 @@ export default function ModelFeed() {
                     <nav className="breadcrumbs" aria-label="Breadcrumb">
                         <span>Explore</span>
                         <span>/</span>
-                        <span>Choose style</span>
+                        <span>Styles</span>
                     </nav>
-                    <h1>Choose an image style</h1>
-                    <p>Pick the look you want for your next image. You can change styles anytime before generating.</p>
+                    <h1>Choose a style</h1>
+                    <p>
+                        {selectedModel 
+                            ? `Active style: ${selectedModel.name}. Choose another style below.` 
+                            : 'Select a visual direction for your next creation.'}
+                    </p>
                 </div>
 
                 <div className="topbar-actions" aria-label="Quick navigation">
+                    {selectedModel && (
+                        <div className="active-style-pill" aria-label={`Active style: ${selectedModel.name}`}>
+                            <IconSparkles size={12} />
+                            <span>{selectedModel.name}</span>
+                        </div>
+                    )}
                     <Link to="/generate" className="secondary-action">
                         <IconZap size={16} />
-                        Create image
+                        Create
                     </Link>
                     <Link to="/profile" className="secondary-action">
                         <IconUser size={16} />
@@ -145,54 +149,18 @@ export default function ModelFeed() {
                 </div>
             </header>
 
-            <section className="selection-summary glass-immersive" aria-label="Current style summary">
-                <div className="summary-copy">
-                    <span className="section-kicker"><IconSparkles size={14} /> Current choice</span>
-                    <h2>{selectedModel ? selectedModel.name : recommendedModel ? `Try ${recommendedModel.name}` : 'Styles are loading'}</h2>
-                    <p>
-                        {selectedModel && selectedProfile
-                            ? `${selectedProfile.categoryLabel}: ${selectedProfile.bestFor}`
-                            : recommendedModel
-                                ? 'A good first pick for creating your next image quickly.'
-                                : 'DreamBees is preparing your available image styles.'}
-                    </p>
-                </div>
-                <div className="summary-actions">
-                    {recommendedModel ? (
-                        <button type="button" onClick={() => selectModel(recommendedModel, currentUser, setSelectedModel, navigate)}>
-                            {selectedModel ? 'Continue to create' : 'Use recommended style'}
-                        </button>
-                    ) : (
-                        <button type="button" disabled>Loading styles</button>
-                    )}
-                </div>
-            </section>
-
-            <section className="decision-helper" aria-label="Style selection guidance">
-                {starterQuestions.map(question => (
-                    <div className="helper-chip glass-immersive" key={question}>
-                        <IconMagic size={15} />
-                        <span>{question}</span>
-                    </div>
-                ))}
-            </section>
-
-            <section className="browse-panel glass-immersive" aria-labelledby="browse-heading">
+            <section className="browse-panel" aria-labelledby="browse-heading">
                 <div className="browse-heading-row">
-                    <div>
-                        <span className="section-kicker"><IconLayers size={14} /> Style library</span>
-                        <h2 id="browse-heading">Find the right look</h2>
-                        <p>{visibleModels.length} of {cleanModels.length} styles shown</p>
-                    </div>
                     <label className="search-box" htmlFor="model-search">
                         <IconImage size={16} />
                         <input
                             id="model-search"
                             value={searchQuery}
                             onChange={event => setSearchQuery(event.target.value)}
-                            placeholder="Search styles, looks, or use cases"
+                            placeholder="Search styles..."
                             type="search"
                         />
+                        <span className="styles-count">{visibleModels.length} styles</span>
                     </label>
                 </div>
 
@@ -206,8 +174,7 @@ export default function ModelFeed() {
                             className={activeCategory === option.id ? 'active' : ''}
                             onClick={() => setActiveCategory(option.id)}
                         >
-                            <strong>{option.label}</strong>
-                            <span>{option.description}</span>
+                            {option.label}
                         </button>
                     ))}
                 </div>
@@ -260,29 +227,23 @@ export default function ModelFeed() {
                 .secondary-action { min-height: 42px; padding: 0 14px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,0.09); border-radius: 14px; color: white; text-decoration: none; background: rgba(255,255,255,0.035); font-size: 0.82rem; font-weight: 900; }
                 .secondary-action:hover { border-color: rgba(139, 92, 246, 0.5); background: rgba(139, 92, 246, 0.12); }
 
-                .selection-summary { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 18px; border-radius: 30px; padding: 22px; margin-bottom: 14px; }
-                .section-kicker { display: inline-flex; align-items: center; gap: 7px; color: var(--color-accent); font-size: 0.72rem; font-weight: 950; text-transform: uppercase; letter-spacing: 0.12em; }
-                .selection-summary h2, .browse-heading-row h2 { font-size: 1.7rem; margin: 8px 0; letter-spacing: -0.04em; }
-                .selection-summary p, .browse-heading-row p, .empty-state p { color: var(--color-zinc-400); font-weight: 650; }
-                .summary-actions button, .empty-state button, .use-style-btn { border: none; min-height: 46px; padding: 0 16px; border-radius: 16px; background: linear-gradient(135deg, var(--color-accent), var(--color-dream-purple)); color: white; font-weight: 950; cursor: pointer; box-shadow: 0 18px 36px rgba(139, 92, 246, 0.22); }
-                .summary-actions button:disabled { cursor: not-allowed; color: var(--color-zinc-500); background: rgba(255,255,255,0.05); box-shadow: none; }
+                .active-style-pill { display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border-radius: 14px; background: rgba(139, 92, 246, 0.12); border: 1px solid rgba(139, 92, 246, 0.28); color: white; font-size: 0.8rem; font-weight: 800; min-height: 42px; }
+                .active-style-pill svg { color: var(--color-accent); }
 
-                .decision-helper { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 14px; }
-                .helper-chip { display: flex; align-items: center; gap: 10px; padding: 14px; border-radius: 20px; color: var(--color-zinc-400); font-size: 0.83rem; font-weight: 800; }
-                .helper-chip svg { color: var(--color-accent); flex-shrink: 0; }
+                .empty-state p { color: var(--color-zinc-400); font-weight: 650; }
+                .empty-state button, .use-style-btn { border: none; min-height: 46px; padding: 0 16px; border-radius: 16px; background: linear-gradient(135deg, var(--color-accent), var(--color-dream-purple)); color: white; font-weight: 950; cursor: pointer; box-shadow: 0 18px 36px rgba(139, 92, 246, 0.22); }
 
-                .browse-panel { border-radius: 30px; padding: 20px; }
-                .browse-heading-row { display: grid; grid-template-columns: 1fr minmax(260px, 380px); gap: 18px; align-items: end; margin-bottom: 16px; }
-                .search-box { min-height: 48px; display: flex; align-items: center; gap: 10px; border-radius: 16px; padding: 0 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); color: var(--color-zinc-400); }
+                .browse-panel { padding: 0; }
+                .browse-heading-row { display: flex; justify-content: flex-start; margin-bottom: 16px; }
+                .search-box { min-height: 48px; display: flex; align-items: center; gap: 10px; border-radius: 16px; padding: 0 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); color: var(--color-zinc-400); width: 100%; max-width: 480px; }
                 .search-box:focus-within { border-color: rgba(139, 92, 246, 0.72); box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.13); }
                 .search-box input { width: 100%; border: 0; outline: 0; background: transparent; color: white; font-size: 0.92rem; font-weight: 700; }
+                .styles-count { font-size: 0.72rem; font-weight: 800; color: var(--color-zinc-500); white-space: nowrap; flex-shrink: 0; background: rgba(255,255,255,0.04); padding: 4px 8px; border-radius: 8px; margin-left: 8px; }
 
-                .category-tabs { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 18px; }
-                .category-tabs button { text-align: left; min-height: 76px; border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 12px; background: rgba(255,255,255,0.025); color: var(--color-zinc-400); cursor: pointer; }
+                .category-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+                .category-tabs button { text-align: center; min-height: 38px; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 0 16px; background: rgba(255,255,255,0.025); color: var(--color-zinc-400); cursor: pointer; font-size: 0.82rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
+                .category-tabs button:hover { border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: white; }
                 .category-tabs button.active { color: white; border-color: rgba(139, 92, 246, 0.55); background: rgba(139, 92, 246, 0.14); }
-                .category-tabs strong, .category-tabs span { display: block; }
-                .category-tabs strong { font-size: 0.82rem; margin-bottom: 4px; }
-                .category-tabs span { font-size: 0.68rem; line-height: 1.25; font-weight: 700; }
 
                 .models-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
                 .style-card { border-radius: 24px; overflow: hidden; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.025); cursor: pointer; transition: all 0.28s ease; display: flex; flex-direction: column; min-height: 100%; }
@@ -313,9 +274,6 @@ export default function ModelFeed() {
 
                 @media (max-width: 980px) {
                     .model-picker-topbar { flex-direction: column; }
-                    .selection-summary, .browse-heading-row { grid-template-columns: 1fr; }
-                    .decision-helper { grid-template-columns: 1fr; }
-                    .category-tabs { grid-template-columns: repeat(2, 1fr); }
                 }
 
                 @media (max-width: 620px) {
@@ -324,7 +282,6 @@ export default function ModelFeed() {
                     .secondary-action { justify-content: center; }
                     .selection-summary { align-items: stretch; }
                     .summary-actions button { width: 100%; }
-                    .category-tabs { grid-template-columns: 1fr; }
                     .models-grid { grid-template-columns: 1fr; }
                 }
             `}</style>
