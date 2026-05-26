@@ -29,21 +29,35 @@ export class ImageGenerationOrchestrator {
         });
         forensic.checkpoint('submission_start');
         return this.executeWithIdempotency(requestId, database, async () => {
-            // 1. Fetch User Data (Single Point of Truth)
-            const userDoc = await database.collection('users').doc(request.auth?.uid).get();
+            // 1. User doc + idempotency doc in parallel (saves one round-trip vs sequential)
+            const uid = request.auth?.uid;
+            const [userDoc, queueSnap] = await Promise.all([
+                database.collection('users').doc(uid).get(),
+                database.collection('generation_queue').doc(requestId).get()
+            ]);
             if (!userDoc.exists) {
                 throw new Error('User document not found. Please re-authenticate.');
+            }
+            if (queueSnap.exists) {
+                const existingStatus = queueSnap.data()?.status;
+                if (['queued', 'processing', 'completed'].includes(existingStatus)) {
+                    forensic.checkpoint('idempotent_hit');
+                    return { requestId };
+                }
             }
             const userData = userDoc.data();
             const userTier = userData.tier || 'free';
             const isPremiumUser = userTier === 'pro' || userTier === 'architect';
             // 2. Preprocess request
             const { sanitizedRequest } = PromptPreprocessor.preprocess(request, isPremiumUser);
-            // 3. Parallel Pre-flight Checks (Substrate Health + Quota)
-            const [isHealthy, activeJobs] = await Promise.all([
+            // 3. Parallel pre-flight (skip active-job scan for subscribers — saves a query)
+            const preflight = [
                 SubstrateHealth.isHealthy(sanitizedRequest.modelId),
-                this.getActiveJobsCount(sanitizedRequest.requestorUid, database)
-            ]);
+                isPremiumUser
+                    ? Promise.resolve(0)
+                    : this.getActiveJobsCount(sanitizedRequest.requestorUid, database)
+            ];
+            const [isHealthy, activeJobs] = await Promise.all(preflight);
             if (!isHealthy) {
                 forensic.checkpoint('circuit_break_triggered');
                 throw new Error(`Provider for ${sanitizedRequest.modelId} is currently degraded. Please try again in a few minutes.`);
@@ -61,6 +75,14 @@ export class ImageGenerationOrchestrator {
             forensic.checkpoint('transaction_prepared');
             // 6. ATOMIC SUBMISSION: Transactional Debit + Queue Document
             await database.runTransaction(async (t) => {
+                const queueRef = database.collection('generation_queue').doc(requestId);
+                const existing = await t.get(queueRef);
+                if (existing.exists) {
+                    const st = existing.data()?.status;
+                    if (['queued', 'processing', 'completed'].includes(st)) {
+                        return;
+                    }
+                }
                 // A. Debit Wallet
                 await Wallet.debit(sanitizedRequest.initiatorUid, finalCost, requestId, { auditType: 'zap_generation', modelId: sanitizedRequest.modelId }, 'zaps', t, true // TURBO MODE: Direct metabolic increment
                 );
@@ -103,7 +125,7 @@ export class ImageGenerationOrchestrator {
     static async checkIdempotency(requestId, database) {
         try {
             const doc = await database.collection('generation_queue').doc(requestId).get();
-            if (doc.exists && ['processing', 'completed'].includes(doc.data().status)) {
+            if (doc.exists && ['queued', 'processing', 'completed'].includes(doc.data().status)) {
                 return { requestId };
             }
             return null;
@@ -151,6 +173,7 @@ export class ImageGenerationOrchestrator {
             seed: request.seed,
             scheduler: request.scheduler,
             status: 'queued',
+            stage: 'queued',
             cost,
             debited: true,
             createdAt: FieldValue.serverTimestamp()

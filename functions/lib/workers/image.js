@@ -36,10 +36,12 @@ export const processImageTask = async (req) => {
             }
             t.update(docRef, {
                 status: "processing",
+                stage: "generating",
                 startedAt: FieldValue.serverTimestamp()
             });
         });
         forensic.checkpoint('locked_and_processing');
+        await docRef.update({ progress: 15 }).catch(() => { });
     }
     catch (e) {
         if (e.message.includes('IDEMPOTENCY_BLOCK')) {
@@ -66,6 +68,7 @@ export const processImageTask = async (req) => {
         if (modelId === 'flux-klein-9b') {
             imageBuffer = await (async () => {
                 logger.info(`[${requestId}] Running Flux Klein Edit via ModalAPI`, { userId, modelId });
+                await docRef.update({ progress: 25 }).catch(() => { });
                 try {
                     const result = await modalAPI.editAndWait({
                         prompt,
@@ -87,6 +90,7 @@ export const processImageTask = async (req) => {
             imageBuffer = await (async () => {
                 const cfUrl = ENDPOINTS.flux2dev.replace('CLOUDFLARE_ACCOUNT_ID', CLOUDFLARE_ACCOUNT_ID);
                 logger.info(`[${requestId}] Running flux-2-dev via Cloudflare. URL: ${cfUrl.substring(0, 50)}...`);
+                await docRef.update({ progress: 25 }).catch(() => { });
                 const formData = new FormData();
                 formData.append('prompt', prompt);
                 formData.append('steps', '25');
@@ -184,24 +188,32 @@ export const processImageTask = async (req) => {
                     throw new Error(`SDXL Submission Failed (${submitResponse.status})`);
                 }
                 const { job_id } = await submitResponse.json();
+                await docRef.update({ stage: "generating", progress: 20 }).catch(() => { });
                 for (let poll = 0; poll < 120; poll++) {
-                    await new Promise(r => setTimeout(r, 4000));
-                    let resultRes = await fetch(`${endpoint}/result/${job_id}`);
-                    if (resultRes.status === 404) {
-                        resultRes = await fetch(`${endpoint}/jobs/${job_id}`);
+                    const delayMs = poll === 0 ? 400 : Math.min(700 + poll * 300, 3000);
+                    await new Promise(r => setTimeout(r, delayMs));
+                    const pollProgress = Math.min(75, 20 + poll * 3);
+                    docRef.update({ stage: "generating", progress: pollProgress }).catch(() => { });
+                    const [resultRes, jobsRes] = await Promise.all([
+                        fetchWithTimeout(`${endpoint}/result/${job_id}`, { timeout: 12000 }).catch(() => null),
+                        fetchWithTimeout(`${endpoint}/jobs/${job_id}`, { timeout: 12000 }).catch(() => null)
+                    ]);
+                    let pending = false;
+                    for (const res of [resultRes, jobsRes]) {
+                        if (!res)
+                            continue;
+                        if (res.status === 202) {
+                            pending = true;
+                            continue;
+                        }
+                        if (!res.ok)
+                            continue;
+                        if (res.headers.get('content-type')?.includes('image/')) {
+                            return Buffer.from(await res.arrayBuffer());
+                        }
                     }
-                    if (resultRes.status === 202) {
+                    if (pending)
                         continue;
-                    }
-                    if (!resultRes.ok) {
-                        throw new Error(`SDXL Polling Error (${resultRes.status})`);
-                    }
-                    if (resultRes.headers.get('content-type')?.includes('image/')) {
-                        return Buffer.from(await resultRes.arrayBuffer());
-                    }
-                    const text = await resultRes.text();
-                    logger.warn(`[${requestId}] SDXL Polling: Received 200 OK but Content-Type is ${resultRes.headers.get('content-type')}`, { body: text.substring(0, 500) });
-                    throw new Error(`SDXL Unexpected Response: ${text.substring(0, 100)}`);
                 }
                 throw new Error("SDXL generation timed out");
             })();
@@ -209,6 +221,7 @@ export const processImageTask = async (req) => {
         if (!imageBuffer || imageBuffer.length < 100) {
             throw new Error("Failed to generate or retrieve image buffer");
         }
+        await docRef.update({ progress: 72, stage: "generating" }).catch(() => { });
         const { default: sharp } = await import("sharp");
         const sharpImg = sharp(imageBuffer);
         const [webpBuffer, thumbBuffer, lqipBuffer] = await Promise.all([
@@ -223,25 +236,36 @@ export const processImageTask = async (req) => {
         const { PutObjectCommand } = await import("@aws-sdk/client-s3");
         const s3 = await getS3Client();
         forensic.checkpoint('upload_starting');
-        await Promise.all([
-            s3.send(new PutObjectCommand({ Bucket: B2_BUCKET, Key: originalFilename, Body: webpBuffer, ContentType: "image/webp" })),
-            s3.send(new PutObjectCommand({ Bucket: B2_BUCKET, Key: thumbFilename, Body: thumbBuffer, ContentType: "image/webp" }))
-        ]);
+        thumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbFilename}`;
+        // Thumbnail first — client can show preview before full upload finishes
+        await s3.send(new PutObjectCommand({ Bucket: B2_BUCKET, Key: thumbFilename, Body: thumbBuffer, ContentType: "image/webp" }));
+        await docRef.update({
+            stage: "saving",
+            progress: 85,
+            thumbnailUrl,
+            lqip
+        }).catch(() => { });
+        await s3.send(new PutObjectCommand({ Bucket: B2_BUCKET, Key: originalFilename, Body: webpBuffer, ContentType: "image/webp" }));
         forensic.checkpoint('upload_complete');
         imageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalFilename}`;
-        thumbnailUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${thumbFilename}`;
-        const imageRef = await db.collection("images").add({
+        // Signal completion immediately — catalog write can finish in the background
+        await retryOperation(() => docRef.update({
+            status: "completed",
+            stage: "done",
+            progress: 100,
+            imageUrl, thumbnailUrl, lqip,
+            completedAt: new Date()
+        }));
+        db.collection("images").add({
             userId, prompt, negative_prompt, steps, cfg, aspectRatio, modelId,
             imageUrl, thumbnailUrl, lqip, promptHash, promptMetadata,
             isPublic: true,
             createdAt: FieldValue.serverTimestamp(), originalRequestId: requestId
+        }).then((imageRef) => {
+            docRef.update({ resultImageId: imageRef.id }).catch(() => { });
+        }).catch((catalogErr) => {
+            logger.error(`[${requestId}] Catalog write failed`, catalogErr);
         });
-        await retryOperation(() => docRef.update({
-            status: "completed",
-            imageUrl, thumbnailUrl, lqip,
-            completedAt: new Date(),
-            resultImageId: imageRef.id
-        }));
         // RECORD SUCCESS
         await SubstrateHealth.recordSuccess(modelId);
     }

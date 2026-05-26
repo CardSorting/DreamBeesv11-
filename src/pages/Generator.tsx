@@ -5,6 +5,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLite } from '../contexts/LiteContext';
 import { getOptimizedImageUrl } from '../lite-utils';
+import { messageForStage, STAGE_ORDER } from '../lib/generationFlow';
 import { IconImage, IconLoader, IconMagic, IconZap } from '../icons';
 
 const quickIdeas = [
@@ -16,11 +17,15 @@ const quickIdeas = [
 export default function Generator() {
   const [prompt, setPrompt] = useState('');
 
-  const { selectedModel, generate, generating, localHistory, currentUser, isOffline, zaps } = useLite();
+  const {
+    selectedModel, generate, generating, generationStage, generationProgress,
+    generationPreviewUrl, activeGeneration, displayHistory,
+    currentUser, isOffline, zaps,
+  } = useLite();
 
   const cleanPrompt = prompt.trim();
-  const latestImage = localHistory[0];
-  const recentImages = localHistory.slice(1, 9);
+  const latestImage = displayHistory[0];
+  const recentImages = displayHistory.slice(1, 9);
 
   const hasCredits = zaps === 'unlimited' || zaps > 0;
   const canGenerate = Boolean(cleanPrompt && selectedModel && currentUser && !isOffline && !generating && hasCredits);
@@ -37,6 +42,10 @@ export default function Generator() {
     return null;
   }, [currentUser, zaps]);
 
+  const progressLabel = generating ? messageForStage(generationStage) : null;
+  const stageIndex = generating ? STAGE_ORDER.indexOf(generationStage as typeof STAGE_ORDER[number]) : -1;
+  const previewSharpen = generationProgress >= 88;
+
   const blockReason = useMemo(() => {
     if (generating || canGenerate) return null;
     if (isOffline) return 'You need internet';
@@ -50,8 +59,9 @@ export default function Generator() {
   const handleGenerate = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!canGenerate) return;
-    await generate(cleanPrompt);
-    setPrompt('');
+    const submitted = cleanPrompt;
+    const ok = await generate(submitted);
+    if (ok) setPrompt('');
   };
 
   useEffect(() => {
@@ -113,7 +123,7 @@ export default function Generator() {
                 {generating ? (
                   <>
                     <IconLoader size={22} className="spin" />
-                    Creating…
+                    {progressLabel || 'Creating…'}
                   </>
                 ) : (
                   <>
@@ -125,7 +135,19 @@ export default function Generator() {
 
               {creditsText ? <p className="credits-line">{creditsText}</p> : null}
               {blockReason ? <p className="block-line">{blockReason}</p> : null}
-              {generating ? <p className="wait-line">This can take a minute. Your picture appears on the right.</p> : null}
+              {generating ? (
+                <>
+                  <p className="wait-line">{progressLabel}</p>
+                  <div className="progress-track" role="progressbar" aria-valuenow={generationProgress} aria-valuemin={0} aria-valuemax={100} aria-label="Creation progress">
+                    <div className="progress-fill" style={{ width: `${generationProgress}%` }} />
+                  </div>
+                  <div className="stage-dots" aria-hidden>
+                    {STAGE_ORDER.map((step, i) => (
+                      <span key={step} className={`stage-dot ${i <= stageIndex ? 'active' : ''}`} />
+                    ))}
+                  </div>
+                </>
+              ) : null}
             </div>
           </form>
         </aside>
@@ -139,8 +161,23 @@ export default function Generator() {
             <div className="preview-stage">
               {generating ? (
                 <div className="preview-loading" role="status" aria-live="polite">
-                  <IconLoader size={44} className="spin" />
-                  <span>Working on it…</span>
+                  {generationPreviewUrl ? (
+                    <img
+                      src={getOptimizedImageUrl(generationPreviewUrl) || generationPreviewUrl}
+                      alt=""
+                      className={previewSharpen ? 'preview-sharp' : 'preview-blur'}
+                    />
+                  ) : null}
+                  <div className="preview-overlay">
+                    <IconLoader size={44} className="spin" />
+                    <span>{progressLabel}</span>
+                    {activeGeneration?.prompt ? (
+                      <p className="preview-prompt">“{activeGeneration.prompt}”</p>
+                    ) : null}
+                    <div className="progress-track preview-progress" aria-hidden>
+                      <div className="progress-fill" style={{ width: `${generationProgress}%` }} />
+                    </div>
+                  </div>
                 </div>
               ) : latestImage ? (
                 <figure className="latest-figure">
@@ -268,18 +305,59 @@ export default function Generator() {
           color: #fbbf24;
         }
         .wait-line {
-          margin: 10px 0 0; text-align: center;
+          margin: 10px 0 6px; text-align: center;
           font-size: 0.8rem; font-weight: 700;
           color: var(--color-zinc-500); line-height: 1.35;
         }
+        .progress-track {
+          height: 6px; border-radius: 999px;
+          background: rgba(255,255,255,0.08); overflow: hidden;
+        }
+        .progress-fill {
+          height: 100%; border-radius: inherit;
+          background: linear-gradient(90deg, var(--color-accent), var(--color-dream-purple));
+          transition: width 0.45s ease;
+        }
+        .stage-dots {
+          display: flex; justify-content: center; gap: 8px; margin-top: 10px;
+        }
+        .stage-dot {
+          width: 8px; height: 8px; border-radius: 50%;
+          background: rgba(255,255,255,0.15);
+          transition: background 0.2s, transform 0.2s;
+        }
+        .stage-dot.active { background: var(--color-accent); transform: scale(1.15); }
 
         .preview-stage {
           min-height: 340px; border-radius: 14px; overflow: hidden;
           border: 1px solid rgba(255,255,255,0.08);
           background: rgba(0,0,0,0.15);
           display: flex; align-items: center; justify-content: center;
+          position: relative;
         }
-        .preview-loading { display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--color-accent); font-weight: 900; }
+        .preview-loading { width: 100%; min-height: 340px; position: relative; }
+        .preview-blur, .preview-sharp {
+          width: 100%; aspect-ratio: 1; object-fit: cover; display: block;
+          animation: previewReveal 0.5s ease;
+        }
+        .preview-blur {
+          filter: blur(8px) brightness(0.85); transform: scale(1.04);
+        }
+        .preview-sharp {
+          filter: none; transform: none;
+        }
+        @keyframes previewReveal {
+          from { opacity: 0; transform: scale(1.08); }
+          to { opacity: 1; transform: scale(1.04); }
+        }
+        .preview-overlay {
+          position: absolute; inset: 0;
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          gap: 12px; padding: 20px; text-align: center;
+          background: rgba(0,0,0,0.35); color: var(--color-accent); font-weight: 900;
+        }
+        .preview-progress { width: min(240px, 80%); margin-top: 4px; }
+        .preview-prompt { margin: 4px 0 0; font-size: 0.85rem; font-weight: 700; color: var(--color-zinc-400); line-height: 1.4; max-width: 280px; }
         .latest-figure { margin: 0; width: 100%; }
         .latest-figure img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
         .latest-figure figcaption { padding: 10px 12px; font-size: 0.85rem; font-weight: 700; color: var(--color-zinc-300); background: rgba(0,0,0,0.35); line-height: 1.35; }

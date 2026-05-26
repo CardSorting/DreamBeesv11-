@@ -1,7 +1,23 @@
 /**
  * [LAYER: INFRASTRUCTURE]
  */
-import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef, useMemo } from 'react';
+import {
+    GenerationStage,
+    ENQUEUE_RETRY_MESSAGE,
+    LONG_RUNNING_MESSAGE,
+    clearPendingGeneration,
+    loadPendingGeneration,
+    mergeGenerationHistory,
+    messageForStage,
+    monotonicProgress,
+    preloadImage,
+    progressPercent,
+    savePendingGeneration,
+    smoothIdleProgress,
+    stageFromQueueDoc,
+} from '../lib/generationFlow';
+import toast from 'react-hot-toast';
 import { auth, db, functions } from '../firebase.ts';
 import { httpsCallable } from 'firebase/functions';
 import { 
@@ -14,9 +30,8 @@ import {
     signInWithPopup,
     signInWithCredential
 } from 'firebase/auth';
-import { collection, doc, onSnapshot, query, orderBy, limit, setDoc, serverTimestamp, enableNetwork, disableNetwork } from 'firebase/firestore';
-import { AIModel } from '../lite-utils';
-import toast from 'react-hot-toast';
+import { collection, doc, onSnapshot, query, orderBy, limit, where, setDoc, serverTimestamp, enableNetwork, disableNetwork } from 'firebase/firestore';
+import { AIModel, getOptimizedImageUrl } from '../lite-utils';
 
 const BUILTIN_MODELS: AIModel[] = [
     {
@@ -57,10 +72,15 @@ interface LiteContextType {
     setSelectedModel: (model: AIModel) => void;
     history: any[];
     localHistory: any[];
+    displayHistory: any[];
     loading: boolean;
     generating: boolean;
+    generationStage: GenerationStage;
+    generationProgress: number;
+    generationPreviewUrl: string | null;
+    activeGeneration: { requestId: string; prompt: string } | null;
     generateStartTime: number | undefined;
-    generate: (prompt: string, params?: any) => Promise<void>;
+    generate: (prompt: string, params?: any) => Promise<boolean>;
     login: (email: string, pass: string) => Promise<void>;
     signup: (email: string, pass: string, birthday: string) => Promise<void>;
     logout: () => Promise<void>;
@@ -88,6 +108,12 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     const [localHistory, setLocalHistory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
+    const [generationStage, setGenerationStage] = useState<GenerationStage>('idle');
+    const [generationProgress, setGenerationProgress] = useState(0);
+    const [generationPreviewUrl, setGenerationPreviewUrl] = useState<string | null>(null);
+    const [activeGeneration, setActiveGeneration] = useState<{ requestId: string; prompt: string } | null>(null);
+    const generationSessionRef = useRef<(() => void) | null>(null);
+    const generatingRef = useRef(false);
     const [isOffline, setIsOffline] = useState(!navigator.onLine);
     const [cooldownUntil, setCooldownUntil] = useState<number>(0);
     const [consecutiveFailures, setConsecutiveFailures] = useState(0);
@@ -151,6 +177,94 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     }, []);
 
     useEffect(() => { loadLocal(); }, [loadLocal]);
+
+    const resetGenerationUi = useCallback(() => {
+        setGenerating(false);
+        setGenerationStage('idle');
+        setGenerationProgress(0);
+        setGenerationPreviewUrl(null);
+        setActiveGeneration(null);
+        setGenerateStartTime(undefined);
+    }, []);
+
+    useEffect(() => () => { generationSessionRef.current?.(); }, []);
+
+    /** Re-attach to an in-flight job after navigation refresh */
+    useEffect(() => {
+        if (!currentUser || generatingRef.current) return;
+
+        const pending = loadPendingGeneration();
+        if (!pending) return;
+
+        generatingRef.current = true;
+        setGenerating(true);
+        setGenerationStage('processing');
+        setGenerationProgress(40);
+        setActiveGeneration({ requestId: pending.requestId, prompt: pending.prompt });
+        setGenerateStartTime(pending.startedAt);
+        toast.loading('Checking on your picture…', { id: pending.requestId });
+
+        let settled = false;
+        let progressFloor = 40;
+
+        const finish = () => {
+            generatingRef.current = false;
+            clearPendingGeneration();
+        };
+
+        const unsub = onSnapshot(doc(db, 'generation_queue', pending.requestId), async (snap) => {
+            const data = snap.data();
+            if (!data || settled) return;
+
+            if (data.status === 'queued' || data.status === 'processing') {
+                const stage = stageFromQueueDoc(data);
+                const next = progressPercent(stage, data.progress);
+                progressFloor = monotonicProgress(progressFloor, next);
+                setGenerationStage(stage);
+                setGenerationProgress(progressFloor);
+                toast.loading(messageForStage(stage), { id: pending.requestId });
+                const preview = data.thumbnailUrl || data.lqip || data.imageUrl;
+                if (preview) setGenerationPreviewUrl(preview as string);
+                return;
+            }
+
+            if (data.status === 'completed' && data.imageUrl) {
+                settled = true;
+                unsub();
+                finish();
+                const entry = {
+                    id: pending.requestId,
+                    prompt: pending.prompt,
+                    imageUrl: data.imageUrl as string,
+                    createdAt: Date.now()
+                };
+                await preloadImage(getOptimizedImageUrl(data.imageUrl as string) || data.imageUrl as string);
+                setLocalHistory(prev => [entry, ...prev.filter(i => i.id !== pending.requestId)]);
+                resetGenerationUi();
+                toast.success('Your picture is ready!', { id: pending.requestId });
+                if (window.electronAPI?.lite) {
+                    try {
+                        await window.electronAPI.lite.saveGeneration(entry);
+                        loadLocal();
+                    } catch { /* ignore */ }
+                }
+                return;
+            }
+
+            if (data.status === 'failed') {
+                settled = true;
+                unsub();
+                finish();
+                resetGenerationUi();
+                toast.error((data.error as string) || 'Something went wrong.', { id: pending.requestId });
+            }
+        });
+
+        return () => {
+            settled = true;
+            unsub();
+        };
+    }, [currentUser, loadLocal, resetGenerationUi]);
 
     useEffect(() => {
         const handleStorage = (e: StorageEvent) => {
@@ -233,12 +347,22 @@ export function LiteProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         if (!currentUser) { setHistory([]); return; }
-        const q = query(collection(db, 'images'), orderBy('createdAt', 'desc'), limit(50));
-        return onSnapshot(q, snap => setHistory(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))), err => {
+        const q = query(
+            collection(db, 'images'),
+            where('userId', '==', currentUser.uid),
+            orderBy('createdAt', 'desc'),
+            limit(50)
+        );
+        return onSnapshot(q, snap => setHistory(snap.docs.map(d => ({ id: d.id, ...d.data() }))), err => {
             console.warn('[Lite] History subscription failed:', err);
             setHistory([]);
         });
     }, [currentUser]);
+
+    const displayHistory = useMemo(
+        () => mergeGenerationHistory(localHistory, history),
+        [localHistory, history]
+    );
 
     const login = (email: string, pass: string) => signInWithEmailAndPassword(auth, email, pass).then(() => {});
     
@@ -324,128 +448,206 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         return 0.5;
     };
 
-    const generate = useCallback(async (prompt: string, params: any = {}) => {
+    const generate = useCallback((prompt: string, params: any = {}): Promise<boolean> => {
         const cleanPrompt = prompt?.trim();
-        if (!cleanPrompt) return;
-        if (isOffline) { toast.error("The garden requires a connection to bloom."); return; }
-        if (!currentUser || !selectedModel) { toast.error("Identity unknown. Please sign in."); return; }
+        if (!cleanPrompt) return Promise.resolve(false);
+        if (generatingRef.current) return Promise.resolve(false);
+        if (isOffline) { toast.error("The garden requires a connection to bloom."); return Promise.resolve(false); }
+        if (!currentUser || !selectedModel) { toast.error("Identity unknown. Please sign in."); return Promise.resolve(false); }
         
-        // Credit Enforcement
         if (zaps !== 'unlimited' && zaps <= 0) {
             toast.error("You have exhausted your Zaps. Upgrade to continue creating.", { id: 'no-zaps' });
-            return;
+            return Promise.resolve(false);
         }
 
-        // OPTIMISTIC UI: Deduct credits locally to mask latency
-        const estimatedCost = calculateEstimatedCost(selectedModel.id, userTier);
-        if (typeof zaps === 'number' && estimatedCost > 0) {
-            setZaps(prev => typeof prev === 'number' ? Math.max(0, prev - estimatedCost) : prev);
-        }
-        
         if (Date.now() < cooldownUntil) {
             const remaining = Math.ceil((cooldownUntil - Date.now()) / 1000);
             toast.error(`Service is cooling down. Please wait ${remaining}s...`, { id: 'cooldown' });
-            return;
+            return Promise.resolve(false);
         }
+
+        return new Promise<boolean>((resolve) => {
+        generatingRef.current = true;
+        const estimatedCost = calculateEstimatedCost(selectedModel.id, userTier);
+        const requestId = `gen_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+        generationSessionRef.current?.();
 
         setGenerating(true);
+        setGenerationStage('submitting');
+        setGenerationProgress(10);
+        setGenerationPreviewUrl(null);
+        setActiveGeneration({ requestId, prompt: cleanPrompt });
         setGenerateStartTime(Date.now());
-        const requestId = `gen_${Date.now()}`;
-        const toastId = toast.loading("Invoking the latent space...", { id: requestId });
-        const controller = new AbortController();
+        savePendingGeneration({ requestId, prompt: cleanPrompt, startedAt: Date.now() });
+        toast.loading(messageForStage('submitting'), { id: requestId });
 
-        const timeoutId = setTimeout(() => {
-            controller.abort();
-            setGenerating(false);
-            setGenerateStartTime(undefined);
-            toast.error("The vision is taking too long to manifest.", { id: requestId });
-            
+        if (typeof zaps === 'number' && estimatedCost > 0) {
+            setZaps(prev => typeof prev === 'number' ? Math.max(0, prev - estimatedCost) : prev);
+        }
+
+        let unsub: (() => void) | null = null;
+        let idleTick: ReturnType<typeof setInterval> | null = null;
+        const softTimeoutIds: ReturnType<typeof setTimeout>[] = [];
+        let settled = false;
+        let apiAccepted = false;
+        let sawQueueDoc = false;
+        let progressFloor = 10;
+
+        const rollbackCredits = () => {
+            if (estimatedCost > 0) {
+                setZaps(prev => typeof prev === 'number' ? prev + estimatedCost : prev);
+            }
+        };
+
+        const finishSession = () => {
+            softTimeoutIds.forEach(clearTimeout);
+            if (idleTick) clearInterval(idleTick);
+            if (unsub) unsub();
+            unsub = null;
+            idleTick = null;
+            generatingRef.current = false;
+            clearPendingGeneration();
+            if (generationSessionRef.current === finishSession) {
+                generationSessionRef.current = null;
+            }
+        };
+
+        const failGeneration = (message: string, rollback = !apiAccepted) => {
+            if (settled) return;
+            settled = true;
+            finishSession();
+            if (rollback) rollbackCredits();
+            resetGenerationUi();
+            toast.error(message, { id: requestId });
             setConsecutiveFailures(prev => {
                 const next = prev + 1;
-                if (next >= 3) {
-                    setCooldownUntil(Date.now() + 120000);
-                    toast.error("Service appears overwhelmed. Entering recovery cooldown.", { duration: 5000 });
-                }
+                if (next >= 3) setCooldownUntil(Date.now() + 120000);
                 return next;
             });
-        }, 90000);
+            resolve(false);
+        };
 
-        try {
-            const apiCall = httpsCallable(functions, 'api');
+        const succeedGeneration = async (data: { imageUrl: string }) => {
+            if (settled) return;
+            settled = true;
+            finishSession();
+            setGenerationProgress(100);
+
+            const optimizedUrl = getOptimizedImageUrl(data.imageUrl) || data.imageUrl;
+            await preloadImage(optimizedUrl);
+
+            const entry = {
+                id: requestId,
+                prompt: cleanPrompt,
+                imageUrl: data.imageUrl,
+                modelId: selectedModel.id,
+                params,
+                createdAt: Date.now()
+            };
+            setLocalHistory(prev => [entry, ...prev.filter(i => i.id !== requestId)]);
+
+            resetGenerationUi();
+            toast.success("Your picture is ready!", { id: requestId });
+            setConsecutiveFailures(0);
             
-            const res = await apiCall({ 
-                action: 'createGenerationRequest', 
-                prompt: cleanPrompt, 
-                modelId: selectedModel.id, 
-                requestId, 
-                ...params 
-            });
-            
-            if (!res.data) throw new Error("The engine failed to respond.");
-            
-            const unsub = onSnapshot(doc(db, 'generation_queue', requestId), async (snap) => {
-                const data = snap.data();
-                if (data?.status === 'completed' && data.imageUrl) {
-                    clearTimeout(timeoutId);
-                    setGenerateStartTime(undefined);
-                    toast.success("Vision materialized.", { id: requestId });
-                    setGenerating(false);
-                    setConsecutiveFailures(0);
-                    
-                    if (window.electronAPI?.lite) {
-                        try {
-                            await window.electronAPI.lite.saveGeneration({
-                                id: requestId,
-                                prompt: cleanPrompt,
-                                imageUrl: data.imageUrl,
-                                modelId: selectedModel.id,
-                                params,
-                                createdAt: Date.now()
-                            });
-                            loadLocal();
-                        } catch (err) {
-                            console.warn('[Lite] Local save skipped:', err);
-                        }
-                    }
-                    unsub();
-                } else if (data?.status === 'failed') {
-                    clearTimeout(timeoutId);
-                    setGenerateStartTime(undefined);
-                    toast.error(data.error || "The manifestation failed.", { id: requestId });
-                    setGenerating(false);
-                    
-                    setConsecutiveFailures(prev => {
-                        const next = prev + 1;
-                        if (next >= 3) setCooldownUntil(Date.now() + 120000);
-                        return next;
-                    });
-                    unsub();
+            if (window.electronAPI?.lite) {
+                try {
+                    await window.electronAPI.lite.saveGeneration(entry);
+                    loadLocal();
+                } catch (err) {
+                    console.warn('[Lite] Local save skipped:', err);
                 }
-            }, err => {
-                console.warn('[Lite] Gen subscription error:', err);
-                clearTimeout(timeoutId);
-                setGenerating(false);
-                setGenerateStartTime(undefined);
-            });
-        } catch (err: any) {
-            clearTimeout(timeoutId);
-            setGenerateStartTime(undefined);
-            if (err.name !== 'AbortError') {
-                toast.error(err.message, { id: requestId });
-                setConsecutiveFailures(prev => {
-                    const next = prev + 1;
-                    if (next >= 3) setCooldownUntil(Date.now() + 120000);
-                    return next;
-                });
             }
-            setGenerating(false);
-        }
-    }, [currentUser, selectedModel, isOffline, loadLocal, cooldownUntil]);
+            resolve(true);
+        };
+
+        generationSessionRef.current = finishSession;
+
+        idleTick = setInterval(() => {
+            if (settled || sawQueueDoc) return;
+            progressFloor = smoothIdleProgress(progressFloor);
+            setGenerationProgress(progressFloor);
+        }, 700);
+
+        softTimeoutIds.push(
+            setTimeout(() => {
+                if (!settled) toast.loading(LONG_RUNNING_MESSAGE, { id: requestId });
+            }, 60000),
+            setTimeout(() => {
+                if (!settled) toast.loading(LONG_RUNNING_MESSAGE, { id: requestId });
+            }, 120000)
+        );
+
+        const applyQueueUpdate = (data: Record<string, unknown>) => {
+            sawQueueDoc = true;
+            const stage = stageFromQueueDoc(data as { status?: string; stage?: string });
+            const progress = progressPercent(stage, data.progress as number | undefined);
+            progressFloor = monotonicProgress(progressFloor, progress);
+            setGenerationStage(stage);
+            setGenerationProgress(progressFloor);
+            toast.loading(messageForStage(stage), { id: requestId });
+
+            if (data.enqueueError && !data.enqueuedAt) {
+                toast.loading(ENQUEUE_RETRY_MESSAGE, { id: requestId });
+            }
+
+            const preview = (data.thumbnailUrl || data.lqip || data.imageUrl) as string | undefined;
+            if (preview) {
+                setGenerationPreviewUrl(preview);
+                const fullUrl = data.imageUrl as string | undefined;
+                if (fullUrl) {
+                    preloadImage(getOptimizedImageUrl(fullUrl) || fullUrl);
+                }
+            }
+        };
+
+        unsub = onSnapshot(doc(db, 'generation_queue', requestId), (snap) => {
+            const data = snap.data();
+            if (!data) return;
+
+            if (data.status === 'queued' || data.status === 'processing') {
+                applyQueueUpdate(data);
+                return;
+            }
+
+            if (data.status === 'completed' && data.imageUrl) {
+                succeedGeneration({ imageUrl: data.imageUrl as string });
+                return;
+            }
+
+            if (data.status === 'failed') {
+                failGeneration(
+                    (data.error as string) || "Something went wrong. Your credits were returned.",
+                    false
+                );
+            }
+        }, (err) => {
+            console.warn('[Lite] Gen subscription error:', err);
+            failGeneration("Lost connection to the server. Please try again.", !apiAccepted);
+        });
+
+        const apiCall = httpsCallable(functions, 'api', { timeout: 120000 });
+        apiCall({ 
+            action: 'createGenerationRequest', 
+            prompt: cleanPrompt, 
+            modelId: selectedModel.id, 
+            requestId, 
+            ...params 
+        }).then(() => {
+            apiAccepted = true;
+        }).catch((err: any) => {
+            failGeneration(err.message || "Could not start. Please try again.");
+        });
+        });
+    }, [currentUser, selectedModel, isOffline, loadLocal, cooldownUntil, userTier, zaps, resetGenerationUi]);
 
     return (
         <LiteContext.Provider value={{ 
             currentUser, availableModels, selectedModel, setSelectedModel, 
-            history, localHistory, loading, generating, generateStartTime, generate, 
+            history, localHistory, displayHistory, loading, generating, generationStage, generationProgress,
+            generationPreviewUrl, activeGeneration,
+            generateStartTime, generate, 
             login, signup, logout, loginWithGoogle, isOffline, userTier, zaps,
             addToast,
             modelsError

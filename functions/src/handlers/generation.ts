@@ -66,8 +66,10 @@ export const handleCreateGenerationRequest = async (request: RequestWithAuth<any
     const generatedResult = result as GenerationResult;
     const requestId = generatedResult.requestId;
 
-    // 5. Queue task for worker (Infrastructure concern)
-    await enqueueGenerationTask(requestId, firebaseContext, finalUid);
+    // Queue worker task without blocking response (inline retry + recovery fallback)
+    enqueueGenerationTaskWithRetry(requestId, firebaseContext, finalUid).catch((enqueueErr) => {
+      logger.error(`[Generation Handler] Enqueue failed for ${requestId}`, enqueueErr);
+    });
 
     return {
       requestId
@@ -77,6 +79,39 @@ export const handleCreateGenerationRequest = async (request: RequestWithAuth<any
     throw handleError(error, { uid, modelId: data.modelId });
   }
 };
+
+const ENQUEUE_MAX_ATTEMPTS = 2;
+
+async function enqueueGenerationTaskWithRetry(
+  requestId: string,
+  ctx: any,
+  userId: string
+): Promise<void> {
+  const existing = await db.collection('generation_queue').doc(requestId).get();
+  if (existing.exists && existing.data()?.enqueuedAt && !existing.data()?.enqueueError) {
+    return;
+  }
+
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= ENQUEUE_MAX_ATTEMPTS; attempt++) {
+    try {
+      await enqueueGenerationTask(requestId, ctx, userId);
+      await db.collection('generation_queue').doc(requestId).update({
+        enqueuedAt: FieldValue.serverTimestamp(),
+        enqueueAttempts: attempt
+      }).catch(() => { });
+      return;
+    } catch (err) {
+      lastError = err;
+      logger.warn(`[Generation Handler] Enqueue attempt ${attempt} failed for ${requestId}`, err);
+    }
+  }
+  await db.collection('generation_queue').doc(requestId).update({
+    enqueueError: lastError instanceof Error ? lastError.message : 'Enqueue failed',
+    lastEnqueueAttempt: FieldValue.serverTimestamp()
+  }).catch(() => { });
+  throw lastError;
+}
 
 /**
  * Help: Enqueue generation task for worker (Infrastructure)

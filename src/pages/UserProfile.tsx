@@ -22,7 +22,7 @@ function getDisplayName(email?: string | null, name?: string | null) {
 }
 
 export default function UserProfile() {
-    const { currentUser, logout, localHistory, addToast, zaps } = useLite();
+    const { currentUser, logout, displayHistory, addToast, zaps } = useLite();
 
     const handleLogout = async () => {
         try {
@@ -33,7 +33,7 @@ export default function UserProfile() {
         }
     };
 
-    const pictures = useMemo(() => [...localHistory] as LocalGeneration[], [localHistory]);
+    const pictures = useMemo(() => [...displayHistory] as LocalGeneration[], [displayHistory]);
     const displayName = getDisplayName(currentUser?.email, currentUser?.displayName);
     const creditsLabel = zaps === 'unlimited' ? 'Unlimited' : String(zaps);
 

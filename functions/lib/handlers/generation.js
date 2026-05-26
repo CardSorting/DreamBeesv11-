@@ -1,5 +1,5 @@
 import { HttpsError } from "firebase-functions/v2/https";
-import { db, getFunctions } from "../firebaseInit.js";
+import { db, FieldValue, getFunctions } from "../firebaseInit.js";
 import { handleError, logger } from "../lib/utils.js";
 // Core orchestration layer
 import { ImageGenerationOrchestrator } from "../core/ImageGenerationOrchestrator.js";
@@ -50,8 +50,10 @@ export const handleCreateGenerationRequest = async (request) => {
         // 4. Return Firebase-specific response (result is guaranteed to be GenerationResult here - type guard passed)
         const generatedResult = result;
         const requestId = generatedResult.requestId;
-        // 5. Queue task for worker (Infrastructure concern)
-        await enqueueGenerationTask(requestId, firebaseContext, finalUid);
+        // Queue worker task without blocking response (inline retry + recovery fallback)
+        enqueueGenerationTaskWithRetry(requestId, firebaseContext, finalUid).catch((enqueueErr) => {
+            logger.error(`[Generation Handler] Enqueue failed for ${requestId}`, enqueueErr);
+        });
         return {
             requestId
         };
@@ -61,6 +63,33 @@ export const handleCreateGenerationRequest = async (request) => {
         throw handleError(error, { uid, modelId: data.modelId });
     }
 };
+const ENQUEUE_MAX_ATTEMPTS = 2;
+async function enqueueGenerationTaskWithRetry(requestId, ctx, userId) {
+    const existing = await db.collection('generation_queue').doc(requestId).get();
+    if (existing.exists && existing.data()?.enqueuedAt && !existing.data()?.enqueueError) {
+        return;
+    }
+    let lastError;
+    for (let attempt = 1; attempt <= ENQUEUE_MAX_ATTEMPTS; attempt++) {
+        try {
+            await enqueueGenerationTask(requestId, ctx, userId);
+            await db.collection('generation_queue').doc(requestId).update({
+                enqueuedAt: FieldValue.serverTimestamp(),
+                enqueueAttempts: attempt
+            }).catch(() => { });
+            return;
+        }
+        catch (err) {
+            lastError = err;
+            logger.warn(`[Generation Handler] Enqueue attempt ${attempt} failed for ${requestId}`, err);
+        }
+    }
+    await db.collection('generation_queue').doc(requestId).update({
+        enqueueError: lastError instanceof Error ? lastError.message : 'Enqueue failed',
+        lastEnqueueAttempt: FieldValue.serverTimestamp()
+    }).catch(() => { });
+    throw lastError;
+}
 /**
  * Help: Enqueue generation task for worker (Infrastructure)
  */

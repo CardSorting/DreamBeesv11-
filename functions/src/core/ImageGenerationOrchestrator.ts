@@ -49,11 +49,25 @@ export class ImageGenerationOrchestrator {
     forensic.checkpoint('submission_start');
 
     return this.executeWithIdempotency(requestId, database, async () => {
-      // 1. Fetch User Data (Single Point of Truth)
-      const userDoc = await database.collection('users').doc(request.auth?.uid).get();
+      // 1. User doc + idempotency doc in parallel (saves one round-trip vs sequential)
+      const uid = request.auth?.uid;
+      const [userDoc, queueSnap] = await Promise.all([
+        database.collection('users').doc(uid).get(),
+        database.collection('generation_queue').doc(requestId).get()
+      ]);
+
       if (!userDoc.exists) {
           throw new Error('User document not found. Please re-authenticate.');
       }
+
+      if (queueSnap.exists) {
+        const existingStatus = (queueSnap.data() as any)?.status;
+        if (['queued', 'processing', 'completed'].includes(existingStatus)) {
+          forensic.checkpoint('idempotent_hit');
+          return { requestId };
+        }
+      }
+
       const userData = userDoc.data();
       const userTier = userData.tier || 'free';
       const isPremiumUser = userTier === 'pro' || userTier === 'architect';
@@ -61,11 +75,14 @@ export class ImageGenerationOrchestrator {
       // 2. Preprocess request
       const { sanitizedRequest } = PromptPreprocessor.preprocess(request, isPremiumUser);
 
-      // 3. Parallel Pre-flight Checks (Substrate Health + Quota)
-      const [isHealthy, activeJobs] = await Promise.all([
-          SubstrateHealth.isHealthy(sanitizedRequest.modelId),
-          this.getActiveJobsCount(sanitizedRequest.requestorUid, database)
-      ]);
+      // 3. Parallel pre-flight (skip active-job scan for subscribers — saves a query)
+      const preflight: [Promise<boolean>, Promise<number> | Promise<0>] = [
+        SubstrateHealth.isHealthy(sanitizedRequest.modelId),
+        isPremiumUser
+          ? Promise.resolve(0)
+          : this.getActiveJobsCount(sanitizedRequest.requestorUid, database)
+      ];
+      const [isHealthy, activeJobs] = await Promise.all(preflight);
 
       if (!isHealthy) {
           forensic.checkpoint('circuit_break_triggered');
@@ -96,6 +113,15 @@ export class ImageGenerationOrchestrator {
 
       // 6. ATOMIC SUBMISSION: Transactional Debit + Queue Document
       await database.runTransaction(async (t: any) => {
+          const queueRef = database.collection('generation_queue').doc(requestId);
+          const existing = await t.get(queueRef);
+          if (existing.exists) {
+            const st = (existing.data() as any)?.status;
+            if (['queued', 'processing', 'completed'].includes(st)) {
+              return;
+            }
+          }
+
           // A. Debit Wallet
           await Wallet.debit(
               sanitizedRequest.initiatorUid,
@@ -161,7 +187,7 @@ export class ImageGenerationOrchestrator {
   private static async checkIdempotency(requestId: string, database: any): Promise<any> {
     try {
       const doc = await database.collection('generation_queue').doc(requestId).get();
-      if (doc.exists && ['processing', 'completed'].includes((doc.data() as any).status)) {
+      if (doc.exists && ['queued', 'processing', 'completed'].includes((doc.data() as any).status)) {
         return { requestId };
       }
       return null;
@@ -217,6 +243,7 @@ export class ImageGenerationOrchestrator {
       seed: request.seed,
       scheduler: request.scheduler,
       status: 'queued',
+      stage: 'queued',
       cost,
       debited: true,
       createdAt: FieldValue.serverTimestamp()
