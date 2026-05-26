@@ -4,19 +4,24 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef, useMemo } from 'react';
 import {
     GenerationStage,
-    ENQUEUE_RETRY_MESSAGE,
     LONG_RUNNING_MESSAGE,
+    IN_LINE_MESSAGE,
+    SLOW_START_MESSAGE,
     clearPendingGeneration,
     loadPendingGeneration,
     mergeGenerationHistory,
     messageForStage,
     monotonicProgress,
     preloadImage,
-    progressPercent,
     savePendingGeneration,
     smoothIdleProgress,
-    stageFromQueueDoc,
 } from '../lib/generationFlow';
+import {
+    isQueueInFlight,
+    isQueueSuccess,
+    patchFromQueueDoc,
+    QueueSnapshot,
+} from '../lib/generationSession';
 import toast from 'react-hot-toast';
 import { auth, db, functions } from '../firebase.ts';
 import { httpsCallable } from 'firebase/functions';
@@ -212,57 +217,72 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             clearPendingGeneration();
         };
 
+        const succeedPending = async (imageUrl: string) => {
+            if (settled) return;
+            settled = true;
+            finish();
+            const entry = {
+                id: pending.requestId,
+                prompt: pending.prompt,
+                imageUrl,
+                createdAt: Date.now()
+            };
+            await preloadImage(getOptimizedImageUrl(imageUrl) || imageUrl);
+            setLocalHistory(prev => [entry, ...prev.filter(i => i.id !== pending.requestId)]);
+            resetGenerationUi();
+            toast.success('Your picture is ready!', { id: pending.requestId });
+            if (window.electronAPI?.lite) {
+                try {
+                    await window.electronAPI.lite.saveGeneration(entry);
+                    loadLocal();
+                } catch { /* ignore */ }
+            }
+        };
+
         const unsub = onSnapshot(doc(db, 'generation_queue', pending.requestId), async (snap) => {
             const data = snap.data();
             if (!data || settled) return;
 
-            if (data.status === 'queued' || data.status === 'processing') {
-                const stage = stageFromQueueDoc(data);
-                const next = progressPercent(stage, data.progress);
-                progressFloor = monotonicProgress(progressFloor, next);
-                setGenerationStage(stage);
-                setGenerationProgress(progressFloor);
-                toast.loading(messageForStage(stage), { id: pending.requestId });
-                const preview = data.thumbnailUrl || data.lqip || data.imageUrl;
-                if (preview) setGenerationPreviewUrl(preview as string);
+            if (isQueueInFlight(data as QueueSnapshot)) {
+                const { patch, progressFloor: next } = patchFromQueueDoc(data as QueueSnapshot, progressFloor);
+                progressFloor = next;
+                setGenerationStage(patch.stage);
+                setGenerationProgress(patch.progress);
+                toast.loading(patch.message, { id: pending.requestId });
+                if (patch.previewUrl) setGenerationPreviewUrl(patch.previewUrl);
                 return;
             }
 
-            if (data.status === 'completed' && data.imageUrl) {
-                settled = true;
-                unsub();
-                finish();
-                const entry = {
-                    id: pending.requestId,
-                    prompt: pending.prompt,
-                    imageUrl: data.imageUrl as string,
-                    createdAt: Date.now()
-                };
-                await preloadImage(getOptimizedImageUrl(data.imageUrl as string) || data.imageUrl as string);
-                setLocalHistory(prev => [entry, ...prev.filter(i => i.id !== pending.requestId)]);
-                resetGenerationUi();
-                toast.success('Your picture is ready!', { id: pending.requestId });
-                if (window.electronAPI?.lite) {
-                    try {
-                        await window.electronAPI.lite.saveGeneration(entry);
-                        loadLocal();
-                    } catch { /* ignore */ }
-                }
+            if (isQueueSuccess(data as QueueSnapshot)) {
+                await succeedPending(data.imageUrl as string);
                 return;
             }
 
             if (data.status === 'failed') {
                 settled = true;
-                unsub();
                 finish();
                 resetGenerationUi();
                 toast.error((data.error as string) || 'Something went wrong.', { id: pending.requestId });
             }
         });
 
+        const imagesUnsub = onSnapshot(
+            query(
+                collection(db, 'images'),
+                where('originalRequestId', '==', pending.requestId),
+                limit(1)
+            ),
+            (snap) => {
+                if (settled || snap.empty) return;
+                const img = snap.docs[0].data();
+                if (img.imageUrl) succeedPending(img.imageUrl as string);
+            }
+        );
+
         return () => {
             settled = true;
             unsub();
+            imagesUnsub();
         };
     }, [currentUser, loadLocal, resetGenerationUi]);
 
@@ -487,12 +507,14 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         }
 
         let unsub: (() => void) | null = null;
+        let imagesUnsub: (() => void) | null = null;
         let idleTick: ReturnType<typeof setInterval> | null = null;
         const softTimeoutIds: ReturnType<typeof setTimeout>[] = [];
         let settled = false;
         let apiAccepted = false;
         let sawQueueDoc = false;
         let progressFloor = 10;
+        let lastToastMessage = messageForStage('submitting');
 
         const rollbackCredits = () => {
             if (estimatedCost > 0) {
@@ -504,7 +526,9 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             softTimeoutIds.forEach(clearTimeout);
             if (idleTick) clearInterval(idleTick);
             if (unsub) unsub();
+            if (imagesUnsub) imagesUnsub();
             unsub = null;
+            imagesUnsub = null;
             idleTick = null;
             generatingRef.current = false;
             clearPendingGeneration();
@@ -572,6 +596,18 @@ export function LiteProvider({ children }: { children: ReactNode }) {
 
         softTimeoutIds.push(
             setTimeout(() => {
+                if (settled || sawQueueDoc) return;
+                if (apiAccepted) {
+                    progressFloor = monotonicProgress(progressFloor, 32);
+                    setGenerationProgress(progressFloor);
+                    lastToastMessage = IN_LINE_MESSAGE;
+                    toast.loading(IN_LINE_MESSAGE, { id: requestId });
+                } else {
+                    lastToastMessage = SLOW_START_MESSAGE;
+                    toast.loading(SLOW_START_MESSAGE, { id: requestId });
+                }
+            }, 8000),
+            setTimeout(() => {
                 if (!settled) toast.loading(LONG_RUNNING_MESSAGE, { id: requestId });
             }, 60000),
             setTimeout(() => {
@@ -579,25 +615,22 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             }, 120000)
         );
 
-        const applyQueueUpdate = (data: Record<string, unknown>) => {
+        const applyQueueUpdate = (data: QueueSnapshot) => {
             sawQueueDoc = true;
-            const stage = stageFromQueueDoc(data as { status?: string; stage?: string });
-            const progress = progressPercent(stage, data.progress as number | undefined);
-            progressFloor = monotonicProgress(progressFloor, progress);
-            setGenerationStage(stage);
-            setGenerationProgress(progressFloor);
-            toast.loading(messageForStage(stage), { id: requestId });
+            const { patch, progressFloor: next } = patchFromQueueDoc(data, progressFloor);
+            progressFloor = next;
+            setGenerationStage(patch.stage);
+            setGenerationProgress(patch.progress);
 
-            if (data.enqueueError && !data.enqueuedAt) {
-                toast.loading(ENQUEUE_RETRY_MESSAGE, { id: requestId });
+            if (patch.message !== lastToastMessage) {
+                lastToastMessage = patch.message;
+                toast.loading(patch.message, { id: requestId });
             }
 
-            const preview = (data.thumbnailUrl || data.lqip || data.imageUrl) as string | undefined;
-            if (preview) {
-                setGenerationPreviewUrl(preview);
-                const fullUrl = data.imageUrl as string | undefined;
-                if (fullUrl) {
-                    preloadImage(getOptimizedImageUrl(fullUrl) || fullUrl);
+            if (patch.previewUrl) {
+                setGenerationPreviewUrl(patch.previewUrl);
+                if (data.imageUrl && !data.lqip?.startsWith('data:')) {
+                    preloadImage(getOptimizedImageUrl(data.imageUrl) || data.imageUrl);
                 }
             }
         };
@@ -606,12 +639,12 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             const data = snap.data();
             if (!data) return;
 
-            if (data.status === 'queued' || data.status === 'processing') {
-                applyQueueUpdate(data);
+            if (isQueueInFlight(data as QueueSnapshot)) {
+                applyQueueUpdate(data as QueueSnapshot);
                 return;
             }
 
-            if (data.status === 'completed' && data.imageUrl) {
+            if (isQueueSuccess(data as QueueSnapshot)) {
                 succeedGeneration({ imageUrl: data.imageUrl as string });
                 return;
             }
@@ -627,6 +660,21 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             failGeneration("Lost connection to the server. Please try again.", !apiAccepted);
         });
 
+        imagesUnsub = onSnapshot(
+            query(
+                collection(db, 'images'),
+                where('originalRequestId', '==', requestId),
+                limit(1)
+            ),
+            (snap) => {
+                if (settled || snap.empty) return;
+                const img = snap.docs[0].data();
+                if (img.imageUrl) {
+                    succeedGeneration({ imageUrl: img.imageUrl as string });
+                }
+            }
+        );
+
         const apiCall = httpsCallable(functions, 'api', { timeout: 120000 });
         apiCall({ 
             action: 'createGenerationRequest', 
@@ -636,6 +684,13 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             ...params 
         }).then(() => {
             apiAccepted = true;
+            progressFloor = monotonicProgress(progressFloor, 28);
+            setGenerationStage('queued');
+            setGenerationProgress(progressFloor);
+            if (lastToastMessage !== messageForStage('queued')) {
+                lastToastMessage = messageForStage('queued');
+                toast.loading(lastToastMessage, { id: requestId });
+            }
         }).catch((err: any) => {
             failGeneration(err.message || "Could not start. Please try again.");
         });

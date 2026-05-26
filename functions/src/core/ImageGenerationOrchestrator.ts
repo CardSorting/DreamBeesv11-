@@ -48,7 +48,7 @@ export class ImageGenerationOrchestrator {
 
     forensic.checkpoint('submission_start');
 
-    return this.executeWithIdempotency(requestId, database, async () => {
+    return this.executeWithIdempotency(requestId, async () => {
       // 1. User doc + idempotency doc in parallel (saves one round-trip vs sequential)
       const uid = request.auth?.uid;
       const [userDoc, queueSnap] = await Promise.all([
@@ -156,15 +156,9 @@ export class ImageGenerationOrchestrator {
    */
   private static async executeWithIdempotency(
     requestId: string,
-    database: any,
     operation: () => Promise<GenerationResult | GenerationError>
   ): Promise<GenerationResult | GenerationError> {
     try {
-      const existing = await this.checkIdempotency(requestId, database);
-      if (existing) {
-        return existing;
-      }
-
       const result = await operation();
       if (!result) {
         throw new Error('Operation completed with no result');
@@ -178,21 +172,6 @@ export class ImageGenerationOrchestrator {
         error: error.message || 'Unknown error',
         status: 'failed'
       };
-    }
-  }
-
-  /**
-   * Check if request has already been processed (idempotency)
-   */
-  private static async checkIdempotency(requestId: string, database: any): Promise<any> {
-    try {
-      const doc = await database.collection('generation_queue').doc(requestId).get();
-      if (doc.exists && ['queued', 'processing', 'completed'].includes((doc.data() as any).status)) {
-        return { requestId };
-      }
-      return null;
-    } catch (error) {
-      return null;
     }
   }
 
@@ -244,6 +223,7 @@ export class ImageGenerationOrchestrator {
       scheduler: request.scheduler,
       status: 'queued',
       stage: 'queued',
+      progress: 8,
       cost,
       debited: true,
       createdAt: FieldValue.serverTimestamp()

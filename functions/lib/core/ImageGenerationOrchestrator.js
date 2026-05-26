@@ -28,7 +28,7 @@ export class ImageGenerationOrchestrator {
             startTime
         });
         forensic.checkpoint('submission_start');
-        return this.executeWithIdempotency(requestId, database, async () => {
+        return this.executeWithIdempotency(requestId, async () => {
             // 1. User doc + idempotency doc in parallel (saves one round-trip vs sequential)
             const uid = request.auth?.uid;
             const [userDoc, queueSnap] = await Promise.all([
@@ -98,12 +98,8 @@ export class ImageGenerationOrchestrator {
     /**
      * Execute operation with idempotency check
      */
-    static async executeWithIdempotency(requestId, database, operation) {
+    static async executeWithIdempotency(requestId, operation) {
         try {
-            const existing = await this.checkIdempotency(requestId, database);
-            if (existing) {
-                return existing;
-            }
             const result = await operation();
             if (!result) {
                 throw new Error('Operation completed with no result');
@@ -117,21 +113,6 @@ export class ImageGenerationOrchestrator {
                 error: error.message || 'Unknown error',
                 status: 'failed'
             };
-        }
-    }
-    /**
-     * Check if request has already been processed (idempotency)
-     */
-    static async checkIdempotency(requestId, database) {
-        try {
-            const doc = await database.collection('generation_queue').doc(requestId).get();
-            if (doc.exists && ['queued', 'processing', 'completed'].includes(doc.data().status)) {
-                return { requestId };
-            }
-            return null;
-        }
-        catch (error) {
-            return null;
         }
     }
     /**
@@ -174,6 +155,7 @@ export class ImageGenerationOrchestrator {
             scheduler: request.scheduler,
             status: 'queued',
             stage: 'queued',
+            progress: 8,
             cost,
             debited: true,
             createdAt: FieldValue.serverTimestamp()

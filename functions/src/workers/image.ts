@@ -215,7 +215,7 @@ export const processImageTask = async (req: { data: any }): Promise<void> => {
                 await docRef.update({ stage: "generating", progress: 20 }).catch(() => { });
 
                 for (let poll = 0; poll < 120; poll++) {
-                    const delayMs = poll === 0 ? 400 : Math.min(700 + poll * 300, 3000);
+                    const delayMs = poll === 0 ? 300 : Math.min(600 + poll * 280, 2800);
                     await new Promise(r => setTimeout(r, delayMs));
                     const pollProgress = Math.min(75, 20 + poll * 3);
                     docRef.update({ stage: "generating", progress: pollProgress }).catch(() => { });
@@ -248,15 +248,19 @@ export const processImageTask = async (req: { data: any }): Promise<void> => {
         await docRef.update({ progress: 72, stage: "generating" }).catch(() => { });
 
         const { default: sharp } = await import("sharp");
-        const sharpImg = sharp(imageBuffer);
 
-        const [webpBuffer, thumbBuffer, lqipBuffer] = await Promise.all([
-            sharpImg.webp({ quality: 90 }).toBuffer(),
-            sharpImg.resize(512, 512, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 80 }).toBuffer(),
-            sharpImg.resize(20, 20, { fit: 'inside' }).webp({ quality: 20 }).toBuffer()
-        ]);
-
+        // LQIP first — smallest encode, pushed to client before full resize/upload work
+        const lqipBuffer = await sharp(imageBuffer)
+            .resize(20, 20, { fit: 'inside', withoutEnlargement: true })
+            .webp({ quality: 20 })
+            .toBuffer();
         lqip = `data:image/webp;base64,${lqipBuffer.toString('base64')}`;
+        await docRef.update({ progress: 78, lqip, stage: "generating" }).catch(() => { });
+
+        const [webpBuffer, thumbBuffer] = await Promise.all([
+            sharp(imageBuffer).webp({ quality: 90 }).toBuffer(),
+            sharp(imageBuffer).resize(512, 512, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 80 }).toBuffer()
+        ]);
 
         const baseFolder = `generated/${userId}/${Date.now()}`;
         const originalFilename = `${baseFolder}.webp`;

@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLite } from '../contexts/LiteContext';
 import { getOptimizedImageUrl } from '../lite-utils';
-import { messageForStage, STAGE_ORDER } from '../lib/generationFlow';
+import { formatElapsed, messageForStage, STAGE_ORDER } from '../lib/generationFlow';
 import { IconImage, IconLoader, IconMagic, IconZap } from '../icons';
 
 const quickIdeas = [
@@ -19,9 +19,16 @@ export default function Generator() {
 
   const {
     selectedModel, generate, generating, generationStage, generationProgress,
-    generationPreviewUrl, activeGeneration, displayHistory,
+    generationPreviewUrl, activeGeneration, displayHistory, generateStartTime,
     currentUser, isOffline, zaps,
   } = useLite();
+
+  const [, setElapsedTick] = useState(0);
+  useEffect(() => {
+    if (!generating || !generateStartTime) return;
+    const id = setInterval(() => setElapsedTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [generating, generateStartTime]);
 
   const cleanPrompt = prompt.trim();
   const latestImage = displayHistory[0];
@@ -45,6 +52,8 @@ export default function Generator() {
   const progressLabel = generating ? messageForStage(generationStage) : null;
   const stageIndex = generating ? STAGE_ORDER.indexOf(generationStage as typeof STAGE_ORDER[number]) : -1;
   const previewSharpen = generationProgress >= 88;
+  const elapsedText =
+    generating && generateStartTime ? formatElapsed(Date.now() - generateStartTime) : null;
 
   const blockReason = useMemo(() => {
     if (generating || canGenerate) return null;
@@ -137,7 +146,10 @@ export default function Generator() {
               {blockReason ? <p className="block-line">{blockReason}</p> : null}
               {generating ? (
                 <>
-                  <p className="wait-line">{progressLabel}</p>
+                  <p className="wait-line">
+                    {progressLabel}
+                    {elapsedText ? <span className="elapsed-hint"> · {elapsedText}</span> : null}
+                  </p>
                   <div className="progress-track" role="progressbar" aria-valuenow={generationProgress} aria-valuemin={0} aria-valuemax={100} aria-label="Creation progress">
                     <div className="progress-fill" style={{ width: `${generationProgress}%` }} />
                   </div>
@@ -163,17 +175,24 @@ export default function Generator() {
                 <div className="preview-loading" role="status" aria-live="polite">
                   {generationPreviewUrl ? (
                     <img
-                      src={getOptimizedImageUrl(generationPreviewUrl) || generationPreviewUrl}
+                      src={
+                        generationPreviewUrl.startsWith('data:')
+                          ? generationPreviewUrl
+                          : (getOptimizedImageUrl(generationPreviewUrl) || generationPreviewUrl)
+                      }
                       alt=""
                       className={previewSharpen ? 'preview-sharp' : 'preview-blur'}
                     />
-                  ) : null}
+                  ) : (
+                    <div className="preview-skeleton" aria-hidden />
+                  )}
                   <div className="preview-overlay">
                     <IconLoader size={44} className="spin" />
                     <span>{progressLabel}</span>
                     {activeGeneration?.prompt ? (
                       <p className="preview-prompt">“{activeGeneration.prompt}”</p>
                     ) : null}
+                    {elapsedText ? <p className="elapsed-line">{elapsedText}</p> : null}
                     <div className="progress-track preview-progress" aria-hidden>
                       <div className="progress-fill" style={{ width: `${generationProgress}%` }} />
                     </div>
@@ -309,6 +328,10 @@ export default function Generator() {
           font-size: 0.8rem; font-weight: 700;
           color: var(--color-zinc-500); line-height: 1.35;
         }
+        .elapsed-hint, .elapsed-line {
+          font-weight: 650; color: var(--color-zinc-600);
+        }
+        .elapsed-line { margin: 0; font-size: 0.75rem; }
         .progress-track {
           height: 6px; border-radius: 999px;
           background: rgba(255,255,255,0.08); overflow: hidden;
@@ -345,6 +368,21 @@ export default function Generator() {
         }
         .preview-sharp {
           filter: none; transform: none;
+        }
+        .preview-skeleton {
+          position: absolute; inset: 0;
+          background: linear-gradient(
+            110deg,
+            rgba(255,255,255,0.04) 25%,
+            rgba(139,92,246,0.12) 50%,
+            rgba(255,255,255,0.04) 75%
+          );
+          background-size: 200% 100%;
+          animation: shimmer 1.4s ease-in-out infinite;
+        }
+        @keyframes shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
         }
         @keyframes previewReveal {
           from { opacity: 0; transform: scale(1.08); }

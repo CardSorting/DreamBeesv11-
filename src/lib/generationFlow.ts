@@ -57,6 +57,15 @@ export function messageForStage(stage: GenerationStage): string {
 
 export const LONG_RUNNING_MESSAGE = 'Still working — big pictures take a little longer…';
 export const ENQUEUE_RETRY_MESSAGE = 'Connecting to the art studio…';
+export const IN_LINE_MESSAGE = 'Your idea is in line…';
+export const SLOW_START_MESSAGE = 'Still connecting — hang tight…';
+
+export function formatElapsed(ms: number): string | null {
+  if (ms < 3000) return null;
+  const sec = Math.floor(ms / 1000);
+  if (sec < 60) return `About ${sec}s`;
+  return `About ${Math.floor(sec / 60)}m ${sec % 60}s`;
+}
 
 /** Creep the bar while waiting for the first Firestore update */
 export function smoothIdleProgress(current: number, cap = 22): number {

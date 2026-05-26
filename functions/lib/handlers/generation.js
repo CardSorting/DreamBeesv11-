@@ -50,7 +50,11 @@ export const handleCreateGenerationRequest = async (request) => {
         // 4. Return Firebase-specific response (result is guaranteed to be GenerationResult here - type guard passed)
         const generatedResult = result;
         const requestId = generatedResult.requestId;
-        // Queue worker task without blocking response (inline retry + recovery fallback)
+        // Nudge progress before worker dispatch (client sees movement while Cloud Tasks connects)
+        db.collection('generation_queue').doc(requestId).update({
+            progress: 12,
+            stage: 'queued'
+        }).catch(() => { });
         enqueueGenerationTaskWithRetry(requestId, firebaseContext, finalUid).catch((enqueueErr) => {
             logger.error(`[Generation Handler] Enqueue failed for ${requestId}`, enqueueErr);
         });
