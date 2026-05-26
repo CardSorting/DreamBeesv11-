@@ -14,7 +14,7 @@ export class ImageGenerationOrchestrator {
      * Handle a generation request end-to-end
      * This is the main orchestration point
      */
-    static async handleRequest(request, database, isPremiumUser) {
+    static async handleRequest(request, database) {
         const startTime = Date.now();
         // 1. Identify Anchor (requestId or idempotencyKey)
         const requestId = request.idempotencyKey
@@ -29,26 +29,31 @@ export class ImageGenerationOrchestrator {
         });
         forensic.checkpoint('submission_start');
         return this.executeWithIdempotency(requestId, database, async () => {
-            // 1. Preprocess request
+            // 1. Fetch User Data (Single Point of Truth)
+            const userDoc = await database.collection('users').doc(request.auth?.uid).get();
+            if (!userDoc.exists) {
+                throw new Error('User document not found. Please re-authenticate.');
+            }
+            const userData = userDoc.data();
+            const userTier = userData.tier || 'free';
+            const isPremiumUser = userTier === 'pro' || userTier === 'architect';
+            // 2. Preprocess request
             const { sanitizedRequest } = PromptPreprocessor.preprocess(request, isPremiumUser);
-            // 2. Circuit Breaker: Check Substrate Health
-            const isHealthy = await SubstrateHealth.isHealthy(sanitizedRequest.modelId);
+            // 3. Parallel Pre-flight Checks (Substrate Health + Quota)
+            const [isHealthy, activeJobs] = await Promise.all([
+                SubstrateHealth.isHealthy(sanitizedRequest.modelId),
+                this.getActiveJobsCount(sanitizedRequest.requestorUid, database)
+            ]);
             if (!isHealthy) {
                 forensic.checkpoint('circuit_break_triggered');
                 throw new Error(`Provider for ${sanitizedRequest.modelId} is currently degraded. Please try again in a few minutes.`);
             }
-            // 3. Check quota limits (Internal stub for now)
-            const quotaValid = await this.checkQuota(sanitizedRequest.requestorUid, database);
-            if (!quotaValid) {
-                throw new Error('Quota exceeded');
-            }
-            // 4. Check active jobs limit
-            const activeJobs = await this.getActiveJobsCount(sanitizedRequest.requestorUid, database);
             if (activeJobs >= 15) {
                 throw new Error('Too many active jobs. Please wait for current generations to finish.');
             }
-            // 5. Validate and calculate cost
-            const validationResult = await CostOrchestrator.validateGenerationCost(sanitizedRequest.initiatorUid, sanitizedRequest.modelId, sanitizedRequest.aspectRatio, isPremiumUser, database);
+            // 3. Validate and calculate cost (Pass userData to avoid re-fetch)
+            const validationResult = await CostOrchestrator.validateGenerationCost(sanitizedRequest.initiatorUid, sanitizedRequest.modelId, sanitizedRequest.aspectRatio, isPremiumUser, database, userData // PASSING ALREADY FETCHED DATA
+            );
             if (!validationResult.allowed) {
                 throw new Error(validationResult.reason || 'Insufficient funds or limit exceeded');
             }
@@ -57,7 +62,8 @@ export class ImageGenerationOrchestrator {
             // 6. ATOMIC SUBMISSION: Transactional Debit + Queue Document
             await database.runTransaction(async (t) => {
                 // A. Debit Wallet
-                await Wallet.debit(sanitizedRequest.initiatorUid, finalCost, requestId, { auditType: 'zap_generation', modelId: sanitizedRequest.modelId }, 'zaps', t);
+                await Wallet.debit(sanitizedRequest.initiatorUid, finalCost, requestId, { auditType: 'zap_generation', modelId: sanitizedRequest.modelId }, 'zaps', t, true // TURBO MODE: Direct metabolic increment
+                );
                 // B. Create Queue Entry
                 await this.queueRequestInTransaction(sanitizedRequest, requestId, finalCost, t, database);
             });

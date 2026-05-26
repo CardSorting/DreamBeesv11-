@@ -71,7 +71,8 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
                         discordId: discordId || null,
                         birthday: request.data.birthday || null,
                         createdAt: new Date(),
-                        zaps: 9999, // Unlimited policy
+                        zaps: 10,
+                        tier: 'free',
                         subscriptionStatus: 'inactive',
                         role: 'user'
                     });
@@ -92,27 +93,31 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
                 throw initError;
             }
         }
-        // --- 1. IP Level Protection ---
-        await checkIpThrottle(clientIp);
-        // --- 2. User Level Protection & JIT Init ---
+        // --- 1. User & IP Protection (Parallel Execution) ---
+        const preFlightChecks = [
+            checkIpThrottle(clientIp)
+        ];
         if (uid) {
             const userRef = db.collection('users').doc(uid);
             const userSnap = await userRef.get();
+            let userData = userSnap.data();
             if (!userSnap.exists) {
                 logger.info(`[JIT] User ${uid} not found. Creating new user document...`);
                 try {
                     const discordId = request.auth?.token.firebase?.identities?.['discord.com']?.[0];
-                    await userRef.set({
+                    userData = {
                         uid,
                         email: request.auth?.token.email || "",
                         displayName: request.auth?.token.name || "",
                         photoURL: request.auth?.token.picture || "",
                         discordId: discordId || null,
                         createdAt: new Date(),
-                        zaps: 9999, // Unlimited policy
+                        zaps: 10,
+                        tier: 'free',
                         subscriptionStatus: 'inactive',
                         role: 'user'
-                    });
+                    };
+                    await userRef.set(userData);
                     logger.info(`[JIT] User ${uid} created successfully.`);
                 }
                 catch (creationError) {
@@ -120,15 +125,10 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
                     throw creationError;
                 }
             }
-            await checkUserAbuseStatus(uid);
-            await checkAbuseScore(uid);
-            // Token Bucket checks
-            const isExpensive = false;
-            const bucketCapacity = 10;
-            const refillRate = 0.5;
-            await checkTokenBucket(`tb:${uid}:${action}`, 1, bucketCapacity, refillRate);
-            await checkUserQuota(uid, action);
+            // Parallelized remaining checks using the pre-loaded userData
+            preFlightChecks.push(checkUserAbuseStatus(uid, userData), checkAbuseScore(uid), checkTokenBucket(`tb:${uid}:${action}`, 1, 10, 0.5), checkUserQuota(uid, action));
         }
+        await Promise.all(preFlightChecks);
         // --- 3. Scope Enforcement (API Keys) ---
         if (request.auth?.token?.scope) {
             const scopes = request.auth.token.scope;

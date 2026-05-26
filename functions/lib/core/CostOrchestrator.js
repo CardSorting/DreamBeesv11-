@@ -25,18 +25,24 @@ export class CostOrchestrator {
     /**
      * Validate if user has sufficient cost budget for generation
      */
-    static async validateGenerationCost(initiatorUid, modelId, aspectRatio, isPremiumUser, database) {
+    static async validateGenerationCost(initiatorUid, modelId, aspectRatio, isPremiumUser, database, cachedUserData // Optional pre-loaded data
+    ) {
         // 1. Calculate final cost
         const finalCost = this.calculateFinalCost(modelId, isPremiumUser, aspectRatio);
-        // 2. Single-doc lookup: Get user and validate
-        const userDoc = await database.collection('users').doc(initiatorUid).get();
-        if (!userDoc.exists) {
-            return { allowed: false, estimatedCost: finalCost, reason: 'User not found' };
+        // 2. Doc lookup: Use cache or fetch
+        let userData = cachedUserData;
+        if (!userData) {
+            const userDoc = await database.collection('users').doc(initiatorUid).get();
+            if (!userDoc.exists) {
+                return { allowed: false, estimatedCost: finalCost, reason: 'User not found' };
+            }
+            userData = userDoc.data();
         }
-        const userData = userDoc.data();
         const balance = userData.zaps || 0;
-        // A. Check balance
-        if (balance < finalCost) {
+        const tier = userData.tier || 'free';
+        const isSubscriber = tier === 'pro' || tier === 'architect';
+        // A. Check balance (Subscribers have 'unlimited' zaps which bypasses the comparison)
+        if (balance !== 'unlimited' && balance < finalCost) {
             return {
                 allowed: false,
                 estimatedCost: finalCost,

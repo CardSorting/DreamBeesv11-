@@ -50,10 +50,19 @@ export class Wallet {
             }
             const userData = userDoc.data();
             const currentBalance = userData[currency] || 0;
-            if (amount > 0 && currentBalance < amount) {
+            if (amount > 0 && currentBalance !== 'unlimited' && currentBalance < amount) {
                 throw new HttpsError('resource-exhausted', `Insufficient ${currency}.`);
             }
             // 3. Execution
+            if (currentBalance === 'unlimited') {
+                t.update(userRef, { lastTransactionTime: FieldValue.serverTimestamp() });
+                // Log Transaction (Ledger)
+                t.set(transactionRef, {
+                    userId: uid, type: 'debit', currency, amount: 0, previousBalance: 'unlimited', newBalance: 'unlimited',
+                    requestId, auditType: metadata.auditType || 'standard', metadata, timestamp: FieldValue.serverTimestamp(), createdAt: new Date().toISOString()
+                });
+                return { success: true, transactionId: requestId, newBalance: 0, previousBalance: 0, idempotent: false };
+            }
             const newBalance = Math.max(0, currentBalance - amount);
             t.update(userRef, { [currency]: newBalance, lastTransactionTime: FieldValue.serverTimestamp() });
             // Log Transaction (Ledger)
@@ -114,6 +123,10 @@ export class Wallet {
             }
             const userData = userDoc.data();
             const currentBalance = userData[currency] || 0;
+            if (currentBalance === 'unlimited') {
+                t.update(userRef, { lastTransactionTime: FieldValue.serverTimestamp() });
+                return { success: true, transactionId: requestId, newBalance: 0, previousBalance: 0, idempotent: false };
+            }
             const newBalance = currentBalance + amount;
             t.update(userRef, { [currency]: newBalance, lastTransactionTime: FieldValue.serverTimestamp() });
             // Log Transaction (Ledger)

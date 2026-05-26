@@ -41,7 +41,7 @@ export const handleCreateGenerationRequest = async (request) => {
     };
     try {
         // 3. Delegate to Core orchestrator for business logic
-        const result = await ImageGenerationOrchestrator.handleRequest(firebaseContext, db, callerRole === 'premium' || callerRole === 'admin');
+        const result = await ImageGenerationOrchestrator.handleRequest(firebaseContext, db);
         // Check if orchestrator returned an error (properly typed check)
         const errorResult = result;
         if (errorResult.status) {
