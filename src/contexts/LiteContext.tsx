@@ -11,6 +11,7 @@ import {
     filterDisplayableHistory,
     loadPendingGeneration,
     type PendingGeneration,
+    type GenerationHistoryEntry,
     loadLocalGenerations,
     localHistoryStorageKey,
     mergeGenerationHistory,
@@ -140,6 +141,21 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     const [generateStartTime, setGenerateStartTime] = useState<number | undefined>(undefined);
     const [userTier, setUserTier] = useState<'free' | 'pro' | 'architect'>('free');
     const [zaps, setZaps] = useState<number | 'unlimited'>(10);
+    const [pendingRevision, setPendingRevision] = useState(0);
+
+    const bumpPendingRevision = useCallback(() => {
+        setPendingRevision((v) => v + 1);
+    }, []);
+
+    const clearPending = useCallback(() => {
+        clearPendingGeneration();
+        bumpPendingRevision();
+    }, [bumpPendingRevision]);
+
+    const savePending = useCallback((pending: PendingGeneration) => {
+        savePendingGeneration(pending);
+        bumpPendingRevision();
+    }, [bumpPendingRevision]);
 
     const addToast = useCallback((message: string, type: 'success' | 'error' | 'loading' = 'success', existingId?: string) => {
         if (type === 'loading') return toast.loading(message, { id: existingId });
@@ -162,22 +178,6 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             disableNetwork(db);
         }
     }, []);
-
-    useEffect(() => {
-        const handleOnline = () => {
-            setIsOffline(false);
-            enableNetwork(db);
-            toast.success("Network restored");
-            loadLocal();
-        };
-        const handleOffline = () => { setIsOffline(true); disableNetwork(db); toast.error("Offline Mode Active"); };
-        window.addEventListener('online', handleOnline);
-        window.addEventListener('offline', handleOffline);
-        return () => {
-            window.removeEventListener('online', handleOnline);
-            window.removeEventListener('offline', handleOffline);
-        };
-    }, [loadLocal]);
 
     useEffect(() => {
         let userUnsub: (() => void) | null = null;
@@ -247,14 +247,14 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         if (prevUidRef.current && prevUidRef.current !== uid) {
             generationSessionRef.current?.();
             generatingRef.current = false;
-            clearPendingGeneration();
+            clearPending();
             resetGenerationUi();
             setLocalHistory([]);
             completionClaimRef.current = null;
             resumeSessionIdRef.current = null;
         }
         prevUidRef.current = uid;
-    }, [currentUser?.uid, resetGenerationUi]);
+    }, [currentUser?.uid, resetGenerationUi, clearPending]);
 
     const displayHistory = useMemo(
         () => filterDisplayableHistory(
@@ -270,8 +270,94 @@ export function LiteProvider({ children }: { children: ReactNode }) {
 
     const pendingGeneration = useMemo(
         () => loadPendingGeneration(currentUser?.uid) ?? null,
-        [currentUser?.uid, displayHistory, generating, localHistory]
+        [currentUser?.uid, pendingRevision]
     );
+
+    const commitPendingToLocalState = useCallback(
+        (entry: GenerationHistoryEntry, requestId: string, showSuccessToast = true) => {
+            clearPending();
+            if (resumeSessionIdRef.current === requestId) {
+                resumeSessionIdRef.current = null;
+            }
+            setLocalHistory((prev) => [entry, ...prev.filter((i) => i.id !== requestId)]);
+            loadLocal();
+            if (showSuccessToast) {
+                toast.success('Your picture is ready!', { id: requestId });
+            }
+        },
+        [clearPending, loadLocal]
+    );
+
+    /** Shared recovery: history match, Firestore probe, or failed-job cleanup */
+    const recoverPendingIfReady = useCallback(
+        async (uid: string): Promise<boolean> => {
+            if (generating || generatingRef.current || generationSessionRef.current) {
+                return false;
+            }
+
+            const pending = loadPendingGeneration(uid);
+            if (!pending) return false;
+
+            const inHistory = displayHistoryRef.current.find((item) =>
+                matchesPendingRequest(item, pending.requestId)
+            );
+
+            if (inHistory?.imageUrl) {
+                const entry = await completePendingFromHistory(
+                    completionClaimRef,
+                    pending,
+                    {
+                        imageUrl: inHistory.imageUrl as string,
+                        firestoreImageId: inHistory.firestoreImageId as string | undefined,
+                    },
+                    uid
+                );
+                if (!entry) return false;
+                commitPendingToLocalState(entry, pending.requestId);
+                return true;
+            }
+
+            const probed = await probeCompletedGeneration(db, pending.requestId, uid);
+            if (probed.status === 'complete') {
+                const entry = await completePendingFromHistory(
+                    completionClaimRef,
+                    pending,
+                    probed.payload,
+                    uid
+                );
+                if (!entry) return false;
+                commitPendingToLocalState(entry, pending.requestId);
+                return true;
+            }
+
+            if (probed.status === 'failed') {
+                clearPending();
+                toast.error(probed.message, { id: pending.requestId });
+                return true;
+            }
+
+            return false;
+        },
+        [generating, commitPendingToLocalState, clearPending]
+    );
+
+    useEffect(() => {
+        const handleOnline = () => {
+            setIsOffline(false);
+            enableNetwork(db);
+            toast.success("Network restored");
+            loadLocal();
+            const uid = auth.currentUser?.uid;
+            if (uid) void recoverPendingIfReady(uid);
+        };
+        const handleOffline = () => { setIsOffline(true); disableNetwork(db); toast.error("Offline Mode Active"); };
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
+    }, [loadLocal, recoverPendingIfReady]);
 
     useEffect(() => () => { generationSessionRef.current?.(); }, []);
 
@@ -295,7 +381,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         const finish = (keepPending = false) => {
             generatingRef.current = false;
             if (!keepPending) {
-                clearPendingGeneration();
+                clearPending();
                 if (resumeSessionIdRef.current === pending.requestId) {
                     resumeSessionIdRef.current = null;
                 }
@@ -305,8 +391,6 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         const succeedPending = async (imageUrl: string, firestoreImageId?: string) => {
             if (cancelled || settled) return;
             if (!tryClaimGenerationCompletion(completionClaimRef, pending.requestId)) return;
-            settled = true;
-            finish();
             let savedLocally = false;
             try {
                 const entry = await persistCompletedGeneration({
@@ -317,6 +401,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                     firestoreImageId,
                 });
                 if (cancelled) return;
+                settled = true;
+                finish();
                 setLocalHistory(prev => [entry, ...prev.filter(i => i.id !== pending.requestId)]);
                 savedLocally = true;
             } catch (err) {
@@ -324,6 +410,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 releaseGenerationCompletionClaim(completionClaimRef, pending.requestId);
             }
             if (cancelled) return;
+            if (!settled) return;
             resetGenerationUi();
             detach?.();
             detach = null;
@@ -356,7 +443,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             }
             if (probed.status === 'failed') {
                 settled = true;
-                finish();
+                clearPending();
                 resetGenerationUi();
                 toast.error(probed.message, { id: pending.requestId });
                 return;
@@ -392,7 +479,14 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                     settled = true;
                     detach?.();
                     detach = null;
-                    finish();
+                    clearPending();
+                    generatingRef.current = false;
+                    if (resumeSessionIdRef.current === pending.requestId) {
+                        resumeSessionIdRef.current = null;
+                    }
+                    if (generationSessionRef.current) {
+                        generationSessionRef.current = null;
+                    }
                     resetGenerationUi();
                     toast.error(message, { id: pending.requestId });
                 },
@@ -449,18 +543,26 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         )
             .then((entry) => {
                 if (!entry) return;
-                clearPendingGeneration();
-                if (resumeSessionIdRef.current === pending.requestId) {
-                    resumeSessionIdRef.current = null;
-                }
-                setLocalHistory((prev) => [entry, ...prev.filter((i) => i.id !== pending.requestId)]);
-                loadLocal();
-                toast.success('Your picture is ready!', { id: pending.requestId });
+                commitPendingToLocalState(entry, pending.requestId);
             })
             .catch((err) => {
                 console.warn('[Lite] Late completion save failed:', err);
             });
-    }, [displayHistory, generating, currentUser?.uid, loadLocal]);
+    }, [displayHistory, generating, currentUser?.uid, commitPendingToLocalState]);
+
+    /** Re-probe when the user returns to the tab */
+    useEffect(() => {
+        const uid = currentUser?.uid;
+        if (!uid) return;
+
+        const onVisible = () => {
+            if (document.visibilityState !== 'visible') return;
+            void recoverPendingIfReady(uid);
+        };
+
+        document.addEventListener('visibilitychange', onVisible);
+        return () => document.removeEventListener('visibilitychange', onVisible);
+    }, [currentUser?.uid, recoverPendingIfReady]);
 
     useEffect(() => {
         const handleStorage = (e: StorageEvent) => {
@@ -649,7 +751,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     const logout = () => {
         generationSessionRef.current?.();
         generatingRef.current = false;
-        clearPendingGeneration();
+        clearPending();
         resetGenerationUi();
         setHistory([]);
         setLocalHistory([]);
@@ -780,7 +882,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         setGenerationPreviewUrl(null);
         setActiveGeneration({ requestId, prompt: cleanPrompt });
         setGenerateStartTime(startedAt);
-        savePendingGeneration({
+        savePending({
             requestId,
             prompt: cleanPrompt,
             startedAt,
@@ -816,7 +918,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 jobUnsub = null;
             }
             generatingRef.current = false;
-            if (!options?.keepPending) clearPendingGeneration();
+            if (!options?.keepPending) clearPending();
             if (generationSessionRef.current === finishSession && !options?.keepListener) {
                 generationSessionRef.current = null;
             }
@@ -840,10 +942,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         const succeedGeneration = async (data: { imageUrl: string; firestoreImageId?: string }) => {
             if (settled) return;
             if (!tryClaimGenerationCompletion(completionClaimRef, requestId)) return;
-            settled = true;
-            finishSession();
-            setGenerationProgress(100);
 
+            setGenerationProgress(100);
             let savedLocally = false;
             try {
                 const entry = await persistCompletedGeneration({
@@ -855,11 +955,14 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                     params,
                     firestoreImageId: data.firestoreImageId,
                 });
+                settled = true;
+                finishSession();
                 setLocalHistory(prev => [entry, ...prev.filter(i => i.id !== requestId)]);
                 savedLocally = true;
             } catch (err) {
                 console.warn('[Lite] Could not save picture locally:', err);
                 releaseGenerationCompletionClaim(completionClaimRef, requestId);
+                return;
             }
 
             resetGenerationUi();

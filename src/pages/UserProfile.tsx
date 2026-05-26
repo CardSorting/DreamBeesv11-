@@ -14,7 +14,7 @@ function getDisplayName(email?: string | null, name?: string | null) {
 }
 
 export default function UserProfile() {
-    const { currentUser, logout, displayHistory, addToast, zaps } = useLite();
+    const { currentUser, logout, displayHistory, pendingGeneration, addToast, zaps } = useLite();
 
     const handleLogout = async () => {
         try {
@@ -73,6 +73,18 @@ export default function UserProfile() {
                 </div>
             </section>
 
+            {pendingGeneration ? (
+                <section className="simple-card pending-banner" aria-live="polite">
+                    <p>
+                        <strong>Still finishing:</strong>{' '}
+                        {pendingGeneration.prompt.length > 60
+                            ? `${pendingGeneration.prompt.slice(0, 60)}…`
+                            : pendingGeneration.prompt}
+                    </p>
+                    <p className="pending-hint">It may appear here automatically when ready.</p>
+                </section>
+            ) : null}
+
             <section className="simple-card" aria-label="Your pictures">
                 <div className="pictures-header">
                     <strong>Your pictures</strong>
@@ -123,6 +135,10 @@ export default function UserProfile() {
                 .big-button.primary:hover { transform: translateY(-1px); }
                 .big-button.danger:hover { border-color: rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.10); color: #fecaca; }
                 .big-button.inline { width: auto; margin-top: 10px; }
+
+                .pending-banner { border-color: rgba(139, 92, 246, 0.35); background: rgba(139, 92, 246, 0.08); }
+                .pending-banner p { margin: 0; font-weight: 750; line-height: 1.4; }
+                .pending-hint { margin-top: 6px !important; color: var(--color-zinc-400); font-size: 0.85rem; font-weight: 700; }
 
                 .pictures-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
                 .pictures-header span { color: var(--color-zinc-400); font-weight: 800; font-size: 0.85rem; }
