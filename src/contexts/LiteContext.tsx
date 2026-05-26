@@ -15,6 +15,7 @@ import {
     loadLocalGenerations,
     localHistoryStorageKey,
     mergeGenerationHistory,
+    matchesPendingRequest,
     messageForStage,
     monotonicProgress,
     parseCallableError,
@@ -26,6 +27,7 @@ import {
 } from '../lib/generationFlow';
 import {
     attachGenerationSession,
+    probeCompletedGeneration,
 } from '../lib/generationSession';
 import toast from 'react-hot-toast';
 import { auth, db, functions } from '../firebase.ts';
@@ -245,6 +247,16 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         prevUidRef.current = uid;
     }, [currentUser?.uid, resetGenerationUi]);
 
+    const displayHistory = useMemo(
+        () => filterDisplayableHistory(
+            mergeGenerationHistory(
+                scopeLocalHistoryForUser(localHistory, currentUser?.uid),
+                history
+            )
+        ),
+        [localHistory, history, currentUser?.uid]
+    );
+
     useEffect(() => () => { generationSessionRef.current?.(); }, []);
 
     /** Re-attach to an in-flight job after navigation refresh */
@@ -256,14 +268,10 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         if (!pending) return;
 
         generatingRef.current = true;
-        setGenerating(true);
-        setGenerationStage('processing');
-        setGenerationProgress(40);
-        setActiveGeneration({ requestId: pending.requestId, prompt: pending.prompt });
-        setGenerateStartTime(pending.startedAt);
-        toast.loading('Checking on your picture…', { id: pending.requestId });
 
+        let cancelled = false;
         let settled = false;
+        let detach: (() => void) | null = null;
 
         const finish = (keepPending = false) => {
             generatingRef.current = false;
@@ -299,52 +307,117 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             loadLocal();
         };
 
-        const unsub = attachGenerationSession(db, {
-            requestId: pending.requestId,
-            startedAt: pending.startedAt,
-            initialProgressFloor: 40,
-            expectedUserId: uid,
-            onProgress: (patch) => {
-                setGenerationStage(patch.stage);
-                setGenerationProgress(patch.progress);
-                toast.loading(patch.message, { id: pending.requestId });
-                if (patch.previewUrl) setGenerationPreviewUrl(patch.previewUrl);
-            },
-            onSuccess: ({ imageUrl, firestoreImageId }) => {
-                succeedPending(imageUrl, firestoreImageId);
-            },
-            onFailed: (message) => {
-                if (settled) return;
-                settled = true;
-                finish();
-                resetGenerationUi();
-                toast.error(message, { id: pending.requestId });
-            },
-            onHardTimeout: () => {
-                if (settled) return;
-                settled = true;
-                finish(true);
-                resetGenerationUi();
-                toast.error('This took too long. Check your profile — it may still finish.', { id: pending.requestId });
-            },
-            onConnectionError: () => {
-                if (settled) return;
-                toast.loading('Reconnecting…', { id: pending.requestId });
-            },
-        });
+        (async () => {
+            const inHistory = displayHistory.find((item) =>
+                matchesPendingRequest(item, pending.requestId)
+            );
+            if (inHistory?.imageUrl) {
+                await succeedPending(
+                    inHistory.imageUrl as string,
+                    inHistory.firestoreImageId as string | undefined
+                );
+                return;
+            }
 
-        generationSessionRef.current = () => {
-            settled = true;
-            unsub();
-            finish();
-        };
+            const probed = await probeCompletedGeneration(db, pending.requestId, uid);
+            if (cancelled || settled) return;
+            if (probed) {
+                await succeedPending(probed.imageUrl, probed.firestoreImageId);
+                return;
+            }
+            if (cancelled || settled) {
+                generatingRef.current = false;
+                return;
+            }
+
+            setGenerating(true);
+            setGenerationStage('processing');
+            setGenerationProgress(40);
+            setActiveGeneration({ requestId: pending.requestId, prompt: pending.prompt });
+            setGenerateStartTime(pending.startedAt);
+            toast.loading('Checking on your picture…', { id: pending.requestId });
+
+            detach = attachGenerationSession(db, {
+                requestId: pending.requestId,
+                startedAt: pending.startedAt,
+                initialProgressFloor: 40,
+                expectedUserId: uid,
+                onProgress: (patch) => {
+                    setGenerationStage(patch.stage);
+                    setGenerationProgress(patch.progress);
+                    toast.loading(patch.message, { id: pending.requestId });
+                    if (patch.previewUrl) setGenerationPreviewUrl(patch.previewUrl);
+                },
+                onSuccess: ({ imageUrl, firestoreImageId }) => {
+                    succeedPending(imageUrl, firestoreImageId);
+                },
+                onFailed: (message) => {
+                    if (settled) return;
+                    settled = true;
+                    finish();
+                    resetGenerationUi();
+                    toast.error(message, { id: pending.requestId });
+                },
+                onHardTimeout: () => {
+                    if (settled) return;
+                    settled = true;
+                    finish(true);
+                    resetGenerationUi();
+                    toast.error('This took too long. Check your profile — it may still finish.', { id: pending.requestId });
+                },
+                onConnectionError: () => {
+                    if (settled) return;
+                    toast.loading('Reconnecting…', { id: pending.requestId });
+                },
+            });
+
+            generationSessionRef.current = () => {
+                settled = true;
+                detach?.();
+                finish();
+            };
+        })();
 
         return () => {
+            cancelled = true;
             settled = true;
-            unsub();
+            detach?.();
             generatingRef.current = false;
         };
-    }, [currentUser?.uid, loadLocal, resetGenerationUi]);
+    }, [currentUser?.uid, loadLocal, resetGenerationUi, displayHistory]);
+
+    /** After client timeout, pending is kept — finish when cloud history delivers the image */
+    useEffect(() => {
+        const uid = currentUser?.uid;
+        if (!uid || generating || generatingRef.current) return;
+
+        const pending = loadPendingGeneration(uid);
+        if (!pending) return;
+
+        const match = displayHistory.find((item) =>
+            matchesPendingRequest(item, pending.requestId)
+        );
+        if (!match?.imageUrl) return;
+
+        clearPendingGeneration();
+        const entry = buildGenerationHistoryEntry({
+            requestId: pending.requestId,
+            prompt: pending.prompt,
+            imageUrl: match.imageUrl as string,
+            firestoreImageId: match.firestoreImageId as string | undefined,
+            userId: uid,
+        });
+        commitGenerationSuccess(entry)
+            .then(() => {
+                setLocalHistory((prev) => [entry, ...prev.filter((i) => i.id !== pending.requestId)]);
+                loadLocal();
+                toast.success('Your picture is ready!', { id: pending.requestId });
+            })
+            .catch((err) => {
+                console.warn('[Lite] Late completion save failed:', err);
+                clearPendingGeneration();
+            });
+    }, [displayHistory, generating, currentUser?.uid, loadLocal]);
 
     useEffect(() => {
         const handleStorage = (e: StorageEvent) => {
@@ -489,16 +562,6 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             fallbackUnsub?.();
         };
     }, [currentUser?.uid]);
-
-    const displayHistory = useMemo(
-        () => filterDisplayableHistory(
-            mergeGenerationHistory(
-                scopeLocalHistoryForUser(localHistory, currentUser?.uid),
-                history
-            )
-        ),
-        [localHistory, history, currentUser?.uid]
-    );
 
     const upsertUserProfile = async (
         uid: string,
@@ -823,6 +886,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             requestId, 
             ...params 
         }).then(() => {
+            if (settled) return;
             apiAccepted = true;
             progressFloor = monotonicProgress(progressFloor, 28);
             setGenerationStage('queued');

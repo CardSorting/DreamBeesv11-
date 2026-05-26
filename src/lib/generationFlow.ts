@@ -231,6 +231,14 @@ export function mergeGenerationHistory(local: any[], cloud: any[]): any[] {
   );
 }
 
+/** Does a history item match a pending session request id? */
+export function matchesPendingRequest(
+  item: { id?: string; originalRequestId?: string; firestoreImageId?: string },
+  requestId: string
+): boolean {
+  return matchesGenerationRoute(item, requestId);
+}
+
 /** Does a history item match a /generation/:id route? */
 export function matchesGenerationRoute(
   item: { id?: string; originalRequestId?: string; firestoreImageId?: string },

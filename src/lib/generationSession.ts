@@ -5,6 +5,8 @@ import {
   collection,
   doc,
   Firestore,
+  getDoc,
+  getDocs,
   limit,
   onSnapshot,
   query,
@@ -106,6 +108,62 @@ export function isQueueInFlight(data: QueueSnapshot): boolean {
   return data.status === 'queued' || data.status === 'processing';
 }
 
+/** One-shot read for jobs that finished while the client was away */
+export async function probeCompletedGeneration(
+  db: Firestore,
+  requestId: string,
+  expectedUserId?: string
+): Promise<GenerationSuccessPayload | null> {
+  try {
+    const queueSnap = await getDoc(doc(db, 'generation_queue', requestId));
+    if (queueSnap.exists()) {
+      const queue = queueSnap.data() as QueueSnapshot;
+      if (
+        expectedUserId &&
+        queue.userId &&
+        queue.userId !== expectedUserId
+      ) {
+        return null;
+      }
+      if (queue.status === 'failed') return null;
+      if (hasCompletableImage(queue)) {
+        return {
+          imageUrl: queue.imageUrl as string,
+          firestoreImageId: queue.resultImageId as string | undefined,
+        };
+      }
+    }
+
+    const imgSnap = await getDocs(
+      query(
+        collection(db, 'images'),
+        where('originalRequestId', '==', requestId),
+        limit(1)
+      )
+    );
+    if (!imgSnap.empty) {
+      const imgDoc = imgSnap.docs[0];
+      const img = imgDoc.data();
+      if (
+        expectedUserId &&
+        img.userId &&
+        img.userId !== expectedUserId
+      ) {
+        return null;
+      }
+      if (img.imageUrl) {
+        return {
+          imageUrl: img.imageUrl as string,
+          firestoreImageId: imgDoc.id,
+        };
+      }
+    }
+  } catch {
+    /* offline / permission — caller will subscribe */
+  }
+  return null;
+}
+
 /**
  * Dual-listener subscription: generation_queue doc + images fallback by originalRequestId.
  * Used by both active generate() and session resume after refresh.
@@ -192,6 +250,15 @@ export function subscribeToGenerationJob(
       if (snap.empty) return;
       const imgDoc = snap.docs[0];
       const img = imgDoc.data();
+      if (
+        callbacks.expectedUserId &&
+        img.userId &&
+        img.userId !== callbacks.expectedUserId
+      ) {
+        settled = true;
+        callbacks.onFailed('This picture belongs to another account.');
+        return;
+      }
       if (img.imageUrl) {
         succeed({ imageUrl: img.imageUrl as string, firestoreImageId: imgDoc.id });
       }

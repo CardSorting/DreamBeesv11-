@@ -20,13 +20,18 @@ export default function ImmersiveHero({
     onDownload,
     onShare
 }: ImmersiveHeroProps) {
-    const [imgSrc, setImgSrc] = useState(
-        () => getOptimizedImageUrl(generation.imageUrl) || generation.imageUrl
-    );
+    const [imgSrc, setImgSrc] = useState(() => {
+        const preview = generation.previewUrl as string | undefined;
+        const primary = generation.imageUrl;
+        return getOptimizedImageUrl(preview || primary) || preview || primary;
+    });
 
     useEffect(() => {
-        setImgSrc(getOptimizedImageUrl(generation.imageUrl) || generation.imageUrl);
-    }, [generation.imageUrl]);
+        const preview = generation.previewUrl as string | undefined;
+        const primary = generation.imageUrl;
+        const next = preview || primary;
+        setImgSrc(getOptimizedImageUrl(next) || next);
+    }, [generation.imageUrl, generation.previewUrl]);
 
     return (
         <div className="immersive-hero">
@@ -41,9 +46,8 @@ export default function ImmersiveHero({
                     alt={generation.prompt}
                     className="hero-image"
                     onError={() => {
-                        if (imgSrc !== generation.imageUrl) {
-                            setImgSrc(generation.imageUrl);
-                        }
+                        const fallback = generation.imageUrl;
+                        if (imgSrc !== fallback) setImgSrc(fallback);
                     }}
                 />
             </div>
