@@ -13,6 +13,7 @@ import {
 import {
   ENQUEUE_RETRY_MESSAGE,
   GenerationStage,
+  MAX_GENERATION_MS,
   messageForStage,
   monotonicProgress,
   progressPercent,
@@ -30,6 +31,7 @@ export interface QueueSnapshot {
   enqueuedAt?: unknown;
   error?: string;
   resultImageId?: string;
+  userId?: string;
 }
 
 export interface GenerationUiPatch {
@@ -50,6 +52,8 @@ export interface GenerationJobCallbacks {
   onSuccess: (payload: GenerationSuccessPayload) => void;
   onFailed: (message: string) => void;
   onConnectionError?: () => void;
+  /** Reject queue snapshots that belong to another account */
+  expectedUserId?: string;
 }
 
 /** Prefer LQIP (instant) then thumbnail then full image */
@@ -135,6 +139,16 @@ export function subscribeToGenerationJob(
 
       const queue = data as QueueSnapshot;
 
+      if (
+        callbacks.expectedUserId &&
+        queue.userId &&
+        queue.userId !== callbacks.expectedUserId
+      ) {
+        settled = true;
+        callbacks.onFailed('This picture belongs to another account.');
+        return;
+      }
+
       if (hasCompletableImage(queue)) {
         succeed({
           imageUrl: queue.imageUrl as string,
@@ -191,5 +205,60 @@ export function subscribeToGenerationJob(
     settled = true;
     unsubQueue();
     unsubImages();
+  };
+}
+
+export interface AttachGenerationSessionOptions {
+  requestId: string;
+  startedAt: number;
+  initialProgressFloor?: number;
+  onProgress: (patch: GenerationUiPatch) => void;
+  onSuccess: (payload: GenerationSuccessPayload) => void;
+  onFailed: (message: string) => void;
+  onHardTimeout: () => void;
+  onConnectionError?: () => void;
+  expectedUserId?: string;
+}
+
+/**
+ * Subscribe to queue + images with a client-side hard timeout.
+ * Shared by session resume and active generate flows.
+ */
+export function attachGenerationSession(
+  db: Firestore,
+  options: AttachGenerationSessionOptions
+): () => void {
+  const {
+    requestId,
+    startedAt,
+    initialProgressFloor = 10,
+    onProgress,
+    onSuccess,
+    onFailed,
+    onHardTimeout,
+    onConnectionError,
+    expectedUserId,
+  } = options;
+
+  const remainingMs = Math.max(5000, MAX_GENERATION_MS - (Date.now() - startedAt));
+  const hardTimeout = setTimeout(onHardTimeout, remainingMs);
+
+  const unsub = subscribeToGenerationJob(db, requestId, initialProgressFloor, {
+    onProgress,
+    expectedUserId,
+    onSuccess: (payload) => {
+      clearTimeout(hardTimeout);
+      onSuccess(payload);
+    },
+    onFailed: (message) => {
+      clearTimeout(hardTimeout);
+      onFailed(message);
+    },
+    onConnectionError,
+  });
+
+  return () => {
+    clearTimeout(hardTimeout);
+    unsub();
   };
 }

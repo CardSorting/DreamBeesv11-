@@ -88,6 +88,7 @@ export default function GenerationDetail() {
             const fromHistoryRetry = displayHistory.find((item) =>
                 matchesGenerationRoute(item, generationId)
             );
+            if (tryPrefetch(fromHistoryRetry)) return;
             if (!fromHistoryRetry?.imageUrl) return;
         }
 
@@ -125,7 +126,20 @@ export default function GenerationDetail() {
 
         fetchGeneration();
         return () => { cancelled = true; };
-    }, [generationId, orchestrator, prefetched, displayHistory, fetchVersion, currentUser]);
+    }, [generationId, orchestrator, prefetched, displayHistory, fetchVersion, currentUser?.uid]);
+
+    /** Recover from error when cloud/local history arrives after a failed fetch */
+    useEffect(() => {
+        if (!error || generation?.imageUrl || !generationId) return;
+        const match = displayHistory.find((item) =>
+            matchesGenerationRoute(item, generationId)
+        );
+        if (!match?.imageUrl) return;
+        setGeneration(mapHistoryItemToDetail(match));
+        setError(null);
+        setIsLoading(false);
+        resolvedIdRef.current = generationId;
+    }, [error, generation?.imageUrl, generationId, displayHistory]);
 
     const handleCopyPrompt = () => {
         navigator.clipboard.writeText(generation?.prompt || '').then(() => {
@@ -198,6 +212,24 @@ export default function GenerationDetail() {
                             Try again
                         </button>
                     )}
+                    <button type="button" onClick={() => navigate(-1)} className="back-button secondary">
+                        <IconChevronRight rotation={180} /> Go Back
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    if (!generation?.imageUrl) {
+        return (
+            <div className="generation-detail-error glass-immersive">
+                <IconLayers size={64} />
+                <h2 className="error-title">Could not open picture</h2>
+                <p className="error-message">This picture is missing its image.</p>
+                <div className="error-actions">
+                    <button type="button" onClick={retryFetch} className="back-button">
+                        Try again
+                    </button>
                     <button type="button" onClick={() => navigate(-1)} className="back-button secondary">
                         <IconChevronRight rotation={180} /> Go Back
                     </button>

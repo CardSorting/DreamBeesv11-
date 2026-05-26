@@ -13,6 +13,7 @@ import {
     filterDisplayableHistory,
     loadPendingGeneration,
     loadLocalGenerations,
+    localHistoryStorageKey,
     mergeGenerationHistory,
     messageForStage,
     monotonicProgress,
@@ -24,7 +25,7 @@ import {
     toHistoryTimestamp,
 } from '../lib/generationFlow';
 import {
-    subscribeToGenerationJob,
+    attachGenerationSession,
 } from '../lib/generationSession';
 import toast from 'react-hot-toast';
 import { auth, db, functions } from '../firebase.ts';
@@ -72,9 +73,6 @@ const BUILTIN_MODELS: AIModel[] = [
         order: 4
     }
 ];
-
-/** Fail stuck jobs client-side before sessionStorage pending expires (15m) */
-const MAX_GENERATION_MS = 14 * 60 * 1000;
 
 interface LiteContextType {
     currentUser: User | null;
@@ -208,7 +206,18 @@ export function LiteProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         loadLocal();
-    }, [currentUser, loadLocal]);
+    }, [currentUser?.uid, loadLocal]);
+
+    /** Sync local history when another tab writes to localStorage */
+    useEffect(() => {
+        if (!currentUser?.uid) return;
+        const key = localHistoryStorageKey(currentUser.uid);
+        const onStorage = (e: StorageEvent) => {
+            if (e.key === key) loadLocal();
+        };
+        window.addEventListener('storage', onStorage);
+        return () => window.removeEventListener('storage', onStorage);
+    }, [currentUser?.uid, loadLocal]);
 
     const selectModel = useCallback((model: AIModel) => {
         localStorage.setItem('lite_selected_model', model.id);
@@ -240,14 +249,11 @@ export function LiteProvider({ children }: { children: ReactNode }) {
 
     /** Re-attach to an in-flight job after navigation refresh */
     useEffect(() => {
-        if (!currentUser || generatingRef.current) return;
+        const uid = currentUser?.uid;
+        if (!uid || generatingRef.current) return;
 
-        const pending = loadPendingGeneration(currentUser.uid);
+        const pending = loadPendingGeneration(uid);
         if (!pending) return;
-        if (pending.userId && pending.userId !== currentUser.uid) {
-            clearPendingGeneration();
-            return;
-        }
 
         generatingRef.current = true;
         setGenerating(true);
@@ -259,9 +265,9 @@ export function LiteProvider({ children }: { children: ReactNode }) {
 
         let settled = false;
 
-        const finish = () => {
+        const finish = (keepPending = false) => {
             generatingRef.current = false;
-            clearPendingGeneration();
+            if (!keepPending) clearPendingGeneration();
         };
 
         const succeedPending = async (imageUrl: string, firestoreImageId?: string) => {
@@ -276,7 +282,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                         prompt: pending.prompt,
                         imageUrl,
                         firestoreImageId,
-                        userId: currentUser.uid,
+                        userId: uid,
                     })
                 );
                 setLocalHistory(prev => [entry, ...prev.filter(i => i.id !== pending.requestId)]);
@@ -293,16 +299,11 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             loadLocal();
         };
 
-        const remainingMs = Math.max(5000, MAX_GENERATION_MS - (Date.now() - pending.startedAt));
-        const hardTimeout = setTimeout(() => {
-            if (settled) return;
-            settled = true;
-            finish();
-            resetGenerationUi();
-            toast.error('This took too long. Check your profile — it may still finish.', { id: pending.requestId });
-        }, remainingMs);
-
-        const unsub = subscribeToGenerationJob(db, pending.requestId, 40, {
+        const unsub = attachGenerationSession(db, {
+            requestId: pending.requestId,
+            startedAt: pending.startedAt,
+            initialProgressFloor: 40,
+            expectedUserId: uid,
             onProgress: (patch) => {
                 setGenerationStage(patch.stage);
                 setGenerationProgress(patch.progress);
@@ -310,16 +311,21 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 if (patch.previewUrl) setGenerationPreviewUrl(patch.previewUrl);
             },
             onSuccess: ({ imageUrl, firestoreImageId }) => {
-                clearTimeout(hardTimeout);
                 succeedPending(imageUrl, firestoreImageId);
             },
             onFailed: (message) => {
-                clearTimeout(hardTimeout);
                 if (settled) return;
                 settled = true;
                 finish();
                 resetGenerationUi();
                 toast.error(message, { id: pending.requestId });
+            },
+            onHardTimeout: () => {
+                if (settled) return;
+                settled = true;
+                finish(true);
+                resetGenerationUi();
+                toast.error('This took too long. Check your profile — it may still finish.', { id: pending.requestId });
             },
             onConnectionError: () => {
                 if (settled) return;
@@ -329,18 +335,16 @@ export function LiteProvider({ children }: { children: ReactNode }) {
 
         generationSessionRef.current = () => {
             settled = true;
-            clearTimeout(hardTimeout);
             unsub();
             finish();
         };
 
         return () => {
             settled = true;
-            clearTimeout(hardTimeout);
             unsub();
             generatingRef.current = false;
         };
-    }, [currentUser, loadLocal, resetGenerationUi]);
+    }, [currentUser?.uid, loadLocal, resetGenerationUi]);
 
     useEffect(() => {
         const handleStorage = (e: StorageEvent) => {
@@ -425,7 +429,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     }, []);
 
     useEffect(() => {
-        if (!currentUser) { setHistory([]); return; }
+        const uid = currentUser?.uid;
+        if (!uid) { setHistory([]); return; }
 
         let fallbackUnsub: (() => void) | null = null;
         let primaryUnsub: (() => void) | null = null;
@@ -436,14 +441,14 @@ export function LiteProvider({ children }: { children: ReactNode }) {
 
         const orderedQuery = query(
             collection(db, 'images'),
-            where('userId', '==', currentUser.uid),
+            where('userId', '==', uid),
             orderBy('createdAt', 'desc'),
             limit(50)
         );
 
         const fallbackQuery = query(
             collection(db, 'images'),
-            where('userId', '==', currentUser.uid),
+            where('userId', '==', uid),
             limit(50)
         );
 
@@ -483,7 +488,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             primaryUnsub?.();
             fallbackUnsub?.();
         };
-    }, [currentUser]);
+    }, [currentUser?.uid]);
 
     const displayHistory = useMemo(
         () => filterDisplayableHistory(
@@ -638,6 +643,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         generatingRef.current = true;
         const estimatedCost = calculateEstimatedCost(selectedModel.id, userTier);
         const requestId = `gen_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        const startedAt = Date.now();
 
         generationSessionRef.current?.();
 
@@ -646,11 +652,11 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         setGenerationProgress(10);
         setGenerationPreviewUrl(null);
         setActiveGeneration({ requestId, prompt: cleanPrompt });
-        setGenerateStartTime(Date.now());
+        setGenerateStartTime(startedAt);
         savePendingGeneration({
             requestId,
             prompt: cleanPrompt,
-            startedAt: Date.now(),
+            startedAt,
             userId: currentUser.uid,
         });
         toast.loading(messageForStage('submitting'), { id: requestId });
@@ -674,23 +680,23 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             }
         };
 
-        const finishSession = () => {
+        const finishSession = (options?: { keepPending?: boolean }) => {
             softTimeoutIds.forEach(clearTimeout);
             if (idleTick) clearInterval(idleTick);
             if (jobUnsub) jobUnsub();
             jobUnsub = null;
             idleTick = null;
             generatingRef.current = false;
-            clearPendingGeneration();
+            if (!options?.keepPending) clearPendingGeneration();
             if (generationSessionRef.current === finishSession) {
                 generationSessionRef.current = null;
             }
         };
 
-        const failGeneration = (message: string, rollback = !apiAccepted) => {
+        const failGeneration = (message: string, rollback = !apiAccepted, keepPending = false) => {
             if (settled) return;
             settled = true;
-            finishSession();
+            finishSession({ keepPending });
             if (rollback) rollbackCredits();
             resetGenerationUi();
             toast.error(message, { id: requestId });
@@ -765,15 +771,14 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             }, 60000),
             setTimeout(() => {
                 if (!settled) toast.loading(LONG_RUNNING_MESSAGE, { id: requestId });
-            }, 120000),
-            setTimeout(() => {
-                if (!settled) {
-                    failGeneration('This took too long. Check your profile — it may still finish.', false);
-                }
-            }, MAX_GENERATION_MS)
+            }, 120000)
         );
 
-        jobUnsub = subscribeToGenerationJob(db, requestId, progressFloor, {
+        jobUnsub = attachGenerationSession(db, {
+            requestId,
+            startedAt,
+            initialProgressFloor: progressFloor,
+            expectedUserId: currentUser.uid,
             onProgress: (patch) => {
                 sawQueueDoc = true;
                 progressFloor = patch.progress;
@@ -800,6 +805,9 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                     message || "Something went wrong. Your credits were returned.",
                     false
                 );
+            },
+            onHardTimeout: () => {
+                failGeneration('This took too long. Check your profile — it may still finish.', false, true);
             },
             onConnectionError: () => {
                 if (settled) return;

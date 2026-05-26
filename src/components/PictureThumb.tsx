@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getOptimizedImageUrl } from '../lite-utils';
-import { historyThumbUrl } from '../lib/generationFlow';
+import { historyThumbUrl, canonicalGenerationRouteId } from '../lib/generationFlow';
 
 interface PictureThumbProps {
     item: {
@@ -28,9 +28,11 @@ export default function PictureThumb({ item, className = 'picture-card', showCap
 
     if (!item.imageUrl) return null;
 
+    const routeId = canonicalGenerationRouteId(item);
+
     return (
         <Link
-            to={`/generation/${item.id}`}
+            to={`/generation/${routeId}`}
             state={{ generation: item }}
             className={className}
         >

@@ -136,8 +136,10 @@ export class GenerationRepository {
   }
 
   private async findLocal(generationId: string): Promise<GenerationDetail | null> {
-    const all = await this.getAllGenerations();
-    const raw = all.find((g) => {
+    const uid = auth.currentUser?.uid;
+    const raw = await loadLocalGenerations(1000, uid);
+    const all = raw.map((g) => this.mapToDomainModel(g));
+    const match = all.find((g) => {
       const extra = g as GenerationDetail & { firestoreImageId?: string };
       const fromParams = (extra.parameters as Record<string, unknown> | undefined)?.firestoreImageId;
       return (
@@ -146,7 +148,7 @@ export class GenerationRepository {
         fromParams === generationId
       );
     });
-    return raw || null;
+    return match || null;
   }
 
   private async fetchFromFirestore(generationId: string): Promise<GenerationDetail | null> {
@@ -240,9 +242,14 @@ export class GenerationRepository {
   }
 
   private mapToDomainModel(raw: any): GenerationDetail {
+    const params = raw.params as Record<string, unknown> | undefined;
+    const userId =
+      raw.userId && raw.userId !== 'local'
+        ? raw.userId
+        : (params?.userId as string | undefined) || 'local';
     const detail = {
       id: raw.id,
-      userId: raw.userId || 'local',
+      userId,
       createdAt: raw.createdAt || Date.now(),
       imageUrl: raw.imageUrl,
       previewUrl: raw.previewUrl || raw.thumbnailUrl,
@@ -253,12 +260,12 @@ export class GenerationRepository {
       modelType: raw.modelType,
       seed: raw.seed,
       parameters: {
-        size: raw.params?.size || raw.aspectRatio,
-        steps: raw.params?.steps ?? raw.steps,
-        guidanceScale: raw.params?.guidanceScale ?? raw.cfg,
-        quality: raw.params?.quality,
-        style: raw.params?.style,
-        format: raw.params?.format,
+        size: params?.size || raw.params?.size || raw.aspectRatio,
+        steps: params?.steps ?? raw.params?.steps ?? raw.steps,
+        guidanceScale: params?.guidanceScale ?? raw.params?.guidanceScale ?? raw.cfg,
+        quality: params?.quality ?? raw.params?.quality,
+        style: params?.style ?? raw.params?.style,
+        format: params?.format ?? raw.params?.format,
       },
       generationTime: raw.generationTime,
       revision: raw.revision || 1,

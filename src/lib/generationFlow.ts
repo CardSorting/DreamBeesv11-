@@ -82,6 +82,9 @@ export function monotonicProgress(floor: number, next: number): number {
 const PENDING_KEY = 'lite_pending_generation';
 const PENDING_MAX_AGE_MS = 15 * 60 * 1000;
 
+/** Client-side cap aligned with pending session TTL */
+export const MAX_GENERATION_MS = 14 * 60 * 1000;
+
 export interface PendingGeneration {
   requestId: string;
   prompt: string;
@@ -175,11 +178,13 @@ export function canonicalGenerationRouteId(item: {
 export function scopeLocalHistoryForUser(local: any[], userId: string | undefined): any[] {
   if (!userId) return [];
   return local.filter((item) => {
-    if (!item.userId || item.userId === 'local') {
-      // Legacy rows without owner — only show on Electron (single-user device)
-      return Boolean(window.electronAPI?.lite);
-    }
-    return item.userId === userId;
+    const params = item.params as Record<string, unknown> | undefined;
+    const paramsUserId = params?.userId as string | undefined;
+    const ownerId =
+      item.userId && item.userId !== 'local' ? item.userId : paramsUserId;
+    // Rows without an owner are hidden when signed in (prevents cross-account bleed on shared devices)
+    if (!ownerId) return false;
+    return ownerId === userId;
   });
 }
 
@@ -325,6 +330,11 @@ function localStorageKeyForUser(userId: string): string {
   return `${LOCAL_STORAGE_KEY}_${userId}`;
 }
 
+/** Per-user localStorage key (for cross-tab sync listeners) */
+export function localHistoryStorageKey(userId: string): string {
+  return localStorageKeyForUser(userId);
+}
+
 /** Strip Firebase callable prefix for readable toast copy */
 export function parseCallableError(err: unknown): string {
   const e = err as { code?: string; message?: string };
@@ -342,6 +352,15 @@ export function parseCallableError(err: unknown): string {
   }
   if (e?.code === 'functions/deadline-exceeded') {
     return 'The request timed out. Please try again.';
+  }
+  if (e?.code === 'functions/permission-denied') {
+    return stripped || 'You do not have permission to do that.';
+  }
+  if (e?.code === 'functions/internal') {
+    return stripped || 'Something went wrong on our side. Please try again.';
+  }
+  if (e?.code === 'functions/unavailable' || e?.code === 'functions/unknown') {
+    return stripped || 'The service is temporarily unavailable. Please try again.';
   }
   return stripped || 'Could not start. Please try again.';
 }
@@ -376,7 +395,13 @@ export async function persistGenerationEntry(entry: GenerationHistoryEntry): Pro
     const key = localStorageKeyForUser(entry.userId);
     const raw = localStorage.getItem(key);
     const all: GenerationHistoryEntry[] = raw ? JSON.parse(raw) : [];
-    const filtered = all.filter((g) => g.id !== entry.id);
+    const filtered = all.filter((g) => {
+      if (g.id === entry.id) return false;
+      if (entry.firestoreImageId && g.firestoreImageId === entry.firestoreImageId) return false;
+      const p = g.params as Record<string, unknown> | undefined;
+      if (entry.firestoreImageId && p?.firestoreImageId === entry.firestoreImageId) return false;
+      return true;
+    });
     localStorage.setItem(
       key,
       JSON.stringify([entry, ...filtered].slice(0, LOCAL_MAX_ENTRIES))
