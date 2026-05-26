@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { IconHome, IconZap, IconUser, IconSparkles, IconLayers } from '../icons';
+import { IconHome, IconZap, IconUser, IconSparkles } from '../icons';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function BottomNav() {
@@ -14,14 +14,6 @@ export default function BottomNav() {
                 <span>Explore</span>
             </NavLink>
 
-            <NavLink to="/mockup" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-                <div className="nav-icon-box">
-                    <IconLayers size={22} />
-                    <motion.div className="active-dot" layoutId="nav-dot-m" />
-                </div>
-                <span>Mockup</span>
-            </NavLink>
-            
             <NavLink to="/generate" className={({ isActive }) => `nav-item-center ${isActive ? 'active' : ''}`}>
                 <motion.div 
                     whileHover={{ scale: 1.1, y: -5 }}
