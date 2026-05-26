@@ -59,7 +59,14 @@ export const handleCreateGenerationRequest = async (request: RequestWithAuth<any
     // Check if orchestrator returned an error (properly typed check)
     const errorResult = result as GenerationError;
     if (errorResult.status) {
-      throw new HttpsError('internal', errorResult.error || 'Generation failed');
+      const msg = errorResult.error || 'Generation failed';
+      if (/insufficient|funds|zaps|exhausted|limit exceeded/i.test(msg)) {
+        throw new HttpsError('failed-precondition', msg);
+      }
+      if (/degraded|unavailable|too many active/i.test(msg)) {
+        throw new HttpsError('resource-exhausted', msg);
+      }
+      throw new HttpsError('internal', msg);
     }
 
     // 4. Return Firebase-specific response (result is guaranteed to be GenerationResult here - type guard passed)

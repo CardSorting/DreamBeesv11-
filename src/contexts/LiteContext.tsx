@@ -7,20 +7,24 @@ import {
     LONG_RUNNING_MESSAGE,
     IN_LINE_MESSAGE,
     SLOW_START_MESSAGE,
+    buildGenerationHistoryEntry,
+    commitGenerationSuccess,
     clearPendingGeneration,
+    filterDisplayableHistory,
     loadPendingGeneration,
+    loadLocalGenerations,
     mergeGenerationHistory,
     messageForStage,
     monotonicProgress,
+    parseCallableError,
     preloadImage,
     savePendingGeneration,
+    scopeLocalHistoryForUser,
     smoothIdleProgress,
+    toHistoryTimestamp,
 } from '../lib/generationFlow';
 import {
-    isQueueInFlight,
-    isQueueSuccess,
-    patchFromQueueDoc,
-    QueueSnapshot,
+    subscribeToGenerationJob,
 } from '../lib/generationSession';
 import toast from 'react-hot-toast';
 import { auth, db, functions } from '../firebase.ts';
@@ -35,7 +39,7 @@ import {
     signInWithPopup,
     signInWithCredential
 } from 'firebase/auth';
-import { collection, doc, onSnapshot, query, orderBy, limit, where, setDoc, serverTimestamp, enableNetwork, disableNetwork } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, query, orderBy, limit, where, setDoc, serverTimestamp, enableNetwork, disableNetwork } from 'firebase/firestore';
 import { AIModel, getOptimizedImageUrl } from '../lite-utils';
 
 const BUILTIN_MODELS: AIModel[] = [
@@ -68,6 +72,9 @@ const BUILTIN_MODELS: AIModel[] = [
         order: 4
     }
 ];
+
+/** Fail stuck jobs client-side before sessionStorage pending expires (15m) */
+const MAX_GENERATION_MS = 14 * 60 * 1000;
 
 interface LiteContextType {
     currentUser: User | null;
@@ -119,6 +126,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     const [activeGeneration, setActiveGeneration] = useState<{ requestId: string; prompt: string } | null>(null);
     const generationSessionRef = useRef<(() => void) | null>(null);
     const generatingRef = useRef(false);
+    const prevUidRef = useRef<string | undefined>(undefined);
     const [isOffline, setIsOffline] = useState(!navigator.onLine);
     const [cooldownUntil, setCooldownUntil] = useState<number>(0);
     const [consecutiveFailures, setConsecutiveFailures] = useState(0);
@@ -132,8 +140,29 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         return toast.success(message, { id: existingId });
     }, []);
 
+    const loadLocal = useCallback(async () => {
+        try {
+            const gens = await loadLocalGenerations(50, currentUser?.uid);
+            setLocalHistory(gens);
+        } catch (err) {
+            console.warn('[Lite] Local history unavailable:', err);
+        }
+    }, [currentUser?.uid]);
+
     useEffect(() => {
-        const handleOnline = () => { setIsOffline(false); enableNetwork(db); toast.success("Network restored"); };
+        if (!navigator.onLine) {
+            setIsOffline(true);
+            disableNetwork(db);
+        }
+    }, []);
+
+    useEffect(() => {
+        const handleOnline = () => {
+            setIsOffline(false);
+            enableNetwork(db);
+            toast.success("Network restored");
+            loadLocal();
+        };
         const handleOffline = () => { setIsOffline(true); disableNetwork(db); toast.error("Offline Mode Active"); };
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
@@ -141,11 +170,16 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
         };
-    }, []);
+    }, [loadLocal]);
 
     useEffect(() => {
-        return onAuthStateChanged(auth, user => {
+        let userUnsub: (() => void) | null = null;
+
+        const authUnsub = onAuthStateChanged(auth, (user) => {
+            userUnsub?.();
+            userUnsub = null;
             setCurrentUser(user);
+
             if (!user) {
                 setLoading(false);
                 setUserTier('free');
@@ -153,35 +187,33 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 return;
             }
 
-            // Fetch user data from Firestore
-            const unsub = onSnapshot(doc(db, 'users', user.uid), snap => {
+            userUnsub = onSnapshot(doc(db, 'users', user.uid), (snap) => {
                 if (snap.exists()) {
                     const data = snap.data();
                     setUserTier(data.tier || 'free');
                     setZaps(data.zaps ?? (data.tier === 'pro' || data.tier === 'architect' ? 'unlimited' : 10));
                 }
                 setLoading(false);
-            }, err => {
+            }, (err) => {
                 console.warn('[Lite] User data fetch failed:', err);
                 setLoading(false);
             });
-
-            return () => unsub();
         });
+
+        return () => {
+            authUnsub();
+            userUnsub?.();
+        };
     }, []);
 
-    const loadLocal = useCallback(async () => {
-        try {
-            if (window.electronAPI?.lite) {
-                const gens = await window.electronAPI.lite.getGenerations(50);
-                setLocalHistory(gens);
-            }
-        } catch (err) {
-            console.warn('[Lite] Local history unavailable:', err);
-        }
-    }, []);
+    useEffect(() => {
+        loadLocal();
+    }, [currentUser, loadLocal]);
 
-    useEffect(() => { loadLocal(); }, [loadLocal]);
+    const selectModel = useCallback((model: AIModel) => {
+        localStorage.setItem('lite_selected_model', model.id);
+        setSelectedModel(model);
+    }, []);
 
     const resetGenerationUi = useCallback(() => {
         setGenerating(false);
@@ -192,14 +224,30 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         setGenerateStartTime(undefined);
     }, []);
 
+    useEffect(() => {
+        const uid = currentUser?.uid;
+        if (prevUidRef.current && prevUidRef.current !== uid) {
+            generationSessionRef.current?.();
+            generatingRef.current = false;
+            clearPendingGeneration();
+            resetGenerationUi();
+            setLocalHistory([]);
+        }
+        prevUidRef.current = uid;
+    }, [currentUser?.uid, resetGenerationUi]);
+
     useEffect(() => () => { generationSessionRef.current?.(); }, []);
 
     /** Re-attach to an in-flight job after navigation refresh */
     useEffect(() => {
         if (!currentUser || generatingRef.current) return;
 
-        const pending = loadPendingGeneration();
+        const pending = loadPendingGeneration(currentUser.uid);
         if (!pending) return;
+        if (pending.userId && pending.userId !== currentUser.uid) {
+            clearPendingGeneration();
+            return;
+        }
 
         generatingRef.current = true;
         setGenerating(true);
@@ -210,79 +258,87 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         toast.loading('Checking on your picture…', { id: pending.requestId });
 
         let settled = false;
-        let progressFloor = 40;
 
         const finish = () => {
             generatingRef.current = false;
             clearPendingGeneration();
         };
 
-        const succeedPending = async (imageUrl: string) => {
+        const succeedPending = async (imageUrl: string, firestoreImageId?: string) => {
             if (settled) return;
             settled = true;
             finish();
-            const entry = {
-                id: pending.requestId,
-                prompt: pending.prompt,
-                imageUrl,
-                createdAt: Date.now()
-            };
-            await preloadImage(getOptimizedImageUrl(imageUrl) || imageUrl);
-            setLocalHistory(prev => [entry, ...prev.filter(i => i.id !== pending.requestId)]);
-            resetGenerationUi();
-            toast.success('Your picture is ready!', { id: pending.requestId });
-            if (window.electronAPI?.lite) {
-                try {
-                    await window.electronAPI.lite.saveGeneration(entry);
-                    loadLocal();
-                } catch { /* ignore */ }
+            let savedLocally = false;
+            try {
+                const entry = await commitGenerationSuccess(
+                    buildGenerationHistoryEntry({
+                        requestId: pending.requestId,
+                        prompt: pending.prompt,
+                        imageUrl,
+                        firestoreImageId,
+                        userId: currentUser.uid,
+                    })
+                );
+                setLocalHistory(prev => [entry, ...prev.filter(i => i.id !== pending.requestId)]);
+                savedLocally = true;
+            } catch (err) {
+                console.warn('[Lite] Could not save resumed picture locally:', err);
             }
+            resetGenerationUi();
+            if (savedLocally) {
+                toast.success('Your picture is ready!', { id: pending.requestId });
+            } else {
+                toast.error('Picture finished, but could not save on this device. Check your account online.', { id: pending.requestId });
+            }
+            loadLocal();
         };
 
-        const unsub = onSnapshot(doc(db, 'generation_queue', pending.requestId), async (snap) => {
-            const data = snap.data();
-            if (!data || settled) return;
+        const remainingMs = Math.max(5000, MAX_GENERATION_MS - (Date.now() - pending.startedAt));
+        const hardTimeout = setTimeout(() => {
+            if (settled) return;
+            settled = true;
+            finish();
+            resetGenerationUi();
+            toast.error('This took too long. Check your profile — it may still finish.', { id: pending.requestId });
+        }, remainingMs);
 
-            if (isQueueInFlight(data as QueueSnapshot)) {
-                const { patch, progressFloor: next } = patchFromQueueDoc(data as QueueSnapshot, progressFloor);
-                progressFloor = next;
+        const unsub = subscribeToGenerationJob(db, pending.requestId, 40, {
+            onProgress: (patch) => {
                 setGenerationStage(patch.stage);
                 setGenerationProgress(patch.progress);
                 toast.loading(patch.message, { id: pending.requestId });
                 if (patch.previewUrl) setGenerationPreviewUrl(patch.previewUrl);
-                return;
-            }
-
-            if (isQueueSuccess(data as QueueSnapshot)) {
-                await succeedPending(data.imageUrl as string);
-                return;
-            }
-
-            if (data.status === 'failed') {
+            },
+            onSuccess: ({ imageUrl, firestoreImageId }) => {
+                clearTimeout(hardTimeout);
+                succeedPending(imageUrl, firestoreImageId);
+            },
+            onFailed: (message) => {
+                clearTimeout(hardTimeout);
+                if (settled) return;
                 settled = true;
                 finish();
                 resetGenerationUi();
-                toast.error((data.error as string) || 'Something went wrong.', { id: pending.requestId });
-            }
+                toast.error(message, { id: pending.requestId });
+            },
+            onConnectionError: () => {
+                if (settled) return;
+                toast.loading('Reconnecting…', { id: pending.requestId });
+            },
         });
 
-        const imagesUnsub = onSnapshot(
-            query(
-                collection(db, 'images'),
-                where('originalRequestId', '==', pending.requestId),
-                limit(1)
-            ),
-            (snap) => {
-                if (settled || snap.empty) return;
-                const img = snap.docs[0].data();
-                if (img.imageUrl) succeedPending(img.imageUrl as string);
-            }
-        );
+        generationSessionRef.current = () => {
+            settled = true;
+            clearTimeout(hardTimeout);
+            unsub();
+            finish();
+        };
 
         return () => {
             settled = true;
+            clearTimeout(hardTimeout);
             unsub();
-            imagesUnsub();
+            generatingRef.current = false;
         };
     }, [currentUser, loadLocal, resetGenerationUi]);
 
@@ -305,11 +361,14 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             const savedId = localStorage.getItem('lite_selected_model');
             const savedModel = models.find(m => m.id === savedId);
 
-            if (savedModel && (!selectedModel || selectedModel.id !== savedModel.id)) {
-                setSelectedModel(savedModel);
-            } else if (!selectedModel) {
-                setSelectedModel(models[0]);
-            }
+            setSelectedModel((current) => {
+                if (savedModel) {
+                    if (!current) return savedModel;
+                    if (models.some((m) => m.id === current.id)) return current;
+                    return savedModel;
+                }
+                return current ?? models[0];
+            });
         };
 
         const orderedQuery = query(collection(db, 'models'), orderBy('order', 'asc'), limit(12));
@@ -363,26 +422,92 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             stopped = true;
             if (activeUnsub) activeUnsub();
         };
-    }, [selectedModel]);
+    }, []);
 
     useEffect(() => {
         if (!currentUser) { setHistory([]); return; }
-        const q = query(
+
+        let fallbackUnsub: (() => void) | null = null;
+        let primaryUnsub: (() => void) | null = null;
+        let usingFallback = false;
+
+        const mapDocs = (docs: { id: string; data: () => Record<string, unknown> }[]) =>
+            docs.map(d => ({ id: d.id, ...d.data() } as Record<string, unknown> & { id: string }));
+
+        const orderedQuery = query(
             collection(db, 'images'),
             where('userId', '==', currentUser.uid),
             orderBy('createdAt', 'desc'),
             limit(50)
         );
-        return onSnapshot(q, snap => setHistory(snap.docs.map(d => ({ id: d.id, ...d.data() }))), err => {
-            console.warn('[Lite] History subscription failed:', err);
-            setHistory([]);
-        });
+
+        const fallbackQuery = query(
+            collection(db, 'images'),
+            where('userId', '==', currentUser.uid),
+            limit(50)
+        );
+
+        const startFallback = () => {
+            if (fallbackUnsub || usingFallback) return;
+            usingFallback = true;
+            primaryUnsub?.();
+            primaryUnsub = null;
+            fallbackUnsub = onSnapshot(
+                fallbackQuery,
+                snap => {
+                    const items = mapDocs(snap.docs).sort(
+                        (a, b) => toHistoryTimestamp(b.createdAt) - toHistoryTimestamp(a.createdAt)
+                    );
+                    setHistory(items);
+                },
+                err2 => {
+                    console.warn('[Lite] History subscription failed (fallback):', err2);
+                    setHistory([]);
+                }
+            );
+        };
+
+        primaryUnsub = onSnapshot(
+            orderedQuery,
+            snap => {
+                if (usingFallback) return;
+                setHistory(mapDocs(snap.docs));
+            },
+            err => {
+                console.warn('[Lite] History subscription failed (ordered):', err);
+                startFallback();
+            }
+        );
+
+        return () => {
+            primaryUnsub?.();
+            fallbackUnsub?.();
+        };
     }, [currentUser]);
 
     const displayHistory = useMemo(
-        () => mergeGenerationHistory(localHistory, history),
-        [localHistory, history]
+        () => filterDisplayableHistory(
+            mergeGenerationHistory(
+                scopeLocalHistoryForUser(localHistory, currentUser?.uid),
+                history
+            )
+        ),
+        [localHistory, history, currentUser?.uid]
     );
+
+    const upsertUserProfile = async (
+        uid: string,
+        fields: Record<string, unknown>,
+        initializeIfMissing?: Record<string, unknown>
+    ) => {
+        const userRef = doc(db, 'users', uid);
+        const existing = await getDoc(userRef);
+        if (!existing.exists() && initializeIfMissing) {
+            await setDoc(userRef, { ...initializeIfMissing, ...fields }, { merge: true });
+            return;
+        }
+        await setDoc(userRef, fields, { merge: true });
+    };
 
     const login = (email: string, pass: string) => signInWithEmailAndPassword(auth, email, pass).then(() => {});
     
@@ -410,7 +535,15 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const logout = () => signOut(auth).then(() => { toast.success("Safe travels."); });
+    const logout = () => {
+        generationSessionRef.current?.();
+        generatingRef.current = false;
+        clearPendingGeneration();
+        resetGenerationUi();
+        setHistory([]);
+        setLocalHistory([]);
+        return signOut(auth).then(() => { toast.success("Safe travels."); });
+    };
 
     const loginWithGoogle = async () => {
         try {
@@ -434,25 +567,40 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 const res = await signInWithCredential(auth, credential);
 
                 if (res.user) {
-                    await setDoc(doc(db, 'users', res.user.uid), {
-                        email: res.user.email,
-                        lastLogin: serverTimestamp(),
-                        platform: 'electron',
-                        tier: 'free',
-                        zaps: 10
-                    }, { merge: true });
+                    await upsertUserProfile(
+                        res.user.uid,
+                        {
+                            email: res.user.email,
+                            lastLogin: serverTimestamp(),
+                            platform: 'electron',
+                        },
+                        {
+                            email: res.user.email,
+                            createdAt: serverTimestamp(),
+                            platform: 'electron',
+                            tier: 'free',
+                            zaps: 10,
+                        }
+                    );
                     addToast(`Welcome back, ${res.user.displayName?.split(' ')[0]}`, "success", "google-auth");
                 }
             } else {
                 const provider = new GoogleAuthProvider();
                 const res = await signInWithPopup(auth, provider);
                 if (res.user) {
-                    await setDoc(doc(db, 'users', res.user.uid), {
-                        email: res.user.email,
-                        lastLogin: serverTimestamp(),
-                        tier: 'free',
-                        zaps: 10
-                    }, { merge: true });
+                    await upsertUserProfile(
+                        res.user.uid,
+                        {
+                            email: res.user.email,
+                            lastLogin: serverTimestamp(),
+                        },
+                        {
+                            email: res.user.email,
+                            createdAt: serverTimestamp(),
+                            tier: 'free',
+                            zaps: 10,
+                        }
+                    );
                     toast.success(`Welcome back, ${res.user.displayName?.split(' ')[0]}`);
                 }
             }
@@ -499,15 +647,19 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         setGenerationPreviewUrl(null);
         setActiveGeneration({ requestId, prompt: cleanPrompt });
         setGenerateStartTime(Date.now());
-        savePendingGeneration({ requestId, prompt: cleanPrompt, startedAt: Date.now() });
+        savePendingGeneration({
+            requestId,
+            prompt: cleanPrompt,
+            startedAt: Date.now(),
+            userId: currentUser.uid,
+        });
         toast.loading(messageForStage('submitting'), { id: requestId });
 
         if (typeof zaps === 'number' && estimatedCost > 0) {
             setZaps(prev => typeof prev === 'number' ? Math.max(0, prev - estimatedCost) : prev);
         }
 
-        let unsub: (() => void) | null = null;
-        let imagesUnsub: (() => void) | null = null;
+        let jobUnsub: (() => void) | null = null;
         let idleTick: ReturnType<typeof setInterval> | null = null;
         const softTimeoutIds: ReturnType<typeof setTimeout>[] = [];
         let settled = false;
@@ -525,10 +677,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         const finishSession = () => {
             softTimeoutIds.forEach(clearTimeout);
             if (idleTick) clearInterval(idleTick);
-            if (unsub) unsub();
-            if (imagesUnsub) imagesUnsub();
-            unsub = null;
-            imagesUnsub = null;
+            if (jobUnsub) jobUnsub();
+            jobUnsub = null;
             idleTick = null;
             generatingRef.current = false;
             clearPendingGeneration();
@@ -552,37 +702,40 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             resolve(false);
         };
 
-        const succeedGeneration = async (data: { imageUrl: string }) => {
+        const succeedGeneration = async (data: { imageUrl: string; firestoreImageId?: string }) => {
             if (settled) return;
             settled = true;
             finishSession();
             setGenerationProgress(100);
 
-            const optimizedUrl = getOptimizedImageUrl(data.imageUrl) || data.imageUrl;
-            await preloadImage(optimizedUrl);
-
-            const entry = {
-                id: requestId,
-                prompt: cleanPrompt,
-                imageUrl: data.imageUrl,
-                modelId: selectedModel.id,
-                params,
-                createdAt: Date.now()
-            };
-            setLocalHistory(prev => [entry, ...prev.filter(i => i.id !== requestId)]);
+            let savedLocally = false;
+            try {
+                const entry = await commitGenerationSuccess(
+                    buildGenerationHistoryEntry({
+                        requestId,
+                        prompt: cleanPrompt,
+                        imageUrl: data.imageUrl,
+                        modelId: selectedModel.id,
+                        params,
+                        firestoreImageId: data.firestoreImageId,
+                        userId: currentUser.uid,
+                    })
+                );
+                setLocalHistory(prev => [entry, ...prev.filter(i => i.id !== requestId)]);
+                savedLocally = true;
+            } catch (err) {
+                console.warn('[Lite] Could not save picture locally:', err);
+            }
 
             resetGenerationUi();
-            toast.success("Your picture is ready!", { id: requestId });
+            if (savedLocally) {
+                toast.success("Your picture is ready!", { id: requestId });
+            } else {
+                toast.error('Picture finished, but could not save on this device. Check your account online.', { id: requestId });
+            }
             setConsecutiveFailures(0);
             
-            if (window.electronAPI?.lite) {
-                try {
-                    await window.electronAPI.lite.saveGeneration(entry);
-                    loadLocal();
-                } catch (err) {
-                    console.warn('[Lite] Local save skipped:', err);
-                }
-            }
+            loadLocal();
             resolve(true);
         };
 
@@ -612,68 +765,47 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             }, 60000),
             setTimeout(() => {
                 if (!settled) toast.loading(LONG_RUNNING_MESSAGE, { id: requestId });
-            }, 120000)
+            }, 120000),
+            setTimeout(() => {
+                if (!settled) {
+                    failGeneration('This took too long. Check your profile — it may still finish.', false);
+                }
+            }, MAX_GENERATION_MS)
         );
 
-        const applyQueueUpdate = (data: QueueSnapshot) => {
-            sawQueueDoc = true;
-            const { patch, progressFloor: next } = patchFromQueueDoc(data, progressFloor);
-            progressFloor = next;
-            setGenerationStage(patch.stage);
-            setGenerationProgress(patch.progress);
+        jobUnsub = subscribeToGenerationJob(db, requestId, progressFloor, {
+            onProgress: (patch) => {
+                sawQueueDoc = true;
+                progressFloor = patch.progress;
+                setGenerationStage(patch.stage);
+                setGenerationProgress(patch.progress);
 
-            if (patch.message !== lastToastMessage) {
-                lastToastMessage = patch.message;
-                toast.loading(patch.message, { id: requestId });
-            }
-
-            if (patch.previewUrl) {
-                setGenerationPreviewUrl(patch.previewUrl);
-                if (data.imageUrl && !data.lqip?.startsWith('data:')) {
-                    preloadImage(getOptimizedImageUrl(data.imageUrl) || data.imageUrl);
+                if (patch.message !== lastToastMessage) {
+                    lastToastMessage = patch.message;
+                    toast.loading(patch.message, { id: requestId });
                 }
-            }
-        };
 
-        unsub = onSnapshot(doc(db, 'generation_queue', requestId), (snap) => {
-            const data = snap.data();
-            if (!data) return;
-
-            if (isQueueInFlight(data as QueueSnapshot)) {
-                applyQueueUpdate(data as QueueSnapshot);
-                return;
-            }
-
-            if (isQueueSuccess(data as QueueSnapshot)) {
-                succeedGeneration({ imageUrl: data.imageUrl as string });
-                return;
-            }
-
-            if (data.status === 'failed') {
+                if (patch.previewUrl) {
+                    setGenerationPreviewUrl(patch.previewUrl);
+                    if (!patch.previewUrl.startsWith('data:')) {
+                        preloadImage(getOptimizedImageUrl(patch.previewUrl) || patch.previewUrl);
+                    }
+                }
+            },
+            onSuccess: (payload) => {
+                succeedGeneration(payload);
+            },
+            onFailed: (message) => {
                 failGeneration(
-                    (data.error as string) || "Something went wrong. Your credits were returned.",
+                    message || "Something went wrong. Your credits were returned.",
                     false
                 );
-            }
-        }, (err) => {
-            console.warn('[Lite] Gen subscription error:', err);
-            failGeneration("Lost connection to the server. Please try again.", !apiAccepted);
+            },
+            onConnectionError: () => {
+                if (settled) return;
+                toast.loading('Reconnecting…', { id: requestId });
+            },
         });
-
-        imagesUnsub = onSnapshot(
-            query(
-                collection(db, 'images'),
-                where('originalRequestId', '==', requestId),
-                limit(1)
-            ),
-            (snap) => {
-                if (settled || snap.empty) return;
-                const img = snap.docs[0].data();
-                if (img.imageUrl) {
-                    succeedGeneration({ imageUrl: img.imageUrl as string });
-                }
-            }
-        );
 
         const apiCall = httpsCallable(functions, 'api', { timeout: 120000 });
         apiCall({ 
@@ -691,15 +823,15 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 lastToastMessage = messageForStage('queued');
                 toast.loading(lastToastMessage, { id: requestId });
             }
-        }).catch((err: any) => {
-            failGeneration(err.message || "Could not start. Please try again.");
+        }).catch((err: unknown) => {
+            failGeneration(parseCallableError(err));
         });
         });
     }, [currentUser, selectedModel, isOffline, loadLocal, cooldownUntil, userTier, zaps, resetGenerationUi]);
 
     return (
         <LiteContext.Provider value={{ 
-            currentUser, availableModels, selectedModel, setSelectedModel, 
+            currentUser, availableModels, selectedModel, setSelectedModel: selectModel, 
             history, localHistory, displayHistory, loading, generating, generationStage, generationProgress,
             generationPreviewUrl, activeGeneration,
             generateStartTime, generate, 

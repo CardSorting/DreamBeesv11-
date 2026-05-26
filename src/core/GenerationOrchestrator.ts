@@ -23,9 +23,12 @@ export class GenerationOrchestrator {
       return enriched;
     } catch (error) {
       if (error instanceof PermissionError) {
-        throw new PermissionError(`Access denied: ${error.message}`);
+        throw error;
       }
-      throw new Error(`Failed to load generation: ${generationId}`);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(`Could not load picture: ${generationId}`);
     }
   }
 
@@ -50,7 +53,8 @@ export class GenerationOrchestrator {
    * Formats raw generation data into enriched domain model.
    * Applies formatting services from domain layer.
    */
-  private enrichWithMetadata(raw: any): GenerationDetail {
+  private enrichWithMetadata(raw: GenerationDetail & { firestoreImageId?: string }): GenerationDetail {
+    const params = raw.parameters || {};
     return {
       id: raw.id,
       userId: raw.userId,
@@ -63,15 +67,15 @@ export class GenerationOrchestrator {
       modelType: raw.modelType,
       seed: raw.seed,
       parameters: {
-        size: raw.params?.size,
-        steps: raw.params?.steps,
-        guidanceScale: raw.params?.guidanceScale,
-        quality: raw.params?.quality,
-        style: raw.params?.style,
-        format: raw.params?.format
+        size: params.size,
+        steps: params.steps,
+        guidanceScale: params.guidanceScale,
+        quality: params.quality,
+        style: params.style,
+        format: params.format,
       },
       generationTime: raw.generationTime,
-      revision: raw.revision || 1
+      revision: raw.revision || 1,
     };
   }
 }

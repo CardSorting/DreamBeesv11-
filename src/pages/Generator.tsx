@@ -5,7 +5,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLite } from '../contexts/LiteContext';
 import { getOptimizedImageUrl } from '../lite-utils';
-import { formatElapsed, messageForStage, STAGE_ORDER } from '../lib/generationFlow';
+import PictureThumb from '../components/PictureThumb';
+import PreviewImage from '../components/PreviewImage';
+import { formatElapsed, historyThumbUrl, messageForStage, STAGE_ORDER } from '../lib/generationFlow';
 import { IconImage, IconLoader, IconMagic, IconZap } from '../icons';
 
 const quickIdeas = [
@@ -200,7 +202,10 @@ export default function Generator() {
                 </div>
               ) : latestImage ? (
                 <figure className="latest-figure">
-                  <img src={getOptimizedImageUrl(latestImage.imageUrl) || ''} alt={latestImage.prompt || 'Generated image'} />
+                  <PreviewImage
+                    src={historyThumbUrl(latestImage) || latestImage.imageUrl}
+                    alt={latestImage.prompt || 'Generated image'}
+                  />
                   {latestImage.prompt ? <figcaption>{latestImage.prompt}</figcaption> : null}
                 </figure>
               ) : (
@@ -221,9 +226,12 @@ export default function Generator() {
             {recentImages.length > 0 ? (
               <div className="history-grid">
                 {recentImages.map((item) => (
-                  <Link key={item.id} to={`/generation/${item.id}`} className="history-thumb">
-                    <img src={getOptimizedImageUrl(item.imageUrl) || ''} alt="" loading="lazy" />
-                  </Link>
+                  <PictureThumb
+                    key={item.id}
+                    item={item}
+                    className="history-thumb"
+                    showCaption={false}
+                  />
                 ))}
               </div>
             ) : (

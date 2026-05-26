@@ -2,9 +2,9 @@
  * [LAYER: INFRASTRUCTURE]
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { IconDownload, IconShare, IconZap, IconText } from '@/icons';
-import { downloadImage, formatDuration } from '@/lite-utils';
+import { downloadImage, formatDuration, getOptimizedImageUrl } from '@/lite-utils';
 import type { GenerationDetail } from '@/domain/models/GenerationDetail';
 
 interface ImmersiveHeroProps {
@@ -20,6 +20,14 @@ export default function ImmersiveHero({
     onDownload,
     onShare
 }: ImmersiveHeroProps) {
+    const [imgSrc, setImgSrc] = useState(
+        () => getOptimizedImageUrl(generation.imageUrl) || generation.imageUrl
+    );
+
+    useEffect(() => {
+        setImgSrc(getOptimizedImageUrl(generation.imageUrl) || generation.imageUrl);
+    }, [generation.imageUrl]);
+
     return (
         <div className="immersive-hero">
             {/* Image container with generation time badge */}
@@ -29,9 +37,14 @@ export default function ImmersiveHero({
                     <span>{formatDuration(generation.generationTime || 0)}</span>
                 </div>
                 <img
-                    src={generation.imageUrl}
+                    src={imgSrc}
                     alt={generation.prompt}
                     className="hero-image"
+                    onError={() => {
+                        if (imgSrc !== generation.imageUrl) {
+                            setImgSrc(generation.imageUrl);
+                        }
+                    }}
                 />
             </div>
 

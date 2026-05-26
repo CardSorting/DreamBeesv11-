@@ -1,13 +1,27 @@
 /**
  * [LAYER: INFRASTRUCTURE]
- * Adapters and integrations for generation data persistence.
- * Interfaces defined in Domain.
+ * Local + Firestore generation resolution for detail views.
  */
 
-import { GenerationDetail, GenerationParameters } from '../domain/models/GenerationDetail';
-import { validateGeneration } from '../domain/models/GenerationDetail';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  query,
+  where,
+} from 'firebase/firestore';
+import { db } from '../firebase.ts';
+import { auth } from '../firebase.ts';
+import { GenerationDetail } from '../domain/models/GenerationDetail';
+import {
+  buildGenerationHistoryEntry,
+  loadLocalGenerations,
+  persistGenerationEntry,
+  toHistoryTimestamp,
+} from '../lib/generationFlow';
 
-// Custom error for permission/access issues
 export class PermissionError extends Error {
   constructor(message: string) {
     super(message);
@@ -16,109 +30,256 @@ export class PermissionError extends Error {
 }
 
 export class GenerationRepository {
-  private static LOCAL_STORAGE_KEY = 'lite_generations_v3';
-
-  /**
-   * Retrieves a single generation by ID.
-   * Returns enriched data with metadata.
-   */
   async getById(generationId: string): Promise<GenerationDetail> {
-    const allGenerations = await this.getAllGenerations();
-    const found = allGenerations.find(g => g.id === generationId);
-
-    if (!found) {
-      throw new Error(`Generation not found: ${generationId}`);
-    }
-
-    return this.enrichWithMetadata(found);
-  }
-
-  /**
-   * Retrieves all generations stored locally.
-   * Fallback to localStorage if Electron API is unavailable.
-   */
-  async getAllGenerations(): Promise<GenerationDetail[]> {
-    if (window.electronAPI?.lite?.getGenerations) {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const raw = await window.electronAPI.lite.getGenerations(1000);
-        return raw.map(g => this.mapToDomainModel(g));
+        const [local, remote] = await Promise.all([
+          this.findLocal(generationId),
+          this.fetchFromFirestore(generationId),
+        ]);
+
+        const resolved = this.mergeLocalAndRemote(local, remote);
+        if (!resolved) {
+          throw new Error(`Generation not found: ${generationId}`);
+        }
+
+        if (remote) {
+          this.cacheLocally(resolved).catch(() => { });
+        }
+
+        return this.enrichWithMetadata(resolved);
       } catch (error) {
-        console.warn('[GenerationRepository] Electron API call failed, falling back to localStorage:', error);
+        lastError = error;
+        if (error instanceof PermissionError) throw error;
+        if (error instanceof Error && error.message.includes('not found')) throw error;
+        if (attempt === 0) {
+          await new Promise((r) => setTimeout(r, 450));
+          continue;
+        }
       }
     }
+    throw lastError instanceof Error
+      ? lastError
+      : new Error(`Generation not found: ${generationId}`);
+  }
 
-    // Fallback to localStorage
-    const stored = localStorage.getItem(GenerationRepository.LOCAL_STORAGE_KEY);
-    if (!stored) return [];
+  /** Prefer cloud image URL when local row is stale or missing media */
+  private mergeLocalAndRemote(
+    local: GenerationDetail | null,
+    remote: GenerationDetail | null
+  ): GenerationDetail | null {
+    if (!local && !remote) return null;
+    if (!local) return remote;
+    if (!remote) return local;
 
+    const localExtra = local as GenerationDetail & { firestoreImageId?: string };
+    const remoteExtra = remote as GenerationDetail & { firestoreImageId?: string };
+
+    return {
+      ...remote,
+      ...local,
+      imageUrl: this.pickBestImageUrl(local, remote),
+      previewUrl:
+        local.previewUrl ||
+        remote.previewUrl ||
+        (remote as GenerationDetail & { thumbnailUrl?: string }).thumbnailUrl ||
+        (local as GenerationDetail & { thumbnailUrl?: string }).thumbnailUrl,
+      prompt: local.prompt || remote.prompt,
+      modelId: local.modelId !== 'unknown' ? local.modelId : remote.modelId,
+      parameters: { ...remote.parameters, ...local.parameters },
+      firestoreImageId: remoteExtra.firestoreImageId || localExtra.firestoreImageId,
+    } as GenerationDetail;
+  }
+
+  /** Prefer newer cloud URL when local was saved before catalog sync finished */
+  private pickBestImageUrl(
+    local: GenerationDetail,
+    remote: GenerationDetail
+  ): string {
+    if (!remote.imageUrl) return local.imageUrl;
+    if (!local.imageUrl) return remote.imageUrl;
+    if ((remote.createdAt || 0) >= (local.createdAt || 0)) return remote.imageUrl;
+    return local.imageUrl;
+  }
+
+  async getAllGenerations(): Promise<GenerationDetail[]> {
     try {
-      const raw = JSON.parse(stored) as any[];
-      return raw.map(g => this.mapToDomainModel(g));
+      const uid = auth.currentUser?.uid;
+      const raw = await loadLocalGenerations(1000, uid);
+      return raw.map((g) => this.mapToDomainModel(g));
     } catch (error) {
-      console.error('[GenerationRepository] Failed to parse stored generations:', error);
+      console.warn('[GenerationRepository] Local history load failed:', error);
       return [];
     }
   }
 
-  /**
-   * Saves a generation to local storage.
-   * Used for persistence when Electron API is available.
-   */
   async saveGeneration(generation: any): Promise<void> {
-    try {
-      await window.electronAPI.lite.saveGeneration(generation);
-      return;
-    } catch (error) {
-      console.warn('[GenerationRepository] Electron save failed, using localStorage fallback:', error);
-    }
-
-    // Fallback to localStorage
-    const allGenerations = await this.getAllGenerations();
-    const existingIndex = allGenerations.findIndex(g => g.id === generation.id);
-
-    if (existingIndex >= 0) {
-      allGenerations[existingIndex] = this.mapToDomainModel(generation);
-    } else {
-      allGenerations.unshift(this.mapToDomainModel(generation));
-    }
-
-    localStorage.setItem(GenerationRepository.LOCAL_STORAGE_KEY, JSON.stringify(allGenerations));
+    const detail = this.mapToDomainModel(generation);
+    await this.cacheLocally(detail);
   }
 
-  /**
-   * Maps raw storage format to rich domain model.
-   */
-  private mapToDomainModel(raw: any): GenerationDetail {
+  private async cacheLocally(generation: GenerationDetail): Promise<void> {
+    const extra = generation as GenerationDetail & { firestoreImageId?: string };
+    const entry = buildGenerationHistoryEntry({
+      requestId: generation.id,
+      prompt: generation.prompt,
+      imageUrl: generation.imageUrl,
+      modelId: generation.modelId,
+      userId: generation.userId !== 'local' && generation.userId !== 'unknown'
+        ? generation.userId
+        : auth.currentUser?.uid,
+      firestoreImageId: extra.firestoreImageId,
+      params: (generation.parameters || {}) as Record<string, unknown>,
+    });
+    await persistGenerationEntry(entry);
+  }
+
+  private async findLocal(generationId: string): Promise<GenerationDetail | null> {
+    const all = await this.getAllGenerations();
+    const raw = all.find((g) => {
+      const extra = g as GenerationDetail & { firestoreImageId?: string };
+      const fromParams = (extra.parameters as Record<string, unknown> | undefined)?.firestoreImageId;
+      return (
+        g.id === generationId ||
+        extra.firestoreImageId === generationId ||
+        fromParams === generationId
+      );
+    });
+    return raw || null;
+  }
+
+  private async fetchFromFirestore(generationId: string): Promise<GenerationDetail | null> {
+    try {
+      const imageSnap = await getDoc(doc(db, 'images', generationId));
+      if (imageSnap.exists()) {
+        const data = imageSnap.data();
+        this.assertReadableByCurrentUser(data.userId as string | undefined);
+        return this.mapFirestoreImage(imageSnap.id, data);
+      }
+
+      const [queueSnap, byRequest] = await Promise.all([
+        getDoc(doc(db, 'generation_queue', generationId)),
+        getDocs(
+          query(
+            collection(db, 'images'),
+            where('originalRequestId', '==', generationId),
+            limit(1)
+          )
+        ),
+      ]);
+
+      if (queueSnap.exists()) {
+        const queueData = queueSnap.data();
+        this.assertReadableByCurrentUser(queueData?.userId as string | undefined);
+        const mapped = this.mapFirestoreQueue(generationId, queueData);
+        if (mapped) return mapped;
+      }
+
+      if (!byRequest.empty) {
+        const d = byRequest.docs[0];
+        const data = d.data();
+        this.assertReadableByCurrentUser(data.userId as string | undefined);
+        return this.mapFirestoreImage(d.id, data);
+      }
+    } catch (error: any) {
+      const code = error?.code || '';
+      const msg = error?.message || String(error);
+      if (code === 'permission-denied' || /permission/i.test(msg)) {
+        throw new PermissionError('You do not have access to this picture.');
+      }
+      console.warn('[GenerationRepository] Firestore lookup failed:', error);
+    }
+
+    return null;
+  }
+
+  private mapFirestoreImage(docId: string, data: Record<string, unknown>): GenerationDetail {
+    const linkId = (data.originalRequestId as string) || docId;
+    const detail = {
+      id: linkId,
+      userId: (data.userId as string) || 'unknown',
+      createdAt: toHistoryTimestamp(data.createdAt) || Date.now(),
+      imageUrl: data.imageUrl as string,
+      previewUrl: (data.thumbnailUrl as string) || (data.lqip as string),
+      prompt: (data.prompt as string) || 'Generated image',
+      negativePrompt: data.negative_prompt as string | undefined,
+      modelId: (data.modelId as string) || 'unknown',
+      parameters: {
+        steps: data.steps as number | undefined,
+        guidanceScale: data.cfg as number | undefined,
+        size: data.aspectRatio as string | undefined,
+      },
+      revision: 1,
+    } as GenerationDetail & { firestoreImageId?: string };
+    detail.firestoreImageId = docId;
+    return detail;
+  }
+
+  private mapFirestoreQueue(
+    requestId: string,
+    data: Record<string, unknown>
+  ): GenerationDetail | null {
+    if (!data.imageUrl) return null;
     return {
+      id: requestId,
+      userId: (data.userId as string) || 'unknown',
+      createdAt: toHistoryTimestamp(data.createdAt) || Date.now(),
+      imageUrl: data.imageUrl as string,
+      previewUrl: (data.thumbnailUrl as string) || (data.lqip as string),
+      prompt: (data.prompt as string) || 'Generated image',
+      negativePrompt: data.negative_prompt as string | undefined,
+      modelId: (data.modelId as string) || 'unknown',
+      parameters: {
+        steps: data.steps as number | undefined,
+        guidanceScale: data.cfg as number | undefined,
+        size: data.aspectRatio as string | undefined,
+      },
+      revision: 1,
+    };
+  }
+
+  private mapToDomainModel(raw: any): GenerationDetail {
+    const detail = {
       id: raw.id,
-      userId: raw.userId,
+      userId: raw.userId || 'local',
       createdAt: raw.createdAt || Date.now(),
       imageUrl: raw.imageUrl,
-      previewUrl: raw.previewUrl,
+      previewUrl: raw.previewUrl || raw.thumbnailUrl,
       variantUrls: raw.variantUrls,
       prompt: raw.prompt,
-      negativePrompt: raw.negativePrompt,
+      negativePrompt: raw.negativePrompt || raw.negative_prompt,
       modelId: raw.modelId,
       modelType: raw.modelType,
       seed: raw.seed,
       parameters: {
-        size: raw.params?.size,
-        steps: raw.params?.steps,
-        guidanceScale: raw.params?.guidanceScale,
+        size: raw.params?.size || raw.aspectRatio,
+        steps: raw.params?.steps ?? raw.steps,
+        guidanceScale: raw.params?.guidanceScale ?? raw.cfg,
         quality: raw.params?.quality,
         style: raw.params?.style,
-        format: raw.params?.format
+        format: raw.params?.format,
       },
       generationTime: raw.generationTime,
-      revision: raw.revision || 1
-    };
+      revision: raw.revision || 1,
+    } as GenerationDetail & { firestoreImageId?: string };
+    if (raw.firestoreImageId) detail.firestoreImageId = raw.firestoreImageId;
+    else if (raw.params?.firestoreImageId) detail.firestoreImageId = raw.params.firestoreImageId;
+    return detail;
   }
 
-  /**
-   * Enriches raw data with additional metadata formatting.
-   */
+  private assertReadableByCurrentUser(ownerId: string | undefined): void {
+    const uid = auth.currentUser?.uid;
+    if (!uid || !ownerId || ownerId === 'unknown' || ownerId === 'local') return;
+    if (ownerId !== uid) {
+      throw new PermissionError('You do not have access to this picture.');
+    }
+  }
+
   private enrichWithMetadata(generation: GenerationDetail): GenerationDetail {
-    // Apply formatting services from domain layer
+    if (!generation.imageUrl) {
+      throw new Error('Generation is missing an image');
+    }
     return generation;
   }
 }

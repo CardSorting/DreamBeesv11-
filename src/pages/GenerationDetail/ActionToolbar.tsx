@@ -3,12 +3,12 @@
  */
 
 import React from 'react';
-import { IconDownload, IconShare, IconZap, IconLayers, IconRefresh } from '@/icons';
+import { IconDownload, IconShare, IconZap, IconRefresh } from '@/icons';
 import { downloadImage } from '@/lite-utils';
-import type { GenerationDetail } from '@/domain/models/GenerationDetail';
 
 interface ActionToolbarProps {
     generationId: string;
+    imageUrl?: string;
     prompt: string;
     modelId?: string;
     generationTime?: number;
@@ -17,15 +17,15 @@ interface ActionToolbarProps {
 
 export default function ActionToolbar({
     generationId,
+    imageUrl,
     prompt,
     modelId,
     generationTime,
     onToggleCompare
 }: ActionToolbarProps) {
     const handleDownload = () => {
-        if (generationId) {
-            // In a real app, this would need the actual image URL from generation data
-            downloadImage('', `dreambees-${generationId}.png`);
+        if (imageUrl) {
+            downloadImage(imageUrl, `dreambees-${generationId}.png`);
         }
     };
 
@@ -39,8 +39,7 @@ export default function ActionToolbar({
                     text: prompt,
                     url: shareUrl
                 });
-            } catch (err) {
-                // Fallback to clipboard
+            } catch {
                 await navigator.clipboard.writeText(shareUrl);
             }
         } else {
@@ -80,6 +79,7 @@ export default function ActionToolbar({
                     <button
                         className="action-button-full"
                         onClick={handleDownload}
+                        disabled={!imageUrl}
                     >
                         <span>Download</span>
                         <IconDownload size={18} />

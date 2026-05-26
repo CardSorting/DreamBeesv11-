@@ -4,16 +4,8 @@
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useLite } from '../contexts/LiteContext';
-import { getOptimizedImageUrl } from '../lite-utils';
+import PictureThumb from '../components/PictureThumb';
 import { IconImage, IconLogOut, IconMagic, IconUser, IconZap } from '../icons';
-
-interface LocalGeneration {
-    id: string;
-    prompt: string;
-    imageUrl: string;
-    modelId?: string;
-    createdAt?: number;
-}
 
 function getDisplayName(email?: string | null, name?: string | null) {
     if (name) return name.split(' ')[0];
@@ -33,7 +25,7 @@ export default function UserProfile() {
         }
     };
 
-    const pictures = useMemo(() => [...displayHistory] as LocalGeneration[], [displayHistory]);
+    const pictures = useMemo(() => [...displayHistory], [displayHistory]);
     const displayName = getDisplayName(currentUser?.email, currentUser?.displayName);
     const creditsLabel = zaps === 'unlimited' ? 'Unlimited' : String(zaps);
 
@@ -98,10 +90,7 @@ export default function UserProfile() {
                 ) : (
                     <div className="pictures-grid">
                         {pictures.map((item) => (
-                            <Link key={item.id} to={`/generation/${item.id}`} className="picture-card">
-                                <img src={getOptimizedImageUrl(item.imageUrl) || ''} alt={item.prompt || 'Your picture'} loading="lazy" />
-                                {item.prompt ? <span>{item.prompt}</span> : null}
-                            </Link>
+                            <PictureThumb key={item.id} item={item} />
                         ))}
                     </div>
                 )}

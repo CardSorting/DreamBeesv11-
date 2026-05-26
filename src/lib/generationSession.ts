@@ -2,6 +2,15 @@
  * Shared queue snapshot → UI state (used by generate + session resume).
  */
 import {
+  collection,
+  doc,
+  Firestore,
+  limit,
+  onSnapshot,
+  query,
+  where,
+} from 'firebase/firestore';
+import {
   ENQUEUE_RETRY_MESSAGE,
   GenerationStage,
   messageForStage,
@@ -20,6 +29,7 @@ export interface QueueSnapshot {
   enqueueError?: string;
   enqueuedAt?: unknown;
   error?: string;
+  resultImageId?: string;
 }
 
 export interface GenerationUiPatch {
@@ -28,6 +38,18 @@ export interface GenerationUiPatch {
   message: string;
   previewUrl: string | null;
   showEnqueueRetry: boolean;
+}
+
+export interface GenerationSuccessPayload {
+  imageUrl: string;
+  firestoreImageId?: string;
+}
+
+export interface GenerationJobCallbacks {
+  onProgress: (patch: GenerationUiPatch) => void;
+  onSuccess: (payload: GenerationSuccessPayload) => void;
+  onFailed: (message: string) => void;
+  onConnectionError?: () => void;
 }
 
 /** Prefer LQIP (instant) then thumbnail then full image */
@@ -64,9 +86,110 @@ export function isQueueTerminal(data: QueueSnapshot): boolean {
 }
 
 export function isQueueSuccess(data: QueueSnapshot): boolean {
-  return data.status === 'completed' && Boolean(data.imageUrl);
+  if (!data.imageUrl) return false;
+  if (data.status === 'failed') return false;
+  if (data.status === 'completed') return true;
+  return data.stage === 'done';
+}
+
+/** Final image is available — succeed even if status label lags behind */
+export function hasCompletableImage(data: QueueSnapshot): boolean {
+  if (!data.imageUrl || data.status === 'failed') return false;
+  return data.status === 'completed' || data.stage === 'done';
 }
 
 export function isQueueInFlight(data: QueueSnapshot): boolean {
   return data.status === 'queued' || data.status === 'processing';
+}
+
+/**
+ * Dual-listener subscription: generation_queue doc + images fallback by originalRequestId.
+ * Used by both active generate() and session resume after refresh.
+ */
+export function subscribeToGenerationJob(
+  db: Firestore,
+  requestId: string,
+  initialProgressFloor: number,
+  callbacks: GenerationJobCallbacks
+): () => void {
+  let settled = false;
+  let progressFloor = initialProgressFloor;
+
+  const guard = <T extends (...args: never[]) => void>(fn: T): T =>
+    ((...args: Parameters<T>) => {
+      if (settled) return;
+      fn(...args);
+    }) as T;
+
+  const succeed = guard((payload: GenerationSuccessPayload) => {
+    settled = true;
+    callbacks.onSuccess(payload);
+  });
+
+  const unsubQueue = onSnapshot(
+    doc(db, 'generation_queue', requestId),
+    guard((snap) => {
+      if (!snap.exists()) return;
+      const data = snap.data();
+      if (!data) return;
+
+      const queue = data as QueueSnapshot;
+
+      if (hasCompletableImage(queue)) {
+        succeed({
+          imageUrl: queue.imageUrl as string,
+          firestoreImageId: queue.resultImageId as string | undefined,
+        });
+        return;
+      }
+
+      if (queue.status === 'failed') {
+        settled = true;
+        callbacks.onFailed((queue.error as string) || 'Something went wrong.');
+        return;
+      }
+
+      if (isQueueInFlight(queue)) {
+        const { patch, progressFloor: next } = patchFromQueueDoc(queue, progressFloor);
+        progressFloor = next;
+        callbacks.onProgress(patch);
+        return;
+      }
+
+      if (isQueueSuccess(queue)) {
+        succeed({
+          imageUrl: queue.imageUrl as string,
+          firestoreImageId: queue.resultImageId as string | undefined,
+        });
+      }
+    }),
+    guard(() => {
+      callbacks.onConnectionError?.();
+    })
+  );
+
+  const unsubImages = onSnapshot(
+    query(
+      collection(db, 'images'),
+      where('originalRequestId', '==', requestId),
+      limit(1)
+    ),
+    guard((snap) => {
+      if (snap.empty) return;
+      const imgDoc = snap.docs[0];
+      const img = imgDoc.data();
+      if (img.imageUrl) {
+        succeed({ imageUrl: img.imageUrl as string, firestoreImageId: imgDoc.id });
+      }
+    }),
+    guard(() => {
+      callbacks.onConnectionError?.();
+    })
+  );
+
+  return () => {
+    settled = true;
+    unsubQueue();
+    unsubImages();
+  };
 }
