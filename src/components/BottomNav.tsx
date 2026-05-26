@@ -37,7 +37,7 @@ export default function BottomNav() {
                     <IconUser size={22} />
                     <motion.div className="active-dot" layoutId="nav-dot-2" />
                 </div>
-                <span>Studio</span>
+                <span>You</span>
             </NavLink>
 
             <style>{`
