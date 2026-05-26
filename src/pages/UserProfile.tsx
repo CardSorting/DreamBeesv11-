@@ -90,7 +90,10 @@ export default function UserProfile() {
                 ) : (
                     <div className="pictures-grid">
                         {pictures.map((item) => (
-                            <PictureThumb key={item.id} item={item} />
+                            <PictureThumb
+                                key={item.originalRequestId || item.firestoreImageId || item.id}
+                                item={item}
+                            />
                         ))}
                     </div>
                 )}

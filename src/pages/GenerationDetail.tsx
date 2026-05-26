@@ -45,7 +45,10 @@ export default function GenerationDetail() {
     );
     const resolvedIdRef = useRef<string | null>(null);
     const lastFetchAttemptRef = useRef<string | null>(null);
+    const displayHistoryRef = useRef(displayHistory);
     const [fetchVersion, setFetchVersion] = useState(0);
+
+    displayHistoryRef.current = displayHistory;
 
     const retryFetch = useCallback(() => {
         resolvedIdRef.current = null;
@@ -77,20 +80,14 @@ export default function GenerationDetail() {
 
         if (tryPrefetch(prefetched)) return;
 
-        const fromHistory = displayHistory.find((item) =>
+        const fromHistory = displayHistoryRef.current.find((item) =>
             matchesGenerationRoute(item, generationId)
         );
         if (tryPrefetch(fromHistory)) return;
 
         if (resolvedIdRef.current === generationId) return;
 
-        if (lastFetchAttemptRef.current === generationId && fetchVersion === 0) {
-            const fromHistoryRetry = displayHistory.find((item) =>
-                matchesGenerationRoute(item, generationId)
-            );
-            if (tryPrefetch(fromHistoryRetry)) return;
-            if (!fromHistoryRetry?.imageUrl) return;
-        }
+        if (lastFetchAttemptRef.current === generationId) return;
 
         if (!currentUser) {
             setError('Sign in to view this picture.');
@@ -107,10 +104,12 @@ export default function GenerationDetail() {
                 setError(null);
                 const data = await orchestrator.fetchFullGeneration(generationId);
                 if (cancelled) return;
+                if (resolvedIdRef.current === generationId) return;
                 setGeneration(data);
                 resolvedIdRef.current = generationId;
             } catch (err: any) {
                 if (cancelled) return;
+                if (resolvedIdRef.current === generationId) return;
                 console.error('Failed to load generation:', err);
                 if (err instanceof PermissionError) {
                     setError('You cannot view this picture. Try signing in with the account that created it.');
@@ -126,11 +125,13 @@ export default function GenerationDetail() {
 
         fetchGeneration();
         return () => { cancelled = true; };
-    }, [generationId, orchestrator, prefetched, displayHistory, fetchVersion, currentUser?.uid]);
+    }, [generationId, orchestrator, prefetched, fetchVersion, currentUser?.uid]);
 
-    /** Recover from error when cloud/local history arrives after a failed fetch */
+    /** Resolve from merged history when fetch is slow, failed, or still in flight */
     useEffect(() => {
-        if (!error || generation?.imageUrl || !generationId) return;
+        if (!generationId || generation?.imageUrl || resolvedIdRef.current === generationId) {
+            return;
+        }
         const match = displayHistory.find((item) =>
             matchesGenerationRoute(item, generationId)
         );
@@ -139,7 +140,7 @@ export default function GenerationDetail() {
         setError(null);
         setIsLoading(false);
         resolvedIdRef.current = generationId;
-    }, [error, generation?.imageUrl, generationId, displayHistory]);
+    }, [generation?.imageUrl, generationId, displayHistory]);
 
     const handleCopyPrompt = () => {
         navigator.clipboard.writeText(generation?.prompt || '').then(() => {

@@ -108,12 +108,17 @@ export function isQueueInFlight(data: QueueSnapshot): boolean {
   return data.status === 'queued' || data.status === 'processing';
 }
 
+export type ProbeGenerationResult =
+  | { status: 'complete'; payload: GenerationSuccessPayload }
+  | { status: 'failed'; message: string }
+  | { status: 'pending' };
+
 /** One-shot read for jobs that finished while the client was away */
 export async function probeCompletedGeneration(
   db: Firestore,
   requestId: string,
   expectedUserId?: string
-): Promise<GenerationSuccessPayload | null> {
+): Promise<ProbeGenerationResult> {
   try {
     const queueSnap = await getDoc(doc(db, 'generation_queue', requestId));
     if (queueSnap.exists()) {
@@ -123,13 +128,30 @@ export async function probeCompletedGeneration(
         queue.userId &&
         queue.userId !== expectedUserId
       ) {
-        return null;
+        return { status: 'failed', message: 'This picture belongs to another account.' };
       }
-      if (queue.status === 'failed') return null;
+      if (queue.status === 'failed') {
+        return {
+          status: 'failed',
+          message: (queue.error as string) || 'Something went wrong.',
+        };
+      }
       if (hasCompletableImage(queue)) {
         return {
-          imageUrl: queue.imageUrl as string,
-          firestoreImageId: queue.resultImageId as string | undefined,
+          status: 'complete',
+          payload: {
+            imageUrl: queue.imageUrl as string,
+            firestoreImageId: queue.resultImageId as string | undefined,
+          },
+        };
+      }
+      if (isQueueSuccess(queue) && queue.imageUrl) {
+        return {
+          status: 'complete',
+          payload: {
+            imageUrl: queue.imageUrl as string,
+            firestoreImageId: queue.resultImageId as string | undefined,
+          },
         };
       }
     }
@@ -149,19 +171,22 @@ export async function probeCompletedGeneration(
         img.userId &&
         img.userId !== expectedUserId
       ) {
-        return null;
+        return { status: 'failed', message: 'This picture belongs to another account.' };
       }
       if (img.imageUrl) {
         return {
-          imageUrl: img.imageUrl as string,
-          firestoreImageId: imgDoc.id,
+          status: 'complete',
+          payload: {
+            imageUrl: img.imageUrl as string,
+            firestoreImageId: imgDoc.id,
+          },
         };
       }
     }
   } catch {
     /* offline / permission — caller will subscribe */
   }
-  return null;
+  return { status: 'pending' };
 }
 
 /**

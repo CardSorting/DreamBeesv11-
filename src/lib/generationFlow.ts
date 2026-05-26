@@ -193,9 +193,13 @@ export function mergeGenerationHistory(local: any[], cloud: any[]): any[] {
 
   for (const item of cloud) {
     const key = historyLinkId(item);
+    const originalRequestId =
+      (item.originalRequestId as string | undefined) ||
+      (key.startsWith('gen_') ? key : undefined);
     byKey.set(key, {
       ...item,
       id: key,
+      originalRequestId,
       firestoreImageId: item.id,
       previewUrl: item.thumbnailUrl || item.lqip || item.previewUrl,
       createdAt: toHistoryTimestamp(item.createdAt),
@@ -209,6 +213,10 @@ export function mergeGenerationHistory(local: any[], cloud: any[]): any[] {
       ...existing,
       ...item,
       id: key,
+      originalRequestId:
+        item.originalRequestId ||
+        existing?.originalRequestId ||
+        (key.startsWith('gen_') ? key : undefined),
       firestoreImageId: item.firestoreImageId || existing?.firestoreImageId,
       imageUrl: pickNewerImageUrl(item, existing) || item.imageUrl || existing?.imageUrl,
       thumbnailUrl: item.thumbnailUrl || existing?.thumbnailUrl,
@@ -241,19 +249,30 @@ export function matchesPendingRequest(
 
 /** Does a history item match a /generation/:id route? */
 export function matchesGenerationRoute(
-  item: { id?: string; originalRequestId?: string; firestoreImageId?: string },
+  item: {
+    id?: string;
+    originalRequestId?: string;
+    firestoreImageId?: string;
+    params?: Record<string, unknown>;
+  },
   routeId: string
 ): boolean {
   if (!routeId) return false;
+  const paramsFsId = item.params?.firestoreImageId as string | undefined;
   return (
     item.id === routeId ||
     item.originalRequestId === routeId ||
-    item.firestoreImageId === routeId
+    item.firestoreImageId === routeId ||
+    paramsFsId === routeId
   );
 }
 
 /** Map profile/history item → detail view model */
 export function mapHistoryItemToDetail(raw: Record<string, unknown>) {
+  const params = raw.params as Record<string, unknown> | undefined;
+  const firestoreImageId =
+    (raw.firestoreImageId as string | undefined) ||
+    (params?.firestoreImageId as string | undefined);
   return {
     id: (raw.id as string) || '',
     userId: (raw.userId as string) || 'local',
@@ -268,7 +287,7 @@ export function mapHistoryItemToDetail(raw: Record<string, unknown>) {
       guidanceScale: raw.cfg as number | undefined,
       size: raw.aspectRatio as string | undefined,
     },
-    firestoreImageId: raw.firestoreImageId as string | undefined,
+    firestoreImageId,
   };
 }
 
@@ -492,4 +511,69 @@ export async function commitGenerationSuccess(
   }
   await persistGenerationEntry(entry);
   return entry;
+}
+
+/**
+ * Ensure only one code path (resume listener, late watcher, etc.) finishes a pending job.
+ * Pass a ref object `{ current: string | null }` from the React layer.
+ */
+export function tryClaimGenerationCompletion(
+  handledRef: { current: string | null },
+  requestId: string
+): boolean {
+  if (handledRef.current === requestId) return false;
+  handledRef.current = requestId;
+  return true;
+}
+
+export function releaseGenerationCompletionClaim(
+  handledRef: { current: string | null },
+  requestId: string
+): void {
+  if (handledRef.current === requestId) handledRef.current = null;
+}
+
+/** Finish a pending job from a history row (late watcher / profile sync) */
+export async function completePendingFromHistory(
+  handledRef: { current: string | null },
+  pending: PendingGeneration,
+  match: { imageUrl: string; firestoreImageId?: string },
+  userId: string
+): Promise<GenerationHistoryEntry | null> {
+  if (!tryClaimGenerationCompletion(handledRef, pending.requestId)) return null;
+  try {
+    return await persistCompletedGeneration({
+      requestId: pending.requestId,
+      prompt: pending.prompt,
+      imageUrl: match.imageUrl,
+      userId,
+      firestoreImageId: match.firestoreImageId,
+    });
+  } catch (err) {
+    releaseGenerationCompletionClaim(handledRef, pending.requestId);
+    throw err;
+  }
+}
+
+/** Build + persist a completed job (shared by resume, generate, late-completion) */
+export async function persistCompletedGeneration(opts: {
+  requestId: string;
+  prompt: string;
+  imageUrl: string;
+  userId: string;
+  firestoreImageId?: string;
+  modelId?: string;
+  params?: Record<string, unknown>;
+}): Promise<GenerationHistoryEntry> {
+  return commitGenerationSuccess(
+    buildGenerationHistoryEntry({
+      requestId: opts.requestId,
+      prompt: opts.prompt,
+      imageUrl: opts.imageUrl,
+      userId: opts.userId,
+      firestoreImageId: opts.firestoreImageId,
+      modelId: opts.modelId,
+      params: opts.params,
+    })
+  );
 }

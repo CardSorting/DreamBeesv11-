@@ -21,7 +21,7 @@ export default function Generator() {
 
   const {
     selectedModel, generate, generating, generationStage, generationProgress,
-    generationPreviewUrl, activeGeneration, displayHistory, generateStartTime,
+    generationPreviewUrl, activeGeneration, pendingGeneration, displayHistory, generateStartTime,
     currentUser, isOffline, zaps,
   } = useLite();
 
@@ -37,7 +37,10 @@ export default function Generator() {
   const recentImages = displayHistory.slice(1, 9);
 
   const hasCredits = zaps === 'unlimited' || zaps > 0;
-  const canGenerate = Boolean(cleanPrompt && selectedModel && currentUser && !isOffline && !generating && hasCredits);
+  const awaitingPending = Boolean(pendingGeneration && !generating);
+  const canGenerate = Boolean(
+    cleanPrompt && selectedModel && currentUser && !isOffline && !generating && !awaitingPending && hasCredits
+  );
 
   const greeting = useMemo(() => {
     const firstName = currentUser?.displayName?.split(' ')[0];
@@ -63,9 +66,10 @@ export default function Generator() {
     if (!currentUser) return 'Sign in first';
     if (!selectedModel) return 'Pick a style below';
     if (!hasCredits) return 'No credits left';
+    if (awaitingPending) return 'Your last picture is still finishing';
     if (!cleanPrompt) return 'Write what you want above';
     return null;
-  }, [generating, canGenerate, isOffline, currentUser, selectedModel, hasCredits, cleanPrompt]);
+  }, [generating, canGenerate, isOffline, currentUser, selectedModel, hasCredits, cleanPrompt, awaitingPending]);
 
   const handleGenerate = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -169,11 +173,23 @@ export default function Generator() {
         <section className="preview-column" aria-label="Preview and history">
           <div className="simple-card preview-card">
             <strong className="card-label">
-              {generating ? 'Creating…' : latestImage ? 'Newest' : 'Preview'}
+              {generating ? 'Creating…' : awaitingPending ? 'Still working…' : latestImage ? 'Newest' : 'Preview'}
             </strong>
 
             <div className="preview-stage">
-              {generating ? (
+              {awaitingPending && !generating ? (
+                <div className="preview-loading" role="status" aria-live="polite">
+                  <div className="preview-skeleton" aria-hidden />
+                  <div className="preview-overlay">
+                    <IconLoader size={44} className="spin" />
+                    <span>Your picture may still finish</span>
+                    {pendingGeneration?.prompt ? (
+                      <p className="preview-prompt">“{pendingGeneration.prompt}”</p>
+                    ) : null}
+                    <p className="elapsed-line">Check your profile in a moment.</p>
+                  </div>
+                </div>
+              ) : generating ? (
                 <div className="preview-loading" role="status" aria-live="polite">
                   {generationPreviewUrl ? (
                     <img

@@ -223,7 +223,7 @@ export class GenerationRepository {
     data: Record<string, unknown>
   ): GenerationDetail | null {
     if (!data.imageUrl) return null;
-    return {
+    const detail = {
       id: requestId,
       userId: (data.userId as string) || 'unknown',
       createdAt: toHistoryTimestamp(data.createdAt) || Date.now(),
@@ -238,7 +238,10 @@ export class GenerationRepository {
         size: data.aspectRatio as string | undefined,
       },
       revision: 1,
-    };
+    } as GenerationDetail & { firestoreImageId?: string };
+    const catalogId = data.resultImageId as string | undefined;
+    if (catalogId) detail.firestoreImageId = catalogId;
+    return detail;
   }
 
   private mapToDomainModel(raw: any): GenerationDetail {

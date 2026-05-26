@@ -55,7 +55,7 @@ export class GenerationOrchestrator {
    */
   private enrichWithMetadata(raw: GenerationDetail & { firestoreImageId?: string }): GenerationDetail {
     const params = raw.parameters || {};
-    return {
+    const enriched = {
       id: raw.id,
       userId: raw.userId,
       createdAt: raw.createdAt || Date.now(),
@@ -76,6 +76,8 @@ export class GenerationOrchestrator {
       },
       generationTime: raw.generationTime,
       revision: raw.revision || 1,
-    };
+    } as GenerationDetail & { firestoreImageId?: string };
+    if (raw.firestoreImageId) enriched.firestoreImageId = raw.firestoreImageId;
+    return enriched;
   }
 }
