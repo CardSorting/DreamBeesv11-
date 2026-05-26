@@ -3,14 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowRight, CheckCircle2, ChevronDown, Clock, Cloud, Cpu, ImagePlus, Lock, Menu, Monitor, Sparkles, X, Zap } from 'lucide-react';
-
-const navItems = [
-  { label: 'How it works', href: '#how-it-works' },
-  { label: 'Features', href: '#features' },
-  { label: 'Pricing', href: '/pricing' },
-  { label: 'FAQ', href: '#faq' },
-];
+import { ArrowRight, CheckCircle2, ChevronDown, Clock, Cloud, Cpu, ImagePlus, Lock, Monitor, Sparkles, Zap } from 'lucide-react';
+import { SiteHeader } from '@/components/SiteHeader';
+import { SiteFooter } from '@/components/SiteFooter';
 
 const features = [
   { title: 'Easy to start', body: 'Write a simple idea, choose a style, and generate without learning complex settings.', icon: Sparkles },
@@ -27,6 +22,8 @@ const faqs = [
 const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: '100vh',
+    display: 'flex',
+    flexDirection: 'column',
     background: '#070708',
     color: '#fff',
     fontFamily: 'Outfit, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
@@ -60,57 +57,6 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'relative',
     zIndex: 1,
   },
-  navWrap: {
-    position: 'fixed',
-    top: 18,
-    left: 0,
-    right: 0,
-    zIndex: 50,
-    padding: '0 20px',
-  },
-  nav: {
-    maxWidth: 1120,
-    margin: '0 auto',
-    padding: 14,
-    border: '1px solid rgba(255,255,255,0.10)',
-    borderRadius: 28,
-    background: 'rgba(0,0,0,0.66)',
-    backdropFilter: 'blur(22px)',
-    boxShadow: '0 24px 80px rgba(0,0,0,0.35)',
-  },
-  navRow: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 20,
-  },
-  brand: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    color: '#fff',
-    textDecoration: 'none',
-  },
-  logo: {
-    width: 42,
-    height: 42,
-    borderRadius: 16,
-    background: '#fbbf24',
-    color: '#111',
-    display: 'grid',
-    placeItems: 'center',
-  },
-  navLinks: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 30,
-  },
-  navLink: {
-    color: 'rgba(255,255,255,0.62)',
-    textDecoration: 'none',
-    fontSize: 14,
-    fontWeight: 800,
-  },
   buttonPrimary: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -138,23 +84,6 @@ const styles: Record<string, React.CSSProperties> = {
     textDecoration: 'none',
     fontWeight: 900,
     border: '1px solid rgba(255,255,255,0.10)',
-  },
-  menuButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 16,
-    border: '1px solid rgba(255,255,255,0.12)',
-    background: 'rgba(255,255,255,0.06)',
-    color: '#fff',
-    display: 'none',
-    placeItems: 'center',
-  },
-  mobileMenu: {
-    display: 'grid',
-    gap: 8,
-    paddingTop: 14,
-    marginTop: 14,
-    borderTop: '1px solid rgba(255,255,255,0.10)',
   },
   section: {
     maxWidth: 1120,
@@ -360,12 +289,6 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: 'center',
     padding: '52px 28px',
   },
-  footer: {
-    borderTop: '1px solid rgba(255,255,255,0.08)',
-    padding: '28px 20px',
-    color: 'rgba(255,255,255,0.36)',
-    fontWeight: 800,
-  },
 };
 
 const DEMOS = [
@@ -505,9 +428,7 @@ function StatusBadge({ icon: Icon, label, value, active, color = '#fbbf24' }: { 
 }
 
 export default function Home() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeFaq, setActiveFaq] = useState<number | null>(0);
-  const closeMenu = () => setIsMenuOpen(false);
 
   return (
     <div style={styles.page}>
@@ -515,8 +436,6 @@ export default function Home() {
       <div style={styles.glowTwo} />
       <style>{`
         @media (max-width: 860px) {
-          .landing-nav-links, .landing-download { display: none !important; }
-          .landing-menu-button { display: grid !important; }
           .landing-hero, .landing-grid-3, .landing-privacy { grid-template-columns: 1fr !important; }
           .landing-hero { gap: 40px !important; padding-top: 140px !important; }
           .landing-section { padding-top: 72px !important; padding-bottom: 72px !important; }
@@ -557,20 +476,7 @@ export default function Home() {
         }
       `}</style>
 
-      <header style={styles.navWrap}>
-        <nav style={styles.nav} aria-label="Main navigation">
-          <div style={styles.navRow}>
-            <a href="#top" onClick={closeMenu} style={styles.brand}>
-              <span style={styles.logo}><Zap size={20} fill="currentColor" /></span>
-              <span><strong style={{ display: 'block', fontSize: 16 }}>DreamBees</strong><span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, fontWeight: 700 }}>AI image studio</span></span>
-            </a>
-            <div className="landing-nav-links" style={styles.navLinks}>{navItems.map((item) => <a key={item.href} href={item.href} style={styles.navLink}>{item.label}</a>)}</div>
-            <Link className="landing-download" href="/auth" style={{ ...styles.buttonPrimary, minHeight: 44, padding: '0 20px', borderRadius: 18 }}>Join Now</Link>
-            <button className="landing-menu-button" type="button" onClick={() => setIsMenuOpen(v => !v)} style={styles.menuButton} aria-label="Toggle navigation" aria-expanded={isMenuOpen}>{isMenuOpen ? <X size={20} /> : <Menu size={20} />}</button>
-          </div>
-          <AnimatePresence>{isMenuOpen && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden' }}><div style={styles.mobileMenu}>{navItems.map((item) => <a key={item.href} href={item.href} onClick={closeMenu} style={{ ...styles.navLink, padding: 12 }}>{item.label}</a>)}<a href="#download" onClick={closeMenu} style={styles.buttonPrimary}>Download DreamBees</a></div></motion.div>}</AnimatePresence>
-        </nav>
-      </header>
+      <SiteHeader />
 
       <main id="top" style={styles.shell}>
         <section className="landing-section landing-hero" style={{ ...styles.section, ...styles.hero }}>
@@ -599,7 +505,7 @@ export default function Home() {
         <section id="download" className="landing-section" style={{ ...styles.section, paddingTop: 0 }}><div style={styles.cta}><h2 style={{ ...styles.h2, color: '#111' }}>Start creating on desktop.</h2><p style={{ margin: '18px auto 0', maxWidth: 620, color: 'rgba(0,0,0,0.68)', fontSize: 18, lineHeight: 1.6, fontWeight: 750 }}>A cleaner first impression: clear promise, clear benefits, clear next step.</p><a href="#" style={{ ...styles.buttonPrimary, marginTop: 30, background: '#111', color: '#fff' }}>Download DreamBees Lite <ArrowRight size={20} /></a></div></section>
       </main>
 
-      <footer style={{ ...styles.footer, ...styles.shell }}><div style={{ maxWidth: 1120, margin: '0 auto', display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}><span>© 2026 DreamBeesAI</span><span>Simple desktop AI image creation.</span></div></footer>
+      <SiteFooter />
     </div>
   );
 }

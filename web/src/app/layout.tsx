@@ -20,6 +20,10 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "DreamBees | AI Image Studio",
   description: "Create AI images without the confusing setup. Professional local-first desktop studio with optional cloud power.",
+  icons: {
+    icon: [{ url: "/dreambees_icon.png", type: "image/png" }],
+    apple: [{ url: "/dreambees_icon.png", type: "image/png" }],
+  },
 };
 
 import { AuthProvider } from "@/contexts/AuthContext";

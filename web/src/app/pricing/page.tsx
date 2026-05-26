@@ -2,57 +2,94 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Check, Sparkles, Zap, Shield, Crown, ArrowRight, Loader2 } from 'lucide-react';
+import { Check, Sparkles, Shield, ArrowRight, Loader2 } from 'lucide-react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { SiteHeader } from '@/components/SiteHeader';
+import { SiteFooter } from '@/components/SiteFooter';
 
-const plans = [
+type Plan = {
+  name: string;
+  price: string;
+  tierKey: 'free' | 'pro' | 'architect';
+  tagline: string;
+  features: string[];
+  cta: string;
+  popular: boolean;
+  color: string;
+  priceId?: string;
+};
+
+const plans: Plan[] = [
   {
     name: 'Dreamer',
     price: '0',
-    description: 'Perfect for exploring your vision.',
-    features: ['10 daily generations', 'Standard speed', 'Public gallery', 'Basic styles'],
-    cta: 'Start Free',
+    tierKey: 'free',
+    tagline: 'Explore at your pace',
+    features: ['10 daily generations', 'Standard speed', 'Public gallery'],
+    cta: 'Start free',
     popular: false,
-    color: 'rgba(255, 255, 255, 0.1)'
+    color: 'rgba(255, 255, 255, 0.08)',
   },
   {
     name: 'Alchemist',
     price: '29',
-    description: 'For dedicated creators and designers.',
-    features: ['Unlimited generations', 'Turbo speed boost', 'Private studio', 'Exclusive Flux Pro models', 'Priority support'],
-    cta: 'Ascend Now',
+    tierKey: 'pro',
+    tagline: 'For daily creators',
+    features: ['Unlimited generations', 'Turbo speed', 'Private studio', 'Flux Pro models'],
+    cta: 'Upgrade',
     popular: true,
-    color: 'rgba(139, 92, 246, 0.2)',
-    priceId: 'price_alchemist_pro' // Real Stripe Price ID
+    color: 'rgba(139, 92, 246, 0.18)',
+    priceId: 'price_alchemist_pro',
   },
   {
     name: 'Architect',
     price: '99',
-    description: 'Professional scale and control.',
-    features: ['Everything in Alchemist', 'API access', 'Team workspace', 'Commercial license', 'Dedicated GPU'],
-    cta: 'Scale Vision',
+    tierKey: 'architect',
+    tagline: 'Teams and scale',
+    features: ['Everything in Alchemist', 'API access', 'Commercial license', 'Dedicated GPU'],
+    cta: 'Scale up',
     popular: false,
-    color: 'rgba(251, 191, 36, 0.2)',
-    priceId: 'price_architect_pro' // Real Stripe Price ID
-  }
+    color: 'rgba(251, 191, 36, 0.15)',
+    priceId: 'price_architect_pro',
+  },
 ];
+
+function displayName(user: { displayName?: string | null; email?: string | null } | null) {
+  if (!user) return null;
+  if (user.displayName) return user.displayName.split(' ')[0];
+  if (user.email) return user.email.split('@')[0];
+  return null;
+}
 
 export default function PricingPage() {
   const [loadingPlan, setLoadingPlan] = React.useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, userData, loading } = useAuth();
   const router = useRouter();
 
-  const handleCheckout = async (plan: any) => {
+  const currentTier = userData?.tier || 'free';
+  const firstName = displayName(user);
+
+  React.useEffect(() => {
+    const canceled = new URLSearchParams(window.location.search).get('canceled') === 'true';
+    if (canceled) toast.error('Checkout canceled — your plan is unchanged.');
+  }, []);
+
+  const handleCheckout = async (plan: Plan) => {
     if (!user) {
       router.push('/auth');
       return;
     }
 
     if (plan.price === '0') {
+      router.push('/dashboard');
+      return;
+    }
+
+    if (plan.tierKey === currentTier) {
       router.push('/dashboard');
       return;
     }
@@ -65,7 +102,7 @@ export default function PricingPage() {
         priceId: plan.priceId,
         successUrl: window.location.origin + '/dashboard?success=true',
         cancelUrl: window.location.origin + '/pricing?canceled=true',
-        mode: 'subscription'
+        mode: 'subscription',
       });
 
       if (res.data?.url) {
@@ -81,108 +118,151 @@ export default function PricingPage() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#070708] text-white py-24 px-6 relative overflow-hidden">
-      {/* Background Glows */}
-      <div className="fixed top-[-260px] left-[50%] translate-x-[-50%] w-[760px] h-[560px] rounded-full bg-[rgba(139,92,246,0.12)] blur-[150px] pointer-events-none" />
-      <div className="fixed bottom-[-260px] right-[-240px] w-[560px] h-[560px] rounded-full bg-[rgba(251,191,36,0.12)] blur-[150px] pointer-events-none" />
+  const planCta = (plan: Plan) => {
+    if (plan.tierKey === currentTier) return 'Current plan';
+    if (plan.price === '0' && currentTier !== 'free') return 'Included';
+    if (!user) return plan.cta;
+    if (currentTier === 'free' && plan.tierKey === 'pro') return 'Upgrade to Alchemist';
+    if (currentTier === 'pro' && plan.tierKey === 'architect') return 'Upgrade to Architect';
+    if (currentTier === 'architect' && plan.tierKey !== 'architect') return 'Contact support';
+    return plan.cta;
+  };
 
-      <div className="max-w-7xl mx-auto relative z-10">
-        <div className="text-center mb-20">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+  const headline = firstName
+    ? `${firstName}, pick what fits your workflow`
+    : 'Plans built for how you create';
+
+  const subcopy = user
+    ? `You're on ${plans.find((p) => p.tierKey === currentTier)?.name ?? 'Dreamer'}. Change anytime — billed securely via Stripe.`
+    : 'Start free, upgrade when you need more speed and privacy.';
+
+  return (
+    <div className="min-h-screen bg-[#070708] text-white font-[family-name:var(--font-outfit)] relative overflow-hidden flex flex-col">
+      <div className="fixed top-[-200px] left-[50%] translate-x-[-50%] w-[600px] h-[400px] rounded-full bg-[rgba(139,92,246,0.10)] blur-[120px] pointer-events-none" />
+      <div className="fixed bottom-[-200px] right-[-180px] w-[400px] h-[400px] rounded-full bg-[rgba(251,191,36,0.08)] blur-[120px] pointer-events-none" />
+
+      <SiteHeader />
+
+      <main className="flex-1 relative z-10 pt-28 pb-12 px-5 max-w-5xl mx-auto w-full">
+        <div className="text-center mb-10">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-200 text-sm font-bold mb-6"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-500/25 bg-amber-500/10 text-amber-200 text-xs font-bold mb-4"
           >
-            <Sparkles size={16} /> Subscription Plans
+            <Sparkles size={14} /> {user ? 'Your studio plans' : 'Simple pricing'}
           </motion.div>
-          <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
+          <motion.h1
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="text-3xl md:text-4xl font-black tracking-tight mb-3"
+          >
+            {headline}
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-5xl md:text-7xl font-black tracking-tight mb-6"
+            className="text-zinc-400 text-sm md:text-base max-w-md mx-auto leading-relaxed"
           >
-            Choose your <span className="text-transparent bg-clip-text bg-linear-to-r from-purple-400 to-amber-400">creative tier.</span>
-          </motion.h1>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-zinc-400 text-xl max-w-2xl mx-auto"
-          >
-            Unlock the full potential of DreamBees with a plan that scales with your imagination.
+            {subcopy}
           </motion.p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {plans.map((plan, index) => (
-            <motion.div
-              key={plan.name}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 + index * 0.1 }}
-              className={`relative p-8 rounded-[40px] border border-white/10 bg-white/5 backdrop-blur-xl flex flex-col ${plan.popular ? 'ring-2 ring-purple-500/50' : ''}`}
-              style={{ background: `linear-gradient(135deg, ${plan.color}, transparent)` }}
+          {user && !loading && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mt-3 text-xs font-bold text-purple-300/90 uppercase tracking-widest"
             >
-              {plan.popular && (
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-purple-500 text-white text-xs font-black uppercase tracking-widest rounded-full">
-                  Most Popular
-                </div>
-              )}
+              Signed in as {user.email}
+            </motion.p>
+          )}
+        </div>
 
-              <div className="mb-8">
-                <h3 className="text-2xl font-black mb-2">{plan.name}</h3>
-                <p className="text-zinc-400 text-sm">{plan.description}</p>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
+          {plans.map((plan, index) => {
+            const isCurrent = plan.tierKey === currentTier;
+            const cta = planCta(plan);
+            const disabled = loadingPlan !== null || isCurrent || (currentTier === 'architect' && plan.tierKey !== 'architect');
 
-              <div className="mb-8">
-                <span className="text-5xl font-black">${plan.price}</span>
-                <span className="text-zinc-500 font-bold ml-2">/ month</span>
-              </div>
-
-              <div className="flex-1 mb-8 space-y-4">
-                {plan.features.map(feature => (
-                  <div key={feature} className="flex items-center gap-3">
-                    <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center">
-                      <Check size={12} className="text-purple-400" />
-                    </div>
-                    <span className="text-zinc-300 text-sm font-medium">{feature}</span>
-                  </div>
-                ))}
-              </div>
-
-              <button 
-                onClick={() => handleCheckout(plan)}
-                disabled={loadingPlan !== null}
-                className={`w-full py-4 rounded-2xl font-black text-sm uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 ${plan.popular ? 'bg-purple-500 hover:bg-purple-400 text-white shadow-lg shadow-purple-500/25' : 'bg-white/10 hover:bg-white/20 text-white'}`}
+            return (
+              <motion.article
+                key={plan.name}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.12 + index * 0.06 }}
+                className={`relative p-5 md:p-6 rounded-3xl border flex flex-col ${
+                  isCurrent
+                    ? 'border-amber-500/40 ring-1 ring-amber-500/30'
+                    : plan.popular
+                      ? 'border-purple-500/40 ring-1 ring-purple-500/30'
+                      : 'border-white/10'
+                } bg-white/[0.04] backdrop-blur-xl`}
+                style={{ background: `linear-gradient(160deg, ${plan.color}, transparent 70%)` }}
               >
-                {loadingPlan === plan.name ? (
-                  <Loader2 size={16} className="animate-spin" />
-                ) : (
-                  <>{plan.cta} <ArrowRight size={16} /></>
+                {plan.popular && !isCurrent && (
+                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-purple-500 text-white text-[10px] font-black uppercase tracking-wider rounded-full">
+                    Recommended
+                  </span>
                 )}
-              </button>
-            </motion.div>
-          ))}
+                {isCurrent && (
+                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-amber-500 text-black text-[10px] font-black uppercase tracking-wider rounded-full">
+                    Your plan
+                  </span>
+                )}
+
+                <div className="mb-4">
+                  <h2 className="text-lg font-black">{plan.name}</h2>
+                  <p className="text-zinc-500 text-xs mt-0.5">{plan.tagline}</p>
+                </div>
+
+                <div className="mb-4">
+                  <span className="text-3xl font-black">${plan.price}</span>
+                  {plan.price !== '0' && <span className="text-zinc-500 text-xs font-bold ml-1">/mo</span>}
+                </div>
+
+                <ul className="flex-1 mb-5 space-y-2">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-center gap-2 text-zinc-300 text-xs font-medium">
+                      <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+                        <Check size={10} className="text-amber-400" />
+                      </span>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  type="button"
+                  onClick={() => handleCheckout(plan)}
+                  disabled={disabled}
+                  className={`w-full py-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${
+                    plan.popular && !isCurrent
+                      ? 'bg-purple-500 hover:bg-purple-400 text-white'
+                      : 'bg-white/10 hover:bg-white/15 text-white'
+                  }`}
+                >
+                  {loadingPlan === plan.name ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <>
+                      {cta}
+                      {!isCurrent && <ArrowRight size={14} />}
+                    </>
+                  )}
+                </button>
+              </motion.article>
+            );
+          })}
         </div>
 
-        <div className="mt-24 p-12 rounded-[50px] border border-white/10 bg-white/5 backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="flex items-center gap-6">
-            <div className="w-16 h-16 rounded-3xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-500">
-              <Shield size={32} />
-            </div>
-            <div>
-              <h4 className="text-2xl font-black mb-1">Secure Payments</h4>
-              <p className="text-zinc-400 font-medium">All transactions are encrypted and processed via Stripe.</p>
-            </div>
-          </div>
-          <div className="flex gap-4">
-            <div className="h-10 w-16 bg-white/5 rounded-xl border border-white/10"></div>
-            <div className="h-10 w-16 bg-white/5 rounded-xl border border-white/10"></div>
-            <div className="h-10 w-16 bg-white/5 rounded-xl border border-white/10"></div>
-          </div>
-        </div>
-      </div>
+        <p className="mt-8 flex items-center justify-center gap-2 text-zinc-500 text-xs font-medium">
+          <Shield size={14} className="text-amber-500/80 shrink-0" />
+          Payments encrypted and processed by Stripe.
+        </p>
+      </main>
+
+      <SiteFooter />
     </div>
   );
 }
