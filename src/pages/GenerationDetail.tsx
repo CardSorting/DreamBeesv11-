@@ -12,7 +12,12 @@ import {
     IconZap
 } from '../icons';
 import { getOptimizedImageUrl, copyToClipboard, showToast, downloadImage, formatDuration } from '@/lite-utils';
-import { matchesGenerationRoute, mapHistoryItemToDetail, canonicalGenerationRouteId } from '@/lib/generationFlow';
+import {
+    matchesGenerationRoute,
+    mapHistoryItemToDetail,
+    canonicalGenerationRouteId,
+    messageForStage,
+} from '@/lib/generationFlow';
 import { useLite } from '@/contexts/LiteContext';
 import { GenerationOrchestrator } from '@/core/GenerationOrchestrator';
 import { GenerationRepository, PermissionError } from '@/infrastructure/GenerationRepository';
@@ -30,7 +35,15 @@ export default function GenerationDetail() {
     const location = useLocation();
     const generationId = id || '';
     const prefetched = (location.state as { generation?: Record<string, unknown> } | null)?.generation;
-    const { displayHistory, currentUser } = useLite();
+    const { displayHistory, currentUser, pendingGeneration } = useLite();
+
+    const pendingMatchesRoute = Boolean(
+        pendingGeneration &&
+        matchesGenerationRoute(
+            { id: pendingGeneration.requestId, originalRequestId: pendingGeneration.requestId },
+            generationId
+        )
+    );
 
     // State
     const [generation, setGeneration] = useState<any>(null);
@@ -191,6 +204,25 @@ export default function GenerationDetail() {
                     <div className="loading-message">
                         Loading your creation...
                     </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (pendingMatchesRoute && !generation?.imageUrl) {
+        return (
+            <div className="generation-detail-loading glass-immersive">
+                <div className="loading-animation">
+                    <IconZap size={64} fill="currentColor" />
+                    <div className="loading-message">
+                        {messageForStage('processing')}
+                    </div>
+                    <p className="error-message" style={{ marginTop: '1rem', opacity: 0.85 }}>
+                        This picture is still being created. You can wait here or check your profile.
+                    </p>
+                    <button type="button" onClick={() => navigate('/profile')} className="back-button" style={{ marginTop: '1rem' }}>
+                        Go to profile
+                    </button>
                 </div>
             </div>
         );

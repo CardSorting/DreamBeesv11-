@@ -80,7 +80,9 @@ export function monotonicProgress(floor: number, next: number): number {
 }
 
 const PENDING_KEY = 'lite_pending_generation';
-const PENDING_MAX_AGE_MS = 15 * 60 * 1000;
+
+/** Pending session TTL — aligned with client recovery window */
+export const PENDING_MAX_AGE_MS = 15 * 60 * 1000;
 
 /** Client-side cap aligned with pending session TTL */
 export const MAX_GENERATION_MS = 14 * 60 * 1000;
@@ -135,6 +137,19 @@ export function clearPendingGeneration(): void {
   } catch {
     /* ignore */
   }
+}
+
+export function getPendingTimeRemainingMs(pending: PendingGeneration): number {
+  return Math.max(0, PENDING_MAX_AGE_MS - (Date.now() - pending.startedAt));
+}
+
+/** Human-readable time until pending session expires */
+export function formatPendingTimeRemaining(pending: PendingGeneration): string | null {
+  const ms = getPendingTimeRemainingMs(pending);
+  if (ms <= 0) return null;
+  const min = Math.ceil(ms / 60_000);
+  if (min <= 1) return 'about 1 minute';
+  return `about ${min} minutes`;
 }
 
 export function toHistoryTimestamp(value: unknown): number {
@@ -540,17 +555,43 @@ export async function completePendingFromHistory(
   match: { imageUrl: string; firestoreImageId?: string },
   userId: string
 ): Promise<GenerationHistoryEntry | null> {
-  if (!tryClaimGenerationCompletion(handledRef, pending.requestId)) return null;
+  return finalizeClaimedPendingJob({
+    claimRef: handledRef,
+    requestId: pending.requestId,
+    prompt: pending.prompt,
+    imageUrl: match.imageUrl,
+    userId,
+    firestoreImageId: match.firestoreImageId,
+  });
+}
+
+/**
+ * Claim + persist a completed job (single-flight via claimRef).
+ * Returns null if another path already claimed this requestId.
+ */
+export async function finalizeClaimedPendingJob(opts: {
+  claimRef: { current: string | null };
+  requestId: string;
+  prompt: string;
+  imageUrl: string;
+  userId: string;
+  firestoreImageId?: string;
+  modelId?: string;
+  params?: Record<string, unknown>;
+}): Promise<GenerationHistoryEntry | null> {
+  if (!tryClaimGenerationCompletion(opts.claimRef, opts.requestId)) return null;
   try {
     return await persistCompletedGeneration({
-      requestId: pending.requestId,
-      prompt: pending.prompt,
-      imageUrl: match.imageUrl,
-      userId,
-      firestoreImageId: match.firestoreImageId,
+      requestId: opts.requestId,
+      prompt: opts.prompt,
+      imageUrl: opts.imageUrl,
+      userId: opts.userId,
+      firestoreImageId: opts.firestoreImageId,
+      modelId: opts.modelId,
+      params: opts.params,
     });
   } catch (err) {
-    releaseGenerationCompletionClaim(handledRef, pending.requestId);
+    releaseGenerationCompletionClaim(opts.claimRef, opts.requestId);
     throw err;
   }
 }

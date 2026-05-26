@@ -7,7 +7,7 @@ import { useLite } from '../contexts/LiteContext';
 import { getOptimizedImageUrl } from '../lite-utils';
 import PictureThumb from '../components/PictureThumb';
 import PreviewImage from '../components/PreviewImage';
-import { formatElapsed, historyThumbUrl, messageForStage, STAGE_ORDER } from '../lib/generationFlow';
+import { formatElapsed, formatPendingTimeRemaining, historyThumbUrl, messageForStage, STAGE_ORDER } from '../lib/generationFlow';
 import { IconImage, IconLoader, IconMagic, IconZap } from '../icons';
 
 const quickIdeas = [
@@ -22,7 +22,7 @@ export default function Generator() {
   const {
     selectedModel, generate, generating, generationStage, generationProgress,
     generationPreviewUrl, activeGeneration, pendingGeneration, displayHistory, generateStartTime,
-    currentUser, isOffline, zaps,
+    currentUser, isOffline, zaps, dismissStuckPending,
   } = useLite();
 
   const [, setElapsedTick] = useState(0);
@@ -38,6 +38,7 @@ export default function Generator() {
 
   const hasCredits = zaps === 'unlimited' || zaps > 0;
   const awaitingPending = Boolean(pendingGeneration && !generating);
+  const pendingTimeHint = pendingGeneration ? formatPendingTimeRemaining(pendingGeneration) : null;
   const canGenerate = Boolean(
     cleanPrompt && selectedModel && currentUser && !isOffline && !generating && !awaitingPending && hasCredits
   );
@@ -186,7 +187,18 @@ export default function Generator() {
                     {pendingGeneration?.prompt ? (
                       <p className="preview-prompt">“{pendingGeneration.prompt}”</p>
                     ) : null}
-                    <p className="elapsed-line">Check your profile in a moment.</p>
+                    <p className="elapsed-line">
+                      {pendingTimeHint
+                        ? `Session ends in ${pendingTimeHint}. Check your profile in a moment.`
+                        : 'Check your profile in a moment.'}
+                    </p>
+                    <button
+                      type="button"
+                      className="dismiss-pending-btn"
+                      onClick={dismissStuckPending}
+                    >
+                      Start fresh
+                    </button>
                   </div>
                 </div>
               ) : generating ? (
@@ -420,6 +432,12 @@ export default function Generator() {
         }
         .preview-progress { width: min(240px, 80%); margin-top: 4px; }
         .preview-prompt { margin: 4px 0 0; font-size: 0.85rem; font-weight: 700; color: var(--color-zinc-400); line-height: 1.4; max-width: 280px; }
+        .dismiss-pending-btn {
+          margin-top: 8px; padding: 8px 14px; border-radius: 10px;
+          border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.4);
+          color: var(--color-zinc-300); font-size: 0.8rem; font-weight: 800; cursor: pointer;
+        }
+        .dismiss-pending-btn:hover { border-color: rgba(139, 92, 246, 0.5); color: white; }
         .latest-figure { margin: 0; width: 100%; }
         .latest-figure img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
         .latest-figure figcaption { padding: 10px 12px; font-size: 0.85rem; font-weight: 700; color: var(--color-zinc-300); background: rgba(0,0,0,0.35); line-height: 1.35; }

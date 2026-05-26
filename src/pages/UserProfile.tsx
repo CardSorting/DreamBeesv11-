@@ -3,6 +3,7 @@
  */
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { formatPendingTimeRemaining } from '../lib/generationFlow';
 import { useLite } from '../contexts/LiteContext';
 import PictureThumb from '../components/PictureThumb';
 import { IconImage, IconLogOut, IconMagic, IconUser, IconZap } from '../icons';
@@ -14,7 +15,7 @@ function getDisplayName(email?: string | null, name?: string | null) {
 }
 
 export default function UserProfile() {
-    const { currentUser, logout, displayHistory, pendingGeneration, addToast, zaps } = useLite();
+    const { currentUser, logout, displayHistory, pendingGeneration, dismissStuckPending, addToast, zaps } = useLite();
 
     const handleLogout = async () => {
         try {
@@ -28,6 +29,7 @@ export default function UserProfile() {
     const pictures = useMemo(() => [...displayHistory], [displayHistory]);
     const displayName = getDisplayName(currentUser?.email, currentUser?.displayName);
     const creditsLabel = zaps === 'unlimited' ? 'Unlimited' : String(zaps);
+    const pendingTimeHint = pendingGeneration ? formatPendingTimeRemaining(pendingGeneration) : null;
 
     return (
         <div className="profile-simple fade-in">
@@ -81,7 +83,14 @@ export default function UserProfile() {
                             ? `${pendingGeneration.prompt.slice(0, 60)}…`
                             : pendingGeneration.prompt}
                     </p>
-                    <p className="pending-hint">It may appear here automatically when ready.</p>
+                    <p className="pending-hint">
+                        {pendingTimeHint
+                            ? `It may appear automatically when ready (session ends in ${pendingTimeHint}).`
+                            : 'It may appear here automatically when ready.'}
+                    </p>
+                    <button type="button" className="big-button inline dismiss-pending" onClick={dismissStuckPending}>
+                        Start fresh
+                    </button>
                 </section>
             ) : null}
 
@@ -139,6 +148,7 @@ export default function UserProfile() {
                 .pending-banner { border-color: rgba(139, 92, 246, 0.35); background: rgba(139, 92, 246, 0.08); }
                 .pending-banner p { margin: 0; font-weight: 750; line-height: 1.4; }
                 .pending-hint { margin-top: 6px !important; color: var(--color-zinc-400); font-size: 0.85rem; font-weight: 700; }
+                .dismiss-pending { margin-top: 12px; width: auto; min-height: 44px; font-size: 0.88rem; }
 
                 .pictures-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
                 .pictures-header span { color: var(--color-zinc-400); font-weight: 800; font-size: 0.85rem; }
