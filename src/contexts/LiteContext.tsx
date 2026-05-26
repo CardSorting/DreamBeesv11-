@@ -18,9 +18,41 @@ import { collection, doc, onSnapshot, query, orderBy, limit, setDoc, serverTimes
 import { AIModel } from '../lite-utils';
 import toast from 'react-hot-toast';
 
+const BUILTIN_MODELS: AIModel[] = [
+    {
+        id: 'wai-illustrious',
+        name: 'WAI Illustrious',
+        description: 'Illustration + character art. Great for cute, sticker, and storybook looks.',
+        image: '/build/icon.png',
+        order: 1
+    },
+    {
+        id: 'flux-realistic',
+        name: 'Flux Realistic',
+        description: 'Photo-like lighting and detail. Great for portraits and product shots.',
+        image: '/build/icon.png',
+        order: 2
+    },
+    {
+        id: 'cinematic',
+        name: 'Cinematic',
+        description: 'Dramatic lighting, film look, and rich mood.',
+        image: '/build/icon.png',
+        order: 3
+    },
+    {
+        id: 'creative',
+        name: 'Creative',
+        description: 'Stylized and imaginative. Good for fantasy scenes and playful ideas.',
+        image: '/build/icon.png',
+        order: 4
+    }
+];
+
 interface LiteContextType {
     currentUser: User | null;
     availableModels: AIModel[];
+    modelsError: string | null;
     selectedModel: AIModel | null;
     setSelectedModel: (model: AIModel) => void;
     history: any[];
@@ -50,6 +82,7 @@ export const useLite = () => {
 export function LiteProvider({ children }: { children: ReactNode }) {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [availableModels, setAvailableModels] = useState<AIModel[]>([]);
+    const [modelsError, setModelsError] = useState<string | null>(null);
     const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
     const [history, setHistory] = useState<any[]>([]);
     const [localHistory, setLocalHistory] = useState<any[]>([]);
@@ -131,25 +164,71 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     }, [availableModels]);
 
     useEffect(() => {
-        const modelsQuery = query(collection(db, 'models'), orderBy('order', 'asc'), limit(12));
-        return onSnapshot(modelsQuery, snap => {
-            const models = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as AIModel));
-            setAvailableModels(models);
-            
-            if (models.length > 0) {
-                const savedId = localStorage.getItem('lite_selected_model');
-                const savedModel = models.find(m => m.id === savedId);
-                
-                if (savedModel && (!selectedModel || selectedModel.id !== savedModel.id)) {
-                    setSelectedModel(savedModel);
-                } else if (!selectedModel) {
-                    setSelectedModel(models[0]);
-                }
+        setModelsError(null);
+
+        const pickDefaultModel = (models: AIModel[]) => {
+            if (models.length === 0) return;
+            const savedId = localStorage.getItem('lite_selected_model');
+            const savedModel = models.find(m => m.id === savedId);
+
+            if (savedModel && (!selectedModel || selectedModel.id !== savedModel.id)) {
+                setSelectedModel(savedModel);
+            } else if (!selectedModel) {
+                setSelectedModel(models[0]);
             }
-        }, err => {
-            console.warn('[Lite] Model subscription failed:', err);
-            setAvailableModels([]);
-        });
+        };
+
+        const orderedQuery = query(collection(db, 'models'), orderBy('order', 'asc'), limit(12));
+        const fallbackQuery = query(collection(db, 'models'), limit(12));
+
+        let activeUnsub: (() => void) | null = null;
+        let stopped = false;
+
+        const subscribeFallback = (previousError?: unknown) => {
+            if (stopped) return;
+            const msg = (previousError as any)?.message ? String((previousError as any).message) : 'Failed to load styles.';
+            setModelsError(msg);
+
+            activeUnsub = onSnapshot(
+                fallbackQuery,
+                snap => {
+                    const models = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as AIModel));
+                    setAvailableModels(models);
+                    setModelsError(models.length ? null : msg);
+                    pickDefaultModel(models);
+                },
+                err2 => {
+                    console.warn('[Lite] Model subscription failed (fallback):', err2);
+                    // Final fallback: ship a small built-in set of styles so the app still works.
+                    setAvailableModels(BUILTIN_MODELS);
+                    setModelsError((err2 as any)?.message ? String((err2 as any).message) : msg);
+                    pickDefaultModel(BUILTIN_MODELS);
+                }
+            );
+        };
+
+        activeUnsub = onSnapshot(
+            orderedQuery,
+            snap => {
+                const models = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as AIModel));
+                setAvailableModels(models);
+                setModelsError(null);
+                pickDefaultModel(models);
+            },
+            err => {
+                console.warn('[Lite] Model subscription failed (ordered):', err);
+                if (activeUnsub) {
+                    activeUnsub();
+                    activeUnsub = null;
+                }
+                subscribeFallback(err);
+            }
+        );
+
+        return () => {
+            stopped = true;
+            if (activeUnsub) activeUnsub();
+        };
     }, [selectedModel]);
 
     useEffect(() => {
@@ -368,7 +447,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             currentUser, availableModels, selectedModel, setSelectedModel, 
             history, localHistory, loading, generating, generateStartTime, generate, 
             login, signup, logout, loginWithGoogle, isOffline, userTier, zaps,
-            addToast
+            addToast,
+            modelsError
         }}>
             {children}
         </LiteContext.Provider>

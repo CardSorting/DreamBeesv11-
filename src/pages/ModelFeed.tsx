@@ -80,7 +80,7 @@ function selectModel(model: AIModel, currentUser: unknown, setSelectedModel: (mo
 }
 
 export default function ModelFeed() {
-    const { availableModels, setSelectedModel, selectedModel, currentUser } = useLite();
+    const { availableModels, setSelectedModel, selectedModel, currentUser, modelsError } = useLite();
     const navigate = useNavigate();
     const [activeCategory, setActiveCategory] = useState<CategoryId>('all');
     const [searchQuery, setSearchQuery] = useState('');
@@ -179,7 +179,14 @@ export default function ModelFeed() {
                     ))}
                 </div>
 
-                {availableModels.length === 0 ? (
+                {availableModels.length === 0 && modelsError ? (
+                    <EmptyState
+                        title="Styles failed to load"
+                        body={`DreamBees couldn’t load styles yet. ${modelsError}`}
+                        actionLabel="Try again"
+                        onAction={() => window.location.reload()}
+                    />
+                ) : availableModels.length === 0 ? (
                     <EmptyState
                         title="Preparing styles"
                         body="DreamBees is loading your available styles. They will appear here automatically."
