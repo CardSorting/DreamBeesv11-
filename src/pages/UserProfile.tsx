@@ -131,7 +131,7 @@ export default function UserProfile() {
             </section>
 
             <style>{`
-                .profile-simple { min-height: 100vh; width: min(860px, calc(100% - 28px)); margin: 0 auto; padding: 22px 0 120px; }
+                .profile-simple { min-height: 100vh; width: min(860px, calc(100% - 28px)); margin: 0 auto; padding: 22px 0 40px; }
                 .simple-header { margin-bottom: 14px; }
                 .simple-title h1 { font-size: clamp(1.8rem, 5vw, 3rem); letter-spacing: -0.06em; margin: 0 0 8px; }
                 .simple-title p { margin: 0; color: var(--color-zinc-400); font-weight: 700; }

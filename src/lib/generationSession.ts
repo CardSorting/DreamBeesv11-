@@ -202,11 +202,12 @@ export function subscribeToGenerationJob(
   let settled = false;
   let progressFloor = initialProgressFloor;
 
-  const guard = <T extends (...args: never[]) => void>(fn: T): T =>
-    ((...args: Parameters<T>) => {
+  const guard = <Args extends any[]>(fn: (...args: Args) => void) => {
+    return (...args: Args) => {
       if (settled) return;
       fn(...args);
-    }) as T;
+    };
+  };
 
   const succeed = guard((payload: GenerationSuccessPayload) => {
     settled = true;

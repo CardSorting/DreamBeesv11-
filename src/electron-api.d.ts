@@ -6,6 +6,8 @@ export interface ElectronAPI {
     setSetting: (key: string, val: any) => Promise<void>;
     getSetting: (key: string) => Promise<any>;
     googleLogin: () => Promise<{ idToken: string; accessToken?: string }>;
+    getPendingLink: () => Promise<string | null>;
+    onDeepLink: (callback: (url: string) => void) => () => void;
   };
 }
 

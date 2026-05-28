@@ -24,6 +24,7 @@ let mainWindow: BrowserWindow | null = null;
 let db: LiteDatabase | null = null;
 let dbInitError: string | null = null;
 let pendingAuthResolve: ((url: string) => void) | null = null;
+let pendingDeepLinkUrl: string | null = null;
 let activeAuthServer: http.Server | null = null;
 let authServerTimeout: NodeJS.Timeout | null = null;
 
@@ -294,6 +295,12 @@ function registerIpcHandlers() {
       }, 300000);
     });
   });
+
+  ipcMain.handle('auth:get-pending-link', async () => {
+    const url = pendingDeepLinkUrl;
+    pendingDeepLinkUrl = null;
+    return url;
+  });
 }
 
 function tryInitDatabase() {
@@ -423,6 +430,13 @@ function createWindow() {
 
   attachWebContentsDiagnostics(mainWindow.webContents);
 
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (pendingDeepLinkUrl && mainWindow) {
+      mainWindow.webContents.send('auth:deep-link', pendingDeepLinkUrl);
+      pendingDeepLinkUrl = null;
+    }
+  });
+
   const loadPromise = devServerUrl
     ? mainWindow.loadURL(devServerUrl)
     : mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
@@ -444,6 +458,21 @@ function createWindow() {
   });
 }
 
+function handleDeepLink(url: string) {
+  logStartup(`Received protocol URL to handle: ${url}`);
+  if (url.startsWith('dreambees://auth')) {
+    if (pendingAuthResolve) {
+      pendingAuthResolve(url);
+      pendingAuthResolve = null;
+    }
+    if (mainWindow && !mainWindow.webContents.isLoading()) {
+      mainWindow.webContents.send('auth:deep-link', url);
+    } else {
+      pendingDeepLinkUrl = url;
+    }
+  }
+}
+
 app.whenReady().then(() => {
   setupSecurityHeaders();
   registerIpcHandlers();
@@ -452,29 +481,28 @@ app.whenReady().then(() => {
 
   app.on('open-url', (event, url) => {
     event.preventDefault();
-    logStartup(`Received protocol URL: ${url}`);
-    if (url.startsWith('dreambees://auth')) {
-      if (pendingAuthResolve) {
-        pendingAuthResolve(url);
-        pendingAuthResolve = null;
-      }
-    }
+    handleDeepLink(url);
   });
 
   // Windows/Linux handle deep link from argv
   app.on('second-instance', (_event, commandLine) => {
     const url = commandLine.pop();
     if (url?.startsWith('dreambees://auth')) {
-      if (pendingAuthResolve) {
-        pendingAuthResolve(url);
-        pendingAuthResolve = null;
-      }
+      handleDeepLink(url);
     }
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
     }
   });
+
+  // Windows/Linux cold-start deep-link check
+  if (process.platform !== 'darwin') {
+    const url = process.argv.find(arg => arg.startsWith('dreambees://auth'));
+    if (url) {
+      handleDeepLink(url);
+    }
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

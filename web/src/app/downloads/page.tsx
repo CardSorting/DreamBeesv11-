@@ -4,52 +4,75 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { SiteHeader } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
+import { auth } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInWithPopup, 
+  GoogleAuthProvider 
+} from 'firebase/auth';
 import { 
   ArrowRight, Download, Sparkles, Monitor, Database, Zap, 
-  Terminal, ShieldCheck, Cpu, HardDrive, Network, HelpCircle, ChevronDown, CheckCircle2
+  Terminal, ShieldCheck, Cpu, HardDrive, Network, HelpCircle, ChevronDown, CheckCircle2,
+  Lock, User as UserIcon, RefreshCw, Key
 } from 'lucide-react';
 
 const stepIds = ['step-welcome', 'step-compat', 'step-install', 'step-config', 'step-finish'];
-const sidebarIds = ['sb-welcome', 'sb-compat', 'sb-install', 'sb-config', 'sb-finish'];
-
-const diagnosticLogs = [
-  "Initializing local hardware diagnostic probe...",
-  "Querying CPU instruction extensions...",
-  "Host Architecture: MacIntel (Simulated ARM Bridge)",
-  "WebGL 2.0 rendering context bound successfully.",
-  "GPU Core Mapping: Apple GPU Neural Engine detected.",
-  "Probing deep-link registry: 'dreambees://' available.",
-  "System diagnostics completed. M-series acceleration active."
-];
 
 export default function DownloadsPage() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
+  // Client OS & Manifest Detection
+  const [detectedOS, setDetectedOS] = useState<'mac' | 'windows' | 'linux' | 'mobile' | 'unknown'>('mac');
+  const [installerName, setInstallerName] = useState('dreambees-lite-mac.dmg');
+  const [downloadUrl, setDownloadUrl] = useState('/downloads/dreambees-lite-mac.dmg');
+  const [appVersion, setAppVersion] = useState('1.4.11');
+
   // Step 1: Compatibility Terminal
   const [compatLogs, setCompatLogs] = useState<string[]>([]);
-  const [systemOS, setSystemOS] = useState('Checking...');
-  const [systemCPU, setSystemCPU] = useState('Checking...');
+  const [systemOS, setSystemOS] = useState('Detecting...');
+  const [systemCPU, setSystemCPU] = useState('Detecting...');
   const [systemOSOk, setSystemOSOk] = useState(true);
   const [systemCPUOk, setSystemCPUOk] = useState(true);
+  const [diagnosticsRunning, setDiagnosticsRunning] = useState(false);
 
-  // Step 2: Download & Drag Simulator
+  // Step 2: Download & Install Simulator
   const [downloadProgress, setDownloadProgress] = useState(0);
-  const [downloadState, setDownloadState] = useState<'downloading' | 'dragging' | 'success'>('downloading');
+  const [downloadState, setDownloadState] = useState<'idle' | 'downloading' | 'ready' | 'success'>('idle');
   const [dragHover, setDragHover] = useState(false);
   const [dragSuccess, setDragSuccess] = useState(false);
 
+  // Windows Setup Wizard Simulator States
+  const [winSetupState, setWinSetupState] = useState<'welcome' | 'agreement' | 'folder' | 'installing' | 'finished'>('welcome');
+  const [winInstallProgress, setWinInstallProgress] = useState(0);
+  const [winInstallLogs, setWinInstallLogs] = useState<string[]>([]);
+
+  // Linux Setup Simulator States
+  const [linuxInstallState, setLinuxInstallState] = useState<'idle' | 'running' | 'done'>('idle');
+  const [linuxInstallLogs, setLinuxInstallLogs] = useState<string[]>([]);
+
   // Step 3: Playground Customizer
-  const [stylePreset, setStylePreset] = useState<'beginner' | 'advanced'>('beginner');
+  const [stylePreset, setStylePreset] = useState<'cyber' | 'cosmic' | 'fantasy' | 'retro'>('cyber');
   const [cloudBoost, setCloudBoost] = useState(true);
   const [diffusionState, setDiffusionState] = useState<'idle' | 'diffusing' | 'done'>('idle');
   const [diffusionProgress, setDiffusionProgress] = useState(0);
   const [diffusionTimer, setDiffusionTimer] = useState('0.0s');
-  const [prompt, setPrompt] = useState('Futuristic glowing bee on digital flower');
+  const [prompt, setPrompt] = useState('');
 
-  // Step 4: Token
-  const [syncToken, setSyncToken] = useState('DB-LITE-WAITING');
+  // Step 4: Session Sync & Token
+  const [syncToken, setSyncToken] = useState('Retrieve Firebase Session...');
+  const [deepLinkUrl, setDeepLinkUrl] = useState('');
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
+
+  // Inline Auth States
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   // Gallery Lightbox
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -58,6 +81,108 @@ export default function DownloadsPage() {
 
   // FAQs Accordion
   const [faqOpenIndex, setFaqOpenIndex] = useState<number | null>(null);
+
+  // Canvas Refs & Loaded Image state
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [loadedImages, setLoadedImages] = useState<Record<string, HTMLImageElement>>({});
+
+  const { user } = useAuth();
+
+  // Helper delay
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  // -------------------------------------------------------------
+  // OS & MANIFEST DETECTION
+  // -------------------------------------------------------------
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const ua = navigator.userAgent.toLowerCase();
+      let os: 'mac' | 'windows' | 'linux' | 'mobile' | 'unknown' = 'mac';
+      if (/iphone|ipad|ipod|android|webos|blackberry|iemobile|opera mini/.test(ua)) {
+        os = 'mobile';
+      } else if (ua.indexOf('win') !== -1) {
+        os = 'windows';
+      } else if (ua.indexOf('mac') !== -1) {
+        os = 'mac';
+      } else if (ua.indexOf('linux') !== -1) {
+        os = 'linux';
+      } else {
+        os = 'unknown';
+      }
+      setDetectedOS(os);
+
+      // Fetch dynamic manifest
+      fetch('/downloads/manifest.json')
+        .then(res => res.json())
+        .then(data => {
+          if (data.version) setAppVersion(data.version);
+          if (data.files) {
+            if (os === 'mac' && data.files.mac) {
+              setDownloadUrl(data.files.mac.stable);
+              setInstallerName(data.files.mac.stable.split('/').pop() || 'dreambees-lite-mac.dmg');
+            } else if (os === 'windows' && data.files.windows) {
+              setDownloadUrl(data.files.windows.stable);
+              setInstallerName(data.files.windows.stable.split('/').pop() || 'dreambees-lite-windows.exe');
+            } else if (os === 'linux' && data.files.linux) {
+              setDownloadUrl(data.files.linux.stable);
+              setInstallerName(data.files.linux.stable.split('/').pop() || 'dreambees-lite-linux.AppImage');
+            }
+          }
+        })
+        .catch(() => {
+          // Normal fallback URLs
+          if (os === 'windows') {
+            setDownloadUrl('/downloads/dreambees-lite-windows.exe');
+            setInstallerName('dreambees-lite-windows.exe');
+          } else if (os === 'linux') {
+            setDownloadUrl('/downloads/dreambees-lite-linux.AppImage');
+            setInstallerName('dreambees-lite-linux.AppImage');
+          } else {
+            setDownloadUrl('/downloads/dreambees-lite-mac.dmg');
+            setInstallerName('dreambees-lite-mac.dmg');
+          }
+        });
+    }
+  }, []);
+
+  // Set document title on client mount
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.title = "Download DreamBees Lite | Local-First AI Desktop Studio";
+    }
+  }, []);
+
+  // Listen for Escape key to close the lightbox modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setLightboxOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Preload style images
+  useEffect(() => {
+    const images = {
+      cyber: '/downloads/playground_cyber_bee.png',
+      cosmic: '/downloads/playground_cosmic_space.png',
+      fantasy: '/downloads/playground_fantasy_flower.png',
+      retro: '/downloads/playground_retro_robot.png'
+    };
+    
+    const loaded: Record<string, HTMLImageElement> = {};
+    Object.entries(images).forEach(([key, src]) => {
+      const img = new Image();
+      img.src = src;
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        loaded[key] = img;
+        setLoadedImages(prev => ({ ...prev, [key]: img }));
+      };
+    });
+  }, []);
 
   // -------------------------------------------------------------
   // AUDIO SYNTHESIZER
@@ -86,24 +211,24 @@ export default function DownloadsPage() {
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(600, now);
-      osc.frequency.exponentialRampToValueAtTime(150, now + 0.04);
+      osc.frequency.setValueAtTime(550, now);
+      osc.frequency.exponentialRampToValueAtTime(140, now + 0.05);
       gain.gain.setValueAtTime(0.06, now);
-      gain.gain.linearRampToValueAtTime(0, now + 0.04);
+      gain.gain.linearRampToValueAtTime(0, now + 0.05);
       osc.start(now);
-      osc.stop(now + 0.04);
+      osc.stop(now + 0.05);
     } else if (type === 'swoosh') {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
       gain.connect(ctx.destination);
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(100, now);
-      osc.frequency.exponentialRampToValueAtTime(800, now + 0.16);
+      osc.frequency.setValueAtTime(110, now);
+      osc.frequency.exponentialRampToValueAtTime(750, now + 0.18);
       gain.gain.setValueAtTime(0.03, now);
-      gain.gain.linearRampToValueAtTime(0, now + 0.16);
+      gain.gain.linearRampToValueAtTime(0, now + 0.18);
       osc.start(now);
-      osc.stop(now + 0.16);
+      osc.stop(now + 0.18);
     } else if (type === 'chime') {
       const notes = [293.66, 349.23, 440.00, 587.33]; // D Minor Chord
       notes.forEach((freq, idx) => {
@@ -112,12 +237,12 @@ export default function DownloadsPage() {
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.07);
-        gain.gain.setValueAtTime(0, now + idx * 0.07);
-        gain.gain.linearRampToValueAtTime(0.05, now + idx * 0.07 + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.35);
-        osc.start(now + idx * 0.07);
-        osc.stop(now + idx * 0.07 + 0.4);
+        osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+        gain.gain.setValueAtTime(0, now + idx * 0.06);
+        gain.gain.linearRampToValueAtTime(0.05, now + idx * 0.06 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.3);
+        osc.start(now + idx * 0.06);
+        osc.stop(now + idx * 0.06 + 0.35);
       });
     }
   };
@@ -128,145 +253,399 @@ export default function DownloadsPage() {
   };
 
   // -------------------------------------------------------------
-  // DYNAMIC COMPATIBILITY EFFECT
+  // DYNAMIC HARDWARE DIAGNOSTICS
   // -------------------------------------------------------------
-  useEffect(() => {
-    if (currentStepIndex === 1) {
-      setCompatLogs([]);
-      
-      // Check OS
-      const userAgent = typeof window !== 'undefined' ? navigator.userAgent : '';
-      const isMac = /Macintosh|MacIntel|MacPPC|Mac68K/.test(userAgent);
-      if (isMac) {
-        setSystemOS("macOS Detected (Compatible)");
-        setSystemOSOk(true);
-      } else {
-        setSystemOS("Other OS (Simulating Mac)");
-        setSystemOSOk(false);
-      }
+  const runDiagnostics = async () => {
+    if (diagnosticsRunning) return;
+    setDiagnosticsRunning(true);
+    setCompatLogs([]);
 
-      // Check CPU
-      let isAppleSilicon = false;
-      try {
-        const canvas = document.createElement('canvas');
-        const gl = (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null;
-        if (gl) {
-          const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-          if (debugInfo) {
-            const renderer = gl.getParameter((debugInfo as any).UNMASKED_RENDERER_VENDOR_ID || (debugInfo as any).UNMASKED_RENDERER_STRING);
-            if (/Apple/.test(renderer) && !/Intel/.test(renderer)) {
-              isAppleSilicon = true;
-            }
+    const userAgent = typeof window !== 'undefined' ? navigator.userAgent : '';
+    const isMac = /Macintosh|MacIntel|MacPPC|Mac68K/.test(userAgent);
+    const isWin = /Windows|Win32|Win64|WOW64/.test(userAgent);
+    const isLinux = /Linux|X11/.test(userAgent);
+
+    if (isMac) {
+      setSystemOS("macOS Detected (Compatible)");
+      setSystemOSOk(true);
+    } else if (isWin) {
+      setSystemOS("Windows Detected (Compatible)");
+      setSystemOSOk(true);
+    } else if (isLinux) {
+      setSystemOS("Linux Detected (Compatible)");
+      setSystemOSOk(true);
+    } else {
+      setSystemOS("Other OS (Fallback Active)");
+      setSystemOSOk(false);
+    }
+
+    let isAppleSilicon = false;
+    let glVendor = "Generic CPU Vendor";
+    let glRenderer = "Software rasterizer";
+
+    try {
+      const canvas = document.createElement('canvas');
+      const gl = (canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null;
+      if (gl) {
+        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+        if (debugInfo) {
+          glVendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || "Unknown";
+          glRenderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || "Unknown";
+          if (/Apple/.test(glRenderer) && !/Intel/.test(glRenderer)) {
+            isAppleSilicon = true;
           }
         }
-      } catch (e) {}
-
-      if (isAppleSilicon) {
-        setSystemCPU("Apple Silicon M-Series (Optimized)");
-        setSystemCPUOk(true);
-      } else if (isMac) {
-        setSystemCPU("Intel Architecture (Compatible)");
-        setSystemCPUOk(true);
-      } else {
-        setSystemCPU("Non-ARM (Simulated)");
-        setSystemCPUOk(false);
       }
+    } catch (e) {}
 
-      // Print terminal diagnostics line by line
-      let lineIdx = 0;
-      const interval = setInterval(() => {
-        if (lineIdx < diagnosticLogs.length) {
-          setCompatLogs(prev => [...prev, diagnosticLogs[lineIdx]]);
-          playSound('click');
-          lineIdx++;
-        } else {
-          clearInterval(interval);
-        }
-      }, 350);
+    if (isAppleSilicon) {
+      setSystemCPU("Apple Silicon M-Series (Optimized)");
+      setSystemCPUOk(true);
+    } else if (isMac) {
+      setSystemCPU("Intel Mac (Compatible)");
+      setSystemCPUOk(true);
+    } else if (isWin || isLinux) {
+      setSystemCPU("x86_64 Core Architecture");
+      setSystemCPUOk(true);
+    } else {
+      setSystemCPU("Unknown Processor Core");
+      setSystemCPUOk(false);
+    }
 
-      return () => clearInterval(interval);
+    // Build the diagnostic entries dynamically
+    const logs: string[] = [
+      "Initializing local hardware diagnostic probe...",
+      `Host Platform: ${isMac ? 'Darwin macOS' : isWin ? 'Windows NT' : isLinux ? 'Linux kernel' : 'Unknown Kernel'}.`,
+      `Logical Processors: ${navigator.hardwareConcurrency || 'Unknown'} threads available.`
+    ];
+
+    const memory = (navigator as any).deviceMemory;
+    if (memory) {
+      logs.push(`Physical RAM allocation: ${memory} GB memory.`);
+    } else {
+      logs.push("Querying RAM capability: Restrictive sandboxing; estimating >= 8GB RAM.");
+    }
+
+    logs.push("Binding WebGL 2.0 interface parameters...");
+    logs.push(`GPU Vendor: ${glVendor}`);
+    logs.push(`GPU Renderer: ${glRenderer}`);
+
+    const width = window.screen.width * window.devicePixelRatio;
+    const height = window.screen.height * window.devicePixelRatio;
+    logs.push(`Screen Resolution: ${window.screen.width}x${window.screen.height} @${window.devicePixelRatio}x (${width}x${height} virtual px).`);
+
+    const online = navigator.onLine ? "CONNECTED" : "OFFLINE";
+    logs.push(`Network link state: ${online}.`);
+    if (navigator.onLine) {
+      const conn = (navigator as any).connection;
+      if (conn) {
+        logs.push(`Connection link rate: ${conn.downlink} Mbps, RTT: ${conn.rtt}ms.`);
+      }
+    }
+
+    logs.push("Checking local deep-link protocol 'dreambees://' status...");
+    logs.push("Deep-link handlers validated. Ready for desktop interface.");
+
+    // Print logs line-by-line in typewriter format
+    for (let i = 0; i < logs.length; i++) {
+      setCompatLogs(prev => [...prev, logs[i]]);
+      playSound('click');
+      await delay(250);
+    }
+    setDiagnosticsRunning(false);
+  };
+
+  useEffect(() => {
+    if (currentStepIndex === 1) {
+      runDiagnostics();
     }
   }, [currentStepIndex]);
 
   // -------------------------------------------------------------
-  // SIMULATED DOWNLOAD EFFECT
+  // STEP 2: DOWNLOAD & SETUP CONTROL
   // -------------------------------------------------------------
   useEffect(() => {
     if (currentStepIndex === 2) {
       setDownloadProgress(0);
-      setDownloadState('downloading');
+      setDownloadState('idle');
       setDragSuccess(false);
-
-      // Trigger actual DMG file download
-      if (typeof window !== 'undefined') {
-        const link = document.createElement('a');
-        link.href = "/downloads/dreambees-lite-mac.dmg";
-        link.download = "dreambees-lite-mac.dmg";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += Math.floor(Math.random() * 8) + 5;
-        if (progress >= 100) {
-          progress = 100;
-          clearInterval(interval);
-          setDownloadProgress(100);
-          playSound('chime');
-          setTimeout(() => {
-            setDownloadState('dragging');
-          }, 600);
-        } else {
-          setDownloadProgress(progress);
-        }
-      }, 110);
-
-      return () => clearInterval(interval);
+      setWinSetupState('welcome');
+      setWinInstallProgress(0);
+      setWinInstallLogs([]);
+      setLinuxInstallState('idle');
+      setLinuxInstallLogs([]);
     }
   }, [currentStepIndex]);
 
-  // -------------------------------------------------------------
-  // STEP 3 PLAYGROUND TIMING BARS INITIATION
-  // -------------------------------------------------------------
-  useEffect(() => {
-    if (currentStepIndex === 3) {
-      // Small timeout to trigger css bars width transitions
-      const cloudBar = document.getElementById('bar-cloud');
-      const localBar = document.getElementById('bar-local');
-      if (cloudBar && localBar) {
-        cloudBar.style.width = "20%";
-        localBar.style.width = "100%";
-      }
-    }
-  }, [currentStepIndex]);
+  const startDownloadFile = () => {
+    if (downloadState !== 'idle') return;
+    setDownloadState('downloading');
+    playSound('click');
 
-  // -------------------------------------------------------------
-  // STEP 4 SYNC TOKEN INITIATION
-  // -------------------------------------------------------------
-  useEffect(() => {
-    if (currentStepIndex === 4) {
-      generateCredsToken();
+    // Trigger browser file download
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = installerName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += Math.floor(Math.random() * 12) + 6;
+      if (progress >= 100) {
+        progress = 100;
+        clearInterval(interval);
+        setDownloadProgress(100);
+        playSound('chime');
+        setTimeout(() => {
+          setDownloadState('ready');
+          if (detectedOS !== 'mac') {
+            // Proceed automatically to Setup Wizard for non-mac
+          }
+        }, 500);
+      } else {
+        setDownloadProgress(progress);
+      }
+    }, 110);
+  };
+
+  // Windows Setup simulation
+  const handleWinSetupNext = () => {
+    playSound('click');
+    if (winSetupState === 'welcome') {
+      setWinSetupState('agreement');
+    } else if (winSetupState === 'agreement') {
+      setWinSetupState('folder');
+    } else if (winSetupState === 'folder') {
+      setWinSetupState('installing');
+      runWindowsInstallation();
+    } else if (winSetupState === 'finished') {
+      setDragSuccess(true);
       playSound('chime');
     }
-  }, [currentStepIndex]);
+  };
+
+  const handleWinSetupBack = () => {
+    playSound('click');
+    if (winSetupState === 'agreement') {
+      setWinSetupState('welcome');
+    } else if (winSetupState === 'folder') {
+      setWinSetupState('agreement');
+    }
+  };
+
+  const runWindowsInstallation = async () => {
+    const installLogs = [
+      "Creating destination directory: C:\\Program Files\\DreamBees Lite",
+      "Extracting: dreambees-lite.exe (14.2 MB)...",
+      "Extracting: resources\\app.asar (112.5 MB)...",
+      "Extracting: better-sqlite3.node (2.1 MB)...",
+      "Extracting: node.dll (12.4 MB)...",
+      "Extracting: ffmpeg.dll (3.5 MB)...",
+      "Configuring SQLite local database cache...",
+      "Registering system protocol registry keys...",
+      "Creating Desktop shortcut bindings...",
+      "Finalizing Windows configuration..."
+    ];
+
+    setWinInstallProgress(0);
+    setWinInstallLogs([]);
+
+    for (let i = 0; i < installLogs.length; i++) {
+      setWinInstallLogs(prev => [...prev, installLogs[i]]);
+      setWinInstallProgress(Math.floor(((i + 1) / installLogs.length) * 100));
+      playSound('click');
+      await delay(250);
+    }
+
+    playSound('chime');
+    setWinSetupState('finished');
+  };
+
+  // Linux command simulation
+  const runLinuxInstallation = async () => {
+    if (linuxInstallState === 'running') return;
+    setLinuxInstallState('running');
+    setLinuxInstallLogs([]);
+    playSound('click');
+
+    const logs = [
+      "$ chmod +x ./dreambees-lite-linux.AppImage",
+      "Permissions updated [OK]",
+      "$ ./dreambees-lite-linux.AppImage --install",
+      "Mounting FUSE AppImage volume...",
+      "Extracting core assets...",
+      "Registering desktop shortcuts in ~/.local/share/applications...",
+      "Adding MIME associations for dreambees:// scheme...",
+      "Launching local background SQLite sync daemon...",
+      "Daemon listener ready on port 8089.",
+      "Linux binary setup completed successfully."
+    ];
+
+    for (let i = 0; i < logs.length; i++) {
+      setLinuxInstallLogs(prev => [...prev, logs[i]]);
+      playSound('click');
+      await delay(250);
+    }
+
+    playSound('chime');
+    setLinuxInstallState('done');
+    setDragSuccess(true);
+  };
 
   // -------------------------------------------------------------
-  // IMAGE DIFFUSION PLAYGROUND EFFECT
+  // STEP 3: PLAYGROUND & PIXEL SHUFFLING DIFFUSION
   // -------------------------------------------------------------
+  const playgroundPresets = {
+    cyber: {
+      title: "Cyberpunk Bee",
+      desc: "Glowing biomechanical bee hovering in a neon hive",
+      prompt: "Glowing biomechanical bee hovering in a neon-lit digital hive grid, vibrant neon wings, high-tech circuits, cybernetic design",
+      image: "/downloads/playground_cyber_bee.png"
+    },
+    cosmic: {
+      title: "Cosmic Alchemist",
+      desc: "Stellar nebula forming a majestic space bee",
+      prompt: "Stellar nebula dust cloud forming a majestic cosmic space bee in deep space, glowing purple and gold star dust, galaxies",
+      image: "/downloads/playground_cosmic_space.png"
+    },
+    fantasy: {
+      title: "Enchanted Garden",
+      desc: "Golden bee gathering nectar from magical flower",
+      prompt: "Mystical golden bee gathering glowing nectar from an enchanted fantasy flower at night, magical dust, deep fantasy forest",
+      image: "/downloads/playground_fantasy_flower.png"
+    },
+    retro: {
+      title: "Retro Synthwave",
+      desc: "Chrome robotic bee over 80s grid sunset",
+      prompt: "80s retro synthwave illustration of a chrome cybernetic robotic bee flying over a glowing grid, sunset background with neon lines",
+      image: "/downloads/playground_retro_robot.png"
+    }
+  };
+
+  useEffect(() => {
+    setPrompt(playgroundPresets[stylePreset].prompt);
+  }, [stylePreset]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#0a080f';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.font = '10px Courier New';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.textAlign = 'center';
+        ctx.fillText("CANVAS STEADY: CLICK DIFFUSE TO GENERATE", canvas.width / 2, canvas.height / 2);
+      }
+    }
+    setDiffusionState('idle');
+    setDiffusionProgress(0);
+    setDiffusionTimer('0.0s');
+  }, [stylePreset]);
+
+  const generateProceduralArt = (ctx: CanvasRenderingContext2D, width: number, height: number, promptText: string) => {
+    let hashVal = 0;
+    for (let i = 0; i < promptText.length; i++) {
+      hashVal = promptText.charCodeAt(i) + ((hashVal << 5) - hashVal);
+    }
+    const hue1 = Math.abs(hashVal % 360);
+    const hue2 = (hue1 + 140) % 360;
+
+    const grad = ctx.createRadialGradient(width / 2, height / 2, 8, width / 2, height / 2, width * 0.75);
+    grad.addColorStop(0, `hsla(${hue1}, 75%, 12%, 1)`);
+    grad.addColorStop(1, '#050408');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.strokeStyle = `hsla(${hue2}, 40%, 45%, 0.08)`;
+    ctx.lineWidth = 1;
+    const hexRadius = 14;
+    for (let y = -hexRadius; y < height + hexRadius; y += hexRadius * 1.5) {
+      for (let x = -hexRadius; x < width + hexRadius; x += hexRadius * Math.sqrt(3)) {
+        const xOffset = (Math.floor(y / (hexRadius * 1.5)) % 2) * (hexRadius * Math.sqrt(3) / 2);
+        ctx.beginPath();
+        for (let side = 0; side < 6; side++) {
+          const angle = (side * Math.PI) / 3;
+          const px = (x + xOffset) + hexRadius * Math.cos(angle);
+          const py = y + hexRadius * Math.sin(angle);
+          if (side === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.stroke();
+      }
+    }
+
+    const particleCount = 260;
+    for (let i = 0; i < particleCount; i++) {
+      const t = (i / particleCount) * Math.PI * 2 * 5;
+      const factor = Math.exp(Math.cos(t)) - 2 * Math.cos(4 * t) - Math.pow(Math.sin(t / 12), 5);
+      const px = width / 2 + Math.sin(t) * factor * 14;
+      const py = height / 2 - Math.cos(t) * factor * 14;
+      const size = 1.0 + 1.6 * Math.random();
+      ctx.beginPath();
+      ctx.arc(px, py, size, 0, Math.PI * 2);
+      ctx.fillStyle = i % 2 === 0 ? `hsla(${hue1}, 95%, 70%, 0.85)` : `hsla(${hue2}, 95%, 65%, 0.75)`;
+      ctx.shadowBlur = 4;
+      ctx.shadowColor = `hsla(${hue1}, 90%, 65%, 0.8)`;
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+  };
+
   const runMiniDiffusion = () => {
     if (diffusionState === 'diffusing') return;
     setDiffusionState('diffusing');
     setDiffusionProgress(0);
     setDiffusionTimer('0.0s');
 
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const width = canvas.width;
+    const height = canvas.height;
+
+    const isPreset = Object.values(playgroundPresets).some(
+      p => p.prompt.toLowerCase() === prompt.toLowerCase()
+    );
+
+    let originalData: Uint8ClampedArray | null = null;
+
+    if (isPreset) {
+      const targetImg = loadedImages[stylePreset];
+      if (targetImg) {
+        const offscreen = document.createElement('canvas');
+        offscreen.width = width;
+        offscreen.height = height;
+        const offCtx = offscreen.getContext('2d');
+        if (offCtx) {
+          offCtx.drawImage(targetImg, 0, 0, width, height);
+          originalData = offCtx.getImageData(0, 0, width, height).data;
+        }
+      }
+    } else {
+      const offscreen = document.createElement('canvas');
+      offscreen.width = width;
+      offscreen.height = height;
+      const offCtx = offscreen.getContext('2d');
+      if (offCtx) {
+        generateProceduralArt(offCtx, width, height, prompt);
+        originalData = offCtx.getImageData(0, 0, width, height).data;
+      }
+    }
+
     const duration = cloudBoost ? 800 : 4000;
     const start = performance.now();
 
     const soundInterval = setInterval(() => {
       playSound('click');
-    }, cloudBoost ? 150 : 350);
+    }, cloudBoost ? 100 : 250);
 
     const animate = (time: number) => {
       const elapsed = time - start;
@@ -274,6 +653,32 @@ export default function DownloadsPage() {
 
       setDiffusionProgress(progress);
       setDiffusionTimer(`${(elapsed / 1000).toFixed(1)}s`);
+
+      // Shuffling noise blending
+      const imgData = ctx.createImageData(width, height);
+      for (let i = 0; i < imgData.data.length; i += 4) {
+        const noiseAmount = 1 - progress;
+        if (Math.random() < noiseAmount) {
+          // Colorful noise pixels
+          imgData.data[i] = Math.floor(Math.random() * 255);
+          imgData.data[i+1] = Math.floor(Math.random() * 255);
+          imgData.data[i+2] = Math.floor(Math.random() * 255);
+          imgData.data[i+3] = 255;
+        } else if (originalData) {
+          // Sharp image pixels
+          imgData.data[i] = originalData[i];
+          imgData.data[i+1] = originalData[i+1];
+          imgData.data[i+2] = originalData[i+2];
+          imgData.data[i+3] = originalData[i+3];
+        } else {
+          // Fallback deep color noise
+          imgData.data[i] = 12;
+          imgData.data[i+1] = 8;
+          imgData.data[i+2] = 22;
+          imgData.data[i+3] = 255;
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
 
       if (progress < 1) {
         requestAnimationFrame(animate);
@@ -288,8 +693,87 @@ export default function DownloadsPage() {
   };
 
   // -------------------------------------------------------------
-  // DRAG AND DROP HANDLERS
+  // STEP 4: AUTH & SESSION DELEGATION LINK
   // -------------------------------------------------------------
+  const generateSessionSync = async () => {
+    if (user) {
+      try {
+        const idToken = await user.getIdToken();
+        const deepLink = `dreambees://auth?id_token=${encodeURIComponent(idToken)}`;
+        setDeepLinkUrl(deepLink);
+        setSyncToken(idToken.substring(0, 16) + "...");
+        setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=000000&bgcolor=FFFFFF&data=${encodeURIComponent(deepLink)}`);
+      } catch (err) {
+        console.error("Failed to generate real sync session token", err);
+      }
+    } else {
+      setSyncToken('Sign in to generate sync credentials');
+      setDeepLinkUrl('');
+      setQrCodeUrl('');
+    }
+  };
+
+  useEffect(() => {
+    if (currentStepIndex === 4) {
+      generateSessionSync();
+      playSound('chime');
+    }
+  }, [currentStepIndex, user]);
+
+  const handleInlineLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError(null);
+    playSound('click');
+
+    try {
+      if (isRegistering) {
+        await createUserWithEmailAndPassword(auth, email, password);
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
+      playSound('chime');
+    } catch (err: any) {
+      console.error(err);
+      setAuthError(err.message || "Authentication failed. Check details.");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setAuthLoading(true);
+    setAuthError(null);
+    playSound('click');
+
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      playSound('chime');
+    } catch (err: any) {
+      console.error(err);
+      setAuthError(err.message || "Google sign-in interrupted.");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const copyToken = () => {
+    if (!deepLinkUrl) return;
+    navigator.clipboard.writeText(deepLinkUrl).then(() => {
+      const btn = document.querySelector('.btn-copy-token') as HTMLButtonElement;
+      if (btn) {
+        btn.textContent = "Copied!";
+        btn.style.background = "var(--color-success)";
+        setTimeout(() => {
+          btn.textContent = "Copy Session Link";
+          btn.style.background = "rgba(255,255,255,0.06)";
+        }, 1500);
+      }
+    });
+  };
+
+  // Drag and Drop simulation mechanics
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('text/plain', 'app');
     playSound('click');
@@ -309,49 +793,11 @@ export default function DownloadsPage() {
     setDragHover(false);
     const data = e.dataTransfer.getData('text/plain');
     if (data === 'app') {
-      triggerDropSuccess();
+      setDragSuccess(true);
+      playSound('chime');
     } else {
       playSound('click');
     }
-  };
-
-  const triggerDropSuccess = () => {
-    playSound('chime');
-    setDragSuccess(true);
-  };
-
-  // -------------------------------------------------------------
-  // UTILITY CONTROLS
-  // -------------------------------------------------------------
-  const generateCredsToken = () => {
-    const chars = '0123456789ABCDEF';
-    let token = 'DB-LITE-';
-    for (let i = 0; i < 4; i++) {
-      token += chars[Math.floor(Math.random() * chars.length)];
-    }
-    token += '-';
-    for (let i = 0; i < 4; i++) {
-      token += chars[Math.floor(Math.random() * chars.length)];
-    }
-    setSyncToken(token);
-  };
-
-  const copyToken = () => {
-    navigator.clipboard.writeText(syncToken).then(() => {
-      const btn = document.querySelector('.btn-copy-token') as HTMLButtonElement;
-      if (btn) {
-        btn.textContent = "Copied!";
-        btn.style.background = "var(--color-success)";
-        setTimeout(() => {
-          btn.textContent = "Copy Key";
-          btn.style.background = "rgba(255,255,255,0.06)";
-        }, 1500);
-      }
-    });
-  };
-
-  const toggleCloudBoost = (checkbox: HTMLInputElement) => {
-    setCloudBoost(checkbox.checked);
   };
 
   const openLightbox = (src: string, caption: string) => {
@@ -400,7 +846,8 @@ export default function DownloadsPage() {
           
           .container { max-width: 1120px; margin: 0 auto; padding: 140px 20px 88px; }
           .crumbs-wrapper { font-size: 0.74rem; font-weight: 700; color: var(--color-text-secondary); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
-          .crumbs-wrapper span { color: var(--color-text-secondary); }
+          .crumbs-wrapper a { color: var(--color-text-secondary); text-decoration: none; transition: color 0.2s; }
+          .crumbs-wrapper a:hover { color: #fff; }
           .crumbs-wrapper span.active { color: var(--color-accent); }
           
           /* APP STORE FEATURED APP DETAILS */
@@ -589,7 +1036,7 @@ export default function DownloadsPage() {
             width: 100%; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.06); overflow: hidden; margin-bottom: 8px; position: relative;
           }
           .progress-bar-fill {
-            width: 0%; height: 100%; background: linear-gradient(90deg, var(--color-purple), var(--color-accent)); transition: width 0.1s linear;
+            height: 100%; background: linear-gradient(90deg, var(--color-purple), var(--color-accent)); transition: width 0.1s linear;
           }
           .progress-details { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--color-text-secondary); margin-bottom: 16px; font-weight: 500; }
           
@@ -623,6 +1070,174 @@ export default function DownloadsPage() {
             width: 44px; height: 44px; display: grid; place-items: center; color: var(--color-text-secondary);
           }
           .drop-zone.success .drag-icon-folder { color: var(--color-success); }
+
+          /* Windows Fluent Setup Wizard styles */
+          .win-setup-window {
+            border: 1px solid rgba(255,255,255,0.14);
+            border-radius: 12px;
+            background: #121118;
+            box-shadow: 0 16px 36px rgba(0,0,0,0.5);
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            height: 220px;
+            overflow: hidden;
+            width: 100%;
+          }
+          .win-setup-header {
+            background: rgba(0,0,0,0.4);
+            padding: 8px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+          }
+          .win-setup-header-title {
+            font-size: 0.74rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #94a3b8;
+          }
+          .win-setup-main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+          }
+          .win-setup-sidebar {
+            width: 110px;
+            background: linear-gradient(180deg, #1b1035 0%, #0a0810 100%);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            border-right: 1px solid rgba(255,255,255,0.06);
+          }
+          .win-setup-sidebar-text {
+            font-weight: 800;
+            font-size: 0.65rem;
+            line-height: 1.25;
+            color: var(--color-accent);
+            text-transform: uppercase;
+          }
+          .win-setup-content {
+            flex: 1;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow-y: auto;
+            font-size: 0.76rem;
+            text-align: left;
+          }
+          .win-setup-content h4 {
+            font-size: 0.86rem;
+            font-weight: 700;
+            margin: 0 0 4px 0;
+            color: #fff;
+          }
+          .win-setup-content p {
+            margin: 0;
+            color: var(--color-text-secondary);
+            font-size: 0.7rem;
+            line-height: 1.35;
+          }
+          .win-setup-footer {
+            padding: 10px 14px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            background: rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+          }
+          .win-setup-btn {
+            padding: 4px 14px;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          .win-setup-btn:hover:not(:disabled) {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.2);
+          }
+          .win-setup-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+          }
+          .win-setup-btn.primary {
+            background: var(--color-purple);
+            border-color: rgba(255,255,255,0.1);
+          }
+          .win-setup-btn.primary:hover {
+            background: #9d76fa;
+          }
+
+          /* Linux Shell console styles */
+          .linux-console {
+            background: #050408;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            font-family: var(--font-mono);
+            box-shadow: 0 16px 36px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            height: 220px;
+            width: 100%;
+          }
+          .linux-console-header {
+            background: rgba(255,255,255,0.02);
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+          }
+          .linux-console-dots {
+            display: flex;
+            gap: 6px;
+          }
+          .linux-console-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+          }
+          .linux-console-title {
+            color: var(--color-text-secondary);
+            font-size: 0.62rem;
+            font-weight: 700;
+          }
+          .linux-console-body {
+            flex: 1;
+            padding: 12px;
+            overflow-y: auto;
+            font-size: 0.68rem;
+            color: #c084fc;
+            text-align: left;
+            line-height: 1.45;
+          }
+          .linux-console-run-btn {
+            background: var(--color-purple);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            padding: 6px 14px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+          }
+          .linux-console-run-btn:hover {
+            background: #9d76fa;
+          }
           
           /* STEP 3: CUSTOMIZE / MOCK GENERATOR */
           .step-config-layout { display: flex; flex-direction: column; gap: 12px; }
@@ -671,25 +1286,20 @@ export default function DownloadsPage() {
           .playground-input:focus { border-color: var(--color-purple); }
           
           .diffusion-canvas-frame {
-            height: 100px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); background: #000;
+            height: 110px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); background: #000;
             position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;
           }
-          .diffusion-canvas-img {
+          .diffusion-canvas-el {
             width: 100%; height: 100%; object-fit: cover; border-radius: 7px;
-            filter: blur(28px) saturate(0) contrast(1.8); opacity: 0;
           }
           .diffusion-canvas-noise {
-            position: absolute; inset: 0; background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 10px);
-            opacity: 0.4; pointer-events: none; z-index: 5;
+            position: absolute; inset: 0; background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 2px, transparent 2px, transparent 10px);
+            opacity: 0.3; pointer-events: none; z-index: 5;
           }
-          .diffusion-canvas-placeholder {
-            color: var(--color-text-secondary); font-size: 0.7rem; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 10;
-          }
-          .diffusion-canvas-placeholder svg { color: var(--color-accent); }
           .diffusion-timer {
             position: absolute; bottom: 8px; right: 8px; padding: 2px 6px; border-radius: 4px;
-            background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.1);
-            font-family: var(--font-mono); font-size: 0.6rem; color: var(--color-accent); font-weight: 700; z-index: 15; display: none;
+            background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.1);
+            font-family: var(--font-mono); font-size: 0.6rem; color: var(--color-accent); font-weight: 700; z-index: 15;
           }
 
           /* TIMING CHART GRAPH */
@@ -704,26 +1314,103 @@ export default function DownloadsPage() {
 
           /* STEP 4: SUCCESS AND SUMMARY WITH CSS QR CODE */
           .step-success-row { display: flex; gap: 14px; align-items: center; }
-          .qr-code-box {
-            width: 72px; height: 72px; background: #fff; border-radius: 8px; display: grid;
-            grid-template-columns: repeat(12, 1fr); padding: 5px; flex-shrink: 0;
+          .qr-code-frame {
+            width: 78px; height: 78px; background: #fff; border-radius: 8px; display: grid;
+            place-items: center; padding: 5px; flex-shrink: 0;
             box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            overflow: hidden;
           }
-          .qr-pixel { background: #fff; }
-          .qr-pixel.b { background: #000; }
+          .qr-code-img {
+            width: 100%; height: 100%; object-fit: contain;
+          }
+          .qr-code-placeholder {
+            width: 100%; height: 100%; background: #000; border-radius: 4px; display: flex; align-items: center; justify-content: center;
+          }
           
           .token-box {
             display: flex; justify-content: space-between; align-items: center; gap: 8px;
             padding: 8px 12px; border-radius: 8px; background: #000; border: 1px solid rgba(255,255,255,0.08);
             font-family: var(--font-mono); font-size: 0.72rem; margin-bottom: 12px;
           }
-          .token-val { color: var(--color-accent); font-weight: 700; }
+          .token-val { color: var(--color-accent); font-weight: 700; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 180px; }
           .btn-copy-token { background: rgba(255,255,255,0.06); border: none; border-radius: 6px; color: #fff; padding: 4px 8px; font-size: 0.68rem; font-weight: 700; cursor: pointer; }
           .btn-copy-token:hover { background: rgba(255,255,255,0.12); }
           
           .shortcuts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; text-align: left; }
           .shortcut-item { font-size: 0.68rem; color: var(--color-text-secondary); display: flex; justify-content: space-between; background: rgba(255,255,255,0.01); padding: 4px 8px; border-radius: 6px; }
           .shortcut-key { font-family: var(--font-mono); color: #fff; font-weight: 700; }
+
+          /* INLINE LOGIN CARD styles */
+          .inline-auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: left;
+            width: 100%;
+          }
+          .inline-auth-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+          }
+          .inline-auth-input-group label {
+            font-size: 0.64rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--color-purple);
+            letter-spacing: 0.05em;
+          }
+          .inline-auth-input {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 0.74rem;
+            color: #fff;
+            outline: none;
+            transition: all 0.2s;
+          }
+          .inline-auth-input:focus {
+            border-color: var(--color-purple);
+            background: rgba(255, 255, 255, 0.06);
+          }
+          .inline-auth-submit {
+            background: var(--color-purple);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            padding: 8px;
+            font-size: 0.76rem;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+          }
+          .inline-auth-submit:hover {
+            background: #9d76fa;
+          }
+          .inline-auth-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+          .inline-auth-switch {
+            font-size: 0.68rem;
+            color: var(--color-text-secondary);
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            margin-top: 4px;
+          }
+          .inline-auth-switch:hover {
+            color: #fff;
+            text-decoration: underline;
+          }
 
           /* APP PREVIEW GALLERY (LIGHTBOXABLE) */
           .section-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; margin: 44px 0 16px; display: flex; align-items: center; gap: 8px; color: #fff; }
@@ -764,12 +1451,20 @@ export default function DownloadsPage() {
           .req strong { font-size: 0.9rem; color: var(--color-text-primary); }
 
           .faq { display: flex; flex-direction: column; gap: 10px; }
-          details {
-            border: 1px solid var(--color-card-border); border-radius: 14px; background: rgba(0,0,0,0.15); padding: 12px 16px; transition: border-color 0.2s;
+          .faq-item {
+            border: 1px solid var(--color-card-border); border-radius: 14px; background: rgba(0,0,0,0.15); overflow: hidden;
           }
-          details:hover { border-color: rgba(255,255,255,0.15); }
-          summary { cursor: pointer; font-weight: 700; font-size: 0.92rem; outline: none; color: #fff; }
-          details p { margin: 10px 0 0; color: var(--color-text-secondary); line-height: 1.55; font-size: 0.86rem; }
+          .faq-question {
+            width: 100%; padding: 14px 18px; background: transparent; border: none; display: flex;
+            justify-content: space-between; align-items: center; color: #fff; font-weight: 700;
+            font-size: 0.92rem; cursor: pointer; text-align: left; outline: none; transition: background 0.2s;
+          }
+          .faq-question:hover { background: rgba(255,255,255,0.02); }
+          .faq-chevron { transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1); color: var(--color-text-secondary); }
+          .faq-chevron.open { transform: rotate(180deg); color: var(--color-accent); }
+          .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.28s cubic-bezier(0.16, 1, 0.3, 1), padding 0.28s ease; padding: 0 18px; }
+          .faq-answer.open { max-height: 120px; padding: 0 18px 16px; }
+          .faq-answer p { margin: 0; color: var(--color-text-secondary); line-height: 1.55; font-size: 0.86rem; }
 
           .release-note {
             margin-bottom: 10px; padding: 16px; border-radius: 14px; border: 1px solid var(--color-card-border); background: rgba(0,0,0,0.15);
@@ -811,8 +1506,12 @@ export default function DownloadsPage() {
         `}</style>
 
         {/* BREADCRUMBS */}
-        <div className="crumbs-wrapper">
-          <span>Home</span> / <span>Downloads</span> / <span className="active">macOS App</span>
+        <div className="crumbs-wrapper" aria-label="Breadcrumbs">
+          <Link href="/">Home</Link>
+          <span style={{ margin: '0 8px', opacity: 0.3 }}>/</span>
+          <Link href="/downloads">Downloads</Link>
+          <span style={{ margin: '0 8px', opacity: 0.3 }}>/</span>
+          <span className="active">{detectedOS === 'mac' ? 'macOS App' : detectedOS === 'windows' ? 'Windows App' : detectedOS === 'linux' ? 'Linux App' : 'App Setup'}</span>
         </div>
 
         {/* FEATURED HEADER AREA */}
@@ -829,13 +1528,13 @@ export default function DownloadsPage() {
             <h1>DreamBees Lite</h1>
             <p className="featured-subtitle">Local-first desktop studio for creative AI image synthesis</p>
             <div className="featured-actions">
-              <a className="btn btn-primary" href="/downloads/dreambees-lite-mac.dmg" id="btn-dmg-download">
+              <button className="btn btn-primary" onClick={startDownloadFile} id="btn-dmg-download">
                 <Download size={16} strokeWidth={2.5} />
-                Download DMG
-              </a>
+                Download for {detectedOS === 'mac' ? 'macOS (DMG)' : detectedOS === 'windows' ? 'Windows (EXE)' : detectedOS === 'linux' ? 'Linux (AppImage)' : 'Desktop'}
+              </button>
               <button className="btn btn-secondary" onClick={startWizard}>
                 <Sparkles size={16} strokeWidth={2.5} />
-                Setup Wizard
+                Setup Assistant
               </button>
             </div>
           </div>
@@ -855,18 +1554,26 @@ export default function DownloadsPage() {
           </div>
           <div className="store-stat-box">
             <span className="store-stat-label">PLATFORM</span>
-            <span className="store-stat-val">macOS</span>
-            <span className="store-stat-sub">Apple Silicon Native</span>
+            <span className="store-stat-val">
+              {detectedOS === 'mac' ? 'macOS' : detectedOS === 'windows' ? 'Windows' : detectedOS === 'linux' ? 'Linux' : 'Cross-Platform'}
+            </span>
+            <span className="store-stat-sub">
+              {detectedOS === 'mac' ? 'Apple Silicon Native' : detectedOS === 'windows' ? 'x64 Native Desktop' : detectedOS === 'linux' ? 'AppImage package' : 'Mobile / Desktop Companion'}
+            </span>
           </div>
           <div className="store-stat-box">
             <span className="store-stat-label">SIZE</span>
-            <span className="store-stat-val">141.2 MB</span>
-            <span className="store-stat-sub">DMG package</span>
+            <span className="store-stat-val">
+              {detectedOS === 'mac' ? '141.2 MB' : detectedOS === 'windows' ? '128.5 MB' : detectedOS === 'linux' ? '135.0 MB' : 'Varies'}
+            </span>
+            <span className="store-stat-sub">
+              {detectedOS === 'mac' ? 'DMG Package' : detectedOS === 'windows' ? 'Direct Installer (EXE)' : detectedOS === 'linux' ? 'Universal Binary' : 'Store download'}
+            </span>
           </div>
           <div className="store-stat-box">
-            <span className="store-stat-label">AGE RATING</span>
-            <span className="store-stat-val">4+</span>
-            <span className="store-stat-sub">Safe for everyone</span>
+            <span className="store-stat-label">VERSION</span>
+            <span className="store-stat-val">{appVersion}</span>
+            <span className="store-stat-sub">Latest stable release</span>
           </div>
         </section>
 
@@ -889,7 +1596,7 @@ export default function DownloadsPage() {
                 <ul style={{ paddingLeft: '20px', color: 'var(--color-text-secondary)', fontSize: '0.92rem', lineHeight: '1.7', margin: '4px 0 0' }}>
                   <li><strong>Zero Tab Clutter:</strong> Kept in a dedicated dockable application.</li>
                   <li><strong>Local-First History:</strong> All prompts and metadata stay in your local database.</li>
-                  <li><strong>M1/M2/M3 Native:</strong> Direct hardware bindings for local pre-processing.</li>
+                  <li><strong>Native Code:</strong> Direct hardware bindings for local pre-processing.</li>
                 </ul>
               </div>
             </div>
@@ -982,25 +1689,40 @@ export default function DownloadsPage() {
                 {/* STEP 2: INSTALL SIMULATION */}
                 <div className={`wizard-step ${currentStepIndex === 2 ? 'active' : ''}`} id="step-install">
                   <h3>Simulated Installation</h3>
-                  <p id="install-instruction" style={{ color: dragSuccess ? 'var(--color-success)' : 'inherit' }}>
-                    {downloadState === 'downloading' ? "Downloading installer package..." : dragSuccess ? "✓ Application successfully mounted!" : "Complete install by placing app into Applications:"}
+                  <p id="install-instruction" style={{ color: dragSuccess ? 'var(--color-success)' : 'inherit', fontSize: '0.74rem' }}>
+                    {downloadState === 'idle' 
+                      ? "First step: Download the installer package file:" 
+                      : downloadState === 'downloading' 
+                        ? "Downloading package to local filesystem..." 
+                        : dragSuccess 
+                          ? "✓ Application successfully mounted!" 
+                          : "Complete install using your OS installer simulator below:"}
                   </p>
                   
-                  {/* Download loader */}
-                  {downloadState === 'downloading' && (
-                    <div id="download-progress-area">
-                      <div className="progress-bar-container">
-                        <div className="progress-bar-fill" style={{ width: `${downloadProgress}%` }}></div>
-                      </div>
-                      <div className="progress-details">
-                        <span>{downloadProgress}%</span>
-                        <span>{((141.2 * downloadProgress) / 100).toFixed(1)} / 141.2 MB</span>
-                      </div>
+                  {/* Download trigger/loader */}
+                  {(downloadState === 'idle' || downloadState === 'downloading') && (
+                    <div id="download-progress-area" style={{ width: '100%' }}>
+                      {downloadState === 'idle' && (
+                        <button className="btn btn-primary" style={{ width: '100%', minHeight: '38px', fontSize: '0.78rem' }} onClick={startDownloadFile}>
+                          <Download size={14} /> Download Installer ({installerName})
+                        </button>
+                      )}
+                      {downloadState === 'downloading' && (
+                        <>
+                          <div className="progress-bar-container">
+                            <div className="progress-bar-fill" style={{ width: `${downloadProgress}%` }}></div>
+                          </div>
+                          <div className="progress-details">
+                            <span>{downloadProgress}%</span>
+                            <span>{((detectedOS === 'mac' ? 141.2 : detectedOS === 'windows' ? 128.5 : 135.0) * downloadProgress / 100).toFixed(1)} MB</span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
 
-                  {/* Drag-and-drop game */}
-                  {downloadState !== 'downloading' && (
+                  {/* Drag-and-drop game for Mac */}
+                  {downloadState === 'ready' && detectedOS === 'mac' && (
                     <div 
                       className="drag-simulator" 
                       id="drag-zone"
@@ -1013,7 +1735,7 @@ export default function DownloadsPage() {
                         id="drag-app" 
                         draggable={!dragSuccess}
                         onDragStart={handleDragStart}
-                        onClick={triggerDropSuccess}
+                        onClick={() => setDragSuccess(true)}
                         style={{
                           opacity: dragSuccess ? 0.3 : 1,
                           transform: dragSuccess ? 'scale(0.8) translate(100px, 0)' : 'none',
@@ -1036,9 +1758,126 @@ export default function DownloadsPage() {
                       </div>
                     </div>
                   )}
-                  {downloadState !== 'downloading' && (
+
+                  {/* Windows Wizard Dialog */}
+                  {downloadState === 'ready' && detectedOS === 'windows' && (
+                    <div className="win-setup-window">
+                      <div className="win-setup-header">
+                        <div className="win-setup-header-title">
+                          <Monitor size={12} />
+                          <span>DreamBees Lite Setup</span>
+                        </div>
+                        <span style={{ fontSize: '0.7rem', color: '#64748b' }}>✕</span>
+                      </div>
+                      <div className="win-setup-main">
+                        <div className="win-setup-sidebar">
+                          <span className="win-setup-sidebar-text">DreamBees Studio</span>
+                          <span style={{ fontSize: '0.52rem', color: '#64748b' }}>v{appVersion}</span>
+                        </div>
+                        <div className="win-setup-content">
+                          {winSetupState === 'welcome' && (
+                            <>
+                              <h4>Welcome to the Setup Wizard</h4>
+                              <p>This wizard will guide you through the local desktop workspace setup. Click Next to continue.</p>
+                            </>
+                          )}
+                          {winSetupState === 'agreement' && (
+                            <>
+                              <h4>License Agreement</h4>
+                              <p style={{ maxHeight: '70px', overflowY: 'scroll', background: 'rgba(0,0,0,0.3)', padding: '6px', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '4px' }}>
+                                By installing this software, you agree to run model workloads locally on your device neural engines. No graphic files are uploaded without consent.
+                              </p>
+                            </>
+                          )}
+                          {winSetupState === 'folder' && (
+                            <>
+                              <h4>Destination Folder</h4>
+                              <p>Setup will install DreamBees Lite in the folder:</p>
+                              <input type="text" readOnly value="C:\Program Files\DreamBees Lite" style={{ background: '#09080e', border: '1px solid rgba(255,255,255,0.1)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.66rem', color: '#a78bfa', marginTop: '4px' }} />
+                            </>
+                          )}
+                          {winSetupState === 'installing' && (
+                            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem' }}>
+                                <span style={{ color: '#c084fc' }}>Installing local binaries...</span>
+                                <span>{winInstallProgress}%</span>
+                              </div>
+                              <div style={{ background: 'rgba(255,255,255,0.06)', height: '4px', borderRadius: '2px', overflow: 'hidden' }}>
+                                <div style={{ background: 'var(--color-purple)', height: '100%', width: `${winInstallProgress}%` }} />
+                              </div>
+                              <div style={{ fontSize: '0.56rem', color: 'rgba(255,255,255,0.4)', height: '35px', overflowY: 'hidden', textAlign: 'left', fontFamily: 'monospace' }}>
+                                {winInstallLogs.slice(-2).map((log, lIdx) => (
+                                  <div key={lIdx}>Extract: {log}</div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {winSetupState === 'finished' && (
+                            <>
+                              <h4 style={{ color: 'var(--color-success)' }}>✓ Complete!</h4>
+                              <p>DreamBees Lite has been successfully configured. Click Finish to close this wizard and proceed.</p>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="win-setup-footer">
+                        <button className="win-setup-btn" onClick={handleWinSetupBack} disabled={winSetupState === 'welcome' || winSetupState === 'installing' || winSetupState === 'finished'}>&lt; Back</button>
+                        <button className="win-setup-btn primary" onClick={handleWinSetupNext} disabled={winSetupState === 'installing'}>{winSetupState === 'folder' ? 'Install' : winSetupState === 'finished' ? 'Finish' : 'Next &gt;'}</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Linux terminal console */}
+                  {downloadState === 'ready' && detectedOS === 'linux' && (
+                    <div className="linux-console">
+                      <div className="linux-console-header">
+                        <div className="linux-console-dots">
+                          <span className="linux-console-dot"></span>
+                          <span className="linux-console-dot"></span>
+                          <span className="linux-console-dot"></span>
+                        </div>
+                        <span className="linux-console-title">user@local:~</span>
+                      </div>
+                      <div className="linux-console-body">
+                        {linuxInstallState === 'idle' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
+                            <div>
+                              <div style={{ color: 'rgba(255,255,255,0.4)' }}># Run helper permissions command:</div>
+                              <div style={{ color: '#fff', margin: '4px 0 8px' }}>chmod +x ./dreambees-lite-linux.AppImage && ./dreambees-lite-linux.AppImage</div>
+                            </div>
+                            <button className="linux-console-run-btn" onClick={runLinuxInstallation}>Run Console Install</button>
+                          </div>
+                        )}
+                        {(linuxInstallState === 'running' || linuxInstallState === 'done') && (
+                          <div style={{ fontFamily: 'monospace', fontSize: '0.62rem' }}>
+                            {linuxInstallLogs.map((log, lIdx) => (
+                              <div key={lIdx} style={{ color: log.startsWith('$') ? '#fbbf24' : '#c084fc' }}>{log}</div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Fallback / Mobile screen */}
+                  {downloadState === 'ready' && detectedOS !== 'mac' && detectedOS !== 'windows' && detectedOS !== 'linux' && (
+                    <div style={{ width: '100%', textAlign: 'center', padding: '16px', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px' }}>
+                      <Monitor size={32} style={{ color: 'var(--color-accent)', margin: '0 auto 8px' }} />
+                      <h4 style={{ color: '#fff', fontSize: '0.86rem', fontWeight: 700, marginBottom: '4px' }}>Desktop Install Sync</h4>
+                      <p style={{ fontSize: '0.72rem', color: 'var(--color-text-secondary)', marginBottom: '8px' }}>Complete wizard steps to view dynamic integration parameters or log in below.</p>
+                      <button className="btn btn-secondary" style={{ minHeight: '32px', fontSize: '0.72rem', width: '100%' }} onClick={() => setDragSuccess(true)}>Skip to Sync</button>
+                    </div>
+                  )}
+
+                  {downloadState === 'ready' && (
                     <div id="drag-tip" style={{ fontSize: '0.68rem', color: 'var(--color-text-secondary)', textAlign: 'center', marginTop: '6px' }}>
-                      {dragSuccess ? "Click Continue to finalize configuration" : "Drag app icon to folder or click it to auto-install"}
+                      {dragSuccess 
+                        ? "Click Continue to finalize configuration" 
+                        : detectedOS === 'mac' 
+                          ? "Drag app icon to folder or click it to auto-install" 
+                          : detectedOS === 'windows' 
+                            ? "Follow the setup dialog steps to install"
+                            : "Click Execute to configure binary shortcuts"}
                     </div>
                   )}
                 </div>
@@ -1047,13 +1886,21 @@ export default function DownloadsPage() {
                 <div className={`wizard-step ${currentStepIndex === 3 ? 'active' : ''}`} id="step-config">
                   <div className="step-config-layout">
                     <div className="customize-options">
-                      <div className={`cust-card ${stylePreset === 'beginner' ? 'selected' : ''}`} onClick={() => { setStylePreset('beginner'); playSound('click'); }}>
-                        <div className="cust-card-title">Beginner Mode</div>
-                        <div className="cust-card-desc">Sleek defaults. Ready out-of-the-box.</div>
+                      <div className={`cust-card ${stylePreset === 'cyber' ? 'selected' : ''}`} onClick={() => setStylePreset('cyber')}>
+                        <div className="cust-card-title">Cyberpunk</div>
+                        <div className="cust-card-desc">Neon-lit digital bees.</div>
                       </div>
-                      <div className={`cust-card ${stylePreset === 'advanced' ? 'selected' : ''}`} onClick={() => { setStylePreset('advanced'); playSound('click'); }}>
-                        <div className="cust-card-title">Pro Studio</div>
-                        <div className="cust-card-desc">Exposes raw seeds, resolution and sliders.</div>
+                      <div className={`cust-card ${stylePreset === 'cosmic' ? 'selected' : ''}`} onClick={() => setStylePreset('cosmic')}>
+                        <div className="cust-card-title">Cosmic</div>
+                        <div className="cust-card-desc">Space nebulas & dust.</div>
+                      </div>
+                      <div className={`cust-card ${stylePreset === 'fantasy' ? 'selected' : ''}`} onClick={() => setStylePreset('fantasy')}>
+                        <div className="cust-card-title">Fantasy</div>
+                        <div className="cust-card-desc">Magical enchanted flowers.</div>
+                      </div>
+                      <div className={`cust-card ${stylePreset === 'retro' ? 'selected' : ''}`} onClick={() => setStylePreset('retro')}>
+                        <div className="cust-card-title">Retro</div>
+                        <div className="cust-card-desc">Synthwave grid aesthetic.</div>
                       </div>
                     </div>
 
@@ -1061,7 +1908,7 @@ export default function DownloadsPage() {
                       <div className="toggle-label">
                         <span className="toggle-title">Cloud-Boost Accelerator</span>
                         <span className="toggle-desc" id="toggle-desc-txt">
-                          {cloudBoost ? "Uses cloud servers to speed up rendering." : "Generates offline on your Apple neural core."}
+                          {cloudBoost ? "Uses cloud servers to speed up rendering." : "Generates offline on your graphics core."}
                         </span>
                       </div>
                       <label className="switch">
@@ -1080,31 +1927,9 @@ export default function DownloadsPage() {
                       </div>
                       <div className="diffusion-canvas-frame">
                         <div className="diffusion-canvas-noise"></div>
-                        {diffusionState === 'diffusing' && (
-                          <div className="diffusion-timer" id="demo-timer" style={{ display: 'block' }}>{diffusionTimer}</div>
-                        )}
-                        {diffusionState === 'done' && (
-                          <div className="diffusion-timer" id="demo-timer" style={{ display: 'block' }}>{diffusionTimer}</div>
-                        )}
-                        <img 
-                          className="diffusion-canvas-img" 
-                          id="demo-canvas-img" 
-                          src="/downloads/generation-flow.png" 
-                          alt="Simulated render"
-                          style={{
-                            opacity: diffusionState === 'idle' ? 0 : diffusionState === 'diffusing' ? (0.15 + 0.85 * diffusionProgress) : 1,
-                            filter: diffusionState === 'idle' 
-                              ? 'blur(28px) saturate(0) contrast(1.8)' 
-                              : diffusionState === 'diffusing' 
-                                ? `blur(${(28 * (1 - diffusionProgress)).toFixed(1)}px) saturate(${diffusionProgress}) contrast(${(1.8 - 0.8 * diffusionProgress).toFixed(2)})` 
-                                : 'none'
-                          }}
-                        />
-                        {diffusionState === 'idle' && (
-                          <div className="diffusion-canvas-placeholder" id="demo-canvas-ph">
-                            <Sparkles size={20} />
-                            <span>Canvas Ready</span>
-                          </div>
+                        <canvas ref={canvasRef} width="320" height="200" className="diffusion-canvas-el" />
+                        {diffusionState !== 'idle' && (
+                          <div className="diffusion-timer" id="demo-timer">{diffusionTimer}</div>
                         )}
                       </div>
                     </div>
@@ -1129,36 +1954,95 @@ export default function DownloadsPage() {
                   </div>
                 </div>
 
-                {/* STEP 4: COMPLETE WITH SYNC QR */}
+                {/* STEP 4: COMPLETE WITH AUTH / SYNC */}
                 <div className={`wizard-step ${currentStepIndex === 4 ? 'active' : ''}`} id="step-finish">
-                  <div className="step-success-row">
-                    <div className="qr-code-box" aria-label="Mobile Sync QR Code">
-                      {/* Grid QR pixels */}
-                      <span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span>
-                      <span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span>
-                      <span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span>
-                      <span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span>
-                      <span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span>
-                      <span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel"></span>
-                      <span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span>
-                      <span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span>
-                      <span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span>
-                      <span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span>
-                      <span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span>
-                      <span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel b"></span><span className="qr-pixel b"></span><span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel"></span><span className="qr-pixel"></span>
-                    </div>
-                    <div>
-                      <h3 style={{ color: 'var(--color-success)', textAlign: 'left', marginBottom: '4px' }}>✓ Configuration Completed</h3>
-                      <p style={{ textAlign: 'left', fontSize: '0.74rem', margin: 0 }}>Scan this sync code from your mobile app to link accounts, or sync the desktop app using the sync key below.</p>
-                    </div>
-                  </div>
-                  
-                  <div className="token-box" style={{ marginTop: '10px' }}>
-                    <span className="token-val" id="token-display">{syncToken}</span>
-                    <button className="btn-copy-token" onClick={copyToken}>Copy Key</button>
-                  </div>
+                  {user ? (
+                    // Authenticated State
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div className="step-success-row">
+                        <div className="qr-code-frame" aria-label="Mobile Sync QR Code">
+                          {qrCodeUrl ? (
+                            <img className="qr-code-img" src={qrCodeUrl} alt="Active user sync QR Code" />
+                          ) : (
+                            <div className="qr-code-placeholder">
+                              <RefreshCw size={18} className="animate-spin text-purple-400" />
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <h3 style={{ color: 'var(--color-success)', textAlign: 'left', marginBottom: '2px', fontSize: '0.9rem' }}>✓ Authed as {user.displayName || user.email?.split('@')[0]}</h3>
+                          <p style={{ textAlign: 'left', fontSize: '0.68rem', margin: 0, color: 'var(--color-text-secondary)' }}>You are logged in on the web. Sync your desktop app by clicking launch below or scanning the QR code.</p>
+                        </div>
+                      </div>
+                      
+                      <div className="token-box" style={{ marginTop: '4px' }}>
+                        <span className="token-val" id="token-display">{syncToken}</span>
+                        <button className="btn-copy-token" onClick={copyToken}>Copy Session</button>
+                      </div>
 
-                  <div className="shortcuts-grid">
+                      {deepLinkUrl && (
+                        <a className="btn btn-primary" href={deepLinkUrl} style={{ width: '100%', minHeight: '34px', fontSize: '0.78rem' }}>
+                          <Zap size={14} /> Launch & Sync Desktop App
+                        </a>
+                      )}
+                    </div>
+                  ) : (
+                    // Unauthenticated Inline Auth Block
+                    <div className="inline-auth-form">
+                      <h3 style={{ textAlign: 'left', fontSize: '0.9rem', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Lock size={14} className="text-purple-400" />
+                        <span>{isRegistering ? 'Create DreamBees Account' : 'Sign in to Sync Desktop'}</span>
+                      </h3>
+                      <p style={{ fontSize: '0.64rem', color: 'var(--color-text-secondary)', margin: '0 0 6px 0', textAlign: 'left' }}>
+                        Sign in to generate your secure local workspace authentication deep-link parameters.
+                      </p>
+
+                      <form onSubmit={handleInlineLogin} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <input 
+                          type="email" 
+                          placeholder="Email Address" 
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="inline-auth-input"
+                          required
+                        />
+                        <input 
+                          type="password" 
+                          placeholder="Password" 
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="inline-auth-input"
+                          required
+                        />
+                        
+                        {authError && (
+                          <div style={{ fontSize: '0.62rem', color: '#ef4444', textAlign: 'left', padding: '2px 4px' }}>
+                            {authError}
+                          </div>
+                        )}
+
+                        <button type="submit" className="inline-auth-submit" disabled={authLoading}>
+                          {authLoading ? <RefreshCw size={12} className="animate-spin" /> : (isRegistering ? 'Create & Sync' : 'Log in & Sync')}
+                        </button>
+                      </form>
+
+                      <button type="button" className="inline-auth-switch" onClick={() => setIsRegistering(!isRegistering)}>
+                        {isRegistering ? 'Already have an account? Sign in' : 'Need an account? Sign up here'}
+                      </button>
+
+                      <button type="button" className="btn-secondary" style={{ minHeight: '30px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', marginTop: '4px' }} onClick={handleGoogleLogin} disabled={authLoading}>
+                        <svg width="12" height="12" viewBox="0 0 24 24">
+                          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.26.81-.58z" fill="#FBBC05" />
+                          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                        </svg>
+                        <span>Continue with Google</span>
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="shortcuts-grid" style={{ marginTop: '8px' }}>
                     <div className="shortcut-item"><span>Generate:</span><span className="shortcut-key">⌘ G</span></div>
                     <div className="shortcut-item"><span>Save Work:</span><span className="shortcut-key">⌘ S</span></div>
                     <div className="shortcut-item"><span>Open Library:</span><span className="shortcut-key">⌘ L</span></div>
@@ -1182,7 +2066,7 @@ export default function DownloadsPage() {
                 className="wiz-btn btn-next" 
                 id="wiz-next" 
                 onClick={() => handleStepChange(currentStepIndex === stepIds.length - 1 ? 0 : currentStepIndex + 1)}
-                disabled={currentStepIndex === 2 && !dragSuccess}
+                disabled={(currentStepIndex === 1 && diagnosticsRunning) || (currentStepIndex === 2 && !dragSuccess)}
               >
                 {currentStepIndex === stepIds.length - 1 ? "Close Wizard" : "Continue"}
               </button>
@@ -1261,11 +2145,15 @@ export default function DownloadsPage() {
               <div className="reqs">
                 <div className="req">
                   <span className="label">Operating System</span>
-                  <strong>macOS 13.0+</strong>
+                  <strong>
+                    {detectedOS === 'mac' ? 'macOS 13.0+' : detectedOS === 'windows' ? 'Windows 10 / 11 x64' : detectedOS === 'linux' ? 'Ubuntu 20.04+ / Debian' : 'Desktop OS Required'}
+                  </strong>
                 </div>
                 <div className="req">
                   <span className="label">Processor</span>
-                  <strong>Apple M1/M2/M3+</strong>
+                  <strong>
+                    {detectedOS === 'mac' ? 'Apple Silicon M1/M2/M3+' : detectedOS === 'windows' ? 'Intel i5/i7/i9 or AMD Ryzen' : detectedOS === 'linux' ? 'Intel x64 or AMD' : 'Core i5 or equivalent'}
+                  </strong>
                 </div>
                 <div className="req">
                   <span className="label">Disk Space</span>
@@ -1283,18 +2171,41 @@ export default function DownloadsPage() {
             <div className="card-body">
               <h2 style={{ fontSize: '1.3rem', fontWeight: 800, margin: '0 0 16px', color: '#fff' }}>Frequently Asked Questions</h2>
               <div className="faq">
-                <details open={faqOpenIndex === 0} onClick={(e) => { e.preventDefault(); setFaqOpenIndex(faqOpenIndex === 0 ? null : 0); }}>
-                  <summary>Do I need technical setup?</summary>
-                  <p>No. You download the DMG file, open it, and drag the application icon to your Applications folder. No code compiler or terminal config required.</p>
-                </details>
-                <details open={faqOpenIndex === 1} onClick={(e) => { e.preventDefault(); setFaqOpenIndex(faqOpenIndex === 1 ? null : 1); }}>
-                  <summary>Can I still use the web app?</summary>
-                  <p>Yes. The web app remains completely operational. The desktop client is a companion app that runs in a focused, standalone window.</p>
-                </details>
-                <details open={faqOpenIndex === 2} onClick={(e) => { e.preventDefault(); setFaqOpenIndex(faqOpenIndex === 2 ? null : 2); }}>
-                  <summary>What is Cloud-Boost acceleration?</summary>
-                  <p>Cloud-boost uses our server cluster to synthesize images in 1-2 seconds, while local-first operations use your CPU/GPU for slower offline processing.</p>
-                </details>
+                <div className="faq-item">
+                  <button className="faq-question" onClick={() => setFaqOpenIndex(faqOpenIndex === 0 ? null : 0)}>
+                    <span>Do I need technical setup?</span>
+                    <ChevronDown size={16} className={`faq-chevron ${faqOpenIndex === 0 ? 'open' : ''}`} />
+                  </button>
+                  <div className={`faq-answer ${faqOpenIndex === 0 ? 'open' : ''}`}>
+                    <p>
+                      {detectedOS === 'mac' 
+                        ? 'No. Drag the app icon to your Applications folder in Step 2. No terminal configuration is required.'
+                        : detectedOS === 'windows' 
+                          ? 'No. Run the Setup Wizard simulation to choose your directory and install automatically in Step 2.'
+                          : 'Simply make the AppImage executable and launch it, or execute the quick terminal installation script.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="faq-item">
+                  <button className="faq-question" onClick={() => setFaqOpenIndex(faqOpenIndex === 1 ? null : 1)}>
+                    <span>Can I still use the web app?</span>
+                    <ChevronDown size={16} className={`faq-chevron ${faqOpenIndex === 1 ? 'open' : ''}`} />
+                  </button>
+                  <div className={`faq-answer ${faqOpenIndex === 1 ? 'open' : ''}`}>
+                    <p>Yes. The web app remains completely operational. The desktop client is a companion app that runs in a focused, standalone window.</p>
+                  </div>
+                </div>
+
+                <div className="faq-item">
+                  <button className="faq-question" onClick={() => setFaqOpenIndex(faqOpenIndex === 2 ? null : 2)}>
+                    <span>What is Cloud-Boost acceleration?</span>
+                    <ChevronDown size={16} className={`faq-chevron ${faqOpenIndex === 2 ? 'open' : ''}`} />
+                  </button>
+                  <div className={`faq-answer ${faqOpenIndex === 2 ? 'open' : ''}`}>
+                    <p>Cloud-boost uses our server cluster to synthesize images in 1-2 seconds, while local-first operations use your CPU/GPU for slower offline processing.</p>
+                  </div>
+                </div>
               </div>
             </div>
           </article>
@@ -1305,32 +2216,32 @@ export default function DownloadsPage() {
           <div className="card-body">
             <h2 style={{ fontSize: '1.3rem', fontWeight: 800, margin: '0 0 16px', color: '#fff' }}>Release Notes</h2>
             <div className="release-note">
-              <strong>Version 1.4.11 (Latest)</strong>
-              <p>Implements client-side state recovery for slow local loads, adds robust Electron IPC boundaries, and fixes database locks. Features Apple Silicon native binary compilation for direct Mac execution.</p>
+              <strong>Version {appVersion} (Latest)</strong>
+              <p>Implements client-side state recovery for slow local loads, adds robust Electron IPC boundaries, and fixes database locks. Features platform-native binary compilation for direct device execution.</p>
             </div>
           </div>
         </section>
 
         {/* FOOTER CTA */}
         <section className="footer-cta">
-          <h2>Download DreamBees Lite for macOS</h2>
+          <h2>Download DreamBees Lite</h2>
           <p>Start generating high-resolution assets locally on your device today.</p>
-          <a className="btn btn-primary" href="/downloads/dreambees-lite-mac.dmg">
+          <button className="btn btn-primary" onClick={startDownloadFile}>
             <Download size={18} strokeWidth={2.5} />
             Download Direct Installer
-          </a>
+          </button>
         </section>
 
         {/* STICKY DOWNLOAD BAR */}
         <section className="sticky-download" aria-label="Sticky download bar">
-          <span>Ready to create? <strong>DreamBees Lite for macOS</strong> direct DMG installer.</span>
+          <span>Ready to create? <strong>DreamBees Lite for {detectedOS === 'mac' ? 'macOS' : detectedOS === 'windows' ? 'Windows' : detectedOS === 'linux' ? 'Linux' : 'Desktop'}</strong> installer.</span>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button className="btn btn-secondary" style={{ minHeight: '36px', padding: '0 12px', fontSize: '0.8rem' }} onClick={startWizard}>
               Launch Wizard
             </button>
-            <a className="btn btn-primary" style={{ minHeight: '36px', padding: '0 16px', fontSize: '0.8rem' }} href="/downloads/dreambees-lite-mac.dmg">
-              Download DMG
-            </a>
+            <button className="btn btn-primary" style={{ minHeight: '36px', padding: '0 16px', fontSize: '0.8rem' }} onClick={startDownloadFile}>
+              Download
+            </button>
           </div>
         </section>
       </main>

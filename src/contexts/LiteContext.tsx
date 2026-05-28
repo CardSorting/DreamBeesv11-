@@ -704,6 +704,68 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         await setDoc(userRef, fields, { merge: true });
     };
 
+    // Listen for incoming deep link authentication handovers
+    useEffect(() => {
+        const isElectron = window.navigator.userAgent.toLowerCase().includes('electron');
+        const hasNativeLogin = Boolean(window.electronAPI?.lite?.onDeepLink);
+        if (!isElectron || !hasNativeLogin) return;
+
+        const processDeepLinkUrl = async (url: string) => {
+            console.log("[Lite Auth] Processing deep link:", url);
+            try {
+                // Parse deep link parameters (format: dreambees://auth?id_token=...)
+                const cleanUrl = url.replace('dreambees://', 'http://localhost/');
+                const parsedUrl = new URL(cleanUrl);
+                const idToken = parsedUrl.searchParams.get('id_token');
+                
+                if (idToken) {
+                    addToast("Web sync session detected. Syncing account...", "loading", "deeplink-auth");
+                    
+                    const credential = GoogleAuthProvider.credential(idToken);
+                    const res = await signInWithCredential(auth, credential);
+                    
+                    if (res.user) {
+                        await upsertUserProfile(
+                            res.user.uid,
+                            {
+                                email: res.user.email,
+                                lastLogin: serverTimestamp(),
+                                platform: 'electron',
+                            },
+                            {
+                                email: res.user.email,
+                                createdAt: serverTimestamp(),
+                                platform: 'electron',
+                                tier: 'free',
+                                zaps: 10,
+                            }
+                        );
+                        addToast(`Successfully synced as ${res.user.displayName || res.user.email?.split('@')[0]}!`, "success", "deeplink-auth");
+                    }
+                }
+            } catch (err: any) {
+                console.error("[Lite Auth] Deep link login failed:", err);
+                addToast(err.message || "Failed to sync credentials from web link.", "error", "deeplink-auth");
+            }
+        };
+
+        // 1. Listen for dynamic events while app is open
+        const unsub = window.electronAPI.lite.onDeepLink((url: string) => {
+            void processDeepLinkUrl(url);
+        });
+
+        // 2. Query cold-start pending deep links
+        window.electronAPI.lite.getPendingLink().then((url: string | null) => {
+            if (url) {
+                void processDeepLinkUrl(url);
+            }
+        });
+
+        return () => {
+            unsub();
+        };
+    }, [addToast]);
+
     const login = (email: string, pass: string) => signInWithEmailAndPassword(auth, email, pass).then(() => {});
     
     const signup = async (email: string, pass: string, birthday: string) => {

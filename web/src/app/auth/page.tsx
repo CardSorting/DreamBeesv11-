@@ -3,16 +3,58 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, Sparkles, Wand2, Loader2 } from 'lucide-react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { auth } from '@/lib/firebase';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInWithPopup, 
+  GoogleAuthProvider 
+} from 'firebase/auth';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => setLoading(false), 2000); // Mock
+    setError(null);
+
+    try {
+      if (isLogin) {
+        await signInWithEmailAndPassword(auth, email, password);
+      } else {
+        await createUserWithEmailAndPassword(auth, email, password);
+      }
+      // Redirect to downloads page or dashboard
+      router.push('/downloads');
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Authentication failed. Please verify credentials.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      router.push('/downloads');
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Google Sign-In failed.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -29,7 +71,7 @@ export default function AuthPage() {
         className="w-full max-w-[440px] p-12 rounded-[48px] border border-white/10 bg-white/5 backdrop-blur-2xl relative z-10"
       >
         <header className="text-center mb-10">
-          <div className="w-16 h-16 rounded-3xl bg-linear-to-br from-purple-500 to-amber-500 mx-auto mb-6 flex items-center justify-center shadow-lg shadow-purple-500/20">
+          <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-purple-500 to-amber-500 mx-auto mb-6 flex items-center justify-center shadow-lg shadow-purple-500/20">
             <Zap size={32} fill="white" className="text-white" />
           </div>
           <h1 className="text-3xl font-black tracking-tight mb-2">
@@ -46,7 +88,9 @@ export default function AuthPage() {
             <input 
               type="email" 
               placeholder="Email address" 
-              className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-purple-500/50 focus:bg-white/10 transition-all font-medium"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-purple-500/50 focus:bg-white/10 transition-all font-medium text-white"
               required
             />
           </div>
@@ -55,15 +99,23 @@ export default function AuthPage() {
             <input 
               type="password" 
               placeholder="Password" 
-              className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-purple-500/50 focus:bg-white/10 transition-all font-medium"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 outline-none focus:border-purple-500/50 focus:bg-white/10 transition-all font-medium text-white"
               required
             />
           </div>
 
+          {error && (
+            <div className="text-xs font-semibold text-rose-500 text-center bg-rose-500/10 border border-rose-500/20 rounded-xl p-3">
+              {error}
+            </div>
+          )}
+
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full py-4 rounded-2xl bg-linear-to-r from-purple-600 to-amber-600 font-black uppercase tracking-widest text-sm shadow-xl shadow-purple-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:scale-100"
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-amber-600 font-black uppercase tracking-widest text-sm shadow-xl shadow-purple-900/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:scale-100 cursor-pointer text-white"
           >
             {loading ? <Loader2 size={20} className="animate-spin" /> : (isLogin ? 'Enter Studio' : 'Begin Journey')}
           </button>
@@ -75,7 +127,11 @@ export default function AuthPage() {
           <div className="flex-1 h-px bg-white/10" />
         </div>
 
-        <button className="w-full mt-8 py-4 rounded-2xl bg-white/5 border border-white/10 font-bold hover:bg-white/10 transition-all flex items-center justify-center gap-3">
+        <button 
+          onClick={handleGoogleSignIn}
+          disabled={loading}
+          className="w-full mt-8 py-4 rounded-2xl bg-white/5 border border-white/10 font-bold hover:bg-white/10 transition-all flex items-center justify-center gap-3 cursor-pointer text-white"
+        >
           <svg width="20" height="20" viewBox="0 0 24 24" className="mr-2">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -87,7 +143,7 @@ export default function AuthPage() {
 
         <p className="mt-8 text-center text-zinc-500 font-medium">
           {isLogin ? "New to the archive? " : "Already a creator? "}
-          <button onClick={() => setIsLogin(!isLogin)} className="text-amber-500 font-black hover:underline ml-1">
+          <button onClick={() => setIsLogin(!isLogin)} className="text-amber-500 font-black hover:underline ml-1 cursor-pointer">
             {isLogin ? 'Join now' : 'Sign in'}
           </button>
         </p>

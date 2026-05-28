@@ -219,7 +219,7 @@ export default function ModelFeed() {
             </section>
 
             <style>{`
-                .model-picker-page { min-height: 100vh; width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 132px; position: relative; }
+                .model-picker-page { min-height: 100vh; width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 40px; position: relative; }
                 .model-picker-mesh { position: fixed; inset: 0; overflow: hidden; pointer-events: none; opacity: 0.34; z-index: -1; }
                 .mesh-orb { position: absolute; border-radius: 999px; filter: blur(110px); animation: pickerDrift 24s ease-in-out infinite alternate; }
                 .orb-one { width: 560px; height: 560px; top: -190px; right: -120px; background: rgba(139, 92, 246, 0.28); }

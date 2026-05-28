@@ -270,7 +270,7 @@ export default function Generator() {
       </main>
 
       <style>{`
-        .generator-simple { min-height: 100vh; width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 20px 0 120px; }
+        .generator-simple { min-height: 100vh; width: min(1180px, calc(100% - 28px)); margin: 0 auto; padding: 20px 0 40px; }
         .page-head { margin-bottom: 16px; }
         .page-head h1 { font-size: clamp(1.75rem, 5vw, 2.75rem); letter-spacing: -0.05em; margin: 0 0 6px; }
         .page-head p { margin: 0; color: var(--color-zinc-400); font-weight: 700; font-size: 0.95rem; }

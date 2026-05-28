@@ -178,3 +178,24 @@ button {
 input, textarea {
   font-family: inherit;
 }
+
+/* Sidebar App Layout System */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--color-black);
+}
+
+.app-main {
+  flex: 1;
+  margin-left: 250px;
+  min-height: 100vh;
+  background-color: var(--color-black);
+  transition: margin-left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+@media (max-width: 768px) {
+  .app-main {
+    margin-left: 76px;
+  }
+}
