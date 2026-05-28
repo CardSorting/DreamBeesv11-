@@ -131,6 +131,8 @@ export default function DownloadsPage() {
   const [loadedImages, setLoadedImages] = useState<Record<string, HTMLImageElement>>({});
 
   const { user } = useAuth();
+  const webAppHref = user ? '/dashboard' : '/auth';
+  const webAppLabel = user ? 'Open Web Studio' : 'Use Web App';
 
   // Helper delay
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -156,7 +158,7 @@ export default function DownloadsPage() {
       setDetectedOS(os);
 
       // Fetch dynamic manifest
-      fetch('/downloads/manifest.json', { cache: 'no-store' })
+      fetch('/downloads/manifest.json', { cache: 'no-cache' })
         .then(res => res.json())
         .then((data: DownloadManifest) => {
           if (data.version) setAppVersion(data.version);
@@ -430,9 +432,9 @@ export default function DownloadsPage() {
         preconnect.href = url.origin;
         document.head.appendChild(preconnect);
       }
-      fetch(url.toString(), { method: 'HEAD', cache: 'no-store', mode: 'no-cors' }).catch(() => {});
+      fetch(url.toString(), { method: 'HEAD', cache: 'no-cache', mode: 'no-cors' }).catch(() => {});
     } catch {
-      fetch(href, { method: 'HEAD', cache: 'no-store' }).catch(() => {});
+      fetch(href, { method: 'HEAD', cache: 'no-cache' }).catch(() => {});
     }
   };
 
@@ -1597,8 +1599,12 @@ export default function DownloadsPage() {
           <div className="featured-title-area">
             <span className="developer-badge">Editors' Choice</span>
             <h1>DreamBees Lite</h1>
-            <p className="featured-subtitle">Local-first desktop studio for creative AI image synthesis</p>
+            <p className="featured-subtitle">Use DreamBees in the browser now, or install the focused desktop studio when you want a native workspace.</p>
             <div className="featured-actions">
+              <Link href={webAppHref} className="btn btn-secondary">
+                <ArrowRight size={16} strokeWidth={2.5} />
+                {webAppLabel}
+              </Link>
               <button className="btn btn-primary" onPointerEnter={warmDownloadConnection} onFocus={warmDownloadConnection} onClick={startDownloadFile} id="btn-dmg-download">
                 <Download size={16} strokeWidth={2.5} />
                 Download for {detectedOS === 'mac' ? 'macOS (DMG)' : detectedOS === 'windows' ? 'Windows (EXE)' : detectedOS === 'linux' ? 'Linux (AppImage)' : 'Desktop'}
@@ -1655,10 +1661,10 @@ export default function DownloadsPage() {
               <div>
                 <h2>Harness local power. Run with zero lag.</h2>
                 <p className="sub">
-                  DreamBees Lite bridges desktop flexibility and cloud capabilities. Get a structured workspace designed for rapid style iteration, private offline cataloging, and optimized hardware utilization.
+                  DreamBees Lite bridges web access, desktop focus, and cloud capabilities. Start from any browser, then use the native app when you want a dedicated workspace with local history.
                 </p>
                 <p className="sub">
-                  Use the interactive **Setup Assistant** on the right to verify system specs, run the installer drag-and-drop game, and pre-configure your studio features.
+                  Use the interactive Setup Assistant on the right to verify system specs, run the installer flow, and connect the desktop app to your account.
                 </p>
               </div>
               
@@ -2264,7 +2270,7 @@ export default function DownloadsPage() {
                     <ChevronDown size={16} className={`faq-chevron ${faqOpenIndex === 1 ? 'open' : ''}`} />
                   </button>
                   <div className={`faq-answer ${faqOpenIndex === 1 ? 'open' : ''}`}>
-                    <p>Yes. The web app remains completely operational. The desktop client is a companion app that runs in a focused, standalone window.</p>
+                    <p>Yes. You can keep using the web app, install the desktop client later, or use both with the same DreamBees account.</p>
                   </div>
                 </div>
 
@@ -2295,18 +2301,27 @@ export default function DownloadsPage() {
 
         {/* FOOTER CTA */}
         <section className="footer-cta">
-          <h2>Download DreamBees Lite</h2>
-          <p>Start generating high-resolution assets locally on your device today.</p>
-          <button className="btn btn-primary" onPointerEnter={warmDownloadConnection} onFocus={warmDownloadConnection} onClick={startDownloadFile}>
-            <Download size={18} strokeWidth={2.5} />
-            Download Direct Installer
-          </button>
+          <h2>Pick your DreamBees workflow</h2>
+          <p>Open the web app instantly, or download the desktop companion for a focused local-first workspace.</p>
+          <div className="featured-actions" style={{ justifyContent: 'center' }}>
+            <Link href={webAppHref} className="btn btn-secondary">
+              <ArrowRight size={18} strokeWidth={2.5} />
+              {webAppLabel}
+            </Link>
+            <button className="btn btn-primary" onPointerEnter={warmDownloadConnection} onFocus={warmDownloadConnection} onClick={startDownloadFile}>
+              <Download size={18} strokeWidth={2.5} />
+              Download Direct Installer
+            </button>
+          </div>
         </section>
 
         {/* STICKY DOWNLOAD BAR */}
         <section className="sticky-download" aria-label="Sticky download bar">
-          <span>Ready to create? <strong>DreamBees Lite for {detectedOS === 'mac' ? 'macOS' : detectedOS === 'windows' ? 'Windows' : detectedOS === 'linux' ? 'Linux' : 'Desktop'}</strong> installer.</span>
+          <span>Ready to create? Use the <strong>web app</strong> now or install <strong>DreamBees Lite for {detectedOS === 'mac' ? 'macOS' : detectedOS === 'windows' ? 'Windows' : detectedOS === 'linux' ? 'Linux' : 'Desktop'}</strong>.</span>
           <div style={{ display: 'flex', gap: '10px' }}>
+            <Link href={webAppHref} className="btn btn-secondary" style={{ minHeight: '36px', padding: '0 12px', fontSize: '0.8rem' }}>
+              Web App
+            </Link>
             <button className="btn btn-secondary" style={{ minHeight: '36px', padding: '0 12px', fontSize: '0.8rem' }} onClick={startWizard}>
               Launch Wizard
             </button>

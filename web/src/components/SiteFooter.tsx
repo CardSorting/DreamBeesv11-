@@ -11,14 +11,15 @@ import { MakersMark } from '@/components/MakersMark';
 const sitemap = [
   { index: '01', label: 'How it works', href: '/#how-it-works', match: 'hash:how-it-works' },
   { index: '02', label: 'Features', href: '/#features', match: 'hash:features' },
-  { index: '03', label: 'Download', href: '/downloads/', match: '/downloads' },
+  { index: '03', label: 'Download', href: '/downloads', match: '/downloads' },
   { index: '04', label: 'Pricing', href: '/pricing', match: '/pricing' },
   { index: '05', label: 'FAQ', href: '/#faq', match: 'hash:faq' },
 ] as const;
 
 const studioNotes = [
   'Local-first workspace',
-  'macOS app',
+  'Web app included',
+  'Desktop companion',
   'Optional cloud boost',
 ] as const;
 
@@ -35,7 +36,7 @@ const tierNames: Record<string, string> = {
 };
 
 const DESKTOP_DOWNLOADS_URL =
-  process.env.NEXT_PUBLIC_DESKTOP_DOWNLOADS_URL ?? 'https://dreambees-alchemist.web.app/downloads/';
+  process.env.NEXT_PUBLIC_DESKTOP_DOWNLOADS_URL ?? 'https://dreambees-alchemist.web.app/downloads';
 
 function firstName(user: { displayName?: string | null; email?: string | null } | null) {
   if (!user) return null;
@@ -75,7 +76,7 @@ export function SiteFooter() {
   const pathname = usePathname();
   const { user, userData } = useAuth();
   const accountHref = user ? '/dashboard' : '/auth';
-  const accountLabel = user ? 'Your studio' : 'Sign in';
+  const accountLabel = user ? 'Your studio' : 'Open web app';
   const name = firstName(user);
   const tier = userData?.tier || 'free';
   const tierLabel = tierNames[tier] ?? 'Dreamer';
@@ -536,7 +537,7 @@ export function SiteFooter() {
                   <MakersMark size={38} className="site-footer-mark" />
                   <div>
                     <span className="site-footer-name">DreamBees</span>
-                    <span className="site-footer-role">Lite · Desktop atelier</span>
+                    <span className="site-footer-role">Lite · Web and desktop atelier</span>
                   </div>
                 </div>
                 {user && name && (
@@ -599,7 +600,7 @@ export function SiteFooter() {
               <div className="site-footer-actions">
                 <a href={DESKTOP_DOWNLOADS_URL} className="site-footer-btn site-footer-btn--primary">
                   <Download size={14} strokeWidth={2.5} />
-                  Download for macOS
+                  Desktop download
                 </a>
                 <Link href={accountHref} className="site-footer-btn site-footer-btn--ghost">
                   {accountLabel}
@@ -612,7 +613,7 @@ export function SiteFooter() {
             </div>
 
             <p className="site-footer-ribbon">
-              Crafted for creators who prefer <em>desks over dashboards</em> — close the tab, keep the work on your machine.
+              Work in the browser when speed matters, then move into the desktop studio when focus matters.
             </p>
 
             <div className="site-footer-bar">

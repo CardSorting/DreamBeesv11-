@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
-import { ArrowRight, CheckCircle2, ChevronDown, Clock, Cloud, Cpu, ImagePlus, Lock, Monitor, Sparkles, Zap } from 'lucide-react';
+import { ArrowRight, CheckCircle2, ChevronDown, Clock, Cloud, Cpu, Download, ImagePlus, Lock, Monitor, Sparkles, Zap } from 'lucide-react';
 import { SiteHeader } from '@/components/SiteHeader';
 import { SiteFooter } from '@/components/SiteFooter';
 
@@ -15,7 +15,7 @@ const features = [
 
 const faqs = [
   { q: 'Is this beginner friendly?', a: 'Yes. DreamBees is presented around a simple flow: describe, choose, create, and save.' },
-  { q: 'Is there a desktop app?', a: 'Yes. DreamBees Lite has a native macOS app you can install from the Download page.' },
+  { q: 'Do I have to install the desktop app?', a: 'No. You can start in the web app, install the desktop app later, or use both with the same account.' },
   { q: 'Can it use cloud power?', a: 'Yes. The page explains cloud generation as an optional boost, not a requirement.' },
 ];
 
@@ -312,7 +312,7 @@ const DEMOS = [
   }
 ];
 
-const DESKTOP_DOWNLOADS_URL = process.env.NEXT_PUBLIC_DESKTOP_DOWNLOADS_URL ?? '/downloads/';
+const DESKTOP_DOWNLOADS_URL = process.env.NEXT_PUBLIC_DESKTOP_DOWNLOADS_URL ?? '/downloads';
 
 function MockupDemo() {
   const [index, setIndex] = useState(0);
@@ -483,14 +483,14 @@ export default function Home() {
       <main id="top" style={styles.shell}>
         <section className="landing-section landing-hero" style={{ ...styles.section, ...styles.hero }}>
           <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}>
-            <div style={styles.eyebrow}><Sparkles size={16} /> Simple desktop AI image creation</div>
+            <div style={styles.eyebrow}><Sparkles size={16} /> Simple AI image creation</div>
             <h1 style={styles.h1}>Create AI images without the confusing setup.</h1>
-            <p style={styles.lead}>DreamBees Lite is a local-first desktop studio for turning ideas into images with clear controls, saved history, and optional cloud power.</p>
+            <p style={styles.lead}>Start in the browser, install the focused desktop studio when you want it, and keep cloud power available from either workflow.</p>
             <div className="landing-actions" style={styles.heroActions}>
-              <Link href="/auth" style={styles.buttonPrimary}>Get Started <ArrowRight size={20} /></Link>
-              <Link href="/pricing" style={styles.buttonSecondary}>View Pricing</Link>
+              <Link href="/auth" style={styles.buttonPrimary}>Open Web App <ArrowRight size={20} /></Link>
+              <Link href={DESKTOP_DOWNLOADS_URL} style={styles.buttonSecondary}>Desktop Download <Download size={20} /></Link>
             </div>
-            <div style={styles.trust}>{['macOS app available', 'Private local history', 'Optional cloud boost'].map((item) => <span key={item} style={styles.pill}><CheckCircle2 size={16} color="#34d399" /> {item}</span>)}</div>
+            <div style={styles.trust}>{['Web app ready now', 'Desktop companion', 'Optional cloud boost'].map((item) => <span key={item} style={styles.pill}><CheckCircle2 size={16} color="#34d399" /> {item}</span>)}</div>
           </motion.div>
 
           <MockupDemo />
@@ -504,7 +504,7 @@ export default function Home() {
 
         <section id="faq" className="landing-section" style={{ ...styles.section, paddingTop: 0 }}><div style={styles.faq}><SectionHeader eyebrow="FAQ" title="Quick answers." center />{faqs.map((faq, i) => { const open = activeFaq === i; return <div key={faq.q} style={styles.faqItem}><button type="button" onClick={() => setActiveFaq(open ? null : i)} style={styles.faqButton}>{faq.q}<ChevronDown size={20} style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 160ms' }} /></button><AnimatePresence initial={false}>{open && <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}><p style={{ ...styles.cardText, padding: '0 20px 20px', margin: 0 }}>{faq.a}</p></motion.div>}</AnimatePresence></div>; })}</div></section>
 
-        <section id="download" className="landing-section" style={{ ...styles.section, paddingTop: 0 }}><div style={styles.cta}><h2 style={{ ...styles.h2, color: '#111' }}>Install the macOS app for your daily workflow.</h2><p style={{ margin: '18px auto 0', maxWidth: 620, color: 'rgba(0,0,0,0.68)', fontSize: 18, lineHeight: 1.6, fontWeight: 750 }}>Use DreamBees on the web anywhere, then move into the native Mac app for a focused, local-first creative studio.</p><div className="landing-actions" style={{ ...styles.heroActions, justifyContent: 'center', marginTop: 30 }}><Link href="/auth" style={{ ...styles.buttonPrimary, background: '#111', color: '#fff' }}>Open Web App <ArrowRight size={20} /></Link><Link href={DESKTOP_DOWNLOADS_URL} style={{ ...styles.buttonSecondary, border: '1px solid rgba(17,17,17,0.2)', color: '#111', background: 'rgba(255,255,255,0.55)' }}>View Mac Download</Link></div><p style={{ margin: '12px auto 0', maxWidth: 620, color: 'rgba(0,0,0,0.56)', fontSize: 13, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>macOS only · Apple Silicon optimized · direct installer</p></div></section>
+        <section id="download" className="landing-section" style={{ ...styles.section, paddingTop: 0 }}><div style={styles.cta}><h2 style={{ ...styles.h2, color: '#111' }}>Choose the web app, the desktop app, or both.</h2><p style={{ margin: '18px auto 0', maxWidth: 620, color: 'rgba(0,0,0,0.68)', fontSize: 18, lineHeight: 1.6, fontWeight: 750 }}>Use DreamBees in the browser when you want instant access, then install the native app for a focused local-first workspace.</p><div className="landing-actions" style={{ ...styles.heroActions, justifyContent: 'center', marginTop: 30 }}><Link href="/auth" style={{ ...styles.buttonPrimary, background: '#111', color: '#fff' }}>Open Web App <ArrowRight size={20} /></Link><Link href={DESKTOP_DOWNLOADS_URL} style={{ ...styles.buttonSecondary, border: '1px solid rgba(17,17,17,0.2)', color: '#111', background: 'rgba(255,255,255,0.55)' }}>View Desktop Download <Download size={20} /></Link></div><p style={{ margin: '12px auto 0', maxWidth: 620, color: 'rgba(0,0,0,0.56)', fontSize: 13, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>web app available now · macOS installer available · shared account</p></div></section>
       </main>
 
       <SiteFooter />

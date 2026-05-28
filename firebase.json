@@ -17,6 +17,7 @@
     "site": "dreambees-alchemist",
     "public": "web/out",
     "cleanUrls": true,
+    "trailingSlash": false,
     "predeploy": [
       "npm run build:web:release:firebase"
     ],
@@ -61,28 +62,11 @@
     ],
     "headers": [
       {
-        "source": "/index.html",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-cache, no-store, must-revalidate"
-          },
-          {
-            "key": "Cross-Origin-Opener-Policy",
-            "value": "same-origin-allow-popups"
-          },
-          {
-            "key": "Cross-Origin-Embedder-Policy",
-            "value": "unsafe-none"
-          }
-        ]
-      },
-      {
         "source": "**",
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "no-cache, no-store, must-revalidate"
+            "value": "no-cache, max-age=0, must-revalidate"
           },
           {
             "key": "Cross-Origin-Opener-Policy",
@@ -91,6 +75,10 @@
           {
             "key": "Cross-Origin-Embedder-Policy",
             "value": "unsafe-none"
+          },
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
           }
         ]
       },
@@ -108,7 +96,7 @@
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "public, max-age=3600"
+            "value": "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400"
           },
           {
             "key": "Content-Disposition",
@@ -117,7 +105,7 @@
         ]
       },
       {
-        "source": "/downloads/dreambees-lite-*.@(dmg|exe|AppImage)",
+        "source": "/downloads/dreambees-lite-[0-9]*.@(dmg|exe|AppImage)",
         "headers": [
           {
             "key": "Cache-Control",
@@ -134,7 +122,16 @@
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "no-cache, no-store, must-revalidate"
+            "value": "public, max-age=60, s-maxage=300, stale-while-revalidate=3600"
+          }
+        ]
+      },
+      {
+        "source": "/_next/static/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
           }
         ]
       },

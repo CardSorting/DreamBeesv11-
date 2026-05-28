@@ -11,7 +11,7 @@ import { MakersMark } from '@/components/MakersMark';
 const navItems = [
   { index: '01', label: 'How it works', href: '/#how-it-works', match: 'hash:how-it-works' },
   { index: '02', label: 'Features', href: '/#features', match: 'hash:features' },
-  { index: '03', label: 'Download', href: '/downloads/', match: '/downloads' },
+  { index: '03', label: 'Download', href: '/downloads', match: '/downloads' },
   { index: '04', label: 'Pricing', href: '/pricing', match: '/pricing' },
   { index: '05', label: 'FAQ', href: '/#faq', match: 'hash:faq' },
 ] as const;
