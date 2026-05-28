@@ -4,7 +4,8 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, CreditCard, History, Settings, LogOut, Zap, Crown, 
-  Shield, Loader2, ExternalLink, Sparkles, Clock, Save, Image as ImageIcon
+  Shield, Loader2, ExternalLink, Sparkles, Clock, Save, Image as ImageIcon,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -23,7 +24,22 @@ export default function DashboardPage() {
   const [imageCount, setImageCount] = React.useState(0);
   const [userImages, setUserImages] = React.useState<any[]>([]);
   const [imagesLoading, setImagesLoading] = React.useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
   const router = useRouter();
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setSidebarCollapsed(localStorage.getItem('web_dashboard_sidebar_collapsed') === 'true');
+    }
+  }, []);
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('web_dashboard_sidebar_collapsed', String(next));
+      return next;
+    });
+  };
 
   // Settings State
   const [displayNameInput, setDisplayNameInput] = React.useState('');
@@ -142,31 +158,54 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#070708] text-white flex">
       {/* Sidebar */}
-      <aside className="w-80 border-r border-white/10 p-8 hidden lg:flex flex-col gap-8 bg-black/20 backdrop-blur-3xl">
-        <div className="flex items-center gap-3 px-4">
-          <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-black font-black">
-            <Zap size={20} fill="black" />
+      <aside className={`border-r border-white/10 p-8 hidden lg:flex flex-col gap-8 bg-black/20 backdrop-blur-3xl transition-all duration-300 ${sidebarCollapsed ? 'w-24 px-4' : 'w-80'}`}>
+        <div className="flex items-center justify-between px-2 gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-black font-black shrink-0">
+              <Zap size={20} fill="black" />
+            </div>
+            {!sidebarCollapsed && <span className="text-xl font-black tracking-tight">DreamBees</span>}
           </div>
-          <span className="text-xl font-black tracking-tight">DreamBees</span>
+          <button 
+            onClick={toggleSidebar}
+            className="text-zinc-500 hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition-all cursor-pointer"
+            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
         </div>
 
         <nav className="flex-1 flex flex-col gap-2">
-          <NavItem icon={User} label="Profile" active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} />
-          <NavItem icon={CreditCard} label="Subscription" active={activeTab === 'subscription'} onClick={() => setActiveTab('subscription')} />
-          <NavItem icon={History} label="Billing History" active={activeTab === 'billing'} onClick={() => setActiveTab('billing')} />
-          <NavItem icon={Settings} label="Settings" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+          <NavItem icon={User} label="Profile" active={activeTab === 'profile'} collapsed={sidebarCollapsed} onClick={() => setActiveTab('profile')} />
+          <NavItem icon={CreditCard} label="Subscription" active={activeTab === 'subscription'} collapsed={sidebarCollapsed} onClick={() => setActiveTab('subscription')} />
+          <NavItem icon={History} label="Billing History" active={activeTab === 'billing'} collapsed={sidebarCollapsed} onClick={() => setActiveTab('billing')} />
+          <NavItem icon={Settings} label="Settings" active={activeTab === 'settings'} collapsed={sidebarCollapsed} onClick={() => setActiveTab('settings')} />
         </nav>
 
         <button 
           onClick={handleLogout}
-          className="flex items-center gap-3 px-6 py-4 rounded-2xl text-zinc-500 hover:text-white hover:bg-white/5 transition-all font-bold cursor-pointer"
+          className="flex items-center justify-center lg:justify-start gap-4 px-4 py-4 rounded-2xl text-zinc-500 hover:text-white hover:bg-white/5 transition-all font-bold cursor-pointer relative group"
         >
-          <LogOut size={20} /> Sign Out
+          <LogOut size={20} className="shrink-0" />
+          {!sidebarCollapsed && <span>Sign Out</span>}
+          {sidebarCollapsed && (
+            <div className="absolute left-20 top-1/2 -translate-y-1/2 bg-zinc-900 border border-white/10 text-white text-xs font-bold py-2 px-3 rounded-xl opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 shadow-xl z-50 whitespace-nowrap">
+              Sign Out
+            </div>
+          )}
         </button>
       </aside>
 
+      {/* Mobile Bottom Nav */}
+      <nav className="fixed bottom-0 left-0 right-0 h-16 bg-[#0c0c0e]/95 backdrop-blur-xl border-t border-white/10 lg:hidden flex justify-around items-center z-50 px-4">
+        <MobileNavItem icon={User} label="Profile" active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} />
+        <MobileNavItem icon={CreditCard} label="Subscription" active={activeTab === 'subscription'} onClick={() => setActiveTab('subscription')} />
+        <MobileNavItem icon={History} label="Billing" active={activeTab === 'billing'} onClick={() => setActiveTab('billing')} />
+        <MobileNavItem icon={Settings} label="Settings" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+      </nav>
+
       {/* Main Content */}
-      <main className="flex-1 p-8 md:p-16 overflow-y-auto">
+      <main className="flex-1 p-6 md:p-12 pb-24 lg:pb-12 overflow-y-auto">
         <div className="max-w-4xl mx-auto">
           <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
@@ -488,6 +527,40 @@ function NavItem({
   icon: Icon, 
   label, 
   active = false,
+  collapsed = false,
+  onClick
+}: { 
+  icon: any; 
+  label: string; 
+  active?: boolean;
+  collapsed?: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <button 
+      onClick={onClick}
+      className={`w-full flex items-center justify-center lg:justify-start gap-4 px-4 py-4 rounded-2xl font-bold transition-all cursor-pointer relative group ${
+        active 
+          ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' 
+          : 'text-zinc-500 hover:text-white hover:bg-white/5'
+      }`}
+    >
+      <Icon size={20} className="shrink-0" /> 
+      {!collapsed && <span>{label}</span>}
+      
+      {collapsed && (
+        <div className="absolute left-20 top-1/2 -translate-y-1/2 bg-zinc-900 border border-white/10 text-white text-xs font-bold py-2 px-3 rounded-xl opacity-0 scale-95 pointer-events-none group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 shadow-xl z-50 whitespace-nowrap animate-in fade-in zoom-in-95 duration-150">
+          {label}
+        </div>
+      )}
+    </button>
+  );
+}
+
+function MobileNavItem({ 
+  icon: Icon, 
+  label, 
+  active = false,
   onClick
 }: { 
   icon: any; 
@@ -498,13 +571,14 @@ function NavItem({
   return (
     <button 
       onClick={onClick}
-      className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all cursor-pointer ${
+      className={`flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl transition-all cursor-pointer ${
         active 
-          ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20' 
-          : 'text-zinc-500 hover:text-white hover:bg-white/5'
+          ? 'text-amber-500 font-black scale-105' 
+          : 'text-zinc-500 hover:text-white'
       }`}
     >
-      <Icon size={20} /> {label}
+      <Icon size={20} />
+      <span className="text-[9px] font-black uppercase tracking-wider">{label}</span>
     </button>
   );
 }
