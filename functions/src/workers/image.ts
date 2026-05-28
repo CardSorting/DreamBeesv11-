@@ -1,12 +1,10 @@
 import { db, FieldValue } from "../firebaseInit.js";
 import { Wallet } from "../lib/wallet.js";
 import { getS3Client, fetchWithTimeout, logger, retryOperation } from "../lib/utils.js";
-import { B2_BUCKET, B2_PUBLIC_URL, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, MODAL_ENDPOINT, ENDPOINTS } from "../lib/constants.js";
+import { B2_BUCKET, B2_PUBLIC_URL, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, ENDPOINTS } from "../lib/constants.js";
 import { MODEL_IDS, MODEL_ENDPOINTS, MODEL_GENERATION_PARAMS } from "../lib/modelConventions.js";
 import { ForensicLogger } from "../lib/forensics.js";
 import { SubstrateHealth } from "../lib/substrateHealth.js";
-// @ts-ignore
-import { modalAPI } from "../lib/modal.js";
 
 /**
  * Main worker for image generation tasks
@@ -80,28 +78,7 @@ export const processImageTask = async (req: { data: any }): Promise<void> => {
 
         // --- MODEL EXECUTION ---
 
-        if (modelId === 'flux-klein-9b') {
-            imageBuffer = await (async () => {
-                logger.info(`[${requestId}] Running Flux Klein Edit via ModalAPI`, { userId, modelId });
-                await docRef.update({ progress: 25 }).catch(() => { });
-
-                try {
-                    const result = await modalAPI.editAndWait({
-                        prompt,
-                        image: req.data.image,
-                        num_steps: 4,
-                        width: resolution.width,
-                        height: resolution.height
-                    });
-                    logger.info(`[${requestId}] Flux Klein Edit completed successfully`);
-                    return result;
-                } catch (error: any) {
-                    logger.error(`[${requestId}] Flux Klein Edit failed`, error);
-                    throw error;
-                }
-            })();
-        }
-        else if (modelId === 'flux-2-dev') {
+        if (modelId === 'flux-2-dev') {
             imageBuffer = await (async () => {
                 const cfUrl = ENDPOINTS.flux2dev.replace('CLOUDFLARE_ACCOUNT_ID', CLOUDFLARE_ACCOUNT_ID);
                 logger.info(`[${requestId}] Running flux-2-dev via Cloudflare. URL: ${cfUrl.substring(0, 50)}...`);

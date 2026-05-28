@@ -15,10 +15,10 @@
   },
   "hosting": {
     "site": "dreambees-alchemist",
-    "public": "dist",
+    "public": "web/out",
+    "cleanUrls": true,
     "predeploy": [
-      "npm run lint",
-      "npm run test"
+      "npm run build:web:release:firebase"
     ],
     "ignore": [
       "firebase.json",
@@ -57,10 +57,6 @@
       {
         "source": "/tasks/**",
         "function": "web"
-      },
-      {
-        "source": "**",
-        "destination": "/index.html"
       }
     ],
     "headers": [
@@ -104,6 +100,19 @@
           {
             "key": "Cache-Control",
             "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      },
+      {
+        "source": "/downloads/*.@(dmg|exe|AppImage)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=3600"
+          },
+          {
+            "key": "Content-Disposition",
+            "value": "attachment"
           }
         ]
       },

@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { IconDownload, IconShare, IconZap, IconRefresh } from '@/icons';
+import { IconDownload, IconShare, IconZap } from '@/icons';
 import { downloadImage } from '@/lite-utils';
 
 interface ActionToolbarProps {
@@ -12,7 +12,6 @@ interface ActionToolbarProps {
     prompt: string;
     modelId?: string;
     generationTime?: number;
-    onToggleCompare: () => void;
 }
 
 export default function ActionToolbar({
@@ -20,8 +19,7 @@ export default function ActionToolbar({
     imageUrl,
     prompt,
     modelId,
-    generationTime,
-    onToggleCompare
+    generationTime
 }: ActionToolbarProps) {
     const handleDownload = () => {
         if (imageUrl) {
@@ -47,11 +45,6 @@ export default function ActionToolbar({
         }
     };
 
-    const handleRegenerate = () => {
-        // Navigate to generate page with preset
-        // This would be implemented based on the actual routing system
-    };
-
     return (
         <div className="action-toolbar">
             <div className="toolbar-title">
@@ -68,14 +61,6 @@ export default function ActionToolbar({
                 <div className="toolbar-divider"></div>
 
                 <div className="action-list">
-                    <button
-                        className="action-button-full shift-left"
-                        onClick={handleRegenerate}
-                    >
-                        <span>Regenerate</span>
-                        <IconRefresh size={18} />
-                    </button>
-
                     <button
                         className="action-button-full"
                         onClick={handleDownload}

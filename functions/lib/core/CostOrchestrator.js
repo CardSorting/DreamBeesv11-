@@ -12,7 +12,7 @@ export class CostOrchestrator {
      */
     static calculateFinalCost(modelId, isPremiumUser, aspectRatio, steps) {
         // 1. Check for Flux specific cost
-        if (modelId === 'flux-2-dev' || modelId === 'flux-klein-9b') {
+        if (modelId === 'flux-2-dev') {
             return calculateFluxCost(aspectRatio, steps || 25);
         }
         // 2. Check for Premium models
@@ -50,7 +50,7 @@ export class CostOrchestrator {
             };
         }
         // B. Check usage limits (Rate Limiting)
-        if (modelId === 'flux-2-dev' || modelId === 'flux-klein-9b') {
+        if (modelId === 'flux-2-dev') {
             // Global limit (still a separate doc as it's shared state)
             const globalUsage = await this.getGlobalDailyUsage(database);
             if (globalUsage >= CostConstants.FLUX_GLOBAL_LIMIT_DAILY) {

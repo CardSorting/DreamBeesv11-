@@ -11,7 +11,6 @@ import { MODELS_DB } from './constants.js';
 // ==============================================================================
 
 export const MODEL_IDS = {
-    FLUX_KLEIN: 'flux-klein-9b',
     WAI_ILLUSTRIOUS: 'wai-illustrious',
     CHENKIN_NOOB: 'chenkin-noob-xl',
     NOVA_3D: 'nova-3d-cg-xl',
@@ -25,7 +24,6 @@ export type ModelID = (typeof MODEL_IDS)[keyof typeof MODEL_IDS];
 // ==============================================================================
 
 export const MODEL_ENDPOINTS = {
-    [MODEL_IDS.FLUX_KLEIN]: 'https://mariecoderinc--flux-klein-9b-v2-flux-fastapi-app.modal.run',
     [MODEL_IDS.Z_IMAGE_TURBO]: 'https://mariecoderinc--zit-a100-stable-fastapi-app.modal.run'
 } as const;
 
@@ -38,12 +36,6 @@ export function isValidModelId(id: string): id is ModelID {
 // ==============================================================================
 
 export const MODEL_GENERATION_PARAMS = {
-    [MODEL_IDS.FLUX_KLEIN]: {
-        defaultSteps: 4,
-        cfg: 7.5,
-        width: 1024,
-        height: 1024
-    },
     [MODEL_IDS.WAI_ILLUSTRIOUS]: {
         hiresFix: true
     },

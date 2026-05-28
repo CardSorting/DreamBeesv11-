@@ -44,8 +44,7 @@ export class PromptPreprocessor {
       domainRequest.seed,
       domainRequest.scheduler,
       domainRequest.idempotencyKey,
-      domainRequest.targetUserId,
-      domainRequest.image
+      domainRequest.targetUserId
     );
     
     return {

@@ -11,13 +11,14 @@ import { MakersMark } from '@/components/MakersMark';
 const sitemap = [
   { index: '01', label: 'How it works', href: '/#how-it-works', match: 'hash:how-it-works' },
   { index: '02', label: 'Features', href: '/#features', match: 'hash:features' },
-  { index: '03', label: 'Pricing', href: '/pricing', match: '/pricing' },
-  { index: '04', label: 'FAQ', href: '/#faq', match: 'hash:faq' },
+  { index: '03', label: 'Download', href: '/downloads/', match: '/downloads' },
+  { index: '04', label: 'Pricing', href: '/pricing', match: '/pricing' },
+  { index: '05', label: 'FAQ', href: '/#faq', match: 'hash:faq' },
 ] as const;
 
 const studioNotes = [
   'Local-first workspace',
-  'Mac & Windows',
+  'macOS app',
   'Optional cloud boost',
 ] as const;
 
@@ -32,6 +33,9 @@ const tierNames: Record<string, string> = {
   pro: 'Alchemist',
   architect: 'Architect',
 };
+
+const DESKTOP_DOWNLOADS_URL =
+  process.env.NEXT_PUBLIC_DESKTOP_DOWNLOADS_URL ?? 'https://dreambees-alchemist.web.app/downloads/';
 
 function firstName(user: { displayName?: string | null; email?: string | null } | null) {
   if (!user) return null;
@@ -84,7 +88,7 @@ export function SiteFooter() {
   }, []);
 
   const linkActive = (match: string) => {
-    if (match.startsWith('/')) return pathname === match;
+    if (match.startsWith('/')) return pathname === match || pathname.startsWith(`${match}/`);
     if (pathname !== '/') return false;
     return hash === `#${match.slice(5)}`;
   };
@@ -551,7 +555,7 @@ export function SiteFooter() {
               </section>
 
               <nav className="site-footer-sitemap" aria-label="Footer navigation">
-                <p className="site-footer-heading">Visit the atelier</p>
+                <p className="site-footer-heading">Quick links</p>
                 <ul className="site-footer-links">
                   {sitemap.map((item) => (
                     <li key={item.href}>
@@ -593,10 +597,10 @@ export function SiteFooter() {
                 ))}
               </div>
               <div className="site-footer-actions">
-                <Link href="/#download" className="site-footer-btn site-footer-btn--primary">
+                <a href={DESKTOP_DOWNLOADS_URL} className="site-footer-btn site-footer-btn--primary">
                   <Download size={14} strokeWidth={2.5} />
-                  Download Lite
-                </Link>
+                  Download for macOS
+                </a>
                 <Link href={accountHref} className="site-footer-btn site-footer-btn--ghost">
                   {accountLabel}
                   <ArrowUpRight size={13} strokeWidth={2.5} />

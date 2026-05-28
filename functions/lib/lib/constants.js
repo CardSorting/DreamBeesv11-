@@ -7,7 +7,7 @@
 export const VALID_MODELS = [
     'nova-furry-xl', 'perfect-illustrious',
     'gray-color', 'scyrax-pastel', 'ani-detox', 'animij-v7', 'swijtspot-no1',
-    'wai-illustrious', 'flux-klein-9b',
+    'wai-illustrious',
     'rin-anime-blend', 'rin-anime-popcute',
     'crystal-cuteness', 'veretoon-v10',
     'flux-2-dev', 'chenkin-noob-xl',
@@ -23,7 +23,6 @@ export const ACTIVE_MODELS = [...VALID_MODELS];
  * These are exported here for backward compatibility
  */
 export const MODEL_IDS = {
-    FLUX_KLEIN: 'flux-klein-9b',
     WAI_ILLUSTRIOUS: 'wai-illustrious',
     CHENKIN_NOOB: 'chenkin-noob-xl',
     NOVA_3D: 'nova-3d-cg-xl',
@@ -38,7 +37,6 @@ export const B2_APP_KEY = process.env.B2_APP_KEY;
 export const B2_PUBLIC_URL = process.env.B2_PUBLIC_URL;
 export const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
 export const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
-export const MODAL_ENDPOINT = "https://mariecoderinc--flux-klein-9b-v2-flux-fastapi-app.modal.run";
 export const ENDPOINTS = {
     flux2dev: "https://api.cloudflare.com/client/v4/accounts/CLOUDFLARE_ACCOUNT_ID/ai/run/@cf/black-forest-labs/flux-1-dev"
 };

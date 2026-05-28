@@ -18,7 +18,7 @@ export class PromptPreprocessor {
         const qualityTagsApplied = processedPrompt !== originalPrompt;
         // 3. Re-wrap in domain model with processed prompt
         // Use the constructor to maintain domain integrity
-        const processedRequest = new ImageGenerationRequest(domainRequest.initiatorUid, domainRequest.requestorUid, processedPrompt, domainRequest.negativePrompt, domainRequest.modelId, domainRequest.aspectRatio, domainRequest.steps, domainRequest.cfg, domainRequest.seed, domainRequest.scheduler, domainRequest.idempotencyKey, domainRequest.targetUserId, domainRequest.image);
+        const processedRequest = new ImageGenerationRequest(domainRequest.initiatorUid, domainRequest.requestorUid, processedPrompt, domainRequest.negativePrompt, domainRequest.modelId, domainRequest.aspectRatio, domainRequest.steps, domainRequest.cfg, domainRequest.seed, domainRequest.scheduler, domainRequest.idempotencyKey, domainRequest.targetUserId);
         return {
             sanitizedRequest: processedRequest,
             qualityTagsApplied

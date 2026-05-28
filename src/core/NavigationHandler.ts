@@ -37,27 +37,6 @@ export class NavigationHandler {
   }
 
   /**
-   * Generates a variation/generation link based on a prompt.
-   * Pattern: /generate with query params
-   */
-  static generateGenerationUrl(
-    prompt: string,
-    modelId: string,
-    seed?: number
-  ): string {
-    const baseUrl = '/generate';
-    const params = new URLSearchParams();
-    params.set('prompt', prompt);
-    params.set('modelId', modelId);
-    
-    if (seed !== undefined) {
-      params.set('seed', seed.toString());
-    }
-    
-    return `${baseUrl}?${params.toString()}`;
-  }
-
-  /**
    * Checks if a path is a generation detail page.
    * Useful for showing context-sensitive actions.
    */

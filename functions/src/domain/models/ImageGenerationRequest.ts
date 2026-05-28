@@ -19,8 +19,7 @@ export class ImageGenerationRequest {
     public readonly seed: number,
     public readonly scheduler: string,
     public readonly idempotencyKey?: string,
-    public readonly targetUserId?: string,
-    public readonly image?: string
+    public readonly targetUserId?: string
   ) {
     this.validate();
   }
@@ -35,7 +34,7 @@ export class ImageGenerationRequest {
 
     // Extract request data (handle both raw and pre-wrapped formats)
     const data = raw.data || raw;
-    const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler, requestId, image, targetUserId, idempotencyKey } = data;
+    const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler, requestId, targetUserId, idempotencyKey } = data;
 
     // Determine initiator vs target
     const callerRole = raw.auth?.token?.role || 'user';
@@ -57,8 +56,7 @@ export class ImageGenerationRequest {
       parseInt(seed) || -1,
       scheduler || 'DPM++ 2M Karras',
       idempotencyKey,
-      targetUserId,
-      image
+      targetUserId
     );
   }
 

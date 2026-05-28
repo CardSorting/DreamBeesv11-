@@ -45,7 +45,14 @@ export const handleCreateGenerationRequest = async (request) => {
         // Check if orchestrator returned an error (properly typed check)
         const errorResult = result;
         if (errorResult.status) {
-            throw new HttpsError('internal', errorResult.error || 'Generation failed');
+            const msg = errorResult.error || 'Generation failed';
+            if (/insufficient|funds|zaps|exhausted|limit exceeded/i.test(msg)) {
+                throw new HttpsError('failed-precondition', msg);
+            }
+            if (/degraded|unavailable|too many active/i.test(msg)) {
+                throw new HttpsError('resource-exhausted', msg);
+            }
+            throw new HttpsError('internal', msg);
         }
         // 4. Return Firebase-specific response (result is guaranteed to be GenerationResult here - type guard passed)
         const generatedResult = result;
@@ -98,7 +105,7 @@ async function enqueueGenerationTaskWithRetry(requestId, ctx, userId) {
  * Help: Enqueue generation task for worker (Infrastructure)
  */
 async function enqueueGenerationTask(requestId, ctx, userId) {
-    const { prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler, image } = ctx;
+    const { prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler } = ctx;
     const taskData = {
         taskType: 'image',
         requestId,
@@ -109,8 +116,7 @@ async function enqueueGenerationTask(requestId, ctx, userId) {
         steps: steps || 30,
         cfg: cfg || 7.0,
         aspectRatio: aspectRatio || "1:1",
-        scheduler: scheduler || 'DPM++ 2M Karras',
-        image
+        scheduler: scheduler || 'DPM++ 2M Karras'
     };
     const LOCATION = "us-central1";
     const queue = getFunctions().taskQueue(`locations/${LOCATION}/functions/urgentWorker`);

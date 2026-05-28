@@ -7,7 +7,6 @@
 // 1. Model ID Definitions (Domain Layer)
 // ==============================================================================
 export const MODEL_IDS = {
-    FLUX_KLEIN: 'flux-klein-9b',
     WAI_ILLUSTRIOUS: 'wai-illustrious',
     CHENKIN_NOOB: 'chenkin-noob-xl',
     NOVA_3D: 'nova-3d-cg-xl',
@@ -17,7 +16,6 @@ export const MODEL_IDS = {
 // 2. Backend Endpoint Mapping (Infrastructure Layer)
 // ==============================================================================
 export const MODEL_ENDPOINTS = {
-    [MODEL_IDS.FLUX_KLEIN]: 'https://mariecoderinc--flux-klein-9b-v2-flux-fastapi-app.modal.run',
     [MODEL_IDS.Z_IMAGE_TURBO]: 'https://mariecoderinc--zit-a100-stable-fastapi-app.modal.run'
 };
 export function isValidModelId(id) {
@@ -27,12 +25,6 @@ export function isValidModelId(id) {
 // 3. Generation Parameters (Domain-Specific)
 // ==============================================================================
 export const MODEL_GENERATION_PARAMS = {
-    [MODEL_IDS.FLUX_KLEIN]: {
-        defaultSteps: 4,
-        cfg: 7.5,
-        width: 1024,
-        height: 1024
-    },
     [MODEL_IDS.WAI_ILLUSTRIOUS]: {
         hiresFix: true
     },

@@ -4,9 +4,10 @@
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { formatPendingTimeRemaining } from '../lib/generationFlow';
+import { getDesktopDownloadUrl } from '../lib/desktopDownload';
 import { useLite } from '../contexts/LiteContext';
 import PictureThumb from '../components/PictureThumb';
-import { IconImage, IconLogOut, IconMagic, IconUser, IconZap } from '../icons';
+import { IconDownload, IconImage, IconLogOut, IconMagic, IconUser, IconZap } from '../icons';
 
 function getDisplayName(email?: string | null, name?: string | null) {
     if (name) return name.split(' ')[0];
@@ -30,6 +31,7 @@ export default function UserProfile() {
     const displayName = getDisplayName(currentUser?.email, currentUser?.displayName);
     const creditsLabel = zaps === 'unlimited' ? 'Unlimited' : String(zaps);
     const pendingTimeHint = pendingGeneration ? formatPendingTimeRemaining(pendingGeneration) : null;
+    const desktopDownloadUrl = getDesktopDownloadUrl();
 
     return (
         <div className="profile-simple fade-in">
@@ -69,6 +71,14 @@ export default function UserProfile() {
                     <Link to="/" className="big-button">
                         <IconMagic size={18} /> Pick a style
                     </Link>
+                    <a
+                        href={desktopDownloadUrl}
+                        className="big-button"
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        <IconDownload size={18} /> Download desktop app
+                    </a>
                     <button type="button" className="big-button danger" onClick={handleLogout}>
                         <IconLogOut size={18} /> Sign out
                     </button>

@@ -133,7 +133,7 @@ async function enqueueGenerationTask(
   ctx: any,
   userId: string
 ): Promise<void> {
-  const { prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler, image } = ctx;
+  const { prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler } = ctx;
 
   const taskData = {
     taskType: 'image',
@@ -145,8 +145,7 @@ async function enqueueGenerationTask(
     steps: steps || 30,
     cfg: cfg || 7.0,
     aspectRatio: aspectRatio || "1:1",
-    scheduler: scheduler || 'DPM++ 2M Karras',
-    image
+    scheduler: scheduler || 'DPM++ 2M Karras'
   };
 
   const LOCATION = "us-central1";

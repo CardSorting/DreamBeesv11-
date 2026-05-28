@@ -11,7 +11,8 @@ const db = admin.firestore();
 
 const DEPRECATED_MODEL_IDS = [
     'lightricks-ltx-2-pro',
-    'flux-2-dev'
+    'flux-2-dev',
+    'flux-klein-9b'
 ];
 
 const MODELS = [
@@ -82,15 +83,6 @@ const MODELS = [
         image: 'https://cdn.dreambeesai.com/file/printeregg/assets/landing/wai_illustrious_preview.png'
     },
     {
-        id: 'flux-klein-9b',
-        name: 'Flux (Klein 9B)',
-        description: 'Advanced FLUX model variant (9B parameters) on A100 GPUs.',
-        type: 'Flux',
-        order: 14,
-        isActive: true,
-        hideFromGenerator: true // Hidden from manual selection, used for Remix/Edit only
-    },
-    {
         id: 'z-image-turbo-a100',
         name: 'Z-Image Turbo',
         description: 'Ultra-fast image generation model optimized for quick iteration on A100 GPUs.',
@@ -111,6 +103,14 @@ async function seedModels() {
     for (const modelId of DEPRECATED_MODEL_IDS) {
         await collectionRef.doc(modelId).delete();
         console.log(`✕ Deleted deprecated model: ${modelId}`);
+
+        const showcaseSnap = await db.collection('model_showcase_images')
+            .where('modelId', '==', modelId)
+            .get();
+        for (const doc of showcaseSnap.docs) {
+            await doc.ref.delete();
+            console.log(`✕ Deleted showcase image for ${modelId}: ${doc.id}`);
+        }
     }
 
     for (const model of MODELS) {

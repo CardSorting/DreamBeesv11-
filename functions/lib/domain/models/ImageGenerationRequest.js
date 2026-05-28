@@ -17,9 +17,8 @@ export class ImageGenerationRequest {
     scheduler;
     idempotencyKey;
     targetUserId;
-    image;
     constructor(initiatorUid, requestorUid, // User making the request (could be target or initiator)
-    prompt, negativePrompt, modelId, aspectRatio, steps, cfg, seed, scheduler, idempotencyKey, targetUserId, image) {
+    prompt, negativePrompt, modelId, aspectRatio, steps, cfg, seed, scheduler, idempotencyKey, targetUserId) {
         this.initiatorUid = initiatorUid;
         this.requestorUid = requestorUid;
         this.prompt = prompt;
@@ -32,7 +31,6 @@ export class ImageGenerationRequest {
         this.scheduler = scheduler;
         this.idempotencyKey = idempotencyKey;
         this.targetUserId = targetUserId;
-        this.image = image;
         this.validate();
     }
     /**
@@ -44,7 +42,7 @@ export class ImageGenerationRequest {
         const requestor = raw.auth?.uid;
         // Extract request data (handle both raw and pre-wrapped formats)
         const data = raw.data || raw;
-        const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler, requestId, image, targetUserId, idempotencyKey } = data;
+        const { prompt, negative_prompt, modelId, aspectRatio, steps, cfg, seed, scheduler, requestId, targetUserId, idempotencyKey } = data;
         // Determine initiator vs target
         const callerRole = raw.auth?.token?.role || 'user';
         const realRequestor = (['admin', 'system'].includes(callerRole) && targetUserId) ? targetUserId : initiator;
@@ -53,7 +51,7 @@ export class ImageGenerationRequest {
         const sanitizedNegativePrompt = sanitizePrompt(negative_prompt);
         return new ImageGenerationRequest(initiator, // Cost/billing tracks to initiator
         realRequestor, // Actual user executing
-        sanitizedPrompt, sanitizedNegativePrompt, modelId || "wai-illustrious", aspectRatio || "1:1", parseInt(steps) || 30, parseFloat(cfg) || 7.0, parseInt(seed) || -1, scheduler || 'DPM++ 2M Karras', idempotencyKey, targetUserId, image);
+        sanitizedPrompt, sanitizedNegativePrompt, modelId || "wai-illustrious", aspectRatio || "1:1", parseInt(steps) || 30, parseFloat(cfg) || 7.0, parseInt(seed) || -1, scheduler || 'DPM++ 2M Karras', idempotencyKey, targetUserId);
     }
     /**
      * Validate request adheres to business rules

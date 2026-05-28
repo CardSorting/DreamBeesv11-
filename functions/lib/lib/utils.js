@@ -39,8 +39,12 @@ export const handleError = (error, context = {}) => {
         return new HttpsError('deadline-exceeded', "The operation timed out. Please try again.", error);
     }
     // Auth/Permissions (generic catch from libraries)
-    if (msg.includes("unauthorized") || msg.includes("forbidden") || msg.includes("permission") || msg.includes("insufficient")) {
+    if (msg.includes("unauthorized") || msg.includes("forbidden") || msg.includes("permission")) {
         return new HttpsError('permission-denied', "Action not authorized or insufficient permissions.", error);
+    }
+    // Billing / quota (do not classify as permission-denied)
+    if (msg.includes("insufficient") || msg.includes("funds") || msg.includes("zaps")) {
+        return new HttpsError('failed-precondition', error.message || "Insufficient credits.", error);
     }
     // Default to Internal (obfuscated for security, but logged above)
     return new HttpsError('internal', "An unexpected internal error occurred. Our team has been notified.");

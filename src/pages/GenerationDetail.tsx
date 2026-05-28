@@ -4,9 +4,7 @@
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
-    IconCheck,
     IconChevronRight,
     IconLayers,
     IconZap
@@ -50,7 +48,6 @@ export default function GenerationDetail() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [copied, setCopied] = useState(false);
-    const [isCompareMode, setIsCompareMode] = useState(false);
 
     const orchestrator = useMemo(
         () => new GenerationOrchestrator(new GenerationRepository()),
@@ -191,11 +188,6 @@ export default function GenerationDetail() {
         }
     };
 
-    // Handle compare mode toggle
-    const toggleCompareMode = () => {
-        setIsCompareMode(!isCompareMode);
-    };
-
     if (isLoading) {
         return (
             <div className="generation-detail-loading glass-immersive">
@@ -329,35 +321,9 @@ export default function GenerationDetail() {
                         prompt={generation.prompt}
                         modelId={generation.modelId}
                         generationTime={generation.generationTime}
-                        onToggleCompare={toggleCompareMode}
                     />
                 </div>
             </div>
-
-            {/* Overlay for compare mode (when it exists in future) */}
-            <AnimatePresence>
-                {isCompareMode && (
-                    <motion.div
-                        className="compare-overlay"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                    >
-                        <div className="compare-header">
-                            <h3>Similar Generations</h3>
-                            <button onClick={toggleCompareMode} aria-label="Close compare">
-                                <IconCheck size={24} rotation={180} />
-                            </button>
-                        </div>
-                        <div className="compare-content">
-                            {/* Future: Load similar generations */}
-                            <p className="compare-placeholder">
-                                Coming soon: Compare with similar variations
-                            </p>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     );
 }

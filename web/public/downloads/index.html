@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DreamBees Lite for macOS</title>
+    <meta
+      name="description"
+      content="Install DreamBees Lite for macOS. App Store-style download page with clear requirements, setup steps, and support."
+    />
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+        color: #f8fafc;
+        background: radial-gradient(circle at 14% -8%, #2f2355 0%, #0b0b11 45%, #060609 100%);
+      }
+      .container { max-width: 1080px; margin: 0 auto; padding: 18px 20px 88px; }
+      .topnav {
+        position: sticky; top: 0; z-index: 20;
+        display: flex; justify-content: space-between; align-items: center; gap: 12px;
+        margin-bottom: 20px; padding: 12px 14px;
+        border: 1px solid rgba(255,255,255,0.12); border-radius: 14px;
+        background: rgba(9,9,14,0.88); backdrop-filter: blur(10px);
+      }
+      .brand { font-weight: 800; letter-spacing: 0.01em; }
+      .crumbs { color: #94a3b8; font-size: 0.8rem; margin-top: 2px; }
+      .navlinks { display: flex; gap: 14px; flex-wrap: wrap; }
+      .navlinks a { color: #cbd5e1; text-decoration: none; font-size: 0.92rem; font-weight: 600; }
+      .hero {
+        display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 16px;
+        margin-top: 16px;
+      }
+      .card {
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 20px; background: rgba(255,255,255,0.04);
+      }
+      .copy { padding: 28px; }
+      h1 {
+        margin: 0; font-size: clamp(2rem, 5.2vw, 3.8rem);
+        line-height: 0.98; letter-spacing: -0.05em;
+      }
+      .sub { margin-top: 14px; color: #cbd5e1; line-height: 1.7; max-width: 56ch; }
+      .store-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+      .chip {
+        padding: 7px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 700;
+        border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.03); color: #e2e8f0;
+      }
+      .cta { margin-top: 22px; display: flex; gap: 10px; flex-wrap: wrap; }
+      .btn {
+        min-height: 48px; padding: 0 18px; border-radius: 12px;
+        display: inline-flex; align-items: center; justify-content: center;
+        text-decoration: none; font-weight: 800; font-size: 0.95rem;
+      }
+      .btn-primary { color: #fff; background: linear-gradient(135deg, #7c3aed, #a855f7); }
+      .btn-secondary {
+        color: #f8fafc; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.04);
+      }
+      .small {
+        margin-top: 10px; font-size: 0.82rem; color: #94a3b8;
+      }
+      .preview { padding: 16px; display: grid; gap: 10px; }
+      .window {
+        border: 1px solid rgba(255,255,255,0.14); border-radius: 14px; overflow: hidden;
+        background: linear-gradient(140deg, rgba(251,191,36,0.22), rgba(168,85,247,0.18), rgba(59,130,246,0.2));
+      }
+      .window-top {
+        padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.14);
+        background: rgba(0,0,0,0.22); font-size: 0.78rem; color: #e2e8f0;
+      }
+      .window-body {
+        height: 212px; display: grid; place-items: center; color: rgba(255,255,255,0.8); font-weight: 700;
+      }
+      .stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+      .stat {
+        padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(0,0,0,0.22); text-align: center;
+      }
+      .stat strong { display: block; font-size: 0.9rem; }
+      .stat span { color: #94a3b8; font-size: 0.74rem; }
+      .section { margin-top: 14px; padding: 22px; }
+      .section h2 { margin: 0 0 12px; font-size: 1.2rem; }
+      .section-lead { margin: 0 0 14px; color: #cbd5e1; line-height: 1.6; }
+      .trust-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .trust-item {
+        padding: 12px;
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 10px;
+        background: rgba(0,0,0,0.2);
+      }
+      .trust-item strong { display: block; margin-bottom: 6px; }
+      .trust-item p { margin: 0; color: #cbd5e1; line-height: 1.5; font-size: 0.9rem; }
+      .grid-3 { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+      .tile {
+        padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2);
+      }
+      .tile strong { display: block; margin-bottom: 6px; }
+      .tile p { margin: 0; color: #cbd5e1; font-size: 0.9rem; line-height: 1.5; }
+      .steps { display: grid; gap: 8px; }
+      .step {
+        display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: start;
+        padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2);
+      }
+      .num {
+        width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center;
+        background: rgba(124,58,237,0.22); border: 1px solid rgba(255,255,255,0.16); font-weight: 800; font-size: 0.8rem;
+      }
+      .reqs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .req {
+        padding: 12px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(0,0,0,0.2);
+      }
+      .req .label { display: block; color: #94a3b8; font-size: 0.78rem; margin-bottom: 4px; }
+      .faq { display: grid; gap: 8px; }
+      .release-note {
+        margin-top: 10px;
+        padding: 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(0,0,0,0.2);
+      }
+      .release-note p { margin: 4px 0 0; color: #cbd5e1; font-size: 0.9rem; }
+      .shots {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .shot {
+        overflow: hidden;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(0,0,0,0.2);
+      }
+      .shot img {
+        width: 100%;
+        display: block;
+        aspect-ratio: 16 / 10;
+        object-fit: cover;
+      }
+      .shot figcaption {
+        padding: 10px 12px;
+        color: #cbd5e1;
+        font-size: 0.86rem;
+      }
+      details {
+        border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(0,0,0,0.2); padding: 10px 12px;
+      }
+      summary { cursor: pointer; font-weight: 700; }
+      details p { margin: 10px 0 0; color: #cbd5e1; line-height: 1.55; }
+      .footer-cta {
+        margin-top: 14px; text-align: center; padding: 18px;
+        border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; background: rgba(255,255,255,0.03);
+      }
+      .footer-cta p { margin: 0 0 12px; color: #cbd5e1; }
+      .sticky-download {
+        position: sticky;
+        bottom: 10px;
+        z-index: 25;
+        margin-top: 16px;
+        padding: 10px;
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 14px;
+        background: rgba(7,7,10,0.92);
+        backdrop-filter: blur(10px);
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .sticky-download span {
+        color: #cbd5e1;
+        font-size: 0.9rem;
+      }
+      @media (max-width: 940px) {
+        .hero { grid-template-columns: 1fr; }
+        .grid-3, .reqs, .stats, .shots, .trust-grid { grid-template-columns: 1fr; }
+        .sticky-download { flex-direction: column; align-items: stretch; }
+        .sticky-download span { text-align: center; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="container">
+      <nav class="topnav" aria-label="Downloads navigation">
+        <div>
+          <div class="brand">DreamBees Lite for macOS</div>
+          <div class="crumbs">Home / Downloads / Mac</div>
+        </div>
+        <div class="navlinks">
+          <a href="#overview">Overview</a>
+          <a href="#before-download">Before download</a>
+          <a href="#install">How to install</a>
+          <a href="#requirements">Requirements</a>
+          <a href="#whats-new">What's new</a>
+          <a href="#faq">FAQ</a>
+          <a href="/auth">Open web app</a>
+        </div>
+      </nav>
+
+      <section id="overview" class="hero">
+        <article class="card copy">
+          <h1>Create faster with the native Mac app.</h1>
+          <p class="sub">
+            DreamBees Lite is a focused desktop studio for image generation. This page is intentionally Mac-only,
+            with one clear installer and beginner-friendly setup steps.
+          </p>
+          <div class="store-meta">
+            <span class="chip">macOS only</span>
+            <span class="chip">Apple Silicon optimized</span>
+            <span class="chip">Direct DMG installer</span>
+            <span class="chip">Version 1.4.11</span>
+          </div>
+          <div class="cta">
+            <a class="btn btn-primary" href="/downloads/dreambees-lite-mac.dmg">Download for macOS</a>
+            <a class="btn btn-secondary" href="/auth">Use web app first</a>
+          </div>
+          <p class="small">Need help after download? Scroll to "How to install" for step-by-step setup.</p>
+        </article>
+        <aside class="card preview">
+          <div class="window">
+            <div class="window-top">DreamBees Lite · Mac Edition</div>
+            <div class="window-body">Native desktop creation workspace</div>
+          </div>
+          <div class="stats" aria-label="Quick product facts">
+            <div class="stat"><strong>macOS</strong><span>Platform support</span></div>
+            <div class="stat"><strong>DMG</strong><span>Installer format</span></div>
+            <div class="stat"><strong>Local-first</strong><span>Default workflow</span></div>
+          </div>
+        </aside>
+      </section>
+
+      <section id="before-download" class="card section">
+        <h2>Before you download</h2>
+        <p class="section-lead">This quick checklist removes surprises and matches familiar app-store expectations.</p>
+        <div class="trust-grid">
+          <article class="trust-item">
+            <strong>Platform fit</strong>
+            <p>This installer is for macOS only and optimized for Apple Silicon Macs.</p>
+          </article>
+          <article class="trust-item">
+            <strong>Direct source</strong>
+            <p>You are downloading directly from the official DreamBees Hosting domain.</p>
+          </article>
+          <article class="trust-item">
+            <strong>Simple install path</strong>
+            <p>Open DMG, drag to Applications, launch app. No technical configuration required.</p>
+          </article>
+          <article class="trust-item">
+            <strong>Support fallback</strong>
+            <p>If install feels unclear, continue with the web app and get support from your account.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="card section">
+        <h2>Why creators install the Mac app</h2>
+        <div class="grid-3">
+          <article class="tile">
+            <strong>Single-purpose workspace</strong>
+            <p>No tab juggling. Keep prompts, styles, and outputs in one dedicated app.</p>
+          </article>
+          <article class="tile">
+            <strong>Local-first by design</strong>
+            <p>Your working context stays on your machine by default with optional cloud acceleration.</p>
+          </article>
+          <article class="tile">
+            <strong>Beginner-friendly flow</strong>
+            <p>Describe, choose, generate, save. Same familiar path every time.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="card section">
+        <h2>App preview gallery</h2>
+        <p class="section-lead">These are visual placeholders matching production aspect ratios. Replace them with final screenshots when ready.</p>
+        <div class="shots">
+          <figure class="shot">
+            <img src="/downloads/placeholder-studio-home.svg" alt="Placeholder screenshot for studio home view" />
+            <figcaption>Home studio view placeholder</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="/downloads/placeholder-generation-flow.svg" alt="Placeholder screenshot for generation flow view" />
+            <figcaption>Generation flow placeholder</figcaption>
+          </figure>
+          <figure class="shot">
+            <img src="/downloads/placeholder-history-library.svg" alt="Placeholder screenshot for history and library view" />
+            <figcaption>History and library placeholder</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section id="install" class="card section">
+        <h2>How to install (non-technical)</h2>
+        <div class="steps">
+          <div class="step"><span class="num">1</span><div><strong>Download the installer</strong><div>Click <em>Download for macOS</em> above.</div></div></div>
+          <div class="step"><span class="num">2</span><div><strong>Open the DMG file</strong><div>Double-click the downloaded file in your Downloads folder.</div></div></div>
+          <div class="step"><span class="num">3</span><div><strong>Move app to Applications</strong><div>Drag <em>DreamBees Lite</em> into the Applications folder.</div></div></div>
+          <div class="step"><span class="num">4</span><div><strong>Launch DreamBees Lite</strong><div>Open it from Applications and sign in to start creating.</div></div></div>
+        </div>
+      </section>
+
+      <section class="card section">
+        <h2>What happens after you click download</h2>
+        <div class="steps">
+          <div class="step"><span class="num">A</span><div><strong>File downloads to your Mac</strong><div>The installer appears in Downloads as a DMG file.</div></div></div>
+          <div class="step"><span class="num">B</span><div><strong>Install in Applications</strong><div>You drag DreamBees Lite into Applications like standard Mac apps.</div></div></div>
+          <div class="step"><span class="num">C</span><div><strong>Sign in and start creating</strong><div>Open the app and continue with the same account you use on web.</div></div></div>
+        </div>
+      </section>
+
+      <section id="requirements" class="card section">
+        <h2>System requirements</h2>
+        <div class="reqs">
+          <div class="req"><span class="label">Operating system</span><strong>macOS 13 or newer</strong></div>
+          <div class="req"><span class="label">Processor</span><strong>Apple Silicon (M1/M2/M3+)</strong></div>
+          <div class="req"><span class="label">Disk space</span><strong>At least 1 GB free</strong></div>
+          <div class="req"><span class="label">Network</span><strong>Needed for cloud generation and sign-in</strong></div>
+        </div>
+      </section>
+
+      <section id="faq" class="card section">
+        <h2>Frequently asked questions</h2>
+        <div class="faq">
+          <details><summary>Do I need technical setup?</summary><p>No. Download the DMG, drag the app to Applications, then open it.</p></details>
+          <details><summary>Can I still use the web app?</summary><p>Yes. The web app remains available for on-the-go use; the Mac app is an optional install.</p></details>
+          <details><summary>Where do I get support?</summary><p>If anything feels unclear, return to the web app and contact support from your account area.</p></details>
+        </div>
+      </section>
+
+      <section id="whats-new" class="card section">
+        <h2>What's new in this release</h2>
+        <div class="release-note">
+          <strong>Version 1.4.11</strong>
+          <p>Mac installer packaging and hosting flow improvements for clearer downloads and smoother install navigation.</p>
+        </div>
+        <div class="release-note">
+          <strong>Download page update</strong>
+          <p>Added step-by-step onboarding, requirements, FAQs, and screenshot placeholders for an App Store-like experience.</p>
+        </div>
+      </section>
+
+      <section class="footer-cta">
+        <p>Ready to install DreamBees Lite for macOS?</p>
+        <a class="btn btn-primary" href="/downloads/dreambees-lite-mac.dmg">Download for macOS</a>
+      </section>
+      <section class="sticky-download" aria-label="Sticky download call to action">
+        <span>DreamBees Lite for macOS — one-click direct installer</span>
+        <a class="btn btn-primary" href="/downloads/dreambees-lite-mac.dmg">Download for macOS</a>
+      </section>
+    </main>
+  </body>
+</html>

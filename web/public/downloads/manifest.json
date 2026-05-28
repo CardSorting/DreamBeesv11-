@@ -1,0 +1,11 @@
+{
+  "version": "1.4.11",
+  "generatedAt": "2026-05-28T10:18:27.746Z",
+  "files": {
+    "mac": {
+      "stable": "/downloads/dreambees-lite-mac.dmg",
+      "versioned": "/downloads/dreambees-lite-1.4.11-mac.dmg",
+      "sourceFile": "DreamBees Lite-1.4.11-arm64.dmg"
+    }
+  }
+}
