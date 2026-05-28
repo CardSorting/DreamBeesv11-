@@ -49,28 +49,28 @@ const BUILTIN_MODELS: AIModel[] = [
         id: 'wai-illustrious',
         name: 'WAI Illustrious',
         description: 'Illustration + character art. Great for cute, sticker, and storybook looks.',
-        image: '/build/icon.png',
+        image: '/models/wai-illustrious.png',
         order: 1
     },
     {
         id: 'flux-realistic',
         name: 'Flux Realistic',
         description: 'Photo-like lighting and detail. Great for portraits and product shots.',
-        image: '/build/icon.png',
+        image: '/assets/styles/hr_core.png',
         order: 2
     },
     {
         id: 'cinematic',
         name: 'Cinematic',
         description: 'Dramatic lighting, film look, and rich mood.',
-        image: '/build/icon.png',
+        image: '/assets/styles/spooky_cinema.png',
         order: 3
     },
     {
         id: 'creative',
         name: 'Creative',
         description: 'Stylized and imaginative. Good for fantasy scenes and playful ideas.',
-        image: '/build/icon.png',
+        image: '/assets/styles/dreamy_soft.png',
         order: 4
     }
 ];
@@ -103,6 +103,8 @@ interface LiteContextType {
     userTier: 'free' | 'pro' | 'architect';
     zaps: number | 'unlimited';
     addToast: (message: string, type?: 'success' | 'error' | 'loading', id?: string) => string;
+    sidebarCollapsed: boolean;
+    toggleSidebar: () => void;
 }
 
 const LiteContext = createContext<LiteContextType | undefined>(undefined);
@@ -142,6 +144,20 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     const [userTier, setUserTier] = useState<'free' | 'pro' | 'architect'>('free');
     const [zaps, setZaps] = useState<number | 'unlimited'>(10);
     const [pendingRevision, setPendingRevision] = useState(0);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('sidebar_collapsed') === 'true';
+        }
+        return false;
+    });
+
+    const toggleSidebar = useCallback(() => {
+        setSidebarCollapsed((prev) => {
+            const next = !prev;
+            localStorage.setItem('sidebar_collapsed', String(next));
+            return next;
+        });
+    }, []);
 
     const bumpPendingRevision = useCallback(() => {
         setPendingRevision((v) => v + 1);
@@ -1143,7 +1159,9 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             generateStartTime, generate, dismissStuckPending,
             login, signup, logout, loginWithGoogle, isOffline, userTier, zaps,
             addToast,
-            modelsError
+            modelsError,
+            sidebarCollapsed,
+            toggleSidebar
         }}>
             {children}
         </LiteContext.Provider>

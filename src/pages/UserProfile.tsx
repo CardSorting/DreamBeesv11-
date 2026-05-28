@@ -1,13 +1,12 @@
 /**
  * [LAYER: INFRASTRUCTURE]
  */
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatPendingTimeRemaining } from '../lib/generationFlow';
-import { getDesktopDownloadUrl } from '../lib/desktopDownload';
 import { useLite } from '../contexts/LiteContext';
 import PictureThumb from '../components/PictureThumb';
-import { IconDownload, IconImage, IconLogOut, IconMagic, IconUser, IconZap } from '../icons';
+import { IconRefresh, IconImage, IconLogOut, IconMagic, IconUser, IconZap } from '../icons';
 
 function getDisplayName(email?: string | null, name?: string | null) {
     if (name) return name.split(' ')[0];
@@ -17,6 +16,7 @@ function getDisplayName(email?: string | null, name?: string | null) {
 
 export default function UserProfile() {
     const { currentUser, logout, displayHistory, pendingGeneration, dismissStuckPending, addToast, zaps } = useLite();
+    const [updateChecking, setUpdateChecking] = useState(false);
 
     const handleLogout = async () => {
         try {
@@ -27,11 +27,37 @@ export default function UserProfile() {
         }
     };
 
+    const checkUpdates = async () => {
+        setUpdateChecking(true);
+        try {
+            let currentVersion = '1.4.11';
+            const isElectron = typeof window !== 'undefined' && Boolean(window.electronAPI);
+            if (isElectron && window.electronAPI?.lite?.health) {
+                const health = await window.electronAPI.lite.health();
+                currentVersion = health.appVersion || currentVersion;
+            }
+
+            const response = await fetch('https://dreambees-alchemist.firebaseapp.com/downloads/manifest.json');
+            if (!response.ok) throw new Error('Could not connect to update servers');
+            
+            const manifest = await response.json();
+            if (manifest.version && manifest.version !== currentVersion) {
+                addToast(`Update available: v${manifest.version}! Please download the installer from our web portal.`, 'success');
+            } else {
+                addToast(`DreamBees Lite is up to date (v${currentVersion}).`, 'success');
+            }
+        } catch (err: any) {
+            console.error(err);
+            addToast('Unable to check for updates. Update server offline.', 'error');
+        } finally {
+            setUpdateChecking(false);
+        }
+    };
+
     const pictures = useMemo(() => [...displayHistory], [displayHistory]);
     const displayName = getDisplayName(currentUser?.email, currentUser?.displayName);
     const creditsLabel = zaps === 'unlimited' ? 'Unlimited' : String(zaps);
     const pendingTimeHint = pendingGeneration ? formatPendingTimeRemaining(pendingGeneration) : null;
-    const desktopDownloadUrl = getDesktopDownloadUrl();
 
     return (
         <div className="profile-simple fade-in">
@@ -71,14 +97,10 @@ export default function UserProfile() {
                     <Link to="/" className="big-button">
                         <IconMagic size={18} /> Pick a style
                     </Link>
-                    <a
-                        href={desktopDownloadUrl}
-                        className="big-button"
-                        target="_blank"
-                        rel="noreferrer"
-                    >
-                        <IconDownload size={18} /> Download desktop app
-                    </a>
+                    <button type="button" className="big-button" onClick={checkUpdates} disabled={updateChecking}>
+                        <IconRefresh size={18} className={updateChecking ? 'spin' : ''} />
+                        {updateChecking ? 'Checking...' : 'Check for Updates'}
+                    </button>
                     <button type="button" className="big-button danger" onClick={handleLogout}>
                         <IconLogOut size={18} /> Sign out
                     </button>

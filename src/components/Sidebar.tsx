@@ -1,11 +1,10 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useLite } from '../contexts/LiteContext';
-import { IconHome, IconZap, IconUser, IconLogOut, IconSparkles, IconMagic } from '../icons';
-import { motion } from 'framer-motion';
+import { IconHome, IconZap, IconUser, IconLogOut, IconSparkles, IconMagic, IconChevronLeft, IconChevronRight } from '../icons';
 
 export default function Sidebar() {
-    const { currentUser, logout, userTier, zaps, isOffline, addToast } = useLite();
+    const { currentUser, logout, userTier, zaps, isOffline, addToast, sidebarCollapsed, toggleSidebar } = useLite();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
@@ -43,33 +42,44 @@ export default function Sidebar() {
     };
 
     return (
-        <aside className="sidebar glass-immersive">
+        <aside className={`sidebar glass-immersive ${sidebarCollapsed ? 'collapsed' : ''}`}>
             {/* Logo Header */}
             <div className="sidebar-header">
-                <div className="logo-box">
-                    <IconSparkles size={20} className="logo-icon" />
+                <div className="logo-box-group">
+                    <div className="logo-box">
+                        <IconSparkles size={20} className="logo-icon" />
+                    </div>
+                    <div className="brand-meta">
+                        <span className="brand-title">DreamBees</span>
+                        <span className="brand-version">Lite v1.4.11</span>
+                    </div>
                 </div>
-                <div className="brand-meta">
-                    <span className="brand-title">DreamBees</span>
-                    <span className="brand-version">Lite v1.4.11</span>
-                </div>
+                <button 
+                    type="button" 
+                    className="btn-sidebar-toggle" 
+                    onClick={toggleSidebar}
+                    aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                    title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                >
+                    {sidebarCollapsed ? <IconChevronRight size={16} /> : <IconChevronLeft size={16} />}
+                </button>
             </div>
 
             {/* Navigation links */}
             <nav className="sidebar-nav">
-                <NavLink to="/" className={({ isActive }) => `side-nav-item ${isActive ? 'active' : ''}`}>
+                <NavLink to="/" className={({ isActive }) => `side-nav-item ${isActive ? 'active' : ''}`} data-tooltip="Explore Styles">
                     <IconHome size={20} />
                     <span className="nav-label">Explore Styles</span>
                     <div className="active-indicator" />
                 </NavLink>
 
-                <NavLink to="/generate" className={({ isActive }) => `side-nav-item ${isActive ? 'active' : ''}`}>
+                <NavLink to="/generate" className={({ isActive }) => `side-nav-item ${isActive ? 'active' : ''}`} data-tooltip="Create Canvas">
                     <IconZap size={20} />
                     <span className="nav-label">Create Canvas</span>
                     <div className="active-indicator" />
                 </NavLink>
 
-                <NavLink to="/profile" className={({ isActive }) => `side-nav-item ${isActive ? 'active' : ''}`}>
+                <NavLink to="/profile" className={({ isActive }) => `side-nav-item ${isActive ? 'active' : ''}`} data-tooltip="My Profile">
                     <IconUser size={20} />
                     <span className="nav-label">My Profile</span>
                     <div className="active-indicator" />
@@ -104,14 +114,14 @@ export default function Sidebar() {
                             </span>
                         </div>
 
-                        <button type="button" className="btn-logout" onClick={handleLogout} title="Sign Out">
+                        <button type="button" className="btn-logout" onClick={handleLogout} title="Sign Out" data-tooltip="Sign Out">
                             <IconLogOut size={16} />
                             <span className="logout-text">Sign Out</span>
                         </button>
                     </div>
                 ) : (
                     <div className="auth-prompt-panel">
-                        <NavLink to="/auth" className="btn-sidebar-auth">
+                        <NavLink to="/auth" className="btn-sidebar-auth" data-tooltip="Sign In">
                             <IconUser size={16} />
                             <span>Sign in</span>
                         </NavLink>
@@ -140,9 +150,16 @@ export default function Sidebar() {
                 .sidebar-header {
                     display: flex;
                     align-items: center;
-                    gap: 12px;
+                    justify-content: space-between;
                     margin-bottom: 32px;
                     padding: 0 4px;
+                    width: 100%;
+                }
+
+                .logo-box-group {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
                 }
 
                 .logo-box {
@@ -176,6 +193,27 @@ export default function Sidebar() {
                     font-size: 0.65rem;
                     color: var(--color-zinc-500);
                     font-weight: 700;
+                }
+
+                .btn-sidebar-toggle {
+                    background: transparent;
+                    border: none;
+                    color: var(--color-zinc-500);
+                    cursor: pointer;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 8px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.2s ease;
+                    border: 1px solid transparent;
+                }
+
+                .btn-sidebar-toggle:hover {
+                    color: #fff;
+                    background: rgba(255, 255, 255, 0.05);
+                    border-color: rgba(255, 255, 255, 0.08);
                 }
 
                 .sidebar-nav {
@@ -382,6 +420,7 @@ export default function Sidebar() {
                     font-weight: 800;
                     cursor: pointer;
                     transition: all 0.2s ease;
+                    position: relative;
                 }
 
                 .btn-logout:hover {
@@ -405,10 +444,104 @@ export default function Sidebar() {
                     text-decoration: none;
                     text-align: center;
                     transition: background 0.2s ease;
+                    position: relative;
                 }
 
                 .btn-sidebar-auth:hover {
                     background: #9d76fa;
+                }
+
+                /* Collapsed sidebar layout styles */
+                .sidebar.collapsed {
+                    width: 76px;
+                    padding: 24px 8px;
+                    align-items: center;
+                }
+                .sidebar.collapsed .brand-meta, 
+                .sidebar.collapsed .nav-label, 
+                .sidebar.collapsed .brand-version, 
+                .sidebar.collapsed .network-status span:last-child, 
+                .sidebar.collapsed .user-info, 
+                .sidebar.collapsed .stats-badges, 
+                .sidebar.collapsed .logout-text {
+                    display: none !important;
+                }
+                .sidebar.collapsed .sidebar-header {
+                    margin-bottom: 24px;
+                    justify-content: center;
+                    width: 100%;
+                }
+                .sidebar.collapsed .logo-box-group {
+                    justify-content: center;
+                }
+                .sidebar.collapsed .sidebar-nav {
+                    align-items: center;
+                    width: 100%;
+                }
+                .sidebar.collapsed .side-nav-item {
+                    padding: 12px;
+                    justify-content: center;
+                    width: 44px;
+                    height: 44px;
+                }
+                .sidebar.collapsed .network-status {
+                    justify-content: center;
+                    padding: 0;
+                }
+                .sidebar.collapsed .user-profile-panel {
+                    padding: 6px;
+                    align-items: center;
+                    border: none;
+                    background: transparent;
+                    width: 100%;
+                }
+                .sidebar.collapsed .btn-logout {
+                    width: 32px;
+                    height: 32px;
+                    padding: 0;
+                    border-radius: 8px;
+                    justify-content: center;
+                }
+                .sidebar.collapsed .btn-sidebar-auth {
+                    width: 36px;
+                    height: 36px;
+                    padding: 0;
+                    border-radius: 8px;
+                    justify-content: center;
+                }
+                .sidebar.collapsed .btn-sidebar-toggle {
+                    margin-top: 8px;
+                }
+
+                /* Tooltip styling for collapsed sidebar */
+                .sidebar.collapsed .side-nav-item::after,
+                .sidebar.collapsed .btn-logout::after,
+                .sidebar.collapsed .btn-sidebar-auth::after {
+                    content: attr(data-tooltip);
+                    position: absolute;
+                    left: 54px;
+                    top: 50%;
+                    transform: translateY(-50%) scale(0.9);
+                    background: rgba(24, 24, 27, 0.95);
+                    backdrop-filter: blur(10px);
+                    color: #fff;
+                    padding: 6px 12px;
+                    border-radius: 8px;
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    white-space: nowrap;
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: all 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+                    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+                    z-index: 10000;
+                }
+                .sidebar.collapsed .side-nav-item:hover::after,
+                .sidebar.collapsed .btn-logout:hover::after,
+                .sidebar.collapsed .btn-sidebar-auth:hover::after {
+                    opacity: 1;
+                    transform: translateY(-50%) scale(1);
                 }
 
                 /* Responsive Compact Sidebar under 768px */
@@ -425,6 +558,12 @@ export default function Sidebar() {
                         margin-bottom: 24px;
                         justify-content: center;
                         width: 100%;
+                    }
+                    .btn-sidebar-toggle {
+                        display: none !important;
+                    }
+                    .logo-box-group {
+                        justify-content: center;
                     }
                     .sidebar-nav {
                         align-items: center;
@@ -445,18 +584,21 @@ export default function Sidebar() {
                         align-items: center;
                         border: none;
                         background: transparent;
+                        width: 100%;
                     }
                     .btn-logout {
                         width: 32px;
                         height: 32px;
                         padding: 0;
                         border-radius: 8px;
+                        justify-content: center;
                     }
                     .btn-sidebar-auth {
                         width: 36px;
                         height: 36px;
                         padding: 0;
                         border-radius: 8px;
+                        justify-content: center;
                     }
                 }
             `}</style>

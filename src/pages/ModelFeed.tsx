@@ -131,28 +131,14 @@ export default function ModelFeed() {
                     </p>
                 </div>
 
-                <div className="topbar-actions" aria-label="Quick navigation">
+                <div className="topbar-actions" aria-label="Model search and status">
                     {selectedModel && (
                         <div className="active-style-pill" aria-label={`Active style: ${selectedModel.name}`}>
                             <IconSparkles size={12} />
                             <span>{selectedModel.name}</span>
                         </div>
                     )}
-                    <Link to="/generate" className="secondary-action">
-                        <IconZap size={16} />
-                        Create
-                    </Link>
-                    <Link to="/profile" className="secondary-action">
-                        <IconUser size={16} />
-                        History
-                    </Link>
-                </div>
-            </header>
-
-            <section className="browse-panel" aria-labelledby="browse-heading">
-                <div className="browse-heading-row">
                     <label className="search-box" htmlFor="model-search">
-                        <IconImage size={16} />
                         <input
                             id="model-search"
                             value={searchQuery}
@@ -163,6 +149,9 @@ export default function ModelFeed() {
                         <span className="styles-count">{visibleModels.length} styles</span>
                     </label>
                 </div>
+            </header>
+
+            <section className="browse-panel" aria-labelledby="browse-heading">
 
                 <div className="category-tabs" role="tablist" aria-label="Filter image styles">
                     {categoryOptions.map(option => (
@@ -226,7 +215,7 @@ export default function ModelFeed() {
                 .orb-two { width: 440px; height: 440px; bottom: 0; left: -150px; background: rgba(245, 158, 11, 0.14); animation-delay: -6s; }
                 .orb-three { width: 360px; height: 360px; top: 34%; left: 34%; background: rgba(168, 85, 247, 0.12); animation-delay: -12s; }
 
-                .model-picker-topbar { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 18px; }
+                .model-picker-topbar { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 18px; }
                 .breadcrumbs { display: flex; align-items: center; gap: 8px; color: var(--color-zinc-500); font-size: 0.78rem; font-weight: 800; margin-bottom: 12px; }
                 .model-picker-topbar h1 { font-size: clamp(2rem, 5vw, 4.25rem); letter-spacing: -0.07em; margin-bottom: 10px; }
                 .model-picker-topbar p { max-width: 650px; color: var(--color-zinc-400); font-weight: 650; }
