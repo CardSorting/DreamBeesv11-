@@ -20,13 +20,57 @@ import {
 
 const stepIds = ['step-welcome', 'step-compat', 'step-install', 'step-config', 'step-finish'];
 
+type DownloadOS = 'mac' | 'windows' | 'linux' | 'mobile' | 'unknown';
+type DownloadManifestFile = {
+  stable?: string;
+  versioned?: string;
+  sourceFile?: string;
+  sizeBytes?: number;
+  sha256?: string;
+};
+type DownloadManifest = {
+  version?: string;
+  files?: Partial<Record<Exclude<DownloadOS, 'mobile' | 'unknown'>, DownloadManifestFile>>;
+};
+
+const downloadBaseUrl = process.env.NEXT_PUBLIC_DOWNLOAD_BASE_URL?.trim().replace(/\/$/, '') || '';
+
+const fallbackDownloadForOS = (os: DownloadOS) => {
+  if (os === 'windows') {
+    return { href: '/downloads/dreambees-lite-windows.exe', name: 'dreambees-lite-windows.exe' };
+  }
+  if (os === 'linux') {
+    return { href: '/downloads/dreambees-lite-linux.AppImage', name: 'dreambees-lite-linux.AppImage' };
+  }
+  return { href: '/downloads/dreambees-lite-mac.dmg', name: 'dreambees-lite-mac.dmg' };
+};
+
+const resolveDownloadUrl = (href: string) => {
+  if (!downloadBaseUrl || /^https?:\/\//i.test(href)) return href;
+  return `${downloadBaseUrl}${href.startsWith('/') ? href : `/${href}`}`;
+};
+
+const fileNameFromUrl = (href: string, fallback: string) => {
+  try {
+    const url = new URL(href, 'https://download.local');
+    const lastSegment = url.pathname.split('/').filter(Boolean).pop();
+    return lastSegment ? decodeURIComponent(lastSegment) : fallback;
+  } catch {
+    const lastSegment = href.split('?')[0].split('#')[0].split('/').filter(Boolean).pop();
+    return lastSegment || fallback;
+  }
+};
+
 export default function DownloadsPage() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const warmedDownloadUrlsRef = useRef<Set<string>>(new Set());
+  const downloadUrlRef = useRef('/downloads/dreambees-lite-mac.dmg');
+  const installerNameRef = useRef('dreambees-lite-mac.dmg');
 
   // Client OS & Manifest Detection
-  const [detectedOS, setDetectedOS] = useState<'mac' | 'windows' | 'linux' | 'mobile' | 'unknown'>('mac');
+  const [detectedOS, setDetectedOS] = useState<DownloadOS>('mac');
   const [installerName, setInstallerName] = useState('dreambees-lite-mac.dmg');
   const [downloadUrl, setDownloadUrl] = useState('/downloads/dreambees-lite-mac.dmg');
   const [appVersion, setAppVersion] = useState('1.4.11');
@@ -97,7 +141,7 @@ export default function DownloadsPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const ua = navigator.userAgent.toLowerCase();
-      let os: 'mac' | 'windows' | 'linux' | 'mobile' | 'unknown' = 'mac';
+      let os: DownloadOS = 'mac';
       if (/iphone|ipad|ipod|android|webos|blackberry|iemobile|opera mini/.test(ua)) {
         os = 'mobile';
       } else if (ua.indexOf('win') !== -1) {
@@ -112,38 +156,33 @@ export default function DownloadsPage() {
       setDetectedOS(os);
 
       // Fetch dynamic manifest
-      fetch('/downloads/manifest.json')
+      fetch('/downloads/manifest.json', { cache: 'no-store' })
         .then(res => res.json())
-        .then(data => {
+        .then((data: DownloadManifest) => {
           if (data.version) setAppVersion(data.version);
-          if (data.files) {
-            if (os === 'mac' && data.files.mac) {
-              setDownloadUrl(data.files.mac.stable);
-              setInstallerName(data.files.mac.stable.split('/').pop() || 'dreambees-lite-mac.dmg');
-            } else if (os === 'windows' && data.files.windows) {
-              setDownloadUrl(data.files.windows.stable);
-              setInstallerName(data.files.windows.stable.split('/').pop() || 'dreambees-lite-windows.exe');
-            } else if (os === 'linux' && data.files.linux) {
-              setDownloadUrl(data.files.linux.stable);
-              setInstallerName(data.files.linux.stable.split('/').pop() || 'dreambees-lite-linux.AppImage');
-            }
+          const fallback = fallbackDownloadForOS(os);
+          const platformFile = os === 'mac' || os === 'windows' || os === 'linux'
+            ? data.files?.[os]
+            : undefined;
+          const manifestHref = platformFile?.versioned || platformFile?.stable;
+          if (manifestHref) {
+            const resolvedHref = resolveDownloadUrl(manifestHref);
+            setDownloadUrl(resolvedHref);
+            setInstallerName(fileNameFromUrl(manifestHref, fallback.name));
           }
         })
         .catch(() => {
-          // Normal fallback URLs
-          if (os === 'windows') {
-            setDownloadUrl('/downloads/dreambees-lite-windows.exe');
-            setInstallerName('dreambees-lite-windows.exe');
-          } else if (os === 'linux') {
-            setDownloadUrl('/downloads/dreambees-lite-linux.AppImage');
-            setInstallerName('dreambees-lite-linux.AppImage');
-          } else {
-            setDownloadUrl('/downloads/dreambees-lite-mac.dmg');
-            setInstallerName('dreambees-lite-mac.dmg');
-          }
+          const fallback = fallbackDownloadForOS(os);
+          setDownloadUrl(resolveDownloadUrl(fallback.href));
+          setInstallerName(fallback.name);
         });
     }
   }, []);
+
+  useEffect(() => {
+    downloadUrlRef.current = downloadUrl;
+    installerNameRef.current = installerName;
+  }, [downloadUrl, installerName]);
 
   // Set document title on client mount
   useEffect(() => {
@@ -377,18 +416,50 @@ export default function DownloadsPage() {
     }
   }, [currentStepIndex]);
 
-  const startDownloadFile = () => {
-    if (downloadState !== 'idle') return;
-    setDownloadState('downloading');
-    playSound('click');
+  const warmDownloadConnection = () => {
+    if (typeof window === 'undefined') return;
+    const href = downloadUrlRef.current;
+    if (!href || warmedDownloadUrlsRef.current.has(href)) return;
+    warmedDownloadUrlsRef.current.add(href);
 
-    // Trigger browser file download
+    try {
+      const url = new URL(href, window.location.href);
+      if (url.origin !== window.location.origin && !document.querySelector(`link[rel="preconnect"][href="${url.origin}"]`)) {
+        const preconnect = document.createElement('link');
+        preconnect.rel = 'preconnect';
+        preconnect.href = url.origin;
+        document.head.appendChild(preconnect);
+      }
+      fetch(url.toString(), { method: 'HEAD', cache: 'no-store', mode: 'no-cors' }).catch(() => {});
+    } catch {
+      fetch(href, { method: 'HEAD', cache: 'no-store' }).catch(() => {});
+    }
+  };
+
+  const triggerBrowserDownload = (href: string, name: string) => {
     const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = installerName;
+    link.href = href;
+    link.download = name;
+    link.rel = 'noopener';
+    link.style.display = 'none';
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    window.setTimeout(() => {
+      link.remove();
+    }, 0);
+  };
+
+  const startDownloadFile = () => {
+    if (downloadState === 'downloading') return;
+    playSound('click');
+
+    const href = downloadUrlRef.current;
+    const name = installerNameRef.current;
+    triggerBrowserDownload(href, name);
+    warmDownloadConnection();
+
+    if (downloadState !== 'idle') return;
+    setDownloadState('downloading');
 
     let progress = 0;
     const interval = setInterval(() => {
@@ -1528,7 +1599,7 @@ export default function DownloadsPage() {
             <h1>DreamBees Lite</h1>
             <p className="featured-subtitle">Local-first desktop studio for creative AI image synthesis</p>
             <div className="featured-actions">
-              <button className="btn btn-primary" onClick={startDownloadFile} id="btn-dmg-download">
+              <button className="btn btn-primary" onPointerEnter={warmDownloadConnection} onFocus={warmDownloadConnection} onClick={startDownloadFile} id="btn-dmg-download">
                 <Download size={16} strokeWidth={2.5} />
                 Download for {detectedOS === 'mac' ? 'macOS (DMG)' : detectedOS === 'windows' ? 'Windows (EXE)' : detectedOS === 'linux' ? 'Linux (AppImage)' : 'Desktop'}
               </button>
@@ -1703,7 +1774,7 @@ export default function DownloadsPage() {
                   {(downloadState === 'idle' || downloadState === 'downloading') && (
                     <div id="download-progress-area" style={{ width: '100%' }}>
                       {downloadState === 'idle' && (
-                        <button className="btn btn-primary" style={{ width: '100%', minHeight: '38px', fontSize: '0.78rem' }} onClick={startDownloadFile}>
+                        <button className="btn btn-primary" style={{ width: '100%', minHeight: '38px', fontSize: '0.78rem' }} onPointerEnter={warmDownloadConnection} onFocus={warmDownloadConnection} onClick={startDownloadFile}>
                           <Download size={14} /> Download Installer ({installerName})
                         </button>
                       )}
@@ -2226,7 +2297,7 @@ export default function DownloadsPage() {
         <section className="footer-cta">
           <h2>Download DreamBees Lite</h2>
           <p>Start generating high-resolution assets locally on your device today.</p>
-          <button className="btn btn-primary" onClick={startDownloadFile}>
+          <button className="btn btn-primary" onPointerEnter={warmDownloadConnection} onFocus={warmDownloadConnection} onClick={startDownloadFile}>
             <Download size={18} strokeWidth={2.5} />
             Download Direct Installer
           </button>
@@ -2239,7 +2310,7 @@ export default function DownloadsPage() {
             <button className="btn btn-secondary" style={{ minHeight: '36px', padding: '0 12px', fontSize: '0.8rem' }} onClick={startWizard}>
               Launch Wizard
             </button>
-            <button className="btn btn-primary" style={{ minHeight: '36px', padding: '0 16px', fontSize: '0.8rem' }} onClick={startDownloadFile}>
+            <button className="btn btn-primary" style={{ minHeight: '36px', padding: '0 16px', fontSize: '0.8rem' }} onPointerEnter={warmDownloadConnection} onFocus={warmDownloadConnection} onClick={startDownloadFile}>
               Download
             </button>
           </div>

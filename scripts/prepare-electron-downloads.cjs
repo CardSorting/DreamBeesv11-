@@ -2,6 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 
 const projectRoot = path.resolve(__dirname, '..');
 const releaseDir = path.join(projectRoot, 'release');
@@ -28,6 +29,13 @@ function pickLatestFile(filePaths) {
     return bTime - aTime;
   });
   return sorted[0];
+}
+
+function fileMetadata(filePath) {
+  return {
+    sizeBytes: fs.statSync(filePath).size,
+    sha256: crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')
+  };
 }
 
 function main() {
@@ -64,10 +72,12 @@ function main() {
     const versionedName = `dreambees-lite-${version}-mac.dmg`;
     copyIfExists(macInstaller, path.join(downloadsDir, stableName));
     copyIfExists(macInstaller, path.join(downloadsDir, versionedName));
+    const metadata = fileMetadata(macInstaller);
     manifest.files.mac = {
       stable: `/downloads/${stableName}`,
       versioned: `/downloads/${versionedName}`,
-      sourceFile: path.basename(macInstaller)
+      sourceFile: path.basename(macInstaller),
+      ...metadata
     };
   }
 
@@ -76,10 +86,12 @@ function main() {
     const versionedName = `dreambees-lite-${version}-windows.exe`;
     copyIfExists(windowsInstaller, path.join(downloadsDir, stableName));
     copyIfExists(windowsInstaller, path.join(downloadsDir, versionedName));
+    const metadata = fileMetadata(windowsInstaller);
     manifest.files.windows = {
       stable: `/downloads/${stableName}`,
       versioned: `/downloads/${versionedName}`,
-      sourceFile: path.basename(windowsInstaller)
+      sourceFile: path.basename(windowsInstaller),
+      ...metadata
     };
   }
 
@@ -88,16 +100,18 @@ function main() {
     const versionedName = `dreambees-lite-${version}-linux.AppImage`;
     copyIfExists(linuxInstaller, path.join(downloadsDir, stableName));
     copyIfExists(linuxInstaller, path.join(downloadsDir, versionedName));
+    const metadata = fileMetadata(linuxInstaller);
     manifest.files.linux = {
       stable: `/downloads/${stableName}`,
       versioned: `/downloads/${versionedName}`,
-      sourceFile: path.basename(linuxInstaller)
+      sourceFile: path.basename(linuxInstaller),
+      ...metadata
     };
   }
 
   fs.writeFileSync(
     path.join(downloadsDir, 'manifest.json'),
-    JSON.stringify(manifest, null, 2),
+    `${JSON.stringify(manifest, null, 2)}\n`,
     'utf8'
   );
 
