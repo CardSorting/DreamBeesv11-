@@ -398,7 +398,10 @@ export default function DownloadsPage() {
             --font-mono: 'JetBrains Mono', monospace;
           }
           
-          .container { max-width: 1120px; margin: 0 auto; padding: 24px 20px 88px; }
+          .container { max-width: 1120px; margin: 0 auto; padding: 140px 20px 88px; }
+          .crumbs-wrapper { font-size: 0.74rem; font-weight: 700; color: var(--color-text-secondary); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
+          .crumbs-wrapper span { color: var(--color-text-secondary); }
+          .crumbs-wrapper span.active { color: var(--color-accent); }
           
           /* APP STORE FEATURED APP DETAILS */
           .featured-header {
@@ -807,10 +810,15 @@ export default function DownloadsPage() {
           }
         `}</style>
 
+        {/* BREADCRUMBS */}
+        <div className="crumbs-wrapper">
+          <span>Home</span> / <span>Downloads</span> / <span className="active">macOS App</span>
+        </div>
+
         {/* FEATURED HEADER AREA */}
         <header className="featured-header" id="overview">
           <div className="app-icon-wrapper">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
               <path d="M12 6v12M8 10h8M8 14h8"/>
               <circle cx="12" cy="12" r="3" fill="currentColor"/>
@@ -1331,7 +1339,7 @@ export default function DownloadsPage() {
       <div className={`lightbox ${lightboxOpen ? 'active' : ''}`} id="gallery-lightbox" onClick={closeLightbox}>
         <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
           <button className="lightbox-close" onClick={closeLightbox}>✕</button>
-          <img className="lightbox-img" id="lightbox-img" src={lightboxSrc} alt="Expanded screenshot preview" />
+          <img className="lightbox-img" id="lightbox-img" src={lightboxSrc || undefined} alt="Expanded screenshot preview" />
           <div className="lightbox-caption" id="lightbox-caption">{lightboxCaption}</div>
         </div>
       </div>
