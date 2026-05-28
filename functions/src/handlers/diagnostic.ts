@@ -24,7 +24,6 @@ const RATE_LIMIT_MAX_REQUESTS = 12;
 const diagnosticRateLimit = new Map<string, { count: number; resetAt: number }>();
 
 const SECRET_ENV_KEYS = [
-    "CLOUDFLARE_API_TOKEN",
     "STRIPE_SECRET_KEY",
     "B2_APP_KEY",
     "B2_KEY_ID",
@@ -33,7 +32,6 @@ const SECRET_ENV_KEYS = [
 ] as const;
 
 const CONFIG_ENV_KEYS = [
-    "CLOUDFLARE_ACCOUNT_ID",
     "B2_BUCKET",
     "B2_PUBLIC_URL",
     "GCLOUD_PROJECT",

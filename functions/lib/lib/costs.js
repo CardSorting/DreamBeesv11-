@@ -5,19 +5,6 @@ export const ZAP_COSTS = {
     IMAGE_GENERATION_TURBO: 1.0, // Turbo Mode
     IMAGE_GENERATION_PREMIUM: 1.0 // Premium Models
 };
-// Helper: Calculate Flux Cost
-export function calculateFluxCost(aspectRatio, steps) {
-    const tileMap = {
-        '1:1': 4,
-        '2:3': 4,
-        '3:2': 4,
-        '9:16': 4,
-        '16:9': 4
-    };
-    const tiles = tileMap[aspectRatio] || 4;
-    const s = steps || 20;
-    return tiles * s * 0.00041;
-}
 /**
  * CostManager
  * Standardized hardcoded pricing for maximum determinism and zero-latency.

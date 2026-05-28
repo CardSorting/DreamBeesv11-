@@ -301,7 +301,7 @@ const DEMOS = [
   {
     prompt: "Cyberpunk street market at night, neon signs in Japanese, rainy puddles reflecting pink and teal lights.",
     image: "https://images.unsplash.com/photo-1545156521-77bd85671d30?w=800&q=80",
-    model: "Flux Pro",
+    model: "WAI Illustrious",
     time: "1.2s"
   },
   {

@@ -8,6 +8,8 @@ export interface AIModel {
     name: string;
     description: string;
     image: string;
+    type?: string;
+    isActive?: boolean;
     order?: number;
 }
 
@@ -85,14 +87,13 @@ export const calculateTier = (genCount: number): UserTier => {
  */
 export const getModelMetadata = (model: AIModel) => {
     const n = model.name.toLowerCase();
-    const isFlux = n.includes('flux');
     const isReal = n.includes('real');
     const isAnime = n.includes('anime');
 
     return {
-        isFlagship: isFlux,
-        tag: isFlux ? "Superior" : (isReal ? "Precision" : (isAnime ? "Aesthetic" : "Creative")),
-        insight: isFlux ? "Complex Prompts & Photorealism" : (isReal ? "Portrait & Product Detail" : "Digital Art Mastery"),
+        isFlagship: n.includes('illustrious') || n.includes('turbo'),
+        tag: isReal ? "Precision" : (isAnime ? "Aesthetic" : "Creative"),
+        insight: isReal ? "Portrait & Product Detail" : (isAnime ? "Anime & Character Art" : "Digital Art Mastery"),
         shortDesc: model.description.length > 80 ? model.description.substring(0, 77) + "..." : model.description
     };
 };

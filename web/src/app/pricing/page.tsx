@@ -39,7 +39,7 @@ const plans: Plan[] = [
     price: '29',
     tierKey: 'pro',
     tagline: 'For daily creators',
-    features: ['Unlimited generations', 'Turbo speed', 'Private studio', 'Flux Pro models'],
+    features: ['Unlimited generations', 'Turbo speed', 'Private studio', 'Premium generator styles'],
     cta: 'Upgrade',
     popular: true,
     color: 'rgba(139, 92, 246, 0.18)',

@@ -11,7 +11,7 @@ export const VALID_MODELS: string[] = [
     'wai-illustrious',
     'rin-anime-blend', 'rin-anime-popcute',
     'crystal-cuteness', 'veretoon-v10',
-    'flux-2-dev', 'chenkin-noob-xl',
+    'chenkin-noob-xl',
     'nova-3d-cg-xl', 'z-image-turbo-a100'
 ];
 
@@ -26,7 +26,18 @@ export const ACTIVE_MODELS = [...VALID_MODELS];
  * These are exported here for backward compatibility
  */
 export const MODEL_IDS = {
+    NOVA_FURRY: 'nova-furry-xl',
+    PERFECT_ILLUSTRIOUS: 'perfect-illustrious',
+    GRAY_COLOR: 'gray-color',
+    SCYRAX_PASTEL: 'scyrax-pastel',
+    ANI_DETOX: 'ani-detox',
+    ANIMIJ_V7: 'animij-v7',
+    SWIJTSPOT_NO1: 'swijtspot-no1',
     WAI_ILLUSTRIOUS: 'wai-illustrious',
+    RIN_ANIME_BLEND: 'rin-anime-blend',
+    RIN_ANIME_POPCUTE: 'rin-anime-popcute',
+    CRYSTAL_CUTENESS: 'crystal-cuteness',
+    VERETOON_V10: 'veretoon-v10',
     CHENKIN_NOOB: 'chenkin-noob-xl',
     NOVA_3D: 'nova-3d-cg-xl',
     Z_IMAGE_TURBO: 'z-image-turbo-a100'
@@ -40,9 +51,3 @@ export const B2_BUCKET = process.env.B2_BUCKET;
 export const B2_KEY_ID = process.env.B2_KEY_ID;
 export const B2_APP_KEY = process.env.B2_APP_KEY;
 export const B2_PUBLIC_URL = process.env.B2_PUBLIC_URL;
-export const CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID;
-export const CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN;
-
-export const ENDPOINTS = {
-    flux2dev: "https://api.cloudflare.com/client/v4/accounts/CLOUDFLARE_ACCOUNT_ID/ai/run/@cf/black-forest-labs/flux-1-dev"
-};

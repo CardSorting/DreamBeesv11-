@@ -26,7 +26,7 @@ const categoryOptions: Array<{ id: CategoryId; label: string }> = [
 function getModelProfile(model: AIModel): ModelProfile {
     const meta = getModelMetadata(model);
     const text = `${model.name} ${model.description}`.toLowerCase();
-    const isRealistic = ['real', 'photo', 'portrait', 'product', 'flux', 'cinematic'].some(word => text.includes(word));
+    const isRealistic = ['real', 'photo', 'portrait', 'product', 'cinematic'].some(word => text.includes(word));
     const isIllustration = ['anime', 'illustr', 'cartoon', 'paint', 'draw', 'sketch', 'manga', 'wai'].some(word => text.includes(word));
     const isCreative = !isRealistic && !isIllustration;
 

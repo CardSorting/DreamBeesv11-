@@ -9,22 +9,6 @@ export const ZAP_COSTS = {
 
 export type ZapCostKey = keyof typeof ZAP_COSTS;
 
-// Helper: Calculate Flux Cost
-export function calculateFluxCost(aspectRatio: string, steps: number): number {
-    const tileMap: Record<string, number> = {
-        '1:1': 4,
-        '2:3': 4,
-        '3:2': 4,
-        '9:16': 4,
-        '16:9': 4
-    };
-
-    const tiles = tileMap[aspectRatio] || 4;
-    const s = steps || 20;
-
-    return tiles * s * 0.00041;
-}
-
 /**
  * CostManager
  * Standardized hardcoded pricing for maximum determinism and zero-latency.

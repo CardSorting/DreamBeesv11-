@@ -11,7 +11,18 @@ import { MODELS_DB } from './constants.js';
 // ==============================================================================
 
 export const MODEL_IDS = {
+    NOVA_FURRY: 'nova-furry-xl',
+    PERFECT_ILLUSTRIOUS: 'perfect-illustrious',
+    GRAY_COLOR: 'gray-color',
+    SCYRAX_PASTEL: 'scyrax-pastel',
+    ANI_DETOX: 'ani-detox',
+    ANIMIJ_V7: 'animij-v7',
+    SWIJTSPOT_NO1: 'swijtspot-no1',
     WAI_ILLUSTRIOUS: 'wai-illustrious',
+    RIN_ANIME_BLEND: 'rin-anime-blend',
+    RIN_ANIME_POPCUTE: 'rin-anime-popcute',
+    CRYSTAL_CUTENESS: 'crystal-cuteness',
+    VERETOON_V10: 'veretoon-v10',
     CHENKIN_NOOB: 'chenkin-noob-xl',
     NOVA_3D: 'nova-3d-cg-xl',
     Z_IMAGE_TURBO: 'z-image-turbo-a100'
@@ -59,9 +70,22 @@ export const MODEL_GENERATION_PARAMS = {
 // ==============================================================================
 
 export const MODEL_CATEGORIES = {
-    PREMIUM: ['wai-illustrious'],
+    PREMIUM: ['wai-illustrious', 'nova-3d-cg-xl'],
     FAST: ['z-image-turbo-a100'],
-    STANDARD: ['chenkin-noob-xl', 'flux-2-dev', 'gray-color', 'scyrax-pastel', 'ani-detox', 'animij-v7', 'swijtspot-no1']
+    STANDARD: [
+        'nova-furry-xl',
+        'perfect-illustrious',
+        'gray-color',
+        'scyrax-pastel',
+        'ani-detox',
+        'animij-v7',
+        'swijtspot-no1',
+        'rin-anime-blend',
+        'rin-anime-popcute',
+        'crystal-cuteness',
+        'veretoon-v10',
+        'chenkin-noob-xl'
+    ]
 } as const;
 
 export const MODEL_COSTS = {

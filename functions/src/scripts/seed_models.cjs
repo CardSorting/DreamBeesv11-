@@ -12,7 +12,9 @@ const db = admin.firestore();
 const DEPRECATED_MODEL_IDS = [
     'lightricks-ltx-2-pro',
     'flux-2-dev',
-    'flux-klein-9b'
+    'flux-klein-9b',
+    'meowacc',
+    'dressup'
 ];
 
 const MODELS = [
@@ -83,6 +85,22 @@ const MODELS = [
         image: 'https://cdn.dreambeesai.com/file/printeregg/assets/landing/wai_illustrious_preview.png'
     },
     {
+        id: 'rin-anime-blend',
+        name: 'Rin Anime Blend',
+        description: 'A smooth blend of popular anime models for high-quality results.',
+        type: 'SDXL',
+        order: 14,
+        isActive: true
+    },
+    {
+        id: 'rin-anime-popcute',
+        name: 'Rin Anime Popcute',
+        description: 'Bright, vibrant, and cute anime style with popping colors.',
+        type: 'SDXL',
+        order: 15,
+        isActive: true
+    },
+    {
         id: 'z-image-turbo-a100',
         name: 'Z-Image Turbo',
         description: 'Ultra-fast image generation model optimized for quick iteration on A100 GPUs.',
@@ -92,6 +110,38 @@ const MODELS = [
         image: 'https://dreambees-alchemist.web.app/assets/styles/hr_core.png',
         thumbnail: 'https://dreambees-alchemist.web.app/assets/styles/hr_core.png',
         previewImages: ['https://dreambees-alchemist.web.app/assets/styles/hr_core.png']
+    },
+    {
+        id: 'crystal-cuteness',
+        name: 'Crystal Cuteness',
+        description: 'Adorable and sparkling aesthetics for high-quality cute art.',
+        type: 'SDXL',
+        order: 19,
+        isActive: true
+    },
+    {
+        id: 'veretoon-v10',
+        name: 'Veretoon V1.0',
+        description: 'Vibrant toon-style illustrations with clean outlines.',
+        type: 'SDXL',
+        order: 20,
+        isActive: true
+    },
+    {
+        id: 'chenkin-noob-xl',
+        name: 'Chenkin Noob XL',
+        description: 'High-quality Rectified Flow model optimized for Euler Flow Match. Excellent for general anime and artistic styles.',
+        type: 'Generator',
+        order: 21,
+        isActive: true
+    },
+    {
+        id: 'nova-3d-cg-xl',
+        name: 'Nova 3D CG XL',
+        description: 'Premium SDXL model optimized for high-quality 3D and CGI art with extreme detail.',
+        type: 'Generator',
+        order: 22,
+        isActive: true
     }
 ];
 

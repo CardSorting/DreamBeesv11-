@@ -50,30 +50,17 @@ const BUILTIN_MODELS: AIModel[] = [
         name: 'WAI Illustrious',
         description: 'Illustration + character art. Great for cute, sticker, and storybook looks.',
         image: '/models/wai-illustrious.png',
+        type: 'SDXL',
         order: 1
-    },
-    {
-        id: 'flux-realistic',
-        name: 'Flux Realistic',
-        description: 'Photo-like lighting and detail. Great for portraits and product shots.',
-        image: '/assets/styles/hr_core.png',
-        order: 2
-    },
-    {
-        id: 'cinematic',
-        name: 'Cinematic',
-        description: 'Dramatic lighting, film look, and rich mood.',
-        image: '/assets/styles/spooky_cinema.png',
-        order: 3
-    },
-    {
-        id: 'creative',
-        name: 'Creative',
-        description: 'Stylized and imaginative. Good for fantasy scenes and playful ideas.',
-        image: '/assets/styles/dreamy_soft.png',
-        order: 4
     }
 ];
+
+const GENERATION_MODEL_TYPES = new Set(['sdxl', 'generator', 'image']);
+
+const isClientGenerationModel = (model: AIModel) => {
+    const type = typeof model.type === 'string' ? model.type.toLowerCase() : 'sdxl';
+    return model.isActive !== false && GENERATION_MODEL_TYPES.has(type);
+};
 
 interface LiteContextType {
     currentUser: User | null;
@@ -591,8 +578,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             });
         };
 
-        const orderedQuery = query(collection(db, 'models'), orderBy('order', 'asc'), limit(12));
-        const fallbackQuery = query(collection(db, 'models'), limit(12));
+        const orderedQuery = query(collection(db, 'models'), orderBy('order', 'asc'), limit(30));
+        const fallbackQuery = query(collection(db, 'models'), limit(30));
 
         let activeUnsub: (() => void) | null = null;
         let stopped = false;
@@ -605,7 +592,9 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             activeUnsub = onSnapshot(
                 fallbackQuery,
                 snap => {
-                    const models = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as AIModel));
+                    const models = snap.docs
+                        .map(doc => ({ id: doc.id, ...doc.data() } as AIModel))
+                        .filter(isClientGenerationModel);
                     setAvailableModels(models);
                     setModelsError(models.length ? null : msg);
                     pickDefaultModel(models);
@@ -623,7 +612,9 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         activeUnsub = onSnapshot(
             orderedQuery,
             snap => {
-                const models = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as AIModel));
+                const models = snap.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() } as AIModel))
+                    .filter(isClientGenerationModel);
                 setAvailableModels(models);
                 setModelsError(null);
                 pickDefaultModel(models);

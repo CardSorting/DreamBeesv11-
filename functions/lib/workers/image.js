@@ -1,7 +1,8 @@
 import { db, FieldValue } from "../firebaseInit.js";
 import { Wallet } from "../lib/wallet.js";
 import { getS3Client, fetchWithTimeout, logger, retryOperation } from "../lib/utils.js";
-import { B2_BUCKET, B2_PUBLIC_URL, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, ENDPOINTS } from "../lib/constants.js";
+import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
+import { isValidModelId } from "../lib/modelConventions.js";
 import { ForensicLogger } from "../lib/forensics.js";
 import { SubstrateHealth } from "../lib/substrateHealth.js";
 /**
@@ -63,138 +64,102 @@ export const processImageTask = async (req) => {
         };
         const resolution = resolutionMap[aspectRatio] || resolutionMap['1:1'];
         // --- MODEL EXECUTION ---
-        if (modelId === 'flux-2-dev') {
-            imageBuffer = await (async () => {
-                const cfUrl = ENDPOINTS.flux2dev.replace('CLOUDFLARE_ACCOUNT_ID', CLOUDFLARE_ACCOUNT_ID);
-                logger.info(`[${requestId}] Running flux-2-dev via Cloudflare. URL: ${cfUrl.substring(0, 50)}...`);
-                await docRef.update({ progress: 25 }).catch(() => { });
-                const formData = new FormData();
-                formData.append('prompt', prompt);
-                formData.append('steps', '25');
-                formData.append('width', String(resolution.width));
-                formData.append('height', String(resolution.height));
-                const cfRes = await fetch(cfUrl, {
-                    method: "POST",
-                    headers: { "Authorization": `Bearer ${CLOUDFLARE_API_TOKEN}` },
-                    body: formData
-                });
-                if (!cfRes.ok) {
-                    const errText = await cfRes.text();
-                    logger.error(`[${requestId}] Cloudflare Flux Failed (${cfRes.status})`, { error: errText });
-                    throw new Error(`Cloudflare Flux Failed (${cfRes.status}): ${errText.substring(0, 200)}`);
-                }
-                const contentType = cfRes.headers.get("content-type") || "";
-                if (contentType.includes("image/")) {
-                    logger.info(`[${requestId}] Flux: Received binary image response.`);
-                    return Buffer.from(await cfRes.arrayBuffer());
-                }
-                else {
-                    const cfJson = await cfRes.json();
-                    const base64Img = cfJson.result?.image || cfJson.result;
-                    if (!base64Img || typeof base64Img !== 'string') {
-                        logger.error(`[${requestId}] Flux: No image data in JSON response.`, { response: cfJson });
-                        throw new Error("No image data from Cloudflare");
-                    }
-                    logger.info(`[${requestId}] Flux: Received Base64 image response.`);
-                    return Buffer.from(base64Img, 'base64');
-                }
-            })();
+        if (!isValidModelId(modelId)) {
+            throw new Error(`Unsupported model ID: ${modelId}`);
         }
-        else {
-            imageBuffer = await (async () => {
-                logger.info(`[${requestId}] Running SDXL generation for model: ${modelId}`);
-                let finalSteps = steps || 30;
-                let finalCfg = cfg || 7;
-                let finalScheduler = scheduler || 'DPM++ 2M Karras';
-                let hires_fix = false;
-                let finalPrompt = prompt;
-                if (modelId === 'wai-illustrious') {
-                    hires_fix = true;
+        imageBuffer = await (async () => {
+            logger.info(`[${requestId}] Running SDXL generation for model: ${modelId}`);
+            let finalSteps = steps || 30;
+            let finalCfg = cfg || 7;
+            let finalScheduler = scheduler || 'DPM++ 2M Karras';
+            let hires_fix = false;
+            let finalPrompt = prompt;
+            if (modelId === 'wai-illustrious') {
+                hires_fix = true;
+            }
+            else if (modelId === 'z-image-turbo-a100') {
+                finalSteps = Math.min(Math.max(steps || 8, 1), 9);
+                finalCfg = cfg || 7;
+                finalScheduler = scheduler || 'DPM++ 2M Karras';
+                hires_fix = false;
+            }
+            else if (modelId === 'chenkin-noob-xl') {
+                finalSteps = steps || 25;
+                finalCfg = cfg || 4.0;
+                finalScheduler = scheduler || 'Euler a';
+                hires_fix = false;
+            }
+            else if (modelId === 'nova-3d-cg-xl') {
+                hires_fix = true;
+                const qualityTags = ", 3d render, cgi, masterwork, ultra detailed, cinematic lighting";
+                if (!finalPrompt.toLowerCase().includes("3d render")) {
+                    finalPrompt = `${finalPrompt}${qualityTags}`;
                 }
-                else if (modelId === 'z-image-turbo-a100') {
-                    finalSteps = Math.min(Math.max(steps || 8, 1), 9);
-                    finalCfg = cfg || 7;
-                    finalScheduler = scheduler || 'DPM++ 2M Karras';
-                    hires_fix = false;
+            }
+            const body = modelId === 'z-image-turbo-a100'
+                ? {
+                    prompt: finalPrompt,
+                    negative_prompt,
+                    steps: finalSteps,
+                    aspect_ratio: aspectRatio,
+                    width: resolution.width,
+                    height: resolution.height
                 }
-                else if (modelId === 'chenkin-noob-xl') {
-                    finalSteps = steps || 25;
-                    finalCfg = cfg || 4.0;
-                    finalScheduler = scheduler || 'Euler a';
-                    hires_fix = false;
-                }
-                else if (modelId === 'nova-3d-cg-xl') {
-                    hires_fix = true;
-                    const qualityTags = ", 3d render, cgi, masterwork, ultra detailed, cinematic lighting";
-                    if (!finalPrompt.toLowerCase().includes("3d render")) {
-                        finalPrompt = `${finalPrompt}${qualityTags}`;
-                    }
-                }
-                const body = modelId === 'z-image-turbo-a100'
-                    ? {
-                        prompt: finalPrompt,
-                        negative_prompt,
-                        steps: finalSteps,
-                        aspect_ratio: aspectRatio,
-                        width: resolution.width,
-                        height: resolution.height
-                    }
-                    : {
-                        prompt: finalPrompt,
-                        model: modelId || "wai-illustrious",
-                        negative_prompt,
-                        steps: finalSteps,
-                        cfg: finalCfg,
-                        width: resolution.width,
-                        height: resolution.height,
-                        scheduler: finalScheduler,
-                        hires_fix
-                    };
-                const { getModelEndpoint } = await import("../lib/modelConventions.js");
-                const endpoint = getModelEndpoint(modelId);
-                const submitResponse = await fetchWithTimeout(`${endpoint}/generate`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "User-Agent": "DreamBees/1.1"
-                    },
-                    body: JSON.stringify(body),
-                    timeout: 120000
-                });
-                if (!submitResponse.ok) {
-                    throw new Error(`SDXL Submission Failed (${submitResponse.status})`);
-                }
-                const { job_id } = await submitResponse.json();
-                await docRef.update({ stage: "generating", progress: 20 }).catch(() => { });
-                for (let poll = 0; poll < 120; poll++) {
-                    const delayMs = poll === 0 ? 300 : Math.min(600 + poll * 280, 2800);
-                    await new Promise(r => setTimeout(r, delayMs));
-                    const pollProgress = Math.min(75, 20 + poll * 3);
-                    docRef.update({ stage: "generating", progress: pollProgress }).catch(() => { });
-                    const [resultRes, jobsRes] = await Promise.all([
-                        fetchWithTimeout(`${endpoint}/result/${job_id}`, { timeout: 12000 }).catch(() => null),
-                        fetchWithTimeout(`${endpoint}/jobs/${job_id}`, { timeout: 12000 }).catch(() => null)
-                    ]);
-                    let pending = false;
-                    for (const res of [resultRes, jobsRes]) {
-                        if (!res)
-                            continue;
-                        if (res.status === 202) {
-                            pending = true;
-                            continue;
-                        }
-                        if (!res.ok)
-                            continue;
-                        if (res.headers.get('content-type')?.includes('image/')) {
-                            return Buffer.from(await res.arrayBuffer());
-                        }
-                    }
-                    if (pending)
+                : {
+                    prompt: finalPrompt,
+                    model: modelId || "wai-illustrious",
+                    negative_prompt,
+                    steps: finalSteps,
+                    cfg: finalCfg,
+                    width: resolution.width,
+                    height: resolution.height,
+                    scheduler: finalScheduler,
+                    hires_fix
+                };
+            const { getModelEndpoint } = await import("../lib/modelConventions.js");
+            const endpoint = getModelEndpoint(modelId);
+            const submitResponse = await fetchWithTimeout(`${endpoint}/generate`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "User-Agent": "DreamBees/1.1"
+                },
+                body: JSON.stringify(body),
+                timeout: 120000
+            });
+            if (!submitResponse.ok) {
+                throw new Error(`SDXL Submission Failed (${submitResponse.status})`);
+            }
+            const { job_id } = await submitResponse.json();
+            await docRef.update({ stage: "generating", progress: 20 }).catch(() => { });
+            for (let poll = 0; poll < 120; poll++) {
+                const delayMs = poll === 0 ? 300 : Math.min(600 + poll * 280, 2800);
+                await new Promise(r => setTimeout(r, delayMs));
+                const pollProgress = Math.min(75, 20 + poll * 3);
+                docRef.update({ stage: "generating", progress: pollProgress }).catch(() => { });
+                const [resultRes, jobsRes] = await Promise.all([
+                    fetchWithTimeout(`${endpoint}/result/${job_id}`, { timeout: 12000 }).catch(() => null),
+                    fetchWithTimeout(`${endpoint}/jobs/${job_id}`, { timeout: 12000 }).catch(() => null)
+                ]);
+                let pending = false;
+                for (const res of [resultRes, jobsRes]) {
+                    if (!res)
                         continue;
+                    if (res.status === 202) {
+                        pending = true;
+                        continue;
+                    }
+                    if (!res.ok)
+                        continue;
+                    if (res.headers.get('content-type')?.includes('image/')) {
+                        return Buffer.from(await res.arrayBuffer());
+                    }
                 }
-                throw new Error("SDXL generation timed out");
-            })();
-        }
+                if (pending)
+                    continue;
+            }
+            throw new Error("SDXL generation timed out");
+        })();
         if (!imageBuffer || imageBuffer.length < 100) {
             throw new Error("Failed to generate or retrieve image buffer");
         }
