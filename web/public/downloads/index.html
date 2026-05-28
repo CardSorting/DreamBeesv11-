@@ -6,352 +6,1466 @@
     <title>DreamBees Lite for macOS</title>
     <meta
       name="description"
-      content="Install DreamBees Lite for macOS. App Store-style download page with clear requirements, setup steps, and support."
+      content="Download DreamBees Lite for macOS. App Store-style download page featuring an interactive setup walkthrough, drag-and-drop installer, system requirements, and premium previews."
     />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-      :root { color-scheme: dark; }
+      :root {
+        color-scheme: dark;
+        --color-bg: #060609;
+        --color-card-bg: rgba(255, 255, 255, 0.03);
+        --color-card-border: rgba(255, 255, 255, 0.08);
+        --color-accent: #fbbf24;
+        --color-purple: #8b5cf6;
+        --color-purple-glow: rgba(139, 92, 246, 0.15);
+        --color-text-primary: #f8fafc;
+        --color-text-secondary: #94a3b8;
+        --color-success: #10b981;
+        --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+        --font-mono: 'JetBrains Mono', monospace;
+      }
+      
       * { box-sizing: border-box; }
+      
       body {
         margin: 0;
-        font-family: Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
-        color: #f8fafc;
-        background: radial-gradient(circle at 14% -8%, #2f2355 0%, #0b0b11 45%, #060609 100%);
+        font-family: var(--font-sans);
+        color: var(--color-text-primary);
+        background: radial-gradient(circle at 14% -8%, #1f1235 0%, #09090e 50%, var(--color-bg) 100%);
+        line-height: 1.5;
+        overflow-x: hidden;
       }
-      .container { max-width: 1080px; margin: 0 auto; padding: 18px 20px 88px; }
+      
+      .container { max-width: 1120px; margin: 0 auto; padding: 24px 20px 88px; }
+      
+      /* TOP NAVIGATION */
       .topnav {
-        position: sticky; top: 0; z-index: 20;
-        display: flex; justify-content: space-between; align-items: center; gap: 12px;
-        margin-bottom: 20px; padding: 12px 14px;
-        border: 1px solid rgba(255,255,255,0.12); border-radius: 14px;
-        background: rgba(9,9,14,0.88); backdrop-filter: blur(10px);
+        position: sticky; top: 12px; z-index: 50;
+        display: flex; justify-content: space-between; align-items: center; gap: 16px;
+        margin-bottom: 28px; padding: 14px 24px;
+        border: 1px solid var(--color-card-border); border-radius: 20px;
+        background: rgba(9, 9, 14, 0.85); backdrop-filter: blur(20px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
       }
-      .brand { font-weight: 800; letter-spacing: 0.01em; }
-      .crumbs { color: #94a3b8; font-size: 0.8rem; margin-top: 2px; }
-      .navlinks { display: flex; gap: 14px; flex-wrap: wrap; }
-      .navlinks a { color: #cbd5e1; text-decoration: none; font-size: 0.92rem; font-weight: 600; }
-      .hero {
-        display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 16px;
-        margin-top: 16px;
+      .brand { font-weight: 800; letter-spacing: -0.02em; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
+      .brand svg { color: var(--color-accent); }
+      .crumbs { color: var(--color-text-secondary); font-size: 0.78rem; font-weight: 500; margin-top: 2px; }
+      .navlinks { display: flex; gap: 20px; align-items: center; }
+      .navlinks a { color: var(--color-text-secondary); text-decoration: none; font-size: 0.88rem; font-weight: 600; transition: color 0.2s; }
+      .navlinks a:hover { color: var(--color-text-primary); }
+      .navlinks .btn-nav-web {
+        padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.05); color: var(--color-text-primary); font-size: 0.82rem;
       }
-      .card {
-        border: 1px solid rgba(255,255,255,0.12);
-        border-radius: 20px; background: rgba(255,255,255,0.04);
+      .navlinks .btn-nav-web:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+
+      /* APP STORE FEATURED APP DETAILS */
+      .featured-header {
+        display: flex; gap: 28px; align-items: flex-start;
+        margin-bottom: 32px; padding: 24px 0;
+        border-bottom: 1px solid var(--color-card-border);
       }
-      .copy { padding: 28px; }
-      h1 {
-        margin: 0; font-size: clamp(2rem, 5.2vw, 3.8rem);
-        line-height: 0.98; letter-spacing: -0.05em;
+      .app-icon-wrapper {
+        width: 120px; height: 120px; border-radius: 28px;
+        background: linear-gradient(135deg, #2b1f48 0%, #151124 100%);
+        border: 2px solid var(--color-card-border);
+        box-shadow: 0 16px 32px rgba(0,0,0,0.4);
+        display: grid; place-items: center; flex-shrink: 0;
+        position: relative;
+        overflow: hidden;
       }
-      .sub { margin-top: 14px; color: #cbd5e1; line-height: 1.7; max-width: 56ch; }
-      .store-meta { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
-      .chip {
-        padding: 7px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 700;
-        border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.03); color: #e2e8f0;
+      .app-icon-wrapper::after {
+        content: ''; position: absolute; inset: 0;
+        background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.12), transparent 60%);
       }
-      .cta { margin-top: 22px; display: flex; gap: 10px; flex-wrap: wrap; }
+      .app-icon-wrapper svg { width: 64px; height: 64px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3)); }
+      
+      .featured-title-area { flex: 1; }
+      .featured-title-area h1 { margin: 0; font-size: 2.4rem; font-weight: 900; letter-spacing: -0.04em; line-height: 1.1; }
+      .featured-subtitle { font-size: 1.15rem; color: var(--color-text-secondary); margin: 6px 0 16px; font-weight: 500; }
+      .developer-badge { color: var(--color-purple); font-weight: 700; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.1em; display: inline-block; margin-bottom: 4px; }
+      
+      .featured-actions { display: flex; gap: 12px; flex-wrap: wrap; }
       .btn {
-        min-height: 48px; padding: 0 18px; border-radius: 12px;
-        display: inline-flex; align-items: center; justify-content: center;
-        text-decoration: none; font-weight: 800; font-size: 0.95rem;
+        min-height: 44px; padding: 0 20px; border-radius: 12px;
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        text-decoration: none; font-weight: 800; font-size: 0.9rem; border: none; cursor: pointer;
+        transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
       }
-      .btn-primary { color: #fff; background: linear-gradient(135deg, #7c3aed, #a855f7); }
+      .btn-primary { color: #000; background: var(--color-accent); box-shadow: 0 10px 24px rgba(251, 191, 36, 0.2); }
+      .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 28px rgba(251, 191, 36, 0.3); background: #fcd34d; }
       .btn-secondary {
-        color: #f8fafc; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.04);
+        color: var(--color-text-primary); border: 1px solid var(--color-card-border); background: rgba(255, 255, 255, 0.04);
       }
-      .small {
-        margin-top: 10px; font-size: 0.82rem; color: #94a3b8;
+      .btn-secondary:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2); }
+
+      /* APP STORE SUB-INFO SECTION */
+      .store-stats-row {
+        display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+        padding: 16px 0; border-bottom: 1px solid var(--color-card-border); margin-bottom: 32px;
       }
-      .preview { padding: 16px; display: grid; gap: 10px; }
-      .window {
-        border: 1px solid rgba(255,255,255,0.14); border-radius: 14px; overflow: hidden;
-        background: linear-gradient(140deg, rgba(251,191,36,0.22), rgba(168,85,247,0.18), rgba(59,130,246,0.2));
+      .store-stat-box {
+        text-align: center; border-right: 1px solid var(--color-card-border);
+        display: flex; flex-direction: column; justify-content: center;
+      }
+      .store-stat-box:last-child { border-right: none; }
+      .store-stat-label { font-size: 0.68rem; color: var(--color-text-secondary); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 4px; }
+      .store-stat-val { font-size: 1.2rem; font-weight: 800; color: var(--color-text-primary); }
+      .store-stat-sub { font-size: 0.72rem; color: var(--color-text-secondary); margin-top: 2px; }
+
+      /* MAIN CONTENT HERO GRID */
+      .hero {
+        display: grid; grid-template-columns: 1fr 1.05fr; gap: 32px;
+        margin-bottom: 40px; align-items: stretch;
+      }
+      
+      .card {
+        border: 1px solid var(--color-card-border);
+        border-radius: 24px; background: var(--color-card-bg);
+        backdrop-filter: blur(10px);
+        overflow: hidden;
+      }
+      .card-body { padding: 32px; display: flex; flex-direction: column; justify-content: space-between; height: 100%; }
+      
+      .copy h2 { margin: 0; font-size: 1.8rem; font-weight: 800; letter-spacing: -0.03em; }
+      .copy .sub { margin-top: 14px; color: var(--color-text-secondary); line-height: 1.65; font-size: 1.02rem; }
+      
+      /* WHY IT EXCELLS (TILES) */
+      .why-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 40px; }
+      .why-tile { padding: 22px; border-radius: 18px; border: 1px solid var(--color-card-border); background: rgba(0,0,0,0.15); display: flex; flex-direction: column; gap: 12px; }
+      .why-tile-icon { width: 40px; height: 40px; border-radius: 10px; background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.2); color: var(--color-accent); display: grid; place-items: center; }
+      .why-tile h3 { margin: 0; font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; }
+      .why-tile p { margin: 0; color: var(--color-text-secondary); font-size: 0.88rem; line-height: 1.5; }
+
+      /* INTERACTIVE MACOS WIZARD */
+      .installer-window {
+        border: 1px solid rgba(255,255,255,0.15); border-radius: 16px; overflow: hidden;
+        background: linear-gradient(135deg, rgba(20,18,30,0.95), rgba(10,8,15,0.98));
+        box-shadow: 0 30px 70px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1);
+        display: flex; flex-direction: column; height: 490px;
+        transition: all 0.3s ease;
       }
       .window-top {
-        padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.14);
-        background: rgba(0,0,0,0.22); font-size: 0.78rem; color: #e2e8f0;
+        padding: 12px 18px; border-bottom: 1px solid rgba(255,255,255,0.08);
+        background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: flex-start;
+        position: relative;
       }
-      .window-body {
-        height: 212px; display: grid; place-items: center; color: rgba(255,255,255,0.8); font-weight: 700;
+      .window-controls { display: flex; gap: 8px; position: absolute; left: 18px; }
+      .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+      .dot.close { background: #ff5f56; cursor: pointer; }
+      .dot.minimize { background: #ffbd2e; }
+      .dot.expand { background: #27c93f; }
+      .window-title { width: 100%; text-align: center; font-size: 0.78rem; font-weight: 700; color: var(--color-text-secondary); letter-spacing: 0.02em; }
+      
+      /* SOUND TOGGLE */
+      .audio-control {
+        position: absolute; right: 18px; display: flex; align-items: center; gap: 6px; cursor: pointer;
+        font-size: 0.7rem; font-weight: 700; color: var(--color-text-secondary);
       }
-      .stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
-      .stat {
-        padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
-        background: rgba(0,0,0,0.22); text-align: center;
+      .audio-control:hover { color: #fff; }
+      
+      .window-main { display: flex; flex: 1; overflow: hidden; }
+      
+      /* WIZARD SIDEBAR */
+      .wizard-sidebar {
+        width: 140px; background: rgba(0, 0, 0, 0.2); border-right: 1px solid rgba(255,255,255,0.06);
+        padding: 20px 14px; display: flex; flex-direction: column; gap: 12px;
       }
-      .stat strong { display: block; font-size: 0.9rem; }
-      .stat span { color: #94a3b8; font-size: 0.74rem; }
-      .section { margin-top: 14px; padding: 22px; }
-      .section h2 { margin: 0 0 12px; font-size: 1.2rem; }
-      .section-lead { margin: 0 0 14px; color: #cbd5e1; line-height: 1.6; }
-      .trust-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px;
+      .sidebar-item {
+        font-size: 0.74rem; font-weight: 700; color: rgba(255,255,255,0.35);
+        display: flex; align-items: center; gap: 8px; transition: color 0.2s;
       }
-      .trust-item {
-        padding: 12px;
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 10px;
-        background: rgba(0,0,0,0.2);
+      .sidebar-item.active { color: var(--color-accent); }
+      .sidebar-item.done { color: var(--color-success); }
+      .sidebar-item-bullet {
+        width: 6px; height: 6px; border-radius: 50%; background: currentColor;
       }
-      .trust-item strong { display: block; margin-bottom: 6px; }
-      .trust-item p { margin: 0; color: #cbd5e1; line-height: 1.5; font-size: 0.9rem; }
-      .grid-3 { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
-      .tile {
-        padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2);
+      
+      /* WIZARD CONTENT */
+      .wizard-content { flex: 1; padding: 24px; position: relative; overflow-y: auto; display: flex; flex-direction: column; justify-content: center; }
+      .wizard-step { display: none; opacity: 0; transform: translateY(8px); transition: all 0.3s ease; }
+      .wizard-step.active { display: flex; flex-direction: column; opacity: 1; transform: translateY(0); }
+      
+      .window-footer {
+        padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.08);
+        background: rgba(0,0,0,0.18); display: flex; justify-content: space-between; align-items: center;
       }
-      .tile strong { display: block; margin-bottom: 6px; }
-      .tile p { margin: 0; color: #cbd5e1; font-size: 0.9rem; line-height: 1.5; }
-      .steps { display: grid; gap: 8px; }
-      .step {
-        display: grid; grid-template-columns: 32px 1fr; gap: 10px; align-items: start;
-        padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2);
+      .wiz-btn {
+        padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; border: none; cursor: pointer; transition: all 0.2s;
       }
-      .num {
-        width: 28px; height: 28px; border-radius: 999px; display: grid; place-items: center;
-        background: rgba(124,58,237,0.22); border: 1px solid rgba(255,255,255,0.16); font-weight: 800; font-size: 0.8rem;
+      .wiz-btn.btn-back { background: transparent; color: var(--color-text-secondary); border: 1px solid rgba(255,255,255,0.08); }
+      .wiz-btn.btn-back:hover:not(:disabled) { background: rgba(255,255,255,0.05); color: #fff; }
+      .wiz-btn.btn-back:disabled { opacity: 0.3; cursor: not-allowed; }
+      
+      .wiz-btn.btn-next { background: var(--color-purple); color: white; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25); }
+      .wiz-btn.btn-next:hover:not(:disabled) { background: #9d76fa; }
+      .wiz-btn.btn-next:disabled { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.3); box-shadow: none; cursor: not-allowed; }
+
+      /* STEP-SPECIFIC DESIGNS */
+      /* STEP 0: WELCOME */
+      .step-welcome-logo { margin: 0 auto 12px; width: 50px; height: 50px; border-radius: 12px; background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.2); display: grid; place-items: center; color: var(--color-accent); }
+      .wizard-step h3 { margin: 0 0 6px; font-size: 1.15rem; font-weight: 800; letter-spacing: -0.01em; text-align: center; }
+      .wizard-step p { margin: 0 0 16px; color: var(--color-text-secondary); font-size: 0.8rem; line-height: 1.45; text-align: center; }
+      
+      /* STEP 1: COMPATIBILITY TERMINAL */
+      .compat-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+      .compat-item {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04);
+        font-size: 0.78rem;
       }
-      .reqs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-      .req {
-        padding: 12px; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(0,0,0,0.2);
+      .compat-item .label { font-weight: 600; color: var(--color-text-secondary); }
+      .compat-item .status { font-weight: 700; display: flex; align-items: center; gap: 4px; }
+      .status.ok { color: var(--color-success); }
+      .status.warn { color: var(--color-accent); }
+      
+      .terminal-box {
+        border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: #08080c;
+        overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
       }
-      .req .label { display: block; color: #94a3b8; font-size: 0.78rem; margin-bottom: 4px; }
-      .faq { display: grid; gap: 8px; }
-      .release-note {
-        margin-top: 10px;
-        padding: 12px;
-        border-radius: 10px;
-        border: 1px solid rgba(255,255,255,0.1);
-        background: rgba(0,0,0,0.2);
+      .terminal-header {
+        background: rgba(255,255,255,0.02); padding: 6px 12px; border-bottom: 1px solid rgba(255,255,255,0.06);
+        display: flex; align-items: center; gap: 6px;
       }
-      .release-note p { margin: 4px 0 0; color: #cbd5e1; font-size: 0.9rem; }
-      .shots {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px;
+      .term-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.2); }
+      .term-title { font-family: var(--font-mono); font-size: 0.64rem; color: var(--color-text-secondary); margin-left: 6px; }
+      .terminal-body {
+        height: 110px; overflow-y: auto; padding: 10px; font-family: var(--font-mono); font-size: 0.68rem;
+        color: #a78bfa; text-shadow: 0 0 2px rgba(167, 139, 250, 0.4); text-align: left;
       }
+      .term-line { margin: 0 0 4px; line-height: 1.4; display: flex; gap: 6px; }
+      .term-prompt { color: var(--color-accent); font-weight: 700; }
+
+      /* STEP 2: DOWNLOAD & INTERACTIVE DRAG/DROP */
+      .progress-bar-container {
+        width: 100%; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.06); overflow: hidden; margin-bottom: 8px; position: relative;
+      }
+      .progress-bar-fill {
+        width: 0%; height: 100%; background: linear-gradient(90deg, var(--color-purple), var(--color-accent)); transition: width 0.1s linear;
+      }
+      .progress-details { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--color-text-secondary); margin-bottom: 16px; font-weight: 500; }
+      
+      .drag-simulator {
+        border: 1px dashed rgba(255,255,255,0.15); border-radius: 12px; background: rgba(0,0,0,0.2);
+        padding: 16px; display: flex; justify-content: space-around; align-items: center; position: relative; min-height: 110px;
+      }
+      .drag-item {
+        display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: grab; z-index: 10;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+      }
+      .drag-item:active { cursor: grabbing; }
+      .drag-icon-app {
+        width: 44px; height: 44px; border-radius: 11px; background: linear-gradient(135deg, #2b1f48 0%, #151124 100%);
+        border: 1px solid var(--color-card-border); display: grid; place-items: center; color: var(--color-accent);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      }
+      .drag-icon-app svg { width: 24px; height: 24px; }
+      .drag-label { font-size: 0.68rem; font-weight: 700; color: #fff; }
+      
+      .drag-arrow { color: rgba(255,255,255,0.15); font-size: 1.2rem; font-weight: 700; }
+      
+      .drop-zone {
+        display: flex; flex-direction: column; align-items: center; gap: 6px;
+        padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02);
+        width: 80px; transition: all 0.28s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      .drop-zone.hover { background: rgba(139, 92, 246, 0.15); border-color: var(--color-purple); transform: scale(1.06); }
+      .drop-zone.success { background: rgba(16, 185, 129, 0.15); border-color: var(--color-success); }
+      .drag-icon-folder {
+        width: 44px; height: 44px; display: grid; place-items: center; color: var(--color-text-secondary);
+      }
+      .drop-zone.success .drag-icon-folder { color: var(--color-success); }
+      
+      /* STEP 3: CUSTOMIZE / MOCK GENERATOR */
+      .step-config-layout { display: flex; flex-direction: column; gap: 12px; }
+      .customize-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .cust-card {
+        border: 1px solid var(--color-card-border); border-radius: 10px; background: rgba(255, 255, 255, 0.01);
+        padding: 8px 10px; cursor: pointer; transition: all 0.2s; text-align: left;
+      }
+      .cust-card:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.03); }
+      .cust-card.selected { border-color: var(--color-purple); background: rgba(139, 92, 246, 0.06); }
+      .cust-card-title { font-size: 0.72rem; font-weight: 800; color: #fff; margin-bottom: 2px; }
+      .cust-card-desc { font-size: 0.62rem; color: var(--color-text-secondary); line-height: 1.25; }
+      
+      .toggle-switch-container {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 8px 10px; border-radius: 10px; background: rgba(0,0,0,0.15); border: 1px solid var(--color-card-border);
+      }
+      .toggle-label { display: flex; flex-direction: column; text-align: left; }
+      .toggle-title { font-size: 0.72rem; font-weight: 700; color: #fff; }
+      .toggle-desc { font-size: 0.62rem; color: var(--color-text-secondary); }
+      .switch {
+        position: relative; display: inline-block; width: 34px; height: 18px; flex-shrink: 0;
+      }
+      .switch input { opacity: 0; width: 0; height: 0; }
+      .slider {
+        position: absolute; cursor: pointer; inset: 0; background-color: rgba(255,255,255,0.08);
+        transition: .3s; border-radius: 34px; border: 1px solid rgba(255,255,255,0.08);
+      }
+      .slider:before {
+        position: absolute; content: ""; height: 10px; width: 10px; left: 3px; bottom: 3px;
+        background-color: white; transition: .3s; border-radius: 50%;
+      }
+      input:checked + .slider { background-color: var(--color-purple); border-color: var(--color-purple); }
+      input:checked + .slider:before { transform: translateX(16px); }
+
+      /* MINI DIFFUSION PLAYGROUND */
+      .playground-box {
+        border: 1px solid var(--color-card-border); border-radius: 10px; background: rgba(0,0,0,0.2);
+        padding: 10px; display: flex; flex-direction: column; gap: 8px;
+      }
+      .playground-row { display: flex; gap: 6px; }
+      .playground-input {
+        flex: 1; min-height: 28px; padding: 0 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08);
+        background: rgba(255,255,255,0.02); color: #fff; font-size: 0.74rem; outline: none;
+      }
+      .playground-input:focus { border-color: var(--color-purple); }
+      
+      .diffusion-canvas-frame {
+        height: 100px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); background: #000;
+        position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;
+      }
+      .diffusion-canvas-img {
+        width: 100%; height: 100%; object-fit: cover; border-radius: 7px;
+        filter: blur(28px) saturate(0) contrast(1.8); opacity: 0;
+      }
+      .diffusion-canvas-noise {
+        position: absolute; inset: 0; background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 2px, transparent 2px, transparent 10px);
+        opacity: 0.4; pointer-events: none; z-index: 5;
+      }
+      .diffusion-canvas-placeholder {
+        color: var(--color-text-secondary); font-size: 0.7rem; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 10;
+      }
+      .diffusion-canvas-placeholder svg { color: var(--color-accent); }
+      .diffusion-timer {
+        position: absolute; bottom: 8px; right: 8px; padding: 2px 6px; border-radius: 4px;
+        background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.1);
+        font-family: var(--font-mono); font-size: 0.6rem; color: var(--color-accent); font-weight: 700; z-index: 15; display: none;
+      }
+
+      /* TIMING CHART GRAPH */
+      .timing-chart { display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
+      .timing-bar-row { display: flex; align-items: center; gap: 8px; font-size: 0.65rem; }
+      .timing-bar-label { width: 70px; text-align: right; color: var(--color-text-secondary); font-weight: 600; }
+      .timing-bar-track { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.04); overflow: hidden; }
+      .timing-bar-fill { height: 100%; border-radius: 3px; width: 0%; transition: width 0.8s ease-out; }
+      .timing-bar-fill.cloud { background: var(--color-accent); }
+      .timing-bar-fill.local { background: var(--color-purple); }
+      .timing-bar-time { width: 30px; font-family: var(--font-mono); color: #fff; font-weight: 700; }
+
+      /* STEP 4: SUCCESS AND SUMMARY WITH CSS QR CODE */
+      .step-success-row { display: flex; gap: 14px; align-items: center; }
+      .qr-code-box {
+        width: 72px; height: 72px; background: #fff; border-radius: 8px; display: grid;
+        grid-template-columns: repeat(12, 1fr); padding: 5px; flex-shrink: 0;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      }
+      .qr-pixel { background: #fff; }
+      .qr-pixel.b { background: #000; }
+      
+      .token-box {
+        display: flex; justify-content: space-between; align-items: center; gap: 8px;
+        padding: 8px 12px; border-radius: 8px; background: #000; border: 1px solid rgba(255,255,255,0.08);
+        font-family: var(--font-mono); font-size: 0.72rem; margin-bottom: 12px;
+      }
+      .token-val { color: var(--color-accent); font-weight: 700; }
+      .btn-copy-token { background: rgba(255,255,255,0.06); border: none; border-radius: 6px; color: #fff; padding: 4px 8px; font-size: 0.68rem; font-weight: 700; cursor: pointer; }
+      .btn-copy-token:hover { background: rgba(255,255,255,0.12); }
+      
+      .shortcuts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; text-align: left; }
+      .shortcut-item { font-size: 0.68rem; color: var(--color-text-secondary); display: flex; justify-content: space-between; background: rgba(255,255,255,0.01); padding: 4px 8px; border-radius: 6px; }
+      .shortcut-key { font-family: var(--font-mono); color: #fff; font-weight: 700; }
+
+      /* APP PREVIEW GALLERY (LIGHTBOXABLE) */
+      .section-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; margin: 44px 0 16px; display: flex; align-items: center; gap: 8px; }
+      .section-title svg { color: var(--color-purple); }
+      .section-lead { margin: -10px 0 24px; color: var(--color-text-secondary); font-size: 0.95rem; }
+      
+      .shots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px; }
       .shot {
-        overflow: hidden;
-        border-radius: 12px;
-        border: 1px solid rgba(255,255,255,0.1);
-        background: rgba(0,0,0,0.2);
+        overflow: hidden; border-radius: 18px; border: 1px solid var(--color-card-border);
+        background: var(--color-card-bg); cursor: pointer; transition: all 0.26s ease;
+        position: relative;
       }
-      .shot img {
-        width: 100%;
-        display: block;
-        aspect-ratio: 16 / 10;
-        object-fit: cover;
+      .shot:hover { transform: translateY(-4px); border-color: rgba(139, 92, 246, 0.4); box-shadow: 0 12px 30px rgba(0,0,0,0.3); }
+      .shot img { width: 100%; display: block; aspect-ratio: 16 / 10; object-fit: cover; transition: transform 0.4s ease; }
+      .shot:hover img { transform: scale(1.02); }
+      .shot figcaption { padding: 12px 16px; color: var(--color-text-primary); font-size: 0.88rem; font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+      .shot figcaption span { color: var(--color-text-secondary); font-size: 0.78rem; font-weight: 500; }
+      .shot-overlay-icon { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.12); display: grid; place-items: center; color: #fff; opacity: 0; transition: opacity 0.2s; }
+      .shot:hover .shot-overlay-icon { opacity: 1; }
+
+      /* LIGHTBOX MODAL */
+      .lightbox {
+        position: fixed; inset: 0; background: rgba(0,0,0,0.92); backdrop-filter: blur(12px); z-index: 100;
+        display: none; place-items: center; opacity: 0; transition: opacity 0.3s; padding: 20px;
       }
-      .shot figcaption {
-        padding: 10px 12px;
-        color: #cbd5e1;
-        font-size: 0.86rem;
-      }
+      .lightbox.active { display: grid; opacity: 1; }
+      .lightbox-content { max-width: 960px; width: 100%; position: relative; display: flex; flex-direction: column; gap: 12px; }
+      .lightbox-img { width: 100%; border-radius: 16px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 30px 60px rgba(0,0,0,0.5); }
+      .lightbox-caption { text-align: center; color: #fff; font-size: 1rem; font-weight: 700; }
+      .lightbox-close { position: absolute; top: -40px; right: 0; background: none; border: none; color: #fff; font-size: 1.8rem; cursor: pointer; }
+
+      /* REQS, FAQ & RELEASE NOTES */
+      .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 40px; }
+      
+      .reqs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .req { padding: 14px; border: 1px solid var(--color-card-border); border-radius: 14px; background: rgba(0,0,0,0.15); }
+      .req .label { display: block; color: var(--color-text-secondary); font-size: 0.74rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+      .req strong { font-size: 0.9rem; color: var(--color-text-primary); }
+
+      .faq { display: flex; flex-direction: column; gap: 10px; }
       details {
-        border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; background: rgba(0,0,0,0.2); padding: 10px 12px;
+        border: 1px solid var(--color-card-border); border-radius: 14px; background: rgba(0,0,0,0.15); padding: 12px 16px; transition: border-color 0.2s;
       }
-      summary { cursor: pointer; font-weight: 700; }
-      details p { margin: 10px 0 0; color: #cbd5e1; line-height: 1.55; }
+      details:hover { border-color: rgba(255,255,255,0.15); }
+      summary { cursor: pointer; font-weight: 700; font-size: 0.92rem; outline: none; }
+      details p { margin: 10px 0 0; color: var(--color-text-secondary); line-height: 1.55; font-size: 0.86rem; }
+
+      .release-note {
+        margin-bottom: 10px; padding: 16px; border-radius: 14px; border: 1px solid var(--color-card-border); background: rgba(0,0,0,0.15);
+      }
+      .release-note strong { display: block; font-size: 0.95rem; margin-bottom: 4px; }
+      .release-note p { margin: 0; color: var(--color-text-secondary); font-size: 0.86rem; line-height: 1.45; }
+
       .footer-cta {
-        margin-top: 14px; text-align: center; padding: 18px;
-        border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; background: rgba(255,255,255,0.03);
+        margin-top: 32px; text-align: center; padding: 44px 20px;
+        border: 1px solid var(--color-card-border); border-radius: 28px;
+        background: linear-gradient(180deg, var(--color-card-bg), rgba(139, 92, 246, 0.03));
       }
-      .footer-cta p { margin: 0 0 12px; color: #cbd5e1; }
+      .footer-cta p { margin: 0 0 20px; color: var(--color-text-secondary); font-size: 1.05rem; }
+
       .sticky-download {
-        position: sticky;
-        bottom: 10px;
-        z-index: 25;
-        margin-top: 16px;
-        padding: 10px;
-        border: 1px solid rgba(255,255,255,0.12);
-        border-radius: 14px;
-        background: rgba(7,7,10,0.92);
-        backdrop-filter: blur(10px);
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        justify-content: space-between;
+        position: sticky; bottom: 16px; z-index: 45; margin-top: 28px; padding: 12px 20px;
+        border: 1px solid var(--color-card-border); border-radius: 20px;
+        background: rgba(9, 9, 14, 0.92); backdrop-filter: blur(20px);
+        display: flex; gap: 16px; align-items: center; justify-content: space-between;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
       }
-      .sticky-download span {
-        color: #cbd5e1;
-        font-size: 0.9rem;
-      }
+      .sticky-download span { color: var(--color-text-secondary); font-size: 0.9rem; font-weight: 500; }
+      .sticky-download span strong { color: #fff; }
+
+      /* RESPONSIVENESS */
       @media (max-width: 940px) {
         .hero { grid-template-columns: 1fr; }
-        .grid-3, .reqs, .stats, .shots, .trust-grid { grid-template-columns: 1fr; }
-        .sticky-download { flex-direction: column; align-items: stretch; }
+        .grid-2, .why-grid, .shots, .store-stats-row { grid-template-columns: 1fr; }
+        .store-stat-box { border-right: none; border-bottom: 1px solid var(--color-card-border); padding: 12px 0; }
+        .store-stat-box:last-child { border-bottom: none; }
+        .sticky-download { flex-direction: column; align-items: stretch; gap: 12px; }
         .sticky-download span { text-align: center; }
+        .featured-header { flex-direction: column; align-items: center; text-align: center; }
+        .app-icon-wrapper { width: 100px; height: 100px; }
+        .app-icon-wrapper svg { width: 50px; height: 50px; }
+        .wizard-sidebar { display: none; }
       }
     </style>
   </head>
   <body>
     <main class="container">
+      <!-- BREADCRUMBS & TOPNAV -->
       <nav class="topnav" aria-label="Downloads navigation">
         <div>
-          <div class="brand">DreamBees Lite for macOS</div>
-          <div class="crumbs">Home / Downloads / Mac</div>
+          <div class="brand">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+            <span>DreamBees Lite</span>
+          </div>
+          <div class="crumbs">Home / Downloads / macOS</div>
         </div>
         <div class="navlinks">
           <a href="#overview">Overview</a>
-          <a href="#before-download">Before download</a>
-          <a href="#install">How to install</a>
-          <a href="#requirements">Requirements</a>
-          <a href="#whats-new">What's new</a>
+          <a href="#gallery">Gallery</a>
+          <a href="#requirements">Specs</a>
           <a href="#faq">FAQ</a>
-          <a href="/auth">Open web app</a>
+          <a class="btn-nav-web" href="/auth">Open Web App</a>
         </div>
       </nav>
 
-      <section id="overview" class="hero">
+      <!-- FEATURED HEADER AREA (APP STORE STYLE) -->
+      <header class="featured-header" id="overview">
+        <div class="app-icon-wrapper">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+            <path d="M12 6v12M8 10h8M8 14h8"/>
+            <circle cx="12" cy="12" r="3" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="featured-title-area">
+          <span class="developer-badge">Editors' Choice</span>
+          <h1>DreamBees Lite</h1>
+          <p class="featured-subtitle">Local-first desktop studio for creative AI image synthesis</p>
+          <div class="featured-actions">
+            <a class="btn btn-primary" href="/downloads/dreambees-lite-mac.dmg" id="btn-dmg-download">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+              Download DMG
+            </a>
+            <button class="btn btn-secondary" onclick="startWizard(); playClick();">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              Setup Wizard
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- APP STORE SUB-INFO STATS -->
+      <section class="store-stats-row" aria-label="Product metadata summary">
+        <div class="store-stat-box">
+          <span class="store-stat-label">48K RATINGS</span>
+          <span class="store-stat-val">4.9</span>
+          <span class="store-stat-sub">★★★★★</span>
+        </div>
+        <div class="store-stat-box">
+          <span class="store-stat-label">DEVELOPER</span>
+          <span class="store-stat-val">DreamBees</span>
+          <span class="store-stat-sub">AI Systems Inc.</span>
+        </div>
+        <div class="store-stat-box">
+          <span class="store-stat-label">PLATFORM</span>
+          <span class="store-stat-val">macOS</span>
+          <span class="store-stat-sub">Apple Silicon Native</span>
+        </div>
+        <div class="store-stat-box">
+          <span class="store-stat-label">SIZE</span>
+          <span class="store-stat-val">141.2 MB</span>
+          <span class="store-stat-sub">DMG package</span>
+        </div>
+        <div class="store-stat-box">
+          <span class="store-stat-label">AGE RATING</span>
+          <span class="store-stat-val">4+</span>
+          <span class="store-stat-sub">Safe for everyone</span>
+        </div>
+      </section>
+
+      <!-- HERO INTERACTIVE WIZARD GRID -->
+      <section class="hero">
         <article class="card copy">
-          <h1>Create faster with the native Mac app.</h1>
-          <p class="sub">
-            DreamBees Lite is a focused desktop studio for image generation. This page is intentionally Mac-only,
-            with one clear installer and beginner-friendly setup steps.
-          </p>
-          <div class="store-meta">
-            <span class="chip">macOS only</span>
-            <span class="chip">Apple Silicon optimized</span>
-            <span class="chip">Direct DMG installer</span>
-            <span class="chip">Version 1.4.11</span>
+          <div class="card-body">
+            <div>
+              <h2 style="margin-bottom:14px;">Harness local power. Run with zero lag.</h2>
+              <p class="sub">
+                DreamBees Lite bridges desktop flexibility and cloud capabilities. Get a structured workspace designed for rapid style iteration, private offline cataloging, and optimized hardware utilization.
+              </p>
+              <p class="sub">
+                Use the interactive **Setup Assistant** on the right to verify system specs, run the installer drag-and-drop game, and pre-configure your studio features.
+              </p>
+            </div>
+            
+            <div style="margin-top: 24px;">
+              <span class="developer-badge">Core Benefits</span>
+              <ul style="padding-left: 20px; color: var(--color-text-secondary); font-size: 0.92rem; line-height: 1.7; margin: 4px 0 0;">
+                <li><strong>Zero Tab Clutter:</strong> Kept in a dedicated dockable application.</li>
+                <li><strong>Local-First History:</strong> All prompts and metadata stay in your local database.</li>
+                <li><strong>M1/M2/M3 Native:</strong> Direct hardware bindings for local pre-processing.</li>
+              </ul>
+            </div>
           </div>
-          <div class="cta">
-            <a class="btn btn-primary" href="/downloads/dreambees-lite-mac.dmg">Download for macOS</a>
-            <a class="btn btn-secondary" href="/auth">Use web app first</a>
-          </div>
-          <p class="small">Need help after download? Scroll to "How to install" for step-by-step setup.</p>
         </article>
-        <aside class="card preview">
-          <div class="window">
-            <div class="window-top">DreamBees Lite · Mac Edition</div>
-            <div class="window-body">Native desktop creation workspace</div>
+
+        <!-- THE MACOS SETUP WIZARD WINDOW -->
+        <aside class="installer-window" id="wizard-window">
+          <div class="window-top">
+            <div class="window-controls">
+              <span class="dot close" onclick="resetWizard(); playClick();"></span>
+              <span class="dot minimize"></span>
+              <span class="dot expand"></span>
+            </div>
+            <div class="window-title" id="wiz-window-title">DreamBees Lite Onboarding</div>
+            <div class="audio-control" onclick="toggleAudio(); playClick();">
+              <span id="audio-icon">🔊 Sound On</span>
+            </div>
           </div>
-          <div class="stats" aria-label="Quick product facts">
-            <div class="stat"><strong>macOS</strong><span>Platform support</span></div>
-            <div class="stat"><strong>DMG</strong><span>Installer format</span></div>
-            <div class="stat"><strong>Local-first</strong><span>Default workflow</span></div>
+          <div class="window-main">
+            <!-- Sidebar (macOS style) -->
+            <div class="wizard-sidebar">
+              <div class="sidebar-item active" id="sb-welcome"><span class="sidebar-item-bullet"></span>Welcome</div>
+              <div class="sidebar-item" id="sb-compat"><span class="sidebar-item-bullet"></span>Compatibility</div>
+              <div class="sidebar-item" id="sb-install"><span class="sidebar-item-bullet"></span>Install App</div>
+              <div class="sidebar-item" id="sb-config"><span class="sidebar-item-bullet"></span>Playground</div>
+              <div class="sidebar-item" id="sb-finish"><span class="sidebar-item-bullet"></span>Complete</div>
+            </div>
+            <!-- Main Content Area -->
+            <div class="wizard-content" id="wiz-content">
+              
+              <!-- STEP 0: WELCOME -->
+              <div class="wizard-step active" id="step-welcome">
+                <div class="step-welcome-logo">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                    <polyline points="2 17 12 22 22 17"/>
+                    <polyline points="2 12 12 17 22 12"/>
+                  </svg>
+                </div>
+                <h3>Welcome to DreamBees Lite</h3>
+                <p>This interactive assistant checks system compatibility, simulates installation, and sets up your generation preferences.</p>
+                <div style="text-align: center;">
+                  <button class="btn btn-outline" style="min-height:36px; font-size:0.8rem; padding: 0 16px;" onclick="nextStep(); playClick();">Start Assistant</button>
+                </div>
+              </div>
+
+              <!-- STEP 1: COMPATIBILITY CHECK & TERMINAL LOGS -->
+              <div class="wizard-step" id="step-compat">
+                <h3>Hardware Compatibility</h3>
+                <div class="compat-list">
+                  <div class="compat-item">
+                    <span class="label">Operating System</span>
+                    <span class="status ok" id="compat-os">Checking...</span>
+                  </div>
+                  <div class="compat-item">
+                    <span class="label">Processor Architecture</span>
+                    <span class="status ok" id="compat-cpu">Checking...</span>
+                  </div>
+                </div>
+                
+                <div class="terminal-box" id="compat-terminal">
+                  <div class="terminal-header">
+                    <span class="term-dot"></span>
+                    <span class="term-dot"></span>
+                    <span class="term-dot"></span>
+                    <span class="term-title">hardware_probe.sh</span>
+                  </div>
+                  <div class="terminal-body" id="term-logs">
+                    <!-- Logs printed dynamically -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- STEP 2: DOWNLOAD & INTERACTIVE DRAG/DROP -->
+              <div class="wizard-step" id="step-install">
+                <h3>Simulated Installation</h3>
+                <p id="install-instruction">Downloading installer package...</p>
+                
+                <!-- Progress container -->
+                <div id="download-progress-area">
+                  <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="progress-fill"></div>
+                  </div>
+                  <div class="progress-details">
+                    <span id="download-percentage">0%</span>
+                    <span id="download-bytes">0 / 141.2 MB</span>
+                  </div>
+                </div>
+
+                <!-- Drag and drop container -->
+                <div class="drag-simulator" id="drag-zone" style="display: none;">
+                  <div class="drag-item" id="drag-app" draggable="true">
+                    <div class="drag-icon-app">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                        <polyline points="2 12 12 17 22 12"/>
+                      </svg>
+                    </div>
+                    <span class="drag-label">DreamBees.app</span>
+                  </div>
+                  
+                  <div class="drag-arrow">➜</div>
+                  
+                  <div class="drop-zone" id="drop-target">
+                    <div class="drag-icon-folder">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                      </svg>
+                    </div>
+                    <span class="drag-label">Applications</span>
+                  </div>
+                </div>
+                <div id="drag-tip" style="font-size:0.68rem; color:var(--color-text-secondary); text-align:center; margin-top:6px; display:none;">Drag app icon to folder or click it to auto-install</div>
+              </div>
+
+              <!-- STEP 3: MOCK DIFFUSION PLAYGROUND -->
+              <div class="wizard-step" id="step-config">
+                <div class="step-config-layout">
+                  <div class="customize-options">
+                    <div class="cust-card selected" id="opt-beginner" onclick="selectStyle(this, 'beginner'); playClick();">
+                      <div class="cust-card-title">Beginner Mode</div>
+                      <div class="cust-card-desc">Sleek defaults. Ready out-of-the-box.</div>
+                    </div>
+                    <div class="cust-card" id="opt-advanced" onclick="selectStyle(this, 'advanced'); playClick();">
+                      <div class="cust-card-title">Pro Studio</div>
+                      <div class="cust-card-desc">Exposes raw weights, resolution and seeds.</div>
+                    </div>
+                  </div>
+
+                  <div class="toggle-switch-container">
+                    <div class="toggle-label">
+                      <span class="toggle-title">Cloud-Boost Accelerator</span>
+                      <span class="toggle-desc" id="toggle-desc-txt">Increases speeds up to 500% via remote cluster.</span>
+                    </div>
+                    <label class="switch">
+                      <input type="checkbox" id="toggle-cloud" checked onchange="toggleCloudBoost(this); playClick();">
+                      <span class="slider"></span>
+                    </label>
+                  </div>
+
+                  <!-- Playground -->
+                  <div class="playground-box">
+                    <div class="playground-row">
+                      <input type="text" class="playground-input" id="demo-prompt" value="Futuristic glowing bee on digital flower">
+                      <button class="btn btn-primary" style="min-height:28px; padding:0 12px; font-size:0.7rem; border-radius:6px;" onclick="runMiniDiffusion(); playClick();" id="btn-demo-diffuse">Diffuse</button>
+                    </div>
+                    <div class="diffusion-canvas-frame">
+                      <div class="diffusion-canvas-noise"></div>
+                      <div class="diffusion-timer" id="demo-timer">0.0s</div>
+                      <img class="diffusion-canvas-img" id="demo-canvas-img" src="/downloads/generation-flow.png" alt="Simulated render">
+                      <div class="diffusion-canvas-placeholder" id="demo-canvas-ph">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                          <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                          <polyline points="2 17 12 22 22 17"/>
+                        </svg>
+                        <span>Canvas Ready</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Timing chart -->
+                  <div class="timing-chart">
+                    <div class="timing-bar-row">
+                      <span class="timing-bar-label">Cloud-Boost</span>
+                      <div class="timing-bar-track">
+                        <div class="timing-bar-fill cloud" id="bar-cloud"></div>
+                      </div>
+                      <span class="timing-bar-time">0.8s</span>
+                    </div>
+                    <div class="timing-bar-row">
+                      <span class="timing-bar-label">Local GPU</span>
+                      <div class="timing-bar-track">
+                        <div class="timing-bar-fill local" id="bar-local"></div>
+                      </div>
+                      <span class="timing-bar-time">4.0s</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- STEP 4: SUCCESS AND SUMMARY WITH CSS QR CODE -->
+              <div class="wizard-step" id="step-finish">
+                <div class="step-success-row">
+                  <!-- Generated QR Code (Finder patterns in corners) -->
+                  <div class="qr-code-box" aria-label="Mobile Sync QR Code">
+                    <!-- Row 1 -->
+                    <span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span>
+                    <!-- Row 2 -->
+                    <span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span>
+                    <!-- Row 3 -->
+                    <span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span>
+                    <!-- Row 4 -->
+                    <span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span>
+                    <!-- Row 5 -->
+                    <span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span>
+                    <!-- Row 6 -->
+                    <span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel"></span>
+                    <!-- Row 7 -->
+                    <span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span>
+                    <!-- Row 8 -->
+                    <span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span>
+                    <!-- Row 9 -->
+                    <span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span>
+                    <!-- Row 10 -->
+                    <span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span>
+                    <!-- Row 11 -->
+                    <span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span>
+                    <!-- Row 12 -->
+                    <span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel b"></span><span class="qr-pixel b"></span><span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel"></span><span class="qr-pixel"></span>
+                  </div>
+                  <div>
+                    <h3 style="color:var(--color-success); text-align:left; margin-bottom:4px;">✓ Configuration Completed</h3>
+                    <p style="text-align:left; font-size:0.74rem; margin-bottom:0;">Scan this sync code from your mobile app to link accounts, or sync the desktop app using the sync key below.</p>
+                  </div>
+                </div>
+                
+                <div class="token-box" style="margin-top:10px;">
+                  <span class="token-val" id="token-display">DB-LITE-WAITING</span>
+                  <button class="btn-copy-token" onclick="copyToken(); playClick();">Copy Key</button>
+                </div>
+
+                <div class="shortcuts-grid">
+                  <div class="shortcut-item"><span>Generate:</span><span class="shortcut-key">⌘ G</span></div>
+                  <div class="shortcut-item"><span>Save Work:</span><span class="shortcut-key">⌘ S</span></div>
+                  <div class="shortcut-item"><span>Open Library:</span><span class="shortcut-key">⌘ L</span></div>
+                  <div class="shortcut-item"><span>Toggle Sidebar:</span><span class="shortcut-key">⌘ \</span></div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+          <div class="window-footer">
+            <button class="wiz-btn btn-back" id="wiz-prev" onclick="prevStep(); playClick();" disabled>Cancel</button>
+            <button class="wiz-btn btn-next" id="wiz-next" onclick="nextStep(); playClick();" disabled>Continue</button>
           </div>
         </aside>
       </section>
 
-      <section id="before-download" class="card section">
-        <h2>Before you download</h2>
-        <p class="section-lead">This quick checklist removes surprises and matches familiar app-store expectations.</p>
-        <div class="trust-grid">
-          <article class="trust-item">
-            <strong>Platform fit</strong>
-            <p>This installer is for macOS only and optimized for Apple Silicon Macs.</p>
-          </article>
-          <article class="trust-item">
-            <strong>Direct source</strong>
-            <p>You are downloading directly from the official DreamBees Hosting domain.</p>
-          </article>
-          <article class="trust-item">
-            <strong>Simple install path</strong>
-            <p>Open DMG, drag to Applications, launch app. No technical configuration required.</p>
-          </article>
-          <article class="trust-item">
-            <strong>Support fallback</strong>
-            <p>If install feels unclear, continue with the web app and get support from your account.</p>
-          </article>
+      <!-- WHY CREATORS CHOOSE THE DESKTOP APP -->
+      <section class="card-body card" style="margin-bottom: 40px; background: rgba(0,0,0,0.12);">
+        <h2 style="font-size: 1.5rem; font-weight: 800; text-align: center; margin-bottom: 24px;">Why creators install the desktop app</h2>
+        <div class="why-grid">
+          <div class="why-tile">
+            <div class="why-tile-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            </div>
+            <h3>Reliable Context</h3>
+            <p>Your prompt logs, model parameters, and saved templates stay grouped in one workspace.</p>
+          </div>
+          <div class="why-tile">
+            <div class="why-tile-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+            </div>
+            <h3>Local Database</h3>
+            <p>Built-in high-performance local SQLite storage maps catalog changes immediately.</p>
+          </div>
+          <div class="why-tile">
+            <div class="why-tile-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            </div>
+            <h3>Direct Integration</h3>
+            <p>Allows instant exporting and drag-and-drop support into native vector design tools.</p>
+          </div>
         </div>
       </section>
 
-      <section class="card section">
-        <h2>Why creators install the Mac app</h2>
-        <div class="grid-3">
-          <article class="tile">
-            <strong>Single-purpose workspace</strong>
-            <p>No tab juggling. Keep prompts, styles, and outputs in one dedicated app.</p>
-          </article>
-          <article class="tile">
-            <strong>Local-first by design</strong>
-            <p>Your working context stays on your machine by default with optional cloud acceleration.</p>
-          </article>
-          <article class="tile">
-            <strong>Beginner-friendly flow</strong>
-            <p>Describe, choose, generate, save. Same familiar path every time.</p>
-          </article>
+      <!-- APP PREVIEW GALLERY -->
+      <section id="gallery">
+        <div class="section-title">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+          <h2>App Preview Gallery</h2>
         </div>
-      </section>
-
-      <section class="card section">
-        <h2>App preview gallery</h2>
-        <p class="section-lead">These are visual placeholders matching production aspect ratios. Replace them with final screenshots when ready.</p>
+        <p class="section-lead">Click on any screenshot below to inspect the high-fidelity UI layout and studio panels.</p>
+        
         <div class="shots">
-          <figure class="shot">
-            <img src="/downloads/placeholder-studio-home.svg" alt="Placeholder screenshot for studio home view" />
-            <figcaption>Home studio view placeholder</figcaption>
+          <figure class="shot" onclick="openLightbox('/downloads/studio-home.png', 'Studio Home Dashboard View')">
+            <div class="shot-overlay-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            </div>
+            <img src="/downloads/studio-home.png" alt="DreamBees Home Studio View screenshot" />
+            <figcaption>Home Studio Dashboard <span>Select styles & browse catalog</span></figcaption>
           </figure>
-          <figure class="shot">
-            <img src="/downloads/placeholder-generation-flow.svg" alt="Placeholder screenshot for generation flow view" />
-            <figcaption>Generation flow placeholder</figcaption>
+          
+          <figure class="shot" onclick="openLightbox('/downloads/generation-flow.png', 'Workspace Generation Detail View')">
+            <div class="shot-overlay-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            </div>
+            <img src="/downloads/generation-flow.png" alt="DreamBees Generation workspace view screenshot" />
+            <figcaption>Active Generation Workspace <span>Write prompts & adjust weights</span></figcaption>
           </figure>
-          <figure class="shot">
-            <img src="/downloads/placeholder-history-library.svg" alt="Placeholder screenshot for history and library view" />
-            <figcaption>History and library placeholder</figcaption>
+          
+          <figure class="shot" onclick="openLightbox('/downloads/history-library.png', 'Saved Generation Library View')">
+            <div class="shot-overlay-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            </div>
+            <img src="/downloads/history-library.png" alt="DreamBees library and local history screenshot" />
+            <figcaption>History Library View <span>Organize folders & manage outputs</span></figcaption>
           </figure>
         </div>
       </section>
 
-      <section id="install" class="card section">
-        <h2>How to install (non-technical)</h2>
-        <div class="steps">
-          <div class="step"><span class="num">1</span><div><strong>Download the installer</strong><div>Click <em>Download for macOS</em> above.</div></div></div>
-          <div class="step"><span class="num">2</span><div><strong>Open the DMG file</strong><div>Double-click the downloaded file in your Downloads folder.</div></div></div>
-          <div class="step"><span class="num">3</span><div><strong>Move app to Applications</strong><div>Drag <em>DreamBees Lite</em> into the Applications folder.</div></div></div>
-          <div class="step"><span class="num">4</span><div><strong>Launch DreamBees Lite</strong><div>Open it from Applications and sign in to start creating.</div></div></div>
+      <!-- SPECIFICATIONS & FAQs GRID -->
+      <section class="grid-2" id="requirements">
+        <article class="card">
+          <div class="card-body">
+            <h2 style="font-size: 1.3rem; font-weight: 800; margin: 0 0 16px;">System Requirements</h2>
+            <div class="reqs">
+              <div class="req">
+                <span class="label">Operating System</span>
+                <strong>macOS 13.0+</strong>
+              </div>
+              <div class="req">
+                <span class="label">Processor</span>
+                <strong>Apple M1/M2/M3+</strong>
+              </div>
+              <div class="req">
+                <span class="label">Disk Space</span>
+                <strong>At least 1 GB free</strong>
+              </div>
+              <div class="req">
+                <span class="label">Network</span>
+                <strong>Sign-in & Cloud boost</strong>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card" id="faq">
+          <div class="card-body">
+            <h2 style="font-size: 1.3rem; font-weight: 800; margin: 0 0 16px;">Frequently Asked Questions</h2>
+            <div class="faq">
+              <details>
+                <summary>Do I need technical setup?</summary>
+                <p>No. You download the DMG file, open it, and drag the application icon to your Applications folder. No code compiler or terminal config required.</p>
+              </details>
+              <details>
+                <summary>Can I still use the web app?</summary>
+                <p>Yes. The web app remains completely operational. The desktop client is a companion app that runs in a focused, standalone window.</p>
+              </details>
+              <details>
+                <summary>What is Cloud-Boost acceleration?</summary>
+                <p>Cloud-boost uses our server cluster to synthesize images in 1-2 seconds, while local-first operations use your CPU/GPU for slower offline processing.</p>
+              </details>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- WHAT'S NEW SECTION -->
+      <section class="card" style="margin-bottom: 40px;">
+        <div class="card-body">
+          <h2 style="font-size: 1.3rem; font-weight: 800; margin: 0 0 16px;">Release Notes</h2>
+          <div class="release-note">
+            <strong>Version 1.4.11 (Latest)</strong>
+            <p>Implements client-side state recovery for slow local loads, adds robust Electron IPC boundaries, and fixes database locks. Features Apple Silicon native binary compilation for direct Mac execution.</p>
+          </div>
         </div>
       </section>
 
-      <section class="card section">
-        <h2>What happens after you click download</h2>
-        <div class="steps">
-          <div class="step"><span class="num">A</span><div><strong>File downloads to your Mac</strong><div>The installer appears in Downloads as a DMG file.</div></div></div>
-          <div class="step"><span class="num">B</span><div><strong>Install in Applications</strong><div>You drag DreamBees Lite into Applications like standard Mac apps.</div></div></div>
-          <div class="step"><span class="num">C</span><div><strong>Sign in and start creating</strong><div>Open the app and continue with the same account you use on web.</div></div></div>
-        </div>
-      </section>
-
-      <section id="requirements" class="card section">
-        <h2>System requirements</h2>
-        <div class="reqs">
-          <div class="req"><span class="label">Operating system</span><strong>macOS 13 or newer</strong></div>
-          <div class="req"><span class="label">Processor</span><strong>Apple Silicon (M1/M2/M3+)</strong></div>
-          <div class="req"><span class="label">Disk space</span><strong>At least 1 GB free</strong></div>
-          <div class="req"><span class="label">Network</span><strong>Needed for cloud generation and sign-in</strong></div>
-        </div>
-      </section>
-
-      <section id="faq" class="card section">
-        <h2>Frequently asked questions</h2>
-        <div class="faq">
-          <details><summary>Do I need technical setup?</summary><p>No. Download the DMG, drag the app to Applications, then open it.</p></details>
-          <details><summary>Can I still use the web app?</summary><p>Yes. The web app remains available for on-the-go use; the Mac app is an optional install.</p></details>
-          <details><summary>Where do I get support?</summary><p>If anything feels unclear, return to the web app and contact support from your account area.</p></details>
-        </div>
-      </section>
-
-      <section id="whats-new" class="card section">
-        <h2>What's new in this release</h2>
-        <div class="release-note">
-          <strong>Version 1.4.11</strong>
-          <p>Mac installer packaging and hosting flow improvements for clearer downloads and smoother install navigation.</p>
-        </div>
-        <div class="release-note">
-          <strong>Download page update</strong>
-          <p>Added step-by-step onboarding, requirements, FAQs, and screenshot placeholders for an App Store-like experience.</p>
-        </div>
-      </section>
-
+      <!-- FOOTER CTA -->
       <section class="footer-cta">
-        <p>Ready to install DreamBees Lite for macOS?</p>
-        <a class="btn btn-primary" href="/downloads/dreambees-lite-mac.dmg">Download for macOS</a>
+        <h2>Download DreamBees Lite for macOS</h2>
+        <p>Start generating high-resolution assets locally on your device today.</p>
+        <a class="btn btn-primary" href="/downloads/dreambees-lite-mac.dmg">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Download Direct Installer
+        </a>
       </section>
-      <section class="sticky-download" aria-label="Sticky download call to action">
-        <span>DreamBees Lite for macOS — one-click direct installer</span>
-        <a class="btn btn-primary" href="/downloads/dreambees-lite-mac.dmg">Download for macOS</a>
+
+      <!-- STICKY DOWNLOAD BAR -->
+      <section class="sticky-download" aria-label="Sticky download bar">
+        <span>Ready to create? <strong>DreamBees Lite for macOS</strong> direct DMG installer.</span>
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-secondary" style="min-height:36px; padding:0 12px; font-size:0.8rem;" onclick="startWizard(); playClick();">Launch Wizard</button>
+          <a class="btn btn-primary" style="min-height:36px; padding:0 16px; font-size:0.8rem;" href="/downloads/dreambees-lite-mac.dmg">Download DMG</a>
+        </div>
       </section>
     </main>
+
+    <!-- LIGHTBOX MODAL CONTAINER -->
+    <div class="lightbox" id="gallery-lightbox" onclick="closeLightbox()">
+      <div class="lightbox-content" onclick="event.stopPropagation()">
+        <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+        <img class="lightbox-img" id="lightbox-img" src="" alt="Expanded screenshot preview">
+        <div class="lightbox-caption" id="lightbox-caption">Caption details</div>
+      </div>
+    </div>
+
+    <!-- JAVASCRIPT STATE CONTROLLER -->
+    <script>
+      let currentStepIndex = 0;
+      const stepIds = ['step-welcome', 'step-compat', 'step-install', 'step-config', 'step-finish'];
+      const sidebarIds = ['sb-welcome', 'sb-compat', 'sb-install', 'sb-config', 'sb-finish'];
+      
+      const wizardTitle = document.getElementById('wiz-window-title');
+      const prevBtn = document.getElementById('wiz-prev');
+      const nextBtn = document.getElementById('wiz-next');
+
+      // -------------------------------------------------------------
+      // WEB AUDIO SYNTHESIZER MODULE (Dynamic Sound Effects)
+      // -------------------------------------------------------------
+      let audioCtx = null;
+      let soundEnabled = true;
+
+      function initAudio() {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+      }
+
+      function toggleAudio() {
+        soundEnabled = !soundEnabled;
+        const icon = document.getElementById('audio-icon');
+        if (soundEnabled) {
+          icon.textContent = "🔊 Sound On";
+        } else {
+          icon.textContent = "🔇 Sound Off";
+        }
+      }
+
+      function playClick() {
+        if (!soundEnabled) return;
+        initAudio();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.04);
+        
+        gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.04);
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.04);
+      }
+
+      function playSwoosh() {
+        if (!soundEnabled) return;
+        initAudio();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.16);
+        
+        gain.gain.setValueAtTime(0.03, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.16);
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.16);
+      }
+
+      function playChime() {
+        if (!soundEnabled) return;
+        initAudio();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        
+        const now = audioCtx.currentTime;
+        const notes = [293.66, 349.23, 440.00, 587.33]; // D4, F4, A4, D5 (D Minor Chord)
+        notes.forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.07);
+          
+          gain.gain.setValueAtTime(0, now + idx * 0.07);
+          gain.gain.linearRampToValueAtTime(0.05, now + idx * 0.07 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.07 + 0.35);
+          
+          osc.start(now + idx * 0.07);
+          osc.stop(now + idx * 0.07 + 0.4);
+        });
+      }
+
+      // -------------------------------------------------------------
+      // SYSTEM DIAGNOSTICS LOG ANIMATION
+      // -------------------------------------------------------------
+      const diagnosticLogs = [
+        "Initializing local hardware diagnostic probe...",
+        "Querying CPU instruction extensions...",
+        "Host Architecture: MacIntel (Simulated ARM Bridge)",
+        "WebGL 2.0 rendering context bound successfully.",
+        "GPU Core Mapping: Apple GPU Neural Engine detected.",
+        "Probing deep-link registry: 'dreambees://' available.",
+        "System diagnostics completed. M-series acceleration active."
+      ];
+
+      function runTerminalDiagnostics() {
+        const terminal = document.getElementById('term-logs');
+        terminal.innerHTML = '';
+        let lineIdx = 0;
+        
+        function printNextLine() {
+          if (currentStepIndex !== 1) return;
+          if (lineIdx < diagnosticLogs.length) {
+            const p = document.createElement('p');
+            p.className = 'term-line';
+            p.innerHTML = `<span class="term-prompt">➜</span> ${diagnosticLogs[lineIdx]}`;
+            terminal.appendChild(p);
+            terminal.scrollTop = terminal.scrollHeight;
+            lineIdx++;
+            playClick();
+            setTimeout(printNextLine, 350 + Math.random() * 150);
+          }
+        }
+        printNextLine();
+      }
+      
+      // Auto-detect OS & Processor
+      function checkSystemCompat() {
+        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+        const osLabel = document.getElementById('compat-os');
+        const cpuLabel = document.getElementById('compat-cpu');
+        
+        let isMac = /Macintosh|MacIntel|MacPPC|Mac68K/.test(userAgent);
+        
+        if (isMac) {
+          osLabel.textContent = "macOS Detected (Compatible)";
+          osLabel.className = "status ok";
+        } else {
+          osLabel.textContent = "Other OS (Simulating Mac)";
+          osLabel.className = "status warn";
+        }
+
+        // Try detecting Apple Silicon via WebGL
+        let isAppleSilicon = false;
+        try {
+          const canvas = document.createElement('canvas');
+          const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+          if (gl) {
+            const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+            if (debugInfo) {
+              const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_VENDOR_ID || debugInfo.UNMASKED_RENDERER_STRING);
+              if (/Apple/.test(renderer) && !/Intel/.test(renderer)) {
+                isAppleSilicon = true;
+              }
+            }
+          }
+        } catch (e) {}
+
+        if (isAppleSilicon) {
+          cpuLabel.textContent = "Apple Silicon M-Series (Optimized)";
+          cpuLabel.className = "status ok";
+        } else if (isMac) {
+          cpuLabel.textContent = "Intel Architecture (Compatible)";
+          cpuLabel.className = "status ok";
+        } else {
+          cpuLabel.textContent = "Non-ARM (Simulated)";
+          cpuLabel.className = "status warn";
+        }
+      }
+
+      // Start the wizard flow
+      function startWizard() {
+        const win = document.getElementById('wizard-window');
+        win.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Blink window to show active focus
+        win.style.borderColor = "var(--color-purple)";
+        setTimeout(() => {
+          win.style.borderColor = "rgba(255,255,255,0.15)";
+        }, 800);
+        
+        goToStep(0);
+      }
+
+      function resetWizard() {
+        goToStep(0);
+      }
+
+      function goToStep(index) {
+        // Play swoosh on page transition
+        if (index !== currentStepIndex) playSwoosh();
+
+        // Hide active step
+        document.getElementById(stepIds[currentStepIndex]).classList.remove('active');
+        document.getElementById(sidebarIds[currentStepIndex]).classList.remove('active');
+        
+        // Set new step
+        currentStepIndex = index;
+        document.getElementById(stepIds[currentStepIndex]).classList.add('active');
+        document.getElementById(sidebarIds[currentStepIndex]).classList.add('active');
+        
+        // Update sidebar items status
+        for (let i = 0; i < sidebarIds.length; i++) {
+          const sbItem = document.getElementById(sidebarIds[i]);
+          if (i < currentStepIndex) {
+            sbItem.classList.add('done');
+          } else {
+            sbItem.classList.remove('done');
+          }
+        }
+
+        // Update footer buttons state
+        if (currentStepIndex === 0) {
+          prevBtn.disabled = true;
+          prevBtn.textContent = "Cancel";
+          nextBtn.disabled = true; // Wait for click on welcome screen
+          nextBtn.textContent = "Continue";
+          wizardTitle.textContent = "DreamBees Lite Onboarding";
+        } else {
+          prevBtn.disabled = false;
+          prevBtn.textContent = "Back";
+          nextBtn.disabled = false;
+          nextBtn.textContent = currentStepIndex === stepIds.length - 1 ? "Finish" : "Continue";
+          wizardTitle.textContent = `Setup Assistant - Step ${currentStepIndex} of 4`;
+        }
+
+        // Handle step-specific triggers
+        if (currentStepIndex === 1) {
+          checkSystemCompat();
+          runTerminalDiagnostics();
+        } else if (currentStepIndex === 2) {
+          nextBtn.disabled = true; // Block continue until drag and drop matches
+          runSimulatedDownload();
+        } else if (currentStepIndex === 3) {
+          // Initialize timing bars
+          setTimeout(() => {
+            document.getElementById('bar-cloud').style.width = "20%";
+            document.getElementById('bar-local').style.width = "100%";
+          }, 200);
+        } else if (currentStepIndex === 4) {
+          generateCredsToken();
+          playChime();
+          nextBtn.textContent = "Close Wizard";
+        }
+      }
+
+      function nextStep() {
+        if (currentStepIndex < stepIds.length - 1) {
+          goToStep(currentStepIndex + 1);
+        } else {
+          goToStep(0);
+        }
+      }
+
+      function prevStep() {
+        if (currentStepIndex > 0) {
+          goToStep(currentStepIndex - 1);
+        }
+      }
+
+      // STEP 2: DOWNLOAD SIMULATOR & DRAG DROP
+      function runSimulatedDownload() {
+        const progressArea = document.getElementById('download-progress-area');
+        const fill = document.getElementById('progress-fill');
+        const pct = document.getElementById('download-percentage');
+        const bytes = document.getElementById('download-bytes');
+        const instr = document.getElementById('install-instruction');
+        const dragZone = document.getElementById('drag-zone');
+        const dragTip = document.getElementById('drag-tip');
+
+        // Reset elements
+        progressArea.style.display = "block";
+        dragZone.style.display = "none";
+        dragTip.style.display = "none";
+        fill.style.width = "0%";
+        pct.textContent = "0%";
+        bytes.textContent = "0 / 141.2 MB";
+        instr.textContent = "Downloading installer package...";
+
+        // Trigger file download to physical user machine
+        const downloadBtn = document.getElementById('btn-dmg-download');
+        if (downloadBtn && currentStepIndex === 2) {
+          const link = document.createElement('a');
+          link.href = downloadBtn.href;
+          link.download = "dreambees-lite-mac.dmg";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+
+        let progress = 0;
+        const interval = setInterval(() => {
+          if (currentStepIndex !== 2) {
+            clearInterval(interval);
+            return;
+          }
+          
+          progress += Math.floor(Math.random() * 8) + 5;
+          if (progress >= 100) {
+            progress = 100;
+            clearInterval(interval);
+            
+            // Finish download, show drag simulator
+            fill.style.width = "100%";
+            pct.textContent = "100%";
+            bytes.textContent = "141.2 / 141.2 MB";
+            playChime();
+            
+            setTimeout(() => {
+              progressArea.style.display = "none";
+              dragZone.style.display = "flex";
+              dragTip.style.display = "block";
+              instr.textContent = "Complete install by placing app into Applications:";
+              setupDragAndDrop();
+            }, 600);
+          } else {
+            fill.style.width = `${progress}%`;
+            pct.textContent = `${progress}%`;
+            const currentMB = ((141.2 * progress) / 100).toFixed(1);
+            bytes.textContent = `${currentMB} / 141.2 MB`;
+          }
+        }, 110);
+      }
+
+      function setupDragAndDrop() {
+        const app = document.getElementById('drag-app');
+        const target = document.getElementById('drop-target');
+        const nextBtn = document.getElementById('wiz-next');
+        const instr = document.getElementById('install-instruction');
+
+        // Drag transitions physics setup
+        app.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s';
+
+        // Drag events
+        app.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', 'app');
+          playClick();
+        });
+
+        target.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          target.classList.add('hover');
+        });
+
+        target.addEventListener('dragleave', () => {
+          target.classList.remove('hover');
+        });
+
+        target.addEventListener('drop', (e) => {
+          e.preventDefault();
+          target.classList.remove('hover');
+          const data = e.dataTransfer.getData('text/plain');
+          if (data === 'app') {
+            triggerDropSuccess();
+          } else {
+            bounceBack();
+          }
+        });
+
+        // Add document-wide drop listener to trigger bounce-back on miss
+        document.addEventListener('dragover', (e) => {
+          e.preventDefault();
+        });
+
+        // Click-to-install support (fallback for touch/mobile)
+        app.onclick = () => {
+          triggerDropSuccess();
+        };
+
+        function bounceBack() {
+          app.style.transform = 'translate(0px, 0px)';
+          playClick();
+        }
+
+        function triggerDropSuccess() {
+          playChime();
+          // Slide app icon inside target folder
+          app.style.pointerEvents = "none";
+          app.style.opacity = "0.3";
+          app.style.transform = "scale(0.8) translate(100px, 0)";
+          
+          target.classList.add('success');
+          nextBtn.disabled = false;
+          instr.textContent = "✓ Application successfully mounted!";
+          instr.style.color = "var(--color-success)";
+          document.getElementById('drag-tip').textContent = "Click Continue to finalize configuration";
+        }
+      }
+
+      // STEP 3: MOCK DIFFUSION PLAYGROUND
+      let selectedStyleId = 'beginner';
+      function selectStyle(element, id) {
+        document.querySelectorAll('.cust-card').forEach(card => card.classList.remove('selected'));
+        element.classList.add('selected');
+        selectedStyleId = id;
+      }
+
+      function toggleCloudBoost(checkbox) {
+        const desc = document.getElementById('toggle-desc-txt');
+        if (checkbox.checked) {
+          desc.textContent = "Uses cloud servers to speed up rendering.";
+        } else {
+          desc.textContent = "Generates offline on your Apple neural core.";
+        }
+      }
+
+      // Image Diffusion Simulator loop
+      function runMiniDiffusion() {
+        const btn = document.getElementById('btn-demo-diffuse');
+        const img = document.getElementById('demo-canvas-img');
+        const ph = document.getElementById('demo-canvas-ph');
+        const timer = document.getElementById('demo-timer');
+        const cloudChecked = document.getElementById('toggle-cloud').checked;
+        
+        btn.disabled = true;
+        ph.style.display = "none";
+        timer.style.display = "block";
+        
+        // Reset image styles to blurred gray latent block
+        img.style.opacity = "0.15";
+        img.style.filter = "blur(28px) saturate(0) contrast(1.8)";
+        
+        const duration = cloudChecked ? 800 : 4000; // 0.8s vs 4.0s
+        let start = null;
+        
+        // Loop sound synthesis (ticker clicks)
+        let soundInterval = setInterval(() => {
+          playClick();
+        }, cloudChecked ? 150 : 350);
+
+        function animate(timestamp) {
+          if (!start) start = timestamp;
+          const elapsed = timestamp - start;
+          const progress = Math.min(elapsed / duration, 1);
+          
+          timer.textContent = `${(elapsed / 1000).toFixed(1)}s`;
+          
+          // Interpolate filters
+          const currentBlur = (28 * (1 - progress)).toFixed(1);
+          const currentSat = progress.toFixed(2);
+          const currentContrast = (1.8 - (0.8 * progress)).toFixed(2);
+          const currentOpacity = (0.15 + (0.85 * progress)).toFixed(2);
+          
+          img.style.filter = `blur(${currentBlur}px) saturate(${currentSat}) contrast(${currentContrast})`;
+          img.style.opacity = currentOpacity;
+          
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            // Completed!
+            clearInterval(soundInterval);
+            playChime();
+            btn.disabled = false;
+            timer.textContent = `${(duration / 1000).toFixed(1)}s (Done)`;
+          }
+        }
+        
+        requestAnimationFrame(animate);
+      }
+
+      // STEP 4: AUTHENTICATION SYNC TOKEN
+      function generateCredsToken() {
+        const chars = '0123456789ABCDEF';
+        let token = 'DB-LITE-';
+        for (let i = 0; i < 4; i++) {
+          token += chars[Math.floor(Math.random() * chars.length)];
+        }
+        token += '-';
+        for (let i = 0; i < 4; i++) {
+          token += chars[Math.floor(Math.random() * chars.length)];
+        }
+        
+        document.getElementById('token-display').textContent = token;
+      }
+
+      function copyToken() {
+        const token = document.getElementById('token-display').textContent;
+        navigator.clipboard.writeText(token).then(() => {
+          const btn = document.querySelector('.btn-copy-token');
+          btn.textContent = "Copied!";
+          btn.style.background = "var(--color-success)";
+          setTimeout(() => {
+            btn.textContent = "Copy Key";
+            btn.style.background = "rgba(255,255,255,0.06)";
+          }, 1500);
+        });
+      }
+
+      // LIGHTBOX GALLERY MODULE
+      const lightbox = document.getElementById('gallery-lightbox');
+      const lightboxImg = document.getElementById('lightbox-img');
+      const lightboxCap = document.getElementById('lightbox-caption');
+
+      function openLightbox(src, caption) {
+        lightboxImg.src = src;
+        lightboxCap.textContent = caption;
+        lightbox.classList.add('active');
+        playClick();
+      }
+
+      function closeLightbox() {
+        lightbox.classList.remove('active');
+        playClick();
+      }
+    </script>
   </body>
 </html>
