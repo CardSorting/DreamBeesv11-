@@ -9,14 +9,6 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-const DEPRECATED_MODEL_IDS = [
-    'lightricks-ltx-2-pro',
-    'flux-2-dev',
-    'flux-klein-9b',
-    'meowacc',
-    'dressup'
-];
-
 const MODELS = [
 
     {
@@ -57,22 +49,6 @@ const MODELS = [
         description: 'Clean, crisp anime style with high detail.',
         type: 'SDXL',
         order: 7,
-        isActive: true
-    },
-    {
-        id: 'animij-v7',
-        name: 'Animij V7',
-        description: 'The latest version of the popular Animij model for anime art.',
-        type: 'SDXL',
-        order: 8,
-        isActive: true
-    },
-    {
-        id: 'swijtspot-no1',
-        name: 'Swijtspot No. 1',
-        description: 'Artistic model with a distinct, painterly touch.',
-        type: 'SDXL',
-        order: 9,
         isActive: true
     },
     {
@@ -128,14 +104,6 @@ const MODELS = [
         isActive: true
     },
     {
-        id: 'chenkin-noob-xl',
-        name: 'Chenkin Noob XL',
-        description: 'High-quality Rectified Flow model optimized for Euler Flow Match. Excellent for general anime and artistic styles.',
-        type: 'Generator',
-        order: 21,
-        isActive: true
-    },
-    {
         id: 'nova-3d-cg-xl',
         name: 'Nova 3D CG XL',
         description: 'Premium SDXL model optimized for high-quality 3D and CGI art with extreme detail.',
@@ -149,19 +117,6 @@ async function seedModels() {
     const collectionRef = db.collection('models');
 
     console.log(`Starting seed of ${MODELS.length} models...`);
-
-    for (const modelId of DEPRECATED_MODEL_IDS) {
-        await collectionRef.doc(modelId).delete();
-        console.log(`✕ Deleted deprecated model: ${modelId}`);
-
-        const showcaseSnap = await db.collection('model_showcase_images')
-            .where('modelId', '==', modelId)
-            .get();
-        for (const doc of showcaseSnap.docs) {
-            await doc.ref.delete();
-            console.log(`✕ Deleted showcase image for ${modelId}: ${doc.id}`);
-        }
-    }
 
     for (const model of MODELS) {
         const docRef = collectionRef.doc(model.id);

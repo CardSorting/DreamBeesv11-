@@ -6,11 +6,10 @@
  */
 export const VALID_MODELS = [
     'nova-furry-xl', 'perfect-illustrious',
-    'gray-color', 'scyrax-pastel', 'ani-detox', 'animij-v7', 'swijtspot-no1',
+    'gray-color', 'scyrax-pastel', 'ani-detox',
     'wai-illustrious',
     'rin-anime-blend', 'rin-anime-popcute',
     'crystal-cuteness', 'veretoon-v10',
-    'chenkin-noob-xl',
     'nova-3d-cg-xl', 'z-image-turbo-a100'
 ];
 /**
@@ -28,14 +27,11 @@ export const MODEL_IDS = {
     GRAY_COLOR: 'gray-color',
     SCYRAX_PASTEL: 'scyrax-pastel',
     ANI_DETOX: 'ani-detox',
-    ANIMIJ_V7: 'animij-v7',
-    SWIJTSPOT_NO1: 'swijtspot-no1',
     WAI_ILLUSTRIOUS: 'wai-illustrious',
     RIN_ANIME_BLEND: 'rin-anime-blend',
     RIN_ANIME_POPCUTE: 'rin-anime-popcute',
     CRYSTAL_CUTENESS: 'crystal-cuteness',
     VERETOON_V10: 'veretoon-v10',
-    CHENKIN_NOOB: 'chenkin-noob-xl',
     NOVA_3D: 'nova-3d-cg-xl',
     Z_IMAGE_TURBO: 'z-image-turbo-a100'
 };

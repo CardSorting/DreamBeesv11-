@@ -42,7 +42,7 @@ async function runSample() {
             modelId: model.id,
             status: "queued",
             createdAt: new Date(),
-            steps: model.id === 'flux-2-dev' ? 20 : 30,
+            steps: 30,
             aspectRatio: "1:1"
         });
 
@@ -53,7 +53,7 @@ async function runSample() {
                     userId: uid,
                     modelId: model.id,
                     prompt: `A beautiful digital bee themed artwork, ${model.name} style`,
-                    steps: model.id === 'flux-2-dev' ? 20 : 30,
+                    steps: 30,
                     aspectRatio: "1:1"
                 }
             });

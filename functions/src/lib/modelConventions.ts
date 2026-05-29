@@ -16,14 +16,11 @@ export const MODEL_IDS = {
     GRAY_COLOR: 'gray-color',
     SCYRAX_PASTEL: 'scyrax-pastel',
     ANI_DETOX: 'ani-detox',
-    ANIMIJ_V7: 'animij-v7',
-    SWIJTSPOT_NO1: 'swijtspot-no1',
     WAI_ILLUSTRIOUS: 'wai-illustrious',
     RIN_ANIME_BLEND: 'rin-anime-blend',
     RIN_ANIME_POPCUTE: 'rin-anime-popcute',
     CRYSTAL_CUTENESS: 'crystal-cuteness',
     VERETOON_V10: 'veretoon-v10',
-    CHENKIN_NOOB: 'chenkin-noob-xl',
     NOVA_3D: 'nova-3d-cg-xl',
     Z_IMAGE_TURBO: 'z-image-turbo-a100'
 } as const;
@@ -50,11 +47,6 @@ export const MODEL_GENERATION_PARAMS = {
     [MODEL_IDS.WAI_ILLUSTRIOUS]: {
         hiresFix: true
     },
-    [MODEL_IDS.CHENKIN_NOOB]: {
-        defaultSteps: 25,
-        cfg: 4.0,
-        scheduler: 'Euler a'
-    },
     [MODEL_IDS.NOVA_3D]: {
         hiresFix: true,
         qualityTags: ", 3d render, cgi, masterwork, ultra detailed, cinematic lighting"
@@ -78,13 +70,10 @@ export const MODEL_CATEGORIES = {
         'gray-color',
         'scyrax-pastel',
         'ani-detox',
-        'animij-v7',
-        'swijtspot-no1',
         'rin-anime-blend',
         'rin-anime-popcute',
         'crystal-cuteness',
-        'veretoon-v10',
-        'chenkin-noob-xl'
+        'veretoon-v10'
     ]
 } as const;
 

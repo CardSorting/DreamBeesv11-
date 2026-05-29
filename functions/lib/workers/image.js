@@ -83,12 +83,6 @@ export const processImageTask = async (req) => {
                 finalScheduler = scheduler || 'DPM++ 2M Karras';
                 hires_fix = false;
             }
-            else if (modelId === 'chenkin-noob-xl') {
-                finalSteps = steps || 25;
-                finalCfg = cfg || 4.0;
-                finalScheduler = scheduler || 'Euler a';
-                hires_fix = false;
-            }
             else if (modelId === 'nova-3d-cg-xl') {
                 hires_fix = true;
                 const qualityTags = ", 3d render, cgi, masterwork, ultra detailed, cinematic lighting";

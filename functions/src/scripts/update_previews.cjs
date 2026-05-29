@@ -8,18 +8,7 @@ admin.initializeApp({
 
 const db = admin.firestore();
 
-const UPDATES = [
-    {
-        id: 'animij-v7',
-        image: '/models/animij-v7/preview.png',
-        previewImages: ['/models/animij-v7/preview.png']
-    },
-    {
-        id: 'swijtspot-no1',
-        image: '/models/swijtspot-no1/preview.png',
-        previewImages: ['/models/swijtspot-no1/preview.png']
-    }
-];
+const UPDATES = [];
 
 async function updatePreviews() {
     const collectionRef = db.collection('models');
