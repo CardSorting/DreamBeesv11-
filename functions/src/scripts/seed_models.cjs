@@ -20,22 +20,6 @@ const MODELS = [
         isActive: true
     },
     {
-        id: 'perfect-illustrious',
-        name: 'Perfect Illustrious',
-        description: 'Refined illustration model focusing on detailed textures and lighting.',
-        type: 'SDXL',
-        order: 4,
-        isActive: true
-    },
-    {
-        id: 'gray-color',
-        name: 'Gray Color',
-        description: 'Unique style focusing on grayscale and monochromatic aesthetics.',
-        type: 'SDXL',
-        order: 5,
-        isActive: true
-    },
-    {
         id: 'scyrax-pastel',
         name: 'Scyrax Pastel',
         description: 'Soft, pastel color palettes and dreamy atmospheres.',

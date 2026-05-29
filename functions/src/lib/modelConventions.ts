@@ -12,8 +12,6 @@ import { MODELS_DB } from './constants.js';
 
 export const MODEL_IDS = {
     NOVA_FURRY: 'nova-furry-xl',
-    PERFECT_ILLUSTRIOUS: 'perfect-illustrious',
-    GRAY_COLOR: 'gray-color',
     SCYRAX_PASTEL: 'scyrax-pastel',
     ANI_DETOX: 'ani-detox',
     WAI_ILLUSTRIOUS: 'wai-illustrious',
@@ -66,8 +64,6 @@ export const MODEL_CATEGORIES = {
     FAST: ['z-image-turbo-a100'],
     STANDARD: [
         'nova-furry-xl',
-        'perfect-illustrious',
-        'gray-color',
         'scyrax-pastel',
         'ani-detox',
         'rin-anime-blend',

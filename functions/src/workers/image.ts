@@ -6,6 +6,118 @@ import { isValidModelId } from "../lib/modelConventions.js";
 import { ForensicLogger } from "../lib/forensics.js";
 import { SubstrateHealth } from "../lib/substrateHealth.js";
 
+type ModelPollResult =
+    | { kind: 'pending' }
+    | { kind: 'empty' }
+    | { kind: 'image'; buffer: Buffer };
+
+function findImagePayload(value: unknown): string | null {
+    if (!value) return null;
+
+    if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (
+            trimmed.startsWith('http://') ||
+            trimmed.startsWith('https://') ||
+            trimmed.startsWith('data:image/') ||
+            /^[A-Za-z0-9+/=\r\n]+$/.test(trimmed)
+        ) {
+            return trimmed;
+        }
+        return null;
+    }
+
+    if (Array.isArray(value)) {
+        for (const item of value) {
+            const match = findImagePayload(item);
+            if (match) return match;
+        }
+        return null;
+    }
+
+    if (typeof value === 'object') {
+        const record = value as Record<string, unknown>;
+        const preferredKeys = [
+            'image',
+            'image_url',
+            'imageUrl',
+            'url',
+            'output',
+            'result',
+            'data',
+            'artifact',
+            'artifacts'
+        ];
+
+        for (const key of preferredKeys) {
+            const match = findImagePayload(record[key]);
+            if (match) return match;
+        }
+    }
+
+    return null;
+}
+
+async function imagePayloadToBuffer(payload: string): Promise<Buffer> {
+    if (payload.startsWith('http://') || payload.startsWith('https://')) {
+        const res = await fetchWithTimeout(payload, {
+            headers: { "User-Agent": "DreamBees/1.1" },
+            timeout: 60000
+        });
+        if (!res.ok) {
+            throw new Error(`Generated image download failed (${res.status})`);
+        }
+        return Buffer.from(await res.arrayBuffer());
+    }
+
+    const base64 = payload.startsWith('data:image/')
+        ? payload.slice(payload.indexOf(',') + 1)
+        : payload;
+    return Buffer.from(base64.replace(/\s/g, ''), 'base64');
+}
+
+async function parseModelPollResponse(res: Response): Promise<ModelPollResult> {
+    if (res.status === 202) return { kind: 'pending' };
+    if (res.status === 404) return { kind: 'empty' };
+
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('image/')) {
+        return { kind: 'image', buffer: Buffer.from(await res.arrayBuffer()) };
+    }
+
+    if (contentType.includes('application/json')) {
+        const payload = await res.json() as Record<string, unknown>;
+        const status = typeof payload.status === 'string' ? payload.status.toLowerCase() : '';
+        const error = payload.error || payload.message || payload.detail;
+
+        if (!res.ok || ['failed', 'error', 'cancelled', 'canceled'].includes(status)) {
+            throw new Error(`SDXL generation failed: ${String(error || `status ${res.status}`)}`);
+        }
+
+        const imagePayload = findImagePayload(payload);
+        if (imagePayload) {
+            return { kind: 'image', buffer: await imagePayloadToBuffer(imagePayload) };
+        }
+
+        if (['queued', 'running', 'generating', 'processing', 'pending', 'started'].includes(status)) {
+            return { kind: 'pending' };
+        }
+
+        if (['completed', 'complete', 'succeeded', 'success', 'done'].includes(status)) {
+            throw new Error("SDXL generation completed without an image payload");
+        }
+
+        return { kind: 'empty' };
+    }
+
+    if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`SDXL result request failed (${res.status})${body ? `: ${body.slice(0, 300)}` : ''}`);
+    }
+
+    return { kind: 'empty' };
+}
+
 /**
  * Main worker for image generation tasks
  */
@@ -160,10 +272,13 @@ export const processImageTask = async (req: { data: any }): Promise<void> => {
                     let pending = false;
                     for (const res of [resultRes, jobsRes]) {
                         if (!res) continue;
-                        if (res.status === 202) { pending = true; continue; }
-                        if (!res.ok) continue;
-                        if (res.headers.get('content-type')?.includes('image/')) {
-                            return Buffer.from(await res.arrayBuffer());
+                        const parsed = await parseModelPollResponse(res);
+                        if (parsed.kind === 'pending') {
+                            pending = true;
+                            continue;
+                        }
+                        if (parsed.kind === 'image') {
+                            return parsed.buffer;
                         }
                     }
                     if (pending) continue;

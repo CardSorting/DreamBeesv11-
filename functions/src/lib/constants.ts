@@ -6,8 +6,7 @@
  * Configuration Source: functions/src/lib/modelConventions.ts
  */
 export const VALID_MODELS: string[] = [
-    'nova-furry-xl', 'perfect-illustrious',
-    'gray-color', 'scyrax-pastel', 'ani-detox',
+    'nova-furry-xl', 'scyrax-pastel', 'ani-detox',
     'wai-illustrious',
     'rin-anime-blend', 'rin-anime-popcute',
     'crystal-cuteness', 'veretoon-v10',
@@ -26,8 +25,6 @@ export const ACTIVE_MODELS = [...VALID_MODELS];
  */
 export const MODEL_IDS = {
     NOVA_FURRY: 'nova-furry-xl',
-    PERFECT_ILLUSTRIOUS: 'perfect-illustrious',
-    GRAY_COLOR: 'gray-color',
     SCYRAX_PASTEL: 'scyrax-pastel',
     ANI_DETOX: 'ani-detox',
     WAI_ILLUSTRIOUS: 'wai-illustrious',
