@@ -77,7 +77,10 @@ const MODELS = [
         description: 'Anime illustration model powered by circlestone-labs/Anima Base v1.0.',
         type: 'Image',
         order: 18,
-        isActive: true
+        isActive: true,
+        image: 'models/anima.png',
+        thumbnail: 'models/anima.png',
+        previewImages: ['models/anima.png']
     },
     {
         id: 'crystal-cuteness',
