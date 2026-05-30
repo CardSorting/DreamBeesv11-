@@ -17,7 +17,10 @@ const MODELS = [
         description: 'Optimized for furry art and anthropomorphic characters. Auto-tags quality prompts.',
         type: 'SDXL',
         order: 3,
-        isActive: true
+        isActive: true,
+        image: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/nova-furry-xl.png',
+        thumbnail: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/nova-furry-xl.png',
+        previewImages: ['https://cdn.dreambeesai.com/file/printeregg/assets/models/nova-furry-xl.png']
     },
     {
         id: 'scyrax-pastel',
@@ -25,7 +28,10 @@ const MODELS = [
         description: 'Soft, pastel color palettes and dreamy atmospheres.',
         type: 'SDXL',
         order: 6,
-        isActive: true
+        isActive: true,
+        image: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/scyrax-pastel.png',
+        thumbnail: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/scyrax-pastel.png',
+        previewImages: ['https://cdn.dreambeesai.com/file/printeregg/assets/models/scyrax-pastel.png']
     },
     {
         id: 'ani-detox',
@@ -33,7 +39,10 @@ const MODELS = [
         description: 'Clean, crisp anime style with high detail.',
         type: 'SDXL',
         order: 7,
-        isActive: true
+        isActive: true,
+        image: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/ani-detox.png',
+        thumbnail: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/ani-detox.png',
+        previewImages: ['https://cdn.dreambeesai.com/file/printeregg/assets/models/ani-detox.png']
     },
     {
         id: 'wai-illustrious',
@@ -42,7 +51,9 @@ const MODELS = [
         type: 'SDXL',
         order: 12,
         isActive: true,
-        image: 'https://cdn.dreambeesai.com/file/printeregg/assets/landing/wai_illustrious_preview.png'
+        image: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/wai-illustrious.png',
+        thumbnail: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/wai-illustrious.png',
+        previewImages: ['https://cdn.dreambeesai.com/file/printeregg/assets/models/wai-illustrious.png']
     },
     {
         id: 'rin-anime-blend',
@@ -50,7 +61,10 @@ const MODELS = [
         description: 'A smooth blend of popular anime models for high-quality results.',
         type: 'SDXL',
         order: 14,
-        isActive: true
+        isActive: true,
+        image: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/rin-anime-blend.png',
+        thumbnail: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/rin-anime-blend.png',
+        previewImages: ['https://cdn.dreambeesai.com/file/printeregg/assets/models/rin-anime-blend.png']
     },
     {
         id: 'rin-anime-popcute',
@@ -58,7 +72,10 @@ const MODELS = [
         description: 'Bright, vibrant, and cute anime style with popping colors.',
         type: 'SDXL',
         order: 15,
-        isActive: true
+        isActive: true,
+        image: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/rin-anime-popcute.png',
+        thumbnail: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/rin-anime-popcute.png',
+        previewImages: ['https://cdn.dreambeesai.com/file/printeregg/assets/models/rin-anime-popcute.png']
     },
     {
         id: 'z-image-turbo-a100',
@@ -67,9 +84,9 @@ const MODELS = [
         type: 'Image',
         order: 17,
         isActive: true,
-        image: 'https://dreambees-alchemist.web.app/assets/styles/hr_core.png',
-        thumbnail: 'https://dreambees-alchemist.web.app/assets/styles/hr_core.png',
-        previewImages: ['https://dreambees-alchemist.web.app/assets/styles/hr_core.png']
+        image: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/z-image-turbo-a100.png',
+        thumbnail: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/z-image-turbo-a100.png',
+        previewImages: ['https://cdn.dreambeesai.com/file/printeregg/assets/models/z-image-turbo-a100.png']
     },
     {
         id: 'anima',
@@ -88,7 +105,10 @@ const MODELS = [
         description: 'Adorable and sparkling aesthetics for high-quality cute art.',
         type: 'SDXL',
         order: 19,
-        isActive: true
+        isActive: true,
+        image: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/crystal-cuteness.png',
+        thumbnail: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/crystal-cuteness.png',
+        previewImages: ['https://cdn.dreambeesai.com/file/printeregg/assets/models/crystal-cuteness.png']
     },
     {
         id: 'veretoon-v10',
@@ -96,7 +116,10 @@ const MODELS = [
         description: 'Vibrant toon-style illustrations with clean outlines.',
         type: 'SDXL',
         order: 20,
-        isActive: true
+        isActive: true,
+        image: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/veretoon-v10.png',
+        thumbnail: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/veretoon-v10.png',
+        previewImages: ['https://cdn.dreambeesai.com/file/printeregg/assets/models/veretoon-v10.png']
     },
     {
         id: 'nova-3d-cg-xl',
@@ -104,7 +127,10 @@ const MODELS = [
         description: 'Premium SDXL model optimized for high-quality 3D and CGI art with extreme detail.',
         type: 'Generator',
         order: 22,
-        isActive: true
+        isActive: true,
+        image: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/nova-3d-cg-xl.png',
+        thumbnail: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/nova-3d-cg-xl.png',
+        previewImages: ['https://cdn.dreambeesai.com/file/printeregg/assets/models/nova-3d-cg-xl.png']
     }
 ];
 
