@@ -123,3 +123,9 @@
         height: 54px;
     }
 }
+
+@media (min-width: 769px) {
+    .bottom-nav-immersive {
+        display: none !important;
+    }
+}

@@ -203,7 +203,8 @@ input, textarea {
 
 @media (max-width: 768px) {
   .app-main {
-    margin-left: 76px;
+    margin-left: 0 !important;
+    padding-bottom: 120px;
   }
 }
 

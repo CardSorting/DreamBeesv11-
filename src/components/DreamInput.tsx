@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   applyEditorialAction,
+  ARRIVAL_THRESHOLD,
   DreamTrailMode,
   DreamTrailEditorialAction,
   DreamTrailResponse,
@@ -23,6 +24,7 @@ import {
   rememberAcceptedSuggestion,
   takeGhostPhrase,
 } from '../lib/dreamtrail';
+import { IconChevronLeft, IconChevronRight } from '../icons';
 
 type DreamInputProps = {
   id: string;
@@ -47,12 +49,32 @@ export default function DreamInput({
   onSubmit,
 }: DreamInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const overlayRef = useRef<HTMLDivElement | null>(null);
   const requestIdRef = useRef(0);
-  const dismissedForValueRef = useRef<string | null>(null);
+  const cooldownTimeoutRef = useRef<number | null>(null);
   const [suggestions, setSuggestions] = useState<DreamTrailSuggestion[]>([]);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [caretAtEnd, setCaretAtEnd] = useState(true);
+  const [isFocused, setIsFocused] = useState(false);
+  const [hasSelection, setHasSelection] = useState(false);
+  const [cooldownActive, setCooldownActive] = useState(false);
+  const [apiFailed, setApiFailed] = useState(false);
+  const [activeKey, setActiveKey] = useState<'tab' | 'right' | 'esc' | null>(null);
+  const helpCardRef = useRef<HTMLDivElement | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
+  const [undoPrompt, setUndoPrompt] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!showHelp) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (helpCardRef.current && !helpCardRef.current.contains(e.target as Node)) {
+        setShowHelp(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [showHelp]);
 
   const cleanPrompt = value.trim();
   const cadenceState = useMemo(() => getCadenceState(cleanPrompt), [cleanPrompt]);
@@ -64,19 +86,30 @@ export default function DreamInput({
   const interventionState = useMemo(() => getInterventionState(cleanPrompt, confidenceField, creativeState, arrivalState, decisionState), [arrivalState, cleanPrompt, confidenceField, creativeState, decisionState]);
   const rescueChips = useMemo(() => getRescueChips(), []);
   const editorialChips = useMemo(() => getEditorialChips(arrivalState, confidenceField), [arrivalState, confidenceField]);
-  const hasArrived = (creativeState === 'refining' || creativeState === 'finished' || confidenceMode === 'high') && interventionState.shouldIntervene;
-  const showForks = interventionState.shouldIntervene && interventionState.interventionLevel === 2;
-  const showRescue = interventionState.shouldIntervene && interventionState.interventionLevel === 3;
+  
+  const hasArrived = creativeState === 'refining' || creativeState === 'finished' || confidenceMode === 'high' || arrivalState.readinessScore >= ARRIVAL_THRESHOLD;
+  const showForks = !hasArrived && (interventionState.reason === 'hesitation' || interventionState.reason === 'branch_confusion');
+  const showRescue = !hasArrived && (interventionState.reason === 'looping' || interventionState.reason === 'overloaded' || (interventionState.reason === 'arrival' && confidenceField.executionConfidence < 0.86));
+  
   const activeSuggestion = suggestions[activeSuggestionIndex] ?? suggestions[0] ?? null;
   const rawGhost = activeSuggestion?.text ?? '';
-  const visibleGhost = interventionState.shouldIntervene && interventionState.interventionLevel === 1 && !hasArrived && caretAtEnd && dismissedForValueRef.current !== value
-    ? cleanPrompt ? rawGhost : rawGhost.replace(/^,\s*/, '')
-    : '';
+  const visibleGhost = (
+    cleanPrompt &&
+    isFocused &&
+    !cooldownActive &&
+    !apiFailed &&
+    suggestions.length > 0 &&
+    caretAtEnd &&
+    !hasSelection
+  ) ? (
+    cleanPrompt ? rawGhost : rawGhost.replace(/^,\s*/, '')
+  ) : '';
 
   const updateCaret = useCallback(() => {
     const node = textareaRef.current;
     if (!node) return;
     setCaretAtEnd(node.selectionStart === value.length && node.selectionEnd === value.length);
+    setHasSelection(node.selectionStart !== node.selectionEnd);
   }, [value.length]);
 
   const acceptSuggestion = useCallback((suggestion: DreamTrailSuggestion | null) => {
@@ -84,7 +117,14 @@ export default function DreamInput({
     const accepted = normalizeSuggestion(suggestion.text);
     if (!accepted) return;
     rememberAcceptedSuggestion(value, { ...suggestion, text: accepted });
-    dismissedForValueRef.current = null;
+    
+    if (cooldownTimeoutRef.current) {
+      window.clearTimeout(cooldownTimeoutRef.current);
+    }
+    setCooldownActive(false);
+    setApiFailed(false);
+    
+    setUndoPrompt(value);
     setSuggestions([]);
     setActiveSuggestionIndex(0);
     onChange(value.trim() ? `${value}${accepted}` : accepted.replace(/^,\s*/, ''));
@@ -92,6 +132,10 @@ export default function DreamInput({
       const node = textareaRef.current;
       node?.focus();
       node?.setSelectionRange(node.value.length, node.value.length);
+      if (node && overlayRef.current) {
+        overlayRef.current.scrollTop = node.scrollTop;
+        overlayRef.current.scrollLeft = node.scrollLeft;
+      }
     });
   }, [onChange, value]);
 
@@ -103,7 +147,13 @@ export default function DreamInput({
 
     const nextPrompt = applyEditorialAction(value, action);
     if (nextPrompt !== value) {
-      dismissedForValueRef.current = null;
+      if (cooldownTimeoutRef.current) {
+        window.clearTimeout(cooldownTimeoutRef.current);
+      }
+      setCooldownActive(false);
+      setApiFailed(false);
+      
+      setUndoPrompt(value);
       setSuggestions([]);
       setActiveSuggestionIndex(0);
       onChange(nextPrompt);
@@ -111,12 +161,16 @@ export default function DreamInput({
         const node = textareaRef.current;
         node?.focus();
         node?.setSelectionRange(node.value.length, node.value.length);
+        if (node && overlayRef.current) {
+          overlayRef.current.scrollTop = node.scrollTop;
+          overlayRef.current.scrollLeft = node.scrollLeft;
+        }
       });
     }
   }, [onChange, onSubmit, value]);
 
   useEffect(() => {
-    if (dismissedForValueRef.current === value) {
+    if (!cleanPrompt || cooldownActive) {
       setSuggestions([]);
       setActiveSuggestionIndex(0);
       setLoading(false);
@@ -126,18 +180,15 @@ export default function DreamInput({
     const tasteVector = getTasteVector();
     const tasteGravity = getTasteGravity(tasteVector);
     const local = getLocalDreamTrailSuggestions(cleanPrompt, mode, tasteVector, tasteGravity, cadenceState, decisionState, arrivalState, creativeState, confidenceField);
-    setSuggestions(interventionState.shouldIntervene ? local : []);
+    setSuggestions(local);
     setActiveSuggestionIndex(0);
-    if (!interventionState.shouldIntervene || showRescue || hasArrived || creativeState === 'blank') {
-      setLoading(false);
-      return;
-    }
 
     const requestId = ++requestIdRef.current;
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), STALE_AFTER_MS);
     const debounceId = window.setTimeout(async () => {
       setLoading(true);
+      setApiFailed(false);
       try {
         const response = await fetch('/api/dreamtrail', {
           method: 'POST',
@@ -157,17 +208,19 @@ export default function DreamInput({
           }),
           signal: controller.signal,
         });
-        if (!response.ok) return;
+        if (!response.ok) {
+          setApiFailed(true);
+          return;
+        }
         const data = await response.json() as DreamTrailResponse;
-        if (requestId !== requestIdRef.current || dismissedForValueRef.current === value) return;
+        if (requestId !== requestIdRef.current || cooldownActive) return;
         const remote = filterDreamTrailSuggestions(data.suggestions ?? [], cleanPrompt, tasteVector, mode, tasteGravity, cadenceState, decisionState, arrivalState, creativeState, confidenceField);
         const merged = filterDreamTrailSuggestions([...remote, ...local], cleanPrompt, tasteVector, mode, tasteGravity, cadenceState, decisionState, arrivalState, creativeState, confidenceField).slice(0, 3);
         setSuggestions(merged);
         setActiveSuggestionIndex(0);
       } catch {
         if (requestId === requestIdRef.current) {
-          setSuggestions(local);
-          setActiveSuggestionIndex(0);
+          setApiFailed(true);
         }
       } finally {
         window.clearTimeout(timeoutId);
@@ -180,17 +233,20 @@ export default function DreamInput({
       window.clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [arrivalState, cadenceState, cleanPrompt, confidenceField, creativeState, decisionState, hasArrived, interventionState, mode, showRescue, value]);
+  }, [arrivalState, cadenceState, cleanPrompt, confidenceField, creativeState, decisionState, mode, value, cooldownActive]);
 
   const panelSuggestions = useMemo(
-    () => showForks ? suggestions.slice(0, 3) : [],
-    [suggestions, showForks]
+    () => !showRescue && !hasArrived ? suggestions.slice(0, 3) : [],
+    [suggestions, showRescue, hasArrived]
   );
 
   return (
     <div className="dream-input-shell">
       <div className="dream-input-wrap" data-loading={loading ? 'true' : 'false'}>
-        <DreamTrailOverlay prompt={value} ghostText={visibleGhost} />
+        <div ref={overlayRef} className="dreamtrail-overlay" aria-hidden>
+          <span className="dreamtrail-overlay-prompt">{value || ' '}</span>
+          {visibleGhost ? <span className="dreamtrail-ghost">{visibleGhost}</span> : null}
+        </div>
         <textarea
           ref={textareaRef}
           id={id}
@@ -198,8 +254,24 @@ export default function DreamInput({
           placeholder={placeholder}
           value={value}
           onChange={(event) => {
-            dismissedForValueRef.current = null;
+            if (cooldownTimeoutRef.current) {
+              window.clearTimeout(cooldownTimeoutRef.current);
+            }
+            setCooldownActive(false);
+            setApiFailed(false);
+            setSuggestions([]);
+            setActiveSuggestionIndex(0);
+            setUndoPrompt(null);
             onChange(event.target.value);
+            
+            const target = event.currentTarget;
+            setTimeout(() => {
+              updateCaret();
+              if (overlayRef.current) {
+                overlayRef.current.scrollTop = target.scrollTop;
+                overlayRef.current.scrollLeft = target.scrollLeft;
+              }
+            }, 0);
           }}
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.shiftKey) {
@@ -209,6 +281,8 @@ export default function DreamInput({
             }
             if (event.key === 'Tab' && visibleGhost) {
               event.preventDefault();
+              setActiveKey('tab');
+              setTimeout(() => setActiveKey(null), 150);
               acceptSuggestion(activeSuggestion);
               return;
             }
@@ -217,8 +291,15 @@ export default function DreamInput({
               setActiveSuggestionIndex((index) => (index + 1) % suggestions.length);
               return;
             }
+            if (event.key === 'ArrowUp' && suggestions.length > 1) {
+              event.preventDefault();
+              setActiveSuggestionIndex((index) => (index - 1 + suggestions.length) % suggestions.length);
+              return;
+            }
             if (event.key === 'ArrowRight' && visibleGhost && caretAtEnd && activeSuggestion) {
               event.preventDefault();
+              setActiveKey('right');
+              setTimeout(() => setActiveKey(null), 150);
               acceptSuggestion({
                 ...activeSuggestion,
                 text: takeGhostPhrase(visibleGhost),
@@ -227,10 +308,35 @@ export default function DreamInput({
             }
             if (event.key === 'Escape' && suggestions.length) {
               event.preventDefault();
-              dismissedForValueRef.current = value;
+              setActiveKey('esc');
+              setTimeout(() => setActiveKey(null), 150);
+              setCooldownActive(true);
+              if (cooldownTimeoutRef.current) {
+                window.clearTimeout(cooldownTimeoutRef.current);
+              }
+              cooldownTimeoutRef.current = window.setTimeout(() => {
+                setCooldownActive(false);
+              }, 5000);
               setSuggestions([]);
               setActiveSuggestionIndex(0);
             }
+          }}
+          onScroll={(event) => {
+            if (overlayRef.current) {
+              overlayRef.current.scrollTop = event.currentTarget.scrollTop;
+              overlayRef.current.scrollLeft = event.currentTarget.scrollLeft;
+            }
+          }}
+          onFocus={() => {
+            setIsFocused(true);
+            updateCaret();
+            if (textareaRef.current && overlayRef.current) {
+              overlayRef.current.scrollTop = textareaRef.current.scrollTop;
+              overlayRef.current.scrollLeft = textareaRef.current.scrollLeft;
+            }
+          }}
+          onBlur={() => {
+            setIsFocused(false);
           }}
           onClick={updateCaret}
           onKeyUp={updateCaret}
@@ -241,10 +347,157 @@ export default function DreamInput({
         />
       </div>
       <div id={`${id}-hint`} className="dreamtrail-hint">
-        {visibleGhost ? 'Tab accepts the trail. Right arrow accepts a phrase.' : 'DreamTrail listens for the edge of your idea.'}
+        <div className="dreamtrail-hint-left">
+          {visibleGhost ? (
+            <div className="dreamtrail-hint-keys">
+              <button
+                type="button"
+                className="dreamtrail-hint-btn"
+                onClick={() => acceptSuggestion(activeSuggestion)}
+                title="Accept suggestion (Tab)"
+              >
+                <span className={`dreamtrail-keycap ${activeKey === 'tab' ? 'active' : ''}`}>Tab</span> <span className="dreamtrail-hint-action">accept suggestion</span>
+              </button>
+              <span className="dreamtrail-hint-divider">•</span>
+              <button
+                type="button"
+                className="dreamtrail-hint-btn"
+                onClick={() =>
+                  acceptSuggestion({
+                    ...activeSuggestion,
+                    text: takeGhostPhrase(visibleGhost),
+                  })
+                }
+                title="Accept next word (Right Arrow)"
+              >
+                <span className={`dreamtrail-keycap ${activeKey === 'right' ? 'active' : ''}`}>→</span> <span className="dreamtrail-hint-action">accept word</span>
+              </button>
+              
+              {suggestions.length > 1 && (
+                <>
+                  <span className="dreamtrail-hint-divider">•</span>
+                  <div className="dreamtrail-pagination">
+                    <button
+                      type="button"
+                      className="dreamtrail-pagination-arrow"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveSuggestionIndex((index) => (index - 1 + suggestions.length) % suggestions.length);
+                      }}
+                      title="Previous suggestion (ArrowUp)"
+                    >
+                      <IconChevronLeft size={12} />
+                    </button>
+                    <span className="dreamtrail-pagination-text" title="Cycle suggestions (ArrowUp / ArrowDown)">
+                      {activeSuggestionIndex + 1} of {suggestions.length}
+                    </span>
+                    <button
+                      type="button"
+                      className="dreamtrail-pagination-arrow"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveSuggestionIndex((index) => (index + 1) % suggestions.length);
+                      }}
+                      title="Next suggestion (ArrowDown)"
+                    >
+                      <IconChevronRight size={12} />
+                    </button>
+                  </div>
+                </>
+              )}
+
+              <span className="dreamtrail-hint-divider">•</span>
+              <button
+                type="button"
+                className="dreamtrail-hint-btn"
+                onClick={() => {
+                  setActiveKey('esc');
+                  setTimeout(() => setActiveKey(null), 150);
+                  setCooldownActive(true);
+                  if (cooldownTimeoutRef.current) {
+                    window.clearTimeout(cooldownTimeoutRef.current);
+                  }
+                  cooldownTimeoutRef.current = window.setTimeout(() => {
+                    setCooldownActive(false);
+                  }, 5000);
+                  setSuggestions([]);
+                  setActiveSuggestionIndex(0);
+                }}
+                title="Dismiss suggestions (Escape)"
+              >
+                <span className={`dreamtrail-keycap ${activeKey === 'esc' ? 'active' : ''}`}>Esc</span> <span className="dreamtrail-hint-action">dismiss</span>
+              </button>
+            </div>
+          ) : undoPrompt ? (
+            <div className="dreamtrail-hint-keys">
+              <button
+                type="button"
+                className="dreamtrail-hint-btn dreamtrail-undo-btn"
+                onClick={() => {
+                  onChange(undoPrompt);
+                  setUndoPrompt(null);
+                  requestAnimationFrame(() => {
+                    const node = textareaRef.current;
+                    node?.focus();
+                    node?.setSelectionRange(node.value.length, node.value.length);
+                  });
+                }}
+                title="Undo last change"
+              >
+                <span className="dreamtrail-keycap">↺</span> <span className="dreamtrail-hint-action">undo last change</span>
+              </button>
+            </div>
+          ) : (
+            <span className="dreamtrail-hint-idle">DreamTrail is listening for the edge of your idea.</span>
+          )}
+        </div>
+        
+        <div className="dreamtrail-status-container" style={{ display: 'flex', alignItems: 'center', gap: '8px', position: 'relative' }}>
+          {cleanPrompt && (
+            <div className={`dreamtrail-status-pill ${loading ? 'dreamtrail-status-loading' : `dreamtrail-status-${confidenceMode}`}`}>
+              <span className="dreamtrail-status-dot"></span>
+              <span className="dreamtrail-status-text">
+                {loading ? 'DreamTrail thinking...' : (
+                  <>
+                    {confidenceMode === 'low' && 'Dream Explorer'}
+                    {confidenceMode === 'medium' && 'Dream Builder'}
+                    {confidenceMode === 'high' && 'Dream Editor'}
+                  </>
+                )}
+              </span>
+            </div>
+          )}
+          <button
+            type="button"
+            className={`dreamtrail-info-trigger ${showHelp ? 'active' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowHelp(prev => !prev);
+            }}
+            title="What is DreamTrail?"
+            aria-expanded={showHelp}
+          >
+            ?
+          </button>
+          
+          {showHelp && (
+            <div className="dreamtrail-info-card glass-immersive fade-in" ref={helpCardRef}>
+              <h4>About DreamTrail</h4>
+              <p>DreamTrail is your ambient creative companion. As you write, it predicts details, actions, and settings to inspire your imagination.</p>
+              <ul>
+                <li><span className="info-key">Tab</span> accepts suggestion.</li>
+                <li><span className="info-key">→</span> accepts word.</li>
+                <li><span className="info-key">↓</span> / <span className="info-key">↑</span> cycles alternative suggestions.</li>
+                <li><span className="info-key">Esc</span> dismisses suggestions.</li>
+              </ul>
+              <p className="info-note">Use the mode buttons below the prompt to guide how dreamlike or realistic suggestions should be.</p>
+            </div>
+          )}
+        </div>
       </div>
       {showRescue ? (
         <div className="dreamtrail-panel dreamtrail-editorial-panel" aria-label="DreamTrail rescue moves">
+          <div className="dreamtrail-panel-title">Creative Rescue Moves:</div>
           {rescueChips.map((chip) => (
             <button type="button" key={chip.id} onClick={() => applyEditorialChip(chip.id)}>
               {chip.label}
@@ -253,6 +506,7 @@ export default function DreamInput({
         </div>
       ) : hasArrived && editorialChips.length > 0 ? (
         <div className="dreamtrail-panel dreamtrail-editorial-panel" aria-label="DreamTrail editorial moves">
+          <div className="dreamtrail-panel-title">Editorial Refinements:</div>
           {editorialChips.map((chip) => (
             <button type="button" key={chip.id} onClick={() => applyEditorialChip(chip.id)}>
               {chip.label}
@@ -261,22 +515,19 @@ export default function DreamInput({
         </div>
       ) : panelSuggestions.length > 0 ? (
         <div className="dreamtrail-panel" aria-label="DreamTrail alternatives">
-          {panelSuggestions.map((suggestion) => (
-            <button type="button" key={`${suggestion.mutation}:${suggestion.text}`} onClick={() => acceptSuggestion(suggestion)}>
-              {suggestion.text.replace(/^,\s*/, '')}
+          <div className="dreamtrail-panel-title">Alternate Directions:</div>
+          {panelSuggestions.map((suggestion, index) => (
+            <button
+              type="button"
+              key={`${suggestion.mutation}:${suggestion.text}`}
+              className={index === activeSuggestionIndex ? 'active' : ''}
+              onClick={() => acceptSuggestion(suggestion)}
+            >
+              ↳ {suggestion.text.replace(/^,\s*/, '')}
             </button>
           ))}
         </div>
       ) : null}
-    </div>
-  );
-}
-
-function DreamTrailOverlay({ prompt, ghostText }: { prompt: string; ghostText: string }) {
-  return (
-    <div className="dreamtrail-overlay" aria-hidden>
-      <span className="dreamtrail-overlay-prompt">{prompt || ' '}</span>
-      {ghostText ? <span className="dreamtrail-ghost">{ghostText}</span> : null}
     </div>
   );
 }

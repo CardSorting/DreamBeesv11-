@@ -2,6 +2,7 @@ import React, { Suspense, useEffect, useState } from 'react';
 import { useLite } from './contexts/LiteContext';
 import AnimatedRoutes from './components/AnimatedRoutes';
 import Sidebar from './components/Sidebar';
+import BottomNav from './components/BottomNav';
 
 const LazyToaster = React.lazy(() =>
   import('react-hot-toast').then((module) => ({ default: module.Toaster }))
@@ -53,6 +54,7 @@ export default function AppContent() {
       <main className="app-main">
         <AnimatedRoutes />
       </main>
+      <BottomNav />
       {showToaster ? (
         <Suspense fallback={null}>
           <LazyToaster

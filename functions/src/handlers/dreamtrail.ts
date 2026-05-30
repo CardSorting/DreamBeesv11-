@@ -69,6 +69,8 @@ type ConfidenceField = {
 
 type ConfidenceMode = "low" | "medium" | "high";
 
+type GhostAssertiveness = "subtle" | "normal" | "strong";
+
 type InterventionReason = "hesitation" | "looping" | "branch_confusion" | "arrival" | "overloaded" | "none";
 
 type InterventionState = {
@@ -76,7 +78,6 @@ type InterventionState = {
     attentionCost: number;
     expectedMomentumGain: number;
     interventionLevel: 0 | 1 | 2 | 3;
-    shouldIntervene: boolean;
     reason: InterventionReason;
 };
 
@@ -252,6 +253,7 @@ const BLANK_FALLBACKS: DreamTrailSuggestion[] = [
     { text: ", carrying a lantern", mutation: "whimsy", decision: "action", score: 0.72 },
     { text: ", lost in a giant garden", mutation: "wonder", decision: "setting", score: 0.7 },
     { text: ", searching for the last flower", mutation: "mythmaking", decision: "action", score: 0.69 },
+    { text: ", wandering a forgotten garden", mutation: "melancholy", decision: "setting", score: 0.68 },
     { text: ", finding a tiny crown in the grass", mutation: "mystery", decision: "symbol", score: 0.66 },
 ];
 
@@ -452,9 +454,7 @@ function buildUserInstruction(payload: DreamTrailPayload) {
         interventionState: payload.interventionState,
         mode: payload.mode,
         modeBias: MODE_MUTATION_BIAS[payload.mode],
-        instruction: !payload.interventionState.shouldIntervene
-            ? "Do not suggest unless the intervention improves momentum more than it costs attention."
-            : getConfidenceMode(payload.confidenceField) === "high" || payload.creativeState === "refining" || payload.creativeState === "finished"
+        instruction: getConfidenceMode(payload.confidenceField) === "high" || payload.creativeState === "refining" || payload.creativeState === "finished"
             ? "The idea is ready enough. Do not add garnish. If suggesting anything, make it editorially useful: sharpen conflict, strengthen a symbol, or clarify the landing image."
             : "Adapt to confidenceField. Low confidence means act as a creative scout and offer distinct futures. Medium confidence means act as a partner and develop one path. High confidence means act as an editor and stop adding new futures. Also adapt to creativeState.",
     });
@@ -675,18 +675,24 @@ function scoreConfidence(suggestion: DreamTrailSuggestion, confidence: Confidenc
     let score = 0;
 
     if (mode === "low") {
-        if (suggestionDecision === "action" || suggestionDecision === "setting") score += 0.2;
-        if (/\b(defending|exploring|leading|lost|searching|carrying)\b/.test(text)) score += 0.12;
+        if (suggestionDecision === "action" || suggestionDecision === "setting") score += 0.25;
+        if (suggestionDecision === "conflict") score += 0.15;
+        if (/\b(defending|exploring|leading|lost|searching|carrying|wandering|finding)\b/.test(text)) score += 0.15;
         if (suggestionDecision === "identity" && arrival.hasIdentity) score -= 0.18;
     } else if (mode === "medium") {
-        if (!arrival.hasConflict && suggestionDecision === "conflict") score += 0.2;
+        if (!arrival.hasConflict && suggestionDecision === "conflict") score += 0.25;
         if (arrival.hasConflict && !arrival.hasSymbol && suggestionDecision === "symbol") score += 0.18;
-        if (suggestionDecision === "action" && arrival.hasAction) score -= 0.16;
+        if (suggestionDecision === "action" && !arrival.hasAction) score += 0.15;
+        if (suggestionDecision === "setting" && !arrival.hasSetting) score += 0.15;
         if (suggestionDecision === "identity" && arrival.hasIdentity) score -= 0.2;
     } else {
-        if (suggestionDecision === "composition" || suggestionDecision === "symbol" || suggestionDecision === "tone") score += 0.08;
-        if (suggestionDecision === "identity" || suggestionDecision === "action" || suggestionDecision === "setting") score -= 0.28;
-        if (confidence.executionConfidence >= 0.82) score -= 0.18;
+        if (suggestionDecision === "composition" || suggestionDecision === "symbol" || suggestionDecision === "tone") score += 0.25;
+        if (suggestionDecision === "identity" || suggestionDecision === "action" || suggestionDecision === "setting") score -= 0.2;
+        
+        // Favor smaller and more focused suggestions for subtle assertiveness
+        const words = wordCount(suggestion.text);
+        if (words <= 7) score += 0.15;
+        else if (words >= 10) score -= 0.2;
     }
 
     return score;
@@ -725,12 +731,12 @@ function scoreCreativeState(
         if (suggestionDecision === "setting" && arrival.hasSetting) score -= 0.24;
         if (decision.alreadySatisfied.includes(suggestionDecision)) score -= 0.12;
         if (suggestionDecision === "identity") score -= 0.24;
-    } else if (creativeState === "refining") {
-        if (suggestionDecision === "composition" || suggestionDecision === "symbol" || suggestionDecision === "tone") score += 0.12;
+    } else if (creativeState === "refining" || creativeState === "finished") {
+        if (suggestionDecision === "composition" || suggestionDecision === "symbol" || suggestionDecision === "tone") score += 0.25;
         if (suggestionDecision === "setting" && arrival.hasSetting) score -= 0.2;
         if (suggestionDecision === "identity" || suggestionDecision === "action") score -= 0.2;
     } else {
-        score -= 0.3;
+        score -= 0.1;
     }
 
     return score;
@@ -747,7 +753,7 @@ function scoreEditorialUsefulness(suggestion: DreamTrailSuggestion, arrival: Arr
         if (suggestionDecision === "composition" || suggestionDecision === "symbol" || suggestionDecision === "tone") score += 0.16;
         if (wordCount(suggestion.text) <= 8) score += 0.1;
     } else if (arrival.nextBestMove === "generate") {
-        score -= 0.08;
+        if (suggestionDecision === "composition" || suggestionDecision === "symbol" || suggestionDecision === "tone") score += 0.15;
     }
 
     if (decision.alreadySatisfied.includes(suggestionDecision)) score -= 0.12;
@@ -876,7 +882,6 @@ function parseInterventionState(
         attentionCost: clamp01(typeof source.attentionCost === "number" ? source.attentionCost : fallback.attentionCost),
         expectedMomentumGain: clamp01(typeof source.expectedMomentumGain === "number" ? source.expectedMomentumGain : fallback.expectedMomentumGain),
         interventionLevel: isInterventionLevel(source.interventionLevel) ? source.interventionLevel : fallback.interventionLevel,
-        shouldIntervene: typeof source.shouldIntervene === "boolean" ? source.shouldIntervene : fallback.shouldIntervene,
         reason: isInterventionReason(source.reason) ? source.reason : fallback.reason,
     };
 }
@@ -1006,6 +1011,13 @@ function getConfidenceMode(confidence: ConfidenceField): ConfidenceMode {
     return "medium";
 }
 
+function getGhostAssertiveness(confidence: ConfidenceField): GhostAssertiveness {
+    const mode = getConfidenceMode(confidence);
+    if (mode === "low") return "strong";
+    if (mode === "high") return "subtle";
+    return "normal";
+}
+
 function buildInterventionState(
     prompt: string,
     confidence: ConfidenceField,
@@ -1054,22 +1066,18 @@ function buildInterventionState(
     if (commaCount >= 5 && confidence.executionConfidence < 0.7) expectedMomentumGain += 0.08;
     expectedMomentumGain = clamp01(expectedMomentumGain);
 
-    const shouldIntervene = expectedMomentumGain > attentionCost;
     let interventionLevel: 0 | 1 | 2 | 3 = 0;
-    if (shouldIntervene) {
-        if (reason === "overloaded") interventionLevel = 3;
-        else if (reason === "hesitation" || reason === "branch_confusion") interventionLevel = 2;
-        else if (reason === "arrival") interventionLevel = confidence.executionConfidence >= 0.86 ? 1 : 3;
-        else interventionLevel = 1;
-    }
+    if (reason === "overloaded") interventionLevel = 3;
+    else if (reason === "hesitation" || reason === "branch_confusion") interventionLevel = 2;
+    else if (reason === "arrival") interventionLevel = confidence.executionConfidence >= 0.86 ? 1 : 3;
+    else interventionLevel = 1;
 
     return {
         uncertaintyScore,
         attentionCost,
         expectedMomentumGain,
         interventionLevel,
-        shouldIntervene,
-        reason: shouldIntervene ? reason : "none",
+        reason,
     };
 }
 

@@ -140,7 +140,14 @@ export default function Generator() {
                   type="button"
                   key={idea.label}
                   className="idea-pill"
-                  onClick={() => setPrompt(idea.prompt)}
+                  onClick={() => {
+                    setPrompt((prev) => {
+                      const cleanPrev = prev.trim();
+                      if (!cleanPrev) return idea.prompt;
+                      if (cleanPrev.toLowerCase().includes(idea.prompt.toLowerCase())) return prev;
+                      return `${cleanPrev}, ${idea.prompt}`;
+                    });
+                  }}
                 >
                   {idea.label}
                 </button>
