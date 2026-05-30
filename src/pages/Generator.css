@@ -115,6 +115,155 @@
     color: var(--color-zinc-500);
 }
 
+.dream-input-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dream-input-wrap {
+    position: relative;
+    min-height: 110px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.dream-input-wrap:focus-within {
+    border-color: rgba(139, 92, 246, 0.7);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+}
+
+.dream-input-wrap[data-loading="true"]::after {
+    content: "";
+    position: absolute;
+    right: 12px;
+    bottom: 10px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(251, 191, 36, 0.75);
+    box-shadow: 0 0 14px rgba(251, 191, 36, 0.7);
+    pointer-events: none;
+}
+
+.dream-input-textarea {
+    position: relative;
+    z-index: 2;
+    display: block;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    caret-color: white;
+}
+
+.dream-input-textarea:focus {
+    border-color: transparent;
+    box-shadow: none;
+}
+
+.dreamtrail-overlay {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    padding: 14px;
+    color: transparent;
+    font-size: 1.05rem;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.dreamtrail-overlay-prompt {
+    color: transparent;
+}
+
+.dreamtrail-ghost {
+    color: rgba(212, 212, 216, 0.42);
+    font-style: italic;
+}
+
+.dreamtrail-hint {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.dreamtrail-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.dreamtrail-panel button {
+    min-width: 0;
+    padding: 8px 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(251, 191, 36, 0.16);
+    background: rgba(251, 191, 36, 0.06);
+    color: rgba(244, 244, 245, 0.82);
+    font-size: 0.78rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.dreamtrail-panel button:hover {
+    border-color: rgba(251, 191, 36, 0.42);
+    background: rgba(251, 191, 36, 0.1);
+    color: white;
+}
+
+.dreamtrail-editorial-panel button {
+    border-color: rgba(139, 92, 246, 0.24);
+    background: rgba(139, 92, 246, 0.08);
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.dreamtrail-editorial-panel button:hover {
+    border-color: rgba(139, 92, 246, 0.55);
+    background: rgba(139, 92, 246, 0.14);
+}
+
+.dreamtrail-mode-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    padding: 4px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.14);
+}
+
+.dreamtrail-mode-row button {
+    min-width: 0;
+    min-height: 34px;
+    padding: 6px 8px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--color-zinc-500);
+    font-size: 0.72rem;
+    font-weight: 900;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.dreamtrail-mode-row button:hover,
+.dreamtrail-mode-row button.active {
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+}
+
 .idea-row {
     display: flex;
     flex-wrap: wrap;
@@ -489,6 +638,9 @@
 }
 
 @media (max-width: 620px) {
+    .dreamtrail-mode-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
     .idea-pill {
         flex: 1 1 calc(33% - 6px);
     }

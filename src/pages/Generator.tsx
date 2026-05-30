@@ -5,9 +5,11 @@ import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useLite } from '../contexts/LiteContext';
 import { getOptimizedImageUrl } from '../lite-utils';
+import DreamInput from '../components/DreamInput';
 import PictureThumb from '../components/PictureThumb';
 import PreviewImage from '../components/PreviewImage';
 import { formatElapsed, formatPendingTimeRemaining, historyThumbUrl, messageForStage, STAGE_ORDER } from '../lib/generationFlow';
+import { DREAMTRAIL_MODES, DreamTrailMode } from '../lib/dreamtrail';
 import { IconImage, IconLoader, IconMagic, IconZap } from '../icons';
 import './Generator.css';
 
@@ -19,6 +21,7 @@ const quickIdeas = [
 
 export default function Generator() {
   const [prompt, setPrompt] = useState('');
+  const [dreamTrailMode, setDreamTrailMode] = useState<DreamTrailMode>('balanced');
 
   const {
     selectedModel, generate, generating, generationStage, generationProgress,
@@ -108,20 +111,28 @@ export default function Generator() {
         <aside className="input-column">
           <form onSubmit={handleGenerate} className="input-panel" aria-label="Create image">
             <label htmlFor="image-prompt" className="field-label">What do you want?</label>
-            <textarea
+            <DreamInput
               id="image-prompt"
-              className="prompt-input"
               placeholder="A friendly bee painting a rainbow…"
               value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleGenerate();
-                }
-              }}
+              mode={dreamTrailMode}
+              onChange={setPrompt}
+              onSubmit={handleGenerate}
               maxLength={1000}
             />
+
+            <div className="dreamtrail-mode-row" aria-label="DreamTrail mode">
+              {DREAMTRAIL_MODES.map((mode) => (
+                <button
+                  type="button"
+                  key={mode.id}
+                  className={mode.id === dreamTrailMode ? 'active' : ''}
+                  onClick={() => setDreamTrailMode(mode.id)}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
 
             <div className="idea-row" aria-label="Quick ideas">
               {quickIdeas.map((idea) => (

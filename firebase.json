@@ -28,6 +28,10 @@
     ],
     "rewrites": [
       {
+        "source": "/api/dreamtrail",
+        "function": "dreamtrail"
+      },
+      {
         "source": "/sitemap.xml",
         "function": "web"
       },
