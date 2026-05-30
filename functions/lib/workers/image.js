@@ -130,11 +130,11 @@ export const processImageTask = async (req) => {
             t.update(docRef, {
                 status: "processing",
                 stage: "generating",
+                progress: 15,
                 startedAt: FieldValue.serverTimestamp()
             });
         });
         forensic.checkpoint('locked_and_processing');
-        await docRef.update({ progress: 15 }).catch(() => { });
     }
     catch (e) {
         if (e.message.includes('IDEMPOTENCY_BLOCK')) {
@@ -264,7 +264,6 @@ export const processImageTask = async (req) => {
         if (!imageBuffer || imageBuffer.length < 100) {
             throw new Error("Failed to generate or retrieve image buffer");
         }
-        await docRef.update({ progress: 72, stage: "generating" }).catch(() => { });
         const { default: sharp } = await import("sharp");
         // LQIP first — smallest encode, pushed to client before full resize/upload work
         const lqipBuffer = await sharp(imageBuffer)
@@ -295,21 +294,21 @@ export const processImageTask = async (req) => {
         await s3.send(new PutObjectCommand({ Bucket: B2_BUCKET, Key: originalFilename, Body: webpBuffer, ContentType: "image/webp" }));
         forensic.checkpoint('upload_complete');
         imageUrl = `${B2_PUBLIC_URL}/file/${B2_BUCKET}/${originalFilename}`;
+        const imageRef = db.collection("images").doc();
         // Signal completion immediately — catalog write can finish in the background
         await retryOperation(() => docRef.update({
             status: "completed",
             stage: "done",
             progress: 100,
             imageUrl, thumbnailUrl, lqip,
+            resultImageId: imageRef.id,
             completedAt: new Date()
         }));
-        db.collection("images").add({
+        imageRef.set({
             userId, prompt, negative_prompt, steps, cfg, aspectRatio, modelId,
             imageUrl, thumbnailUrl, lqip, promptHash, promptMetadata,
             isPublic: true,
             createdAt: FieldValue.serverTimestamp(), originalRequestId: requestId
-        }).then((imageRef) => {
-            docRef.update({ resultImageId: imageRef.id }).catch(() => { });
         }).catch((catalogErr) => {
             logger.error(`[${requestId}] Catalog write failed`, catalogErr);
         });

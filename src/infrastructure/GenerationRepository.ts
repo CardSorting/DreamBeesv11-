@@ -34,10 +34,12 @@ export class GenerationRepository {
     let lastError: unknown;
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        const [local, remote] = await Promise.all([
-          this.findLocal(generationId),
-          this.fetchFromFirestore(generationId),
-        ]);
+        const local = await this.findLocal(generationId);
+        if (this.hasUsableLocalDetail(local)) {
+          return this.enrichWithMetadata(local);
+        }
+
+        const remote = await this.fetchFromFirestore(generationId);
 
         const resolved = this.mergeLocalAndRemote(local, remote);
         if (!resolved) {
@@ -62,6 +64,10 @@ export class GenerationRepository {
     throw lastError instanceof Error
       ? lastError
       : new Error(`Generation not found: ${generationId}`);
+  }
+
+  private hasUsableLocalDetail(local: GenerationDetail | null): local is GenerationDetail {
+    return Boolean(local?.imageUrl);
   }
 
   /** Prefer cloud image URL when local row is stale or missing media */

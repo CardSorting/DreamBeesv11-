@@ -1,7 +1,15 @@
 import { db } from "../../firebaseInit.js";
 import { logger } from "../../lib/utils.js";
+const APP_PAGE_CACHE_MS = 60 * 60 * 1000;
+const pageCache = new Map();
 export const handleApp = async (req, res) => {
     const path = req.path;
+    const cached = pageCache.get(path);
+    if (cached && cached.expiresAt > Date.now()) {
+        res.set('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+        res.status(cached.statusCode).send(cached.html);
+        return;
+    }
     const baseUrl = 'https://dreambeesai.com';
     let title = "DreamBees Lite | Unlimited Desktop AI Art Generation";
     let desc = "Experience the power of Stable Diffusion on your desktop. Unlimited generations, blazing fast speeds, and complete creative control. Download DreamBees Lite for macOS and Windows today.";
@@ -134,8 +142,7 @@ export const handleApp = async (req, res) => {
   <meta name="twitter:image" content="${image.startsWith('http') ? image : baseUrl + image}" />
   ${structuredData.length > 0 ? structuredData.map(sd => `<script type="application/ld+json">${JSON.stringify(sd)}</script>`).join('\n') : ''}
 `;
-        res.set('Cache-Control', 'public, max-age=3600, s-maxage=3600');
-        res.status(statusCode).send(`
+        const html = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -157,7 +164,10 @@ export const handleApp = async (req, res) => {
     <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
-        `);
+        `;
+        pageCache.set(path, { html, statusCode, expiresAt: Date.now() + APP_PAGE_CACHE_MS });
+        res.set('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+        res.status(statusCode).send(html);
     }
     catch (err) {
         logger.error("Error in serveApp:", err);

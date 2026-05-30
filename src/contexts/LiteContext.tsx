@@ -135,6 +135,7 @@ const BUILTIN_MODELS: AIModel[] = [
 
 const GENERATION_MODEL_TYPES = new Set(['sdxl', 'generator', 'image']);
 const MODEL_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const CLOUD_HISTORY_CACHE_TTL_MS = 2 * 60 * 1000;
 
 const isClientGenerationModel = (model: AIModel) => {
     const type = typeof model.type === 'string' ? model.type.toLowerCase() : 'sdxl';
@@ -856,14 +857,24 @@ export function LiteProvider({ children }: { children: ReactNode }) {
 
         // Boost perceived speed: instantly restore history from cache
         const cacheKey = `lite_cached_cloud_history_${uid}`;
+        const cacheFetchedAtKey = `${cacheKey}_fetched_at`;
         const cached = localStorage.getItem(cacheKey);
+        let restoredFromFreshCache = false;
         if (cached) {
             try {
-                setHistory(JSON.parse(cached));
+                const parsed = JSON.parse(cached);
+                setHistory(parsed);
+                const cachedAt = Number(localStorage.getItem(cacheFetchedAtKey) || '0');
+                restoredFromFreshCache =
+                    Array.isArray(parsed) &&
+                    parsed.length >= historyLimit &&
+                    cachedAt > 0 &&
+                    Date.now() - cachedAt < CLOUD_HISTORY_CACHE_TTL_MS;
             } catch (err) {
                 console.warn('[Lite] Parse cached history failed:', err);
             }
         }
+        if (restoredFromFreshCache) return;
 
         let cancelled = false;
 
@@ -890,6 +901,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 const items = mapDocs(snap.docs);
                 setHistory(items);
                 idleSaveToLocalStorage(`lite_cached_cloud_history_${uid}`, JSON.stringify(items));
+                idleSaveToLocalStorage(cacheFetchedAtKey, String(Date.now()));
                 return;
             } catch (err) {
                 console.warn('[Lite] History fetch failed (ordered):', err);
@@ -903,6 +915,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 );
                 setHistory(items);
                 idleSaveToLocalStorage(`lite_cached_cloud_history_${uid}`, JSON.stringify(items));
+                idleSaveToLocalStorage(cacheFetchedAtKey, String(Date.now()));
             } catch (err2) {
                 if (cancelled) return;
                 console.warn('[Lite] History fetch failed (fallback):', err2);
