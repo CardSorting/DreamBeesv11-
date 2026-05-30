@@ -59,7 +59,26 @@ export type ArrivalState = {
 
 export type CreativeState = 'blank' | 'searching' | 'exploring' | 'committing' | 'refining' | 'finished';
 
-export type DreamTrailEditorialAction = 'tighten' | 'sharpen_conflict' | 'strengthen_symbol' | 'generate';
+export type ConfidenceField = {
+  directionConfidence: number;
+  conceptConfidence: number;
+  executionConfidence: number;
+};
+
+export type ConfidenceMode = 'low' | 'medium' | 'high';
+
+export type InterventionReason = 'hesitation' | 'looping' | 'branch_confusion' | 'arrival' | 'overloaded' | 'none';
+
+export type InterventionState = {
+  uncertaintyScore: number;
+  attentionCost: number;
+  expectedMomentumGain: number;
+  interventionLevel: 0 | 1 | 2 | 3;
+  shouldIntervene: boolean;
+  reason: InterventionReason;
+};
+
+export type DreamTrailEditorialAction = 'choose_direction' | 'tighten' | 'sharpen_conflict' | 'strengthen_symbol' | 'start_over_softer' | 'generate';
 
 export type DreamTrailEditorialChip = {
   id: DreamTrailEditorialAction;
@@ -96,6 +115,7 @@ export interface DreamTrailResponse {
 
 export const ARRIVAL_THRESHOLD = 0.65;
 export const FINISHED_THRESHOLD = 0.86;
+export const HIGH_CONFIDENCE_THRESHOLD = 0.72;
 
 export const DREAMTRAIL_MODES: Array<{ id: DreamTrailMode; label: string }> = [
   { id: 'balanced', label: 'Balanced' },
@@ -451,7 +471,158 @@ export function getCreativeState(
   return 'searching';
 }
 
-export function getEditorialChips(arrival: ArrivalState): DreamTrailEditorialChip[] {
+export function getConfidenceField(
+  prompt: string,
+  decision: DecisionState = getDecisionState(prompt),
+  arrival: ArrivalState = getArrivalState(prompt, decision),
+  creativeState: CreativeState = getCreativeState(prompt, decision, arrival),
+  cadence: CadenceState = getCadenceState(prompt),
+  events: MutationEvent[] = getMutationEvents()
+): ConfidenceField {
+  const clean = prompt.trim();
+  const words = wordCount(clean);
+  const lower = clean.toLowerCase();
+  const recentEvents = events.slice(0, 8);
+  const currentAccepts = recentEvents.filter((event) => {
+    const ghost = event.acceptedGhost.toLowerCase();
+    return lower.includes(ghost.replace(/^,\s*/, '')) || lower.startsWith(event.sourceText.toLowerCase());
+  });
+  const recentAxes = new Set(recentEvents.slice(0, 5).map((event) => event.detectedMutation));
+
+  let directionConfidence = 0.08;
+  if (arrival.hasIdentity) directionConfidence += 0.16;
+  if (arrival.hasAction) directionConfidence += 0.2;
+  if (arrival.hasSetting) directionConfidence += 0.16;
+  if (arrival.hasConflict) directionConfidence += 0.2;
+  if (arrival.hasSymbol) directionConfidence += 0.12;
+  if (creativeState === 'blank') directionConfidence -= 0.18;
+  if (creativeState === 'searching') directionConfidence -= 0.08;
+  if (creativeState === 'committing' || creativeState === 'refining') directionConfidence += 0.1;
+  if (words <= 2) directionConfidence -= 0.12;
+
+  let conceptConfidence = 0.16;
+  conceptConfidence += Math.min(0.22, words * 0.018);
+  conceptConfidence += decision.alreadySatisfied.length * 0.055;
+  if (/\b(ceremonial|honeycomb|amber|shadow|pollen|cracked|banner|gates|armor|wasps|lantern|procession)\b/.test(lower)) conceptConfidence += 0.2;
+  if (/\b(cool|thing|stuff|vibe|aesthetic|fantasy|random|whatever|nice|beautiful)\b/.test(lower)) conceptConfidence -= 0.24;
+  if (creativeState === 'blank') conceptConfidence -= 0.12;
+
+  let executionConfidence = arrival.readinessScore * 0.58 + cadence.escalationLevel * 0.18;
+  executionConfidence += Math.min(0.14, currentAccepts.length * 0.045);
+  if (creativeState === 'refining') executionConfidence += 0.12;
+  if (creativeState === 'finished') executionConfidence += 0.22;
+  if (recentAxes.size >= 4 && currentAccepts.length < 2) executionConfidence -= 0.16;
+  if (words <= 2) executionConfidence -= 0.12;
+
+  return {
+    directionConfidence: clamp01(directionConfidence),
+    conceptConfidence: clamp01(conceptConfidence),
+    executionConfidence: clamp01(executionConfidence),
+  };
+}
+
+export function getConfidenceMode(confidence: ConfidenceField): ConfidenceMode {
+  const average = (confidence.directionConfidence + confidence.conceptConfidence + confidence.executionConfidence) / 3;
+  if (confidence.executionConfidence >= HIGH_CONFIDENCE_THRESHOLD || average >= 0.74) return 'high';
+  if (confidence.directionConfidence < 0.42 || confidence.conceptConfidence < 0.38) return 'low';
+  return 'medium';
+}
+
+export function getInterventionState(
+  prompt: string,
+  confidence: ConfidenceField,
+  creativeState: CreativeState,
+  arrival: ArrivalState,
+  decision: DecisionState = getDecisionState(prompt),
+  events: MutationEvent[] = getMutationEvents()
+): InterventionState {
+  const clean = prompt.trim();
+  const words = wordCount(clean);
+  const recent = events.slice(0, 5);
+  const lastThree = recent.slice(0, 3);
+  const repeatedAxis = Math.max(0, ...MUTATION_KEYS.map((axis) => lastThree.filter((event) => event.detectedMutation === axis).length));
+  const repeatedDecision = Math.max(0, ...DECISION_KEYS.map((need) => lastThree.filter((event) => event.detectedDecision === need).length));
+  const commaCount = (clean.match(/,/g) ?? []).length;
+  const isGeneric = /\b(cool|thing|stuff|vibe|aesthetic|random|whatever|bored|boring)\b/i.test(clean);
+  const confidenceAverage = (confidence.directionConfidence + confidence.conceptConfidence + confidence.executionConfidence) / 3;
+
+  const uncertaintyScore = clamp01(
+    1
+    - confidenceAverage * 0.7
+    + (decision.missingNeeds.length / DECISION_KEYS.length) * 0.2
+    + (creativeState === 'blank' || creativeState === 'searching' ? 0.18 : 0)
+    + (isGeneric ? 0.18 : 0)
+  );
+
+  const attentionCost = clamp01(
+    0.16
+    + confidence.executionConfidence * 0.3
+    + confidence.directionConfidence * 0.18
+    + (words > 18 ? 0.12 : 0)
+    + (creativeState === 'refining' || creativeState === 'finished' ? 0.18 : 0)
+    + (clean.endsWith(',') ? 0.08 : 0)
+  );
+
+  let reason: InterventionReason = 'none';
+  if (creativeState === 'refining' || creativeState === 'finished' || confidence.executionConfidence >= HIGH_CONFIDENCE_THRESHOLD) {
+    reason = 'arrival';
+  } else if (repeatedAxis >= 3 || repeatedDecision >= 3) {
+    reason = 'looping';
+  } else if (isGeneric || (words > 14 && decision.missingNeeds.length >= 4)) {
+    reason = 'overloaded';
+  } else if (creativeState === 'blank' || words <= 1) {
+    reason = 'hesitation';
+  } else if (getConfidenceMode(confidence) === 'low' || creativeState === 'searching') {
+    reason = 'branch_confusion';
+  }
+
+  let expectedMomentumGain = 0;
+  if (reason === 'hesitation') expectedMomentumGain = 0.74;
+  if (reason === 'branch_confusion') expectedMomentumGain = 0.66;
+  if (reason === 'looping') expectedMomentumGain = 0.82;
+  if (reason === 'overloaded') expectedMomentumGain = 0.78;
+  if (reason === 'arrival') expectedMomentumGain = confidence.executionConfidence >= 0.86 ? 0.36 : 0.62;
+  if (reason === 'none') expectedMomentumGain = Math.max(0.08, uncertaintyScore * 0.45);
+  if (commaCount >= 5 && confidence.executionConfidence < 0.7) expectedMomentumGain += 0.08;
+  expectedMomentumGain = clamp01(expectedMomentumGain);
+
+  const shouldIntervene = expectedMomentumGain > attentionCost;
+  let interventionLevel: 0 | 1 | 2 | 3 = 0;
+  if (shouldIntervene) {
+    if (reason === 'looping' || reason === 'overloaded') interventionLevel = 3;
+    else if (reason === 'hesitation' || reason === 'branch_confusion') interventionLevel = 2;
+    else if (reason === 'arrival') interventionLevel = confidence.executionConfidence >= 0.86 ? 1 : 3;
+    else interventionLevel = 1;
+  }
+
+  return {
+    uncertaintyScore,
+    attentionCost,
+    expectedMomentumGain,
+    interventionLevel,
+    shouldIntervene,
+    reason: shouldIntervene ? reason : 'none',
+  };
+}
+
+export function getRescueChips(): DreamTrailEditorialChip[] {
+  return [
+    { id: 'choose_direction', label: 'Choose direction' },
+    { id: 'tighten', label: 'Tighten' },
+    { id: 'start_over_softer', label: 'Start over softer' },
+  ];
+}
+
+export function getEditorialChips(arrival: ArrivalState, confidence?: ConfidenceField): DreamTrailEditorialChip[] {
+  if (confidence && getConfidenceMode(confidence) === 'high') {
+    if (confidence.executionConfidence >= 0.86) return [{ id: 'generate', label: 'Generate' }];
+    return [
+      { id: 'tighten', label: 'Tighten' },
+      { id: 'sharpen_conflict', label: 'Sharpen conflict' },
+      { id: 'strengthen_symbol', label: 'Strengthen symbol' },
+      { id: 'generate', label: 'Generate' },
+    ];
+  }
   if (arrival.readinessScore >= FINISHED_THRESHOLD && arrival.hasIdentity && arrival.hasAction && arrival.hasSetting && arrival.hasConflict && arrival.hasSymbol) {
     return [{ id: 'generate', label: 'Generate' }];
   }
@@ -474,8 +645,10 @@ export function getEditorialChips(arrival: ArrivalState): DreamTrailEditorialChi
 
 export function applyEditorialAction(prompt: string, action: DreamTrailEditorialAction): string {
   if (action === 'generate') return prompt;
+  if (action === 'choose_direction') return appendEditorialPhrase(prompt, directionPhraseFor(prompt));
   if (action === 'tighten') return tightenPrompt(prompt);
   if (action === 'sharpen_conflict') return appendEditorialPhrase(prompt, conflictPhraseFor(prompt));
+  if (action === 'start_over_softer') return softerStartFor(prompt);
   return appendEditorialPhrase(prompt, symbolPhraseFor(prompt));
 }
 
@@ -523,14 +696,15 @@ export function getLocalDreamTrailSuggestions(
   cadence = getCadenceState(prompt),
   decision = getDecisionState(prompt, cadence),
   arrival = getArrivalState(prompt, decision),
-  creativeState = getCreativeState(prompt, decision, arrival, cadence)
+  creativeState = getCreativeState(prompt, decision, arrival, cadence),
+  confidence = getConfidenceField(prompt, decision, arrival, creativeState, cadence)
 ): DreamTrailSuggestion[] {
   const source = prompt.trim();
   if ((source.length < 3 && creativeState !== 'blank') || endsWithConnector(source)) return [];
 
   const mapped = LOCAL_COMPLETIONS.find((entry) => entry.test.test(source));
   const candidates = mapped ? mapped.suggestions : FALLBACKS[mode] ?? FALLBACKS.balanced;
-  return filterDreamTrailSuggestions(candidates, source, tasteVector, mode, gravity, cadence, decision, arrival, creativeState).slice(0, 3);
+  return filterDreamTrailSuggestions(candidates, source, tasteVector, mode, gravity, cadence, decision, arrival, creativeState, confidence).slice(0, 3);
 }
 
 export function filterDreamTrailSuggestions(
@@ -542,7 +716,8 @@ export function filterDreamTrailSuggestions(
   cadence: CadenceState = getCadenceState(prompt),
   decision: DecisionState = getDecisionState(prompt, cadence),
   arrival: ArrivalState = getArrivalState(prompt, decision),
-  creativeState: CreativeState = getCreativeState(prompt, decision, arrival, cadence)
+  creativeState: CreativeState = getCreativeState(prompt, decision, arrival, cadence),
+  confidence: ConfidenceField = getConfidenceField(prompt, decision, arrival, creativeState, cadence)
 ) {
   const promptTokens = tokenSet(prompt);
   const accepted: DreamTrailSuggestion[] = [];
@@ -558,7 +733,7 @@ export function filterDreamTrailSuggestions(
     if (accepted.some((existing) => jaccard(tokenSet(existing.text), tokenSet(suggestion.text)) > 0.44)) continue;
     accepted.push({
       ...suggestion,
-      score: scoreSuggestion(suggestion, tasteVector, mode, gravity, cadence, decision, arrival, creativeState),
+      score: scoreSuggestion(suggestion, tasteVector, mode, gravity, cadence, decision, arrival, creativeState, confidence),
     });
   }
 
@@ -602,7 +777,8 @@ function normalizeDreamTrailSuggestion(
     const decision = detectDecision(text);
     const decisionState = getDecisionState('', phaseDefaults.seed);
     const arrival = getArrivalState('', decisionState);
-    return { text, mutation, decision, score: scoreSuggestion({ text, mutation, decision, score: 0.5 }, tasteVector, mode, getTasteGravity(tasteVector), phaseDefaults.seed, decisionState, arrival, getCreativeState('', decisionState, arrival, phaseDefaults.seed)) };
+    const creativeState = getCreativeState('', decisionState, arrival, phaseDefaults.seed);
+    return { text, mutation, decision, score: scoreSuggestion({ text, mutation, decision, score: 0.5 }, tasteVector, mode, getTasteGravity(tasteVector), phaseDefaults.seed, decisionState, arrival, creativeState, getConfidenceField('', decisionState, arrival, creativeState, phaseDefaults.seed)) };
   }
 
   const text = normalizeSuggestion(candidate.text);
@@ -657,7 +833,8 @@ function scoreSuggestion(
   cadence: CadenceState,
   decision: DecisionState,
   arrival: ArrivalState,
-  creativeState: CreativeState
+  creativeState: CreativeState,
+  confidence: ConfidenceField
 ) {
   const lower = suggestion.text.toLowerCase();
   let score = clamp01(suggestion.score) * 0.75 + tasteVector[suggestion.mutation] * 0.18;
@@ -677,6 +854,7 @@ function scoreSuggestion(
     score += gravity.noveltyPressure > 0.7 ? 0.08 : -0.04;
   }
   if (lastThree.filter((axis) => axis === suggestion.mutation).length > 2) score *= 0.6;
+  score += scoreConfidence(suggestion, confidence, arrival);
   score += scoreCadence(suggestion, cadence);
   score += scoreCreativeState(suggestion, creativeState, arrival, decision);
   score += creativeState === 'refining' || creativeState === 'finished'
@@ -738,6 +916,30 @@ function scoreDecision(suggestion: DreamTrailSuggestion, decision: DecisionState
   if (decision.missingNeeds.includes(suggestionDecision)) score += 0.14;
   if (decision.alreadySatisfied.includes(suggestionDecision) && suggestionDecision !== decision.strongestNeed) score -= 0.18;
   if (decision.alreadySatisfied.filter((need) => need === suggestionDecision).length > 0 && suggestionDecision === 'identity') score -= 0.08;
+  return score;
+}
+
+function scoreConfidence(suggestion: DreamTrailSuggestion, confidence: ConfidenceField, arrival: ArrivalState) {
+  const suggestionDecision = suggestion.decision ?? detectDecision(suggestion.text);
+  const mode = getConfidenceMode(confidence);
+  const text = suggestion.text.toLowerCase();
+  let score = 0;
+
+  if (mode === 'low') {
+    if (suggestionDecision === 'action' || suggestionDecision === 'setting') score += 0.2;
+    if (/\b(defending|exploring|leading|lost|searching|carrying)\b/.test(text)) score += 0.12;
+    if (suggestionDecision === 'identity' && arrival.hasIdentity) score -= 0.18;
+  } else if (mode === 'medium') {
+    if (!arrival.hasConflict && suggestionDecision === 'conflict') score += 0.2;
+    if (arrival.hasConflict && !arrival.hasSymbol && suggestionDecision === 'symbol') score += 0.18;
+    if (suggestionDecision === 'action' && arrival.hasAction) score -= 0.16;
+    if (suggestionDecision === 'identity' && arrival.hasIdentity) score -= 0.2;
+  } else {
+    if (suggestionDecision === 'composition' || suggestionDecision === 'symbol' || suggestionDecision === 'tone') score += 0.08;
+    if (suggestionDecision === 'identity' || suggestionDecision === 'action' || suggestionDecision === 'setting') score -= 0.28;
+    if (confidence.executionConfidence >= 0.82) score -= 0.18;
+  }
+
   return score;
 }
 
@@ -858,6 +1060,13 @@ function appendEditorialPhrase(prompt: string, phrase: string) {
   return `${cleanPrompt}${cleanPhrase}`;
 }
 
+function directionPhraseFor(prompt: string) {
+  if (/\bbee\s+knight\b/i.test(prompt)) return ', guarding the hive gates';
+  if (/\bbee\b/i.test(prompt)) return ', carrying a lantern';
+  if (/\bforest|garden\b/i.test(prompt)) return ', following a hidden trail';
+  return ', finding a small path forward';
+}
+
 function conflictPhraseFor(prompt: string) {
   if (/\bbee|hive|honey|pollen\b/i.test(prompt)) return ', as shadow wasps gather outside';
   if (/\bcastle|knight|queen|king\b/i.test(prompt)) return ', as the last gate begins to fall';
@@ -870,6 +1079,13 @@ function symbolPhraseFor(prompt: string) {
   if (/\bcastle|knight|queen|king\b/i.test(prompt)) return ', beneath a torn royal standard';
   if (/\bforest|garden\b/i.test(prompt)) return ', beside a moss-covered altar stone';
   return ', beneath a single broken emblem';
+}
+
+function softerStartFor(prompt: string) {
+  if (/\bbee\s+knight\b/i.test(prompt)) return 'bee knight carrying a lantern';
+  if (/\bbee\b/i.test(prompt)) return 'bee carrying a lantern';
+  const subject = prompt.trim().split(/[,\n]/)[0].split(/\s+/).slice(0, 4).join(' ');
+  return subject ? `${subject} finding a small path` : 'a small lantern finding a path';
 }
 
 function stripConnector(value: string) {

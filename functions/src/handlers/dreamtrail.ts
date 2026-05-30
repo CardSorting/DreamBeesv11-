@@ -61,6 +61,25 @@ type ArrivalState = {
 
 type CreativeState = "blank" | "searching" | "exploring" | "committing" | "refining" | "finished";
 
+type ConfidenceField = {
+    directionConfidence: number;
+    conceptConfidence: number;
+    executionConfidence: number;
+};
+
+type ConfidenceMode = "low" | "medium" | "high";
+
+type InterventionReason = "hesitation" | "looping" | "branch_confusion" | "arrival" | "overloaded" | "none";
+
+type InterventionState = {
+    uncertaintyScore: number;
+    attentionCost: number;
+    expectedMomentumGain: number;
+    interventionLevel: 0 | 1 | 2 | 3;
+    shouldIntervene: boolean;
+    reason: InterventionReason;
+};
+
 interface DreamTrailRequest {
     prompt?: unknown;
     acceptedHistory?: unknown;
@@ -71,6 +90,8 @@ interface DreamTrailRequest {
     decisionState?: unknown;
     arrivalState?: unknown;
     creativeState?: unknown;
+    confidenceField?: unknown;
+    interventionState?: unknown;
     taste?: unknown;
     mode?: unknown;
 }
@@ -84,6 +105,8 @@ interface DreamTrailPayload {
     decisionState: DecisionState;
     arrivalState: ArrivalState;
     creativeState: CreativeState;
+    confidenceField: ConfidenceField;
+    interventionState: InterventionState;
     mode: DreamTrailMode;
 }
 
@@ -99,6 +122,7 @@ const MUTATIONS = new Set<string>(MUTATION_KEYS);
 const DECISION_KEYS: DecisionNeed[] = ["identity", "setting", "action", "conflict", "symbol", "composition", "tone"];
 const ARRIVAL_THRESHOLD = 0.65;
 const FINISHED_THRESHOLD = 0.86;
+const HIGH_CONFIDENCE_THRESHOLD = 0.72;
 
 const SYSTEM_PROMPT = `You are DreamTrail.
 
@@ -349,6 +373,8 @@ function parsePayload(raw: DreamTrailRequest): DreamTrailPayload | null {
     const cadenceState = parseCadenceState(raw.cadenceState, acceptedHistory.length);
     const decisionState = parseDecisionState(raw.decisionState, prompt, cadenceState);
     const arrivalState = parseArrivalState(raw.arrivalState, prompt, decisionState);
+    const creativeState = parseCreativeState(raw.creativeState, prompt, decisionState, arrivalState, cadenceState);
+    const confidenceField = parseConfidenceField(raw.confidenceField, prompt, decisionState, arrivalState, creativeState, cadenceState, acceptedHistory);
     return {
         prompt,
         acceptedHistory,
@@ -357,7 +383,9 @@ function parsePayload(raw: DreamTrailRequest): DreamTrailPayload | null {
         cadenceState,
         decisionState,
         arrivalState,
-        creativeState: parseCreativeState(raw.creativeState, prompt, decisionState, arrivalState, cadenceState),
+        creativeState,
+        confidenceField,
+        interventionState: parseInterventionState(raw.interventionState, prompt, confidenceField, creativeState, arrivalState, decisionState),
         mode,
     };
 }
@@ -419,11 +447,16 @@ function buildUserInstruction(payload: DreamTrailPayload) {
         decisionState: payload.decisionState,
         arrivalState: payload.arrivalState,
         creativeState: payload.creativeState,
+        confidenceField: payload.confidenceField,
+        confidenceMode: getConfidenceMode(payload.confidenceField),
+        interventionState: payload.interventionState,
         mode: payload.mode,
         modeBias: MODE_MUTATION_BIAS[payload.mode],
-        instruction: payload.creativeState === "refining" || payload.creativeState === "finished"
+        instruction: !payload.interventionState.shouldIntervene
+            ? "Do not suggest unless the intervention improves momentum more than it costs attention."
+            : getConfidenceMode(payload.confidenceField) === "high" || payload.creativeState === "refining" || payload.creativeState === "finished"
             ? "The idea is ready enough. Do not add garnish. If suggesting anything, make it editorially useful: sharpen conflict, strengthen a symbol, or clarify the landing image."
-            : "Adapt to creativeState. blank means ignite movement. searching means offer branches. exploring means develop the chosen path. committing means reinforce existing direction without introducing new branches. Suggest the next interesting mutation, not genre tags. Surface the missing creative decision.",
+            : "Adapt to confidenceField. Low confidence means act as a creative scout and offer distinct futures. Medium confidence means act as a partner and develop one path. High confidence means act as an editor and stop adding new futures. Also adapt to creativeState.",
     });
 }
 
@@ -567,6 +600,7 @@ function scoreSuggestion(suggestion: DreamTrailSuggestion, payload: DreamTrailPa
         score += payload.tasteGravity.noveltyPressure > 0.7 ? 0.08 : -0.04;
     }
     if (lastThree.filter((axis) => axis === suggestion.mutation).length > 2) score *= 0.6;
+    score += scoreConfidence(suggestion, payload.confidenceField, payload.arrivalState);
     score += scoreCadence(suggestion, payload.cadenceState);
     score += scoreCreativeState(suggestion, payload.creativeState, payload.arrivalState, payload.decisionState);
     score += payload.creativeState === "refining" || payload.creativeState === "finished"
@@ -631,6 +665,30 @@ function scoreDecision(suggestion: DreamTrailSuggestion, decision: DecisionState
     if (decision.missingNeeds.includes(suggestionDecision)) score += 0.14;
     if (decision.alreadySatisfied.includes(suggestionDecision) && suggestionDecision !== decision.strongestNeed) score -= 0.18;
     if (decision.alreadySatisfied.includes(suggestionDecision) && suggestionDecision === "identity") score -= 0.08;
+    return score;
+}
+
+function scoreConfidence(suggestion: DreamTrailSuggestion, confidence: ConfidenceField, arrival: ArrivalState) {
+    const suggestionDecision = suggestion.decision ?? detectDecision(suggestion.text);
+    const mode = getConfidenceMode(confidence);
+    const text = suggestion.text.toLowerCase();
+    let score = 0;
+
+    if (mode === "low") {
+        if (suggestionDecision === "action" || suggestionDecision === "setting") score += 0.2;
+        if (/\b(defending|exploring|leading|lost|searching|carrying)\b/.test(text)) score += 0.12;
+        if (suggestionDecision === "identity" && arrival.hasIdentity) score -= 0.18;
+    } else if (mode === "medium") {
+        if (!arrival.hasConflict && suggestionDecision === "conflict") score += 0.2;
+        if (arrival.hasConflict && !arrival.hasSymbol && suggestionDecision === "symbol") score += 0.18;
+        if (suggestionDecision === "action" && arrival.hasAction) score -= 0.16;
+        if (suggestionDecision === "identity" && arrival.hasIdentity) score -= 0.2;
+    } else {
+        if (suggestionDecision === "composition" || suggestionDecision === "symbol" || suggestionDecision === "tone") score += 0.08;
+        if (suggestionDecision === "identity" || suggestionDecision === "action" || suggestionDecision === "setting") score -= 0.28;
+        if (confidence.executionConfidence >= 0.82) score -= 0.18;
+    }
+
     return score;
 }
 
@@ -783,6 +841,46 @@ function parseCreativeState(
     return isCreativeState(raw) ? raw : buildCreativeState(prompt, decision, arrival, cadence);
 }
 
+function parseConfidenceField(
+    raw: unknown,
+    prompt: string,
+    decision: DecisionState,
+    arrival: ArrivalState,
+    creativeState: CreativeState,
+    cadence: CadenceState,
+    acceptedHistory: string[]
+): ConfidenceField {
+    const fallback = buildConfidenceField(prompt, decision, arrival, creativeState, cadence, acceptedHistory);
+    if (!raw || typeof raw !== "object") return fallback;
+    const source = raw as Partial<Record<keyof ConfidenceField, unknown>>;
+    return {
+        directionConfidence: clamp01(typeof source.directionConfidence === "number" ? source.directionConfidence : fallback.directionConfidence),
+        conceptConfidence: clamp01(typeof source.conceptConfidence === "number" ? source.conceptConfidence : fallback.conceptConfidence),
+        executionConfidence: clamp01(typeof source.executionConfidence === "number" ? source.executionConfidence : fallback.executionConfidence),
+    };
+}
+
+function parseInterventionState(
+    raw: unknown,
+    prompt: string,
+    confidence: ConfidenceField,
+    creativeState: CreativeState,
+    arrival: ArrivalState,
+    decision: DecisionState
+): InterventionState {
+    const fallback = buildInterventionState(prompt, confidence, creativeState, arrival, decision);
+    if (!raw || typeof raw !== "object") return fallback;
+    const source = raw as Partial<Record<keyof InterventionState, unknown>>;
+    return {
+        uncertaintyScore: clamp01(typeof source.uncertaintyScore === "number" ? source.uncertaintyScore : fallback.uncertaintyScore),
+        attentionCost: clamp01(typeof source.attentionCost === "number" ? source.attentionCost : fallback.attentionCost),
+        expectedMomentumGain: clamp01(typeof source.expectedMomentumGain === "number" ? source.expectedMomentumGain : fallback.expectedMomentumGain),
+        interventionLevel: isInterventionLevel(source.interventionLevel) ? source.interventionLevel : fallback.interventionLevel,
+        shouldIntervene: typeof source.shouldIntervene === "boolean" ? source.shouldIntervene : fallback.shouldIntervene,
+        reason: isInterventionReason(source.reason) ? source.reason : fallback.reason,
+    };
+}
+
 function buildDecisionState(prompt: string, cadence: CadenceState): DecisionState {
     const lower = prompt.toLowerCase();
     const alreadySatisfied = DECISION_KEYS.filter((need) => DECISION_PATTERNS[need].test(lower));
@@ -857,6 +955,124 @@ function buildCreativeState(
     return "searching";
 }
 
+function buildConfidenceField(
+    prompt: string,
+    decision: DecisionState,
+    arrival: ArrivalState,
+    creativeState: CreativeState,
+    cadence: CadenceState,
+    acceptedHistory: string[]
+): ConfidenceField {
+    const clean = prompt.trim();
+    const lower = clean.toLowerCase();
+    const words = wordCount(clean);
+    const acceptedInPrompt = acceptedHistory.filter((item) => lower.includes(item.replace(/^,\s*/, "").toLowerCase()));
+
+    let directionConfidence = 0.08;
+    if (arrival.hasIdentity) directionConfidence += 0.16;
+    if (arrival.hasAction) directionConfidence += 0.2;
+    if (arrival.hasSetting) directionConfidence += 0.16;
+    if (arrival.hasConflict) directionConfidence += 0.2;
+    if (arrival.hasSymbol) directionConfidence += 0.12;
+    if (creativeState === "blank") directionConfidence -= 0.18;
+    if (creativeState === "searching") directionConfidence -= 0.08;
+    if (creativeState === "committing" || creativeState === "refining") directionConfidence += 0.1;
+    if (words <= 2) directionConfidence -= 0.12;
+
+    let conceptConfidence = 0.16;
+    conceptConfidence += Math.min(0.22, words * 0.018);
+    conceptConfidence += decision.alreadySatisfied.length * 0.055;
+    if (/\b(ceremonial|honeycomb|amber|shadow|pollen|cracked|banner|gates|armor|wasps|lantern|procession)\b/.test(lower)) conceptConfidence += 0.2;
+    if (/\b(cool|thing|stuff|vibe|aesthetic|fantasy|random|whatever|nice|beautiful)\b/.test(lower)) conceptConfidence -= 0.24;
+    if (creativeState === "blank") conceptConfidence -= 0.12;
+
+    let executionConfidence = arrival.readinessScore * 0.58 + cadence.escalationLevel * 0.18;
+    executionConfidence += Math.min(0.14, acceptedInPrompt.length * 0.045);
+    if (creativeState === "refining") executionConfidence += 0.12;
+    if (creativeState === "finished") executionConfidence += 0.22;
+    if (words <= 2) executionConfidence -= 0.12;
+
+    return {
+        directionConfidence: clamp01(directionConfidence),
+        conceptConfidence: clamp01(conceptConfidence),
+        executionConfidence: clamp01(executionConfidence),
+    };
+}
+
+function getConfidenceMode(confidence: ConfidenceField): ConfidenceMode {
+    const average = (confidence.directionConfidence + confidence.conceptConfidence + confidence.executionConfidence) / 3;
+    if (confidence.executionConfidence >= HIGH_CONFIDENCE_THRESHOLD || average >= 0.74) return "high";
+    if (confidence.directionConfidence < 0.42 || confidence.conceptConfidence < 0.38) return "low";
+    return "medium";
+}
+
+function buildInterventionState(
+    prompt: string,
+    confidence: ConfidenceField,
+    creativeState: CreativeState,
+    arrival: ArrivalState,
+    decision: DecisionState
+): InterventionState {
+    const clean = prompt.trim();
+    const words = wordCount(clean);
+    const commaCount = (clean.match(/,/g) ?? []).length;
+    const isGeneric = /\b(cool|thing|stuff|vibe|aesthetic|random|whatever|bored|boring)\b/i.test(clean);
+    const confidenceAverage = (confidence.directionConfidence + confidence.conceptConfidence + confidence.executionConfidence) / 3;
+    const uncertaintyScore = clamp01(
+        1
+        - confidenceAverage * 0.7
+        + (decision.missingNeeds.length / DECISION_KEYS.length) * 0.2
+        + (creativeState === "blank" || creativeState === "searching" ? 0.18 : 0)
+        + (isGeneric ? 0.18 : 0)
+    );
+    const attentionCost = clamp01(
+        0.16
+        + confidence.executionConfidence * 0.3
+        + confidence.directionConfidence * 0.18
+        + (words > 18 ? 0.12 : 0)
+        + (creativeState === "refining" || creativeState === "finished" ? 0.18 : 0)
+        + (clean.endsWith(",") ? 0.08 : 0)
+    );
+
+    let reason: InterventionReason = "none";
+    if (creativeState === "refining" || creativeState === "finished" || confidence.executionConfidence >= HIGH_CONFIDENCE_THRESHOLD) {
+        reason = "arrival";
+    } else if (isGeneric || (words > 14 && decision.missingNeeds.length >= 4)) {
+        reason = "overloaded";
+    } else if (creativeState === "blank" || words <= 1) {
+        reason = "hesitation";
+    } else if (getConfidenceMode(confidence) === "low" || creativeState === "searching") {
+        reason = "branch_confusion";
+    }
+
+    let expectedMomentumGain = 0;
+    if (reason === "hesitation") expectedMomentumGain = 0.74;
+    if (reason === "branch_confusion") expectedMomentumGain = 0.66;
+    if (reason === "overloaded") expectedMomentumGain = 0.78;
+    if (reason === "arrival") expectedMomentumGain = confidence.executionConfidence >= 0.86 ? 0.36 : 0.62;
+    if (reason === "none") expectedMomentumGain = Math.max(0.08, uncertaintyScore * 0.45);
+    if (commaCount >= 5 && confidence.executionConfidence < 0.7) expectedMomentumGain += 0.08;
+    expectedMomentumGain = clamp01(expectedMomentumGain);
+
+    const shouldIntervene = expectedMomentumGain > attentionCost;
+    let interventionLevel: 0 | 1 | 2 | 3 = 0;
+    if (shouldIntervene) {
+        if (reason === "overloaded") interventionLevel = 3;
+        else if (reason === "hesitation" || reason === "branch_confusion") interventionLevel = 2;
+        else if (reason === "arrival") interventionLevel = confidence.executionConfidence >= 0.86 ? 1 : 3;
+        else interventionLevel = 1;
+    }
+
+    return {
+        uncertaintyScore,
+        attentionCost,
+        expectedMomentumGain,
+        interventionLevel,
+        shouldIntervene,
+        reason: shouldIntervene ? reason : "none",
+    };
+}
+
 function parseDecisionList(raw: unknown, fallback: DecisionNeed[]) {
     if (!Array.isArray(raw)) return fallback;
     const needs = raw.filter(isDecisionNeed).slice(0, 7);
@@ -895,6 +1111,19 @@ function isCreativeState(value: unknown): value is CreativeState {
         || value === "committing"
         || value === "refining"
         || value === "finished";
+}
+
+function isInterventionLevel(value: unknown): value is 0 | 1 | 2 | 3 {
+    return value === 0 || value === 1 || value === 2 || value === 3;
+}
+
+function isInterventionReason(value: unknown): value is InterventionReason {
+    return value === "hesitation"
+        || value === "looping"
+        || value === "branch_confusion"
+        || value === "arrival"
+        || value === "overloaded"
+        || value === "none";
 }
 
 function buildTasteGravity(vector: TasteVector, recentTrajectory: TasteMutation[]): TasteGravity {

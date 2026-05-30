@@ -9,10 +9,14 @@ import {
   getAcceptedHistory,
   getArrivalState,
   getCadenceState,
+  getConfidenceField,
+  getConfidenceMode,
   getCreativeState,
   getDecisionState,
   getEditorialChips,
+  getInterventionState,
   getLocalDreamTrailSuggestions,
+  getRescueChips,
   getTasteGravity,
   getTasteVector,
   normalizeSuggestion,
@@ -55,11 +59,17 @@ export default function DreamInput({
   const decisionState = useMemo(() => getDecisionState(cleanPrompt, cadenceState), [cleanPrompt, cadenceState]);
   const arrivalState = useMemo(() => getArrivalState(cleanPrompt, decisionState), [cleanPrompt, decisionState]);
   const creativeState = useMemo(() => getCreativeState(cleanPrompt, decisionState, arrivalState, cadenceState), [arrivalState, cadenceState, cleanPrompt, decisionState]);
-  const editorialChips = useMemo(() => getEditorialChips(arrivalState), [arrivalState]);
-  const hasArrived = creativeState === 'refining' || creativeState === 'finished';
+  const confidenceField = useMemo(() => getConfidenceField(cleanPrompt, decisionState, arrivalState, creativeState, cadenceState), [arrivalState, cadenceState, cleanPrompt, creativeState, decisionState]);
+  const confidenceMode = useMemo(() => getConfidenceMode(confidenceField), [confidenceField]);
+  const interventionState = useMemo(() => getInterventionState(cleanPrompt, confidenceField, creativeState, arrivalState, decisionState), [arrivalState, cleanPrompt, confidenceField, creativeState, decisionState]);
+  const rescueChips = useMemo(() => getRescueChips(), []);
+  const editorialChips = useMemo(() => getEditorialChips(arrivalState, confidenceField), [arrivalState, confidenceField]);
+  const hasArrived = (creativeState === 'refining' || creativeState === 'finished' || confidenceMode === 'high') && interventionState.shouldIntervene;
+  const showForks = interventionState.shouldIntervene && interventionState.interventionLevel === 2;
+  const showRescue = interventionState.shouldIntervene && interventionState.interventionLevel === 3;
   const activeSuggestion = suggestions[activeSuggestionIndex] ?? suggestions[0] ?? null;
   const rawGhost = activeSuggestion?.text ?? '';
-  const visibleGhost = !hasArrived && caretAtEnd && dismissedForValueRef.current !== value
+  const visibleGhost = interventionState.shouldIntervene && interventionState.interventionLevel === 1 && !hasArrived && caretAtEnd && dismissedForValueRef.current !== value
     ? cleanPrompt ? rawGhost : rawGhost.replace(/^,\s*/, '')
     : '';
 
@@ -115,10 +125,10 @@ export default function DreamInput({
 
     const tasteVector = getTasteVector();
     const tasteGravity = getTasteGravity(tasteVector);
-    const local = getLocalDreamTrailSuggestions(cleanPrompt, mode, tasteVector, tasteGravity, cadenceState, decisionState, arrivalState, creativeState);
-    setSuggestions(local);
+    const local = getLocalDreamTrailSuggestions(cleanPrompt, mode, tasteVector, tasteGravity, cadenceState, decisionState, arrivalState, creativeState, confidenceField);
+    setSuggestions(interventionState.shouldIntervene ? local : []);
     setActiveSuggestionIndex(0);
-    if (hasArrived || creativeState === 'blank') {
+    if (!interventionState.shouldIntervene || showRescue || hasArrived || creativeState === 'blank') {
       setLoading(false);
       return;
     }
@@ -141,6 +151,8 @@ export default function DreamInput({
             decisionState,
             arrivalState,
             creativeState,
+            confidenceField,
+            interventionState,
             mode,
           }),
           signal: controller.signal,
@@ -148,8 +160,8 @@ export default function DreamInput({
         if (!response.ok) return;
         const data = await response.json() as DreamTrailResponse;
         if (requestId !== requestIdRef.current || dismissedForValueRef.current === value) return;
-        const remote = filterDreamTrailSuggestions(data.suggestions ?? [], cleanPrompt, tasteVector, mode, tasteGravity, cadenceState, decisionState, arrivalState, creativeState);
-        const merged = filterDreamTrailSuggestions([...remote, ...local], cleanPrompt, tasteVector, mode, tasteGravity, cadenceState, decisionState, arrivalState, creativeState).slice(0, 3);
+        const remote = filterDreamTrailSuggestions(data.suggestions ?? [], cleanPrompt, tasteVector, mode, tasteGravity, cadenceState, decisionState, arrivalState, creativeState, confidenceField);
+        const merged = filterDreamTrailSuggestions([...remote, ...local], cleanPrompt, tasteVector, mode, tasteGravity, cadenceState, decisionState, arrivalState, creativeState, confidenceField).slice(0, 3);
         setSuggestions(merged);
         setActiveSuggestionIndex(0);
       } catch {
@@ -168,11 +180,11 @@ export default function DreamInput({
       window.clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [arrivalState, cadenceState, cleanPrompt, creativeState, decisionState, hasArrived, mode, value]);
+  }, [arrivalState, cadenceState, cleanPrompt, confidenceField, creativeState, decisionState, hasArrived, interventionState, mode, showRescue, value]);
 
   const panelSuggestions = useMemo(
-    () => suggestions.filter((_, index) => index !== activeSuggestionIndex).slice(0, 2),
-    [suggestions, activeSuggestionIndex]
+    () => showForks ? suggestions.slice(0, 3) : [],
+    [suggestions, showForks]
   );
 
   return (
@@ -231,7 +243,15 @@ export default function DreamInput({
       <div id={`${id}-hint`} className="dreamtrail-hint">
         {visibleGhost ? 'Tab accepts the trail. Right arrow accepts a phrase.' : 'DreamTrail listens for the edge of your idea.'}
       </div>
-      {hasArrived && editorialChips.length > 0 ? (
+      {showRescue ? (
+        <div className="dreamtrail-panel dreamtrail-editorial-panel" aria-label="DreamTrail rescue moves">
+          {rescueChips.map((chip) => (
+            <button type="button" key={chip.id} onClick={() => applyEditorialChip(chip.id)}>
+              {chip.label}
+            </button>
+          ))}
+        </div>
+      ) : hasArrived && editorialChips.length > 0 ? (
         <div className="dreamtrail-panel dreamtrail-editorial-panel" aria-label="DreamTrail editorial moves">
           {editorialChips.map((chip) => (
             <button type="button" key={chip.id} onClick={() => applyEditorialChip(chip.id)}>
