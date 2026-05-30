@@ -72,6 +72,14 @@ const MODELS = [
         previewImages: ['https://dreambees-alchemist.web.app/assets/styles/hr_core.png']
     },
     {
+        id: 'anima',
+        name: 'Anima',
+        description: 'Anime illustration model powered by circlestone-labs/Anima Base v1.0.',
+        type: 'Image',
+        order: 18,
+        isActive: true
+    },
+    {
         id: 'crystal-cuteness',
         name: 'Crystal Cuteness',
         description: 'Adorable and sparkling aesthetics for high-quality cute art.',

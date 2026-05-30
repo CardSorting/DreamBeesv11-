@@ -218,6 +218,12 @@ export const processImageTask = async (req: { data: any }): Promise<void> => {
                         finalPrompt = `${finalPrompt}${qualityTags}`;
                     }
                 }
+                else if (modelId === 'anima') {
+                    finalSteps = steps || 30;
+                    finalCfg = cfg || 4.5;
+                    finalScheduler = scheduler || 'FlowMatchEuler';
+                    hires_fix = false;
+                }
 
                 const body = modelId === 'z-image-turbo-a100'
                     ? {

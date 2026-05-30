@@ -24,6 +24,9 @@ export class CostOrchestrator {
     aspectRatio: string,
     steps?: number
   ): number {
+    if (modelId === 'anima') {
+        return 0;
+    }
     if (this.isPremiumModel(modelId)) {
         return ZAP_COSTS.IMAGE_GENERATION_PREMIUM;
     }

@@ -11,6 +11,9 @@ export class CostOrchestrator {
      * Calculate final generation cost based on model and user status
      */
     static calculateFinalCost(modelId, isPremiumUser, aspectRatio, steps) {
+        if (modelId === 'anima') {
+            return 0;
+        }
         if (this.isPremiumModel(modelId)) {
             return ZAP_COSTS.IMAGE_GENERATION_PREMIUM;
         }

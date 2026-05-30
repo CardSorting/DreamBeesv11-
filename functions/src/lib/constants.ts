@@ -10,7 +10,7 @@ export const VALID_MODELS: string[] = [
     'wai-illustrious',
     'rin-anime-blend', 'rin-anime-popcute',
     'crystal-cuteness', 'veretoon-v10',
-    'nova-3d-cg-xl', 'z-image-turbo-a100'
+    'nova-3d-cg-xl', 'z-image-turbo-a100', 'anima'
 ];
 
 /**
@@ -33,7 +33,8 @@ export const MODEL_IDS = {
     CRYSTAL_CUTENESS: 'crystal-cuteness',
     VERETOON_V10: 'veretoon-v10',
     NOVA_3D: 'nova-3d-cg-xl',
-    Z_IMAGE_TURBO: 'z-image-turbo-a100'
+    Z_IMAGE_TURBO: 'z-image-turbo-a100',
+    ANIMA: 'anima'
 }
 
 export const MODELS_DB = VALID_MODELS;

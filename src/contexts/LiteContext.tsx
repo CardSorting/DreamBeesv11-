@@ -877,6 +877,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     };
 
     const calculateEstimatedCost = (modelId: string, tier: string) => {
+        if (modelId === 'anima') return 0;
         if (tier === 'pro' || tier === 'architect') return 0;
         if (['wai-illustrious', 'nova-3d-cg-xl'].includes(modelId)) return 1.0;
         return 0.5;

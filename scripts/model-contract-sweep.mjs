@@ -1,5 +1,6 @@
 const SDXL_ENDPOINT = 'https://mariecoderinc--sdxl-multi-model-a100-omniinferencea100-web.modal.run';
 const Z_IMAGE_ENDPOINT = 'https://mariecoderinc--zit-a100-stable-fastapi-app.modal.run';
+const ANIMA_ENDPOINT = 'https://mariecoderinc--anima-inference-animainference-web.modal.run';
 
 const models = process.argv.slice(2);
 const modelIds = models.length ? models : [
@@ -12,16 +13,31 @@ const modelIds = models.length ? models : [
   'crystal-cuteness',
   'veretoon-v10',
   'nova-3d-cg-xl',
-  'z-image-turbo-a100'
+  'z-image-turbo-a100',
+  'anima'
 ];
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function endpointFor(modelId) {
+  if (modelId === 'anima') return ANIMA_ENDPOINT;
   return modelId === 'z-image-turbo-a100' ? Z_IMAGE_ENDPOINT : SDXL_ENDPOINT;
 }
 
 function bodyFor(modelId) {
+  if (modelId === 'anima') {
+    return {
+      prompt: `backend contract test for anima, small golden bee icon on a clean studio table`,
+      negative_prompt: 'low quality, blurry, watermark',
+      model: 'anima',
+      steps: 30,
+      cfg: 4.5,
+      scheduler: 'FlowMatchEuler',
+      width: 1024,
+      height: 1024
+    };
+  }
+
   const common = {
     prompt: `backend contract test for ${modelId}, small golden bee icon on a clean studio table`,
     negative_prompt: 'low quality, blurry, watermark',

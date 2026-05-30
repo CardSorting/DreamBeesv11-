@@ -16,13 +16,15 @@ export const MODEL_IDS = {
     CRYSTAL_CUTENESS: 'crystal-cuteness',
     VERETOON_V10: 'veretoon-v10',
     NOVA_3D: 'nova-3d-cg-xl',
-    Z_IMAGE_TURBO: 'z-image-turbo-a100'
+    Z_IMAGE_TURBO: 'z-image-turbo-a100',
+    ANIMA: 'anima'
 };
 // ==============================================================================
 // 2. Backend Endpoint Mapping (Infrastructure Layer)
 // ==============================================================================
 export const MODEL_ENDPOINTS = {
-    [MODEL_IDS.Z_IMAGE_TURBO]: 'https://mariecoderinc--zit-a100-stable-fastapi-app.modal.run'
+    [MODEL_IDS.Z_IMAGE_TURBO]: 'https://mariecoderinc--zit-a100-stable-fastapi-app.modal.run',
+    [MODEL_IDS.ANIMA]: 'https://mariecoderinc--anima-inference-animainference-web.modal.run'
 };
 export function isValidModelId(id) {
     return Object.values(MODEL_IDS).includes(id);
@@ -41,6 +43,12 @@ export const MODEL_GENERATION_PARAMS = {
     [MODEL_IDS.Z_IMAGE_TURBO]: {
         defaultSteps: 8,
         maxSteps: 9
+    },
+    [MODEL_IDS.ANIMA]: {
+        defaultSteps: 30,
+        defaultScheduler: 'FlowMatchEuler',
+        defaultCfg: 4.5,
+        hiresFix: false
     }
 };
 // ==============================================================================
@@ -56,7 +64,8 @@ export const MODEL_CATEGORIES = {
         'rin-anime-blend',
         'rin-anime-popcute',
         'crystal-cuteness',
-        'veretoon-v10'
+        'veretoon-v10',
+        'anima'
     ]
 };
 export const MODEL_COSTS = {
@@ -65,6 +74,8 @@ export const MODEL_COSTS = {
     STANDARD: 0.25
 };
 export function getModelCost(modelId) {
+    if (modelId === 'anima')
+        return 0;
     if (MODEL_CATEGORIES.PREMIUM.some(id => id === modelId))
         return MODEL_COSTS.PREMIUM;
     if (MODEL_CATEGORIES.FAST.some(id => id === modelId))
