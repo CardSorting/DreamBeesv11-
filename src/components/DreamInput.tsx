@@ -20,6 +20,7 @@ import {
   getRescueChips,
   getTasteGravity,
   getTasteVector,
+  isLastWordComplete,
   normalizeSuggestion,
   rememberAcceptedSuggestion,
   takeGhostPhrase,
@@ -38,6 +39,50 @@ type DreamInputProps = {
 
 const REQUEST_DEBOUNCE_MS = 180;
 const STALE_AFTER_MS = 1000;
+
+function getSustainedGhost(cleanPrompt: string, suggestionsPrompt: string, rawGhost: string): string {
+  if (!cleanPrompt || !suggestionsPrompt || !rawGhost) return '';
+  
+  const cleanPromptLower = cleanPrompt.toLowerCase();
+  const suggestionsPromptLower = suggestionsPrompt.toLowerCase();
+  
+  const strip = (s: string) => s.replace(/[^a-z0-9]/g, '');
+  const promptAlphanum = strip(cleanPromptLower);
+  const suggestionsPromptAlphanum = strip(suggestionsPromptLower);
+  
+  if (!promptAlphanum.startsWith(suggestionsPromptAlphanum)) {
+    return '';
+  }
+  
+  const typedSuggestionAlphanum = promptAlphanum.slice(suggestionsPromptAlphanum.length);
+  const ghostAlphanum = strip(rawGhost.toLowerCase());
+  
+  if (!ghostAlphanum.startsWith(typedSuggestionAlphanum)) {
+    return '';
+  }
+  
+  let alphanumCount = 0;
+  const targetCount = typedSuggestionAlphanum.length;
+  
+  let ghostIndex = 0;
+  while (ghostIndex < rawGhost.length && alphanumCount < targetCount) {
+    const char = rawGhost[ghostIndex].toLowerCase();
+    if (/[a-z0-9]/.test(char)) {
+      alphanumCount++;
+    }
+    ghostIndex++;
+  }
+  
+  let result = rawGhost.slice(ghostIndex);
+  
+  if (cleanPrompt.endsWith(',')) {
+    result = result.replace(/^[\s,]*/, '');
+  } else if (cleanPrompt.endsWith(' ')) {
+    result = result.replace(/^,?\s*/, '');
+  }
+  
+  return result;
+}
 
 export default function DreamInput({
   id,
@@ -64,6 +109,7 @@ export default function DreamInput({
   const helpCardRef = useRef<HTMLDivElement | null>(null);
   const [showHelp, setShowHelp] = useState(false);
   const [undoPrompt, setUndoPrompt] = useState<string | null>(null);
+  const [suggestionsPrompt, setSuggestionsPrompt] = useState('');
 
   useEffect(() => {
     if (!showHelp) return;
@@ -93,17 +139,17 @@ export default function DreamInput({
   
   const activeSuggestion = suggestions[activeSuggestionIndex] ?? suggestions[0] ?? null;
   const rawGhost = activeSuggestion?.text ?? '';
+  const ghostText = getSustainedGhost(cleanPrompt, suggestionsPrompt, rawGhost);
   const visibleGhost = (
     cleanPrompt &&
+    ghostText &&
     isFocused &&
     !cooldownActive &&
     !apiFailed &&
     suggestions.length > 0 &&
     caretAtEnd &&
     !hasSelection
-  ) ? (
-    cleanPrompt ? rawGhost : rawGhost.replace(/^,\s*/, '')
-  ) : '';
+  ) ? ghostText : '';
 
   const updateCaret = useCallback(() => {
     const node = textareaRef.current;
@@ -127,6 +173,7 @@ export default function DreamInput({
     setUndoPrompt(value);
     setSuggestions([]);
     setActiveSuggestionIndex(0);
+    setSuggestionsPrompt("");
     onChange(value.trim() ? `${value}${accepted}` : accepted.replace(/^,\s*/, ''));
     requestAnimationFrame(() => {
       const node = textareaRef.current;
@@ -156,6 +203,7 @@ export default function DreamInput({
       setUndoPrompt(value);
       setSuggestions([]);
       setActiveSuggestionIndex(0);
+      setSuggestionsPrompt("");
       onChange(nextPrompt);
       requestAnimationFrame(() => {
         const node = textareaRef.current;
@@ -173,6 +221,28 @@ export default function DreamInput({
     if (!cleanPrompt || cooldownActive) {
       setSuggestions([]);
       setActiveSuggestionIndex(0);
+      setSuggestionsPrompt("");
+      setLoading(false);
+      return;
+    }
+
+    const currentActive = suggestions[activeSuggestionIndex] ?? suggestions[0] ?? null;
+    const currentGhost = currentActive?.text ?? '';
+    const currentPrediction = (suggestionsPrompt && currentGhost) ? `${suggestionsPrompt}${currentGhost}` : '';
+    const isTypingThrough = (
+      cleanPrompt &&
+      suggestionsPrompt &&
+      currentGhost &&
+      cleanPrompt.length > suggestionsPrompt.length &&
+      currentPrediction.startsWith(cleanPrompt)
+    );
+
+    if (isTypingThrough) {
+      setLoading(false);
+      return;
+    }
+
+    if (!isLastWordComplete(value)) {
       setLoading(false);
       return;
     }
@@ -182,6 +252,7 @@ export default function DreamInput({
     const local = getLocalDreamTrailSuggestions(cleanPrompt, mode, tasteVector, tasteGravity, cadenceState, decisionState, arrivalState, creativeState, confidenceField);
     setSuggestions(local);
     setActiveSuggestionIndex(0);
+    setSuggestionsPrompt(cleanPrompt);
 
     const requestId = ++requestIdRef.current;
     const controller = new AbortController();
@@ -215,9 +286,12 @@ export default function DreamInput({
         const data = await response.json() as DreamTrailResponse;
         if (requestId !== requestIdRef.current || cooldownActive) return;
         const remote = filterDreamTrailSuggestions(data.suggestions ?? [], cleanPrompt, tasteVector, mode, tasteGravity, cadenceState, decisionState, arrivalState, creativeState, confidenceField);
-        const merged = filterDreamTrailSuggestions([...remote, ...local], cleanPrompt, tasteVector, mode, tasteGravity, cadenceState, decisionState, arrivalState, creativeState, confidenceField).slice(0, 3);
+        const firstLocal = local[0];
+        const remoteFiltered = filterDreamTrailSuggestions([...remote, ...local.slice(1)], cleanPrompt, tasteVector, mode, tasteGravity, cadenceState, decisionState, arrivalState, creativeState, confidenceField);
+        const merged = firstLocal ? [firstLocal, ...remoteFiltered].slice(0, 3) : remoteFiltered.slice(0, 3);
         setSuggestions(merged);
         setActiveSuggestionIndex(0);
+        setSuggestionsPrompt(cleanPrompt);
       } catch {
         if (requestId === requestIdRef.current) {
           setApiFailed(true);
@@ -259,8 +333,6 @@ export default function DreamInput({
             }
             setCooldownActive(false);
             setApiFailed(false);
-            setSuggestions([]);
-            setActiveSuggestionIndex(0);
             setUndoPrompt(null);
             onChange(event.target.value);
             
@@ -319,6 +391,7 @@ export default function DreamInput({
               }, 5000);
               setSuggestions([]);
               setActiveSuggestionIndex(0);
+              setSuggestionsPrompt("");
             }
           }}
           onScroll={(event) => {
@@ -422,6 +495,7 @@ export default function DreamInput({
                   }, 5000);
                   setSuggestions([]);
                   setActiveSuggestionIndex(0);
+                  setSuggestionsPrompt("");
                 }}
                 title="Dismiss suggestions (Escape)"
               >
