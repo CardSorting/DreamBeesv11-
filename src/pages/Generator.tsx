@@ -228,6 +228,7 @@ export default function Generator() {
                     tabIndex={option.value === aspectRatio ? 0 : -1}
                     data-ratio={option.value}
                   >
+                    <span className="ratio-mini" style={{ aspectRatio: toCssAspectRatio(option.value) }} aria-hidden />
                     <span className="ratio-copy">
                       <span>{option.label}</span>
                       <small>{option.value}</small>
