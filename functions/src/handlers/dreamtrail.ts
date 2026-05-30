@@ -139,8 +139,15 @@ Your job is to suggest the next interesting mutation of the user's current idea.
 Do not optimize for genre.
 Do not optimize for generic quality tags.
 Optimize for creative transformation.
+Preserve the user's core nouns and situation.
+Do not introduce an unrelated replacement protagonist.
+Do not restart the sentence by naming the main subject again.
+Continue from inside the existing scene.
+If the idea combines odd elements, make the continuation specific to that collision.
+Prefer concrete props, actions, consequences, and visual details over generic scenery.
 
 Return JSON only.
+Return exactly 3 suggestions.
 
 Each suggestion must:
 - start with a comma or connective phrase
@@ -158,6 +165,7 @@ identity, setting, action, conflict, symbol, composition, tone.
 
 Avoid:
 masterpiece, best quality, 4k, 8k, ultra detailed, trending, award-winning, beautiful, nice, cool.
+Avoid unrelated new main characters, generic fantasy scenery, and vague mood garnish.
 
 Return this shape:
 {"suggestions":[{"text":", defending the last hive","mutation":"mythmaking","decision":"action","score":0.91}]}`;
@@ -207,102 +215,49 @@ const MUTATION_ADJACENCY: Record<TasteMutation, TasteMutation[]> = {
     danger: ["grandeur", "machinery", "satire"],
 };
 
-const LOCAL_COMPLETIONS: Array<{ test: RegExp; suggestions: DreamTrailSuggestion[] }> = [
-    {
-        test: /^\s*$|^\s*bee\s*$/i,
-        suggestions: [
-            { text: ", carrying a lantern", mutation: "whimsy", decision: "action", score: 0.72 },
-            { text: ", lost in a giant garden", mutation: "wonder", decision: "setting", score: 0.7 },
-            { text: ", searching for the last flower", mutation: "mythmaking", decision: "action", score: 0.69 },
-            { text: ", wandering a forgotten garden", mutation: "melancholy", decision: "setting", score: 0.68 },
-            { text: ", finding a tiny crown in the grass", mutation: "mystery", decision: "symbol", score: 0.66 },
-        ],
-    },
-    {
-        test: /\bbee\s+knight\b/i,
-        suggestions: [
-            { text: ", amber-plated armor", mutation: "elegance", decision: "identity", score: 0.88 },
-            { text: ", guarding the hive gates", mutation: "mythmaking", decision: "action", score: 0.86 },
-            { text: ", defending the last hive", mutation: "mythmaking", decision: "action", score: 0.91 },
-            { text: ", exploring crystal caves beneath the hive", mutation: "wonder", decision: "setting", score: 0.9 },
-            { text: ", leading a royal pollen procession", mutation: "ritual", decision: "action", score: 0.88 },
-            { text: ", as shadow wasps gather beyond the walls", mutation: "danger", decision: "conflict", score: 0.84 },
-            { text: ", beneath a cracked honeycomb banner", mutation: "melancholy", decision: "symbol", score: 0.83 },
-            { text: ", beneath the queen's final sunrise", mutation: "melancholy", decision: "symbol", score: 0.82 },
-            { text: ", beneath a pollen-lit eclipse", mutation: "wonder", decision: "setting", score: 0.84 },
-            { text: ", wearing ceremonial honeycomb armor", mutation: "ritual", decision: "identity", score: 0.77 },
-            { text: ", facing a wasp army at dawn", mutation: "danger", decision: "conflict", score: 0.74 },
-            { text: ", carrying a velvet banner for one small queen", mutation: "intimacy", decision: "symbol", score: 0.7 },
-            { text: ", guarding a ruined hive", mutation: "decay", decision: "action", score: 0.72 },
-            { text: ", smiling beneath festival lanterns", mutation: "whimsy", decision: "tone", score: 0.66 },
-        ],
-    },
-    {
-        test: /\bbee\s+queen\b/i,
-        suggestions: [
-            { text: ", holding court on a honeycomb throne", mutation: "grandeur", score: 0.86 },
-            { text: ", crowned during a pollen lantern ritual", mutation: "ritual", score: 0.82 },
-            { text: ", hiding a tiny royal secret", mutation: "mystery", score: 0.76 },
-        ],
-    },
-    {
-        test: /\bforest\b/i,
-        suggestions: [
-            { text: ", where lantern mushrooms remember old songs", mutation: "nostalgia", score: 0.78 },
-            { text: ", hiding a moss-covered altar", mutation: "mystery", score: 0.76 },
-            { text: ", under a procession of fireflies", mutation: "wonder", score: 0.74 },
-        ],
-    },
-    {
-        test: /\bcastle\b/i,
-        suggestions: [
-            { text: ", with beeswax windows glowing at dusk", mutation: "wonder", score: 0.76 },
-            { text: ", crumbling under velvet banners", mutation: "decay", score: 0.73 },
-            { text: ", built around a secret hive chapel", mutation: "ritual", score: 0.71 },
-        ],
-    },
-    {
-        test: /\bspace|star|planet|astronaut\b/i,
-        suggestions: [
-            { text: ", orbiting a honeycomb moon", mutation: "wonder", score: 0.78 },
-            { text: ", inside a brass pollen engine", mutation: "machinery", score: 0.74 },
-            { text: ", receiving a signal from the old hive", mutation: "mystery", score: 0.72 },
-        ],
-    },
+const FALLBACK_SUGGESTIONS: DreamTrailSuggestion[] = [
+    { text: ", carrying a lantern", mutation: "whimsy", decision: "action", score: 0.5 },
+    { text: ", beneath a strange glow", mutation: "wonder", decision: "setting", score: 0.5 },
+    { text: ", at the edge of a forgotten place", mutation: "melancholy", decision: "setting", score: 0.5 },
 ];
-
-const FALLBACKS: Record<DreamTrailMode, DreamTrailSuggestion[]> = {
-    balanced: [
-        { text: ", guarding a secret made of pollen", mutation: "mystery", score: 0.68 },
-        { text: ", beneath a small impossible moon", mutation: "wonder", score: 0.66 },
-        { text: ", wearing a threadbare ceremonial cloak", mutation: "ritual", score: 0.62 },
-    ],
-    dreamier: [
-        { text: ", beneath a pollen-lit eclipse", mutation: "wonder", score: 0.78 },
-        { text: ", followed by floating lantern bees", mutation: "whimsy", score: 0.74 },
-        { text: ", where moonlight pools like honey", mutation: "wonder", score: 0.70 },
-    ],
-    weirder: [
-        { text: ", inside a cathedral grown from wax", mutation: "absurdity", score: 0.76 },
-        { text: ", wearing armor that remembers dreams", mutation: "mystery", score: 0.72 },
-        { text: ", escorted by clockwork pollen moths", mutation: "machinery", score: 0.70 },
-    ],
-    concept_art: [
-        { text: ", with a readable ceremonial silhouette", mutation: "ritual", score: 0.72 },
-        { text: ", carrying a shield shaped like a relic", mutation: "mythmaking", score: 0.7 },
-        { text: ", framed by strong foreground banners", mutation: "grandeur", score: 0.68 },
-    ],
-    print_ready: [
-        { text: ", centered beneath a clean halo of pollen", mutation: "elegance", score: 0.72 },
-        { text: ", posed like a collectible myth card", mutation: "mythmaking", score: 0.7 },
-        { text: ", bordered by tiny wax sigils", mutation: "ritual", score: 0.68 },
-    ],
-    commercial: [
-        { text: ", holding a charming golden relic", mutation: "elegance", score: 0.7 },
-        { text: ", leading a tiny parade of lantern bees", mutation: "whimsy", score: 0.68 },
-        { text: ", protecting a polished honey jar kingdom", mutation: "satire", score: 0.64 },
-    ],
-};
+const SUBJECT_STOP_WORDS = new Set([
+    "the",
+    "and",
+    "with",
+    "for",
+    "from",
+    "under",
+    "inside",
+    "near",
+    "beside",
+    "behind",
+    "above",
+    "below",
+    "some",
+    "that",
+    "this",
+    "here",
+    "there",
+    "into",
+    "onto",
+    "over",
+    "through",
+    "about",
+    "after",
+    "before",
+    "between",
+    "while",
+    "where",
+    "when",
+    "then",
+    "than",
+    "very",
+    "really",
+    "just",
+    "like",
+    "made",
+    "making",
+]);
 
 const BANNED_FRAGMENTS = [
     "4k",
@@ -363,8 +318,8 @@ const CADENCE_DECISION: Record<CadencePhase, DecisionNeed> = {
 };
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const OPENROUTER_MODEL = process.env.OPENROUTER_DREAMTRAIL_MODEL || "google/gemini-2.5-flash";
-const OPENROUTER_TIMEOUT_MS = 1600;
+const OPENROUTER_MODEL = process.env.OPENROUTER_DREAMTRAIL_MODEL || "google/gemini-2.5-flash-lite";
+const OPENROUTER_TIMEOUT_MS = 6500;
 
 export async function handleDreamTrail(req: any, res: any) {
     if (req.method === "OPTIONS") {
@@ -384,23 +339,29 @@ export async function handleDreamTrail(req: any, res: any) {
         return;
     }
 
-    const fallback = buildLocalResponse(payload);
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
-        res.status(200).json(fallback);
+        res.status(200).json({ ...buildLocalResponse(payload), source: "fallback" });
         return;
     }
 
     try {
         const parsed = await requestOpenRouter(apiKey, payload);
-        const remote = filterSuggestions(parsed?.suggestions ?? [], payload);
-        const firstLocal = fallback.suggestions[0];
-        const remoteFiltered = filterSuggestions([...remote, ...fallback.suggestions.slice(1)], payload);
-        const suggestions = firstLocal ? [firstLocal, ...remoteFiltered].slice(0, 3) : remoteFiltered.slice(0, 3);
-        res.status(200).json({ suggestions: suggestions.length ? suggestions : fallback.suggestions });
+        const firstPassSuggestions = asSuggestionArray(parsed?.suggestions);
+        let remote = filterSuggestions(firstPassSuggestions, payload);
+        if (remote.length > 0 && remote.length < 3) {
+            const repair = await requestOpenRouter(apiKey, payload, buildRepairInstruction(payload, remote));
+            const repaired = filterSuggestions([...firstPassSuggestions, ...asSuggestionArray(repair?.suggestions)], payload);
+            remote = repaired.length >= remote.length ? repaired : remote;
+        }
+        if (remote.length) {
+            res.status(200).json({ suggestions: remote.slice(0, 3), source: "remote" });
+            return;
+        }
+        res.status(200).json({ ...buildLocalResponse(payload), source: "fallback" });
     } catch (error) {
         logger.warn("[DreamTrail] OpenRouter fallback used.", { error: error instanceof Error ? error.message : String(error) });
-        res.status(200).json(fallback);
+        res.status(200).json({ ...buildLocalResponse(payload), source: "fallback" });
     }
 }
 
@@ -441,7 +402,7 @@ function parsePayload(raw: DreamTrailRequest): DreamTrailPayload | null {
     };
 }
 
-async function requestOpenRouter(apiKey: string, payload: DreamTrailPayload) {
+async function requestOpenRouter(apiKey: string, payload: DreamTrailPayload, repairInstruction?: string) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), OPENROUTER_TIMEOUT_MS);
 
@@ -458,12 +419,12 @@ async function requestOpenRouter(apiKey: string, payload: DreamTrailPayload) {
                 model: OPENROUTER_MODEL,
                 messages: [
                     { role: "system", content: SYSTEM_PROMPT },
-                    { role: "user", content: buildUserInstruction(payload) },
+                    { role: "user", content: repairInstruction ?? buildUserInstruction(payload) },
                 ],
                 response_format: { type: "json_object" },
                 temperature: 0.92,
                 top_p: 0.92,
-                max_tokens: 150,
+                max_tokens: 240,
             }),
             signal: controller.signal,
         });
@@ -509,186 +470,27 @@ function buildUserInstruction(payload: DreamTrailPayload) {
     });
 }
 
-function extractSubjects(prompt: string): string[] {
-    const words = prompt
-        .toLowerCase()
-        .replace(/[^a-z0-9\s]/g, "")
-        .split(/\s+/)
-        .filter((w) => w.length > 2 && !["the", "and", "with", "for", "from", "under", "inside", "near", "beside", "behind", "above", "below", "some", "that", "this", "here", "there"].includes(w));
-    return words;
-}
-
-function getDynamicFallbackSuggestions(prompt: string, mode: DreamTrailMode): DreamTrailSuggestion[] {
-    const subjects = extractSubjects(prompt);
-    if (subjects.length === 0) {
-        return FALLBACKS[mode] ?? FALLBACKS.balanced;
-    }
-
-    // Ensure we have a deterministic hash of the prompt for combinations
-    let hashVal = 0;
-    for (let i = 0; i < prompt.length; i++) {
-        hashVal = (hashVal << 5) - hashVal + prompt.charCodeAt(i);
-        hashVal |= 0;
-    }
-    hashVal = Math.abs(hashVal);
-
-    const ADJECTIVES: Record<TasteMutation, string[]> = {
-        wonder: ["luminous", "pollen-lit", "starlit", "celestial", "dream-born", "glowing"],
-        mystery: ["veiled", "whispering", "moonlit", "hidden", "shadowy", "forbidden"],
-        absurdity: ["impossible", "tiny", "oversized", "inside-out", "flying", "talking"],
-        grandeur: ["colossal", "towering", "vast", "imperial", "monumental", "magnificent"],
-        intimacy: ["tender", "quiet", "private", "soft", "handheld", "gentle"],
-        decay: ["rusted", "overgrown", "moth-eaten", "withered", "ruined", "tarnished"],
-        ritual: ["ceremonial", "sacred", "sigil-etched", "woven", "consecrated", "ancient"],
-        whimsy: ["velvet", "dewdrop", "storybook", "playful", "floating", "sweet"],
-        machinery: ["clockwork", "mechanical", "hinged", "brass", "steam-driven", "copper"],
-        nostalgia: ["faded", "vintage", "half-remembered", "old", "childhood", "heirloom"],
-        satire: ["bureaucratic", "decreed", "committee-approved", "mock", "pompous", "official"],
-        elegance: ["silk-draped", "filigree", "porcelain", "delicate", "ornate", "graceful"],
-        danger: ["storm-lashed", "venomous", "barbed", "sharp", "fierce", "threatening"],
-        mythmaking: ["legendary", "ancestral", "prophetic", "forgotten", "royal", "sacred"],
-        melancholy: ["lonely", "silent", "wilted", "fading", "mournful", "empty"]
-    };
-
-    const TEMPLATES: Record<TasteMutation, Array<(s: string, a: string) => string>> = {
-        wonder: [
-            (s, a) => `, beneath a ${a} ${s} eclipse`,
-            (s, a) => `, under a sky of glowing ${s} constellations`,
-            (s, a) => `, surrounded by floating ${a} ${s} dust`,
-            (s, a) => `, where the ${s} glows with a ${a} light`
-        ],
-        mystery: [
-            (s, a) => `, hiding a ${a} ${s} in the shadows`,
-            (s, a) => `, guided by a ${a} ${s} lantern`,
-            (s, a) => `, guarding the secrets of the ${a} ${s}`,
-            (s, a) => `, searching for a ${a} ${s} gate`
-        ],
-        absurdity: [
-            (s, a) => `, wearing a ${a} crown made of ${s}s`,
-            (s, a) => `, riding a ${a} ${s} through the clouds`,
-            (s, a) => `, inside a house built entirely of ${a} ${s}s`,
-            (s, a) => `, talking to a ${a} ${s} at tea time`
-        ],
-        grandeur: [
-            (s, a) => `, framed by colossal ${a} ${s} pillars`,
-            (s, a) => `, rising above a vast valley of ${s}s`,
-            (s, a) => `, facing the imperial gateway of the ${a} ${s}`,
-            (s, a) => `, holding high a monumental ${a} ${s} banner`
-        ],
-        intimacy: [
-            (s, a) => `, holding a ${a} ${s} close to their chest`,
-            (s, a) => `, sharing a quiet moment with a ${a} ${s}`,
-            (s, a) => `, keeping a tiny ${s} tucked inside a pocket`,
-            (s, a) => `, whispering a secret to the ${a} ${s}`
-        ],
-        decay: [
-            (s, a) => `, crumbling beneath ${a} ${s} vines`,
-            (s, a) => `, surrounded by rusted ${s} relics of the past`,
-            (s, a) => `, in a ruined garden overgrown with ${a} ${s}s`,
-            (s, a) => `, where a withered ${s} turned to dust`
-        ],
-        ritual: [
-            (s, a) => `, for the annual ${a} ${s} procession`,
-            (s, a) => `, offering a consecrated ${s} to the altar`,
-            (s, a) => `, wearing ceremonial ${a} ${s} robes`,
-            (s, a) => `, performing the sacred rite of the ${s}`
-        ],
-        whimsy: [
-            (s, a) => `, with playful starlight ${s} wings`,
-            (s, a) => `, carrying a sweet ${a} ${s} jar`,
-            (s, a) => `, dancing with floating ${a} ${s} fireflies`,
-            (s, a) => `, in a storybook forest of ${a} ${s}s`
-        ],
-        machinery: [
-            (s, a) => `, powered by a complex clockwork ${s} engine`,
-            (s, a) => `, inside a copper workshop filled with ${a} ${s}s`,
-            (s, a) => `, tuning a brass mechanical ${s}`,
-            (s, a) => `, with gears rotating inside a ${a} ${s}`
-        ],
-        nostalgia: [
-            (s, a) => `, recalling a fading memory of a ${a} ${s}`,
-            (s, a) => `, holding a vintage ${a} ${s} postcard`,
-            (s, a) => `, surrounded by childhood ${s} keepsakes`,
-            (s, a) => `, in an old attic filled with ${a} ${s}s`
-        ],
-        satire: [
-            (s, a) => `, presenting an official bureaucratic ${s} decree`,
-            (s, a) => `, in a mock parade for the royal ${a} ${s}`,
-            (s, a) => `, filling out paperwork for a ${a} ${s}`,
-            (s, a) => `, governed by a pompous committee of ${s}s`
-        ],
-        elegance: [
-            (s, a) => `, draped in delicate ${a} ${s} silk`,
-            (s, a) => `, holding a finely carved porcelain ${s}`,
-            (s, a) => `, decorated with ornate gold ${s} filigree`,
-            (s, a) => `, displaying the graceful lines of a ${a} ${s}`
-        ],
-        danger: [
-            (s, a) => `, defending the hive from a storm of ${a} ${s}s`,
-            (s, a) => `, facing a fierce threat of sharp ${s} thorns`,
-            (s, a) => `, armed with a venomous ${a} ${s} blade`,
-            (s, a) => `, escaping a perilous trap of ${a} ${s}s`
-        ],
-        mythmaking: [
-            (s, a) => `, protecting the legendary crown of the ${s}`,
-            (s, a) => `, tracing the ancestral prophecy of the ${a} ${s}`,
-            (s, a) => `, guarding the royal lineage of the ${s} kingdom`,
-            (s, a) => `, seeking the forgotten relic of the ${a} ${s}`
-        ],
-        melancholy: [
-            (s, a) => `, lost in a lonely rain-slicked ${s} street`,
-            (s, a) => `, staring at a fading ${a} ${s} in the dark`,
-            (s, a) => `, under a silent, grey sky of ${s} clouds`,
-            (s, a) => `, mourning the loss of a ${a} ${s}`
-        ]
-    };
-
-    const suggestions: DreamTrailSuggestion[] = [];
-    const keys = Object.keys(TEMPLATES) as TasteMutation[];
-
-    keys.forEach((mutation, idx) => {
-        const adjectiveList = ADJECTIVES[mutation];
-        const templateList = TEMPLATES[mutation];
-
-        for (let j = 0; j < 3; j++) {
-            const subjectIndex = (hashVal + idx + j) % subjects.length;
-            const subject = subjects[subjectIndex];
-            const adj = adjectiveList[(hashVal + idx + j * 3) % adjectiveList.length];
-            const template = templateList[(hashVal + idx + j * 2) % templateList.length];
-
-            const text = template(subject, adj);
-
-            // Map each template to a typical creative decision
-            const decisions: DecisionNeed[] = ["setting", "symbol", "identity", "composition", "action", "identity", "setting", "tone", "conflict", "identity"];
-            const decision = decisions[(idx + j) % decisions.length];
-
-            suggestions.push({
-                text,
-                mutation,
-                decision,
-                score: 0.65 + ((hashVal + idx + j * 7) % 20) * 0.01 // deterministic varied score around 0.65 - 0.85
-            });
-        }
-    });
-
-    const modeBiases: Record<DreamTrailMode, TasteMutation[]> = {
-        balanced: ["wonder", "mystery", "whimsy", "ritual"],
-        dreamier: ["wonder", "whimsy", "mystery", "elegance"],
-        weirder: ["absurdity", "machinery", "decay", "mystery"],
-        concept_art: ["grandeur", "danger", "ritual", "machinery"],
-        print_ready: ["elegance", "ritual", "wonder", "grandeur"],
-        commercial: ["whimsy", "elegance", "wonder", "mystery"]
-    };
-
-    const preferredMutations = modeBiases[mode] || modeBiases.balanced;
-
-    return suggestions.sort((a, b) => {
-        const aPref = preferredMutations.indexOf(a.mutation);
-        const bPref = preferredMutations.indexOf(b.mutation);
-        if (aPref !== -1 && bPref !== -1) return aPref - bPref;
-        if (aPref !== -1) return -1;
-        if (bPref !== -1) return 1;
-        return b.score - a.score;
+function buildRepairInstruction(payload: DreamTrailPayload, accepted: DreamTrailSuggestion[]) {
+    return JSON.stringify({
+        prompt: payload.prompt,
+        acceptedSuggestions: accepted.map((suggestion) => suggestion.text),
+        missingCount: Math.max(1, 3 - accepted.length),
+        tasteVector: compactTasteVector(payload.tasteVector),
+        tasteGravity: {
+            dominantAxes: payload.tasteGravity.dominantAxes,
+            suppressedAxes: payload.tasteGravity.suppressedAxes,
+            noveltyPressure: Math.round(payload.tasteGravity.noveltyPressure * 100) / 100,
+            coherencePressure: Math.round(payload.tasteGravity.coherencePressure * 100) / 100,
+        },
+        decisionState: payload.decisionState,
+        mode: payload.mode,
+        instruction: [
+            "Return exactly 3 total suggestions.",
+            "Keep the accepted suggestions if they are useful, then add distinct missing suggestions.",
+            "Do not repeat accepted suggestions.",
+            "Do not rename the main subject from the prompt.",
+            "Each new suggestion must continue the existing scene with a concrete prop, action, consequence, or visual detail.",
+        ].join(" "),
     });
 }
 
@@ -698,32 +500,7 @@ function buildLocalResponse(payload: DreamTrailPayload) {
         return { suggestions: [] };
     }
 
-    const cleanSource = source.toLowerCase().trim();
-    const LOCAL_TARGETS = [
-        { targets: ["bee"] },
-        { targets: ["bee knight"] },
-        { targets: ["bee queen"] },
-        { targets: ["forest"] },
-        { targets: ["castle"] },
-        { targets: ["space", "star", "planet", "astronaut"] }
-    ];
-
-    const mapped = LOCAL_COMPLETIONS.find((entry, idx) => {
-        if (entry.test.test(source)) return true;
-        const targetMap = LOCAL_TARGETS[idx];
-        if (targetMap && cleanSource.length >= 2) {
-            return targetMap.targets.some((target) => 
-                target.startsWith(cleanSource) || 
-                target.split(/\s+/).some(word => word.startsWith(cleanSource))
-            );
-        }
-        return false;
-    });
-
-    const candidates = mapped 
-        ? [...mapped.suggestions, ...getDynamicFallbackSuggestions(source, payload.mode)]
-        : getDynamicFallbackSuggestions(source, payload.mode);
-    return { suggestions: filterSuggestions(candidates, payload).slice(0, 3) };
+    return { suggestions: FALLBACK_SUGGESTIONS.map((suggestion) => ({ ...suggestion })) };
 }
 
 function parseModelJson(text: string): { suggestions?: unknown } | null {
@@ -739,6 +516,10 @@ function parseModelJson(text: string): { suggestions?: unknown } | null {
             return null;
         }
     }
+}
+
+function asSuggestionArray(value: unknown) {
+    return Array.isArray(value) ? value : [];
 }
 
 function filterSuggestions(raw: unknown, payload: DreamTrailPayload) {
@@ -1450,13 +1231,17 @@ function isLastWordComplete(prompt: string): boolean {
     const trimmed = prompt.trimEnd();
     if (trimmed.length === 0) return true;
 
-    if (/\s|[.,;:!?]$/.test(prompt)) {
+    if (trimmed.length !== prompt.length || /[.,;:!?)\]}"']$/.test(trimmed)) {
         return true;
     }
 
-    const words = trimmed.toLowerCase().split(/\s+/);
-    const lastWord = words[words.length - 1];
+    const match = trimmed.match(/[a-z0-9][a-z0-9'-]*$/i);
+    if (!match) return false;
 
-    const targetKeywords = ["bee", "knight", "queen", "forest", "castle", "space", "star", "planet", "astronaut"];
-    return targetKeywords.includes(lastWord);
+    const lastWord = match[0].toLowerCase().replace(/^['-]+|['-]+$/g, "");
+    if (lastWord.length < 3 || SUBJECT_STOP_WORDS.has(lastWord) || /['-]$/.test(match[0])) {
+        return false;
+    }
+
+    return true;
 }

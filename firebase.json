@@ -29,7 +29,10 @@
     "rewrites": [
       {
         "source": "/api/dreamtrail",
-        "function": "dreamtrail"
+        "function": {
+          "functionId": "dreamtrail",
+          "region": "us-central1"
+        }
       },
       {
         "source": "/sitemap.xml",

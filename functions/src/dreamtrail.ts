@@ -4,6 +4,6 @@ import { handleDreamTrail } from "./handlers/dreamtrail.js";
 export const dreamtrail = onRequest({
     memory: "256MiB",
     cors: true,
-    timeoutSeconds: 5,
+    timeoutSeconds: 10,
     secrets: ["OPENROUTER_API_KEY"],
 }, handleDreamTrail);

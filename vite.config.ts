@@ -10,10 +10,21 @@ import renderer from 'vite-plugin-electron-renderer';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
+  const dreamTrailApiProxyTarget = env.VITE_DREAMTRAIL_API_PROXY_TARGET || 'https://dreambees-alchemist.web.app';
+  const dreamTrailApiProxyPath = env.VITE_DREAMTRAIL_API_PROXY_PATH;
+
   return {
     base: './',
     server: {
       port: 3000,
+      proxy: {
+        '/api/dreamtrail': {
+          target: dreamTrailApiProxyTarget,
+          changeOrigin: true,
+          secure: dreamTrailApiProxyTarget.startsWith('https://'),
+          rewrite: dreamTrailApiProxyPath ? () => dreamTrailApiProxyPath : undefined,
+        },
+      },
     },
     plugins: [
       react(),

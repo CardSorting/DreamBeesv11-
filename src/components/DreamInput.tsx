@@ -37,8 +37,9 @@ type DreamInputProps = {
   onSubmit: () => void;
 };
 
-const REQUEST_DEBOUNCE_MS = 180;
-const STALE_AFTER_MS = 1000;
+const REQUEST_DEBOUNCE_MS = 320;
+const STALE_AFTER_MS = 7500;
+type DreamTrailSource = 'remote' | 'fallback' | 'cached';
 
 function getSustainedGhost(cleanPrompt: string, suggestionsPrompt: string, rawGhost: string): string {
   if (!cleanPrompt || !suggestionsPrompt || !rawGhost) return '';
@@ -97,6 +98,9 @@ export default function DreamInput({
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const requestIdRef = useRef(0);
   const cooldownTimeoutRef = useRef<number | null>(null);
+  const suggestionsRef = useRef<DreamTrailSuggestion[]>([]);
+  const activeSuggestionIndexRef = useRef(0);
+  const suggestionsPromptRef = useRef('');
   const [suggestions, setSuggestions] = useState<DreamTrailSuggestion[]>([]);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -110,6 +114,28 @@ export default function DreamInput({
   const [showHelp, setShowHelp] = useState(false);
   const [undoPrompt, setUndoPrompt] = useState<string | null>(null);
   const [suggestionsPrompt, setSuggestionsPrompt] = useState('');
+  const [dreamTrailSource, setDreamTrailSourceState] = useState<DreamTrailSource | null>(null);
+  const lastLoggedSourceRef = useRef<DreamTrailSource | null>(null);
+
+  const setDreamTrailSource = useCallback((source: DreamTrailSource | null) => {
+    setDreamTrailSourceState(source);
+    if (source && source !== lastLoggedSourceRef.current && import.meta.env.DEV) {
+      console.debug("[DreamTrail] source:", source);
+    }
+    lastLoggedSourceRef.current = source;
+  }, []);
+
+  useEffect(() => {
+    suggestionsRef.current = suggestions;
+  }, [suggestions]);
+
+  useEffect(() => {
+    activeSuggestionIndexRef.current = activeSuggestionIndex;
+  }, [activeSuggestionIndex]);
+
+  useEffect(() => {
+    suggestionsPromptRef.current = suggestionsPrompt;
+  }, [suggestionsPrompt]);
 
   useEffect(() => {
     if (!showHelp) return;
@@ -174,6 +200,7 @@ export default function DreamInput({
     setSuggestions([]);
     setActiveSuggestionIndex(0);
     setSuggestionsPrompt("");
+    setDreamTrailSource(null);
     onChange(value.trim() ? `${value}${accepted}` : accepted.replace(/^,\s*/, ''));
     requestAnimationFrame(() => {
       const node = textareaRef.current;
@@ -184,7 +211,7 @@ export default function DreamInput({
         overlayRef.current.scrollLeft = node.scrollLeft;
       }
     });
-  }, [onChange, value]);
+  }, [onChange, setDreamTrailSource, value]);
 
   const applyEditorialChip = useCallback((action: DreamTrailEditorialAction) => {
     if (action === 'generate') {
@@ -204,6 +231,7 @@ export default function DreamInput({
       setSuggestions([]);
       setActiveSuggestionIndex(0);
       setSuggestionsPrompt("");
+      setDreamTrailSource(null);
       onChange(nextPrompt);
       requestAnimationFrame(() => {
         const node = textareaRef.current;
@@ -215,50 +243,53 @@ export default function DreamInput({
         }
       });
     }
-  }, [onChange, onSubmit, value]);
+  }, [onChange, onSubmit, setDreamTrailSource, value]);
 
   useEffect(() => {
     if (!cleanPrompt || cooldownActive) {
       setSuggestions([]);
       setActiveSuggestionIndex(0);
       setSuggestionsPrompt("");
+      setDreamTrailSource(null);
       setLoading(false);
       return;
     }
 
-    const currentActive = suggestions[activeSuggestionIndex] ?? suggestions[0] ?? null;
+    const currentSuggestions = suggestionsRef.current;
+    const currentSuggestionsPrompt = suggestionsPromptRef.current;
+    const currentActive = currentSuggestions[activeSuggestionIndexRef.current] ?? currentSuggestions[0] ?? null;
     const currentGhost = currentActive?.text ?? '';
-    const currentPrediction = (suggestionsPrompt && currentGhost) ? `${suggestionsPrompt}${currentGhost}` : '';
+    const currentPrediction = (currentSuggestionsPrompt && currentGhost) ? `${currentSuggestionsPrompt}${currentGhost}` : '';
     const isTypingThrough = (
       cleanPrompt &&
-      suggestionsPrompt &&
+      currentSuggestionsPrompt &&
       currentGhost &&
-      cleanPrompt.length > suggestionsPrompt.length &&
+      cleanPrompt.length > currentSuggestionsPrompt.length &&
       currentPrediction.startsWith(cleanPrompt)
     );
 
     if (isTypingThrough) {
+      setDreamTrailSource('cached');
       setLoading(false);
       return;
     }
 
     if (!isLastWordComplete(value)) {
+      setSuggestions([]);
+      setActiveSuggestionIndex(0);
+      setSuggestionsPrompt("");
+      setDreamTrailSource(null);
       setLoading(false);
       return;
     }
 
-    const tasteVector = getTasteVector();
-    const tasteGravity = getTasteGravity(tasteVector);
-    const local = getLocalDreamTrailSuggestions(cleanPrompt, mode, tasteVector, tasteGravity, cadenceState, decisionState, arrivalState, creativeState, confidenceField);
-    setSuggestions(local);
-    setActiveSuggestionIndex(0);
-    setSuggestionsPrompt(cleanPrompt);
-
     const requestId = ++requestIdRef.current;
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), STALE_AFTER_MS);
+    setLoading(true);
     const debounceId = window.setTimeout(async () => {
-      setLoading(true);
+      const tasteVector = getTasteVector();
+      const tasteGravity = getTasteGravity(tasteVector);
       setApiFailed(false);
       try {
         const response = await fetch('/api/dreamtrail', {
@@ -280,21 +311,43 @@ export default function DreamInput({
           signal: controller.signal,
         });
         if (!response.ok) {
-          setApiFailed(true);
+          const fallback = getLocalDreamTrailSuggestions(cleanPrompt, mode, tasteVector, tasteGravity, cadenceState, decisionState, arrivalState, creativeState, confidenceField);
+          setSuggestions(fallback);
+          setActiveSuggestionIndex(0);
+          setSuggestionsPrompt(cleanPrompt);
+          setDreamTrailSource('fallback');
+          setApiFailed(fallback.length === 0);
           return;
         }
         const data = await response.json() as DreamTrailResponse;
         if (requestId !== requestIdRef.current || cooldownActive) return;
-        const remote = filterDreamTrailSuggestions(data.suggestions ?? [], cleanPrompt, tasteVector, mode, tasteGravity, cadenceState, decisionState, arrivalState, creativeState, confidenceField);
-        const firstLocal = local[0];
-        const remoteFiltered = filterDreamTrailSuggestions([...remote, ...local.slice(1)], cleanPrompt, tasteVector, mode, tasteGravity, cadenceState, decisionState, arrivalState, creativeState, confidenceField);
-        const merged = firstLocal ? [firstLocal, ...remoteFiltered].slice(0, 3) : remoteFiltered.slice(0, 3);
-        setSuggestions(merged);
+        const responseSource: DreamTrailSource = data.source === 'fallback' ? 'fallback' : 'remote';
+        if (responseSource === 'fallback') {
+          const fallback = getLocalDreamTrailSuggestions(cleanPrompt, mode, tasteVector, tasteGravity, cadenceState, decisionState, arrivalState, creativeState, confidenceField);
+          setSuggestions(fallback);
+          setActiveSuggestionIndex(0);
+          setSuggestionsPrompt(cleanPrompt);
+          setDreamTrailSource('fallback');
+          setApiFailed(fallback.length === 0);
+          return;
+        }
+        const filtered = filterDreamTrailSuggestions(data.suggestions ?? [], cleanPrompt, tasteVector, mode, tasteGravity, cadenceState, decisionState, arrivalState, creativeState, confidenceField);
+        const fallback = filtered.length === 0
+          ? getLocalDreamTrailSuggestions(cleanPrompt, mode, tasteVector, tasteGravity, cadenceState, decisionState, arrivalState, creativeState, confidenceField)
+          : [];
+        setSuggestions(filtered.length ? filtered.slice(0, 3) : fallback);
         setActiveSuggestionIndex(0);
         setSuggestionsPrompt(cleanPrompt);
+        setDreamTrailSource(filtered.length ? responseSource : 'fallback');
+        setApiFailed(filtered.length === 0 && fallback.length === 0);
       } catch {
         if (requestId === requestIdRef.current) {
-          setApiFailed(true);
+          const fallback = getLocalDreamTrailSuggestions(cleanPrompt, mode, tasteVector, tasteGravity, cadenceState, decisionState, arrivalState, creativeState, confidenceField);
+          setSuggestions(fallback);
+          setActiveSuggestionIndex(0);
+          setSuggestionsPrompt(cleanPrompt);
+          setDreamTrailSource('fallback');
+          setApiFailed(fallback.length === 0);
         }
       } finally {
         window.clearTimeout(timeoutId);
@@ -307,16 +360,19 @@ export default function DreamInput({
       window.clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [arrivalState, cadenceState, cleanPrompt, confidenceField, creativeState, decisionState, mode, value, cooldownActive]);
+  }, [arrivalState, cadenceState, cleanPrompt, confidenceField, creativeState, decisionState, mode, value, cooldownActive, setDreamTrailSource]);
 
-  const panelSuggestions = useMemo(
-    () => !showRescue && !hasArrived ? suggestions.slice(0, 3) : [],
-    [suggestions, showRescue, hasArrived]
-  );
+  const panelSuggestions = useMemo(() => {
+    if (loading || !dreamTrailSource || dreamTrailSource === 'cached' || showRescue || hasArrived) return [];
+    return suggestions.slice(0, 2);
+  }, [dreamTrailSource, hasArrived, loading, showRescue, suggestions]);
 
   return (
     <div className="dream-input-shell">
       <div className="dream-input-wrap" data-loading={loading ? 'true' : 'false'}>
+        {import.meta.env.DEV && dreamTrailSource ? (
+          <div className="dreamtrail-dev-source">DreamTrail: {dreamTrailSource}</div>
+        ) : null}
         <div ref={overlayRef} className="dreamtrail-overlay" aria-hidden>
           <span className="dreamtrail-overlay-prompt">{value || ' '}</span>
           {visibleGhost ? <span className="dreamtrail-ghost">{visibleGhost}</span> : null}

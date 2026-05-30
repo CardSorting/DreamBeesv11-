@@ -153,6 +153,21 @@
     pointer-events: none;
 }
 
+.dreamtrail-dev-source {
+    position: absolute;
+    right: 10px;
+    top: 8px;
+    z-index: 4;
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    border-radius: 6px;
+    background: rgba(15, 23, 42, 0.9);
+    color: rgba(254, 243, 199, 0.95);
+    font-size: 11px;
+    line-height: 1;
+    padding: 5px 6px;
+    pointer-events: none;
+}
+
 .dream-input-textarea {
     position: relative;
     z-index: 2;
@@ -194,6 +209,8 @@
 .dreamtrail-ghost {
     color: rgba(212, 212, 216, 0.42);
     font-style: italic;
+    animation: dreamtrailGhostIn 0.16s ease-out;
+    transition: color 0.15s ease;
 }
 
 .dreamtrail-ghost::after {
@@ -207,6 +224,11 @@
 @keyframes ghostCursorBlink {
     from, to { color: transparent }
     50% { color: rgba(139, 92, 246, 0.85) }
+}
+
+@keyframes dreamtrailGhostIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .dreamtrail-hint {
@@ -538,6 +560,18 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+    animation: dreamtrailPanelIn 0.16s ease-out;
+}
+
+@keyframes dreamtrailPanelIn {
+    from {
+        opacity: 0;
+        transform: translateY(-2px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .dreamtrail-panel button {
