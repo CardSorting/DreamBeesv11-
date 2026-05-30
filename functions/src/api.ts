@@ -5,10 +5,7 @@ import { RequestWithAuth } from "./types/functions.js";
 
 import {
     checkIpThrottle,
-    checkUserAbuseStatus,
-    checkUserQuota,
-    checkTokenBucket,
-    checkAbuseScore,
+    checkUserRequestGuards,
     recordViolation
 } from "./lib/abuse.js";
 import { validateApiKey } from "./lib/apiKey.js";
@@ -78,34 +75,29 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
             if (!uid) { throw new HttpsError('unauthenticated', 'User must be logged in.'); }
 
             try {
-                logger.info(`[INIT_DEBUG] Step 1: Creating reference to users/${uid}`);
+                logger.info(`[INIT_DEBUG] Creating users/${uid} if missing`);
                 const userRef = db.collection('users').doc(uid);
+                const discordId = request.auth?.token.firebase?.identities?.['discord.com']?.[0];
 
-                logger.info(`[INIT_DEBUG] Step 2: Attempting to read document...`);
-                const userSnap = await userRef.get();
-                logger.info(`[INIT_DEBUG] Step 3: Read successful. Exists: ${userSnap.exists}`);
-
-                if (!userSnap.exists) {
-                    logger.info(`[INIT_DEBUG] Step 4: Creating user doc for ${uid}`);
-                    const discordId = request.auth?.token.firebase?.identities?.['discord.com']?.[0];
-
-                    await userRef.set({
-                        uid,
-                        email: request.auth?.token.email || "",
-                        displayName: request.auth?.token.name || "",
-                        photoURL: request.auth?.token.picture || "",
-                        discordId: discordId || null,
-                        birthday: request.data.birthday || null,
-                        createdAt: new Date(),
-                        zaps: 10,
-                        tier: 'free',
-                        subscriptionStatus: 'inactive',
-                        role: 'user'
-                    });
-                    logger.info(`[INIT_DEBUG] Step 5: User doc created successfully`);
-                } else {
-                    logger.info(`[INIT_DEBUG] User doc already exists for ${uid}`);
-                }
+                await userRef.create({
+                    uid,
+                    email: request.auth?.token.email || "",
+                    displayName: request.auth?.token.name || "",
+                    photoURL: request.auth?.token.picture || "",
+                    discordId: discordId || null,
+                    birthday: request.data.birthday || null,
+                    createdAt: new Date(),
+                    zaps: 10,
+                    tier: 'free',
+                    subscriptionStatus: 'inactive',
+                    role: 'user'
+                }).catch((err: any) => {
+                    if (err?.code === 6 || err?.code === 'already-exists') {
+                        logger.info(`[INIT_DEBUG] User doc already exists for ${uid}`);
+                        return;
+                    }
+                    throw err;
+                });
                 return { success: true };
             } catch (initError: any) {
                 console.error(`[INIT_DEBUG] FAILED at Firestore operation:`, {
@@ -119,46 +111,30 @@ export const api = onCall({ memory: "512MiB", timeoutSeconds: 300 }, async (requ
         }
 
         // --- 1. User & IP Protection (Parallel Execution) ---
-        const preFlightChecks = [
-            checkIpThrottle(clientIp)
-        ];
+        const preFlightChecks: Promise<unknown>[] = [];
 
         if (uid) {
-            const userRef = db.collection('users').doc(uid);
-            const userSnap = await userRef.get();
-            let userData = userSnap.data();
-
-            if (!userSnap.exists) {
-                logger.info(`[JIT] User ${uid} not found. Creating new user document...`);
-                try {
-                    const discordId = request.auth?.token.firebase?.identities?.['discord.com']?.[0];
-                    userData = {
-                        uid,
-                        email: request.auth?.token.email || "",
-                        displayName: request.auth?.token.name || "",
-                        photoURL: request.auth?.token.picture || "",
-                        discordId: discordId || null,
-                        createdAt: new Date(),
-                        zaps: 10,
-                        tier: 'free',
-                        subscriptionStatus: 'inactive',
-                        role: 'user'
-                    };
-                    await userRef.set(userData);
-                    logger.info(`[JIT] User ${uid} created successfully.`);
-                } catch (creationError) {
-                    logger.error(`[JIT] Failed to create user ${uid}:`, creationError);
-                    throw creationError;
-                }
-            }
-
-            // Parallelized remaining checks using the pre-loaded userData
+            const discordId = request.auth?.token.firebase?.identities?.['discord.com']?.[0];
+            const createUserData = {
+                uid,
+                email: request.auth?.token.email || "",
+                displayName: request.auth?.token.name || "",
+                photoURL: request.auth?.token.picture || "",
+                discordId: discordId || null,
+                createdAt: new Date(),
+                zaps: 10,
+                tier: 'free',
+                subscriptionStatus: 'inactive',
+                role: 'user'
+            };
             preFlightChecks.push(
-                checkUserAbuseStatus(uid, userData),
-                checkAbuseScore(uid),
-                checkTokenBucket(`tb:${uid}:${action}`, 1, 10, 0.5),
-                checkUserQuota(uid, action)
+                checkUserRequestGuards(uid, action, 1, 10, 0.5, createUserData, clientIp)
+                    .then((userData) => {
+                        (request as any).cachedUserData = userData;
+                    })
             );
+        } else {
+            preFlightChecks.push(checkIpThrottle(clientIp));
         }
 
         await Promise.all(preFlightChecks);

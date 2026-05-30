@@ -34,6 +34,7 @@ export const handleCreateGenerationRequest = async (request) => {
     const firebaseContext = {
         ...data,
         idempotencyKey: data.idempotencyKey || null,
+        cachedUserData: request.cachedUserData || null,
         auth: {
             uid: initiatorUid,
             token: { role: callerRole }
@@ -57,14 +58,11 @@ export const handleCreateGenerationRequest = async (request) => {
         // 4. Return Firebase-specific response (result is guaranteed to be GenerationResult here - type guard passed)
         const generatedResult = result;
         const requestId = generatedResult.requestId;
-        // Nudge progress before worker dispatch (client sees movement while Cloud Tasks connects)
-        db.collection('generation_queue').doc(requestId).update({
-            progress: 12,
-            stage: 'queued'
-        }).catch(() => { });
-        enqueueGenerationTaskWithRetry(requestId, firebaseContext, finalUid).catch((enqueueErr) => {
-            logger.error(`[Generation Handler] Enqueue failed for ${requestId}`, enqueueErr);
-        });
+        if (generatedResult.shouldEnqueue !== false) {
+            enqueueGenerationTaskWithRetry(requestId, firebaseContext, finalUid).catch((enqueueErr) => {
+                logger.error(`[Generation Handler] Enqueue failed for ${requestId}`, enqueueErr);
+            });
+        }
         return {
             requestId
         };
@@ -76,10 +74,6 @@ export const handleCreateGenerationRequest = async (request) => {
 };
 const ENQUEUE_MAX_ATTEMPTS = 2;
 async function enqueueGenerationTaskWithRetry(requestId, ctx, userId) {
-    const existing = await db.collection('generation_queue').doc(requestId).get();
-    if (existing.exists && existing.data()?.enqueuedAt && !existing.data()?.enqueueError) {
-        return;
-    }
     let lastError;
     for (let attempt = 1; attempt <= ENQUEUE_MAX_ATTEMPTS; attempt++) {
         try {

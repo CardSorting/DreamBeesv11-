@@ -11,8 +11,11 @@ export const handleCreateStripeCheckout = async (request: RequestWithAuth<any>) 
     if (!uid) { throw new Error("Unauthenticated"); }
 
     const userRef = db.collection('users').doc(uid);
-    const userDoc = await userRef.get();
-    const user = (userDoc.data() as any) || {};
+    let user = (request as any).cachedUserData;
+    if (!user) {
+        const userDoc = await userRef.get();
+        user = (userDoc.data() as any) || {};
+    }
     const now = new Date();
     const lastCheckout = user.lastCheckoutSessionTime?.toDate ? user.lastCheckoutSessionTime.toDate() : new Date(0);
 
@@ -33,9 +36,15 @@ export const handleCreateStripePortalSession = async (request: RequestWithAuth<a
     const { returnUrl } = request.data;
     const uid = request.auth.uid;
     if (!uid) { throw new Error("Unauthenticated"); }
-    const userDoc = await db.collection('users').doc(uid).get();
-    const userData = userDoc.data() as any;
-    if (!userDoc.exists || !userData?.stripeCustomerId) {
+    let userData = (request as any).cachedUserData;
+    if (!userData) {
+        const userDoc = await db.collection('users').doc(uid).get();
+        userData = userDoc.data() as any;
+        if (!userDoc.exists) {
+            throw new Error("No subscription");
+        }
+    }
+    if (!userData?.stripeCustomerId) {
         throw new Error("No subscription");
     }
     try {
@@ -57,23 +66,26 @@ export const handleClaimDailyZaps = async (request: RequestWithAuth<any>) => {
     const dateId = `${now.getUTCFullYear()}${(now.getUTCMonth() + 1).toString().padStart(2, '0')}${now.getUTCDate().toString().padStart(2, '0')}`;
     
     const userRef = db.collection('users').doc(uid);
+    const claimRef = db.collection('daily_zap_claims').doc(`${uid}_${dateId}`);
+    const cachedUserData = (request as any).cachedUserData;
 
     try {
-        await db.runTransaction(async (transaction) => {
-            const userDoc = await transaction.get(userRef);
-            if (!userDoc.exists) { throw new Error("USER_NOT_FOUND"); }
-            
-            const userData = userDoc.data() as any;
-            if (userData.lastDailyClaimId === dateId) {
-                throw new Error("ALREADY_CLAIMED");
-            }
+        if (cachedUserData?.lastDailyClaimId === dateId) {
+            throw new Error("ALREADY_CLAIMED");
+        }
 
-            transaction.update(userRef, {
-                zaps: FieldValue.increment(100),
-                lastFreeClaimAt: now,
-                lastDailyClaimId: dateId
-            });
+        const batch = db.batch();
+        batch.create(claimRef, {
+            uid,
+            dateId,
+            createdAt: FieldValue.serverTimestamp()
         });
+        batch.update(userRef, {
+            zaps: FieldValue.increment(100),
+            lastFreeClaimAt: now,
+            lastDailyClaimId: dateId
+        });
+        await batch.commit();
 
         const duration = Date.now() - startTime;
         logger.info(`[Claim] Hyper-streamlined finish in ${duration}ms for user ${uid}`);
@@ -85,12 +97,10 @@ export const handleClaimDailyZaps = async (request: RequestWithAuth<any>) => {
         };
 
     } catch (error: any) {
-        if (error.message === "ALREADY_CLAIMED") {
+        if (error.message === "ALREADY_CLAIMED" || error.code === 6 || error.code === 'already-exists') {
             throw new Error("You have already claimed your daily Zaps today. Come back tomorrow!");
         }
         logger.error(`[Claim] Failed for user ${uid}:`, error);
         throw error;
     }
 };
-
-

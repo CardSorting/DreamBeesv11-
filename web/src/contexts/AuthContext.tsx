@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -20,23 +20,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    return onAuthStateChanged(auth, (currentUser) => {
+    let cancelled = false;
+    let fetchSeq = 0;
+
+    const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
+      const seq = ++fetchSeq;
       setUser(currentUser);
       
       if (currentUser) {
-        // Subscribe to user data in Firestore
-        const unsub = onSnapshot(doc(db, 'users', currentUser.uid), (snap) => {
-          if (snap.exists()) {
-            setUserData(snap.data());
-          }
-          setLoading(false);
-        });
-        return () => unsub();
+        getDoc(doc(db, 'users', currentUser.uid))
+          .then((snap) => {
+            if (cancelled || seq !== fetchSeq) return;
+            setUserData(snap.exists() ? snap.data() : null);
+          })
+          .catch((err) => {
+            if (!cancelled && seq === fetchSeq) console.warn('[AuthContext] User data fetch failed:', err);
+          })
+          .finally(() => {
+            if (!cancelled && seq === fetchSeq) setLoading(false);
+          });
       } else {
         setUserData(null);
         setLoading(false);
       }
     });
+
+    return () => {
+      cancelled = true;
+      unsubAuth();
+    };
   }, []);
 
   const logout = async () => {

@@ -114,6 +114,7 @@ export const processImageTask = async (req) => {
         startTime: Date.now()
     });
     const docRef = db.collection("generation_queue").doc(requestId);
+    let debitedCost = 1;
     // --- DETERMINISTIC LOCK: Atomic State Transition ---
     try {
         await db.runTransaction(async (t) => {
@@ -122,6 +123,7 @@ export const processImageTask = async (req) => {
                 throw new Error("Job document missing");
             }
             const data = doc.data();
+            debitedCost = data.cost || debitedCost;
             if (['processing', 'completed'].includes(data.status)) {
                 throw new Error(`IDEMPOTENCY_BLOCK: Status is ${data.status}`);
             }
@@ -223,12 +225,20 @@ export const processImageTask = async (req) => {
                 throw new Error(`SDXL Submission Failed (${submitResponse.status})`);
             }
             const { job_id } = await submitResponse.json();
-            await docRef.update({ stage: "generating", progress: 20 }).catch(() => { });
+            let lastPersistedPollProgress = 20;
+            let lastPersistedPollAt = Date.now();
+            await docRef.update({ stage: "generating", progress: lastPersistedPollProgress }).catch(() => { });
             for (let poll = 0; poll < 120; poll++) {
                 const delayMs = poll === 0 ? 300 : Math.min(600 + poll * 280, 2800);
                 await new Promise(r => setTimeout(r, delayMs));
                 const pollProgress = Math.min(75, 20 + poll * 3);
-                docRef.update({ stage: "generating", progress: pollProgress }).catch(() => { });
+                const now = Date.now();
+                if (pollProgress >= lastPersistedPollProgress + 5 ||
+                    now - lastPersistedPollAt >= 8000) {
+                    lastPersistedPollProgress = pollProgress;
+                    lastPersistedPollAt = now;
+                    docRef.update({ stage: "generating", progress: pollProgress }).catch(() => { });
+                }
                 const [resultRes, jobsRes] = await Promise.all([
                     fetchWithTimeout(`${endpoint}/result/${job_id}`, { timeout: 12000 }).catch(() => null),
                     fetchWithTimeout(`${endpoint}/jobs/${job_id}`, { timeout: 12000 }).catch(() => null)
@@ -313,10 +323,8 @@ export const processImageTask = async (req) => {
                 // RECORD FAILURE FOR CIRCUIT BREAKER
                 await SubstrateHealth.recordFailure(modelId, error.message);
                 // DETERMINISTIC REFUND ID
-                const doc = await docRef.get();
-                const cost = doc.data()?.cost || 1;
                 const refundId = `refund_worker_${requestId}`;
-                await Wallet.credit(userId, cost, refundId, {
+                await Wallet.credit(userId, debitedCost, refundId, {
                     auditType: 'worker_refund',
                     originalRequestId: requestId,
                     reason: error.message

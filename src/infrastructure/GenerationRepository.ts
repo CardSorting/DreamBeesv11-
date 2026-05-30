@@ -153,24 +153,18 @@ export class GenerationRepository {
 
   private async fetchFromFirestore(generationId: string): Promise<GenerationDetail | null> {
     try {
-      const imageSnap = await getDoc(doc(db, 'images', generationId));
-      if (imageSnap.exists()) {
-        const data = imageSnap.data();
-        this.assertReadableByCurrentUser(data.userId as string | undefined);
-        return this.mapFirestoreImage(imageSnap.id, data);
+      const isRequestId = generationId.startsWith('gen_');
+
+      if (!isRequestId) {
+        const imageSnap = await getDoc(doc(db, 'images', generationId));
+        if (imageSnap.exists()) {
+          const data = imageSnap.data();
+          this.assertReadableByCurrentUser(data.userId as string | undefined);
+          return this.mapFirestoreImage(imageSnap.id, data);
+        }
       }
 
-      const [queueSnap, byRequest] = await Promise.all([
-        getDoc(doc(db, 'generation_queue', generationId)),
-        getDocs(
-          query(
-            collection(db, 'images'),
-            where('originalRequestId', '==', generationId),
-            limit(1)
-          )
-        ),
-      ]);
-
+      const queueSnap = await getDoc(doc(db, 'generation_queue', generationId));
       if (queueSnap.exists()) {
         const queueData = queueSnap.data();
         this.assertReadableByCurrentUser(queueData?.userId as string | undefined);
@@ -178,6 +172,13 @@ export class GenerationRepository {
         if (mapped) return mapped;
       }
 
+      const byRequest = await getDocs(
+        query(
+          collection(db, 'images'),
+          where('originalRequestId', '==', generationId),
+          limit(1)
+        )
+      );
       if (!byRequest.empty) {
         const d = byRequest.docs[0];
         const data = d.data();

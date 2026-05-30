@@ -134,6 +134,7 @@ const BUILTIN_MODELS: AIModel[] = [
 ];
 
 const GENERATION_MODEL_TYPES = new Set(['sdxl', 'generator', 'image']);
+const MODEL_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
 const isClientGenerationModel = (model: AIModel) => {
     const type = typeof model.type === 'string' ? model.type.toLowerCase() : 'sdxl';
@@ -769,6 +770,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (!firebase) return;
         setModelsError(null);
+        let cancelled = false;
 
         const pickDefaultModel = (models: AIModel[]) => {
             if (models.length === 0) return;
@@ -785,62 +787,62 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             });
         };
 
-        const orderedQuery = firebase.query(firebase.collection(firebase.db, 'models'), firebase.orderBy('order', 'asc'), firebase.limit(30));
-        const fallbackQuery = firebase.query(firebase.collection(firebase.db, 'models'), firebase.limit(30));
+        const cachedAt = Number(localStorage.getItem('lite_cached_models_fetched_at') || '0');
+        if (cachedAt && Date.now() - cachedAt < MODEL_CACHE_TTL_MS && availableModels.length > 0) {
+            pickDefaultModel(availableModels);
+            return () => {
+                cancelled = true;
+            };
+        }
 
-        let activeUnsub: (() => void) | null = null;
-        let stopped = false;
+        // One-shot fetch instead of persistent listener — models change rarely
+        const fetchModels = async () => {
+            const orderedQuery = firebase.query(firebase.collection(firebase.db, 'models'), firebase.orderBy('order', 'asc'), firebase.limit(30));
+            const fallbackQuery = firebase.query(firebase.collection(firebase.db, 'models'), firebase.limit(30));
 
-        const subscribeFallback = (previousError?: unknown) => {
-            if (stopped) return;
-            const msg = (previousError as any)?.message ? String((previousError as any).message) : 'Failed to load styles.';
-            setModelsError(msg);
-
-            activeUnsub = firebase.onSnapshot(
-                fallbackQuery,
-                snap => {
-                    const models = snap.docs
-                        .map(doc => ({ id: doc.id, ...doc.data() } as AIModel))
-                        .filter(isClientGenerationModel);
+            try {
+                const snap = await firebase.getDocs(orderedQuery);
+                if (cancelled) return;
+                const models = snap.docs
+                    .map((d: any) => ({ id: d.id, ...d.data() } as AIModel))
+                    .filter(isClientGenerationModel);
+                if (models.length > 0) {
                     setAvailableModels(models);
                     idleSaveToLocalStorage('lite_cached_models', JSON.stringify(models));
-                    setModelsError(models.length ? null : msg);
+                    idleSaveToLocalStorage('lite_cached_models_fetched_at', String(Date.now()));
+                    setModelsError(null);
                     pickDefaultModel(models);
-                },
-                err2 => {
-                    console.warn('[Lite] Model subscription failed (fallback):', err2);
-                    // Final fallback: ship a small built-in set of styles so the app still works.
-                    setAvailableModels(BUILTIN_MODELS);
-                    setModelsError((err2 as any)?.message ? String((err2 as any).message) : msg);
-                    pickDefaultModel(BUILTIN_MODELS);
+                    return;
                 }
-            );
+            } catch (err) {
+                console.warn('[Lite] Ordered models fetch failed, trying fallback:', err);
+            }
+
+            // Fallback: unordered query
+            try {
+                const snap = await firebase.getDocs(fallbackQuery);
+                if (cancelled) return;
+                const models = snap.docs
+                    .map((d: any) => ({ id: d.id, ...d.data() } as AIModel))
+                    .filter(isClientGenerationModel);
+                setAvailableModels(models.length > 0 ? models : BUILTIN_MODELS);
+                idleSaveToLocalStorage('lite_cached_models', JSON.stringify(models.length > 0 ? models : BUILTIN_MODELS));
+                idleSaveToLocalStorage('lite_cached_models_fetched_at', String(Date.now()));
+                setModelsError(models.length > 0 ? null : 'Failed to load styles.');
+                pickDefaultModel(models.length > 0 ? models : BUILTIN_MODELS);
+            } catch (err2) {
+                if (cancelled) return;
+                console.warn('[Lite] Fallback models fetch failed:', err2);
+                setAvailableModels(BUILTIN_MODELS);
+                setModelsError((err2 as any)?.message ? String((err2 as any).message) : 'Failed to load styles.');
+                pickDefaultModel(BUILTIN_MODELS);
+            }
         };
 
-        activeUnsub = firebase.onSnapshot(
-            orderedQuery,
-            snap => {
-                const models = snap.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() } as AIModel))
-                    .filter(isClientGenerationModel);
-                setAvailableModels(models);
-                idleSaveToLocalStorage('lite_cached_models', JSON.stringify(models));
-                setModelsError(null);
-                pickDefaultModel(models);
-            },
-            err => {
-                console.warn('[Lite] Model subscription failed (ordered):', err);
-                if (activeUnsub) {
-                    activeUnsub();
-                    activeUnsub = null;
-                }
-                subscribeFallback(err);
-            }
-        );
+        void fetchModels();
 
         return () => {
-            stopped = true;
-            if (activeUnsub) activeUnsub();
+            cancelled = true;
         };
     }, [firebase]);
 
@@ -863,9 +865,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             }
         }
 
-        let fallbackUnsub: (() => void) | null = null;
-        let primaryUnsub: (() => void) | null = null;
-        let usingFallback = false;
+        let cancelled = false;
 
         const mapDocs = (docs: { id: string; data: () => Record<string, unknown> }[]) =>
             docs.map(d => ({ id: d.id, ...d.data() } as Record<string, unknown> & { id: string }));
@@ -874,55 +874,47 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             firebase.collection(firebase.db, 'images'),
             firebase.where('userId', '==', uid),
             firebase.orderBy('createdAt', 'desc'),
-            firebase.limit(100)
+            firebase.limit(historyLimit)
         );
 
         const fallbackQuery = firebase.query(
             firebase.collection(firebase.db, 'images'),
             firebase.where('userId', '==', uid),
-            firebase.limit(100)
+            firebase.limit(historyLimit)
         );
 
-        const startFallback = () => {
-            if (fallbackUnsub || usingFallback) return;
-            usingFallback = true;
-            primaryUnsub?.();
-            primaryUnsub = null;
-            fallbackUnsub = firebase.onSnapshot(
-                fallbackQuery,
-                snap => {
-                    const items = mapDocs(snap.docs).sort(
-                        (a, b) => toHistoryTimestamp(b.createdAt) - toHistoryTimestamp(a.createdAt)
-                    );
-                    setHistory(items);
-                    idleSaveToLocalStorage(`lite_cached_cloud_history_${uid}`, JSON.stringify(items));
-                },
-                err2 => {
-                    console.warn('[Lite] History subscription failed (fallback):', err2);
-                    setHistory([]);
-                }
-            );
-        };
-
-        primaryUnsub = firebase.onSnapshot(
-            orderedQuery,
-            snap => {
-                if (usingFallback) return;
+        const fetchHistory = async () => {
+            try {
+                const snap = await firebase.getDocs(orderedQuery);
+                if (cancelled) return;
                 const items = mapDocs(snap.docs);
                 setHistory(items);
                 idleSaveToLocalStorage(`lite_cached_cloud_history_${uid}`, JSON.stringify(items));
-            },
-            err => {
-                console.warn('[Lite] History subscription failed (ordered):', err);
-                startFallback();
+                return;
+            } catch (err) {
+                console.warn('[Lite] History fetch failed (ordered):', err);
             }
-        );
+
+            try {
+                const snap = await firebase.getDocs(fallbackQuery);
+                if (cancelled) return;
+                const items = mapDocs(snap.docs).sort(
+                    (a, b) => toHistoryTimestamp(b.createdAt) - toHistoryTimestamp(a.createdAt)
+                );
+                setHistory(items);
+                idleSaveToLocalStorage(`lite_cached_cloud_history_${uid}`, JSON.stringify(items));
+            } catch (err2) {
+                if (cancelled) return;
+                console.warn('[Lite] History fetch failed (fallback):', err2);
+            }
+        };
+
+        void fetchHistory();
 
         return () => {
-            primaryUnsub?.();
-            fallbackUnsub?.();
+            cancelled = true;
         };
-    }, [currentUser?.uid, firebase]);
+    }, [currentUser?.uid, firebase, historyLimit]);
 
     const upsertUserProfile = async (
         uid: string,
@@ -931,12 +923,11 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     ) => {
         const runtime = firebase ?? await loadFirebaseRuntime();
         const userRef = runtime.doc(runtime.db, 'users', uid);
-        const existing = await runtime.getDoc(userRef);
-        if (!existing.exists() && initializeIfMissing) {
-            await runtime.setDoc(userRef, { ...initializeIfMissing, ...fields }, { merge: true });
-            return;
-        }
-        await runtime.setDoc(userRef, fields, { merge: true });
+        // merge:true handles create-or-update in a single write — no read needed
+        const mergedFields = initializeIfMissing
+            ? { ...initializeIfMissing, ...fields }
+            : fields;
+        await runtime.setDoc(userRef, mergedFields, { merge: true });
     };
 
     // Listen for incoming deep link authentication handovers
@@ -1256,15 +1247,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 resetGenerationUi();
                 commitPendingToLocalState(entry, requestId);
                 setConsecutiveFailures(0);
-                try {
-                    const userSnap = await runtime.getDoc(runtime.doc(runtime.db, 'users', uid));
-                    if (userSnap.exists()) {
-                        const userData = userSnap.data();
-                        setZaps(userData.zaps ?? (userData.tier === 'pro' || userData.tier === 'architect' ? 'unlimited' : 10));
-                    }
-                } catch {
-                    /* non-fatal */
-                }
+                // Zaps are already kept in sync by the onSnapshot listener on users/{uid}
                 safeResolve(true);
             } catch (err) {
                 console.warn('[Lite] Could not save picture locally:', err);

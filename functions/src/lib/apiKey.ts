@@ -42,8 +42,17 @@ export async function validateApiKey(apiKey?: string): Promise<{ uid: string; sc
             return null;
         }
 
-        // Update usage stats (fire and forget)
-        keyDoc.ref.update({ lastUsed: new Date() }).catch(() => { });
+        const lastUsedAt =
+            typeof data.lastUsed?.toMillis === 'function'
+                ? data.lastUsed.toMillis()
+                : data.lastUsed
+                    ? new Date(data.lastUsed).getTime()
+                    : 0;
+
+        // Update usage stats at most every 15 minutes per key.
+        if (!lastUsedAt || Date.now() - lastUsedAt > 15 * 60 * 1000) {
+            keyDoc.ref.update({ lastUsed: new Date() }).catch(() => { });
+        }
 
         logger.info(`[Auth] API Key authenticated for user: ${data.uid}`);
 

@@ -13,7 +13,7 @@ import { httpsCallable } from 'firebase/functions';
 import { functions, db } from '@/lib/firebase';
 import { 
   collection, query, where, getCountFromServer, 
-  getDocs, limit, doc, updateDoc, serverTimestamp 
+  getDocs, limit, doc, updateDoc, serverTimestamp, orderBy
 } from 'firebase/firestore';
 import toast from 'react-hot-toast';
 
@@ -47,21 +47,6 @@ export default function DashboardPage() {
   const [saveLoading, setSaveLoading] = React.useState(false);
 
   React.useEffect(() => {
-    if (user) {
-      const fetchStats = async () => {
-        try {
-          const q = query(collection(db, 'images'), where('userId', '==', user.uid));
-          const snap = await getCountFromServer(q);
-          setImageCount(snap.data().count);
-        } catch (err) {
-          console.error(err);
-        }
-      };
-      fetchStats();
-    }
-  }, [user]);
-
-  React.useEffect(() => {
     if (userData) {
       setDisplayNameInput(userData.displayName || user?.displayName || user?.email?.split('@')[0] || '');
       setBirthdayInput(userData.birthday || '1995-10-10');
@@ -76,11 +61,19 @@ export default function DashboardPage() {
           const q = query(
             collection(db, 'images'),
             where('userId', '==', user.uid),
-            limit(8)
+            orderBy('createdAt', 'desc'),
+            limit(9)
           );
           const snap = await getDocs(q);
-          const items = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+          const items = snap.docs.slice(0, 8).map(d => ({ id: d.id, ...d.data() }));
           setUserImages(items);
+          if (snap.size < 9) {
+            setImageCount(snap.size);
+          } else {
+            const countQuery = query(collection(db, 'images'), where('userId', '==', user.uid));
+            const countSnap = await getCountFromServer(countQuery);
+            setImageCount(countSnap.data().count);
+          }
         } catch (err) {
           console.error('Failed to fetch user images:', err);
         } finally {

@@ -1,7 +1,15 @@
 import { db } from "../../firebaseInit.js";
 import { logger, slugify } from "../../lib/utils.js";
+let cachedSitemap = null;
+const SITEMAP_CACHE_MS = 60 * 60 * 1000;
 export const handleSitemap = async (req, res) => {
     try {
+        if (cachedSitemap && cachedSitemap.expiresAt > Date.now()) {
+            res.set('Content-Type', 'application/xml');
+            res.set('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+            res.status(200).send(cachedSitemap.xml);
+            return;
+        }
         const baseUrl = 'https://dreambeesai.com';
         const now = new Date().toISOString();
         const urlMap = new Map();
@@ -140,6 +148,7 @@ export const handleSitemap = async (req, res) => {
 </urlset>`;
         res.set('Content-Type', 'application/xml');
         res.set('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+        cachedSitemap = { xml, expiresAt: Date.now() + SITEMAP_CACHE_MS };
         res.status(200).send(xml);
     }
     catch (error) {

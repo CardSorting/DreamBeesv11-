@@ -12,8 +12,18 @@ interface SitemapEntry {
     } | null;
 }
 
+let cachedSitemap: { xml: string; expiresAt: number } | null = null;
+const SITEMAP_CACHE_MS = 60 * 60 * 1000;
+
 export const handleSitemap = async (req: any, res: any) => {
     try {
+        if (cachedSitemap && cachedSitemap.expiresAt > Date.now()) {
+            res.set('Content-Type', 'application/xml');
+            res.set('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+            res.status(200).send(cachedSitemap.xml);
+            return;
+        }
+
         const baseUrl = 'https://dreambeesai.com';
         const now = new Date().toISOString();
         const urlMap = new Map<string, SitemapEntry>();
@@ -153,6 +163,7 @@ export const handleSitemap = async (req: any, res: any) => {
 
         res.set('Content-Type', 'application/xml');
         res.set('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+        cachedSitemap = { xml, expiresAt: Date.now() + SITEMAP_CACHE_MS };
         res.status(200).send(xml);
     } catch (error: any) {
         logger.error("Error generating sitemap", error);

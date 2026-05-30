@@ -65,7 +65,10 @@ export async function checkIpThrottle(ip?: string): Promise<void> {
     const cleanIp = ip.replace(/[:.]/g, '_');
 
     const ipRef = db.collection('abuse_ip_blacklist').doc(cleanIp);
-    const ipDoc = await ipRef.get();
+    const rateRef = db.collection('rate_limits').doc(`ratelimit_global_ip_${cleanIp}`);
+    const now = Date.now();
+    const windowMillis = 60 * 1000;
+    const [ipDoc, rateDoc] = await db.getAll(ipRef, rateRef);
 
     if (ipDoc.exists) {
         const data = ipDoc.data();
@@ -75,7 +78,20 @@ export async function checkIpThrottle(ip?: string): Promise<void> {
     }
 
     // Global IP Rate Limit (e.g., 60 req/min/IP)
-    await checkRateLimit(`global_ip:${cleanIp}`, 60, 60);
+    const rateData = rateDoc.data() || {};
+    const count = rateData.count || 0;
+    const resetTime = rateData.resetTime || 0;
+
+    if (now > resetTime) {
+        await rateRef.set({ count: 1, resetTime: now + windowMillis, lastUpdated: FieldValue.serverTimestamp() });
+        return;
+    }
+
+    if (count >= 60) {
+        throw new HttpsError('resource-exhausted', `Rate limit exceeded. Try again later.`);
+    }
+
+    await rateRef.update({ count: FieldValue.increment(1), lastUpdated: FieldValue.serverTimestamp() });
 }
 
 /**
@@ -210,6 +226,136 @@ export async function checkTokenBucket(key: string, cost: number, capacity: numb
 }
 
 /**
+ * Combined per-user request guards:
+ * - abuse score
+ * - short-window token bucket
+ * - daily action quota
+ *
+ * Keeping these in one transaction cuts separate Firestore roundtrips while
+ * preserving atomic limiter updates.
+ */
+export async function checkUserRequestGuards(
+    uid: string,
+    action: string,
+    cost: number = 1,
+    capacity: number = 10,
+    refillRate: number = 0.5,
+    createUserData?: Record<string, any>,
+    ip?: string
+): Promise<Record<string, any> | null> {
+    if (!uid) { return null; }
+
+    const db = getFirestore();
+    const now = Date.now();
+    const cleanIp = ip?.replace(/[:.]/g, '_');
+    const userRef = db.collection('users').doc(uid);
+    const scoreRef = db.collection('abuse_scores').doc(uid);
+    const ipRef = cleanIp ? db.collection('abuse_ip_blacklist').doc(cleanIp) : null;
+    const ipRateRef = cleanIp ? db.collection('rate_limits').doc(`ratelimit_global_ip_${cleanIp}`) : null;
+    const bucketKey = `tb:${uid}:${action}`.replace(/[:.]/g, '_');
+    const bucketRef = db.collection('rate_limits').doc(`token_bucket_${bucketKey}`);
+    const quotaKey = `quota:${uid}:${action}`.replace(/[:.]/g, '_');
+    const quotaRef = db.collection('rate_limits').doc(`ratelimit_${quotaKey}`);
+    const ipWindowMillis = 60 * 1000;
+    const dailyLimit = 100;
+    const quotaWindowMillis = 86400 * 1000;
+
+    const userData = await db.runTransaction(async (t) => {
+        const [userDoc, scoreDoc, ipDoc, ipRateDoc, bucketDoc, quotaDoc] = await Promise.all([
+            t.get(userRef),
+            t.get(scoreRef),
+            ipRef ? t.get(ipRef) : Promise.resolve(null),
+            ipRateRef ? t.get(ipRateRef) : Promise.resolve(null),
+            t.get(bucketRef),
+            t.get(quotaRef)
+        ]);
+
+        const resolvedUserData = userDoc.exists ? userDoc.data() || {} : createUserData || null;
+        if (!resolvedUserData) {
+            throw new HttpsError('not-found', 'User not found.');
+        }
+
+        if (!userDoc.exists && createUserData) {
+            t.set(userRef, createUserData);
+        }
+
+        if (resolvedUserData.isBanned) {
+            throw new HttpsError('permission-denied', "Account suspended.");
+        }
+
+        if (ipDoc?.exists && ipDoc.data()?.blocked) {
+            throw new HttpsError('permission-denied', "Access denied from this network.");
+        }
+
+        if (scoreDoc.exists) {
+            const scoreData = scoreDoc.data();
+            if (scoreData && scoreData.score < -50) {
+                throw new HttpsError('permission-denied', "Account restricted due to low trust score.");
+            }
+        }
+
+        if (ipRateRef) {
+            const ipRateData = ipRateDoc?.data() || {};
+            const ipCount = ipRateData.count || 0;
+            const ipResetTime = ipRateData.resetTime || 0;
+
+            if (now <= ipResetTime && ipCount >= 60) {
+                throw new HttpsError('resource-exhausted', `Rate limit exceeded. Try again later.`);
+            }
+
+            t.set(ipRateRef, {
+                count: now > ipResetTime ? 1 : ipCount + 1,
+                resetTime: now > ipResetTime ? now + ipWindowMillis : ipResetTime,
+                lastUpdated: FieldValue.serverTimestamp()
+            }, { merge: true });
+        }
+
+        const bucketData = bucketDoc.data() || {};
+        let tokens = bucketData.tokens !== undefined ? bucketData.tokens : capacity;
+        const lastRefill = bucketData.lastRefill || now;
+        const delta = (now - lastRefill) / 1000;
+        tokens = Math.min(capacity, tokens + delta * refillRate);
+
+        if (tokens < cost) {
+            throw new HttpsError('resource-exhausted', "Rate limit exceeded. Please wait.");
+        }
+
+        const quotaData = quotaDoc.data() || {};
+        const quotaCount = quotaData.count || 0;
+        const resetTime = quotaData.resetTime || 0;
+        const nextQuota = now > resetTime ? 1 : quotaCount + 1;
+
+        if (now <= resetTime && quotaCount >= dailyLimit) {
+            throw new HttpsError('resource-exhausted', `Daily limit reached for ${action}. Please try again tomorrow or upgrade.`);
+        }
+
+        t.set(bucketRef, {
+            tokens: tokens - cost,
+            lastRefill: now,
+            updatedAt: FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        t.set(quotaRef, {
+            count: nextQuota,
+            resetTime: now > resetTime ? now + quotaWindowMillis : resetTime,
+            lastUpdated: FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        return resolvedUserData;
+    });
+
+    if (userData?.shadowBanned) {
+        const randomDelay = Math.floor(Math.random() * 2000) + 1000;
+        await new Promise(resolve => setTimeout(resolve, randomDelay));
+        if (Math.random() > 0.8) {
+            throw new HttpsError('unavailable', "System overload, please try again.");
+        }
+    }
+
+    return userData;
+}
+
+/**
  * Records a violation (e.g. rate limit hit)
  */
 export async function recordViolation(uid: string, type: string): Promise<void> {
@@ -248,4 +394,3 @@ export async function checkCumulativeLimit(key: string, increment: number, limit
         }, { merge: true });
     });
 }
-

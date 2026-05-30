@@ -1,8 +1,6 @@
 import { HttpsError } from "firebase-functions/v2/https";
 import { db, FieldValue, getFunctions } from "../firebaseInit.js";
 import { handleError, logger } from "../lib/utils.js";
-import { ensureUserExists } from "../lib/user.js";
-import { checkCumulativeLimit } from "../lib/abuse.js";
 import { RequestWithAuth } from "../types/functions.js";
 // Core orchestration layer
 import { ImageGenerationOrchestrator, GenerationResult, GenerationError } from "../core/ImageGenerationOrchestrator.js";
@@ -43,6 +41,7 @@ export const handleCreateGenerationRequest = async (request: RequestWithAuth<any
   const firebaseContext = {
     ...data,
     idempotencyKey: data.idempotencyKey || null,
+    cachedUserData: (request as any).cachedUserData || null,
     auth: {
       uid: initiatorUid,
       token: { role: callerRole }
@@ -73,15 +72,11 @@ export const handleCreateGenerationRequest = async (request: RequestWithAuth<any
     const generatedResult = result as GenerationResult;
     const requestId = generatedResult.requestId;
 
-    // Nudge progress before worker dispatch (client sees movement while Cloud Tasks connects)
-    db.collection('generation_queue').doc(requestId).update({
-      progress: 12,
-      stage: 'queued'
-    }).catch(() => { });
-
-    enqueueGenerationTaskWithRetry(requestId, firebaseContext, finalUid).catch((enqueueErr) => {
-      logger.error(`[Generation Handler] Enqueue failed for ${requestId}`, enqueueErr);
-    });
+    if (generatedResult.shouldEnqueue !== false) {
+      enqueueGenerationTaskWithRetry(requestId, firebaseContext, finalUid).catch((enqueueErr) => {
+        logger.error(`[Generation Handler] Enqueue failed for ${requestId}`, enqueueErr);
+      });
+    }
 
     return {
       requestId
@@ -99,11 +94,6 @@ async function enqueueGenerationTaskWithRetry(
   ctx: any,
   userId: string
 ): Promise<void> {
-  const existing = await db.collection('generation_queue').doc(requestId).get();
-  if (existing.exists && existing.data()?.enqueuedAt && !existing.data()?.enqueueError) {
-    return;
-  }
-
   let lastError: unknown;
   for (let attempt = 1; attempt <= ENQUEUE_MAX_ATTEMPTS; attempt++) {
     try {

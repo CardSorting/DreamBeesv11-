@@ -154,6 +154,9 @@ export async function probeCompletedGeneration(
           },
         };
       }
+      if (isQueueInFlight(queue)) {
+        return { status: 'pending' };
+      }
     }
 
     const imgSnap = await getDocs(
@@ -190,14 +193,16 @@ export async function probeCompletedGeneration(
 }
 
 /**
- * Dual-listener subscription: generation_queue doc + images fallback by originalRequestId.
+ * Realtime queue subscription. The optional images fallback is for legacy jobs whose
+ * queue doc did not receive the final image URL.
  * Used by both active generate() and session resume after refresh.
  */
 export function subscribeToGenerationJob(
   db: Firestore,
   requestId: string,
   initialProgressFloor: number,
-  callbacks: GenerationJobCallbacks
+  callbacks: GenerationJobCallbacks,
+  options: { listenForImageFallback?: boolean } = {}
 ): () => void {
   let settled = false;
   let progressFloor = initialProgressFloor;
@@ -266,38 +271,40 @@ export function subscribeToGenerationJob(
     })
   );
 
-  const unsubImages = onSnapshot(
-    query(
-      collection(db, 'images'),
-      where('originalRequestId', '==', requestId),
-      limit(1)
-    ),
-    guard((snap) => {
-      if (snap.empty) return;
-      const imgDoc = snap.docs[0];
-      const img = imgDoc.data();
-      if (
-        callbacks.expectedUserId &&
-        img.userId &&
-        img.userId !== callbacks.expectedUserId
-      ) {
-        settled = true;
-        callbacks.onFailed('This picture belongs to another account.');
-        return;
-      }
-      if (img.imageUrl) {
-        succeed({ imageUrl: img.imageUrl as string, firestoreImageId: imgDoc.id });
-      }
-    }),
-    guard(() => {
-      callbacks.onConnectionError?.();
-    })
-  );
+  const unsubImages = options.listenForImageFallback
+    ? onSnapshot(
+        query(
+          collection(db, 'images'),
+          where('originalRequestId', '==', requestId),
+          limit(1)
+        ),
+        guard((snap) => {
+          if (snap.empty) return;
+          const imgDoc = snap.docs[0];
+          const img = imgDoc.data();
+          if (
+            callbacks.expectedUserId &&
+            img.userId &&
+            img.userId !== callbacks.expectedUserId
+          ) {
+            settled = true;
+            callbacks.onFailed('This picture belongs to another account.');
+            return;
+          }
+          if (img.imageUrl) {
+            succeed({ imageUrl: img.imageUrl as string, firestoreImageId: imgDoc.id });
+          }
+        }),
+        guard(() => {
+          callbacks.onConnectionError?.();
+        })
+      )
+    : null;
 
   return () => {
     settled = true;
     unsubQueue();
-    unsubImages();
+    unsubImages?.();
   };
 }
 
@@ -311,10 +318,11 @@ export interface AttachGenerationSessionOptions {
   onHardTimeout: () => void;
   onConnectionError?: () => void;
   expectedUserId?: string;
+  listenForImageFallback?: boolean;
 }
 
 /**
- * Subscribe to queue + images with a client-side hard timeout.
+ * Subscribe to queue updates with a client-side hard timeout.
  * Shared by session resume and active generate flows.
  */
 export function attachGenerationSession(
@@ -331,6 +339,7 @@ export function attachGenerationSession(
     onHardTimeout,
     onConnectionError,
     expectedUserId,
+    listenForImageFallback = false,
   } = options;
 
   const remainingMs = Math.max(5000, MAX_GENERATION_MS - (Date.now() - startedAt));
@@ -348,7 +357,7 @@ export function attachGenerationSession(
       onFailed(message);
     },
     onConnectionError,
-  });
+  }, { listenForImageFallback });
 
   return () => {
     clearTimeout(hardTimeout);

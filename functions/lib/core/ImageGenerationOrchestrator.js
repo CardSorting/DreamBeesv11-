@@ -29,41 +29,23 @@ export class ImageGenerationOrchestrator {
         });
         forensic.checkpoint('submission_start');
         return this.executeWithIdempotency(requestId, async () => {
-            // 1. User doc + idempotency doc in parallel (saves one round-trip vs sequential)
             const uid = request.auth?.uid;
-            const [userDoc, queueSnap] = await Promise.all([
-                database.collection('users').doc(uid).get(),
-                database.collection('generation_queue').doc(requestId).get()
-            ]);
-            if (!userDoc.exists) {
-                throw new Error('User document not found. Please re-authenticate.');
-            }
-            if (queueSnap.exists) {
-                const existingStatus = queueSnap.data()?.status;
-                if (['queued', 'processing', 'completed'].includes(existingStatus)) {
-                    forensic.checkpoint('idempotent_hit');
-                    return { requestId };
+            let userData = request.cachedUserData;
+            if (!userData) {
+                const userDoc = await database.collection('users').doc(uid).get();
+                if (!userDoc.exists) {
+                    throw new Error('User document not found. Please re-authenticate.');
                 }
+                userData = userDoc.data();
             }
-            const userData = userDoc.data();
             const userTier = userData.tier || 'free';
             const isPremiumUser = userTier === 'pro' || userTier === 'architect';
             // 2. Preprocess request
             const { sanitizedRequest } = PromptPreprocessor.preprocess(request, isPremiumUser);
-            // 3. Parallel pre-flight (skip active-job scan for subscribers — saves a query)
-            const preflight = [
-                SubstrateHealth.isHealthy(sanitizedRequest.modelId),
-                isPremiumUser
-                    ? Promise.resolve(0)
-                    : this.getActiveJobsCount(sanitizedRequest.requestorUid, database)
-            ];
-            const [isHealthy, activeJobs] = await Promise.all(preflight);
+            const isHealthy = await SubstrateHealth.isHealthy(sanitizedRequest.modelId);
             if (!isHealthy) {
                 forensic.checkpoint('circuit_break_triggered');
                 throw new Error(`Provider for ${sanitizedRequest.modelId} is currently degraded. Please try again in a few minutes.`);
-            }
-            if (activeJobs >= 15) {
-                throw new Error('Too many active jobs. Please wait for current generations to finish.');
             }
             // 3. Validate and calculate cost (Pass userData to avoid re-fetch)
             const validationResult = await CostOrchestrator.validateGenerationCost(sanitizedRequest.initiatorUid, sanitizedRequest.modelId, sanitizedRequest.aspectRatio, isPremiumUser, database, userData // PASSING ALREADY FETCHED DATA
@@ -74,24 +56,30 @@ export class ImageGenerationOrchestrator {
             const finalCost = validationResult.estimatedCost;
             forensic.checkpoint('transaction_prepared');
             // 6. ATOMIC SUBMISSION: Transactional Debit + Queue Document
+            let shouldEnqueue = true;
             await database.runTransaction(async (t) => {
                 const queueRef = database.collection('generation_queue').doc(requestId);
                 const existing = await t.get(queueRef);
                 if (existing.exists) {
                     const st = existing.data()?.status;
                     if (['queued', 'processing', 'completed'].includes(st)) {
+                        shouldEnqueue = false;
+                        forensic.checkpoint('idempotent_hit');
                         return;
                     }
                 }
                 // A. Debit Wallet
-                await Wallet.debit(sanitizedRequest.initiatorUid, finalCost, requestId, { auditType: 'zap_generation', modelId: sanitizedRequest.modelId }, 'zaps', t, true // TURBO MODE: Direct metabolic increment
-                );
+                if (finalCost > 0) {
+                    await Wallet.debit(sanitizedRequest.initiatorUid, finalCost, requestId, { auditType: 'zap_generation', modelId: sanitizedRequest.modelId }, 'zaps', t, true // TURBO MODE: Direct metabolic increment
+                    );
+                }
                 // B. Create Queue Entry
                 await this.queueRequestInTransaction(sanitizedRequest, requestId, finalCost, t, database);
             });
             forensic.checkpoint('submission_complete');
             return {
-                requestId
+                requestId,
+                shouldEnqueue
             };
         });
     }
@@ -113,28 +101,6 @@ export class ImageGenerationOrchestrator {
                 error: error.message || 'Unknown error',
                 status: 'failed'
             };
-        }
-    }
-    /**
-     * Check user quota (Internal stub)
-     */
-    static async checkQuota(uid, database) {
-        return true;
-    }
-    /**
-     * Get active jobs count for user
-     */
-    static async getActiveJobsCount(uid, database) {
-        try {
-            const snap = await database.collection('generation_queue')
-                .where('userId', '==', uid)
-                .where('status', 'in', ['queued', 'processing'])
-                .limit(11)
-                .get();
-            return snap.size;
-        }
-        catch (error) {
-            return 0;
         }
     }
     /**
