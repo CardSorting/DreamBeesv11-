@@ -650,23 +650,25 @@ function getDynamicFallbackSuggestions(prompt: string, mode: DreamTrailMode): Dr
         const adjectiveList = ADJECTIVES[mutation];
         const templateList = TEMPLATES[mutation];
 
-        // Pick dynamic components based on the deterministic hash
-        const subject = subjects[(hashVal + idx) % subjects.length];
-        const adj = adjectiveList[(hashVal + idx) % adjectiveList.length];
-        const template = templateList[(hashVal + idx) % templateList.length];
+        for (let j = 0; j < 3; j++) {
+            const subjectIndex = (hashVal + idx + j) % subjects.length;
+            const subject = subjects[subjectIndex];
+            const adj = adjectiveList[(hashVal + idx + j * 3) % adjectiveList.length];
+            const template = templateList[(hashVal + idx + j * 2) % templateList.length];
 
-        const text = template(subject, adj);
+            const text = template(subject, adj);
 
-        // Map each template to a typical creative decision
-        const decisions: DecisionNeed[] = ["setting", "symbol", "identity", "composition", "action", "identity", "setting", "tone", "conflict", "identity"];
-        const decision = decisions[idx % decisions.length];
+            // Map each template to a typical creative decision
+            const decisions: DecisionNeed[] = ["setting", "symbol", "identity", "composition", "action", "identity", "setting", "tone", "conflict", "identity"];
+            const decision = decisions[(idx + j) % decisions.length];
 
-        suggestions.push({
-            text,
-            mutation,
-            decision,
-            score: 0.70 + ((hashVal + idx) % 15) * 0.01 // deterministic varied score around 0.70 - 0.85
-        });
+            suggestions.push({
+                text,
+                mutation,
+                decision,
+                score: 0.65 + ((hashVal + idx + j * 7) % 20) * 0.01 // deterministic varied score around 0.65 - 0.85
+            });
+        }
     });
 
     const modeBiases: Record<DreamTrailMode, TasteMutation[]> = {

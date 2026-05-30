@@ -149,6 +149,44 @@ const VECTOR_STORAGE_KEY = 'dreambees:dreamtrail:v2:taste-vector';
 const EVENTS_STORAGE_KEY = 'dreambees:dreamtrail:v2:mutation-events';
 const LEGACY_TASTE_STORAGE_KEY = 'dreambees:dreamtrail:taste';
 const MAX_EVENTS = 40;
+const SUBJECT_STOP_WORDS = new Set([
+  'the',
+  'and',
+  'with',
+  'for',
+  'from',
+  'under',
+  'inside',
+  'near',
+  'beside',
+  'behind',
+  'above',
+  'below',
+  'some',
+  'that',
+  'this',
+  'here',
+  'there',
+  'into',
+  'onto',
+  'over',
+  'through',
+  'about',
+  'after',
+  'before',
+  'between',
+  'while',
+  'where',
+  'when',
+  'then',
+  'than',
+  'very',
+  'really',
+  'just',
+  'like',
+  'made',
+  'making',
+]);
 
 export const DEFAULT_TASTE_VECTOR: TasteVector = {
   mythmaking: 0.34,
@@ -693,14 +731,73 @@ export function updateTasteVector(vector: TasteVector, mutation: TasteMutation) 
   return normalizeTasteVector(next);
 }
 
-function extractSubjects(prompt: string): string[] {
-  const words = prompt
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '')
-    .split(/\s+/)
-    .filter((w) => w.length > 2 && !['the', 'and', 'with', 'for', 'from', 'under', 'inside', 'near', 'beside', 'behind', 'above', 'below', 'some', 'that', 'this', 'here', 'there'].includes(w));
-  return words;
+function isSubjectToken(token: string) {
+  return token.length > 2 && !SUBJECT_STOP_WORDS.has(token) && !/^\d+$/.test(token);
 }
+
+function uniqueInOrder(values: string[]) {
+  const seen = new Set<string>();
+  return values.filter((value) => {
+    if (seen.has(value)) return false;
+    seen.add(value);
+    return true;
+  });
+}
+
+function extractSubjects(prompt: string): string[] {
+  const tokens = prompt
+    .toLowerCase()
+    .replace(/['’]/g, '')
+    .replace(/[^a-z0-9\s-]/g, ' ')
+    .split(/\s+/)
+    .map((token) => token.replace(/^-+|-+$/g, ''))
+    .filter(isSubjectToken);
+
+  const candidates: string[] = [];
+  tokens.forEach((token, index) => {
+    const previous = tokens[index - 1];
+    const next = tokens[index + 1];
+    const previousPrevious = tokens[index - 2];
+
+    if (previousPrevious && previous) candidates.push(`${previousPrevious} ${previous} ${token}`);
+    if (previous) candidates.push(`${previous} ${token}`);
+    candidates.push(token);
+    if (next) candidates.push(`${token} ${next}`);
+  });
+
+  return uniqueInOrder(candidates)
+    .filter((subject) => subject.length <= 34)
+    .slice(0, 18);
+}
+
+function pickSubject(subjects: string[], hashVal: number, mutationIndex: number, iteration: number) {
+  const stride = (hashVal % 7) + 3;
+  const hashOffset = Math.floor(hashVal / ((iteration + 1) * 11));
+  return subjects[(hashOffset + mutationIndex * stride + iteration * (stride + 2)) % subjects.length];
+}
+
+const GENERAL_DYNAMIC_TEMPLATES: Array<{ decision: DecisionNeed; build: (s: string, a: string) => string }> = [
+  { decision: 'action', build: (s, a) => `, carrying the ${a} ${s} toward a hidden threshold` },
+  { decision: 'action', build: (s, a) => `, returning with a ${a} ${s} before dawn` },
+  { decision: 'action', build: (s, a) => `, following a trail of ${a} ${s} marks` },
+  { decision: 'setting', build: (s, a) => `, in a courtyard shaped around the ${a} ${s}` },
+  { decision: 'setting', build: (s, a) => `, beyond terraces of quiet ${a} ${s}` },
+  { decision: 'setting', build: (s, a) => `, at the edge of a ${a} ${s} sanctuary` },
+  { decision: 'conflict', build: (s, a) => `, as a rival claims the ${a} ${s}` },
+  { decision: 'conflict', build: (s, a) => `, while the ${a} ${s} begins to fracture` },
+  { decision: 'conflict', build: (s, a) => `, threatened by a shadow crossing the ${s}` },
+  { decision: 'symbol', build: (s, a) => `, marked by a small ${a} ${s} emblem` },
+  { decision: 'symbol', build: (s, a) => `, beneath a banner stitched with the ${s}` },
+  { decision: 'symbol', build: (s, a) => `, holding a relic carved from ${a} ${s}` },
+  { decision: 'composition', build: (s, a) => `, centered against a clean silhouette of ${a} ${s}` },
+  { decision: 'composition', build: (s, a) => `, framed through an arch of ${a} ${s}` },
+  { decision: 'composition', build: (s, a) => `, seen in profile beside the ${a} ${s}` },
+  { decision: 'tone', build: (s, a) => `, with a quiet mood of ${a} ${s} weather` },
+  { decision: 'tone', build: (s, a) => `, touched by a hopeful trace of ${a} ${s}` },
+  { decision: 'tone', build: (s, a) => `, softened by the hush around the ${s}` },
+  { decision: 'identity', build: (s, a) => `, wearing a crest inspired by the ${a} ${s}` },
+  { decision: 'identity', build: (s, a) => `, carrying tools made for tending the ${s}` },
+];
 
 function getDynamicFallbackSuggestions(prompt: string, mode: DreamTrailMode): DreamTrailSuggestion[] {
   const subjects = extractSubjects(prompt);
@@ -717,21 +814,21 @@ function getDynamicFallbackSuggestions(prompt: string, mode: DreamTrailMode): Dr
   hashVal = Math.abs(hashVal);
 
   const ADJECTIVES: Record<TasteMutation, string[]> = {
-    wonder: ["luminous", "pollen-lit", "starlit", "celestial", "dream-born", "glowing"],
-    mystery: ["veiled", "whispering", "moonlit", "hidden", "shadowy", "forbidden"],
-    absurdity: ["impossible", "tiny", "oversized", "inside-out", "flying", "talking"],
-    grandeur: ["colossal", "towering", "vast", "imperial", "monumental", "magnificent"],
-    intimacy: ["tender", "quiet", "private", "soft", "handheld", "gentle"],
-    decay: ["rusted", "overgrown", "moth-eaten", "withered", "ruined", "tarnished"],
-    ritual: ["ceremonial", "sacred", "sigil-etched", "woven", "consecrated", "ancient"],
-    whimsy: ["velvet", "dewdrop", "storybook", "playful", "floating", "sweet"],
-    machinery: ["clockwork", "mechanical", "hinged", "brass", "steam-driven", "copper"],
-    nostalgia: ["faded", "vintage", "half-remembered", "old", "childhood", "heirloom"],
-    satire: ["bureaucratic", "decreed", "committee-approved", "mock", "pompous", "official"],
-    elegance: ["silk-draped", "filigree", "porcelain", "delicate", "ornate", "graceful"],
-    danger: ["storm-lashed", "venomous", "barbed", "sharp", "fierce", "threatening"],
-    mythmaking: ["legendary", "ancestral", "prophetic", "forgotten", "royal", "sacred"],
-    melancholy: ["lonely", "silent", "wilted", "fading", "mournful", "empty"]
+    wonder: ["luminous", "pollen-lit", "starlit", "celestial", "dream-born", "glowing", "nebular", "auroral", "cosmic", "resplendent"],
+    mystery: ["veiled", "whispering", "moonlit", "hidden", "shadowy", "forbidden", "enigmatic", "cryptic", "obscure", "runic"],
+    absurdity: ["impossible", "tiny", "oversized", "inside-out", "flying", "talking", "juggling", "nonsense", "quirky", "inverted"],
+    grandeur: ["colossal", "towering", "vast", "imperial", "monumental", "magnificent", "majestic", "epic", "cathedral-like", "sublime"],
+    intimacy: ["tender", "quiet", "private", "soft", "handheld", "gentle", "delicate", "hushed", "cosy", "warm"],
+    decay: ["rusted", "overgrown", "moth-eaten", "withered", "ruined", "tarnished", "forgotten", "decaying", "dilapidated", "weathered"],
+    ritual: ["ceremonial", "sacred", "sigil-etched", "woven", "consecrated", "ancient", "hallowed", "solemn", "shamanic", "devotional"],
+    whimsy: ["velvet", "dewdrop", "storybook", "playful", "floating", "sweet", "cheerful", "dappled", "pastel", "sparkling"],
+    machinery: ["clockwork", "mechanical", "hinged", "brass", "steam-driven", "copper", "geared", "automated", "pistoned", "metallic"],
+    nostalgia: ["faded", "vintage", "half-remembered", "old", "childhood", "heirloom", "sepia-toned", "retro", "timeworn", "treasured"],
+    satire: ["bureaucratic", "decreed", "committee-approved", "mock", "pompous", "official", "ironic", "farcical", "exaggerated", "formal"],
+    elegance: ["silk-draped", "filigree", "porcelain", "delicate", "ornate", "graceful", "refined", "polished", "exquisite", "opulent"],
+    danger: ["storm-lashed", "venomous", "barbed", "sharp", "fierce", "threatening", "perilous", "lethal", "toxic", "predatory"],
+    mythmaking: ["legendary", "ancestral", "prophetic", "forgotten", "royal", "sacred", "heraldic", "dynastic", "fabled", "chronicled"],
+    melancholy: ["lonely", "silent", "wilted", "fading", "mournful", "empty", "sombre", "bleak", "tearful", "solitary"]
   };
 
   const TEMPLATES: Record<TasteMutation, Array<(s: string, a: string) => string>> = {
@@ -739,91 +836,151 @@ function getDynamicFallbackSuggestions(prompt: string, mode: DreamTrailMode): Dr
       (s, a) => `, beneath a ${a} ${s} eclipse`,
       (s, a) => `, under a sky of glowing ${s} constellations`,
       (s, a) => `, surrounded by floating ${a} ${s} dust`,
-      (s, a) => `, where the ${s} glows with a ${a} light`
+      (s, a) => `, where the ${s} glows with a ${a} light`,
+      (s, a) => `, reflecting a ${a} ${s} aurora`,
+      (s, a) => `, orbiting a starlit ${s} moon`,
+      (s, a) => `, inside a radiant forest of ${a} ${s}s`,
+      (s, a) => `, beneath a luminous curtain of ${s} fireflies`
     ],
     mystery: [
       (s, a) => `, hiding a ${a} ${s} in the shadows`,
       (s, a) => `, guided by a ${a} ${s} lantern`,
       (s, a) => `, guarding the secrets of the ${a} ${s}`,
-      (s, a) => `, searching for a ${a} ${s} gate`
+      (s, a) => `, searching for a ${a} ${s} gate`,
+      (s, a) => `, veiled by a mist of ${a} ${s} pollen`,
+      (s, a) => `, deciphering a cryptic sigil on the ${s}`,
+      (s, a) => `, following a moonlit path of ${a} ${s}s`,
+      (s, a) => `, unlocking a locked chamber filled with ${s}s`
     ],
     absurdity: [
       (s, a) => `, wearing a ${a} crown made of ${s}s`,
       (s, a) => `, riding a ${a} ${s} through the clouds`,
       (s, a) => `, inside a house built entirely of ${a} ${s}s`,
-      (s, a) => `, talking to a ${a} ${s} at tea time`
+      (s, a) => `, talking to a ${a} ${s} at tea time`,
+      (s, a) => `, balancing a tiny ${s} on a ${a} umbrella`,
+      (s, a) => `, juggling three impossible ${a} ${s}s`,
+      (s, a) => `, flying on a clockwork ${s} with paper wings`,
+      (s, a) => `, where ${s}s grow upside-down in ${a} teacups`
     ],
     grandeur: [
       (s, a) => `, framed by colossal ${a} ${s} pillars`,
       (s, a) => `, rising above a vast valley of ${s}s`,
       (s, a) => `, facing the imperial gateway of the ${a} ${s}`,
-      (s, a) => `, holding high a monumental ${a} ${s} banner`
+      (s, a) => `, holding high a monumental ${a} ${s} banner`,
+      (s, a) => `, silhouetted against a towering ${s} mountain`,
+      (s, a) => `, entering the majestic hall of the ${a} ${s}`,
+      (s, a) => `, beneath a vast procession of ${a} ${s} ships`,
+      (s, a) => `, where colossal ${s} structures touch the ${a} clouds`
     ],
     intimacy: [
       (s, a) => `, holding a ${a} ${s} close to their chest`,
       (s, a) => `, sharing a quiet moment with a ${a} ${s}`,
       (s, a) => `, keeping a tiny ${s} tucked inside a pocket`,
-      (s, a) => `, whispering a secret to the ${a} ${s}`
+      (s, a) => `, whispering a secret to the ${a} ${s}`,
+      (s, a) => `, tracing the delicate lines of a ${a} ${s}`,
+      (s, a) => `, protected by a warm cloak of ${a} ${s} down`,
+      (s, a) => `, reading a hand-written letter about the ${s}`,
+      (s, a) => `, sleeping beside a gentle ${a} ${s}`
     ],
     decay: [
       (s, a) => `, crumbling beneath ${a} ${s} vines`,
       (s, a) => `, surrounded by rusted ${s} relics of the past`,
       (s, a) => `, in a ruined garden overgrown with ${a} ${s}s`,
-      (s, a) => `, where a withered ${s} turned to dust`
+      (s, a) => `, where a withered ${s} turned to dust`,
+      (s, a) => `, covered in a layer of forgotten ${a} ${s} soot`,
+      (s, a) => `, decaying in the damp shade of the ${s}`,
+      (s, a) => `, among the mossy ruins of the ${a} ${s}`,
+      (s, a) => `, tarnished by decades of silent ${a} ${s} rain`
     ],
     ritual: [
       (s, a) => `, for the annual ${a} ${s} procession`,
       (s, a) => `, offering a consecrated ${s} to the altar`,
       (s, a) => `, wearing ceremonial ${a} ${s} robes`,
-      (s, a) => `, performing the sacred rite of the ${s}`
+      (s, a) => `, performing the sacred rite of the ${s}`,
+      (s, a) => `, lit by a circle of consecrated ${a} ${s} candles`,
+      (s, a) => `, etching a hallowed rune into the ${s}`,
+      (s, a) => `, drinking a ceremonial brew from a ${a} ${s}`,
+      (s, a) => `, consecrating the ground with ${a} ${s} oils`
     ],
     whimsy: [
       (s, a) => `, with playful starlight ${s} wings`,
       (s, a) => `, carrying a sweet ${a} ${s} jar`,
       (s, a) => `, dancing with floating ${a} ${s} fireflies`,
-      (s, a) => `, in a storybook forest of ${a} ${s}s`
+      (s, a) => `, in a storybook forest of ${a} ${s}s`,
+      (s, a) => `, wearing a tiny velvet hat shaped like a ${s}`,
+      (s, a) => `, sharing honey cakes with a ${a} ${s}`,
+      (s, a) => `, drifting on a storybook cloud of ${a} ${s}s`,
+      (s, a) => `, tickled by a playful breeze of ${s} petals`
     ],
     machinery: [
       (s, a) => `, powered by a complex clockwork ${s} engine`,
       (s, a) => `, inside a copper workshop filled with ${a} ${s}s`,
       (s, a) => `, tuning a brass mechanical ${s}`,
-      (s, a) => `, with gears rotating inside a ${a} ${s}`
+      (s, a) => `, with gears rotating inside a ${a} ${s}`,
+      (s, a) => `, fueled by a steam-driven ${a} ${s} boiler`,
+      (s, a) => `, holding a copper wrench near the ${s}`,
+      (s, a) => `, adjusting the automated pistons of the ${s}`,
+      (s, a) => `, surrounded by whirring gears and brass ${s}s`
     ],
     nostalgia: [
       (s, a) => `, recalling a fading memory of a ${a} ${s}`,
       (s, a) => `, holding a vintage ${a} ${s} postcard`,
       (s, a) => `, surrounded by childhood ${s} keepsakes`,
-      (s, a) => `, in an old attic filled with ${a} ${s}s`
+      (s, a) => `, in an old attic filled with ${a} ${s}s`,
+      (s, a) => `, looking at a sepia-toned photograph of a ${s}`,
+      (s, a) => `, listening to a timeworn song about the ${s}`,
+      (s, a) => `, turning the pages of an old book of ${s}s`,
+      (s, a) => `, holding a faded ribbon from their first ${s}`
     ],
     satire: [
       (s, a) => `, presenting an official bureaucratic ${s} decree`,
       (s, a) => `, in a mock parade for the royal ${a} ${s}`,
       (s, a) => `, filling out paperwork for a ${a} ${s}`,
-      (s, a) => `, governed by a pompous committee of ${s}s`
+      (s, a) => `, governed by a pompous committee of ${s}s`,
+      (s, a) => `, wearing an oversized mock crown of ${s}s`,
+      (s, a) => `, collecting taxes for the grand ${s} federation`,
+      (s, a) => `, reading a farcical article about the ${a} ${s}`,
+      (s, a) => `, marching in an official parade of ${s} inspectors`
     ],
     elegance: [
       (s, a) => `, draped in delicate ${a} ${s} silk`,
       (s, a) => `, holding a finely carved porcelain ${s}`,
       (s, a) => `, decorated with ornate gold ${s} filigree`,
-      (s, a) => `, displaying the graceful lines of a ${a} ${s}`
+      (s, a) => `, displaying the graceful lines of a ${a} ${s}`,
+      (s, a) => `, resting on a velvet cushion of ${a} ${s}`,
+      (s, a) => `, adorned with exquisite pearl-encrusted ${s}s`,
+      (s, a) => `, posed with the refined grace of a ${s}`,
+      (s, a) => `, painted on a delicate folding screen of ${s}s`
     ],
     danger: [
       (s, a) => `, defending the hive from a storm of ${a} ${s}s`,
       (s, a) => `, facing a fierce threat of sharp ${s} thorns`,
       (s, a) => `, armed with a venomous ${a} ${s} blade`,
-      (s, a) => `, escaping a perilous trap of ${a} ${s}s`
+      (s, a) => `, escaping a perilous trap of ${a} ${s}s`,
+      (s, a) => `, cornered by a pack of predatory ${s}s`,
+      (s, a) => `, navigating a storm-lashed field of ${s}s`,
+      (s, a) => `, dodging the lethal spikes of the ${a} ${s}`,
+      (s, a) => `, guarding the perimeter from a giant ${a} ${s}`
     ],
     mythmaking: [
       (s, a) => `, protecting the legendary crown of the ${s}`,
       (s, a) => `, tracing the ancestral prophecy of the ${a} ${s}`,
       (s, a) => `, guarding the royal lineage of the ${s} kingdom`,
-      (s, a) => `, seeking the forgotten relic of the ${a} ${s}`
+      (s, a) => `, seeking the forgotten relic of the ${a} ${s}`,
+      (s, a) => `, recording the heraldic saga of the ${s}`,
+      (s, a) => `, chosen by the dynastic guardians of the ${s}`,
+      (s, a) => `, standard-bearer for the legendary ${a} ${s}`,
+      (s, a) => `, crowned in the fabled kingdom of the ${s}`
     ],
     melancholy: [
       (s, a) => `, lost in a lonely rain-slicked ${s} street`,
       (s, a) => `, staring at a fading ${a} ${s} in the dark`,
       (s, a) => `, under a silent, grey sky of ${s} clouds`,
-      (s, a) => `, mourning the loss of a ${a} ${s}`
+      (s, a) => `, mourning the loss of a ${a} ${s}`,
+      (s, a) => `, listening to the mournful wind through the ${s}s`,
+      (s, a) => `, shedding a solitary tear over a faded ${s}`,
+      (s, a) => `, walking through a silent, empty hall of ${s}s`,
+      (s, a) => `, in a sombre chamber lit by a single ${s}`
     ]
   };
 
@@ -834,23 +991,26 @@ function getDynamicFallbackSuggestions(prompt: string, mode: DreamTrailMode): Dr
     const adjectiveList = ADJECTIVES[mutation];
     const templateList = TEMPLATES[mutation];
 
-    // Pick dynamic components based on the deterministic hash
-    const subject = subjects[(hashVal + idx) % subjects.length];
-    const adj = adjectiveList[(hashVal + idx) % adjectiveList.length];
-    const template = templateList[(hashVal + idx) % templateList.length];
+    for (let j = 0; j < 5; j++) {
+      const subject = pickSubject(subjects, hashVal, idx, j);
+      const adj = adjectiveList[(hashVal + idx + j * 3) % adjectiveList.length];
+      const extraTemplate = GENERAL_DYNAMIC_TEMPLATES[(hashVal + idx * 5 + j * 3) % GENERAL_DYNAMIC_TEMPLATES.length];
+      const template = j === 4
+        ? extraTemplate.build
+        : templateList[(hashVal + idx + j * 2) % templateList.length];
 
-    const text = template(subject, adj);
+      const text = template(subject, adj);
 
-    // Map each template to a typical creative decision
-    const decisions: DecisionNeed[] = ["setting", "symbol", "identity", "composition", "action", "identity", "setting", "tone", "conflict", "identity"];
-    const decision = decisions[idx % decisions.length];
+      const decisions: DecisionNeed[] = ["setting", "symbol", "identity", "composition", "action", "identity", "setting", "tone", "conflict", "identity"];
+      const decision = j === 4 ? extraTemplate.decision : detectDecision(text) ?? decisions[(idx + j) % decisions.length];
 
-    suggestions.push({
-      text,
-      mutation,
-      decision,
-      score: 0.70 + ((hashVal + idx) % 15) * 0.01 // deterministic varied score around 0.70 - 0.85
-    });
+      suggestions.push({
+        text,
+        mutation,
+        decision,
+        score: 0.65 + ((hashVal + idx + j * 7) % 20) * 0.01 // deterministic varied score around 0.65 - 0.85
+      });
+    }
   });
 
   const modeBiases: Record<DreamTrailMode, TasteMutation[]> = {
@@ -1421,13 +1581,17 @@ export function isLastWordComplete(prompt: string): boolean {
   const trimmed = prompt.trimEnd();
   if (trimmed.length === 0) return true;
 
-  if (/\s|[.,;:!?]$/.test(prompt)) {
+  if (trimmed.length !== prompt.length || /[.,;:!?)\]}"']$/.test(trimmed)) {
     return true;
   }
 
-  const words = trimmed.toLowerCase().split(/\s+/);
-  const lastWord = words[words.length - 1];
+  const match = trimmed.match(/[a-z0-9][a-z0-9'-]*$/i);
+  if (!match) return false;
 
-  const targetKeywords = ['bee', 'knight', 'queen', 'forest', 'castle', 'space', 'star', 'planet', 'astronaut'];
-  return targetKeywords.includes(lastWord);
+  const lastWord = match[0].toLowerCase().replace(/^['-]+|['-]+$/g, '');
+  if (lastWord.length < 3 || SUBJECT_STOP_WORDS.has(lastWord) || /['-]$/.test(match[0])) {
+    return false;
+  }
+
+  return true;
 }
