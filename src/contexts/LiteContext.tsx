@@ -26,21 +26,9 @@ import {
     smoothIdleProgress,
     toHistoryTimestamp,
 } from '../lib/generationFlow';
-import { attachGenerationSession } from '../lib/generationSession';
-import { recoverPendingGeneration } from '../lib/generationRecovery';
 import toast from '../utils/lazyToast';
-import { auth, db, getFunctionsInstance } from '../firebase.ts';
-import { 
-    onAuthStateChanged, 
-    User, 
-    signInWithEmailAndPassword, 
-    createUserWithEmailAndPassword, 
-    signOut, 
-    GoogleAuthProvider, 
-    signInWithPopup,
-    signInWithCredential
-} from 'firebase/auth';
-import { collection, doc, getDoc, onSnapshot, query, orderBy, limit, where, setDoc, serverTimestamp, enableNetwork, disableNetwork } from 'firebase/firestore';
+import { getFirebaseClient, getFunctionsInstance } from '../firebaseLazy';
+import type { User } from 'firebase/auth';
 import { AIModel, getOptimizedImageUrl } from '../lite-utils';
 
 const BUILTIN_MODELS: AIModel[] = [
@@ -160,6 +148,25 @@ const getApiCallable = async (options?: { timeout?: number }) => {
     return httpsCallable(functions, 'api', options);
 };
 
+const loadFirebaseRuntime = async () => {
+    const [client, authModule, firestoreModule] = await Promise.all([
+        getFirebaseClient(),
+        import('firebase/auth'),
+        import('firebase/firestore'),
+    ]);
+
+    return {
+        ...client,
+        ...authModule,
+        ...firestoreModule,
+    };
+};
+
+type FirebaseRuntime = Awaited<ReturnType<typeof loadFirebaseRuntime>>;
+
+const loadGenerationSession = () => import('../lib/generationSession');
+const loadGenerationRecovery = () => import('../lib/generationRecovery');
+
 interface LiteContextType {
     currentUser: User | null;
     availableModels: AIModel[];
@@ -246,6 +253,22 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         }
         return false;
     });
+    const [firebase, setFirebase] = useState<FirebaseRuntime | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        const load = () => {
+            void loadFirebaseRuntime().then((runtime) => {
+                if (!cancelled) setFirebase(runtime);
+            });
+        };
+
+        const timer = globalThis.setTimeout(load, 250);
+        return () => {
+            cancelled = true;
+            globalThis.clearTimeout(timer);
+        };
+    }, []);
 
     const toggleSidebar = useCallback(() => {
         setSidebarCollapsed((prev) => {
@@ -285,16 +308,18 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     }, [currentUser?.uid]);
 
     useEffect(() => {
+        if (!firebase) return;
         if (!navigator.onLine) {
             setIsOffline(true);
-            disableNetwork(db);
+            firebase.disableNetwork(firebase.db);
         }
-    }, []);
+    }, [firebase]);
 
     useEffect(() => {
+        if (!firebase) return;
         let userUnsub: (() => void) | null = null;
 
-        const authUnsub = onAuthStateChanged(auth, (user) => {
+        const authUnsub = firebase.onAuthStateChanged(firebase.auth, (user) => {
             userUnsub?.();
             userUnsub = null;
             setCurrentUser(user);
@@ -320,7 +345,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 }
             }
 
-            userUnsub = onSnapshot(doc(db, 'users', user.uid), (snap) => {
+            userUnsub = firebase.onSnapshot(firebase.doc(firebase.db, 'users', user.uid), (snap) => {
                 if (snap.exists()) {
                     const data = snap.data();
                     const tier = data.tier || 'free';
@@ -345,7 +370,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             authUnsub();
             userUnsub?.();
         };
-    }, []);
+    }, [firebase]);
 
     useEffect(() => {
         loadLocal();
@@ -449,13 +474,15 @@ export function LiteProvider({ children }: { children: ReactNode }) {
      */
     const recoverPendingIfReady = useCallback(
         async (uid: string): Promise<boolean> => {
+            if (!firebase) return false;
             if (generatingRef.current) return false;
             if (recoveringPendingRef.current) return false;
 
             recoveringPendingRef.current = true;
             try {
+                const { recoverPendingGeneration } = await loadGenerationRecovery();
                 const result = await recoverPendingGeneration({
-                    db,
+                    db: firebase.db,
                     uid,
                     claimRef: completionClaimRef,
                     history: displayHistoryRef.current,
@@ -481,33 +508,34 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 recoveringPendingRef.current = false;
             }
         },
-        [commitPendingToLocalState, clearPending]
+        [commitPendingToLocalState, clearPending, firebase]
     );
 
     useEffect(() => {
+        if (!firebase) return;
         const handleOnline = () => {
             setIsOffline(false);
-            enableNetwork(db);
+            firebase.enableNetwork(firebase.db);
             toast.success("Network restored");
             loadLocal();
-            const uid = auth.currentUser?.uid;
+            const uid = firebase.auth.currentUser?.uid;
             if (uid) void recoverPendingIfReady(uid);
         };
-        const handleOffline = () => { setIsOffline(true); disableNetwork(db); toast.error("Offline Mode Active"); };
+        const handleOffline = () => { setIsOffline(true); firebase.disableNetwork(firebase.db); toast.error("Offline Mode Active"); };
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
         return () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
         };
-    }, [loadLocal, recoverPendingIfReady]);
+    }, [loadLocal, recoverPendingIfReady, firebase]);
 
     useEffect(() => () => { generationSessionRef.current?.(); }, []);
 
     /** Re-attach to an in-flight job after navigation refresh */
     useEffect(() => {
         const uid = currentUser?.uid;
-        if (!uid || generatingRef.current) return;
+        if (!firebase || !uid || generatingRef.current) return;
 
         const pending = loadPendingGeneration(uid);
         if (!pending) return;
@@ -592,7 +620,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             setGenerateStartTime(pending.startedAt);
             toast.loading('Checking on your picture…', { id: pending.requestId });
 
-            detach = attachGenerationSession(db, {
+            const { attachGenerationSession } = await loadGenerationSession();
+            detach = attachGenerationSession(firebase.db, {
                 requestId: pending.requestId,
                 startedAt: pending.startedAt,
                 initialProgressFloor: 40,
@@ -651,12 +680,12 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 resumeSessionIdRef.current = null;
             }
         };
-    }, [currentUser?.uid, resetGenerationUi, clearPending, commitPendingToLocalState, recoverPendingIfReady]);
+    }, [currentUser?.uid, resetGenerationUi, clearPending, commitPendingToLocalState, recoverPendingIfReady, firebase]);
 
     /** Finish when merged history gets an image for a pending job (avoids probe on every snapshot) */
     useEffect(() => {
         const uid = currentUser?.uid;
-        if (!uid || generatingRef.current) return;
+        if (!firebase || !uid || generatingRef.current) return;
 
         const pending = loadPendingGeneration(uid);
         if (!pending) return;
@@ -667,12 +696,12 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         if (!hasMatch) return;
 
         void recoverPendingIfReady(uid);
-    }, [displayHistory, currentUser?.uid, recoverPendingIfReady, pendingRevision]);
+    }, [displayHistory, currentUser?.uid, recoverPendingIfReady, pendingRevision, firebase]);
 
     /** Re-probe when the user returns to the tab (throttled) */
     useEffect(() => {
         const uid = currentUser?.uid;
-        if (!uid) return;
+        if (!firebase || !uid) return;
 
         const onVisible = () => {
             if (document.visibilityState !== 'visible') return;
@@ -684,7 +713,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
 
         document.addEventListener('visibilitychange', onVisible);
         return () => document.removeEventListener('visibilitychange', onVisible);
-    }, [currentUser?.uid, recoverPendingIfReady]);
+    }, [currentUser?.uid, recoverPendingIfReady, firebase]);
 
     useEffect(() => {
         const handleStorage = (e: StorageEvent) => {
@@ -698,6 +727,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     }, [availableModels]);
 
     useEffect(() => {
+        if (!firebase) return;
         setModelsError(null);
 
         const pickDefaultModel = (models: AIModel[]) => {
@@ -715,8 +745,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             });
         };
 
-        const orderedQuery = query(collection(db, 'models'), orderBy('order', 'asc'), limit(30));
-        const fallbackQuery = query(collection(db, 'models'), limit(30));
+        const orderedQuery = firebase.query(firebase.collection(firebase.db, 'models'), firebase.orderBy('order', 'asc'), firebase.limit(30));
+        const fallbackQuery = firebase.query(firebase.collection(firebase.db, 'models'), firebase.limit(30));
 
         let activeUnsub: (() => void) | null = null;
         let stopped = false;
@@ -726,7 +756,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             const msg = (previousError as any)?.message ? String((previousError as any).message) : 'Failed to load styles.';
             setModelsError(msg);
 
-            activeUnsub = onSnapshot(
+            activeUnsub = firebase.onSnapshot(
                 fallbackQuery,
                 snap => {
                     const models = snap.docs
@@ -747,7 +777,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             );
         };
 
-        activeUnsub = onSnapshot(
+        activeUnsub = firebase.onSnapshot(
             orderedQuery,
             snap => {
                 const models = snap.docs
@@ -772,10 +802,14 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             stopped = true;
             if (activeUnsub) activeUnsub();
         };
-    }, []);
+    }, [firebase]);
 
     useEffect(() => {
         const uid = currentUser?.uid;
+        if (!firebase) {
+            if (!uid) setHistory([]);
+            return;
+        }
         if (!uid) { setHistory([]); return; }
 
         // Boost perceived speed: instantly restore history from cache
@@ -796,17 +830,17 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         const mapDocs = (docs: { id: string; data: () => Record<string, unknown> }[]) =>
             docs.map(d => ({ id: d.id, ...d.data() } as Record<string, unknown> & { id: string }));
 
-        const orderedQuery = query(
-            collection(db, 'images'),
-            where('userId', '==', uid),
-            orderBy('createdAt', 'desc'),
-            limit(50)
+        const orderedQuery = firebase.query(
+            firebase.collection(firebase.db, 'images'),
+            firebase.where('userId', '==', uid),
+            firebase.orderBy('createdAt', 'desc'),
+            firebase.limit(50)
         );
 
-        const fallbackQuery = query(
-            collection(db, 'images'),
-            where('userId', '==', uid),
-            limit(50)
+        const fallbackQuery = firebase.query(
+            firebase.collection(firebase.db, 'images'),
+            firebase.where('userId', '==', uid),
+            firebase.limit(50)
         );
 
         const startFallback = () => {
@@ -814,7 +848,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             usingFallback = true;
             primaryUnsub?.();
             primaryUnsub = null;
-            fallbackUnsub = onSnapshot(
+            fallbackUnsub = firebase.onSnapshot(
                 fallbackQuery,
                 snap => {
                     const items = mapDocs(snap.docs).sort(
@@ -830,7 +864,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             );
         };
 
-        primaryUnsub = onSnapshot(
+        primaryUnsub = firebase.onSnapshot(
             orderedQuery,
             snap => {
                 if (usingFallback) return;
@@ -848,20 +882,21 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             primaryUnsub?.();
             fallbackUnsub?.();
         };
-    }, [currentUser?.uid]);
+    }, [currentUser?.uid, firebase]);
 
     const upsertUserProfile = async (
         uid: string,
         fields: Record<string, unknown>,
         initializeIfMissing?: Record<string, unknown>
     ) => {
-        const userRef = doc(db, 'users', uid);
-        const existing = await getDoc(userRef);
+        const runtime = firebase ?? await loadFirebaseRuntime();
+        const userRef = runtime.doc(runtime.db, 'users', uid);
+        const existing = await runtime.getDoc(userRef);
         if (!existing.exists() && initializeIfMissing) {
-            await setDoc(userRef, { ...initializeIfMissing, ...fields }, { merge: true });
+            await runtime.setDoc(userRef, { ...initializeIfMissing, ...fields }, { merge: true });
             return;
         }
-        await setDoc(userRef, fields, { merge: true });
+        await runtime.setDoc(userRef, fields, { merge: true });
     };
 
     // Listen for incoming deep link authentication handovers
@@ -880,21 +915,21 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 
                 if (idToken) {
                     addToast("Web sync session detected. Syncing account...", "loading", "deeplink-auth");
-                    
-                    const credential = GoogleAuthProvider.credential(idToken);
-                    const res = await signInWithCredential(auth, credential);
+                    const runtime = firebase ?? await loadFirebaseRuntime();
+                    const credential = runtime.GoogleAuthProvider.credential(idToken);
+                    const res = await runtime.signInWithCredential(runtime.auth, credential);
                     
                     if (res.user) {
                         await upsertUserProfile(
                             res.user.uid,
                             {
                                 email: res.user.email,
-                                lastLogin: serverTimestamp(),
+                                lastLogin: runtime.serverTimestamp(),
                                 platform: 'electron',
                             },
                             {
                                 email: res.user.email,
-                                createdAt: serverTimestamp(),
+                                createdAt: runtime.serverTimestamp(),
                                 platform: 'electron',
                                 tier: 'free',
                                 zaps: 10,
@@ -924,12 +959,16 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         return () => {
             unsub();
         };
-    }, [addToast]);
+    }, [addToast, firebase]);
 
-    const login = (email: string, pass: string) => signInWithEmailAndPassword(auth, email, pass).then(() => {});
+    const login = async (email: string, pass: string) => {
+        const runtime = firebase ?? await loadFirebaseRuntime();
+        await runtime.signInWithEmailAndPassword(runtime.auth, email, pass);
+    };
     
     const signup = async (email: string, pass: string, birthday: string) => {
-        const res = await createUserWithEmailAndPassword(auth, email, pass);
+        const runtime = firebase ?? await loadFirebaseRuntime();
+        const res = await runtime.createUserWithEmailAndPassword(runtime.auth, email, pass);
         if (res.user) {
             // Explicit initialization call to ensure backend consistency
             try {
@@ -941,10 +980,10 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             } catch (err) {
                 console.error('[Lite] User initialization failed:', err);
                 // Fallback to local set if API fails (but JIT will catch it later anyway)
-                await setDoc(doc(db, 'users', res.user.uid), {
+                await runtime.setDoc(runtime.doc(runtime.db, 'users', res.user.uid), {
                     email,
                     birthday,
-                    createdAt: serverTimestamp(),
+                    createdAt: runtime.serverTimestamp(),
                     tier: 'free',
                     zaps: 10
                 }, { merge: true });
@@ -952,7 +991,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const logout = () => {
+    const logout = async () => {
+        const runtime = firebase ?? await loadFirebaseRuntime();
         generationSessionRef.current?.();
         generatingRef.current = false;
         clearPending();
@@ -961,7 +1001,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         setLocalHistory([]);
         completionClaimRef.current = null;
         resumeSessionIdRef.current = null;
-        return signOut(auth).then(() => { toast.success("Safe travels."); });
+        await runtime.signOut(runtime.auth);
+        toast.success("Safe travels.");
     };
 
     const loginWithGoogle = async () => {
@@ -982,20 +1023,21 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 if (!idToken) throw new Error("The identity portal returned an incomplete response. Please try again.");
 
                 console.log("[Lite Auth] Creating Firebase credential...");
-                const credential = GoogleAuthProvider.credential(idToken, accessToken || undefined);
-                const res = await signInWithCredential(auth, credential);
+                const runtime = firebase ?? await loadFirebaseRuntime();
+                const credential = runtime.GoogleAuthProvider.credential(idToken, accessToken || undefined);
+                const res = await runtime.signInWithCredential(runtime.auth, credential);
 
                 if (res.user) {
                     await upsertUserProfile(
                         res.user.uid,
                         {
                             email: res.user.email,
-                            lastLogin: serverTimestamp(),
+                            lastLogin: runtime.serverTimestamp(),
                             platform: 'electron',
                         },
                         {
                             email: res.user.email,
-                            createdAt: serverTimestamp(),
+                            createdAt: runtime.serverTimestamp(),
                             platform: 'electron',
                             tier: 'free',
                             zaps: 10,
@@ -1004,18 +1046,19 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                     addToast(`Welcome back, ${res.user.displayName?.split(' ')[0]}`, "success", "google-auth");
                 }
             } else {
-                const provider = new GoogleAuthProvider();
-                const res = await signInWithPopup(auth, provider);
+                const runtime = firebase ?? await loadFirebaseRuntime();
+                const provider = new runtime.GoogleAuthProvider();
+                const res = await runtime.signInWithPopup(runtime.auth, provider);
                 if (res.user) {
                     await upsertUserProfile(
                         res.user.uid,
                         {
                             email: res.user.email,
-                            lastLogin: serverTimestamp(),
+                            lastLogin: runtime.serverTimestamp(),
                         },
                         {
                             email: res.user.email,
-                            createdAt: serverTimestamp(),
+                            createdAt: runtime.serverTimestamp(),
                             tier: 'free',
                             zaps: 10,
                         }
@@ -1036,14 +1079,16 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         return 0.5;
     };
 
-    const generate = useCallback((prompt: string, params: any = {}): Promise<boolean> => {
+    const generate = useCallback(async (prompt: string, params: any = {}): Promise<boolean> => {
         const cleanPrompt = prompt?.trim();
         if (!cleanPrompt) return Promise.resolve(false);
         if (generatingRef.current) return Promise.resolve(false);
         if (isOffline) { toast.error("The garden requires a connection to bloom."); return Promise.resolve(false); }
 
-        const uid = auth.currentUser?.uid;
+        const runtime = firebase ?? await loadFirebaseRuntime();
+        const uid = runtime.auth.currentUser?.uid;
         if (!uid || !selectedModel) { toast.error("Identity unknown. Please sign in."); return Promise.resolve(false); }
+        const { attachGenerationSession } = await loadGenerationSession();
 
         const existingPending = loadPendingGeneration(uid);
         if (existingPending) {
@@ -1172,7 +1217,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 commitPendingToLocalState(entry, requestId);
                 setConsecutiveFailures(0);
                 try {
-                    const userSnap = await getDoc(doc(db, 'users', uid));
+                    const userSnap = await runtime.getDoc(runtime.doc(runtime.db, 'users', uid));
                     if (userSnap.exists()) {
                         const userData = userSnap.data();
                         setZaps(userData.zaps ?? (userData.tier === 'pro' || userData.tier === 'architect' ? 'unlimited' : 10));
@@ -1220,7 +1265,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             }, 120000)
         );
 
-        jobUnsub = attachGenerationSession(db, {
+        jobUnsub = attachGenerationSession(runtime.db, {
             requestId,
             startedAt,
             initialProgressFloor: progressFloor,
@@ -1293,7 +1338,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             failGeneration(parseCallableError(err));
         });
         });
-    }, [currentUser?.uid, selectedModel, isOffline, loadLocal, cooldownUntil, userTier, zaps, resetGenerationUi, clearPending, savePending, commitPendingToLocalState]);
+    }, [currentUser?.uid, selectedModel, isOffline, loadLocal, cooldownUntil, userTier, zaps, resetGenerationUi, clearPending, savePending, commitPendingToLocalState, firebase]);
 
     return (
         <LiteContext.Provider value={{ 
