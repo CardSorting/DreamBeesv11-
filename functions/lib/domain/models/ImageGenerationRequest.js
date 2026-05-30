@@ -4,6 +4,7 @@
  * No I/O, no external dependencies
  */
 import { isValidModelId } from '../../lib/modelConventions.js';
+export const DEFAULT_ASPECT_RATIO = '4:5';
 export class ImageGenerationRequest {
     initiatorUid;
     requestorUid;
@@ -51,7 +52,7 @@ export class ImageGenerationRequest {
         const sanitizedNegativePrompt = sanitizePrompt(negative_prompt);
         return new ImageGenerationRequest(initiator, // Cost/billing tracks to initiator
         realRequestor, // Actual user executing
-        sanitizedPrompt, sanitizedNegativePrompt, modelId || "wai-illustrious", aspectRatio || "1:1", parseInt(steps) || 30, parseFloat(cfg) || 7.0, parseInt(seed) || -1, scheduler || 'DPM++ 2M Karras', idempotencyKey, targetUserId);
+        sanitizedPrompt, sanitizedNegativePrompt, modelId || "wai-illustrious", aspectRatio || DEFAULT_ASPECT_RATIO, parseInt(steps) || 30, parseFloat(cfg) || 7.0, parseInt(seed) || -1, scheduler || 'DPM++ 2M Karras', idempotencyKey, targetUserId);
     }
     /**
      * Validate request adheres to business rules
@@ -156,7 +157,7 @@ export var Sanitizer;
 (function (Sanitizer) {
     Sanitizer.VALID_ASPECT_RATIOS = ['1:1', '4:5', '5:4', '3:4', '4:3', '2:3', '3:2', '9:16', '16:9'];
     function validateAspectRatio(ar) {
-        return Sanitizer.VALID_ASPECT_RATIOS.includes(ar) ? ar : '1:1';
+        return Sanitizer.VALID_ASPECT_RATIOS.includes(ar) ? ar : DEFAULT_ASPECT_RATIO;
     }
     Sanitizer.validateAspectRatio = validateAspectRatio;
     function toNormalizedDimensions(aspectRatio) {
@@ -171,7 +172,7 @@ export var Sanitizer;
             '9:16': { width: 768, height: 1344 },
             '16:9': { width: 1344, height: 768 }
         };
-        return map[aspectRatio] || map['1:1'];
+        return map[aspectRatio] || map[DEFAULT_ASPECT_RATIO];
     }
     Sanitizer.toNormalizedDimensions = toNormalizedDimensions;
     function isValidAspectRatio(ar) {

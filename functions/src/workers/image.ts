@@ -5,7 +5,7 @@ import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
 import { isValidModelId } from "../lib/modelConventions.js";
 import { ForensicLogger } from "../lib/forensics.js";
 import { SubstrateHealth } from "../lib/substrateHealth.js";
-import { Sanitizer } from "../domain/models/ImageGenerationRequest.js";
+import { DEFAULT_ASPECT_RATIO, Sanitizer } from "../domain/models/ImageGenerationRequest.js";
 
 type ModelPollResult =
     | { kind: 'pending' }
@@ -125,7 +125,7 @@ async function parseModelPollResponse(res: Response): Promise<ModelPollResult> {
 export const processImageTask = async (req: { data: any }): Promise<void> => {
     const {
         requestId, userId, modelId, negative_prompt,
-        steps = 30, cfg = 7, aspectRatio = '1:1',
+        steps = 30, cfg = 7, aspectRatio = DEFAULT_ASPECT_RATIO,
         scheduler, promptHash, promptMetadata
     } = req.data;
 

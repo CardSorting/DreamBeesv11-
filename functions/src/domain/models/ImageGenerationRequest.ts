@@ -6,6 +6,8 @@
 
 import { MODEL_IDS, isValidModelId } from '../../lib/modelConventions.js';
 
+export const DEFAULT_ASPECT_RATIO = '4:5';
+
 export class ImageGenerationRequest {
   constructor(
     public readonly initiatorUid: string,
@@ -50,7 +52,7 @@ export class ImageGenerationRequest {
       sanitizedPrompt,
       sanitizedNegativePrompt,
       modelId || "wai-illustrious",
-      aspectRatio || "1:1",
+      aspectRatio || DEFAULT_ASPECT_RATIO,
       parseInt(steps) || 30,
       parseFloat(cfg) || 7.0,
       parseInt(seed) || -1,
@@ -173,7 +175,7 @@ export namespace Sanitizer {
   export const VALID_ASPECT_RATIOS = ['1:1', '4:5', '5:4', '3:4', '4:3', '2:3', '3:2', '9:16', '16:9'];
 
   export function validateAspectRatio(ar: string): string {
-    return VALID_ASPECT_RATIOS.includes(ar) ? ar : '1:1';
+    return VALID_ASPECT_RATIOS.includes(ar) ? ar : DEFAULT_ASPECT_RATIO;
   }
 
   export function toNormalizedDimensions(aspectRatio: string): { width: number, height: number } {
@@ -188,7 +190,7 @@ export namespace Sanitizer {
       '9:16': { width: 768, height: 1344 },
       '16:9': { width: 1344, height: 768 }
     };
-    return map[aspectRatio] || map['1:1'];
+    return map[aspectRatio] || map[DEFAULT_ASPECT_RATIO];
   }
 
   export function isValidAspectRatio(ar: string): boolean {

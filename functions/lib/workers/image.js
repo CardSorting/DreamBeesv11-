@@ -5,7 +5,7 @@ import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
 import { isValidModelId } from "../lib/modelConventions.js";
 import { ForensicLogger } from "../lib/forensics.js";
 import { SubstrateHealth } from "../lib/substrateHealth.js";
-import { Sanitizer } from "../domain/models/ImageGenerationRequest.js";
+import { DEFAULT_ASPECT_RATIO, Sanitizer } from "../domain/models/ImageGenerationRequest.js";
 function findImagePayload(value) {
     if (!value)
         return null;
@@ -102,7 +102,7 @@ async function parseModelPollResponse(res) {
  * Main worker for image generation tasks
  */
 export const processImageTask = async (req) => {
-    const { requestId, userId, modelId, negative_prompt, steps = 30, cfg = 7, aspectRatio = '1:1', scheduler, promptHash, promptMetadata } = req.data;
+    const { requestId, userId, modelId, negative_prompt, steps = 30, cfg = 7, aspectRatio = DEFAULT_ASPECT_RATIO, scheduler, promptHash, promptMetadata } = req.data;
     let prompt = req.data.prompt;
     if (prompt && prompt.length > 1500) {
         prompt = prompt.substring(0, 1500);

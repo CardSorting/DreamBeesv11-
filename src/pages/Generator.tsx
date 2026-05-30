@@ -123,6 +123,30 @@ export default function Generator() {
     }
   };
 
+  const handleRatioKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, current: AspectRatio) => {
+    const currentIndex = aspectRatioOptions.findIndex((option) => option.value === current);
+    if (currentIndex < 0) return;
+
+    let nextIndex: number | null = null;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      nextIndex = (currentIndex + 1) % aspectRatioOptions.length;
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      nextIndex = (currentIndex - 1 + aspectRatioOptions.length) % aspectRatioOptions.length;
+    } else if (e.key === 'Home') {
+      nextIndex = 0;
+    } else if (e.key === 'End') {
+      nextIndex = aspectRatioOptions.length - 1;
+    }
+
+    if (nextIndex === null) return;
+    e.preventDefault();
+    const next = aspectRatioOptions[nextIndex].value;
+    handleAspectRatioChange(next);
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLButtonElement>(`[data-ratio="${next}"]`)?.focus();
+    });
+  };
+
   useEffect(() => {
     const handleKeys = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleGenerate();
@@ -191,14 +215,18 @@ export default function Generator() {
                 <span>Picture shape</span>
                 <span>{selectedRatioOption.useCase}</span>
               </div>
-              <div className="ratio-grid" aria-label="Image shape">
+              <div className="ratio-grid" role="radiogroup" aria-label="Image shape">
                 {aspectRatioOptions.map((option) => (
                   <button
                     type="button"
+                    role="radio"
                     key={option.value}
                     className={option.value === aspectRatio ? 'active' : ''}
                     onClick={() => handleAspectRatioChange(option.value)}
-                    aria-pressed={option.value === aspectRatio}
+                    onKeyDown={(e) => handleRatioKeyDown(e, option.value)}
+                    aria-checked={option.value === aspectRatio}
+                    tabIndex={option.value === aspectRatio ? 0 : -1}
+                    data-ratio={option.value}
                   >
                     <span className="ratio-swatch" style={{ aspectRatio: toCssAspectRatio(option.value) }} aria-hidden />
                     <span className="ratio-copy">

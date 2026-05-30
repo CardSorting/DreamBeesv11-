@@ -1,6 +1,7 @@
 import { HttpsError } from "firebase-functions/v2/https";
 import { db, FieldValue, getFunctions } from "../firebaseInit.js";
 import { handleError, logger } from "../lib/utils.js";
+import { DEFAULT_ASPECT_RATIO } from "../domain/models/ImageGenerationRequest.js";
 // Core orchestration layer
 import { ImageGenerationOrchestrator } from "../core/ImageGenerationOrchestrator.js";
 /**
@@ -112,7 +113,7 @@ async function enqueueGenerationTask(requestId, ctx, userId) {
         modelId: modelId || "wai-illustrious",
         steps: steps || 30,
         cfg: cfg || 7.0,
-        aspectRatio: aspectRatio || "1:1",
+        aspectRatio: aspectRatio || DEFAULT_ASPECT_RATIO,
         scheduler: scheduler || 'DPM++ 2M Karras'
     };
     const LOCATION = "us-central1";
