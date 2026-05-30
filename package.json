@@ -3,7 +3,7 @@
   "private": true,
   "description": "DreamBees Lite desktop app",
   "author": "DreamBeesAI",
-  "version": "1.4.11",
+  "version": "1.4.12",
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
@@ -60,6 +60,7 @@
   "build": {
     "appId": "com.dreambees.lite",
     "productName": "DreamBees Lite",
+    "artifactName": "DreamBees-Lite-${version}-${arch}.${ext}",
     "directories": {
       "output": "release"
     },
