@@ -31,6 +31,7 @@
     background: radial-gradient(circle, rgba(139, 92, 246, 0.3), transparent 70%);
     top: -100px;
     right: -100px;
+    animation: mesh-drift-one 20s ease-in-out infinite;
 }
 
 .mesh-2 {
@@ -39,6 +40,7 @@
     background: radial-gradient(circle, rgba(245, 158, 11, 0.2), transparent 70%);
     bottom: -100px;
     left: -100px;
+    animation: mesh-drift-two 25s ease-in-out 2s infinite;
 }
 
 .mesh-3 {
@@ -47,6 +49,7 @@
     background: radial-gradient(circle, rgba(168, 85, 247, 0.15), transparent 70%);
     top: 40%;
     left: 20%;
+    animation: mesh-breathe 15s ease-in-out infinite;
 }
 
 .auth-jewel-card {
@@ -59,7 +62,19 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
     overflow: hidden;
     contain: layout style paint;
+    animation: auth-card-in 0.55s cubic-bezier(0.23, 1, 0.32, 1) both;
 }
+
+.auth-reveal {
+    animation: auth-item-in 0.45s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+.reveal-delay-1 { animation-delay: 50ms; }
+.reveal-delay-2 { animation-delay: 90ms; }
+.reveal-delay-3 { animation-delay: 130ms; }
+.reveal-delay-4 { animation-delay: 170ms; }
+.reveal-delay-5 { animation-delay: 210ms; }
+.reveal-delay-6 { animation-delay: 250ms; }
 
 .auth-header {
     text-align: center;
@@ -81,6 +96,7 @@
     inset: -10px;
     border: 1px dashed rgba(139, 92, 246, 0.3);
     border-radius: 50%;
+    animation: spin 20s linear infinite;
 }
 
 .ring-sparkle {
@@ -132,6 +148,10 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+.signup-field {
+    animation: auth-item-in 0.28s cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
 .field-group label {
@@ -243,9 +263,13 @@ input::placeholder {
 }
 
 .google-jewel-btn:hover {
-    transform: translateY(-2px);
+    transform: translateY(-2px) scale(1.02);
     background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.2);
+}
+
+.google-jewel-btn:active {
+    transform: translateY(0) scale(0.98);
 }
 
 .creator-trust {
@@ -355,5 +379,56 @@ input::placeholder {
     }
     to {
         transform: rotate(360deg);
+    }
+}
+
+@keyframes auth-card-in {
+    from {
+        opacity: 0;
+        transform: translateY(28px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes auth-item-in {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes mesh-drift-one {
+    50% {
+        transform: translate(100px, -50px);
+    }
+}
+
+@keyframes mesh-drift-two {
+    50% {
+        transform: translate(-80px, 60px);
+    }
+}
+
+@keyframes mesh-breathe {
+    50% {
+        transform: scale(1.2);
+        opacity: 0.2;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .auth-jewel-card,
+    .auth-reveal,
+    .signup-field,
+    .mesh-ball,
+    .orb-ring {
+        animation: none;
     }
 }

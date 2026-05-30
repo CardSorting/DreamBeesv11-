@@ -6,10 +6,10 @@ import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { useLite } from '../contexts/LiteContext';
 import RouteErrorBoundary from './RouteError';
 import { lazyRetry } from '../lite-utils';
+import ModelFeed from '../pages/ModelFeed';
 import './AnimatedRoutes.css';
 
 // Core LITE Pages
-const ModelFeed = lazyRetry(() => import('../pages/ModelFeed'));
 const Auth = lazyRetry(() => import('../pages/Auth'));
 const Generator = lazyRetry(() => import('../pages/Generator'));
 const UserProfile = lazyRetry(() => import('../pages/UserProfile'));

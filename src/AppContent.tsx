@@ -8,7 +8,7 @@ const LazyToaster = React.lazy(() =>
 );
 
 export default function AppContent() {
-  const { sidebarCollapsed } = useLite();
+  const { sidebarCollapsed, currentUser } = useLite();
   const [showToaster, setShowToaster] = useState(false);
 
   useEffect(() => {
@@ -24,6 +24,28 @@ export default function AppContent() {
     const timer = globalThis.setTimeout(load, 1200);
     return () => globalThis.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    const prefetchRoutes = () => {
+      void import('./pages/Generator');
+      if (currentUser) {
+        void import('./pages/UserProfile');
+      } else {
+        void import('./pages/Auth');
+      }
+    };
+
+    const requestIdle = window.requestIdleCallback;
+    const cancelIdle = window.cancelIdleCallback;
+
+    if (typeof requestIdle === 'function' && typeof cancelIdle === 'function') {
+      const idleId = requestIdle(prefetchRoutes, { timeout: 2500 });
+      return () => cancelIdle(idleId);
+    }
+
+    const timer = globalThis.setTimeout(prefetchRoutes, 1800);
+    return () => globalThis.clearTimeout(timer);
+  }, [currentUser]);
 
   return (
     <div className={`app-container ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>

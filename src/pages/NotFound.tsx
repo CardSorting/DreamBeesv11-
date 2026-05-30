@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { IconHome, IconZap } from '../icons';
 import './NotFound.css';
@@ -12,11 +11,7 @@ export default function NotFound() {
                 <div className="mesh-ball mesh-2"></div>
             </div>
 
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="notfound-card glass-warm"
-            >
+            <div className="notfound-card glass-warm">
                 <div className="icon-box-glow">
                     <IconZap size={48} fill="#8b5cf6" />
                 </div>
@@ -27,7 +22,7 @@ export default function NotFound() {
                     <IconHome size={20} />
                     <span>Return to Studio</span>
                 </Link>
-            </motion.div>
+            </div>
         </div>
     );
 }

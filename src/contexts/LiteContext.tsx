@@ -263,7 +263,18 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             });
         };
 
-        const timer = globalThis.setTimeout(load, 250);
+        const requestIdle = window.requestIdleCallback;
+        const cancelIdle = window.cancelIdleCallback;
+
+        if (typeof requestIdle === 'function' && typeof cancelIdle === 'function') {
+            const idleId = requestIdle(load, { timeout: 1800 });
+            return () => {
+                cancelled = true;
+                cancelIdle(idleId);
+            };
+        }
+
+        const timer = globalThis.setTimeout(load, 900);
         return () => {
             cancelled = true;
             globalThis.clearTimeout(timer);

@@ -132,7 +132,6 @@ export default function Generator() {
               to="/" 
               className="style-row" 
               aria-label="Choose style"
-              onMouseEnter={() => import('./ModelFeed')}
             >
               <IconMagic size={18} />
               <span className="style-row-label">Style</span>

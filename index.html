@@ -6,18 +6,14 @@
 
   <link rel="preconnect" href="https://cdn.dreambeesai.com" crossorigin />
   <link rel="dns-prefetch" href="https://cdn.dreambeesai.com" />
-  <link rel="preconnect" href="https://firebasestorage.googleapis.com" crossorigin />
-  <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="dns-prefetch" href="https://fonts.googleapis.com">
   <link rel="dns-prefetch" href="https://fonts.gstatic.com">
   <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com">
+  <link rel="dns-prefetch" href="https://firestore.googleapis.com">
   <link rel="preload" as="image" href="/models/nova-furry-xl.jpg" fetchpriority="high" />
   <link rel="preload" as="image" href="/models/scyrax-pastel.jpg" fetchpriority="high" />
   <link rel="prefetch" as="image" href="/models/ani-detox.jpg" />
   <link rel="prefetch" as="image" href="/models/wai-illustrious.jpg" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
   <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" /></noscript>
   <link rel="icon" type="image/png" href="/dreambees_icon.png" />
   <link rel="manifest" href="/manifest.json" />
@@ -107,6 +103,15 @@
   </style>
   <script>
     (function () {
+      var loadFonts = function () {
+        if (document.querySelector('link[data-dreambees-fonts]')) return;
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
+        link.dataset.dreambeesFonts = 'true';
+        document.head.appendChild(link);
+      };
+
       window.dataLayer = window.dataLayer || [];
       window.gtag = function gtag() { dataLayer.push(arguments); };
 
@@ -121,8 +126,10 @@
 
       var schedule = function () {
         if ('requestIdleCallback' in window) {
+          window.requestIdleCallback(loadFonts, { timeout: 1800 });
           window.requestIdleCallback(loadAnalytics, { timeout: 2500 });
         } else {
+          window.setTimeout(loadFonts, 900);
           window.setTimeout(loadAnalytics, 1500);
         }
       };

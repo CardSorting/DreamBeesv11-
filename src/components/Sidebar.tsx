@@ -72,7 +72,6 @@ export default function Sidebar() {
                     to="/" 
                     className={({ isActive }) => `side-nav-item ${isActive ? 'active' : ''}`} 
                     data-tooltip="Explore Styles"
-                    onMouseEnter={() => import('../pages/ModelFeed')}
                 >
                     <IconHome size={20} />
                     <span className="nav-label">Explore Styles</span>
