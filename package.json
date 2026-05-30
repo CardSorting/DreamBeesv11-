@@ -99,21 +99,23 @@
       }
     },
     "dmg": {
-      "backgroundColor": "#09090b",
+      "background": "electron/assets/dmg-background.png",
+      "iconSize": 96,
+      "iconTextSize": 13,
       "window": {
-        "width": 540,
-        "height": 380
+        "width": 660,
+        "height": 420
       },
       "contents": [
         {
-          "x": 410,
-          "y": 150,
+          "x": 505,
+          "y": 230,
           "type": "link",
           "path": "/Applications"
         },
         {
-          "x": 130,
-          "y": 150,
+          "x": 155,
+          "y": 230,
           "type": "file"
         }
       ],
