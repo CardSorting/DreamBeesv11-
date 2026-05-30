@@ -78,9 +78,9 @@ const MODELS = [
         type: 'Image',
         order: 18,
         isActive: true,
-        image: 'models/anima.png',
-        thumbnail: 'models/anima.png',
-        previewImages: ['models/anima.png']
+        image: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/anima.png',
+        thumbnail: 'https://cdn.dreambeesai.com/file/printeregg/assets/models/anima.png',
+        previewImages: ['https://cdn.dreambeesai.com/file/printeregg/assets/models/anima.png']
     },
     {
         id: 'crystal-cuteness',
