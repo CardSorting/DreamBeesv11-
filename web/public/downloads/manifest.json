@@ -1,13 +1,13 @@
 {
-  "version": "1.4.13",
-  "generatedAt": "2026-05-30T22:03:02.474Z",
+  "version": "1.4.14",
+  "generatedAt": "2026-05-30T22:16:44.835Z",
   "files": {
     "mac": {
       "stable": "/downloads/dreambees-lite-mac.dmg",
-      "versioned": "/downloads/dreambees-lite-1.4.13-mac.dmg",
-      "sourceFile": "DreamBees-Lite-1.4.13-arm64.dmg",
-      "sizeBytes": 149857413,
-      "sha256": "26176f15fa187108227f10971ab851dd72bc9edf4b612c1a51e3484284cc6146"
+      "versioned": "/downloads/dreambees-lite-1.4.14-mac.dmg",
+      "sourceFile": "DreamBees-Lite-1.4.14-arm64.dmg",
+      "sizeBytes": 149857283,
+      "sha256": "e91642127a1b760550bb9cced50d3dfce3733411e34b5766fdb8b1e89d6c1f30"
     }
   }
 }

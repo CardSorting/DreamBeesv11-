@@ -5,6 +5,7 @@
 import React, { useEffect, useState } from 'react';
 import { IconDownload, IconShare, IconZap, IconText } from '@/icons';
 import { downloadImage, formatDuration, getOptimizedImageUrl } from '@/lite-utils';
+import { toCssAspectRatio } from '@/lib/aspectRatios';
 import type { GenerationDetail } from '@/domain/models/GenerationDetail';
 
 interface ImmersiveHeroProps {
@@ -24,6 +25,7 @@ export default function ImmersiveHero({
     const primary = generation.imageUrl;
     const lowRes = getOptimizedImageUrl(preview || primary) || preview || primary;
     const highRes = getOptimizedImageUrl(primary) || primary;
+    const aspectRatio = toCssAspectRatio(generation.parameters?.size);
 
     const [imgSrc, setImgSrc] = useState(lowRes);
     const [isHighResLoaded, setIsHighResLoaded] = useState(false);
@@ -74,7 +76,7 @@ export default function ImmersiveHero({
     return (
         <div className="immersive-hero">
             {/* Image container with generation time badge */}
-            <div className="hero-image-container">
+            <div className="hero-image-container" style={{ aspectRatio }}>
                 <div className="generation-time-badge">
                     <IconZap size={12} />
                     <span>{formatDuration(generation.generationTime || 0)}</span>

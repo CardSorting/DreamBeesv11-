@@ -26,6 +26,7 @@ import {
     smoothIdleProgress,
     toHistoryTimestamp,
 } from '../lib/generationFlow';
+import { normalizeAspectRatio } from '../lib/aspectRatios';
 import toast from '../utils/lazyToast';
 import { getFirebaseClient, getFunctionsInstance } from '../firebaseLazy';
 import type { User } from 'firebase/auth';
@@ -137,6 +138,12 @@ const GENERATION_MODEL_TYPES = new Set(['sdxl', 'generator', 'image']);
 const MODEL_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const CLOUD_HISTORY_CACHE_TTL_MS = 2 * 60 * 1000;
 
+type ActiveGeneration = {
+    requestId: string;
+    prompt: string;
+    aspectRatio?: string;
+};
+
 const isClientGenerationModel = (model: AIModel) => {
     const type = typeof model.type === 'string' ? model.type.toLowerCase() : 'sdxl';
     return model.isActive !== false && GENERATION_MODEL_TYPES.has(type);
@@ -183,7 +190,7 @@ interface LiteContextType {
     generationStage: GenerationStage;
     generationProgress: number;
     generationPreviewUrl: string | null;
-    activeGeneration: { requestId: string; prompt: string } | null;
+    activeGeneration: ActiveGeneration | null;
     pendingGeneration: PendingGeneration | null;
     generateStartTime: number | undefined;
     generate: (prompt: string, params?: any) => Promise<boolean>;
@@ -262,7 +269,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     const [generationStage, setGenerationStage] = useState<GenerationStage>('idle');
     const [generationProgress, setGenerationProgress] = useState(0);
     const [generationPreviewUrl, setGenerationPreviewUrl] = useState<string | null>(null);
-    const [activeGeneration, setActiveGeneration] = useState<{ requestId: string; prompt: string } | null>(null);
+    const [activeGeneration, setActiveGeneration] = useState<ActiveGeneration | null>(null);
     const generationSessionRef = useRef<(() => void) | null>(null);
     const generatingRef = useRef(false);
     const prevUidRef = useRef<string | undefined>(undefined);
@@ -609,6 +616,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                     imageUrl,
                     userId: uid,
                     firestoreImageId,
+                    params: pending.aspectRatio ? { aspectRatio: pending.aspectRatio } : undefined,
                 });
                 if (!entry) {
                     if (!cancelled) {
@@ -658,7 +666,11 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             setGenerating(true);
             setGenerationStage('processing');
             setGenerationProgress(40);
-            setActiveGeneration({ requestId: pending.requestId, prompt: pending.prompt });
+            setActiveGeneration({
+                requestId: pending.requestId,
+                prompt: pending.prompt,
+                aspectRatio: pending.aspectRatio,
+            });
             setGenerateStartTime(pending.startedAt);
             toast.loading('Checking on your picture…', { id: pending.requestId });
 
@@ -1163,6 +1175,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         };
 
         generatingRef.current = true;
+        const requestAspectRatio = normalizeAspectRatio(params?.aspectRatio);
+        const requestParams = { ...params, aspectRatio: requestAspectRatio };
         const estimatedCost = calculateEstimatedCost(selectedModel.id, userTier);
         const requestId = `gen_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
         const startedAt = Date.now();
@@ -1174,13 +1188,14 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         setGenerationStage('submitting');
         setGenerationProgress(10);
         setGenerationPreviewUrl(null);
-        setActiveGeneration({ requestId, prompt: cleanPrompt });
+        setActiveGeneration({ requestId, prompt: cleanPrompt, aspectRatio: requestAspectRatio });
         setGenerateStartTime(startedAt);
         savePending({
             requestId,
             prompt: cleanPrompt,
             startedAt,
             userId: uid,
+            aspectRatio: requestAspectRatio,
         });
         toast.loading(messageForStage('submitting'), { id: requestId });
 
@@ -1245,7 +1260,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                     imageUrl: data.imageUrl,
                     userId: uid,
                     modelId: selectedModel.id,
-                    params,
+                    params: requestParams,
                     firestoreImageId: data.firestoreImageId,
                 });
                 if (!entry) {
@@ -1359,7 +1374,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             prompt: cleanPrompt, 
             modelId: selectedModel.id, 
             requestId, 
-            ...params 
+            ...requestParams 
         })).then(() => {
             if (settled) return;
             apiAccepted = true;

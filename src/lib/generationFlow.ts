@@ -92,6 +92,7 @@ export interface PendingGeneration {
   prompt: string;
   startedAt: number;
   userId?: string;
+  aspectRatio?: string;
 }
 
 export function savePendingGeneration(pending: PendingGeneration): void {
@@ -293,6 +294,10 @@ export function matchesGenerationRoute(
 /** Map profile/history item → detail view model */
 export function mapHistoryItemToDetail(raw: Record<string, unknown>) {
   const params = raw.params as Record<string, unknown> | undefined;
+  const aspectRatio =
+    (raw.aspectRatio as string | undefined) ||
+    (params?.aspectRatio as string | undefined) ||
+    (params?.size as string | undefined);
   const firestoreImageId =
     (raw.firestoreImageId as string | undefined) ||
     (params?.firestoreImageId as string | undefined);
@@ -308,7 +313,7 @@ export function mapHistoryItemToDetail(raw: Record<string, unknown>) {
     parameters: {
       steps: raw.steps as number | undefined,
       guidanceScale: raw.cfg as number | undefined,
-      size: raw.aspectRatio as string | undefined,
+      size: aspectRatio,
     },
     firestoreImageId,
   };
@@ -570,6 +575,7 @@ export async function completePendingFromHistory(
     imageUrl: match.imageUrl,
     userId,
     firestoreImageId: match.firestoreImageId,
+    params: pending.aspectRatio ? { aspectRatio: pending.aspectRatio } : undefined,
   });
 }
 

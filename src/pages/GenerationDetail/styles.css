@@ -83,6 +83,7 @@
 .hero-image-container {
     position: relative;
     aspect-ratio: 16 / 9;
+    max-height: min(78vh, 860px);
     overflow: hidden;
     background: #18181b;
     border-radius: 20px;

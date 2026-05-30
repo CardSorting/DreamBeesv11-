@@ -675,6 +675,144 @@
     background: rgba(139, 92, 246, 0.12);
 }
 
+.ratio-field {
+    border: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.ratio-legend {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.ratio-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.ratio-heading span:first-child {
+    color: white;
+    font-size: 1rem;
+    font-weight: 900;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.ratio-heading span:last-child {
+    min-width: 0;
+    color: var(--color-zinc-500);
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ratio-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.ratio-grid button {
+    position: relative;
+    min-width: 0;
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.15);
+    color: var(--color-zinc-300);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.ratio-grid button:hover,
+.ratio-grid button.active {
+    border-color: rgba(251, 191, 36, 0.5);
+    background: rgba(251, 191, 36, 0.1);
+    color: white;
+}
+
+.ratio-grid button.active {
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.14);
+}
+
+.ratio-swatch {
+    width: 22px;
+    max-height: 34px;
+    min-height: 14px;
+    flex: 0 0 auto;
+    border-radius: 4px;
+    border: 1px solid rgba(251, 191, 36, 0.68);
+    background: rgba(251, 191, 36, 0.18);
+}
+
+.ratio-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    line-height: 1.05;
+}
+
+.ratio-copy span {
+    font-size: 0.78rem;
+    font-weight: 900;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 32px;
+}
+
+.ratio-copy small {
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: var(--color-zinc-500);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ratio-value {
+    position: absolute;
+    right: 8px;
+    top: 7px;
+    color: var(--color-zinc-600);
+    font-size: 0.62rem;
+    font-weight: 900;
+}
+
+.ratio-badge {
+    position: absolute;
+    right: 8px;
+    bottom: 7px;
+    max-width: calc(100% - 16px);
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: rgba(251, 191, 36, 0.16);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.28);
+    font-size: 0.58rem;
+    font-weight: 950;
+    text-transform: uppercase;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .style-row {
     display: flex;
     align-items: center;
@@ -827,6 +965,7 @@
 
 .preview-stage {
     min-height: 340px;
+    max-height: min(72vh, 680px);
     border-radius: 14px;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -839,14 +978,15 @@
 
 .preview-loading {
     width: 100%;
-    min-height: 340px;
+    height: 100%;
+    min-height: inherit;
     position: relative;
 }
 
 .preview-blur, .preview-sharp {
     width: 100%;
-    aspect-ratio: 1;
-    object-fit: cover;
+    height: 100%;
+    object-fit: contain;
     display: block;
     animation: previewReveal 0.5s ease;
 }
@@ -938,13 +1078,17 @@
 .latest-figure {
     margin: 0;
     width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .latest-figure img {
     width: 100%;
-    aspect-ratio: 1;
-    object-fit: cover;
+    min-height: 0;
+    object-fit: contain;
     display: block;
+    flex: 1;
 }
 
 .latest-figure figcaption {
@@ -1023,6 +1167,9 @@
 
 @media (max-width: 620px) {
     .dreamtrail-mode-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .ratio-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .idea-pill {

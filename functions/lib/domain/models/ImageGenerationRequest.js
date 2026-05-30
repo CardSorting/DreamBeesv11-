@@ -154,7 +154,7 @@ export class ImageGenerationRequest {
  */
 export var Sanitizer;
 (function (Sanitizer) {
-    Sanitizer.VALID_ASPECT_RATIOS = ['1:1', '2:3', '3:2', '9:16', '16:9'];
+    Sanitizer.VALID_ASPECT_RATIOS = ['1:1', '4:5', '5:4', '3:4', '4:3', '2:3', '3:2', '9:16', '16:9'];
     function validateAspectRatio(ar) {
         return Sanitizer.VALID_ASPECT_RATIOS.includes(ar) ? ar : '1:1';
     }
@@ -162,6 +162,10 @@ export var Sanitizer;
     function toNormalizedDimensions(aspectRatio) {
         const map = {
             '1:1': { width: 1024, height: 1024 },
+            '4:5': { width: 896, height: 1120 },
+            '5:4': { width: 1120, height: 896 },
+            '3:4': { width: 768, height: 1024 },
+            '4:3': { width: 1024, height: 768 },
             '2:3': { width: 832, height: 1216 },
             '3:2': { width: 1216, height: 832 },
             '9:16': { width: 768, height: 1344 },

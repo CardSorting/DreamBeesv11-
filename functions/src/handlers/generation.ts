@@ -123,7 +123,10 @@ async function enqueueGenerationTask(
   ctx: any,
   userId: string
 ): Promise<void> {
-  const { prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler } = ctx;
+  const queueDoc = await db.collection('generation_queue').doc(requestId).get();
+  const queued = queueDoc.exists ? queueDoc.data() as any : {};
+  const source = { ...ctx, ...queued };
+  const { prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler } = source;
 
   const taskData = {
     taskType: 'image',

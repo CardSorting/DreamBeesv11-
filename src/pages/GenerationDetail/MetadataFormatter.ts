@@ -3,6 +3,13 @@
  */
 
 import type { GenerationDetail } from '../../domain/models/GenerationDetail';
+import { getAspectRatioOption } from '../../lib/aspectRatios';
+
+function formatShape(value?: string): string | null {
+    if (!value) return null;
+    const option = getAspectRatioOption(value);
+    return option ? `${option.label} (${option.value})` : value;
+}
 
 /**
  * Formats generation parameters into a user-friendly string.
@@ -12,8 +19,9 @@ import type { GenerationDetail } from '../../domain/models/GenerationDetail';
 export function formatParameters(generation: GenerationDetail): string {
     const parts: string[] = [];
 
-    if (generation.parameters?.size) {
-        parts.push(`Size: ${generation.parameters.size}`);
+    const shape = formatShape(generation.parameters?.size);
+    if (shape) {
+        parts.push(`Shape: ${shape}`);
     }
 
     if (generation.parameters?.steps) {
@@ -103,6 +111,15 @@ export function getMetadataItems(generation: GenerationDetail) {
             label: 'Generation time',
             value: formatDuration(generation.generationTime),
             type: 'time' as const
+        });
+    }
+
+    const shape = formatShape(generation.parameters?.size);
+    if (shape) {
+        items.push({
+            label: 'Shape',
+            value: shape,
+            type: 'view' as const
         });
     }
 

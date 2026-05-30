@@ -56,6 +56,7 @@ export async function recoverPendingGeneration(
       imageUrl: inHistory.imageUrl,
       userId: uid,
       firestoreImageId: inHistory.firestoreImageId as string | undefined,
+      params: pending.aspectRatio ? { aspectRatio: pending.aspectRatio } : undefined,
     });
     if (!entry) return { status: 'busy' }; // another completion path holds the claim
     return { status: 'complete', entry, pending };
@@ -70,6 +71,7 @@ export async function recoverPendingGeneration(
       imageUrl: probed.payload.imageUrl,
       userId: uid,
       firestoreImageId: probed.payload.firestoreImageId,
+      params: pending.aspectRatio ? { aspectRatio: pending.aspectRatio } : undefined,
     });
     if (!entry) return { status: 'busy' };
     return { status: 'complete', entry, pending };

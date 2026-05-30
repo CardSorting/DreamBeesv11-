@@ -99,7 +99,10 @@ async function enqueueGenerationTaskWithRetry(requestId, ctx, userId) {
  * Help: Enqueue generation task for worker (Infrastructure)
  */
 async function enqueueGenerationTask(requestId, ctx, userId) {
-    const { prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler } = ctx;
+    const queueDoc = await db.collection('generation_queue').doc(requestId).get();
+    const queued = queueDoc.exists ? queueDoc.data() : {};
+    const source = { ...ctx, ...queued };
+    const { prompt, negative_prompt, modelId, steps, cfg, aspectRatio, scheduler } = source;
     const taskData = {
         taskType: 'image',
         requestId,

@@ -8,6 +8,14 @@ import { getOptimizedImageUrl } from '../lite-utils';
 import DreamInput from '../components/DreamInput';
 import PictureThumb from '../components/PictureThumb';
 import PreviewImage from '../components/PreviewImage';
+import {
+  AspectRatio,
+  DEFAULT_ASPECT_RATIO,
+  aspectRatioOptions,
+  getAspectRatioOption,
+  normalizeAspectRatio,
+  toCssAspectRatio,
+} from '../lib/aspectRatios';
 import { formatElapsed, formatPendingTimeRemaining, historyThumbUrl, messageForStage, STAGE_ORDER } from '../lib/generationFlow';
 import { DREAMTRAIL_MODES, DreamTrailMode } from '../lib/dreamtrail';
 import { IconImage, IconLoader, IconMagic, IconZap } from '../icons';
@@ -19,9 +27,15 @@ const quickIdeas = [
   { label: 'Honey jar', prompt: 'A premium honey jar, golden studio light' },
 ] as const;
 
+const getStoredAspectRatio = (): AspectRatio => {
+  if (typeof window === 'undefined') return DEFAULT_ASPECT_RATIO;
+  return normalizeAspectRatio(window.localStorage.getItem('generator_aspect_ratio'));
+};
+
 export default function Generator() {
   const [prompt, setPrompt] = useState('');
   const [dreamTrailMode, setDreamTrailMode] = useState<DreamTrailMode>('balanced');
+  const [aspectRatio, setAspectRatio] = useState<AspectRatio>(getStoredAspectRatio);
 
   const {
     selectedModel, generate, generating, generationStage, generationProgress,
@@ -47,6 +61,16 @@ export default function Generator() {
   const cleanPrompt = prompt.trim();
   const latestImage = displayHistory[0];
   const recentImages = displayHistory.slice(1, 9);
+  const latestAspectRatio =
+    latestImage?.aspectRatio ||
+    latestImage?.params?.aspectRatio ||
+    latestImage?.params?.size;
+  const previewAspectRatio = toCssAspectRatio(
+    activeGeneration?.aspectRatio ||
+      pendingGeneration?.aspectRatio ||
+      (typeof latestAspectRatio === 'string' ? latestAspectRatio : aspectRatio)
+  );
+  const selectedRatioOption = getAspectRatioOption(aspectRatio) || aspectRatioOptions[0];
 
   const hasCredits = zaps === 'unlimited' || zaps > 0;
   const awaitingPending = Boolean(pendingGeneration && !generating);
@@ -88,8 +112,15 @@ export default function Generator() {
     e?.preventDefault();
     if (!canGenerate) return;
     const submitted = cleanPrompt;
-    const ok = await generate(submitted);
+    const ok = await generate(submitted, { aspectRatio });
     if (ok && mountedRef.current) setPrompt('');
+  };
+
+  const handleAspectRatioChange = (next: AspectRatio) => {
+    setAspectRatio(next);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('generator_aspect_ratio', next);
+    }
   };
 
   useEffect(() => {
@@ -154,6 +185,33 @@ export default function Generator() {
               ))}
             </div>
 
+            <fieldset className="ratio-field">
+              <legend className="field-label ratio-legend">Shape</legend>
+              <div className="ratio-heading">
+                <span>Picture shape</span>
+                <span>{selectedRatioOption.useCase}</span>
+              </div>
+              <div className="ratio-grid" aria-label="Image shape">
+                {aspectRatioOptions.map((option) => (
+                  <button
+                    type="button"
+                    key={option.value}
+                    className={option.value === aspectRatio ? 'active' : ''}
+                    onClick={() => handleAspectRatioChange(option.value)}
+                    aria-pressed={option.value === aspectRatio}
+                  >
+                    <span className="ratio-swatch" style={{ aspectRatio: toCssAspectRatio(option.value) }} aria-hidden />
+                    <span className="ratio-copy">
+                      <span>{option.label}</span>
+                      <small>{option.useCase}</small>
+                    </span>
+                    {'badge' in option ? <span className="ratio-badge">{option.badge}</span> : null}
+                    <span className="ratio-value">{option.value}</span>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+
             <Link 
               to="/" 
               className="style-row" 
@@ -208,7 +266,7 @@ export default function Generator() {
               {generating ? 'Creating…' : awaitingPending ? 'Still working…' : latestImage ? 'Newest' : 'Preview'}
             </strong>
 
-            <div className="preview-stage">
+            <div className="preview-stage" style={{ aspectRatio: previewAspectRatio }}>
               {awaitingPending && !generating ? (
                 <div className="preview-loading" role="status" aria-live="polite">
                   <div className="preview-skeleton" aria-hidden />

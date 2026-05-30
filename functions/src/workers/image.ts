@@ -5,6 +5,7 @@ import { B2_BUCKET, B2_PUBLIC_URL } from "../lib/constants.js";
 import { isValidModelId } from "../lib/modelConventions.js";
 import { ForensicLogger } from "../lib/forensics.js";
 import { SubstrateHealth } from "../lib/substrateHealth.js";
+import { Sanitizer } from "../domain/models/ImageGenerationRequest.js";
 
 type ModelPollResult =
     | { kind: 'pending' }
@@ -181,14 +182,8 @@ export const processImageTask = async (req: { data: any }): Promise<void> => {
 
     try {
 
-        const resolutionMap: Record<string, { width: number, height: number }> = {
-            '1:1': { width: 1024, height: 1024 },
-            '2:3': { width: 832, height: 1216 },
-            '3:2': { width: 1216, height: 832 },
-            '9:16': { width: 768, height: 1344 },
-            '16:9': { width: 1344, height: 768 }
-        };
-        const resolution = resolutionMap[aspectRatio] || resolutionMap['1:1'];
+        const safeAspectRatio = Sanitizer.validateAspectRatio(aspectRatio);
+        const resolution = Sanitizer.toNormalizedDimensions(safeAspectRatio);
 
         // --- MODEL EXECUTION ---
         if (!isValidModelId(modelId)) {
@@ -232,7 +227,7 @@ export const processImageTask = async (req: { data: any }): Promise<void> => {
                         prompt: finalPrompt,
                         negative_prompt,
                         steps: finalSteps,
-                        aspect_ratio: aspectRatio,
+                        aspect_ratio: safeAspectRatio,
                         width: resolution.width,
                         height: resolution.height
                     }
@@ -360,7 +355,7 @@ export const processImageTask = async (req: { data: any }): Promise<void> => {
         }));
 
         imageRef.set({
-            userId, prompt, negative_prompt, steps, cfg, aspectRatio, modelId,
+            userId, prompt, negative_prompt, steps, cfg, aspectRatio: safeAspectRatio, modelId,
             imageUrl, thumbnailUrl, lqip, promptHash, promptMetadata,
             isPublic: true,
             createdAt: FieldValue.serverTimestamp(), originalRequestId: requestId
