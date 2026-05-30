@@ -113,6 +113,8 @@ async function seedModels() {
 
     console.log(`Starting seed of ${MODELS.length} models...`);
 
+    const activeIds = new Set(MODELS.map(m => m.id));
+
     for (const model of MODELS) {
         const docRef = collectionRef.doc(model.id);
         const doc = await docRef.get();
@@ -124,6 +126,18 @@ async function seedModels() {
             // Update existing model with new config
             await docRef.set(model, { merge: true });
             console.log(`↻ Updated model: ${model.name} (${model.id})`);
+        }
+    }
+
+    // Deactivate retired models not in the active list
+    const snapshot = await collectionRef.get();
+    for (const doc of snapshot.docs) {
+        if (!activeIds.has(doc.id)) {
+            const data = doc.data();
+            if (data.isActive !== false) {
+                await doc.ref.update({ isActive: false });
+                console.log(`ø Deactivated retired model: ${data.name || doc.id} (${doc.id})`);
+            }
         }
     }
 
