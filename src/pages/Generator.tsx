@@ -212,8 +212,8 @@ export default function Generator() {
             <fieldset className="ratio-field">
               <legend className="field-label ratio-legend">Shape</legend>
               <div className="ratio-heading">
-                <span>Picture shape</span>
-                <span>{selectedRatioOption.useCase}</span>
+                <span>Shape</span>
+                {'badge' in selectedRatioOption ? <span>{selectedRatioOption.badge}</span> : null}
               </div>
               <div className="ratio-grid" role="radiogroup" aria-label="Image shape">
                 {aspectRatioOptions.map((option) => (
@@ -228,13 +228,10 @@ export default function Generator() {
                     tabIndex={option.value === aspectRatio ? 0 : -1}
                     data-ratio={option.value}
                   >
-                    <span className="ratio-swatch" style={{ aspectRatio: toCssAspectRatio(option.value) }} aria-hidden />
                     <span className="ratio-copy">
                       <span>{option.label}</span>
-                      <small>{option.useCase}</small>
+                      <small>{option.value}</small>
                     </span>
-                    {'badge' in option ? <span className="ratio-badge">{option.badge}</span> : null}
-                    <span className="ratio-value">{option.value}</span>
                   </button>
                 ))}
               </div>

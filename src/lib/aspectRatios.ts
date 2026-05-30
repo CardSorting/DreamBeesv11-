@@ -4,33 +4,33 @@ export const aspectRatioOptions = [
   {
     label: 'Feed',
     value: '4:5',
-    useCase: 'Best default for social posts',
+    useCase: 'Best default',
     badge: 'Recommended',
   },
   {
     label: 'Square',
     value: '1:1',
-    useCase: 'Avatars and classic posts',
+    useCase: 'Classic',
   },
   {
     label: 'Portrait',
     value: '3:4',
-    useCase: 'Photos and phone wallpapers',
+    useCase: 'Photo',
   },
   {
     label: 'Pin',
     value: '2:3',
-    useCase: 'Pinterest and posters',
+    useCase: 'Pinterest',
   },
   {
     label: 'Story',
     value: '9:16',
-    useCase: 'Stories and Shorts',
+    useCase: 'Stories',
   },
   {
     label: 'Wide',
     value: '16:9',
-    useCase: 'YouTube and web',
+    useCase: 'Video',
   },
 ] as const;
 
