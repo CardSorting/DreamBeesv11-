@@ -138,7 +138,7 @@ export class LiteDatabase {
   }
 
   public getGenerations(limit: number = 50) {
-    const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 200);
+    const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 1000);
     const stmt = this.db.prepare(`SELECT * FROM generations ORDER BY createdAt DESC LIMIT ?`);
     return stmt.all(safeLimit).map((g: any) => ({
       ...g,

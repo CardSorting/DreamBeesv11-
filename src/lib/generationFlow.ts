@@ -2,7 +2,7 @@
  * Shared generation UX: stages, progress, and child-friendly copy.
  */
 
-import { getOptimizedImageUrl } from '../lite-utils';
+import { getOptimizedImageUrl, idleSaveToLocalStorage } from '../lite-utils';
 
 export type GenerationStage = 'idle' | 'submitting' | 'queued' | 'processing' | 'finishing';
 
@@ -366,7 +366,7 @@ export function buildGenerationHistoryEntry(opts: {
 }
 
 const LOCAL_STORAGE_KEY = 'lite_generations_v3';
-const LOCAL_MAX_ENTRIES = 100;
+const LOCAL_MAX_ENTRIES = 500;
 
 function localStorageKeyForUser(userId: string): string {
   return `${LOCAL_STORAGE_KEY}_${userId}`;
@@ -444,7 +444,7 @@ export async function persistGenerationEntry(entry: GenerationHistoryEntry): Pro
       if (entry.firestoreImageId && p?.firestoreImageId === entry.firestoreImageId) return false;
       return true;
     });
-    localStorage.setItem(
+    idleSaveToLocalStorage(
       key,
       JSON.stringify([entry, ...filtered].slice(0, LOCAL_MAX_ENTRIES))
     );

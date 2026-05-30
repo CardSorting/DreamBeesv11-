@@ -1,12 +1,13 @@
 /**
  * [LAYER: INFRASTRUCTURE]
  */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { formatPendingTimeRemaining } from '../lib/generationFlow';
 import { useLite } from '../contexts/LiteContext';
 import PictureThumb from '../components/PictureThumb';
 import { IconRefresh, IconImage, IconLogOut, IconMagic, IconUser, IconZap } from '../icons';
+import { observeElement } from '../lite-utils';
 import './UserProfile.css';
 
 function getDisplayName(email?: string | null, name?: string | null) {
@@ -16,8 +17,16 @@ function getDisplayName(email?: string | null, name?: string | null) {
 }
 
 export default function UserProfile() {
-    const { currentUser, logout, displayHistory, pendingGeneration, dismissStuckPending, addToast, zaps } = useLite();
+    const { currentUser, logout, displayHistory, pendingGeneration, dismissStuckPending, addToast, zaps, loadMoreHistory } = useLite();
     const [updateChecking, setUpdateChecking] = useState(false);
+    const isMountedRef = useRef(true);
+
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
 
     const handleLogout = async () => {
         try {
@@ -51,11 +60,41 @@ export default function UserProfile() {
             console.error(err);
             addToast('Unable to check for updates. Update server offline.', 'error');
         } finally {
-            setUpdateChecking(false);
+            if (isMountedRef.current) {
+                setUpdateChecking(false);
+            }
         }
     };
 
-    const pictures = useMemo(() => [...displayHistory], [displayHistory]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [visibleCount, setVisibleCount] = useState(24);
+
+    const filteredPictures = useMemo(() => {
+        const query = searchQuery.trim().toLowerCase();
+        if (!query) return displayHistory;
+        return displayHistory.filter(item => 
+            (typeof item.prompt === 'string' && item.prompt.toLowerCase().includes(query)) ||
+            (typeof item.modelId === 'string' && item.modelId.toLowerCase().includes(query))
+        );
+    }, [displayHistory, searchQuery]);
+
+    const visiblePictures = useMemo(() => {
+        return filteredPictures.slice(0, visibleCount);
+    }, [filteredPictures, visibleCount]);
+
+    const [loadMoreEl, setLoadMoreEl] = useState<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        if (!loadMoreEl) return;
+
+        return observeElement(loadMoreEl, (isIntersecting) => {
+            if (isIntersecting) {
+                setVisibleCount((prev) => prev + 24);
+                loadMoreHistory?.();
+            }
+        }, '400px');
+    }, [loadMoreEl, loadMoreHistory]);
+
     const displayName = getDisplayName(currentUser?.email, currentUser?.displayName);
     const creditsLabel = zaps === 'unlimited' ? 'Unlimited' : String(zaps);
     const pendingTimeHint = pendingGeneration ? formatPendingTimeRemaining(pendingGeneration) : null;
@@ -83,7 +122,7 @@ export default function UserProfile() {
                 <div className="simple-stats">
                     <div className="stat-box">
                         <span className="stat-label">Pictures</span>
-                        <strong>{pictures.length}</strong>
+                        <strong>{displayHistory.length}</strong>
                     </div>
                     <div className="stat-box">
                         <span className="stat-label">Credits left</span>
@@ -130,10 +169,25 @@ export default function UserProfile() {
             <section className="simple-card" aria-label="Your pictures">
                 <div className="pictures-header">
                     <strong>Your pictures</strong>
-                    <span>{pictures.length} saved</span>
+                    <span>{filteredPictures.length} {filteredPictures.length === displayHistory.length ? 'saved' : 'found'}</span>
                 </div>
 
-                {pictures.length === 0 ? (
+                {displayHistory.length > 0 && (
+                    <div className="profile-search">
+                        <input
+                            type="search"
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setVisibleCount(24);
+                            }}
+                            placeholder="Search your pictures by prompt or style..."
+                            aria-label="Search pictures"
+                        />
+                    </div>
+                )}
+
+                {displayHistory.length === 0 ? (
                     <div className="empty-pictures">
                         <IconImage size={28} />
                         <p>No pictures yet.</p>
@@ -141,15 +195,34 @@ export default function UserProfile() {
                             <IconZap size={18} /> Make your first picture
                         </Link>
                     </div>
-                ) : (
-                    <div className="pictures-grid">
-                        {pictures.map((item) => (
-                            <PictureThumb
-                                key={item.originalRequestId || item.firestoreImageId || item.id}
-                                item={item}
-                            />
-                        ))}
+                ) : filteredPictures.length === 0 ? (
+                    <div className="empty-pictures">
+                        <IconImage size={28} />
+                        <p>No pictures match your search.</p>
                     </div>
+                ) : (
+                    <>
+                        <div className="pictures-grid">
+                            {visiblePictures.map((item) => (
+                                <PictureThumb
+                                    key={item.originalRequestId || item.firestoreImageId || item.id}
+                                    item={item}
+                                />
+                            ))}
+                        </div>
+                        {filteredPictures.length > visibleCount && (
+                            <div ref={setLoadMoreEl} className="load-more-container">
+                                <button
+                                    type="button"
+                                    className="load-more-btn"
+                                    onClick={() => setVisibleCount((prev) => prev + 24)}
+                                >
+                                    <span>Load more pictures</span>
+                                    <span>({filteredPictures.length - visibleCount} remaining)</span>
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
             </section>
         </div>

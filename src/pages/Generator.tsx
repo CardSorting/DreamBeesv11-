@@ -1,7 +1,7 @@
 /**
  * [LAYER: INFRASTRUCTURE]
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useLite } from '../contexts/LiteContext';
 import { getOptimizedImageUrl } from '../lite-utils';
@@ -25,6 +25,14 @@ export default function Generator() {
     generationPreviewUrl, activeGeneration, pendingGeneration, displayHistory, generateStartTime,
     currentUser, isOffline, zaps, dismissStuckPending,
   } = useLite();
+
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const [, setElapsedTick] = useState(0);
   useEffect(() => {
@@ -78,7 +86,7 @@ export default function Generator() {
     if (!canGenerate) return;
     const submitted = cleanPrompt;
     const ok = await generate(submitted);
-    if (ok) setPrompt('');
+    if (ok && mountedRef.current) setPrompt('');
   };
 
   useEffect(() => {
@@ -217,6 +225,7 @@ export default function Generator() {
                       }
                       alt=""
                       className={previewSharpen ? 'preview-sharp' : 'preview-blur'}
+                      decoding="async"
                     />
                   ) : (
                     <div className="preview-skeleton" aria-hidden />

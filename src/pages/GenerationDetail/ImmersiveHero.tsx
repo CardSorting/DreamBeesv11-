@@ -20,17 +20,47 @@ export default function ImmersiveHero({
     onDownload,
     onShare
 }: ImmersiveHeroProps) {
-    const [imgSrc, setImgSrc] = useState(() => {
-        const preview = generation.previewUrl as string | undefined;
-        const primary = generation.imageUrl;
-        return getOptimizedImageUrl(preview || primary) || preview || primary;
-    });
+    const preview = generation.previewUrl as string | undefined;
+    const primary = generation.imageUrl;
+    const lowRes = getOptimizedImageUrl(preview || primary) || preview || primary;
+    const highRes = getOptimizedImageUrl(primary) || primary;
+
+    const [imgSrc, setImgSrc] = useState(lowRes);
+    const [isHighResLoaded, setIsHighResLoaded] = useState(false);
 
     useEffect(() => {
-        const preview = generation.previewUrl as string | undefined;
-        const primary = generation.imageUrl;
-        const next = preview || primary;
-        setImgSrc(getOptimizedImageUrl(next) || next);
+        const currentPreview = generation.previewUrl as string | undefined;
+        const currentPrimary = generation.imageUrl;
+        const currentLowRes = getOptimizedImageUrl(currentPreview || currentPrimary) || currentPreview || currentPrimary;
+        const currentHighRes = getOptimizedImageUrl(currentPrimary) || currentPrimary;
+
+        setImgSrc(currentLowRes);
+        setIsHighResLoaded(false);
+
+        let img: HTMLImageElement | null = null;
+
+        if (currentLowRes === currentHighRes) {
+            setIsHighResLoaded(true);
+            return;
+        }
+
+        img = new Image();
+        img.src = currentHighRes;
+        img.onload = () => {
+            setImgSrc(currentHighRes);
+            setIsHighResLoaded(true);
+        };
+        img.onerror = () => {
+            setImgSrc(currentPrimary);
+            setIsHighResLoaded(true);
+        };
+
+        return () => {
+            if (img) {
+                img.onload = null;
+                img.onerror = null;
+            }
+        };
     }, [generation.imageUrl, generation.previewUrl]);
 
     return (
@@ -44,11 +74,14 @@ export default function ImmersiveHero({
                 <img
                     src={imgSrc}
                     alt={generation.prompt}
-                    className="hero-image"
+                    className={`hero-image progressive-img ${isHighResLoaded ? 'loaded' : 'loading-blur'}`}
                     decoding="async"
                     onError={() => {
                         const fallback = generation.imageUrl;
-                        if (imgSrc !== fallback) setImgSrc(fallback);
+                        if (imgSrc !== fallback) {
+                            setImgSrc(fallback);
+                            setIsHighResLoaded(true);
+                        }
                     }}
                 />
             </div>

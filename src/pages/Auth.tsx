@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLite } from '../contexts/LiteContext';
 import { useNavigate } from 'react-router-dom';
 import { IconLoader, IconZap, IconSparkles, IconMagic } from '../icons';
@@ -13,6 +13,14 @@ export default function Auth() {
 
     const { login, signup, loginWithGoogle, currentUser, addToast } = useLite();
     const navigate = useNavigate();
+
+    const mountedRef = useRef(true);
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => {
+            mountedRef.current = false;
+        };
+    }, []);
 
     useEffect(() => {
         if (currentUser) navigate('/generate');
@@ -34,7 +42,9 @@ export default function Auth() {
         } catch (err: any) {
             addToast(err.message, "error");
         } finally {
-            setLoading(false);
+            if (mountedRef.current) {
+                setLoading(false);
+            }
         }
     }
 

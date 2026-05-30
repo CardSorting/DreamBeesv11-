@@ -92,19 +92,22 @@
 .hero-image {
     width: 100%;
     height: 100%;
-}
-
-.hero-image img {
-    width: 100%;
-    height: 100%;
     object-fit: contain;
     display: block;
-    transition: transform 0.5s ease;
-    will-change: transform;
+    transition: transform 0.5s ease, filter 0.3s ease-out;
+    will-change: transform, filter;
 }
 
-.hero-image-container:hover .hero-image img {
+.hero-image-container:hover .hero-image {
     transform: scale(1.02);
+}
+
+.progressive-img.loading-blur {
+    filter: blur(10px);
+}
+
+.progressive-img.loaded {
+    filter: blur(0);
 }
 
 .hero-actions {

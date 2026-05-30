@@ -206,3 +206,18 @@ input, textarea {
     margin-left: 76px;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  body::after {
+    animation: none !important;
+  }
+  .organic-float,
+  .breathe,
+  .fade-in {
+    animation: none !important;
+  }
+  .clickable {
+    transition: none !important;
+    transform: none !important;
+  }
+}

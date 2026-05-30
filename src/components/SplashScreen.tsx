@@ -6,18 +6,24 @@ export default function SplashScreen() {
     const [isMounted, setIsMounted] = useState(true);
     const [isExiting, setIsExiting] = useState(false);
     const exitStartedRef = useRef(false);
-
-    useEffect(() => {
-        const timer = window.setTimeout(() => dismissSplash(), 650);
-        return () => clearTimeout(timer);
-    }, []);
+    const exitTimerRef = useRef<number | null>(null);
 
     const dismissSplash = () => {
         if (exitStartedRef.current) return;
         exitStartedRef.current = true;
         setIsExiting(true);
-        window.setTimeout(() => setIsMounted(false), 260);
+        exitTimerRef.current = window.setTimeout(() => setIsMounted(false), 260);
     };
+
+    useEffect(() => {
+        const timer = window.setTimeout(() => dismissSplash(), 650);
+        return () => {
+            clearTimeout(timer);
+            if (exitTimerRef.current) {
+                clearTimeout(exitTimerRef.current);
+            }
+        };
+    }, []);
 
     if (!isMounted) return null;
 

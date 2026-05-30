@@ -58,6 +58,15 @@ export default function GenerationDetail() {
     const lastFetchAttemptRef = useRef<string | null>(null);
     const displayHistoryRef = useRef(displayHistory);
     const [fetchVersion, setFetchVersion] = useState(0);
+    const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (copiedTimeoutRef.current) {
+                clearTimeout(copiedTimeoutRef.current);
+            }
+        };
+    }, []);
 
     displayHistoryRef.current = displayHistory;
 
@@ -173,7 +182,12 @@ export default function GenerationDetail() {
         navigator.clipboard.writeText(generation?.prompt || '').then(() => {
             showToast('Prompt copied!', 'success');
             setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+            if (copiedTimeoutRef.current) {
+                clearTimeout(copiedTimeoutRef.current);
+            }
+            copiedTimeoutRef.current = setTimeout(() => {
+                setCopied(false);
+            }, 2000);
         });
     };
 

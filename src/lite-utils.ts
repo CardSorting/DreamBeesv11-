@@ -20,7 +20,7 @@ export const getOptimizedImageUrl = (url: string | null | undefined): string | n
     if (!url || typeof url !== 'string') return url;
     
     // Redirect local model requests to optimized JPEG assets
-    if (url.includes('/models/') && url.endsWith('.png')) {
+    if (!url.startsWith('http') && url.includes('/models/') && url.endsWith('.png')) {
         url = url.replace('.png', '.jpg');
     }
     
@@ -29,6 +29,16 @@ export const getOptimizedImageUrl = (url: string | null | undefined): string | n
         const b2Pattern = /https?:\/\/[^/]+\.backblazeb2\.com\//;
         return url.replace(b2Pattern, 'https://cdn.dreambeesai.com/file/printeregg/');
     }
+
+    // Support file:// protocol in Electron (which requires relative paths)
+    const isFileProtocol = typeof window !== 'undefined' && window.location.protocol === 'file:';
+    if (isFileProtocol) {
+        if (url.startsWith('/')) {
+            return url.substring(1);
+        }
+        return url;
+    }
+    
     return !url.startsWith('http') && !url.startsWith('/') ? `/${url}` : url;
 };
 
@@ -59,12 +69,27 @@ export const useTitle = (title: string) => {
     }
 };
 
-/**
- * Sanitizes user input to prevent common injection and UI breakage
- */
 export const sanitizeInput = (text: string, maxLength: number = 1000): string => {
     if (!text || typeof text !== 'string') return '';
     return text.trim().slice(0, maxLength).replace(/[<>]/g, '');
+};
+
+/**
+ * Safely writes to localStorage during browser idle time to prevent main-thread jank.
+ */
+export const idleSaveToLocalStorage = (key: string, value: string) => {
+    const save = () => {
+        try {
+            localStorage.setItem(key, value);
+        } catch (e) {
+            console.warn(`[Lite] localStorage write failed for key ${key}:`, e);
+        }
+    };
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+        window.requestIdleCallback(() => save(), { timeout: 2000 });
+    } else {
+        setTimeout(save, 1000);
+    }
 };
 
 /**
@@ -108,6 +133,7 @@ export const getModelMetadata = (model: AIModel) => {
  * Image optimization utilities
  */
 export { generatePreviewUrl, generateHeroUrl, generateThumbnailUrl, optimizeImageUrl, isLocalFile } from './utils/imagePreview';
+export { observeElement } from './utils/sharedObserver';
 
 /**
  * Feedback and notification utilities

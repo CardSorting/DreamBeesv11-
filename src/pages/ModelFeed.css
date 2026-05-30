@@ -480,3 +480,17 @@
         grid-template-columns: 1fr;
     }
 }
+
+@media (prefers-reduced-motion: reduce) {
+    .mesh-orb {
+        animation: none !important;
+    }
+    .style-card {
+        animation: none !important;
+        transition: none !important;
+    }
+    .style-visual img {
+        transition: none !important;
+        transform: none !important;
+    }
+}

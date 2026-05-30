@@ -29,7 +29,7 @@ import {
 import toast from '../utils/lazyToast';
 import { getFirebaseClient, getFunctionsInstance } from '../firebaseLazy';
 import type { User } from 'firebase/auth';
-import { AIModel, getOptimizedImageUrl } from '../lite-utils';
+import { AIModel, getOptimizedImageUrl, sanitizeInput, idleSaveToLocalStorage } from '../lite-utils';
 
 const BUILTIN_MODELS: AIModel[] = [
     {
@@ -197,6 +197,7 @@ interface LiteContextType {
     addToast: (message: string, type?: 'success' | 'error' | 'loading', id?: string) => string;
     sidebarCollapsed: boolean;
     toggleSidebar: () => void;
+    loadMoreHistory: () => void;
 }
 
 const LiteContext = createContext<LiteContextType | undefined>(undefined);
@@ -225,6 +226,35 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
     const [history, setHistory] = useState<any[]>([]);
     const [localHistory, setLocalHistory] = useState<any[]>([]);
+    const [historyLimit, setHistoryLimit] = useState(50);
+    const historyLimitRef = useRef(50);
+    const localHistoryCacheRef = useRef<GenerationHistoryEntry[] | null>(null);
+
+    const loadLocal = useCallback(async () => {
+        try {
+            if (localHistoryCacheRef.current) {
+                setLocalHistory(localHistoryCacheRef.current.slice(0, historyLimitRef.current));
+                return;
+            }
+            const gens = await loadLocalGenerations(500, currentUser?.uid);
+            localHistoryCacheRef.current = gens;
+            setLocalHistory(gens.slice(0, historyLimitRef.current));
+        } catch (err) {
+            console.warn('[Lite] Local history unavailable:', err);
+        }
+    }, [currentUser?.uid]);
+
+    useEffect(() => {
+        historyLimitRef.current = historyLimit;
+    }, [historyLimit]);
+
+    useEffect(() => {
+        if (localHistoryCacheRef.current) {
+            setLocalHistory(localHistoryCacheRef.current.slice(0, historyLimit));
+        } else {
+            loadLocal();
+        }
+    }, [historyLimit, loadLocal]);
     const [loading, setLoading] = useState(true);
     const [generating, setGenerating] = useState(false);
     const [generationStage, setGenerationStage] = useState<GenerationStage>('idle');
@@ -309,15 +339,6 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         return toast.success(message, { id: existingId });
     }, []);
 
-    const loadLocal = useCallback(async () => {
-        try {
-            const gens = await loadLocalGenerations(50, currentUser?.uid);
-            setLocalHistory(gens);
-        } catch (err) {
-            console.warn('[Lite] Local history unavailable:', err);
-        }
-    }, [currentUser?.uid]);
-
     useEffect(() => {
         if (!firebase) return;
         if (!navigator.onLine) {
@@ -368,7 +389,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                     }
                     
                     // Save to cache
-                    localStorage.setItem(cachedProfileKey, JSON.stringify({ tier, zaps: calculatedZaps }));
+                    idleSaveToLocalStorage(cachedProfileKey, JSON.stringify({ tier, zaps: calculatedZaps }));
                 }
                 setLoading(false);
             }, (err) => {
@@ -387,12 +408,14 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         loadLocal();
     }, [currentUser?.uid, loadLocal]);
 
-    /** Sync local history when another tab writes to localStorage */
     useEffect(() => {
         if (!currentUser?.uid) return;
         const key = localHistoryStorageKey(currentUser.uid);
         const onStorage = (e: StorageEvent) => {
-            if (e.key === key) loadLocal();
+            if (e.key === key) {
+                localHistoryCacheRef.current = null;
+                loadLocal();
+            }
         };
         window.addEventListener('storage', onStorage);
         return () => window.removeEventListener('storage', onStorage);
@@ -441,6 +464,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             clearPending();
             resetGenerationUi();
             setLocalHistory([]);
+            localHistoryCacheRef.current = null;
             completionClaimRef.current = null;
             resumeSessionIdRef.current = null;
         }
@@ -470,13 +494,18 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             if (resumeSessionIdRef.current === requestId) {
                 resumeSessionIdRef.current = null;
             }
+            if (localHistoryCacheRef.current) {
+                localHistoryCacheRef.current = [
+                    entry,
+                    ...localHistoryCacheRef.current.filter((i) => i.id !== requestId)
+                ].slice(0, 500);
+            }
             setLocalHistory((prev) => [entry, ...prev.filter((i) => i.id !== requestId)]);
-            loadLocal();
             if (showSuccessToast) {
                 toast.success('Your picture is ready!', { id: requestId });
             }
         },
-        [clearPending, loadLocal]
+        [clearPending]
     );
 
     /**
@@ -774,7 +803,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                         .map(doc => ({ id: doc.id, ...doc.data() } as AIModel))
                         .filter(isClientGenerationModel);
                     setAvailableModels(models);
-                    localStorage.setItem('lite_cached_models', JSON.stringify(models));
+                    idleSaveToLocalStorage('lite_cached_models', JSON.stringify(models));
                     setModelsError(models.length ? null : msg);
                     pickDefaultModel(models);
                 },
@@ -795,7 +824,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                     .map(doc => ({ id: doc.id, ...doc.data() } as AIModel))
                     .filter(isClientGenerationModel);
                 setAvailableModels(models);
-                localStorage.setItem('lite_cached_models', JSON.stringify(models));
+                idleSaveToLocalStorage('lite_cached_models', JSON.stringify(models));
                 setModelsError(null);
                 pickDefaultModel(models);
             },
@@ -845,13 +874,13 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             firebase.collection(firebase.db, 'images'),
             firebase.where('userId', '==', uid),
             firebase.orderBy('createdAt', 'desc'),
-            firebase.limit(50)
+            firebase.limit(100)
         );
 
         const fallbackQuery = firebase.query(
             firebase.collection(firebase.db, 'images'),
             firebase.where('userId', '==', uid),
-            firebase.limit(50)
+            firebase.limit(100)
         );
 
         const startFallback = () => {
@@ -866,7 +895,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                         (a, b) => toHistoryTimestamp(b.createdAt) - toHistoryTimestamp(a.createdAt)
                     );
                     setHistory(items);
-                    localStorage.setItem(`lite_cached_cloud_history_${uid}`, JSON.stringify(items));
+                    idleSaveToLocalStorage(`lite_cached_cloud_history_${uid}`, JSON.stringify(items));
                 },
                 err2 => {
                     console.warn('[Lite] History subscription failed (fallback):', err2);
@@ -881,7 +910,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 if (usingFallback) return;
                 const items = mapDocs(snap.docs);
                 setHistory(items);
-                localStorage.setItem(`lite_cached_cloud_history_${uid}`, JSON.stringify(items));
+                idleSaveToLocalStorage(`lite_cached_cloud_history_${uid}`, JSON.stringify(items));
             },
             err => {
                 console.warn('[Lite] History subscription failed (ordered):', err);
@@ -1091,7 +1120,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     };
 
     const generate = useCallback(async (prompt: string, params: any = {}): Promise<boolean> => {
-        const cleanPrompt = prompt?.trim();
+        const cleanPrompt = sanitizeInput(prompt);
         if (!cleanPrompt) return Promise.resolve(false);
         if (generatingRef.current) return Promise.resolve(false);
         if (isOffline) { toast.error("The garden requires a connection to bloom."); return Promise.resolve(false); }
@@ -1351,6 +1380,10 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         });
     }, [currentUser?.uid, selectedModel, isOffline, loadLocal, cooldownUntil, userTier, zaps, resetGenerationUi, clearPending, savePending, commitPendingToLocalState, firebase]);
 
+    const loadMoreHistory = useCallback(() => {
+        setHistoryLimit((prev) => Math.min(1000, prev + 50));
+    }, []);
+
     return (
         <LiteContext.Provider value={{ 
             currentUser, availableModels, selectedModel, setSelectedModel: selectModel, 
@@ -1361,7 +1394,8 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             addToast,
             modelsError,
             sidebarCollapsed,
-            toggleSidebar
+            toggleSidebar,
+            loadMoreHistory
         }}>
             {children}
         </LiteContext.Provider>
