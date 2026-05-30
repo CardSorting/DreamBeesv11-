@@ -3,7 +3,7 @@
  * Stateless utility functions for user feedback and notifications.
  */
 
-import toast from 'react-hot-toast';
+import toast from './lazyToast';
 
 /**
  * Core toast notification function with type handling.

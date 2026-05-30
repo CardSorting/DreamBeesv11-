@@ -26,6 +26,7 @@ import ImmersiveHero from '@/pages/GenerationDetail/ImmersiveHero';
 import PromptReveal from '@/pages/GenerationDetail/PromptReveal';
 import MetadataGrid from '@/pages/GenerationDetail/MetadataGrid';
 import ActionToolbar from '@/pages/GenerationDetail/ActionToolbar';
+import './GenerationDetail/styles.css';
 
 export default function GenerationDetail() {
     const { id } = useParams<{ id: string }>();
@@ -108,13 +109,29 @@ export default function GenerationDetail() {
         let cancelled = false;
         lastFetchAttemptRef.current = generationId;
 
+        const cacheKey = `lite_generation_detail_${generationId}`;
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                setGeneration(parsed);
+                setError(null);
+                setIsLoading(false);
+                resolvedIdRef.current = generationId;
+            } catch (err) {
+                console.warn('[Lite] Parse cached generation detail failed:', err);
+            }
+        }
+
         const fetchGeneration = async () => {
             try {
                 setIsLoading(true);
                 setError(null);
                 const data = await orchestrator.fetchFullGeneration(generationId);
                 if (cancelled) return;
-                if (resolvedIdRef.current === generationId) return;
+                
+                // Update cache and state
+                localStorage.setItem(cacheKey, JSON.stringify(data));
                 setGeneration(data);
                 resolvedIdRef.current = generationId;
             } catch (err: any) {

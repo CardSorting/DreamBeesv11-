@@ -6,6 +6,7 @@ import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { useLite } from '../contexts/LiteContext';
 import RouteErrorBoundary from './RouteError';
 import { lazyRetry } from '../lite-utils';
+import './AnimatedRoutes.css';
 
 // Core LITE Pages
 const ModelFeed = lazyRetry(() => import('../pages/ModelFeed'));
@@ -16,8 +17,11 @@ const GenerationDetail = lazyRetry(() => import('../pages/GenerationDetail'));
 const NotFound = lazyRetry(() => import('../pages/NotFound'));
 
 const PageLoader = () => (
-    <div style={{ height: '100vh', width: '100vw', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#000', color: '#8b5cf6' }}>
-        <div className="lite-loader">LITE</div>
+    <div className="page-route-loader">
+        <div className="lite-loader-brand">LITE</div>
+        <div className="shimmer-container">
+            <div className="shimmer-bar" />
+        </div>
     </div>
 );
 
@@ -53,10 +57,6 @@ const AnimatedRoutes = () => {
                     </Routes>
                 </Suspense>
             </RouteErrorBoundary>
-            <style>{`
-                .page-wrapper { animation: fadeIn 0.3s ease-out forwards; }
-                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-            `}</style>
         </div>
     );
 };

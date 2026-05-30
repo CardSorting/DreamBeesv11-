@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getOptimizedImageUrl } from '../lite-utils';
+import { getOptimizedImageUrl, optimizeImageUrl } from '../lite-utils';
 import { historyThumbUrl, canonicalGenerationRouteId } from '../lib/generationFlow';
 
 interface PictureThumbProps {
@@ -19,11 +19,20 @@ interface PictureThumbProps {
 
 export default function PictureThumb({ item, className = 'picture-card', showCaption = true }: PictureThumbProps) {
     const rawThumb = historyThumbUrl(item);
-    const [src, setSrc] = useState(() => getOptimizedImageUrl(rawThumb) || rawThumb || '');
+    
+    const getFinalThumb = (url: string) => {
+        const optimized = getOptimizedImageUrl(url) || url || '';
+        if (optimized && optimized.startsWith('http')) {
+            return optimizeImageUrl(optimized, 'thumbnail');
+        }
+        return optimized;
+    };
+
+    const [src, setSrc] = useState(() => getFinalThumb(rawThumb));
 
     useEffect(() => {
         const next = historyThumbUrl(item);
-        setSrc(getOptimizedImageUrl(next) || next || '');
+        setSrc(getFinalThumb(next));
     }, [item.imageUrl, item.thumbnailUrl, item.previewUrl, item.lqip]);
 
     if (!item.imageUrl) return null;
@@ -35,11 +44,13 @@ export default function PictureThumb({ item, className = 'picture-card', showCap
             to={`/generation/${routeId}`}
             state={{ generation: item }}
             className={className}
+            onMouseEnter={() => import('../pages/GenerationDetail')}
         >
             <img
                 src={src}
                 alt={item.prompt || 'Your picture'}
                 loading="lazy"
+                decoding="async"
                 onError={() => {
                     const fallback = item.imageUrl;
                     if (src !== fallback) setSrc(fallback);

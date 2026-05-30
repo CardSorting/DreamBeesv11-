@@ -3,6 +3,7 @@ import { useLite } from '../contexts/LiteContext';
 import { useNavigate } from 'react-router-dom';
 import { IconLoader, IconZap, IconSparkles, IconMagic } from '../icons';
 import { motion, AnimatePresence } from 'framer-motion';
+import './Auth.css';
 
 export default function Auth() {
     const [isLogin, setIsLogin] = useState(true);
@@ -204,66 +205,6 @@ export default function Auth() {
                     </button>
                 </motion.p>
             </motion.div>
-
-            <style>{`
-                .lite-auth-immersive { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; background: #060608; position: relative; overflow: hidden; }
-                
-                .mesh-gradient-container { position: absolute; inset: 0; overflow: hidden; pointer-events: none; opacity: 0.4; filter: blur(40px); }
-                .mesh-ball { position: absolute; border-radius: 50%; filter: blur(100px); }
-                .mesh-1 { width: 600px; height: 600px; background: radial-gradient(circle, rgba(139, 92, 246, 0.3), transparent 70%); top: -100px; right: -100px; }
-                .mesh-2 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(245, 158, 11, 0.2), transparent 70%); bottom: -100px; left: -100px; }
-                .mesh-3 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(168, 85, 247, 0.15), transparent 70%); top: 40%; left: 20%; }
-                
-                .auth-jewel-card { width: 100%; max-width: 440px; padding: 48px; border-radius: 48px; position: relative; z-index: 10; border: 1px solid rgba(255,255,255,0.08); overflow: hidden; }
-                
-                .auth-header { text-align: center; margin-bottom: 40px; }
-                .brand-orb-visual { position: relative; width: 72px; height: 72px; margin: 0 auto 24px; display: flex; align-items: center; justify-content: center; }
-                .orb-ring { position: absolute; inset: -10px; border: 1px dashed rgba(139, 92, 246, 0.3); border-radius: 50%; }
-                .ring-sparkle { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); color: var(--color-soft-gold); filter: drop-shadow(0 0 8px var(--color-soft-gold)); }
-                .orb-core { width: 100%; height: 100%; background: linear-gradient(135deg, var(--color-accent), var(--color-dream-purple)); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(139, 92, 246, 0.5); }
-                
-                .auth-header h1 { font-size: 2.25rem; font-weight: 900; letter-spacing: -2px; margin-bottom: 8px; }
-                .auth-header h1 span { opacity: 0.5; margin-left: 2px; }
-                .poetic-welcome { color: var(--color-zinc-400); font-size: 1rem; font-weight: 500; opacity: 0.8; }
-
-                .auth-form { display: flex; flex-direction: column; gap: 20px; }
-                .field-group { display: flex; flex-direction: column; gap: 8px; }
-                .field-group label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: var(--color-accent); letter-spacing: 1.5px; padding-left: 4px; }
-                
-                input { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); padding: 18px 24px; border-radius: 24px; color: white; font-size: 1rem; outline: none; transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1); width: 100%; }
-                input:focus { border-color: var(--color-accent); background: rgba(139, 92, 246, 0.05); box-shadow: 0 0 20px rgba(139, 92, 246, 0.1); }
-                input::placeholder { color: rgba(255,255,255,0.2); }
-                
-                .date-input-wrapper { position: relative; }
-                .date-input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.3; cursor: pointer; }
-
-                .manifest-btn { background: linear-gradient(135deg, var(--color-accent), var(--color-dream-purple)); color: white; border: none; padding: 18px; border-radius: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-top: 10px; font-size: 0.9rem; box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4); }
-                .manifest-btn:disabled { opacity: 0.6; transform: none !important; box-shadow: none; }
-
-                .auth-divider { display: flex; align-items: center; gap: 20px; margin: 32px 0; }
-                .auth-divider .line { flex: 1; height: 1px; background: rgba(255,255,255,0.1); }
-                .auth-divider span { font-size: 0.65rem; font-weight: 800; color: var(--color-zinc-500); letter-spacing: 2.5px; white-space: nowrap; }
-
-                .google-jewel-btn { background: rgba(255,255,255,0.04); color: white; border: 1px solid rgba(255,255,255,0.1); padding: 16px; border-radius: 24px; font-weight: 700; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 14px; width: 100%; }
-                
-                .creator-trust { margin-top: 40px; text-align: center; }
-                .avatar-cluster { display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
-                .mini-orb { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #0c0c0e; margin-right: -12px; transition: transform 0.3s; }
-                .mini-orb:hover { transform: translateY(-4px) scale(1.1); z-index: 10; }
-                .orb-gold { background: var(--color-soft-gold); }
-                .orb-purple { background: var(--color-dream-purple); }
-                .orb-amber { background: var(--color-warm-amber); }
-                .mini-plus { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #0c0c0e; background: var(--color-accent); color: white; font-size: 0.7rem; font-weight: 800; display: flex; align-items: center; justify-content: center; z-index: 5; }
-                .creator-trust span { font-size: 0.85rem; color: var(--color-zinc-500); font-weight: 600; letter-spacing: 0.5px; }
-
-                .auth-footer { text-align: center; margin-top: 40px; color: var(--color-zinc-500); font-size: 1rem; font-weight: 500; }
-                .toggle-auth-mode { background: transparent; border: none; color: var(--color-accent); font-weight: 700; cursor: pointer; margin-left: 8px; text-decoration: none; position: relative; }
-                .toggle-auth-mode::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 100%; height: 1px; background: currentColor; transform: scaleX(0); transition: transform 0.3s; transform-origin: right; }
-                .toggle-auth-mode:hover::after { transform: scaleX(1); transform-origin: left; }
-
-                .spin { animation: spin 2s linear infinite; }
-                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-            `}</style>
         </div>
     );
 }

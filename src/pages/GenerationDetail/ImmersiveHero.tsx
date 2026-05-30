@@ -45,6 +45,7 @@ export default function ImmersiveHero({
                     src={imgSrc}
                     alt={generation.prompt}
                     className="hero-image"
+                    decoding="async"
                     onError={() => {
                         const fallback = generation.imageUrl;
                         if (imgSrc !== fallback) setImgSrc(fallback);

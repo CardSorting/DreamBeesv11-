@@ -18,6 +18,12 @@ export interface AIModel {
  */
 export const getOptimizedImageUrl = (url: string | null | undefined): string | null | undefined => {
     if (!url || typeof url !== 'string') return url;
+    
+    // Redirect local model requests to optimized JPEG assets
+    if (url.includes('/models/') && url.endsWith('.png')) {
+        url = url.replace('.png', '.jpg');
+    }
+    
     if (url.startsWith('https://cdn.dreambeesai.com')) return url;
     if (url.includes('backblazeb2.com')) {
         const b2Pattern = /https?:\/\/[^/]+\.backblazeb2\.com\//;

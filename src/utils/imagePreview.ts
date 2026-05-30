@@ -10,6 +10,7 @@
  */
 export function generatePreviewUrl(originalUrl: string): string {
   if (!originalUrl) return '';
+  if (!originalUrl.startsWith('http')) return originalUrl;
   
   try {
     const urlObj = new URL(originalUrl);
@@ -21,8 +22,8 @@ export function generatePreviewUrl(originalUrl: string): string {
     
     return urlObj.toString();
   } catch {
-    // If URL is not parseable, return empty string
-    return '';
+    // If URL is not parseable, return original
+    return originalUrl;
   }
 }
 
@@ -32,6 +33,7 @@ export function generatePreviewUrl(originalUrl: string): string {
  */
 export function generateHeroUrl(originalUrl: string): string {
   if (!originalUrl) return '';
+  if (!originalUrl.startsWith('http')) return originalUrl;
   
   try {
     const urlObj = new URL(originalUrl);
@@ -53,6 +55,7 @@ export function generateHeroUrl(originalUrl: string): string {
  */
 export function generateThumbnailUrl(originalUrl: string): string {
   if (!originalUrl) return '';
+  if (!originalUrl.startsWith('http')) return originalUrl;
   
   try {
     const urlObj = new URL(originalUrl);
@@ -61,7 +64,7 @@ export function generateThumbnailUrl(originalUrl: string): string {
     
     return urlObj.toString();
   } catch {
-    return '';
+    return originalUrl;
   }
 }
 

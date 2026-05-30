@@ -28,9 +28,8 @@ import {
 } from '../lib/generationFlow';
 import { attachGenerationSession } from '../lib/generationSession';
 import { recoverPendingGeneration } from '../lib/generationRecovery';
-import toast from 'react-hot-toast';
-import { auth, db, functions } from '../firebase.ts';
-import { httpsCallable } from 'firebase/functions';
+import toast from '../utils/lazyToast';
+import { auth, db, getFunctionsInstance } from '../firebase.ts';
 import { 
     onAuthStateChanged, 
     User, 
@@ -46,12 +45,103 @@ import { AIModel, getOptimizedImageUrl } from '../lite-utils';
 
 const BUILTIN_MODELS: AIModel[] = [
     {
-        id: 'wai-illustrious',
-        name: 'WAI Illustrious',
-        description: 'Illustration + character art. Great for cute, sticker, and storybook looks.',
-        image: '/models/wai-illustrious.png',
+        id: 'nova-furry-xl',
+        name: 'Nova Furry XL',
+        description: 'Optimized for furry art and anthropomorphic characters. Auto-tags quality prompts.',
+        image: '/models/nova-furry-xl.jpg',
         type: 'SDXL',
-        order: 1
+        order: 3,
+        isActive: true
+    },
+    {
+        id: 'scyrax-pastel',
+        name: 'Scyrax Pastel',
+        description: 'Soft, pastel color palettes and dreamy atmospheres.',
+        image: '/models/scyrax-pastel.jpg',
+        type: 'SDXL',
+        order: 6,
+        isActive: true
+    },
+    {
+        id: 'ani-detox',
+        name: 'Ani Detox',
+        description: 'Clean, crisp anime style with high detail.',
+        image: '/models/ani-detox.jpg',
+        type: 'SDXL',
+        order: 7,
+        isActive: true
+    },
+    {
+        id: 'wai-illustrious',
+        name: 'Wai Illustrious',
+        description: 'High-quality illustrations with enforced quality tags and custom High-Res Fix workflow.',
+        image: '/models/wai-illustrious.jpg',
+        type: 'SDXL',
+        order: 12,
+        isActive: true
+    },
+    {
+        id: 'rin-anime-blend',
+        name: 'Rin Anime Blend',
+        description: 'A smooth blend of popular anime models for high-quality results.',
+        image: '/models/rin-anime-blend.jpg',
+        type: 'SDXL',
+        order: 14,
+        isActive: true
+    },
+    {
+        id: 'rin-anime-popcute',
+        name: 'Rin Anime Popcute',
+        description: 'Bright, vibrant, and cute anime style with popping colors.',
+        image: '/models/rin-anime-popcute.jpg',
+        type: 'SDXL',
+        order: 15,
+        isActive: true
+    },
+    {
+        id: 'z-image-turbo-a100',
+        name: 'Z-Image Turbo',
+        description: 'Ultra-fast image generation model optimized for quick iteration on A100 GPUs.',
+        image: '/models/z-image-turbo-a100.jpg',
+        type: 'Image',
+        order: 17,
+        isActive: true
+    },
+    {
+        id: 'anima',
+        name: 'Anima',
+        description: 'Anime illustration model powered by circlestone-labs/Anima Base v1.0.',
+        image: '/models/anima.jpg',
+        type: 'Image',
+        order: 18,
+        isActive: true
+    },
+    {
+        id: 'crystal-cuteness',
+        name: 'Crystal Cuteness',
+        description: 'Adorable and sparkling aesthetics for high-quality cute art.',
+        image: '/models/crystal-cuteness.jpg',
+        type: 'SDXL',
+        order: 19,
+        isActive: true
+    },
+    {
+        id: 'veretoon-v10',
+        name: 'Veretoon V1.0',
+        description: 'Vibrant toon-style illustrations with clean outlines.',
+        image: '/models/veretoon-v10.jpg',
+        type: 'SDXL',
+        order: 20,
+        isActive: true
+    },
+    {
+        id: 'nova-3d-cg-xl',
+        name: 'Nova 3D CG XL',
+        description: 'Premium SDXL model optimized for high-quality 3D and CGI art with extreme detail.',
+        image: '/models/nova-3d-cg-xl.jpg',
+        type: 'Generator',
+        order: 22,
+        isActive: true
     }
 ];
 
@@ -60,6 +150,14 @@ const GENERATION_MODEL_TYPES = new Set(['sdxl', 'generator', 'image']);
 const isClientGenerationModel = (model: AIModel) => {
     const type = typeof model.type === 'string' ? model.type.toLowerCase() : 'sdxl';
     return model.isActive !== false && GENERATION_MODEL_TYPES.has(type);
+};
+
+const getApiCallable = async (options?: { timeout?: number }) => {
+    const [{ httpsCallable }, functions] = await Promise.all([
+        import('firebase/functions'),
+        getFunctionsInstance(),
+    ]);
+    return httpsCallable(functions, 'api', options);
 };
 
 interface LiteContextType {
@@ -104,7 +202,18 @@ export const useLite = () => {
 
 export function LiteProvider({ children }: { children: ReactNode }) {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
-    const [availableModels, setAvailableModels] = useState<AIModel[]>([]);
+    const [availableModels, setAvailableModels] = useState<AIModel[]>(() => {
+        if (typeof window !== 'undefined') {
+            const cached = localStorage.getItem('lite_cached_models');
+            if (cached) {
+                try {
+                    const parsed = JSON.parse(cached);
+                    return Array.isArray(parsed) && parsed.length > 0 ? parsed : BUILTIN_MODELS;
+                } catch { return BUILTIN_MODELS; }
+            }
+        }
+        return BUILTIN_MODELS;
+    });
     const [modelsError, setModelsError] = useState<string | null>(null);
     const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
     const [history, setHistory] = useState<any[]>([]);
@@ -197,13 +306,33 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                 return;
             }
 
+            // Instantly restore user profile from cache to bypass boot loader
+            const cachedProfileKey = `lite_user_profile_${user.uid}`;
+            const cached = localStorage.getItem(cachedProfileKey);
+            if (cached) {
+                try {
+                    const parsed = JSON.parse(cached);
+                    setUserTier(parsed.tier || 'free');
+                    setZaps(parsed.zaps ?? (parsed.tier === 'pro' || parsed.tier === 'architect' ? 'unlimited' : 10));
+                    setLoading(false);
+                } catch (e) {
+                    console.warn('[Lite] Parse cached user profile failed:', e);
+                }
+            }
+
             userUnsub = onSnapshot(doc(db, 'users', user.uid), (snap) => {
                 if (snap.exists()) {
                     const data = snap.data();
-                    setUserTier(data.tier || 'free');
+                    const tier = data.tier || 'free';
+                    const calculatedZaps = data.zaps ?? (tier === 'pro' || tier === 'architect' ? 'unlimited' : 10);
+                    
+                    setUserTier(tier);
                     if (!generatingRef.current) {
-                        setZaps(data.zaps ?? (data.tier === 'pro' || data.tier === 'architect' ? 'unlimited' : 10));
+                        setZaps(calculatedZaps);
                     }
+                    
+                    // Save to cache
+                    localStorage.setItem(cachedProfileKey, JSON.stringify({ tier, zaps: calculatedZaps }));
                 }
                 setLoading(false);
             }, (err) => {
@@ -237,6 +366,14 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('lite_selected_model', model.id);
         setSelectedModel(model);
     }, []);
+
+    useEffect(() => {
+        if (selectedModel || availableModels.length === 0) return;
+
+        const savedId = localStorage.getItem('lite_selected_model');
+        const savedModel = availableModels.find((model) => model.id === savedId);
+        setSelectedModel(savedModel ?? availableModels[0]);
+    }, [availableModels, selectedModel]);
 
     const resetGenerationUi = useCallback(() => {
         setGenerating(false);
@@ -596,6 +733,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                         .map(doc => ({ id: doc.id, ...doc.data() } as AIModel))
                         .filter(isClientGenerationModel);
                     setAvailableModels(models);
+                    localStorage.setItem('lite_cached_models', JSON.stringify(models));
                     setModelsError(models.length ? null : msg);
                     pickDefaultModel(models);
                 },
@@ -616,6 +754,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                     .map(doc => ({ id: doc.id, ...doc.data() } as AIModel))
                     .filter(isClientGenerationModel);
                 setAvailableModels(models);
+                localStorage.setItem('lite_cached_models', JSON.stringify(models));
                 setModelsError(null);
                 pickDefaultModel(models);
             },
@@ -638,6 +777,17 @@ export function LiteProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const uid = currentUser?.uid;
         if (!uid) { setHistory([]); return; }
+
+        // Boost perceived speed: instantly restore history from cache
+        const cacheKey = `lite_cached_cloud_history_${uid}`;
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+            try {
+                setHistory(JSON.parse(cached));
+            } catch (err) {
+                console.warn('[Lite] Parse cached history failed:', err);
+            }
+        }
 
         let fallbackUnsub: (() => void) | null = null;
         let primaryUnsub: (() => void) | null = null;
@@ -671,6 +821,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
                         (a, b) => toHistoryTimestamp(b.createdAt) - toHistoryTimestamp(a.createdAt)
                     );
                     setHistory(items);
+                    localStorage.setItem(`lite_cached_cloud_history_${uid}`, JSON.stringify(items));
                 },
                 err2 => {
                     console.warn('[Lite] History subscription failed (fallback):', err2);
@@ -683,7 +834,9 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             orderedQuery,
             snap => {
                 if (usingFallback) return;
-                setHistory(mapDocs(snap.docs));
+                const items = mapDocs(snap.docs);
+                setHistory(items);
+                localStorage.setItem(`lite_cached_cloud_history_${uid}`, JSON.stringify(items));
             },
             err => {
                 console.warn('[Lite] History subscription failed (ordered):', err);
@@ -780,7 +933,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
         if (res.user) {
             // Explicit initialization call to ensure backend consistency
             try {
-                const apiCall = httpsCallable(functions, 'api');
+                const apiCall = await getApiCallable();
                 await apiCall({ 
                     action: 'initializeUser', 
                     birthday 
@@ -1120,14 +1273,13 @@ export function LiteProvider({ children }: { children: ReactNode }) {
             },
         });
 
-        const apiCall = httpsCallable(functions, 'api', { timeout: 120000 });
-        apiCall({ 
+        getApiCallable({ timeout: 120000 }).then((apiCall) => apiCall({ 
             action: 'createGenerationRequest', 
             prompt: cleanPrompt, 
             modelId: selectedModel.id, 
             requestId, 
             ...params 
-        }).then(() => {
+        })).then(() => {
             if (settled) return;
             apiAccepted = true;
             progressFloor = monotonicProgress(progressFloor, 28);

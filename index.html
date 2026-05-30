@@ -3,9 +3,6 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
 
   <link rel="preconnect" href="https://cdn.dreambeesai.com" crossorigin />
   <link rel="dns-prefetch" href="https://cdn.dreambeesai.com" />
@@ -16,32 +13,18 @@
   <link rel="dns-prefetch" href="https://fonts.googleapis.com">
   <link rel="dns-prefetch" href="https://fonts.gstatic.com">
   <link rel="dns-prefetch" href="https://firebasestorage.googleapis.com">
-  <link rel="dns-prefetch" href="https://www.googletagmanager.com">
-  <link rel="dns-prefetch" href="https://www.google-analytics.com">
-  <link rel="preload" as="font"
-    href="https://fonts.gstatic.com/s/inter/v13/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKoduKmMEVuLyfMZg.woff2"
-    type="font/woff2" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="preload" as="image" href="/models/nova-furry-xl.jpg" fetchpriority="high" />
+  <link rel="preload" as="image" href="/models/scyrax-pastel.jpg" fetchpriority="high" />
+  <link rel="prefetch" as="image" href="/models/ani-detox.jpg" />
+  <link rel="prefetch" as="image" href="/models/wai-illustrious.jpg" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" /></noscript>
   <link rel="icon" type="image/png" href="/dreambees_icon.png" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="apple-touch-icon" href="/dreambees_icon.png" />
   <meta name="theme-color" content="#000000" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-
-
-  <script type="speculationrules">
-  {
-    "prerender": [
-      {
-        "source": "list",
-        "urls": ["/discovery", "/models"]
-      }
-    ]
-  }
-  </script>
-
-  <!-- SEO_INJECT_START -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />  <!-- SEO_INJECT_START -->
   <title>DreamBees Lite | Unlimited Desktop AI Art Generation</title>
   <meta name="description"
     content="Experience the power of Stable Diffusion on your desktop. Unlimited generations, blazing fast speeds, and complete creative control. Download DreamBees Lite for macOS and Windows today." />
@@ -62,14 +45,94 @@
   <meta name="robots" content="index, follow" />
   <meta name="author" content="DreamBeesAI" />
   <link rel="canonical" href="https://dreambeesai.com/" />
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-2MB0XFEC9G"></script>
+  <style>
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background: #060608;
+      color: #fff;
+    }
+    .boot-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      background: #060608;
+      overflow: hidden;
+    }
+    .boot-side {
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.025);
+    }
+    .boot-main {
+      padding: 24px;
+    }
+    .boot-line,
+    .boot-card {
+      background: linear-gradient(110deg, rgba(255,255,255,0.08), rgba(255,255,255,0.035), rgba(255,255,255,0.08));
+      background-size: 220% 100%;
+      animation: boot-shimmer 1.1s linear infinite;
+    }
+    .boot-line {
+      width: min(520px, 80%);
+      height: 52px;
+      border-radius: 18px;
+      margin: 36px 0 20px;
+    }
+    .boot-kicker {
+      width: 220px;
+      height: 18px;
+      border-radius: 999px;
+    }
+    .boot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+    }
+    .boot-card {
+      aspect-ratio: 4 / 3;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 22px;
+    }
+    @keyframes boot-shimmer {
+      to { background-position: -220% 0; }
+    }
+    @media (max-width: 760px) {
+      .boot-shell { grid-template-columns: 1fr; }
+      .boot-side { display: none; }
+      .boot-main { padding: 18px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .boot-line, .boot-card { animation: none; }
+    }
+  </style>
   <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag() { dataLayer.push(arguments); }
-    gtag('js', new Date());
+    (function () {
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function gtag() { dataLayer.push(arguments); };
 
-    gtag('config', 'G-2MB0XFEC9G');
+      var loadAnalytics = function () {
+        var script = document.createElement('script');
+        script.async = true;
+        script.src = 'https://www.googletagmanager.com/gtag/js?id=G-2MB0XFEC9G';
+        document.head.appendChild(script);
+        window.gtag('js', new Date());
+        window.gtag('config', 'G-2MB0XFEC9G');
+      };
+
+      var schedule = function () {
+        if ('requestIdleCallback' in window) {
+          window.requestIdleCallback(loadAnalytics, { timeout: 2500 });
+        } else {
+          window.setTimeout(loadAnalytics, 1500);
+        }
+      };
+
+      if (document.readyState === 'complete') {
+        schedule();
+      } else {
+        window.addEventListener('load', schedule, { once: true });
+      }
+    })();
   </script>
 
   <script>
@@ -102,7 +165,23 @@
 
 
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div class="boot-shell" aria-hidden="true">
+      <aside class="boot-side"></aside>
+      <main class="boot-main">
+        <div class="boot-kicker boot-line"></div>
+        <div class="boot-line"></div>
+        <div class="boot-grid">
+          <div class="boot-card"></div>
+          <div class="boot-card"></div>
+          <div class="boot-card"></div>
+          <div class="boot-card"></div>
+          <div class="boot-card"></div>
+          <div class="boot-card"></div>
+        </div>
+      </main>
+    </div>
+  </div>
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

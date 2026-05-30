@@ -1,55 +1,65 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { HashRouter as Router } from 'react-router-dom';
-import { LiteProvider, useLite } from './contexts/LiteContext';
-import { Toaster } from 'react-hot-toast';
-import AnimatedRoutes from './components/AnimatedRoutes';
-import Sidebar from './components/Sidebar';
 import SplashScreen from './components/SplashScreen';
 
-function AppContent() {
-  const { sidebarCollapsed } = useLite();
+// Lazy load the database-bound context provider and app layout content
+const LazyLiteProvider = React.lazy(() => 
+  import('./contexts/LiteContext').then((module) => ({ default: module.LiteProvider }))
+);
+const LazyAppContent = React.lazy(() => import('./AppContent'));
 
-  return (
-    <div className={`app-container ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-      <Sidebar />
-      <main className="app-main">
-        <AnimatedRoutes />
-      </main>
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: 'rgba(24, 24, 27, 0.8)',
-            backdropFilter: 'blur(20px)',
-            color: '#fff',
-            borderRadius: '24px',
-            border: '1px solid rgba(255,255,255,0.1)',
-            padding: '16px 24px',
-            fontSize: '0.9rem',
-            fontWeight: 600,
-            boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
-            maxWidth: '400px'
-          },
-          success: {
-            iconTheme: {
-              primary: '#8b5cf6',
-              secondary: '#fff',
-            },
-          },
+const AppLoadingFallback = () => (
+  <div
+    aria-hidden="true"
+    style={{
+      minHeight: '100vh',
+      width: '100vw',
+      background: '#060608',
+      display: 'grid',
+      gridTemplateColumns: '260px 1fr',
+    }}
+  >
+    <aside
+      style={{
+        borderRight: '1px solid rgba(255,255,255,0.08)',
+        background: 'rgba(255,255,255,0.025)',
+      }}
+    />
+    <main style={{ padding: 24 }}>
+      <div style={{ width: 220, height: 18, borderRadius: 999, background: 'rgba(255,255,255,0.07)', marginBottom: 18 }} />
+      <div style={{ width: 'min(520px, 80%)', height: 52, borderRadius: 18, background: 'rgba(255,255,255,0.06)', marginBottom: 20 }} />
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+          gap: 14,
         }}
-      />
-    </div>
-  );
-}
+      >
+        {Array.from({ length: 8 }).map((_, index) => (
+          <div
+            key={index}
+            style={{
+              aspectRatio: '4 / 3',
+              borderRadius: 22,
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))',
+              border: '1px solid rgba(255,255,255,0.08)',
+            }}
+          />
+        ))}
+      </div>
+    </main>
+  </div>
+);
 
 function App() {
   return (
     <Router>
-      <LiteProvider>
-        <SplashScreen />
-        <AppContent />
-      </LiteProvider>
+      <SplashScreen />
+      <Suspense fallback={<AppLoadingFallback />}>
+        <LazyLiteProvider>
+          <LazyAppContent />
+        </LazyLiteProvider>
+      </Suspense>
     </Router>
   );
 }

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --font-body: 'Outfit', -apple-system, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --color-black: #060608;
   --color-zinc-900: #0c0c0e;
   --color-zinc-800: #1a1a1c;
@@ -38,15 +38,16 @@ body {
   selection-background: var(--color-accent);
 }
 
-/* Tactile Grain Overlay */
+/* Tactile Digital Grid Overlay */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 9999;
-  opacity: 0.04;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
 
 /* Ambient Ambient Mesh */
@@ -60,6 +61,7 @@ body::after {
               radial-gradient(circle at 100% 100%, rgba(245, 158, 11, 0.05), transparent 40%),
               radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.03), transparent 60%);
   animation: ambient-drift 20s infinite alternate ease-in-out;
+  will-change: transform;
 }
 
 @keyframes ambient-drift {
@@ -96,8 +98,8 @@ body::after {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(30px) scale(0.98); filter: blur(10px); }
-  to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  from { opacity: 0; transform: translateY(30px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .organic-float {
@@ -139,7 +141,8 @@ p {
 
 .clickable {
   cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), filter 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  will-change: transform;
 }
 
 .clickable:hover {

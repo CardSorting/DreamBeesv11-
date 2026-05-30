@@ -49,14 +49,18 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, './src'),
       }
     },
+    esbuild: {
+      drop: mode === 'production' ? ['console', 'debugger'] : [],
+    },
     build: {
+      sourcemap: false,
       chunkSizeWarningLimit: 2000,
       rollupOptions: {
         output: {
           manualChunks: {
-            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+            'react-vendor': ['react', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'react-dom', 'react-dom/client', 'react-router-dom'],
             'firebase-vendor': ['firebase/app', 'firebase/auth', 'firebase/firestore'],
-            'ui-vendor': ['framer-motion', 'lucide-react', 'react-hot-toast'],
+            'toast-vendor': ['react-hot-toast'],
           }
         }
       }
