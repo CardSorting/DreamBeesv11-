@@ -458,7 +458,7 @@ export function LiteProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         const uid = currentUser?.uid;
-        if (prevUidRef.current && prevUidRef.current !== uid) {
+        if (prevUidRef.current !== uid) {
             generationSessionRef.current?.();
             generatingRef.current = false;
             clearPending();

@@ -167,8 +167,16 @@ export function toHistoryTimestamp(value: unknown): number {
 export function preloadImage(url: string): Promise<void> {
   return new Promise((resolve) => {
     const img = new Image();
-    img.onload = () => resolve();
-    img.onerror = () => resolve();
+    img.onload = () => {
+      img.onload = null;
+      img.onerror = null;
+      resolve();
+    };
+    img.onerror = () => {
+      img.onload = null;
+      img.onerror = null;
+      resolve();
+    };
     img.src = url;
   });
 }

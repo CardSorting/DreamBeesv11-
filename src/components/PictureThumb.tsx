@@ -42,7 +42,7 @@ export default function PictureThumb({ item, className = 'picture-card', showCap
 
         return observeElement(containerEl, (isIntersecting) => {
             setIsInView(isIntersecting);
-        }, '800px');
+        }, '300px');
     }, [containerEl]);
 
     const handleMouseEnter = () => {

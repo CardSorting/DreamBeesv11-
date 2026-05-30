@@ -10,6 +10,9 @@ import { GenerationRecord, LiteDatabase } from './database';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Limit V8 heap space to 512MB to prevent memory explosions
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512');
+
 // Shim for dependencies that rely on __filename/__dirname (like better-sqlite3's bindings).
 Object.defineProperty(globalThis, '__filename', { value: __filename });
 Object.defineProperty(globalThis, '__dirname', { value: __dirname });
@@ -27,6 +30,9 @@ let pendingAuthResolve: ((url: string) => void) | null = null;
 let pendingDeepLinkUrl: string | null = null;
 let activeAuthServer: http.Server | null = null;
 let authServerTimeout: NodeJS.Timeout | null = null;
+const activeSockets = new Set<netModule.Socket>();
+const logQueue: string[] = [];
+let isWritingLog = false;
 
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
@@ -45,24 +51,40 @@ const authDomain = 'dreambees-alchemist.firebaseapp.com';
  * PRODUCTION HARDENING: Persistent Forensic Logging
  */
 const logFile = path.join(app.getPath('userData'), 'forensic.log');
+
+function flushLogQueue() {
+  if (isWritingLog || logQueue.length === 0) return;
+  isWritingLog = true;
+  const entry = logQueue.shift()!;
+  
+  fs.appendFile(logFile, entry, (err) => {
+    if (!err) {
+      fs.stat(logFile, (err, stats) => {
+        if (!err && stats.size > 5 * 1024 * 1024) {
+          fs.writeFile(logFile, `[${new Date().toISOString()}] Log Rotated\n`, () => {
+            isWritingLog = false;
+            flushLogQueue();
+          });
+        } else {
+          isWritingLog = false;
+          flushLogQueue();
+        }
+      });
+    } else {
+      isWritingLog = false;
+      flushLogQueue();
+    }
+  });
+}
+
 function logStartup(message: string, error?: unknown) {
   const suffix = error instanceof Error ? `: ${error.stack || error.message}` : error ? `: ${String(error)}` : '';
   const logEntry = `[${new Date().toISOString()}] ${message}${suffix}\n`;
   
   console.log(logEntry.trim());
   
-  try {
-    // Append to forensic log for post-mortem analysis
-    fs.appendFileSync(logFile, logEntry);
-    
-    // Simple rotation: if log > 5MB, clear it
-    const stats = fs.statSync(logFile);
-    if (stats.size > 5 * 1024 * 1024) {
-      fs.writeFileSync(logFile, `[${new Date().toISOString()}] Log Rotated\n`);
-    }
-  } catch (err) {
-    // Fallback if FS is locked
-  }
+  logQueue.push(logEntry);
+  flushLogQueue();
 }
 
 async function findAvailablePort(startPort: number): Promise<number> {
@@ -82,6 +104,12 @@ function cleanupAuthServer() {
     activeAuthServer.close();
     activeAuthServer = null;
   }
+  for (const socket of activeSockets) {
+    if (!socket.destroyed) {
+      socket.destroy();
+    }
+  }
+  activeSockets.clear();
   if (authServerTimeout) {
     clearTimeout(authServerTimeout);
     authServerTimeout = null;
@@ -277,6 +305,11 @@ function registerIpcHandlers() {
         `);
       });
 
+      server.on('connection', (socket) => {
+        activeSockets.add(socket);
+        socket.on('close', () => activeSockets.delete(socket));
+      });
+
       activeAuthServer = server;
       server.listen(actualPort, '127.0.0.1', () => {
         logStartup(`Auth bridge listening on http://127.0.0.1:${actualPort}`);
@@ -455,6 +488,7 @@ function createWindow() {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+    cleanupAuthServer();
   });
 }
 
@@ -486,8 +520,8 @@ app.whenReady().then(() => {
 
   // Windows/Linux handle deep link from argv
   app.on('second-instance', (_event, commandLine) => {
-    const url = commandLine.pop();
-    if (url?.startsWith('dreambees://auth')) {
+    const url = commandLine.find(arg => arg.startsWith('dreambees://auth'));
+    if (url) {
       handleDeepLink(url);
     }
     if (mainWindow) {
@@ -512,6 +546,7 @@ app.whenReady().then(() => {
 });
 
 app.on('before-quit', () => {
+  cleanupAuthServer();
   try {
     db?.close();
   } catch (error) {

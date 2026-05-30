@@ -31,6 +31,10 @@ function safeJsonParse(value: string | null): unknown {
 export class LiteDatabase {
   private db: Database.Database;
   private dbPath: string;
+  private saveStmt!: Database.Statement;
+  private getStmt!: Database.Statement;
+  private setSettingStmt!: Database.Statement;
+  private getSettingStmt!: Database.Statement;
 
   constructor(dbPath?: string) {
     this.dbPath = dbPath || path.join(app.getPath('userData'), 'lite.sqlite');
@@ -38,6 +42,17 @@ export class LiteDatabase {
     this.db = new Database(this.dbPath, { timeout: 5000 });
     this.init();
     this.verifyIntegrity();
+    this.compileStatements();
+  }
+
+  private compileStatements() {
+    this.saveStmt = this.db.prepare(`
+      INSERT OR REPLACE INTO generations (id, prompt, imageUrl, modelId, params, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    this.getStmt = this.db.prepare(`SELECT * FROM generations ORDER BY createdAt DESC LIMIT ?`);
+    this.setSettingStmt = this.db.prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`);
+    this.getSettingStmt = this.db.prepare(`SELECT value FROM settings WHERE key = ?`);
   }
 
   private backup() {
@@ -71,6 +86,11 @@ export class LiteDatabase {
     this.db.pragma('busy_timeout = 5000');
     this.db.pragma('foreign_keys = ON');
     this.db.pragma('synchronous = NORMAL'); // Balance between speed and safety
+    this.db.pragma('cache_size = -2000'); // Limit page cache memory overhead to ~2MB
+    this.db.pragma('temp_store = MEMORY'); // Keep temporary tables/indices in memory
+    this.db.pragma('mmap_size = 0'); // Disable memory-mapped I/O to restrict VM size expansion
+    this.db.pragma('wal_autocheckpoint = 1000'); // Checkpoint automatically after 1000 pages (~4MB)
+    this.db.pragma('max_page_count = 50000'); // Limit DB file size to ~200MB to prevent disk stutters
 
     // Simple migration system
     this.db.exec(`
@@ -123,11 +143,7 @@ export class LiteDatabase {
     const imageUrl = typeof data.imageUrl === 'string' ? data.imageUrl.slice(0, 4096) : '';
     const modelId = typeof data.modelId === 'string' ? data.modelId.slice(0, 256) : '';
     const createdAt = Number.isFinite(data.createdAt) ? Number(data.createdAt) : Date.now();
-    const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO generations (id, prompt, imageUrl, modelId, params, createdAt)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-    stmt.run(
+    this.saveStmt.run(
       id,
       prompt,
       imageUrl,
@@ -139,8 +155,7 @@ export class LiteDatabase {
 
   public getGenerations(limit: number = 50) {
     const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 1000);
-    const stmt = this.db.prepare(`SELECT * FROM generations ORDER BY createdAt DESC LIMIT ?`);
-    return stmt.all(safeLimit).map((g: any) => ({
+    return this.getStmt.all(safeLimit).map((g: any) => ({
       ...g,
       params: safeJsonParse(g.params)
     }));
@@ -148,14 +163,12 @@ export class LiteDatabase {
 
   public setSetting(key: string, value: any) {
     const safeKey = requireString(key, 'key', 128);
-    const stmt = this.db.prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)`);
-    stmt.run(safeKey, JSON.stringify(value));
+    this.setSettingStmt.run(safeKey, JSON.stringify(value));
   }
 
   public getSetting(key: string) {
     const safeKey = requireString(key, 'key', 128);
-    const stmt = this.db.prepare(`SELECT value FROM settings WHERE key = ?`);
-    const row = stmt.get(safeKey) as any;
+    const row = this.getSettingStmt.get(safeKey) as any;
     return row ? safeJsonParse(row.value) : null;
   }
 
@@ -172,6 +185,11 @@ export class LiteDatabase {
     if (this.db.open) {
       this.checkpoint();
       this.db.close();
+      // Dereference statements to assist garbage collection
+      (this as any).saveStmt = undefined;
+      (this as any).getStmt = undefined;
+      (this as any).setSettingStmt = undefined;
+      (this as any).getSettingStmt = undefined;
       console.log('[database] Database connection closed safely');
     }
   }

@@ -47,10 +47,18 @@ export default function ImmersiveHero({
         img = new Image();
         img.src = currentHighRes;
         img.onload = () => {
+            if (img) {
+                img.onload = null;
+                img.onerror = null;
+            }
             setImgSrc(currentHighRes);
             setIsHighResLoaded(true);
         };
         img.onerror = () => {
+            if (img) {
+                img.onload = null;
+                img.onerror = null;
+            }
             setImgSrc(currentPrimary);
             setIsHighResLoaded(true);
         };

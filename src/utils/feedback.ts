@@ -40,10 +40,11 @@ export async function copyToClipboard(text: string): Promise<void> {
 export async function downloadImage(url: string, filename?: string): Promise<void> {
   showToast('Preparing download...', 'loading', 'download');
   
+  let blobUrl: string | null = null;
   try {
     const response = await fetch(url);
     const blob = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
+    blobUrl = URL.createObjectURL(blob);
     
     const link = document.createElement('a');
     link.href = blobUrl;
@@ -51,14 +52,18 @@ export async function downloadImage(url: string, filename?: string): Promise<voi
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    URL.revokeObjectURL(blobUrl);
     
     toast.dismiss('download');
     showToast('Download complete', 'success');
   } catch (error) {
     console.error('Failed to download image:', error);
+    toast.dismiss('download');
     showToast('Download failed', 'error');
     throw error;
+  } finally {
+    if (blobUrl) {
+      URL.revokeObjectURL(blobUrl);
+    }
   }
 }
 
